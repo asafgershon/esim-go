@@ -1,0 +1,165 @@
+# eSIM Go GraphQL Schema
+# Main schema file for the eSIM Go platform
+
+type Query {
+  # Basic hello query for testing
+  hello: String!
+  
+  # User authentication and profile
+  me: User @auth
+  
+  myESIMs: [ESIM!]! @auth
+  esimDetails(id: ID!): ESIM @auth
+}
+
+type Mutation {
+  # Authentication
+  signIn(input: SignInInput!): SignInResponse
+  signUp(input: SignUpInput!): SignUpResponse
+  
+  # Social Authentication
+  signInWithApple(input: SocialSignInInput!): SignInResponse
+  signInWithGoogle(input: SocialSignInInput!): SignInResponse
+  
+  # Phone Authentication
+  sendPhoneOTP(phoneNumber: String!): SendOTPResponse
+  verifyPhoneOTP(input: VerifyOTPInput!): SignInResponse
+  
+  # eSIM operations
+  purchaseESIM(planId: ID!, input: PurchaseESIMInput!): PurchaseESIMResponse @auth
+  activateESIM(esimId: ID!): ActivateESIMResponse @auth
+}
+
+type Subscription {
+  # Real-time eSIM status updates
+  esimStatusUpdated(esimId: ID!): ESIMStatusUpdate! @auth
+}
+
+# User Types
+type User {
+  id: ID!
+  email: String!
+  firstName: String!
+  lastName: String!
+  phoneNumber: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+# Authentication Types
+input SignInInput {
+  email: String!
+  password: String!
+}
+
+input SignUpInput {
+  email: String!
+  password: String!
+  firstName: String!
+  lastName: String!
+  phoneNumber: String
+}
+
+# Social Authentication
+input SocialSignInInput {
+  idToken: String! # JWT token from Apple/Google
+  firstName: String # For first-time users
+  lastName: String # For first-time users
+}
+
+# Phone Authentication
+input VerifyOTPInput {
+  phoneNumber: String!
+  otp: String!
+  firstName: String # For first-time users
+  lastName: String # For first-time users
+}
+
+type SendOTPResponse {
+  success: Boolean!
+  error: String
+  messageId: String # For tracking SMS delivery
+}
+
+type SignInResponse {
+  success: Boolean!
+  user: User
+  sessionToken: String
+  refreshToken: String
+  error: String
+}
+
+type SignUpResponse {
+  success: Boolean!
+  user: User
+  sessionToken: String
+  refreshToken: String
+  error: String
+}
+
+# eSIM Types
+type ESIMPlan {
+  id: ID!
+  name: String!
+  description: String!
+  destination: String!
+  dataAmount: String! # e.g., "5GB", "Unlimited"
+  duration: Int! # Duration in days
+  price: Float! # Price in USD
+  currency: String!
+  carrier: String!
+  coverage: [String!]! # List of countries/regions covered
+  features: [String!]! # Features like "5G", "Hotspot", etc.
+  isActive: Boolean!
+}
+
+type ESIM {
+  id: ID!
+  planId: ID!
+  plan: ESIMPlan!
+  userId: ID!
+  status: ESIMStatus!
+  qrCode: String # QR code for eSIM installation
+  iccid: String # eSIM identifier
+  phoneNumber: String # Assigned phone number if applicable
+  activationDate: String
+  expirationDate: String!
+  dataUsed: Float # Data used in MB
+  dataRemaining: Float # Data remaining in MB
+  createdAt: String!
+  updatedAt: String!
+}
+
+enum ESIMStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  CANCELLED
+}
+
+# eSIM Operations
+input PurchaseESIMInput {
+  phoneNumber: String
+  autoActivate: Boolean
+}
+
+type PurchaseESIMResponse {
+  success: Boolean!
+  esim: ESIM
+  error: String
+}
+
+type ActivateESIMResponse {
+  success: Boolean!
+  esim: ESIM
+  error: String
+}
+
+type ESIMStatusUpdate {
+  esimId: ID!
+  status: ESIMStatus!
+  dataUsed: Float
+  dataRemaining: Float
+  updatedAt: String!
+}

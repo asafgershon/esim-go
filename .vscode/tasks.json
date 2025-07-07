@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "codegen",
+			"path": "server/server",
+			"problemMatcher": [],
+			"label": "npm: codegen - server/server",
+			"detail": "graphql-codegen"
+		}
+	]
+}
