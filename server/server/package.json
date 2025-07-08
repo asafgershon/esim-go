@@ -22,8 +22,6 @@
   },
   "dependencies": {
     "@apollo/server": "^4.12.2",
-    "@aws-sdk/client-sesv2": "^3.705.0",
-    "@aws-sdk/client-sns": "^3.705.0",
     "@supabase/supabase-js": "^2.47.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",

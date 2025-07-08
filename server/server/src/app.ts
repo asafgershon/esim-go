@@ -15,7 +15,6 @@ import {
 import { useServer } from "graphql-ws/use/ws";
 import { getSupabaseToken, getSupabaseTokenFromConnectionParams, createSupabaseAuthContext } from "./context/supabase-auth";
 import { resolvers } from "./resolvers";
-import { awsSMS, otpService } from "./services";
 import type { Context as WSContext } from "graphql-ws";
 
 const typeDefs = `
@@ -63,8 +62,6 @@ async function startServer() {
               // TODO: Add services for eSIM Go
               // redis, 
               // pubsub
-              sms: awsSMS,
-              otp: otpService,
             },
             repositories: {
               // TODO: Add eSIM Go repositories
@@ -123,8 +120,6 @@ async function startServer() {
             auth,
             services: {
               // TODO: Add eSIM Go services
-              sms: awsSMS,
-              otp: otpService,
             },
             repositories: {
               // TODO: Add eSIM Go repositories
