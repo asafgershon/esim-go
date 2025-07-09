@@ -30,6 +30,7 @@ export async function getRedis() {
         store,
       })
     );
+    console.log("🔥 Redis connected", redisUrl);
   }
 
   return redisInstance;
