@@ -31,7 +31,7 @@ import { getRedis, handleESIMGoWebhook } from "./services";
 
 const typeDefs = `
 ${authDirectiveTypeDefs}
-${readFileSync(join(__dirname, "./schema.graphql"), "utf-8")}
+${readFileSync(join(__dirname, "../schema.graphql"), "utf-8")}
 `;
 
 async function startServer() {
