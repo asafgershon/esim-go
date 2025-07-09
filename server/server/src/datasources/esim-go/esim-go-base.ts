@@ -39,6 +39,9 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     }
     request.headers["X-API-KEY"] = apiKey;
     request.headers["Content-Type"] = "application/json";
+    
+    // Set timeout to prevent hanging requests
+    request.timeout = 10000; // 10 seconds
   }
 
   /**

@@ -22,70 +22,83 @@ export class CountriesDataSource extends ESIMGoDataSource {
       "iso" | "country" | "region" | "flag" | "hebrewName"
     >[]
   > {
-    const queryParams: URLSearchParams = new URLSearchParams();
-
-    if (params?.countries && params.countries.length > 0) {
-      queryParams.set("countries", params.countries.join(","));
-    }
-    if (params?.isos && params.isos.length > 0) {
-      queryParams.set("isos", params.isos.join(","));
-    }
-
-    // Always return all for countries (we don't need pagination for country list)
-    queryParams.set("returnAll", "true");
-
-    const cacheKey = this.getCacheKey("countries", queryParams);
+    // Always use the same cache key regardless of filters to maximize cache hits
+    const cacheKey = this.getCacheKey("countries:all");
 
     // Try cache first (1 hour - country data changes infrequently)
     const cached = await this.cache?.get(cacheKey);
+    let allCountries;
+    
     if (cached) {
-      return JSON.parse(cached);
-    }
+      allCountries = JSON.parse(cached);
+    } else {
+      // Fetch all countries from API (only when not cached)
+      const queryParams = new URLSearchParams();
+      queryParams.set("returnAll", "true");
 
-    try {
-      const response = await this.getWithErrorHandling<ESIMGoNetworkResponse>(
-        "/v2.5/networks",
-        queryParams
-      );
+      try {
+        const response = await this.getWithErrorHandling<ESIMGoNetworkResponse>(
+          "/v2.5/networks",
+          queryParams
+        );
 
-      const schema = z
-        .object({
-          name: z.string(),
-        })
-        .transform((data) => ({
-          iso: data.name,
-          country:
-            countriesList.getCountryData(
-              data.name as countriesList.TCountryCode
-            )?.name || "",
-          region:
-            countriesList.getCountryData(
-              data.name as countriesList.TCountryCode
-            )?.continent || "",
-          flag:
-            countriesList.getEmojiFlag(
-              data.name as countriesList.TCountryCode
-            ) || "",
-          hebrewName: getCountryNameHebrew(data.name) || "",
-        }));
+        const schema = z
+          .object({
+            name: z.string(),
+          })
+          .transform((data) => ({
+            iso: data.name,
+            country:
+              countriesList.getCountryData(
+                data.name as countriesList.TCountryCode
+              )?.name || "",
+            region:
+              countriesList.getCountryData(
+                data.name as countriesList.TCountryCode
+              )?.continent || "",
+            flag:
+              countriesList.getEmojiFlag(
+                data.name as countriesList.TCountryCode
+              ) || "",
+            hebrewName: getCountryNameHebrew(data.name) || "",
+          }));
 
-      const countries = response.countryNetworks
-        .filter((item) => Boolean(item.name))
-        .map((item) => schema.parse(item));
+        allCountries = response.countryNetworks
+          .filter((item) => Boolean(item.name))
+          .map((item) => schema.parse(item));
 
-      // Cache for 1 hour
-      await this.cache?.set(cacheKey, JSON.stringify(countries));
-      return countries;
-    } catch (error) {
-      if (error instanceof GraphQLError) {
-        throw error;
+        // Cache for 1 hour
+        await this.cache?.set(cacheKey, JSON.stringify(allCountries), { ttl: 3600 });
+      } catch (error) {
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
+        throw new GraphQLError("Failed to fetch countries", {
+          extensions: {
+            code: "COUNTRIES_FETCH_ERROR",
+            originalError: error,
+          },
+        });
       }
-      throw new GraphQLError("Failed to fetch countries", {
-        extensions: {
-          code: "COUNTRIES_FETCH_ERROR",
-          originalError: error,
-        },
-      });
     }
+
+    // Apply client-side filtering if parameters are provided
+    let filteredCountries = allCountries;
+
+    if (params?.countries && params.countries.length > 0) {
+      const countryNamesSet = new Set(params.countries.map(c => c.toLowerCase()));
+      filteredCountries = filteredCountries.filter((country: any) => 
+        countryNamesSet.has(country.country.toLowerCase())
+      );
+    }
+
+    if (params?.isos && params.isos.length > 0) {
+      const isoSet = new Set(params.isos.map(iso => iso.toUpperCase()));
+      filteredCountries = filteredCountries.filter((country: any) => 
+        isoSet.has(country.iso.toUpperCase())
+      );
+    }
+
+    return filteredCountries;
   }
 }

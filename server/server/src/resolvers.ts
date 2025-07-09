@@ -65,6 +65,8 @@ export const resolvers: Resolvers = {
         return [];
       }
       
+      // Fetch countries with specific ISOs to reduce API calls
+      // The datasource has caching so this won't hit the API repeatedly
       const countries = await context.dataSources.countries.getCountries({
         isos: parent.countryIds
       });

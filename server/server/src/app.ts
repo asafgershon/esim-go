@@ -193,10 +193,35 @@ async function startServer() {
         `🚀 eSIM Go Server is now running on http://localhost:${PORT}/graphql`
       );
       console.log(`🔗 WebSocket endpoint: ws://localhost:${PORT}/graphql`);
+      
+      // Warm up the countries cache in the background (don't await)
+      warmUpCache(redis).catch((error) => {
+        console.error("⚠️ Cache warm-up failed (non-critical):", error.message);
+      });
     });
   } catch (error) {
     console.error("Failed to start eSIM Go server:", error);
     process.exit(1);
+  }
+}
+
+/**
+ * Warm up cache with commonly requested data
+ */
+async function warmUpCache(redis: any) {
+  try {
+    console.log("🔥 Warming up cache...");
+    
+    // Create a countries datasource to fetch and cache countries
+    const countriesDataSource = new CountriesDataSource({ cache: redis });
+    
+    // Fetch all countries (this will cache them for 1 hour)
+    await countriesDataSource.getCountries();
+    
+    console.log("✅ Countries cache warmed up successfully");
+  } catch (error) {
+    // Don't throw - this is non-critical
+    console.error("❌ Failed to warm up countries cache:", error);
   }
 }
 
