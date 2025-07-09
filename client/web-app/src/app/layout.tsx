@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ApolloProviderWrapper } from "@/components/apollo-provider";
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import Script from "next/script";
 
 const geistSans = Geist({
@@ -37,9 +38,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ApolloProviderWrapper>
-          {children}
-        </ApolloProviderWrapper>
+        <NuqsAdapter>
+          <ApolloProviderWrapper>
+            {children}
+          </ApolloProviderWrapper>
+        </NuqsAdapter>
         
         <Script
           src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"

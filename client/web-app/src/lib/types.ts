@@ -76,3 +76,6 @@ export interface GoogleCredentialResponse {
   credential: string;
   select_by: string;
 }
+
+// Country ISO Code type for URL state management
+export type CountryISOCode = string; // 2-letter ISO country code (e.g., 'US', 'IL', 'FR')

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useQueryState, parseAsInteger, parseAsString } from "nuqs";
 import { Calendar, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { EsimSkeleton } from "./esim-skeleton";
 import { countries as countriesData } from "countries-list";
 import { hebrewNames } from "./countries-hebrew";
+import type { CountryISOCode } from "@/lib/types";
 
 // Types
 interface Country {
@@ -134,9 +136,13 @@ const getVolumeDiscount = (days: number): number => {
 };
 
 export function EsimExperienceSelector() {
+  // URL state management
+  const [numOfDays, setNumOfDays] = useQueryState('numOfDays', parseAsInteger.withDefault(7));
+  const [countryId, setCountryId] = useQueryState('countryId', parseAsString);
+  const [tripId, setTripId] = useQueryState('tripId', parseAsString);
+  
+  // Local state for UI
   const [activeTab, setActiveTab] = useState<"countries" | "trips">("countries");
-  const [selectedDestination, setSelectedDestination] = useState<string>("");
-  const [duration, setDuration] = useState([7]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Simulate loading on component mount
@@ -166,25 +172,21 @@ export function EsimExperienceSelector() {
 
   // Get selected destination details
   const selectedDestinationData = useMemo(() => {
-    if (!selectedDestination) return null;
-    
-    const [type, id] = selectedDestination.split("-");
-    
-    if (type === "country") {
-      return { type: "country" as const, data: countries.find((c) => c.id === id) };
-    } else if (type === "trip") {
-      return { type: "trip" as const, data: trips.find((t) => t.id === id) };
+    if (countryId) {
+      return { type: "country" as const, data: countries.find((c) => c.id === countryId) };
+    } else if (tripId) {
+      return { type: "trip" as const, data: trips.find((t) => t.id === tripId) };
     }
     
     return null;
-  }, [selectedDestination]);
+  }, [countryId, tripId]);
 
   // Calculate pricing
   const pricing = useMemo(() => {
     if (!selectedDestinationData?.data) return null;
     
     const basePrice = selectedDestinationData.data.basePrice;
-    const days = duration[0];
+    const days = numOfDays;
     const volumeDiscount = getVolumeDiscount(days);
     const dailyPrice = basePrice * volumeDiscount;
     const totalPrice = dailyPrice * days;
@@ -195,18 +197,33 @@ export function EsimExperienceSelector() {
       hasDiscount: volumeDiscount < 1,
       days,
     };
-  }, [selectedDestinationData, duration]);
+  }, [selectedDestinationData, numOfDays]);
 
   const handleTabChange = (tab: "countries" | "trips") => {
     setActiveTab(tab);
-    setSelectedDestination(""); // Clear selection when switching tabs
+    // Clear selection when switching tabs
+    setCountryId(null);
+    setTripId(null);
   };
 
   const handleDestinationChange = (value: string) => {
-    setSelectedDestination(value);
+    if (!value) {
+      setCountryId(null);
+      setTripId(null);
+      return;
+    }
+    
+    const [type, id] = value.split("-");
+    if (type === "country") {
+      setCountryId(id as CountryISOCode);
+      setTripId(null);
+    } else if (type === "trip") {
+      setTripId(id);
+      setCountryId(null);
+    }
   };
 
-  const isReadyToPurchase = selectedDestination && duration[0] >= 7;
+  const isReadyToPurchase = (countryId || tripId) && numOfDays >= 7;
 
   // Show loading skeleton initially
   if (isLoading) {
@@ -256,9 +273,9 @@ export function EsimExperienceSelector() {
       <div className="px-4 mb-6">
         <Combobox
           options={comboboxOptions}
-          value={selectedDestination}
+          value={countryId ? `country-${countryId}` : tripId ? `trip-${tripId}` : ""}
           onValueChange={handleDestinationChange}
-          placeholder={selectedDestination ? "שנה יעד..." : "לאן נוסעים?"}
+          placeholder={(countryId || tripId) ? "שנה יעד..." : "לאן נוסעים?"}
           emptyMessage="לא נמצאו תוצאות"
           className="border-border focus:border-ring focus:ring-ring/20 rtl"
         />
@@ -275,8 +292,8 @@ export function EsimExperienceSelector() {
           <div className="space-y-4">
             <div className="px-2">
               <SliderWithValue
-                value={duration}
-                onValueChange={setDuration}
+                value={[numOfDays]}
+                onValueChange={(value) => setNumOfDays(value[0])}
                 max={30}
                 min={1}
                 className="w-full"
@@ -296,8 +313,8 @@ export function EsimExperienceSelector() {
               <div className="flex items-center gap-3">
                 <span className="text-2xl">
                   {selectedDestinationData.type === "country" 
-                    ? (selectedDestinationData.data as Country).flag 
-                    : (selectedDestinationData.data as Trip).icon}
+                    ? (selectedDestinationData.data as Country)?.flag || ""
+                    : (selectedDestinationData.data as Trip)?.icon || ""}
                 </span>
                 <div>
                                      <h3 className="font-medium text-card-foreground">
@@ -311,7 +328,10 @@ export function EsimExperienceSelector() {
                 </div>
               </div>
               <button
-                onClick={() => setSelectedDestination("")}
+                onClick={() => {
+                  setCountryId(null);
+                  setTripId(null);
+                }}
                 className="text-muted-foreground hover:text-foreground p-1"
               >
                 ✕
