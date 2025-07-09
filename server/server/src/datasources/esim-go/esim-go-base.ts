@@ -20,6 +20,11 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
   // Cache instance from options
   protected cache?: KeyValueCache;
 
+  // Rate limiting properties
+  private requestCount = 0;
+  private lastResetTime = Date.now();
+  private readonly MAX_REQUESTS_PER_MINUTE = 100;
+
   constructor(config?: DataSourceConfig) {
     super(config);
     this.cache = config?.cache;
@@ -29,6 +34,9 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
    * Add authentication header to all requests
    */
   override willSendRequest(_path: string, request: any) {
+    // Check rate limit
+    this.enforceRateLimit();
+    
     const apiKey = env.ESIM_GO_API_KEY;
     if (!apiKey) {
       throw new GraphQLError("eSIM Go API key not configured", {
@@ -41,7 +49,33 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     request.headers["Content-Type"] = "application/json";
     
     // Set timeout to prevent hanging requests
-    request.timeout = 10000; // 10 seconds
+    request.timeout = 15000; // 15 seconds
+  }
+
+  /**
+   * Rate limiting to prevent API exhaustion
+   */
+  private enforceRateLimit() {
+    const now = Date.now();
+    const timeWindow = 60 * 1000; // 1 minute
+    
+    // Reset counter if time window passed
+    if (now - this.lastResetTime > timeWindow) {
+      this.requestCount = 0;
+      this.lastResetTime = now;
+    }
+    
+    // Check if we're over the limit
+    if (this.requestCount >= this.MAX_REQUESTS_PER_MINUTE) {
+      throw new GraphQLError("API rate limit exceeded", {
+        extensions: {
+          code: "RATE_LIMIT_EXCEEDED",
+          retryAfter: Math.ceil((timeWindow - (now - this.lastResetTime)) / 1000),
+        },
+      });
+    }
+    
+    this.requestCount++;
   }
 
   /**

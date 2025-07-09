@@ -277,3 +277,50 @@ startServer().catch((error) => {
   console.error("Failed to start eSIM Go server:", error);
   process.exit(1);
 });
+
+// Add memory monitoring and crash prevention
+let memoryWarningLogged = false;
+
+setInterval(() => {
+  const usage = process.memoryUsage();
+  const memoryMB = usage.rss / 1024 / 1024;
+  
+  // Log memory usage every 5 minutes
+  if (Date.now() % (5 * 60 * 1000) < 30000) {
+    console.log(`Memory usage: ${memoryMB.toFixed(2)}MB RSS, ${(usage.heapUsed / 1024 / 1024).toFixed(2)}MB Heap`);
+  }
+  
+  // Warn if memory usage is high (>500MB)
+  if (memoryMB > 500 && !memoryWarningLogged) {
+    console.warn(`HIGH MEMORY USAGE: ${memoryMB.toFixed(2)}MB - potential memory leak`);
+    memoryWarningLogged = true;
+  }
+  
+  // Reset warning flag if memory drops
+  if (memoryMB < 300) {
+    memoryWarningLogged = false;
+  }
+}, 30000); // Check every 30 seconds
+
+// Handle uncaught exceptions gracefully
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Don't crash immediately, try to handle gracefully
+  setTimeout(() => {
+    console.error('Exiting due to uncaught exception');
+    process.exit(1);
+  }, 1000);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't crash for unhandled rejections, just log them
+});
+
+// Log process info on startup
+console.log('Process info:', {
+  platform: process.platform,
+  nodeVersion: process.version,
+  arch: process.arch,
+  pid: process.pid,
+});
