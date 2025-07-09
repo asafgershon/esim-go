@@ -1,4 +1,5 @@
 // Services index file
-// Currently empty - add eSIM Go services here when needed
 
-export {};
+// Export eSIM Go webhook handler
+export { handleESIMGoWebhook } from './esim-go-webhook';
+export { getRedis } from './redis';

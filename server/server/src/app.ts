@@ -4,6 +4,8 @@ import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHt
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import cors from "cors";
 import express from "express";
+import type { Context as WSContext } from "graphql-ws";
+import { useServer } from "graphql-ws/use/ws";
 import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { join } from "node:path";
@@ -12,10 +14,20 @@ import {
   authDirectiveTransformer,
   authDirectiveTypeDefs,
 } from "./auth.directive";
-import { useServer } from "graphql-ws/use/ws";
-import { getSupabaseToken, getSupabaseTokenFromConnectionParams, createSupabaseAuthContext } from "./context/supabase-auth";
+import {
+  createSupabaseAuthContext,
+  getSupabaseToken,
+  getSupabaseTokenFromConnectionParams,
+} from "./context/supabase-auth";
+import {
+  CatalogueDataSource,
+  CountriesDataSource,
+  ESIMsDataSource,
+  OrdersDataSource,
+  RegionsDataSource,
+} from "./datasources/esim-go";
 import { resolvers } from "./resolvers";
-import type { Context as WSContext } from "graphql-ws";
+import { getRedis, handleESIMGoWebhook } from "./services";
 
 const typeDefs = `
 ${authDirectiveTypeDefs}
@@ -28,10 +40,8 @@ async function startServer() {
     const executableSchema = makeExecutableSchema({ typeDefs, resolvers });
     const schemaWithDirectives = authDirectiveTransformer(executableSchema);
 
-    // TODO: Initialize Redis and PubSub for eSIM Go
-    // const redis = await getRedis();
-    // const pubsub = await getPubSub();
-
+    // Redis is now configured at Apollo Server level for caching
+    const redis = await getRedis();
     // Create an Express app and HTTP server
     const app = express();
     const httpServer = createServer(app);
@@ -50,21 +60,28 @@ async function startServer() {
         schema: schemaWithDirectives,
         context: async (ctx: WSContext) => {
           // Extract token from connection params
-          const connectionParams = ctx.connectionParams as Record<string, any> | undefined;
+          const connectionParams = ctx.connectionParams as
+            | Record<string, any>
+            | undefined;
           const token = getSupabaseTokenFromConnectionParams(connectionParams);
-          
+
           // Create Supabase auth context
           const auth = await createSupabaseAuthContext(token);
 
           return {
             auth,
             services: {
-              // TODO: Add services for eSIM Go
-              // redis, 
-              // pubsub
+              redis,
+              // pubsub: getPubSub(redis), // Add when needed
             },
             repositories: {
               // TODO: Add eSIM Go repositories
+            },
+            dataSources: {
+              catalogue: new CatalogueDataSource({ cache: redis }),
+              orders: new OrdersDataSource({ cache: redis }),
+              esims: new ESIMsDataSource({ cache: redis }),
+              countries: new CountriesDataSource({ cache: redis }),
             },
             // Legacy support
             token,
@@ -78,6 +95,7 @@ async function startServer() {
     const server = new ApolloServer({
       schema: schemaWithDirectives,
       introspection: true,
+      cache: redis,
       plugins: [
         // Proper shutdown for the HTTP server
         ApolloServerPluginDrainHttpServer({ httpServer }),
@@ -100,11 +118,31 @@ async function startServer() {
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-        origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:4000", "https://esim-fe.loca.lt"],
+        origin: [
+          "http://localhost:3000",
+          "http://localhost:5173",
+          "http://localhost:4000",
+          "https://esim-fe.loca.lt",
+        ],
       })
     );
 
     app.use(express.json({ limit: "50mb" }));
+
+    // eSIM Go webhook endpoint
+    app.post("/webhooks/esim-go", async (req, res) => {
+      try {
+        const signature = req.headers["x-esim-go-signature"] as string;
+        const result = await handleESIMGoWebhook(req.body, signature);
+        res.json(result);
+      } catch (error: any) {
+        console.error("Webhook error:", error);
+        res.status(400).json({
+          success: false,
+          message: error.message || "Webhook processing failed",
+        });
+      }
+    });
 
     app.use(
       "/graphql",
@@ -112,17 +150,25 @@ async function startServer() {
         context: async ({ req }) => {
           // Extract token from request headers
           const token = getSupabaseToken(req);
-          
+
           // Create Supabase auth context
           const auth = await createSupabaseAuthContext(token);
 
           return {
             auth,
             services: {
-              // TODO: Add eSIM Go services
+              redis,
+              // pubsub: getPubSub(redis), // Add when needed
             },
             repositories: {
               // TODO: Add eSIM Go repositories
+            },
+            dataSources: {
+              catalogue: new CatalogueDataSource({ cache: redis }),
+              orders: new OrdersDataSource({ cache: redis }),
+              esims: new ESIMsDataSource({ cache: redis }),
+              countries: new CountriesDataSource({ cache: redis }),
+              regions: RegionsDataSource,
             },
             // Legacy support
             req,
@@ -136,7 +182,9 @@ async function startServer() {
 
     // Now that our HTTP server is fully set up, we can listen to it
     httpServer.listen(PORT, () => {
-      console.log(`🚀 eSIM Go Server is now running on http://localhost:${PORT}/graphql`);
+      console.log(
+        `🚀 eSIM Go Server is now running on http://localhost:${PORT}/graphql`
+      );
       console.log(`🔗 WebSocket endpoint: ws://localhost:${PORT}/graphql`);
     });
   } catch (error) {

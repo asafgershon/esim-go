@@ -5,20 +5,25 @@ import type { User } from "../types";
 import type { Redis } from "ioredis";
 import type { RedisPubSub } from "graphql-redis-subscriptions";
 import type { SupabaseAuthContext } from "./supabase-auth";
-import type { AWSSMSService, OTPService } from "../services";
+import type { CatalogueDataSource, OrdersDataSource, ESIMsDataSource, CountriesDataSource, RegionsDataSource } from "../datasources/esim-go";
 
 export type Context = {
   auth: SupabaseAuthContext;
   services: {
     // db: typeof db; // TODO: Add database service
-    redis?: Redis;
+    redis: Redis;
     pubsub?: RedisPubSub;
-    sms: AWSSMSService;
-    otp: OTPService;
   };
   repositories: {
     // users: typeof usersRepository; // TODO: Add user repository
     // esim: typeof esimRepository; // TODO: Add eSIM repository
+  };
+  dataSources: {
+    catalogue: CatalogueDataSource;
+    orders: OrdersDataSource;
+    esims: ESIMsDataSource;
+    countries: CountriesDataSource;
+    regions: RegionsDataSource;
   };
   // Legacy for backward compatibility during migration
   token?: string;

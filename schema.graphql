@@ -8,8 +8,19 @@ type Query {
   # User authentication and profile
   me: User @auth
   
+  # eSIM queries
   myESIMs: [ESIM!]! @auth
   esimDetails(id: ID!): ESIM @auth
+  
+  dataPlans(filter: DataPlanFilter): [DataPlan!]!
+  dataPlan(id: ID!): DataPlan
+  
+  # Order queries
+  myOrders(filter: OrderFilter): [Order!]! @auth
+  orderDetails(id: ID!): Order @auth
+
+  countries: [Country!]!
+  trips: [Trip!]!
 }
 
 type Mutation {
@@ -28,6 +39,10 @@ type Mutation {
   # eSIM operations
   purchaseESIM(planId: ID!, input: PurchaseESIMInput!): PurchaseESIMResponse @auth
   activateESIM(esimId: ID!): ActivateESIMResponse @auth
+  suspendESIM(esimId: ID!): ESIMActionResponse @auth
+  restoreESIM(esimId: ID!): ESIMActionResponse @auth
+  cancelESIM(esimId: ID!): ESIMActionResponse @auth
+  updateESIMReference(esimId: ID!, reference: String!): ESIMActionResponse @auth
 }
 
 type Subscription {
@@ -45,6 +60,24 @@ type User {
   createdAt: String!
   updatedAt: String!
 }
+
+type Country {
+  iso: ISOCountryCode! # ISO 3166-1 alpha-2 code
+  name: String! # English name
+  nameHebrew: String!
+  region: String!
+  flag: String
+}
+
+
+type Trip { 
+  name: String!
+  description: String!
+  regionId: String!
+  countries: [Country!]!
+  countryIds: [ISOCountryCode!]!
+}
+
 
 # Authentication Types
 input SignInInput {
@@ -97,41 +130,105 @@ type SignUpResponse {
   error: String
 }
 
-# eSIM Types
-type ESIMPlan {
+# Data Plan Types (from eSIM Go catalogue)
+type DataPlan {
   id: ID!
-  name: String!
+  name: String! # eSIM Go bundle name
   description: String!
-  destination: String!
-  dataAmount: String! # e.g., "5GB", "Unlimited"
+  region: String!
+  countries: [Country!]!
   duration: Int! # Duration in days
   price: Float! # Price in USD
   currency: String!
-  carrier: String!
-  coverage: [String!]! # List of countries/regions covered
-  features: [String!]! # Features like "5G", "Hotspot", etc.
-  isActive: Boolean!
+  isUnlimited: Boolean!
+  bundleGroup: String
+  features: [String!]!
+  availableQuantity: Int
 }
 
-type ESIM {
+
+# Data plan filtering
+input DataPlanFilter {
+  region: String
+  country: String # ISO code
+  duration: Int # Days
+  maxPrice: Float
+  bundleGroup: String
+}
+
+# Order Types
+type Order {
   id: ID!
-  planId: ID!
-  plan: ESIMPlan!
-  userId: ID!
-  status: ESIMStatus!
-  qrCode: String # QR code for eSIM installation
-  iccid: String # eSIM identifier
-  phoneNumber: String # Assigned phone number if applicable
-  activationDate: String
-  expirationDate: String!
-  dataUsed: Float # Data used in MB
-  dataRemaining: Float # Data remaining in MB
+  reference: String! # eSIM Go order reference
+  status: OrderStatus!
+  dataPlan: DataPlan!
+  quantity: Int!
+  totalPrice: Float!
+  esims: [ESIM!]!
   createdAt: String!
   updatedAt: String!
 }
 
+enum OrderStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+input OrderFilter {
+  status: OrderStatus
+  fromDate: String
+  toDate: String
+}
+
+# eSIM Types (updated)
+type ESIM {
+  id: ID!
+  order: Order!
+  plan: DataPlan!
+  iccid: String! # eSIM identifier
+  customerRef: String
+  qrCode: String # QR code for eSIM installation
+  status: ESIMStatus!
+  assignedDate: String
+  lastAction: String
+  actionDate: String
+  bundles: [ESIMBundle!]!
+  usage: ESIMUsage!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type ESIMBundle {
+  id: ID!
+  name: String!
+  state: BundleState!
+  dataUsed: Float! # MB used
+  dataRemaining: Float # MB remaining (null for unlimited)
+  startDate: String
+  endDate: String
+}
+
+enum BundleState {
+  PROCESSING
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  EXPIRED
+  CANCELLED
+}
+
+type ESIMUsage {
+  totalUsed: Float! # Total MB used
+  totalRemaining: Float # Total MB remaining (null for unlimited)
+  activeBundles: [ESIMBundle!]!
+}
+
 enum ESIMStatus {
-  PENDING
+  PROCESSING
+  ASSIGNED
   ACTIVE
   SUSPENDED
   EXPIRED
@@ -140,17 +237,24 @@ enum ESIMStatus {
 
 # eSIM Operations
 input PurchaseESIMInput {
-  phoneNumber: String
+  quantity: Int!
+  customerReference: String
   autoActivate: Boolean
 }
 
 type PurchaseESIMResponse {
   success: Boolean!
-  esim: ESIM
+  order: Order
   error: String
 }
 
 type ActivateESIMResponse {
+  success: Boolean!
+  esim: ESIM
+  error: String
+}
+
+type ESIMActionResponse {
   success: Boolean!
   esim: ESIM
   error: String
@@ -163,3 +267,5 @@ type ESIMStatusUpdate {
   dataRemaining: Float
   updatedAt: String!
 }
+
+scalar ISOCountryCode
