@@ -1,9 +1,17 @@
 import Link from "next/link";
-import { ArrowRight, Globe, Smartphone, Zap, Shield, Check } from "lucide-react";
+import {
+  ArrowRight,
+  Globe,
+  Smartphone,
+  Zap,
+  Shield,
+  Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EsimExperienceSelector } from "@/components/esim-experience-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Suspense } from "react";
 
 export default function Home() {
   return (
@@ -34,26 +42,38 @@ export default function Home() {
             <span className="block text-primary">THAT TRAVELS WITH YOU</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Experience seamless connectivity with our global eSIM marketplace. 
+            Experience seamless connectivity with our global eSIM marketplace.
             No more roaming charges, no more local SIM cards.
           </p>
         </div>
 
         {/* eSIM Selector - Centered */}
         <div className="flex justify-center mb-16">
-          <EsimExperienceSelector />
+          <Suspense>
+            <EsimExperienceSelector />
+          </Suspense>
         </div>
 
         {/* Features Section */}
         <div className="max-w-6xl mx-auto">
           {/* Trust Indicators */}
           <div className="text-center mb-12">
-            <p className="text-sm text-muted-foreground mb-4">Powered by 700+ telcos worldwide</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Powered by 700+ telcos worldwide
+            </p>
             <div className="flex justify-center items-center gap-8 opacity-60">
-              <div className="text-2xl font-bold text-muted-foreground">Verizon</div>
-              <div className="text-2xl font-bold text-muted-foreground">Orange</div>
-              <div className="text-2xl font-bold text-muted-foreground">Vodafone</div>
-              <div className="text-2xl font-bold text-muted-foreground">T-Mobile</div>
+              <div className="text-2xl font-bold text-muted-foreground">
+                Verizon
+              </div>
+              <div className="text-2xl font-bold text-muted-foreground">
+                Orange
+              </div>
+              <div className="text-2xl font-bold text-muted-foreground">
+                Vodafone
+              </div>
+              <div className="text-2xl font-bold text-muted-foreground">
+                T-Mobile
+              </div>
             </div>
           </div>
 
@@ -68,22 +88,27 @@ export default function Home() {
                 One eSIM. 190+ countries. No extra steps.
               </p>
             </Card>
-            
+
             <Card className="p-6 text-center">
               <div className="bg-primary/10 rounded-full p-4 w-fit mx-auto mb-4">
                 <Globe className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Unlimited Really Means Unlimited</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                Unlimited Really Means Unlimited
+              </h3>
               <p className="text-muted-foreground">
-                No caps, no hidden fees. Just internet that&apos;s always on and always fast.
+                No caps, no hidden fees. Just internet that&apos;s always on and
+                always fast.
               </p>
             </Card>
-            
+
             <Card className="p-6 text-center">
               <div className="bg-primary/10 rounded-full p-4 w-fit mx-auto mb-4">
                 <Smartphone className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Set Up in 2 Minutes Flat</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                Set Up in 2 Minutes Flat
+              </h3>
               <p className="text-muted-foreground">
                 Just tap to activate. So easy, your gran can do it.
               </p>
@@ -97,11 +122,14 @@ export default function Home() {
                 Touchdown Connected
               </h2>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                                 You&apos;ve survived the long flight. Now, you just want to get online. But your phone says, &quot;No Service.&quot; 
-                 The airport Wi-Fi is a joke. And buying a SIM? Prepare to waste precious time...
+                You&apos;ve survived the long flight. Now, you just want to get
+                online. But your phone says, &quot;No Service.&quot; The airport
+                Wi-Fi is a joke. And buying a SIM? Prepare to waste precious
+                time...
               </p>
               <p className="text-foreground font-semibold mb-4">
-                <strong>Not with eSIM Go.</strong> The moment you land, you&rsquo;re connected. No SIMs, no searching, no waiting. 
+                <strong>Not with eSIM Go.</strong> The moment you land,
+                you&rsquo;re connected. No SIMs, no searching, no waiting.
                 It&apos;s seamless & hassle-free!
               </p>
               <div className="space-y-3">
@@ -125,8 +153,9 @@ export default function Home() {
                 <h3 className="text-2xl font-bold">Always Fast</h3>
               </div>
               <p className="text-primary-foreground/80 leading-relaxed">
-                No bars? Never. Our 700+ network partnerships ensure your connection never skips a beat. 
-                Enterprise-grade security with encrypted connections and trusted network partners worldwide.
+                No bars? Never. Our 700+ network partnerships ensure your
+                connection never skips a beat. Enterprise-grade security with
+                encrypted connections and trusted network partners worldwide.
               </p>
             </div>
           </div>
@@ -140,26 +169,29 @@ export default function Home() {
               <Card className="p-6">
                 <div className="text-accent mb-2">★★★★★</div>
                 <p className="text-muted-foreground mb-4">
-                  &quot;To be able to just step off the plane in Japan and be connected was fantastic. 
-                  So much better than having to mess around with purchasing and inserting a SIM.&quot;
+                  &quot;To be able to just step off the plane in Japan and be
+                  connected was fantastic. So much better than having to mess
+                  around with purchasing and inserting a SIM.&quot;
                 </p>
                 <p className="font-semibold">— Elsa J.</p>
               </Card>
-              
+
               <Card className="p-6">
                 <div className="text-accent mb-2">★★★★★</div>
                 <p className="text-muted-foreground mb-4">
-                  &quot;Truely eSIM is a game changer. I travel a lot and work online so I need great Internet connection all the time. 
-                  As a digital nomad this is life-changing.&quot;
+                  &quot;Truely eSIM is a game changer. I travel a lot and work
+                  online so I need great Internet connection all the time. As a
+                  digital nomad this is life-changing.&quot;
                 </p>
                 <p className="font-semibold">— Nicole V.</p>
               </Card>
-              
+
               <Card className="p-6">
                 <div className="text-accent mb-2">★★★★★</div>
                 <p className="text-muted-foreground mb-4">
-                  &quot;Great service and amazing support. You can contact them via WhatsApp, and the service/support is 
-                  attentive, intelligent, and downright amazing.&quot;
+                  &quot;Great service and amazing support. You can contact them
+                  via WhatsApp, and the service/support is attentive,
+                  intelligent, and downright amazing.&quot;
                 </p>
                 <p className="font-semibold">— Ben A.</p>
               </Card>
