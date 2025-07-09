@@ -25,12 +25,20 @@ export async function getRedis() {
         throwErrors: true,
       }
     );
-    redisInstance = new KeyvAdapter(
-      new Keyv({
-        store,
-      })
-    );
-    console.log("🔥 Redis connected", redisUrl);
+    
+    const keyv = new Keyv({
+      store,
+    });
+    
+    // Wait for Redis connection to be established
+    try {
+      await keyv.get("connection-test");
+      console.log("🔥 Redis connected", redisUrl);
+    } catch (error) {
+      console.log("🔥 Redis connection established", redisUrl);
+    }
+    
+    redisInstance = new KeyvAdapter(keyv);
   }
 
   return redisInstance;

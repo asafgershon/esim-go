@@ -220,8 +220,7 @@ async function warmUpCache(redis: any) {
     
     console.log("✅ Countries cache warmed up successfully");
   } catch (error) {
-    // Don't throw - this is non-critical
-    console.error("❌ Failed to warm up countries cache:", error);
+    console.error("❌ Failed to warm up countries cache:", error instanceof Error ? error.message : String(error));
   }
 }
 
