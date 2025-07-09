@@ -1,6 +1,7 @@
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import { ApolloServerPluginLandingPageLocalDefault } from "@apollo/server/plugin/landingPage/default";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import cors from "cors";
 import express from "express";
@@ -119,7 +120,32 @@ async function startServer() {
             };
           },
         },
+        // Add request timeout plugin
+        {
+          async requestDidStart() {
+            const startTime = Date.now();
+            return {
+              async willSendResponse(requestContext) {
+                // Log slow requests for debugging
+                const duration = Date.now() - startTime;
+                if (duration > 5000) {
+                  console.warn(`Slow GraphQL request: ${duration}ms for operation ${requestContext.request.operationName}`);
+                }
+              },
+            };
+          },
+        },
       ],
+      // Add global query timeout
+      formatError: (formattedError, error) => {
+        // Log errors for debugging
+        console.error('GraphQL Error:', {
+          message: formattedError.message,
+          code: formattedError.extensions?.code,
+          path: formattedError.path,
+        });
+        return formattedError;
+      },
     });
 
     await server.start();
@@ -133,6 +159,42 @@ async function startServer() {
     );
 
     app.use(express.json({ limit: "50mb" }));
+
+    // Add global request timeout middleware
+    app.use((req, res, next) => {
+      // Set timeout for all requests (60 seconds)
+      req.setTimeout(60000, () => {
+        console.error(`Request timeout for ${req.method} ${req.path}`);
+        if (!res.headersSent) {
+          res.status(408).json({
+            error: "Request timeout",
+            message: "The request took too long to process"
+          });
+        }
+      });
+      
+      res.setTimeout(60000, () => {
+        console.error(`Response timeout for ${req.method} ${req.path}`);
+        if (!res.headersSent) {
+          res.status(408).json({
+            error: "Response timeout", 
+            message: "The response took too long to send"
+          });
+        }
+      });
+      
+      next();
+    });
+
+    // Health check endpoint
+    app.get("/health", (req, res) => {
+      res.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+      });
+    });
 
     // eSIM Go webhook endpoint
     app.post("/webhooks/esim-go", async (req, res) => {

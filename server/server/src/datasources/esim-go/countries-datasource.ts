@@ -39,7 +39,7 @@ export class CountriesDataSource extends ESIMGoDataSource {
       try {
         const response = await this.getWithErrorHandling<ESIMGoNetworkResponse>(
           "/v2.5/networks",
-          queryParams
+          Object.fromEntries(queryParams.entries())
         );
 
         const schema = z

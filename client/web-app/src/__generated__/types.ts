@@ -245,6 +245,7 @@ export type PurchaseEsimResponse = {
 
 export type Query = {
   __typename?: 'Query';
+  calculatePrice: Scalars['Float']['output'];
   countries: Array<Country>;
   dataPlan?: Maybe<DataPlan>;
   dataPlans: Array<DataPlan>;
@@ -255,6 +256,13 @@ export type Query = {
   myOrders: Array<Order>;
   orderDetails?: Maybe<Order>;
   trips: Array<Trip>;
+};
+
+
+export type QueryCalculatePriceArgs = {
+  countryId: Scalars['String']['input'];
+  numOfDays: Scalars['Int']['input'];
+  regionId: Scalars['String']['input'];
 };
 
 
@@ -413,4 +421,13 @@ export type GetCountriesQuery = { __typename?: 'Query', countries: Array<{ __typ
 export type GetTripsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetTripsQuery = { __typename?: 'Query', trips: Array<{ __typename?: 'Trip', name: string, description: string, regionId: string, countryIds: Array<any>, countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew: string, region: string, flag?: string | null }> }> };
+export type GetTripsQuery = { __typename?: 'Query', trips: Array<{ __typename?: 'Trip', name: string, description: string, regionId: string, countryIds: Array<any> }> };
+
+export type CalculatePriceQueryVariables = Exact<{
+  numOfDays: Scalars['Int']['input'];
+  regionId: Scalars['String']['input'];
+  countryId: Scalars['String']['input'];
+}>;
+
+
+export type CalculatePriceQuery = { __typename?: 'Query', calculatePrice: number };

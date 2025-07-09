@@ -129,13 +129,6 @@ export const GET_TRIPS = gql`
       description
       regionId
       countryIds
-      countries {
-        iso
-        name
-        nameHebrew
-        region
-        flag
-      }
     }
   }
 `;

@@ -21,7 +21,8 @@ type Documents = {
     "\n  mutation SendPhoneOTP($phoneNumber: String!) {\n    sendPhoneOTP(phoneNumber: $phoneNumber) {\n      success\n      error\n      messageId\n    }\n  }\n": typeof types.SendPhoneOtpDocument,
     "\n  mutation VerifyPhoneOTP($input: VerifyOTPInput!) {\n    verifyPhoneOTP(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": typeof types.VerifyPhoneOtpDocument,
     "\n  query GetCountries {\n    countries {\n      iso\n      name\n      nameHebrew\n      region\n      flag\n    }\n  }\n": typeof types.GetCountriesDocument,
-    "\n  query GetTrips {\n    trips {\n      name\n      description\n      regionId\n      countryIds\n      countries {\n        iso\n        name\n        nameHebrew\n        region\n        flag\n      }\n    }\n  }\n": typeof types.GetTripsDocument,
+    "\n  query GetTrips {\n    trips {\n      name\n      description\n      regionId\n      countryIds\n    }\n  }\n": typeof types.GetTripsDocument,
+    "\n  query CalculatePrice($numOfDays: Int!, $regionId: String!, $countryId: String!) {\n    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId)\n  }\n": typeof types.CalculatePriceDocument,
 };
 const documents: Documents = {
     "\n  mutation SignIn($input: SignInInput!) {\n    signIn(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": types.SignInDocument,
@@ -31,7 +32,8 @@ const documents: Documents = {
     "\n  mutation SendPhoneOTP($phoneNumber: String!) {\n    sendPhoneOTP(phoneNumber: $phoneNumber) {\n      success\n      error\n      messageId\n    }\n  }\n": types.SendPhoneOtpDocument,
     "\n  mutation VerifyPhoneOTP($input: VerifyOTPInput!) {\n    verifyPhoneOTP(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": types.VerifyPhoneOtpDocument,
     "\n  query GetCountries {\n    countries {\n      iso\n      name\n      nameHebrew\n      region\n      flag\n    }\n  }\n": types.GetCountriesDocument,
-    "\n  query GetTrips {\n    trips {\n      name\n      description\n      regionId\n      countryIds\n      countries {\n        iso\n        name\n        nameHebrew\n        region\n        flag\n      }\n    }\n  }\n": types.GetTripsDocument,
+    "\n  query GetTrips {\n    trips {\n      name\n      description\n      regionId\n      countryIds\n    }\n  }\n": types.GetTripsDocument,
+    "\n  query CalculatePrice($numOfDays: Int!, $regionId: String!, $countryId: String!) {\n    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId)\n  }\n": types.CalculatePriceDocument,
 };
 
 /**
@@ -79,7 +81,11 @@ export function gql(source: "\n  query GetCountries {\n    countries {\n      is
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function gql(source: "\n  query GetTrips {\n    trips {\n      name\n      description\n      regionId\n      countryIds\n      countries {\n        iso\n        name\n        nameHebrew\n        region\n        flag\n      }\n    }\n  }\n"): (typeof documents)["\n  query GetTrips {\n    trips {\n      name\n      description\n      regionId\n      countryIds\n      countries {\n        iso\n        name\n        nameHebrew\n        region\n        flag\n      }\n    }\n  }\n"];
+export function gql(source: "\n  query GetTrips {\n    trips {\n      name\n      description\n      regionId\n      countryIds\n    }\n  }\n"): (typeof documents)["\n  query GetTrips {\n    trips {\n      name\n      description\n      regionId\n      countryIds\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query CalculatePrice($numOfDays: Int!, $regionId: String!, $countryId: String!) {\n    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId)\n  }\n"): (typeof documents)["\n  query CalculatePrice($numOfDays: Int!, $regionId: String!, $countryId: String!) {\n    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId)\n  }\n"];
 
 export function gql(source: string) {
   return (documents as any)[source] ?? {};

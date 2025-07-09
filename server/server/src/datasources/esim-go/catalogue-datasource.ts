@@ -20,8 +20,8 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     }
 
     // Fetch all pages of data plans
-    const plans = await this.get<{ bundles: ESIMGoDataPlan[] }>(
-      "v2.5/catalogue"
+    const plans = await this.getWithErrorHandling<{ bundles: ESIMGoDataPlan[] }>(
+      "/v2.5/catalogue"
     );
     // Cache for 1 hour
     await this.cache?.set(cacheKey, JSON.stringify(plans.bundles), {
@@ -76,13 +76,11 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     }
 
     // Get all plans and filter by country
-    const allPlans = await this.get<{ bundles: ESIMGoDataPlan[] }>(
-      "v2.5/catalogue",
+    const allPlans = await this.getWithErrorHandling<{ bundles: ESIMGoDataPlan[] }>(
+      "/v2.5/catalogue",
       {
-        params: {
-          countries: countryISO.toUpperCase(),
-          group,
-        },
+        countries: countryISO.toUpperCase(),
+        group,
       }
     );
     const countryPlans = allPlans.bundles;

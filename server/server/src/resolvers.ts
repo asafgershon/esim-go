@@ -65,19 +65,22 @@ export const resolvers: Resolvers = {
         return [];
       }
       
-      // Fetch countries with specific ISOs to reduce API calls
-      // The datasource has caching so this won't hit the API repeatedly
-      const countries = await context.dataSources.countries.getCountries({
-        isos: parent.countryIds
-      });
+      // Return empty array to prevent N+1 queries during initial load
+      // Frontend can fetch countries separately if needed
+      return [];
       
-      return countries.map((country) => ({
-        iso: country.iso,
-        name: country.country,
-        nameHebrew: country.hebrewName,
-        region: country.region,
-        flag: country.flag,
-      }));
+      // TODO: Implement DataLoader pattern for batching country requests
+      // const countries = await context.dataSources.countries.getCountries({
+      //   isos: parent.countryIds
+      // });
+      // 
+      // return countries.map((country) => ({
+      //   iso: country.iso,
+      //   name: country.country,
+      //   nameHebrew: country.hebrewName,
+      //   region: country.region,
+      //   flag: country.flag,
+      // }));
     },
   },
 

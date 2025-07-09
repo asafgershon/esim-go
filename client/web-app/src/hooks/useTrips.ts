@@ -61,7 +61,7 @@ export function useTrips() {
       name: trip.name,
       nameHebrew: trip.description.split(' - ')[0] || trip.name, // Extract Hebrew name from description
       icon,
-      countries: trip.countries.map(country => country.nameHebrew),
+      countries: [], // No longer loading individual country names to prevent N+1 queries
       description: trip.description,
       countryCount: trip.countryIds.length,
       basePrice

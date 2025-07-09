@@ -3,6 +3,10 @@ import { setContext } from '@apollo/client/link/context';
 
 const httpLink = createHttpLink({
   uri: process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://localhost:4000/graphql',
+  // Add timeout configuration
+  fetchOptions: {
+    timeout: 30000, // 30 seconds
+  },
 });
 
 const authLink = setContext((_, { headers }) => {

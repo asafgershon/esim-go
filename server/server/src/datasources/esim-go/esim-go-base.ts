@@ -50,13 +50,16 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
   protected async getWithErrorHandling<T>(
     path: string,
     params?: Record<string, any>,
-    init: any = { baseURL: this.baseURL, headers: { "X-API-Key": env.ESIM_GO_API_KEY, "Content-Type": "application/json" } }
+    init: any = {}
   ): Promise<T> {
     try {
-      return await this.get<T>(path, {params });
-
+      return await this.get<T>(path, {
+        params,
+        ...init,
+        timeout: 15000, // 15 second timeout
+      });
     } catch (error: any) {
-      console.log('error', error);
+      console.log('eSIM Go API error:', error);
       this.handleApiError(error);
       throw error; // This line won't be reached but TypeScript needs it
     }
@@ -71,7 +74,11 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     init?: any
   ): Promise<T> {
     try {
-      return await this.post<T>(path, { body, ...init });
+      return await this.post<T>(path, { 
+        body, 
+        ...init,
+        timeout: 15000, // 15 second timeout
+      });
     } catch (error: any) {
       this.handleApiError(error);
       throw error; // This line won't be reached but TypeScript needs it
@@ -146,13 +153,14 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
    */
   protected async getAllPages<T>(
     endpoint: string,
-    params: Record<string, any> = {}
+    params: Record<string, any> = {},
+    maxPages: number = 100 // Prevent infinite loops
   ): Promise<T[]> {
     const results: T[] = [];
     let page = 1;
     let hasMore = true;
 
-    while (hasMore) {
+    while (hasMore && page <= maxPages) {
       const response = await this.getWithErrorHandling<{
         data: T[];
         pagination?: {
@@ -175,6 +183,15 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
       } else {
         hasMore = false;
       }
+
+      // Safety check: if we get no data, stop pagination
+      if (!response.data || response.data.length === 0) {
+        break;
+      }
+    }
+
+    if (page > maxPages) {
+      console.warn(`Pagination stopped at maximum pages (${maxPages}) for endpoint: ${endpoint}`);
     }
 
     return results;
