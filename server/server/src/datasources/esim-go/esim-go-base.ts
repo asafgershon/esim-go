@@ -50,6 +50,10 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     
     // Set timeout to prevent hanging requests
     request.timeout = 15000; // 15 seconds
+    
+    // Set body size limits to handle large API responses
+    request.maxBodyLength = 50 * 1024 * 1024; // 50MB
+    request.maxContentLength = 50 * 1024 * 1024; // 50MB
   }
 
   /**
