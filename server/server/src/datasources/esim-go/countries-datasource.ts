@@ -37,10 +37,16 @@ export class CountriesDataSource extends ESIMGoDataSource {
       queryParams.set("returnAll", "true");
 
       try {
-        const response = await this.getWithErrorHandling<ESIMGoNetworkResponse>(
-          "/v2.5/networks",
-          Object.fromEntries(queryParams.entries())
-        );
+        // Add aggressive timeout for countries endpoint specifically
+        const response = await Promise.race([
+          this.getWithErrorHandling<ESIMGoNetworkResponse>(
+            "/v2.5/networks",
+            Object.fromEntries(queryParams.entries())
+          ),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Countries API timeout")), 10000)
+          )
+        ]) as ESIMGoNetworkResponse;
 
         // Check if the response indicates an error (e.g., access denied)
         if (!response || !response.countryNetworks || (response as any).message) {
@@ -79,14 +85,19 @@ export class CountriesDataSource extends ESIMGoDataSource {
 
         // Cache for 1 hour
         await this.cache?.set(cacheKey, JSON.stringify(allCountries), { ttl: 3600 });
-      } catch (error) {
-        console.error("Countries API error:", error);
+      } catch (error: any) {
+        console.error("Countries API error:", {
+          message: error.message,
+          code: error.code,
+          type: error.constructor.name,
+          stack: error.stack?.split('\n')[0]
+        });
         
-        // For development/demo purposes, return mock data if API fails
-        console.warn("Using fallback countries data due to API error");
+        // Use fallback for any API error (timeout, access denied, network issues, etc.)
+        console.warn("Using fallback countries data due to API error:", error.message);
         allCountries = this.getFallbackCountries();
         
-        // Cache fallback data for 5 minutes
+        // Cache fallback data for 5 minutes (shorter than real data)
         await this.cache?.set(cacheKey, JSON.stringify(allCountries), { ttl: 300 });
       }
     }
