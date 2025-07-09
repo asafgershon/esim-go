@@ -13,12 +13,13 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from "nuqs";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, useEffect, useMemo, useState } from "react";
 import { EsimSkeleton } from "./esim-skeleton";
 import { EnhancedCountry, useCountries } from "@/hooks/useCountries";
 import { EnhancedTrip, useTrips } from "@/hooks/useTrips";
 import { usePricing } from "@/hooks/usePricing";
 
+const CountUp = lazy(() => import("react-countup"));
 // Backend handles discount logic, so this is no longer needed
 
 export function EsimExperienceSelector() {
@@ -90,12 +91,14 @@ export function EsimExperienceSelector() {
   // Calculate pricing using backend
   const { pricing, loading: priceLoading } = usePricing({
     numOfDays,
-    regionId: selectedDestinationData?.type === "trip" 
-      ? selectedDestinationData.data?.id 
-      : undefined,
-    countryId: selectedDestinationData?.type === "country" 
-      ? selectedDestinationData.data?.id 
-      : undefined,
+    regionId:
+      selectedDestinationData?.type === "trip"
+        ? selectedDestinationData.data?.id
+        : undefined,
+    countryId:
+      selectedDestinationData?.type === "country"
+        ? selectedDestinationData.data?.id
+        : undefined,
   });
 
   const handleTabChange = (tab: "countries" | "trips") => {
@@ -221,7 +224,8 @@ export function EsimExperienceSelector() {
                   {selectedDestinationData.type === "country"
                     ? (selectedDestinationData.data as EnhancedCountry)?.flag ||
                       ""
-                    : (selectedDestinationData.data as EnhancedTrip)?.icon || ""}
+                    : (selectedDestinationData.data as EnhancedTrip)?.icon ||
+                      ""}
                 </span>
                 <div>
                   <h3 className="font-medium text-card-foreground">
@@ -231,7 +235,8 @@ export function EsimExperienceSelector() {
                     {selectedDestinationData.type === "country"
                       ? (selectedDestinationData.data as EnhancedCountry)
                           ?.tagline
-                      : (selectedDestinationData.data as EnhancedTrip)?.description}
+                      : (selectedDestinationData.data as EnhancedTrip)
+                          ?.description}
                   </p>
                 </div>
               </div>
@@ -247,55 +252,86 @@ export function EsimExperienceSelector() {
             </div>
 
             {/* Pricing Summary */}
-            {pricing && (
+            {priceLoading ? (
+              <div className="space-y-3 pt-3 border-t">
+                {/* Days skeleton */}
+                <div className="flex items-center justify-between">
+                  <div className="h-4 w-32 bg-muted animate-pulse rounded"></div>
+                </div>
+
+                {/* Daily price skeleton */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-8 bg-muted animate-pulse rounded"></div>
+                    <div className="h-2 w-4 bg-muted animate-pulse rounded"></div>
+                  </div>
+                </div>
+
+                {/* Discount message skeleton */}
+                <div className="h-4 w-40 bg-muted animate-pulse rounded"></div>
+
+                {/* Total price skeleton */}
+                <div className="border-t pt-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-12 bg-muted animate-pulse rounded"></div>
+                      <div className="h-6 w-20 bg-muted animate-pulse rounded"></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Loading indicator */}
+                <div className="text-center">
+                  <span className="text-sm text-muted-foreground">
+                    מחשב מחיר...
+                  </span>
+                </div>
+              </div>
+            ) : (
               <div className="space-y-3 pt-3 border-t">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">
-                    {pricing.days} ימים ללא הגבלה
+                    {pricing?.days} ימים ללא הגבלה
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {priceLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="h-4 w-16 bg-muted animate-pulse rounded"></div>
-                        <span className="text-sm text-muted-foreground">מחשב מחיר...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="font-bold text-lg">
-                          ${pricing.dailyPrice.toFixed(2)}
-                        </span>
-                        <span className="text-sm text-muted-foreground">ליום</span>
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                      </>
-                    )}
+                    <span className="font-bold text-lg">
+                      <CountUp
+                        key={`daily-${countryId || tripId}-${numOfDays}`}
+                        end={pricing?.dailyPrice || 0}
+                        decimals={2}
+                        enableScrollSpy
+                        prefix="$"
+                        duration={0.2}
+                        preserveValue
+                      />
+                    </span>
+                    <span className="text-sm text-muted-foreground">ליום</span>
+                    <Info className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
 
-                {priceLoading ? (
-                  <div className="h-4 w-32 bg-muted animate-pulse rounded"></div>
-                ) : (
-                  pricing.hasDiscount && (
-                    <div className="text-sm text-primary font-medium">
-                      יותר ימים = מחירים נמוכים יותר!
-                    </div>
-                  )
+                {pricing?.hasDiscount && (
+                  <div className="text-sm text-primary font-medium">
+                    יותר ימים = מחירים נמוכים יותר!
+                  </div>
                 )}
 
                 <div className="border-t pt-3">
                   <div className="flex items-center justify-between">
-                    {priceLoading ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold">סה״כ:</span>
-                        <div className="h-5 w-20 bg-muted animate-pulse rounded"></div>
-                      </div>
-                    ) : (
-                      <span className="text-lg font-bold">
-                        סה״כ: ${pricing.totalPrice.toFixed(2)}
-                      </span>
-                    )}
+                    <span className="text-lg font-bold">
+                      סה״כ:{" "}
+                      <CountUp
+                        key={`total-${countryId || tripId}-${numOfDays}`}
+                        end={pricing?.totalPrice || 0}
+                        decimals={2}
+                        prefix="$"
+                        duration={0.2}
+                        preserveValue
+                      />
+                    </span>
                   </div>
                 </div>
               </div>

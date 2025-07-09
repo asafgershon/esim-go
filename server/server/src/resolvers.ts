@@ -53,8 +53,7 @@ export const resolvers: Resolvers = {
       }));
     },
     calculatePrice: async (_, { numOfDays, regionId, countryId }, context: Context) => {
-      console.log("calculatePrice", context.services);
-      return context.services.pricing.calculatePrice(numOfDays, regionId, countryId);
+      return context.services.pricing.calculatePrice(numOfDays, regionId, countryId, context.dataSources.catalogue);
     },
   },
 

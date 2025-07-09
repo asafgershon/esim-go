@@ -17,7 +17,7 @@ export interface ESIMGoDataPlan {
   dataAmount: number; // MB, -1 for unlimited
   duration: number; // days
   speed: string;
-  isUnlimited: boolean;
+  unlimited: boolean;
   roamingCountries: ESIMGoCountry[];
   price: number;
   billingType: string;
@@ -144,4 +144,31 @@ export interface ESIMGoNetworkResponse {
   countryNetworks: {
     name: string;
   }[];
+}
+
+// Inventory interfaces
+export interface ESIMGoInventoryItem {
+  id: string;
+  total: number;
+  remaining: number;
+  expiry: string; // ISO date string
+}
+
+export interface ESIMGoInventoryBundle {
+  name: string;
+  desc: string;
+  useDms: boolean;
+  available: ESIMGoInventoryItem[];
+  countries: ESIMGoCountry[];
+  data: number; // MB, -1 for unlimited
+  duration: number; // days
+  durationUnit: string;
+  autostart: boolean;
+  unlimited: boolean;
+  speed: string;
+  allowances: string[];
+}
+
+export interface ESIMGoInventoryResponse {
+  bundles: ESIMGoInventoryBundle[];
 }

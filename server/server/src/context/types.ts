@@ -11,6 +11,7 @@ import type {
   ESIMsDataSource,
   CountriesDataSource,
   RegionsDataSource,
+  InventoryDataSource,
 } from "../datasources/esim-go";
 import { PricingService } from "../services";
 
@@ -32,6 +33,7 @@ export type Context = {
     esims: ESIMsDataSource;
     countries: CountriesDataSource;
     regions: RegionsDataSource;
+    inventory: InventoryDataSource;
   };
   // Legacy for backward compatibility during migration
   token?: string;

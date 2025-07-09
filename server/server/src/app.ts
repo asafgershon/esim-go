@@ -25,6 +25,7 @@ import {
   ESIMsDataSource,
   OrdersDataSource,
   RegionsDataSource,
+  InventoryDataSource,
 } from "./datasources/esim-go";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook, PricingService } from "./services";
@@ -83,6 +84,8 @@ async function startServer() {
               orders: new OrdersDataSource({ cache: redis }),
               esims: new ESIMsDataSource({ cache: redis }),
               countries: new CountriesDataSource({ cache: redis }),
+              regions: RegionsDataSource,
+              inventory: new InventoryDataSource({ cache: redis }),
             },
             // Legacy support
             token,
@@ -171,6 +174,7 @@ async function startServer() {
               esims: new ESIMsDataSource({ cache: redis }),
               countries: new CountriesDataSource({ cache: redis }),
               regions: RegionsDataSource,
+              inventory: new InventoryDataSource({ cache: redis }),
             },
             // Legacy support
             req,

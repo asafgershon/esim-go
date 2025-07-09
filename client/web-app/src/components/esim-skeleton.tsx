@@ -24,13 +24,7 @@ export function EsimSkeleton() {
         {[1, 2, 3].map((i) => (
           <div key={i} className="p-4 border border-border rounded-xl">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-muted-foreground/20 rounded animate-pulse"></div>
-                <div>
-                  <div className="w-24 h-5 bg-muted-foreground/20 rounded mb-2 animate-pulse"></div>
-                  <div className="w-32 h-4 bg-muted-foreground/20 rounded animate-pulse"></div>
-                </div>
-              </div>
+              
               <div className="text-left">
                 <div className="w-8 h-4 bg-muted-foreground/20 rounded mb-1 animate-pulse"></div>
                 <div className="w-12 h-5 bg-muted-foreground/20 rounded mb-1 animate-pulse"></div>

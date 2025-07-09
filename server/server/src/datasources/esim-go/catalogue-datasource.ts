@@ -20,11 +20,13 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     }
 
     // Fetch all pages of data plans
-    const plans = await this.get<{ bundles: ESIMGoDataPlan[] }>("v2.5/catalogue");
-
-    console.log('Plans', plans);
+    const plans = await this.get<{ bundles: ESIMGoDataPlan[] }>(
+      "v2.5/catalogue"
+    );
     // Cache for 1 hour
-    await this.cache?.set(cacheKey, JSON.stringify(plans), { ttl: 3600 });
+    await this.cache?.set(cacheKey, JSON.stringify(plans.bundles), {
+      ttl: 3600,
+    });
 
     return plans.bundles;
   }
@@ -43,12 +45,10 @@ export class CatalogueDataSource extends ESIMGoDataSource {
 
     // Get all plans and filter by region
     const allPlans = await this.getAllBundels();
-    const regionPlans = allPlans.filter(
-      (plan) =>
-        plan.baseCountry.region.toLowerCase() === region.toLowerCase() ||
-        plan.countries.some(
-          (country) => country.region.toLowerCase() === region.toLowerCase()
-        )
+    const regionPlans = allPlans.filter((plan) =>
+      plan.countries.some(
+        (country) => country.region.toLowerCase() === region.toLowerCase()
+      )
     );
 
     // Cache for 1 hour
@@ -60,8 +60,14 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   /**
    * Get data plans filtered by country ISO code
    */
-  async getPlansByCountry(countryISO: string): Promise<ESIMGoDataPlan[]> {
-    const cacheKey = this.getCacheKey("catalogue:country", { countryISO });
+  async getPlansByCountry(
+    countryISO: string,
+    group: string
+  ): Promise<ESIMGoDataPlan[]> {
+    const cacheKey = this.getCacheKey("catalogue:country", {
+      countryISO,
+      group,
+    });
 
     // Try to get from cache first
     const cached = await this.cache?.get(cacheKey);
@@ -70,17 +76,16 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     }
 
     // Get all plans and filter by country
-    const allPlans = await this.getAllBundels();
-    const countryPlans = allPlans.filter(
-      (plan) =>
-        plan.baseCountry.iso === countryISO.toUpperCase() ||
-        plan.countries.some(
-          (country) => country.iso === countryISO.toUpperCase()
-        ) ||
-        plan.roamingCountries.some(
-          (country) => country.iso === countryISO.toUpperCase()
-        )
+    const allPlans = await this.get<{ bundles: ESIMGoDataPlan[] }>(
+      "v2.5/catalogue",
+      {
+        params: {
+          countries: countryISO.toUpperCase(),
+          group,
+        },
+      }
     );
+    const countryPlans = allPlans.bundles;
 
     // Cache for 1 hour
     await this.cache?.set(cacheKey, JSON.stringify(countryPlans), {
@@ -174,7 +179,6 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     if (criteria.country) {
       plans = plans.filter(
         (plan) =>
-          plan.baseCountry.iso === criteria.country!.toUpperCase() ||
           plan.countries.some(
             (country) => country.iso === criteria.country!.toUpperCase()
           ) ||
@@ -231,7 +235,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
 
     const featuredPlans = allPlans.filter(
       (plan) =>
-        featuredBundles.includes(plan.bundleGroup || '') &&
+        featuredBundles.includes(plan.bundleGroup || "") &&
         [7, 30].includes(plan.duration)
     );
 
@@ -243,8 +247,8 @@ export class CatalogueDataSource extends ESIMGoDataSource {
         "USA_UNLIMITED",
         "ASIA_UNLIMITED",
       ];
-      const aIndex = regionOrder.indexOf(a.bundleGroup || '');
-      const bIndex = regionOrder.indexOf(b.bundleGroup || '');
+      const aIndex = regionOrder.indexOf(a.bundleGroup || "");
+      const bIndex = regionOrder.indexOf(b.bundleGroup || "");
       if (aIndex !== bIndex) return aIndex - bIndex;
       return a.duration - b.duration;
     });
