@@ -29,11 +29,17 @@ import {
 } from "./datasources/esim-go";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook, PricingService } from "./services";
+import { cleanEnv, port, str } from "envalid";
 
 const typeDefs = `
 ${authDirectiveTypeDefs}
 ${readFileSync(join(__dirname, "../schema.graphql"), "utf-8")}
 `;
+
+const env = cleanEnv(process.env, {
+  PORT: port({ default: 4000 }),
+  CORS_ORIGIN: str({ default: "http://localhost:3000" }),
+});
 
 async function startServer() {
   try {
@@ -122,12 +128,7 @@ async function startServer() {
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-        origin: [
-          "http://localhost:3000",
-          "http://localhost:5173",
-          "http://localhost:4000",
-          "https://esim-fe.loca.lt",
-        ],
+        origin: env.CORS_ORIGIN.split(","),
       })
     );
 
