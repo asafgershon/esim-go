@@ -27,7 +27,7 @@ import {
   RegionsDataSource,
 } from "./datasources/esim-go";
 import { resolvers } from "./resolvers";
-import { getRedis, handleESIMGoWebhook } from "./services";
+import { getRedis, handleESIMGoWebhook, PricingService } from "./services";
 
 const typeDefs = `
 ${authDirectiveTypeDefs}
@@ -73,6 +73,7 @@ async function startServer() {
             services: {
               redis,
               // pubsub: getPubSub(redis), // Add when needed
+              pricing: PricingService,
             },
             repositories: {
               // TODO: Add eSIM Go repositories
@@ -159,6 +160,7 @@ async function startServer() {
             services: {
               redis,
               // pubsub: getPubSub(redis), // Add when needed
+              pricing: PricingService,
             },
             repositories: {
               // TODO: Add eSIM Go repositories

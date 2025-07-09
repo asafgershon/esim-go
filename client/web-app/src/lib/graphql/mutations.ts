@@ -109,3 +109,39 @@ export const VERIFY_PHONE_OTP = gql`
     }
   }
 `;
+
+export const GET_COUNTRIES = gql`
+  query GetCountries {
+    countries {
+      iso
+      name
+      nameHebrew
+      region
+      flag
+    }
+  }
+`;
+
+export const GET_TRIPS = gql`
+  query GetTrips {
+    trips {
+      name
+      description
+      regionId
+      countryIds
+      countries {
+        iso
+        name
+        nameHebrew
+        region
+        flag
+      }
+    }
+  }
+`;
+
+export const CALCULATE_PRICE = gql`
+  query CalculatePrice($numOfDays: Int!, $regionId: String!, $countryId: String!) {
+    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId)
+  }
+`;

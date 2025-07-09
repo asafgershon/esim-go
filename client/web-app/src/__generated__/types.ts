@@ -404,3 +404,13 @@ export type VerifyPhoneOtpMutationVariables = Exact<{
 
 
 export type VerifyPhoneOtpMutation = { __typename?: 'Mutation', verifyPhoneOTP?: { __typename?: 'SignInResponse', success: boolean, error?: string | null, sessionToken?: string | null, refreshToken?: string | null, user?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, createdAt: string, updatedAt: string } | null } | null };
+
+export type GetCountriesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetCountriesQuery = { __typename?: 'Query', countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew: string, region: string, flag?: string | null }> };
+
+export type GetTripsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetTripsQuery = { __typename?: 'Query', trips: Array<{ __typename?: 'Trip', name: string, description: string, regionId: string, countryIds: Array<any>, countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew: string, region: string, flag?: string | null }> }> };

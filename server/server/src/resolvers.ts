@@ -48,6 +48,34 @@ export const resolvers: Resolvers = {
         name: region.name,
         description: `${region.nameHebrew} - ${region.countryIds.length} countries`,
         regionId: region.name.toLowerCase().replace(/\s+/g, '-'),
+        countryIds: region.countryIds,
+        countries: [], // Placeholder - will be resolved by field resolver
+      }));
+    },
+    calculatePrice: async (_, { numOfDays, regionId, countryId }, context: Context) => {
+      console.log("calculatePrice", context.services);
+      return context.services.pricing.calculatePrice(numOfDays, regionId, countryId);
+    },
+  },
+
+  // Field resolvers for Trip type
+  Trip: {
+    countries: async (parent, _, context: Context) => {
+      // Use the countryIds from the parent Trip object to fetch full country data
+      if (!parent.countryIds || parent.countryIds.length === 0) {
+        return [];
+      }
+      
+      const countries = await context.dataSources.countries.getCountries({
+        isos: parent.countryIds
+      });
+      
+      return countries.map((country) => ({
+        iso: country.iso,
+        name: country.country,
+        nameHebrew: country.hebrewName,
+        region: country.region,
+        flag: country.flag,
       }));
     },
   },

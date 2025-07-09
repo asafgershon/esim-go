@@ -21,6 +21,9 @@ type Query {
 
   countries: [Country!]!
   trips: [Trip!]!
+
+  # Calculate price
+  calculatePrice(numOfDays: Int!, regionId: String!, countryId: String!): Float!
 }
 
 type Mutation {
