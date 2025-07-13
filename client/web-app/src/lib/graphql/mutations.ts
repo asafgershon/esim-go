@@ -110,6 +110,20 @@ export const VERIFY_PHONE_OTP = gql`
   }
 `;
 
+export const ME = gql`
+  query Me {
+    me {
+      id
+      email
+      firstName
+      lastName
+      phoneNumber
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 export const GET_COUNTRIES = gql`
   query GetCountries {
     countries {

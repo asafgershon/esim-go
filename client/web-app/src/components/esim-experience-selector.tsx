@@ -14,6 +14,7 @@ import {
   useQueryState,
 } from "nuqs";
 import { lazy, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { EsimSkeleton } from "./esim-skeleton";
 import { EnhancedCountry, useCountries } from "@/hooks/useCountries";
 import { EnhancedTrip, useTrips } from "@/hooks/useTrips";
@@ -23,6 +24,8 @@ const CountUp = lazy(() => import("react-countup"));
 // Backend handles discount logic, so this is no longer needed
 
 export function EsimExperienceSelector() {
+  const router = useRouter();
+  
   // URL state management
   const [numOfDays, setNumOfDays] = useQueryState(
     "numOfDays",
@@ -126,6 +129,19 @@ export function EsimExperienceSelector() {
   };
 
   const isReadyToPurchase = (countryId || tripId) && numOfDays >= 7;
+
+  const handlePurchase = () => {
+    if (!isReadyToPurchase) return;
+    
+    // Navigate to checkout with current parameters
+    const params = new URLSearchParams();
+    params.set("numOfDays", numOfDays.toString());
+    if (countryId) params.set("countryId", countryId);
+    if (tripId) params.set("tripId", tripId);
+    if (pricing?.totalPrice) params.set("totalPrice", pricing.totalPrice.toString());
+    
+    router.push(`/checkout?${params.toString()}`);
+  };
 
   // Show loading skeleton initially
   if (isLoading) {
@@ -350,6 +366,7 @@ export function EsimExperienceSelector() {
               : "bg-muted-foreground/20 text-muted-foreground cursor-not-allowed"
           )}
           disabled={!isReadyToPurchase}
+          onClick={handlePurchase}
         >
           {isReadyToPurchase ? "קנה עכשיו" : "בחר יעד ומשך זמן"}
         </Button>
