@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@apollo/client';
 import { SIGN_IN_WITH_APPLE } from '@/lib/graphql/mutations';
@@ -11,7 +11,7 @@ import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-export default function AppleCallbackPage() {
+function AppleCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -147,5 +147,25 @@ export default function AppleCallbackPage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function AppleCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
+        <Card className="p-8 max-w-md w-full text-center">
+          <div className="flex justify-center mb-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+          <p className="text-muted-foreground">
+            Preparing Apple Sign In...
+          </p>
+        </Card>
+      </div>
+    }>
+      <AppleCallbackContent />
+    </Suspense>
   );
 } 
