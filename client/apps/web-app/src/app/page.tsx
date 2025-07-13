@@ -16,12 +16,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { User as UserIcon } from "lucide-react";
 
 export default function Home() {
   const { isAuthenticated, isLoading, user, signOut } = useAuth();
+  console.log("isAuthenticated", isAuthenticated, "isLoading", isLoading, "user", user);
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
-
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted" dir="rtl">
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
@@ -35,16 +37,26 @@ export default function Home() {
             <ThemeToggle />
             {isLoading ? null : isAuthenticated && user ? (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-foreground font-medium">
-                  {user.firstName + " " + user.lastName || user.email || user.phoneNumber}
-                </span>
-                <Button variant="outline" size="sm" onClick={signOut} title="Logout">
+                <Avatar>
+                  {/* If you have a user image, use <AvatarImage src={user.imageUrl} /> */}
+                  <AvatarFallback>
+                    <UserIcon className="h-6 w-6" />
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium text-foreground">אזור אישי</span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={signOut}
+                  title="Logout"
+                  className="ml-1"
+                >
                   <LogOut className="h-4 w-4" />
                 </Button>
               </div>
             ) : (
               <Link href="/login">
-                <Button variant="outline">Sign In</Button>
+                <Button variant="outline">התחברות</Button>
               </Link>
             )}
           </div>
@@ -55,13 +67,9 @@ export default function Home() {
       <main className="container mx-auto px-4 py-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
-            UNLIMITED INTERNET
-            <span className="block text-primary">THAT TRAVELS WITH YOU</span>
+            אינטרנט בחו״ל ללא הגבלה
+            <span className="block text-primary">בלי התחייבויות מיותרות</span>
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Experience seamless connectivity with our global eSIM marketplace.
-            No more roaming charges, no more local SIM cards.
-          </p>
         </div>
 
         {/* eSIM Selector - Centered */}
