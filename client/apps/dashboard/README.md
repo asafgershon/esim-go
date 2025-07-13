@@ -1,69 +1,77 @@
-# React + TypeScript + Vite
+# eSIM Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Admin dashboard for managing the eSIM platform.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔐 **Authentication**: Secure login with Supabase
+- 📊 **Home Dashboard**: View recent users and daily bundle sales
+- 👥 **User Management**: Browse and manage all platform users
+- 🌍 **Trip Management**: Manage regional eSIM bundles and configurations
 
-## Expanding the ESLint configuration
+## Setup
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. Add your Supabase credentials to `.env`:
 ```
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+3. Install dependencies:
+```bash
+bun install
+```
+
+4. Start the development server:
+```bash
+bun run dev
+```
+
+## Tech Stack
+
+- **React** with TypeScript
+- **Vite** for build tooling
+- **React Router** for navigation
+- **Supabase** for authentication and database
+- **shadcn/ui** for UI components
+- **Tailwind CSS** for styling
+- **Tanstack Query** for data fetching
+- **date-fns** for date formatting
+
+## Project Structure
+
+```
+src/
+├── components/       # Reusable components
+│   ├── layout/      # Layout components (sidebar, dashboard layout)
+│   └── protected-route.tsx
+├── contexts/        # React contexts
+│   └── auth-context.tsx
+├── lib/            # Utilities and configurations
+│   └── supabase.ts
+├── pages/          # Page components
+│   ├── home.tsx
+│   ├── login.tsx
+│   ├── trips.tsx
+│   └── users.tsx
+└── App.tsx         # Main app component with routing
+```
+
+## Authentication
+
+All routes except `/login` are protected and require authentication. The app uses Supabase Auth for user authentication.
+
+## Development
+
+The dashboard uses the shared UI components from the `@workspace/ui` package. To add new shadcn/ui components:
+
+```bash
+bunx shadcn@latest add [component-name]
+```
+
+Note: Make sure to add the component exports to `/workspace/client/packages/ui/src/index.ts`.
