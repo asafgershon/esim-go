@@ -2,6 +2,7 @@ import { RESTDataSource, type DataSourceConfig } from "@apollo/datasource-rest";
 import type { KeyValueCache } from "@apollo/utils.keyvaluecache";
 import { cleanEnv, str } from "envalid";
 import { GraphQLError } from "graphql";
+import { createLogger } from "../../lib/logger";
 
 const env = cleanEnv(process.env, {
   ESIM_GO_BASE_URL: str({
@@ -19,6 +20,9 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
 
   // Cache instance from options
   protected cache?: KeyValueCache;
+
+  // Logger instance
+  protected log = createLogger('ESIMGoDataSource');
 
   // Rate limiting properties
   private requestCount = 0;
@@ -97,7 +101,7 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
         timeout: 15000, // 15 second timeout
       });
     } catch (error: any) {
-      console.log('eSIM Go API error:', error);
+      this.log.error('eSIM Go API error', error);
       this.handleApiError(error);
       throw error; // This line won't be reached but TypeScript needs it
     }
@@ -229,7 +233,7 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     }
 
     if (page > maxPages) {
-      console.warn(`Pagination stopped at maximum pages (${maxPages}) for endpoint: ${endpoint}`);
+      this.log.warn(`Pagination stopped at maximum pages (${maxPages}) for endpoint: ${endpoint}`);
     }
 
     return results;

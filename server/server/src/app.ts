@@ -129,7 +129,9 @@ async function startServer() {
                 // Log slow requests for debugging
                 const duration = Date.now() - startTime;
                 if (duration > 5000) {
-                  console.warn(`Slow GraphQL request: ${duration}ms for operation ${requestContext.request.operationName}`);
+                  console.warn(
+                    `Slow GraphQL request: ${duration}ms for operation ${requestContext.request.operationName}`
+                  );
                 }
               },
             };
@@ -139,7 +141,7 @@ async function startServer() {
       // Add global query timeout
       formatError: (formattedError, error) => {
         // Log errors for debugging
-        console.error('GraphQL Error:', {
+        console.error("GraphQL Error:", {
           message: formattedError.message,
           code: formattedError.extensions?.code,
           path: formattedError.path,
@@ -168,21 +170,19 @@ async function startServer() {
         if (!res.headersSent) {
           res.status(408).json({
             error: "Request timeout",
-            message: "The request took too long to process"
+            message: "The request took too long to process",
           });
         }
       });
-      
+
       res.setTimeout(60000, () => {
         console.error(`Response timeout for ${req.method} ${req.path}`);
-        if (!res.headersSent) {
-          res.status(408).json({
-            error: "Response timeout", 
-            message: "The response took too long to send"
-          });
-        }
+        res.status(408).json({
+          error: "Response timeout",
+          message: "The response took too long to send",
+        });
       });
-      
+
       next();
     });
 
@@ -284,18 +284,26 @@ let memoryWarningLogged = false;
 setInterval(() => {
   const usage = process.memoryUsage();
   const memoryMB = usage.rss / 1024 / 1024;
-  
+
   // Log memory usage every 5 minutes
   if (Date.now() % (5 * 60 * 1000) < 30000) {
-    console.log(`Memory usage: ${memoryMB.toFixed(2)}MB RSS, ${(usage.heapUsed / 1024 / 1024).toFixed(2)}MB Heap`);
+    console.log(
+      `Memory usage: ${memoryMB.toFixed(2)}MB RSS, ${(
+        usage.heapUsed /
+        1024 /
+        1024
+      ).toFixed(2)}MB Heap`
+    );
   }
-  
+
   // Warn if memory usage is high (>500MB)
   if (memoryMB > 500 && !memoryWarningLogged) {
-    console.warn(`HIGH MEMORY USAGE: ${memoryMB.toFixed(2)}MB - potential memory leak`);
+    console.warn(
+      `HIGH MEMORY USAGE: ${memoryMB.toFixed(2)}MB - potential memory leak`
+    );
     memoryWarningLogged = true;
   }
-  
+
   // Reset warning flag if memory drops
   if (memoryMB < 300) {
     memoryWarningLogged = false;
@@ -303,24 +311,16 @@ setInterval(() => {
 }, 30000); // Check every 30 seconds
 
 // Handle uncaught exceptions gracefully
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
   // Don't crash immediately, try to handle gracefully
   setTimeout(() => {
-    console.error('Exiting due to uncaught exception');
+    console.error("Exiting due to uncaught exception");
     process.exit(1);
   }, 1000);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
   // Don't crash for unhandled rejections, just log them
-});
-
-// Log process info on startup
-console.log('Process info:', {
-  platform: process.platform,
-  nodeVersion: process.version,
-  arch: process.arch,
-  pid: process.pid,
 });
