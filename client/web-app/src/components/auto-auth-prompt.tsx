@@ -100,7 +100,7 @@ export function AutoAuthPrompt({
   ]);
 
   // Early return if user is already authenticated
-  if (isAuthenticated) {
+  if (isAuthenticated && !authLoading) {
     return null;
   }
 
