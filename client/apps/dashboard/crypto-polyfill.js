@@ -1,13 +1,11 @@
 // Polyfill for crypto.hash function which is not available in Node.js 23.x
 // This needs to be applied before Vite loads
 
-import { createRequire } from 'node:module';
-
-const crypto = createRequire('node:crypto');
+import crypto from "crypto";
 
 if (!crypto.hash) {
-  crypto.hash = function(algorithm, data, outputEncoding) {
+  crypto.hash = function (algorithm, data, outputEncoding) {
     return crypto.createHash(algorithm).update(data).digest(outputEncoding);
   };
-  console.log('Applied crypto.hash polyfill for Node.js 23.x compatibility');
-} 
+  console.log("Applied crypto.hash polyfill for Node.js 23.x compatibility");
+}
