@@ -31,6 +31,7 @@ import {
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook, PricingService } from "./services";
 import { cleanEnv, port, str } from "envalid";
+import { logger } from "./lib/logger";
 
 const typeDefs = `
 ${authDirectiveTypeDefs}
@@ -141,7 +142,7 @@ async function startServer() {
       // Add global query timeout
       formatError: (formattedError, error) => {
         // Log errors for debugging
-        console.error("GraphQL Error:", {
+        logger.error("GraphQL Error:", {
           message: formattedError.message,
           code: formattedError.extensions?.code,
           path: formattedError.path,
@@ -153,6 +154,10 @@ async function startServer() {
     await server.start();
 
     // Set up our Express middleware to handle CORS, body parsing
+    logger.debug("Setting up CORS middleware", {
+      origin: env.CORS_ORIGIN.split(","),
+    });
+
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
