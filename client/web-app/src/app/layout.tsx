@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "eSIM Go",
-  description: "Global eSIM marketplace",
+  title: "Hiilo - Global eSIM",
+  description: "Stay connected worldwide with Hiilo's global eSIM solutions",
 };
 
 export default function RootLayout({
@@ -37,7 +37,7 @@ export default function RootLayout({
           content={process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI || ""}
         />
         <meta name="appleid-signin-state" content="origin:web" />
-        <meta name="appleid-signin-use-popup" content="true" />
+        <meta name="appleid-signin-use-popup" content="false" />
         <meta
           name="google-signin-client_id"
           content={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}

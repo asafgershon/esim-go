@@ -1,9 +1,18 @@
 import { Suspense } from "react";
 import { CheckoutContainer } from "@/components/checkout/checkout-container";
+import { AutoAuthPrompt } from "@/components/auto-auth-prompt";
 
 export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+      {/* Auto Authentication Prompt - triggers automatically based on device */}
+      <AutoAuthPrompt 
+        // onError={(error) => {
+        //   // Silently handle errors for auto prompts
+        //   console.log('Auto auth error in checkout:', error);
+        // }}
+      />
+
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">

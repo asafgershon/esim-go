@@ -7,6 +7,7 @@ interface GoogleSignInConfig {
   callback: (response: GoogleCredentialResponse) => void;
   auto_select?: boolean;
   cancel_on_tap_outside?: boolean;
+  use_fedcm_for_prompt?: boolean;
 }
 
 interface GoogleCredentialResponse {
@@ -15,8 +16,9 @@ interface GoogleCredentialResponse {
 }
 
 interface GoogleNotification {
-  isNotDisplayed: () => boolean;
   isSkippedMoment: () => boolean;
+  isDismissedMoment: () => boolean;
+  getDismissedReason: () => string;
 }
 
 interface GoogleButtonConfig {
@@ -32,7 +34,7 @@ export const useGoogleSignIn = () => {
     { input: SocialSignInInput }
   >(SIGN_IN_WITH_GOOGLE);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (autoPrompt: boolean = false) => {
     try {
       if (!window.google) {
         await waitForGoogleScript();
@@ -76,22 +78,25 @@ export const useGoogleSignIn = () => {
           callback: handleCredentialResponse,
           auto_select: false,
           cancel_on_tap_outside: true,
+          use_fedcm_for_prompt: true, // Enable FedCM to fix migration warning
         });
 
-        window.google.accounts.id.prompt((notification: GoogleNotification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // Fallback to popup if one-tap is not available
-            window.google.accounts.id.renderButton(
-              document.getElementById('google-signin-button'),
-              {
-                theme: 'outline',
-                size: 'large',
-                width: 400,
-                text: 'continue_with',
-              }
-            );
-          }
-        });
+        if (autoPrompt) {
+          window.google.accounts.id.prompt((notification: GoogleNotification) => {
+            if (notification.isSkippedMoment()) {
+              // One-tap was skipped, could show button as fallback
+              console.log('Google One Tap was skipped');
+              reject(new Error('Google One Tap was skipped'));
+            } else if (notification.isDismissedMoment()) {
+              // One-tap was dismissed by user
+              console.log('Google One Tap was dismissed:', notification.getDismissedReason());
+              reject(new Error('Google One Tap was dismissed'));
+            }
+          });
+        } else {
+          // Manual trigger for button click
+          window.google.accounts.id.prompt();
+        }
       });
     } catch (error) {
       throw error;
@@ -137,6 +142,7 @@ export const useGoogleSignIn = () => {
     window.google.accounts.id.initialize({
       client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
       callback: handleCredentialResponse,
+      use_fedcm_for_prompt: true, // Enable FedCM to fix migration warning
     });
 
     window.google.accounts.id.renderButton(
@@ -176,15 +182,13 @@ const parseJwt = (token: string) => {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
     return JSON.parse(jsonPayload);
-  } catch {
-    throw new Error('Invalid JWT token');
+  } catch (error) {
+    console.error('Error parsing JWT:', error);
+    return {};
   }
 };
 

@@ -21,24 +21,25 @@ export const useAppleSignIn = () => {
     { input: SocialSignInInput }
   >(SIGN_IN_WITH_APPLE);
 
-  const signInWithApple = async () => {
+  const signInWithApple = async (autoPrompt: boolean = false) => {
     try {
       if (!window.AppleID) {
         await waitForAppleScript();
       }
 
+      // Use native redirect flow instead of popup to avoid Safari blocking
       const config: AppleSignInConfig = {
         clientId: process.env.NEXT_PUBLIC_APPLE_CLIENT_ID!,
         scope: 'name email',
         redirectURI: process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI!,
-        state: 'web-signin',
-        usePopup: true,
+        state: autoPrompt ? 'auto-signin' : 'manual-signin',
+        usePopup: false, // Changed to false to use native redirect flow
       };
 
       window.AppleID.auth.init(config);
       
       return new Promise<SignInResponse>((resolve, reject) => {
-        document.addEventListener('AppleIDSignInOnSuccess', async (event: Event) => {
+        const handleSuccess = async (event: Event) => {
           try {
             const { authorization, user } = (event as AppleSignInEvent).detail;
             
@@ -67,21 +68,120 @@ export const useAppleSignIn = () => {
             }
           } catch (err) {
             reject(err);
+          } finally {
+            // Clean up event listeners
+            document.removeEventListener('AppleIDSignInOnSuccess', handleSuccess);
+            document.removeEventListener('AppleIDSignInOnFailure', handleFailure);
           }
-        });
+        };
 
-        document.addEventListener('AppleIDSignInOnFailure', (event: Event) => {
-          reject(new Error((event as CustomEvent).detail?.error || 'Apple Sign-In failed'));
-        });
+        const handleFailure = (event: Event) => {
+          const error = (event as CustomEvent).detail?.error || 'Apple Sign-In failed';
+          reject(new Error(error));
+          
+          // Clean up event listeners
+          document.removeEventListener('AppleIDSignInOnSuccess', handleSuccess);
+          document.removeEventListener('AppleIDSignInOnFailure', handleFailure);
+        };
 
-        window.AppleID.auth.signIn();
+        document.addEventListener('AppleIDSignInOnSuccess', handleSuccess);
+        document.addEventListener('AppleIDSignInOnFailure', handleFailure);
+
+        // For auto prompts, add a shorter timeout since native flow is faster
+        if (autoPrompt) {
+          setTimeout(() => {
+            document.removeEventListener('AppleIDSignInOnSuccess', handleSuccess);
+            document.removeEventListener('AppleIDSignInOnFailure', handleFailure);
+            reject(new Error('Apple Sign-In auto prompt timeout'));
+          }, 3000); // Reduced timeout for native flow
+        }
+
+        try {
+          // Use native sign-in flow - this will open the native Apple Sign In window
+          window.AppleID.auth.signIn();
+        } catch (signInError) {
+          document.removeEventListener('AppleIDSignInOnSuccess', handleSuccess);
+          document.removeEventListener('AppleIDSignInOnFailure', handleFailure);
+          reject(signInError);
+        }
       });
     } catch (error) {
       throw error;
     }
   };
 
-  return { signInWithApple, loading, error };
+  const renderAppleButton = (elementId: string) => {
+    if (!window.AppleID) {
+      return;
+    }
+
+    // Use native redirect flow for button as well
+    const config: AppleSignInConfig = {
+      clientId: process.env.NEXT_PUBLIC_APPLE_CLIENT_ID!,
+      scope: 'name email',
+      redirectURI: process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI!,
+      state: 'button-signin',
+      usePopup: false, // Changed to false for native flow
+    };
+
+    window.AppleID.auth.init(config);
+
+    const handleSuccess = async (event: Event) => {
+      try {
+        const { authorization, user } = (event as AppleSignInEvent).detail;
+        
+        if (!authorization?.id_token) {
+          throw new Error('No ID token received from Apple');
+        }
+
+        const firstName = user?.name?.firstName || '';
+        const lastName = user?.name?.lastName || '';
+
+        const result = await signInWithAppleMutation({
+          variables: {
+            input: {
+              idToken: authorization.id_token,
+              firstName,
+              lastName,
+            },
+          },
+        });
+
+        if (result.data?.signInWithApple.success && result.data.signInWithApple.sessionToken) {
+          localStorage.setItem('authToken', result.data.signInWithApple.sessionToken);
+          window.location.href = '/dashboard';
+        } else {
+          alert('Apple Sign-in failed: ' + result.data?.signInWithApple.error);
+        }
+      } catch (err) {
+        alert('Apple Sign-In failed: ' + (err as Error).message);
+      }
+    };
+
+    document.addEventListener('AppleIDSignInOnSuccess', handleSuccess);
+    document.addEventListener('AppleIDSignInOnFailure', (event: Event) => {
+      alert('Apple Sign-In failed: ' + (event as CustomEvent).detail?.error);
+    });
+
+    // Create and configure the Apple Sign-In button
+    const buttonElement = document.getElementById(elementId);
+    if (buttonElement) {
+      buttonElement.innerHTML = `
+        <div id="appleid-signin" 
+             data-color="black" 
+             data-border="true" 
+             data-type="sign-in"
+             data-width="400"
+             data-height="50">
+        </div>
+      `;
+      
+      // Initialize the button with native flow
+      window.AppleID.auth.init(config);
+    }
+  };
+
+  return { signInWithApple, renderAppleButton, loading, error };
 };
 
 // Helper function to wait for Apple script to load
@@ -110,7 +210,7 @@ declare global {
     AppleID: {
       auth: {
         init: (config: AppleSignInConfig) => void;
-        signIn: () => void; // Note: This doesn't return a Promise in event-driven approach
+        signIn: () => void;
       };
     };
   }

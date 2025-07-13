@@ -59,25 +59,33 @@ export function LoginSection() {
 
   const handleAppleSignIn = async () => {
     setError("");
-    const result = await signInWithApple();
-    
-    if (!result.success) {
-      setError(result.error || "התחברות עם Apple נכשלה");
-    } else {
-      // Refresh auth state after successful login
-      refreshAuth();
+    try {
+      const result = await signInWithApple(false); // false for manual trigger
+      
+      if (result.success) {
+        // Refresh auth state after successful login
+        refreshAuth();
+      } else {
+        setError(result.error || "התחברות עם Apple נכשלה");
+      }
+    } catch (error) {
+      setError("התחברות עם Apple נכשלה: " + (error as Error).message);
     }
   };
 
   const handleGoogleSignIn = async () => {
     setError("");
-    const result = await signInWithGoogle();
-    
-    if (!result.success) {
-      setError(result.error || "התחברות עם Google נכשלה");
-    } else {
-      // Refresh auth state after successful login
-      refreshAuth();
+    try {
+      const result = await signInWithGoogle(false); // false for manual trigger
+      
+      if (result.success) {
+        // Refresh auth state after successful login
+        refreshAuth();
+      } else {
+        setError(result.error || "התחברות עם Google נכשלה");
+      }
+    } catch (error) {
+      setError("התחברות עם Google נכשלה: " + (error as Error).message);
     }
   };
 
