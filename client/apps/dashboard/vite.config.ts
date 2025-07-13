@@ -3,12 +3,18 @@ import react from '@vitejs/plugin-react-swc'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 import dotenv from 'dotenv'
+import { cleanEnv, str } from 'envalid'
 
 dotenv.config()
 
+const env = cleanEnv(process.env, {
+  VITE_ALLOWED_HOSTS: str({ desc: 'Allowed hosts', default: '' }),
+})
+
 // https://vite.dev/config/
 export default defineConfig(() => {
-  const allowedHosts = (process.env.VITE_ALLOWED_HOSTS || '').split(',').map(h => h.trim()).filter(Boolean);
+  const allowedHosts = env.VITE_ALLOWED_HOSTS.split(',').map(h => h.trim()).filter(Boolean);
+  console.debug(allowedHosts)
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
