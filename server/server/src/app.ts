@@ -157,11 +157,15 @@ async function startServer() {
     logger.debug("Setting up CORS middleware", {
       origin: env.CORS_ORIGIN.split(","),
     });
+    console.log("Setting up CORS middleware", {
+      origin: env.CORS_ORIGIN.split(","),
+    });
 
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
         origin: env.CORS_ORIGIN.split(","),
+        credentials: true,
       })
     );
 
