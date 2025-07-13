@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -6,6 +8,7 @@ import {
   Zap,
   Shield,
   Check,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,8 +16,10 @@ import { EsimExperienceSelector } from "@/components/esim-experience-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AutoAuthPrompt } from "@/components/auto-auth-prompt";
 import { Suspense } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
+  const { isAuthenticated, isLoading, user, signOut } = useAuth();
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
       {/* Auto Authentication Prompt - triggers automatically based on device */}
@@ -40,9 +45,20 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link href="/login">
-              <Button variant="outline">Sign In</Button>
-            </Link>
+            {isLoading ? null : isAuthenticated && user ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-foreground font-medium">
+                  {user.firstName + " " + user.lastName || user.email || user.phoneNumber}
+                </span>
+                <Button variant="outline" size="sm" onClick={signOut} title="Logout">
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Link href="/login">
+                <Button variant="outline">Sign In</Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>

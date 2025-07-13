@@ -79,6 +79,14 @@ export function AutoAuthPrompt({
   ]);
 
   useEffect(() => {
+    // console.log("useEffect", {
+    //   isAuthenticated,
+    //   authLoading,
+    //   disabled,
+    //   hasTriggered,
+    //   deviceInfo,
+    //   triggerAutoAuth,
+    // });
     // Don't show if user is already authenticated or auth is loading
     if (isAuthenticated || authLoading || disabled || hasTriggered) {
       return;
@@ -86,7 +94,7 @@ export function AutoAuthPrompt({
 
     // Small delay to ensure scripts are loaded
     const timer = setTimeout(() => {
-      triggerAutoAuth();
+      // triggerAutoAuth();
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -113,8 +121,9 @@ export function useAutoAuth() {
   const deviceInfo = useDeviceInfo();
   const { signInWithApple } = useAppleSignIn();
   const { signInWithGoogle } = useGoogleSignIn();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
+  console.log("deviceInfo", deviceInfo, "isAuthenticated", isAuthenticated, "authLoading", authLoading);
   const triggerAutoAuth = async (): Promise<boolean> => {
     if (isAuthenticated) return false;
 
@@ -135,7 +144,7 @@ export function useAutoAuth() {
 
   return {
     triggerAutoAuth,
-    canTriggerAutoAuth: !isAuthenticated && (deviceInfo.shouldShowAppleSignIn || deviceInfo.shouldShowGoogleOneTap),
+    canTriggerAutoAuth: !isAuthenticated && !authLoading && (deviceInfo.shouldShowAppleSignIn || deviceInfo.shouldShowGoogleOneTap),
     deviceInfo,
   };
 }
