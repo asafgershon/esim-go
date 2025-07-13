@@ -13,6 +13,7 @@ export * from "./components/skeleton"
 export * from "./components/table"
 export * from "./components/tabs"
 export * from "./components/tooltip"
+export * from "./components/dialog"
 
 // Utils
 export * from "./lib/utils" 

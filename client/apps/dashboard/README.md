@@ -4,10 +4,10 @@ Admin dashboard for managing the eSIM platform.
 
 ## Features
 
-- 🔐 **Authentication**: Secure login with Supabase
+- 🔐 **Authentication**: Secure login with Supabase (Email, Google, and Apple)
 - 📊 **Home Dashboard**: View recent users and daily bundle sales
 - 👥 **User Management**: Browse and manage all platform users
-- 🌍 **Trip Management**: Manage regional eSIM bundles and configurations
+- 🌍 **Trip Management**: View and manage trips from the GraphQL API
 
 ## Setup
 
@@ -16,10 +16,11 @@ Admin dashboard for managing the eSIM platform.
 cp .env.example .env
 ```
 
-2. Add your Supabase credentials to `.env`:
+2. Add your environment variables to `.env`:
 ```
 VITE_SUPABASE_URL=your-supabase-url
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+VITE_GRAPHQL_URL=http://localhost:4000/graphql
 ```
 
 3. Install dependencies:
@@ -38,6 +39,7 @@ bun run dev
 - **Vite** for build tooling
 - **React Router** for navigation
 - **Supabase** for authentication and database
+- **Apollo Client** for GraphQL queries
 - **shadcn/ui** for UI components
 - **Tailwind CSS** for styling
 - **Tanstack Query** for data fetching

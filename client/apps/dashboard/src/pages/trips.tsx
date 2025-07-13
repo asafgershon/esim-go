@@ -1,115 +1,83 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useQuery } from '@apollo/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
 import { Input } from '@workspace/ui/components/input'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@workspace/ui/components/table'
-import { MapPin, Edit2, Plus, Search } from 'lucide-react'
+import { Skeleton } from '@workspace/ui/components/skeleton'
+import { MapPin, Edit2, Plus, Search, AlertCircle } from 'lucide-react'
+import { GET_TRIPS } from '@/lib/graphql/queries'
 
-// This would normally come from your regions-datasource
-const PREDEFINED_REGIONS = [
-  {
-    name: "Africa",
-    nameHebrew: "אפריקה",
-    countryIds: ["EG", "MA", "TZ", "UG", "TN", "ZA", "ZM", "MG", "NG", "KE", "MU", "NA", "BW"],
-    bundleIds: {
-      unlimited: {
-        "3D": "esim_UL_3D_RAF_V2",
-        "5D": "esim_UL_5D_RAF_V2",
-        "7D": "esim_UL_7D_RAF_V2",
-        "10D": "esim_UL_10D_RAF_V2",
-      }
-    }
-  },
-  {
-    name: "Americas",
-    nameHebrew: "אמריקה",
-    countryIds: ["AR", "BR", "CL", "CO", "CR", "EC", "SV", "PE", "UY", "GF", "MX"],
-    bundleIds: {
-      unlimited: {
-        "3D": "esim_UL_3D_RLA_V2",
-        "5D": "esim_UL_5D_RLA_V2",
-        "7D": "esim_UL_7D_RLA_V2",
-        "10D": "esim_UL_10D_RLA_V2",
-        "15D": "esim_UL_15D_RLA_V2",
-        "30D": "esim_UL_30D_RLA_V2",
-      }
-    }
-  },
-  {
-    name: "Asia",
-    nameHebrew: "אסיה",
-    countryIds: ["AU", "HK", "ID", "KR", "MO", "MY", "PK", "SG", "LK", "TW", "TH", "UZ", "VN", "IN", "NP"],
-    bundleIds: {
-      unlimited: {
-        "3D": "esim_UL_3D_RAS_V2",
-        "5D": "esim_UL_5D_RAS_V2",
-        "7D": "esim_UL_7D_RAS_V2",
-        "10D": "esim_UL_10D_RAS_V2",
-        "15D": "esim_UL_15D_RAS_V2",
-        "30D": "esim_UL_30D_RAS_V2",
-      }
-    }
-  },
-  {
-    name: "Balkans",
-    nameHebrew: "הבלקן",
-    countryIds: ["AL", "BA", "BG", "GR", "HR", "MK", "ME", "RO", "RS", "SI"],
-    bundleIds: {
-      unlimited: {
-        "3D": "esim_UL_3D_RBK_V2",
-        "5D": "esim_UL_5D_RBK_V2",
-        "7D": "esim_UL_7D_RBK_V2",
-        "10D": "esim_UL_10D_RBK_V2",
-        "15D": "esim_UL_15D_RBK_V2",
-      }
-    }
-  },
-  {
-    name: "EU+",
-    nameHebrew: "אירופה מורחבת",
-    countryIds: ["AT", "DK", "IE", "IT", "SE", "FR", "BG", "CY", "EE", "FI", "GR", "HU", "LV", "LT", "NL", "NO", "PL", "RO", "SK", "ES", "GB", "TR", "DE", "MT", "CH", "BE", "HR", "CZ", "LI", "LU", "PT", "SI", "IS", "IC", "VA"],
-    bundleIds: {}
-  },
-  {
-    name: "Caribbean",
-    nameHebrew: "הקריביים",
-    countryIds: ["AI", "AG", "BS", "BB", "KY", "GD", "JM", "MS", "AN", "KN", "LC", "VC", "TT", "TC", "VG", "AW", "BQ", "CW", "DM", "GP", "GY", "HT", "SV", "GF", "BM"],
-    bundleIds: {
-      unlimited: {
-        "3D": "esim_UL_3D_RCA_V2",
-        "5D": "esim_UL_5D_RCA_V2",
-        "7D": "esim_UL_7D_RCA_V2",
-        "10D": "esim_UL_10D_RCA_V2",
-        "15D": "esim_UL_15D_RCA_V2",
-      }
-    }
-  }
-]
+interface Trip {
+  name: string
+  description: string
+  regionId: string
+  countryIds: string[]
+}
+
+// Map for region names to Hebrew names (from the description field)
+const extractHebrewName = (description: string): string => {
+  // The description format is "Hebrew Name - Region Description"
+  const parts = description.split(' - ')
+  return parts[0] || description
+}
+
+// Map for getting emojis based on region names
+const regionEmojis: Record<string, string> = {
+  'south-america': '🌎',
+  'africa': '🦁',
+  'african-safari': '🦁',
+  'europe': '🏰',
+  'east-asia': '🏯',
+  'asia': '🌏',
+  'caribbean': '🏖️',
+  'middle-east': '🕌',
+  'north-america': '🗽',
+  'oceania': '🌊',
+  'balkans': '🏔️',
+  'eu-plus': '🇪🇺',
+  'global': '🌍'
+}
 
 export function TripsPage() {
   const [searchTerm, setSearchTerm] = useState('')
-  const [regions] = useState(PREDEFINED_REGIONS)
+  const { data, loading, error } = useQuery<{ trips: Trip[] }>(GET_TRIPS)
 
-  const filteredRegions = regions.filter(region =>
-    region.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    region.nameHebrew.includes(searchTerm) ||
-    region.countryIds.some(id => id.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
+  const filteredTrips = useMemo(() => {
+    if (!data?.trips) return []
+    
+    return data.trips.filter(trip => {
+      const hebrewName = extractHebrewName(trip.description)
+      return (
+        trip.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        hebrewName.includes(searchTerm) ||
+        trip.regionId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        trip.countryIds.some(id => id.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    })
+  }, [data?.trips, searchTerm])
 
-  const getBundleCount = (region: typeof PREDEFINED_REGIONS[0]) => {
-    let count = 0
-    if (region.bundleIds.unlimited) {
-      count += Object.keys(region.bundleIds.unlimited).length
-    }
-    return count
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Trips</h1>
+          <p className="text-muted-foreground">
+            Manage regional eSIM bundles and trips
+          </p>
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center py-10">
+            <div className="text-center space-y-2">
+              <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
+              <p className="text-sm text-muted-foreground">
+                Failed to load trips: {error.message}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -137,64 +105,76 @@ export function TripsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4">
-        {filteredRegions.map((region) => (
-          <Card key={region.name}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    {region.name}
-                  </CardTitle>
-                  <CardDescription>{region.nameHebrew}</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-sm font-medium mb-2">Countries ({region.countryIds.length})</p>
-                <div className="flex flex-wrap gap-1">
-                  {region.countryIds.map((countryId) => (
-                    <Badge key={countryId} variant="secondary">
-                      {countryId}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {getBundleCount(region) > 0 && (
-                <div>
-                  <p className="text-sm font-medium mb-2">Available Bundles</p>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Bundle ID</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {region.bundleIds.unlimited && Object.entries(region.bundleIds.unlimited).map(([duration, bundleId]) => (
-                        <TableRow key={bundleId}>
-                          <TableCell>
-                            <Badge>Unlimited</Badge>
-                          </TableCell>
-                          <TableCell>{duration}</TableCell>
-                          <TableCell className="font-mono text-xs">{bundleId}</TableCell>
-                        </TableRow>
+      {loading ? (
+        <div className="grid gap-4">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-4 w-32 mt-2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : filteredTrips.length === 0 ? (
+        <Card>
+          <CardContent className="flex items-center justify-center py-10">
+            <p className="text-sm text-muted-foreground">
+              {searchTerm ? 'No trips found matching your search' : 'No trips available'}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {filteredTrips.map((trip) => {
+            const hebrewName = extractHebrewName(trip.description)
+            const emoji = regionEmojis[trip.regionId.toLowerCase()] || '🌍'
+            
+            return (
+              <Card key={trip.regionId}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="flex items-center gap-2">
+                        <span className="text-2xl">{emoji}</span>
+                        <MapPin className="h-4 w-4" />
+                        {trip.name}
+                      </CardTitle>
+                      <CardDescription>{hebrewName}</CardDescription>
+                    </div>
+                    <Button variant="ghost" size="sm">
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium mb-2">Countries ({trip.countryIds.length})</p>
+                    <div className="flex flex-wrap gap-1">
+                      {trip.countryIds.map((countryId) => (
+                        <Badge key={countryId} variant="secondary">
+                          {countryId}
+                        </Badge>
                       ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground">
+                    <p>{trip.description}</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant="outline">Region ID: {trip.regionId}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

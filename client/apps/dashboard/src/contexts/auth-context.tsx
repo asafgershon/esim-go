@@ -30,6 +30,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
+      
+      // Sync auth token for GraphQL
+      if (session?.access_token) {
+        localStorage.setItem('authToken', session.access_token)
+      } else {
+        localStorage.removeItem('authToken')
+      }
     })
 
     return () => subscription.unsubscribe()
