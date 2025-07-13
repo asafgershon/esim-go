@@ -99,6 +99,11 @@ export function AutoAuthPrompt({
     triggerAutoAuth,
   ]);
 
+  // Early return if user is already authenticated
+  if (isAuthenticated) {
+    return null;
+  }
+
   // This component doesn't render anything visible - it just triggers auto auth
   return null;
 }
