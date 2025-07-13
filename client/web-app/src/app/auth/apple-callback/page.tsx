@@ -29,7 +29,6 @@ function AppleCallbackContent() {
       try {
         // Get the authorization code from URL parameters
         const code = searchParams.get("code");
-        const state = searchParams.get("state");
         const idToken = searchParams.get("id_token");
         const user = searchParams.get("user");
 
@@ -76,9 +75,8 @@ function AppleCallbackContent() {
             setStatus("success");
 
             // Redirect based on the state parameter
-            const redirectTo = state === "auto-signin" ? "/" : "/";
             setTimeout(() => {
-              router.push(redirectTo);
+              router.push('/');
             }, 1500);
           } else {
             throw new Error(

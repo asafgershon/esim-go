@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react-swc'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
-import './crypto-polyfill.js'
+// import './crypto-polyfill.js'
 
 // https://vite.dev/config/
 export default defineConfig({
