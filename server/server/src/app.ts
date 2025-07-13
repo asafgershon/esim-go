@@ -40,7 +40,7 @@ ${readFileSync(join(__dirname, "../schema.graphql"), "utf-8")}
 
 const env = cleanEnv(process.env, {
   PORT: port({ default: 4000 }),
-  CORS_ORIGIN: str({ default: "http://localhost:3000" }),
+  CORS_ORIGINS: str({ default: "http://localhost:3000" }),
 });
 
 async function startServer() {
@@ -155,16 +155,16 @@ async function startServer() {
 
     // Set up our Express middleware to handle CORS, body parsing
     logger.debug("Setting up CORS middleware", {
-      origin: env.CORS_ORIGIN.split(","),
+      origin: env.CORS_ORIGINS.split(","),
     });
     console.log("Setting up CORS middleware", {
-      origin: env.CORS_ORIGIN.split(","),
+      origin: env.CORS_ORIGINS.split(","),
     });
 
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-        origin: env.CORS_ORIGIN.split(","),
+        origin: env.CORS_ORIGINS.split(","),
         credentials: true,
       })
     );
