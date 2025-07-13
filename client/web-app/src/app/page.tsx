@@ -1,38 +1,26 @@
 "use client";
 
-import Link from "next/link";
-import {
-  ArrowRight,
-  Globe,
-  Smartphone,
-  Zap,
-  Shield,
-  Check,
-  LogOut,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EsimExperienceSelector } from "@/components/esim-experience-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { AutoAuthPrompt } from "@/components/auto-auth-prompt";
-import { Suspense } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  ArrowRight,
+  Check,
+  Globe,
+  LogOut,
+  Shield,
+  Smartphone,
+  Zap,
+} from "lucide-react";
+import Link from "next/link";
+import { Suspense } from "react";
 
 export default function Home() {
   const { isAuthenticated, isLoading, user, signOut } = useAuth();
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
-      {/* Auto Authentication Prompt - triggers automatically based on device */}
-      <AutoAuthPrompt 
-        // onSuccess={() => {
-        //   // Redirect to dashboard on successful auto sign-in
-        //   window.location.href = '/';
-        // }}
-        // onError={(error) => {
-        //   // Silently handle errors for auto prompts
-        //   console.log('Auto auth error:', error);
-        // }}
-      />
 
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
