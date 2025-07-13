@@ -149,7 +149,7 @@ export const useAppleSignIn = () => {
 
         if (result.data?.signInWithApple.success && result.data.signInWithApple.sessionToken) {
           localStorage.setItem('authToken', result.data.signInWithApple.sessionToken);
-          window.location.href = '/dashboard';
+          window.location.href = '/';
         } else {
           alert('Apple Sign-in failed: ' + result.data?.signInWithApple.error);
         }

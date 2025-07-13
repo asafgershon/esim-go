@@ -52,7 +52,7 @@ export function LoginForm({
     const result = await verifyOTP(otp);
     
     if (result.success) {
-      window.location.href = "/dashboard";
+      window.location.href = "/";
     } else {
       setError(result.error || "Invalid OTP");
       setOtp("");
@@ -66,7 +66,7 @@ export function LoginForm({
       const result = await signInWithApple(false); // false for manual trigger
 
       if (result.success) {
-        window.location.href = "/dashboard";
+        window.location.href = "/";
       } else {
         setError("Apple Sign-In failed: " + result.error);
       }
@@ -84,7 +84,7 @@ export function LoginForm({
       const result = await signInWithGoogle(false); // false for manual trigger
 
       if (result.success) {
-        window.location.href = "/dashboard";
+        window.location.href = "/";
       } else {
         setError("Google Sign-In failed: " + result.error);
       }

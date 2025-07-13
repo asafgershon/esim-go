@@ -76,7 +76,7 @@ function AppleCallbackContent() {
             setStatus("success");
 
             // Redirect based on the state parameter
-            const redirectTo = state === "auto-signin" ? "/" : "/dashboard";
+            const redirectTo = state === "auto-signin" ? "/" : "/";
             setTimeout(() => {
               router.push(redirectTo);
             }, 1500);

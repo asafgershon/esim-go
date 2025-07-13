@@ -130,7 +130,7 @@ export const useGoogleSignIn = () => {
 
         if (result.data?.signInWithGoogle.success && result.data.signInWithGoogle.sessionToken) {
           localStorage.setItem('authToken', result.data.signInWithGoogle.sessionToken);
-          window.location.href = '/dashboard';
+          window.location.href = '/';
         } else {
           alert('Sign-in failed: ' + result.data?.signInWithGoogle.error);
         }
