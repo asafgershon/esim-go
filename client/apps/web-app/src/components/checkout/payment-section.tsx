@@ -1,14 +1,27 @@
 "use client";
 
-import { useState } from "react";
 import { Label, Input, Card } from "@workspace/ui";
 import { CreditCard, Lock } from "lucide-react";
 
-export function PaymentSection() {
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
+interface PaymentSectionProps {
+  sectionNumber?: number;
+  cardNumber: string;
+  setCardNumber: (v: string) => void;
+  expiry: string;
+  setExpiry: (v: string) => void;
+  cvv: string;
+  setCvv: (v: string) => void;
+}
 
+export function PaymentSection({
+  sectionNumber,
+  cardNumber,
+  setCardNumber,
+  expiry,
+  setExpiry,
+  cvv,
+  setCvv,
+}: PaymentSectionProps) {
   const formatCardNumber = (value: string) => {
     // Remove all non-digit characters
     const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
@@ -52,8 +65,13 @@ export function PaymentSection() {
   };
 
   return (
-    <Card className="p-6" dir="rtl">
+    <Card className="p-6 relative" dir="rtl">
       <div className="flex items-center gap-2 mb-4">
+        {sectionNumber && (
+          <div className="bg-primary/80 text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
+            {sectionNumber}
+          </div>
+        )}
         <CreditCard className="h-5 w-5 text-primary" />
         <h2 className="text-xl font-semibold">פרטי תשלום</h2>
       </div>

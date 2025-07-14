@@ -1,17 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card } from "@workspace/ui";
+import { Button, GoogleSignInButton, AppleSignInButton } from "@workspace/ui";
+import { Input } from "@workspace/ui";
 import { Label, InputOTP, InputOTPGroup, InputOTPSlot } from "@workspace/ui";
 import { useAppleSignIn } from "@/hooks/useAppleSignIn";
 import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 import { usePhoneOTP } from "@/hooks/usePhoneOTP";
 import { useAuth } from "@/hooks/useAuth";
-import { User, Apple, Mail, CheckCircle, LogOut } from "lucide-react";
+import { User, CheckCircle, LogOut } from "lucide-react";
 
-export function LoginSection() {
+interface LoginSectionProps {
+  sectionNumber?: number;
+}
+
+export function LoginSection({ sectionNumber }: LoginSectionProps) {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
@@ -96,7 +100,7 @@ export function LoginSection() {
 
   if (isLoading) {
     return (
-      <Card className="p-6" dir="rtl">
+      <Card className="p-6 relative" dir="rtl">
         <div className="flex items-center gap-2 mb-4">
           <User className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold">טוען...</h2>
@@ -135,12 +139,11 @@ export function LoginSection() {
     };
 
           return (
-        <Card className="p-6" dir="rtl">
+        <Card className="p-6 relative" dir="rtl">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <h2 className="text-xl font-semibold">מחובר</h2>
-            </div>
+
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            <h2 className="text-xl font-semibold">מחובר</h2>
             
             <Button
               onClick={signOut}
@@ -167,8 +170,13 @@ export function LoginSection() {
   }
 
   return (
-    <Card className="p-6" dir="rtl">
+    <Card className="p-6 relative" dir="rtl">
       <div className="flex items-center gap-2 mb-4">
+        {sectionNumber && (
+          <div className="bg-primary/80 text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
+            {sectionNumber}
+          </div>
+        )}
         <User className="h-5 w-5 text-primary" />
         <h2 className="text-xl font-semibold">התחבר כדי להמשיך</h2>
       </div>
@@ -183,25 +191,24 @@ export function LoginSection() {
         <div className="space-y-4">
           {/* Social Login Buttons */}
           <div className="space-y-3">
-            <Button
+            <GoogleSignInButton
+              rtl={true}
+              loading={googleLoading}
               onClick={handleGoogleSignIn}
               disabled={googleLoading}
-              variant="outline"
               className="w-full h-11"
             >
-              <Mail className="mr-2 h-4 w-4" />
-              {googleLoading ? "מתחבר..." : "המשך עם Google"}
-            </Button>
-            
-            <Button
+              המשך עם Google
+            </GoogleSignInButton>
+            <AppleSignInButton
+              rtl={true}
+              loading={appleLoading}
               onClick={handleAppleSignIn}
               disabled={appleLoading}
-              variant="outline"
               className="w-full h-11"
             >
-              <Apple className="mr-2 h-4 w-4" />
-              {appleLoading ? "מתחבר..." : "המשך עם Apple"}
-            </Button>
+              המשך עם Apple
+            </AppleSignInButton>
           </div>
 
                       <div className="relative">

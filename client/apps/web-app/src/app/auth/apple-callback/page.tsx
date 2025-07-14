@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "@apollo/client";
 import { SIGN_IN_WITH_APPLE } from "@/lib/graphql/mutations";
 import { SignInResponse, SocialSignInInput } from "@/lib/types";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@workspace/ui";
+import { Button } from "@workspace/ui";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";

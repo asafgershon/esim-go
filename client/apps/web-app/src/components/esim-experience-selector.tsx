@@ -1,18 +1,20 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Combobox, SliderWithValue } from "@workspace/ui";
+import { Button } from "@workspace/ui";
+import { Card } from "@workspace/ui";
+import { FuzzyCombobox, SliderWithValue } from "@workspace/ui";
 import type { CountryISOCode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Calendar, Info } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   parseAsInteger,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
 } from "nuqs";
-import { lazy, useEffect, useMemo, useState } from "react";
+import { lazy, useEffect, useMemo, useState, Suspense } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useRouter } from "next/navigation";
 import { EsimSkeleton } from "./esim-skeleton";
 import { EnhancedCountry, useCountries } from "@/hooks/useCountries";
@@ -22,9 +24,11 @@ import { usePricing } from "@/hooks/usePricing";
 const CountUp = lazy(() => import("react-countup"));
 // Backend handles discount logic, so this is no longer needed
 
+// Lazy load the mobile bottom sheet
+const MobileDestinationSheet = lazy(() => import("./mobile-destination-sheet"));
+
 export function EsimExperienceSelector() {
   const router = useRouter();
-  
   // URL state management
   const [numOfDays, setNumOfDays] = useQueryState(
     "numOfDays",
@@ -32,28 +36,21 @@ export function EsimExperienceSelector() {
   );
   const [countryId, setCountryId] = useQueryState("countryId", parseAsString);
   const [tripId, setTripId] = useQueryState("tripId", parseAsString);
-
   // Local state for UI
   const [activeTab, setActiveTab] = useQueryState(
     "activeTab",
     parseAsStringLiteral(["countries", "trips"]).withDefault("countries")
   );
-
   // Fetch countries and trips data from GraphQL
   const { countries, loading: countriesLoading } = useCountries();
   const { trips, loading: tripsLoading } = useTrips();
-
   // Loading state - show skeleton while countries or trips are loading or initial load
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  // Simulate initial loading for better UX
   useEffect(() => {
     const timer = setTimeout(() => setIsInitialLoading(false), 1200);
     return () => clearTimeout(timer);
   }, []);
-
   const isLoading = isInitialLoading || countriesLoading || tripsLoading;
-
   // Create combobox options based on active tab
   const comboboxOptions = useMemo(() => {
     if (activeTab === "countries") {
@@ -72,7 +69,6 @@ export function EsimExperienceSelector() {
       }));
     }
   }, [activeTab, countries, trips]);
-
   // Get selected destination details
   const selectedDestinationData = useMemo(() => {
     if (countryId) {
@@ -86,10 +82,8 @@ export function EsimExperienceSelector() {
         data: trips.find((t) => t.id === tripId),
       };
     }
-
     return null;
   }, [countryId, tripId, countries, trips]);
-
   // Calculate pricing using backend
   const { pricing, loading: priceLoading } = usePricing({
     numOfDays,
@@ -102,21 +96,18 @@ export function EsimExperienceSelector() {
         ? selectedDestinationData.data?.id
         : undefined,
   });
-
   const handleTabChange = (tab: "countries" | "trips") => {
     setActiveTab(tab);
     // Clear selection when switching tabs
     setCountryId(null);
     setTripId(null);
   };
-
   const handleDestinationChange = (value: string) => {
     if (!value) {
       setCountryId(null);
       setTripId(null);
       return;
     }
-
     const [type, id] = value.split("-");
     if (type === "country") {
       setCountryId(id as CountryISOCode);
@@ -126,30 +117,60 @@ export function EsimExperienceSelector() {
       setCountryId(null);
     }
   };
-
   const isReadyToPurchase = (countryId || tripId) && numOfDays >= 7;
-
   const handlePurchase = () => {
     if (!isReadyToPurchase) return;
-    
     // Navigate to checkout with current parameters
     const params = new URLSearchParams();
     params.set("numOfDays", numOfDays.toString());
     if (countryId) params.set("countryId", countryId);
     if (tripId) params.set("tripId", tripId);
     if (pricing?.totalPrice) params.set("totalPrice", pricing.totalPrice.toString());
-    
     router.push(`/checkout?${params.toString()}`);
   };
-
-  // Show loading skeleton initially
+  const isMobile = useIsMobile();
+  const [showMobileSheet, setShowMobileSheet] = useState(false);
+  const [footerVisible, setFooterVisible] = useState(false);
+  const [firstSelectionMade, setFirstSelectionMade] = useState(false);
+  const [pendingFooter, setPendingFooter] = useState(false);
+  // Effect: On mobile, delay footer appearance after first selection
+  useEffect(() => {
+    if (!isMobile) {
+      setFooterVisible(!!isReadyToPurchase);
+      setFirstSelectionMade(false);
+      setPendingFooter(false);
+      return;
+    }
+    if (!isReadyToPurchase) {
+      setFooterVisible(false);
+      setFirstSelectionMade(false);
+      setPendingFooter(false);
+      return;
+    }
+    // On mobile, first selection: delay
+    if (isReadyToPurchase && !firstSelectionMade) {
+      setPendingFooter(true);
+      const timeout = setTimeout(() => {
+        setFooterVisible(true);
+        setFirstSelectionMade(true);
+        setPendingFooter(false);
+      }, 400);
+      return () => clearTimeout(timeout);
+    }
+    // On mobile, subsequent selections: show immediately
+    if (isReadyToPurchase && firstSelectionMade) {
+      setFooterVisible(true);
+      setPendingFooter(false);
+    }
+  }, [isReadyToPurchase, isMobile, firstSelectionMade]);
+  // Only render after all hooks
   if (isLoading) {
     return <EsimSkeleton />;
   }
 
   return (
     <div
-      className="w-full max-w-sm mx-auto bg-card rounded-2xl shadow-lg overflow-hidden"
+      className="w-full mx-auto bg-card rounded-2xl shadow-lg overflow-hidden"
       dir="rtl"
       style={{
         fontFamily: '"Segoe UI", "Tahoma", "Helvetica Neue", Arial, sans-serif',
@@ -194,16 +215,69 @@ export function EsimExperienceSelector() {
 
       {/* Destination Selection */}
       <div className="px-4 mb-6">
-        <Combobox
-          options={comboboxOptions}
-          value={
-            countryId ? `country-${countryId}` : tripId ? `trip-${tripId}` : ""
-          }
-          onValueChange={handleDestinationChange}
-          placeholder={countryId || tripId ? "שנה יעד..." : "לאן נוסעים?"}
-          emptyMessage="לא נמצאו תוצאות"
-          className="border-border focus:border-ring focus:ring-ring/20 rtl"
-        />
+        {isMobile ? (
+          <div className="relative">
+            <FuzzyCombobox
+              options={comboboxOptions}
+              value={
+                countryId
+                  ? `country-${countryId}`
+                  : tripId
+                  ? `trip-${tripId}`
+                  : ""
+              }
+              onValueChange={() => {}} // No-op, selection handled by sheet
+              placeholder={countryId || tripId ? "שנה יעד..." : "לאן נוסעים?"}
+              searchPlaceholder="חפש..."
+              emptyMessage="לא נמצאו תוצאות"
+              className="border-border focus:border-ring focus:ring-ring/20 pointer-events-none select-none"
+              disabled
+            />
+            {/* Overlay button to open sheet */}
+            <div
+              className="absolute inset-0 z-10 cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowMobileSheet(true);
+              }}
+            />
+            <Suspense fallback={<div>...</div>}>
+              {showMobileSheet && (
+                <MobileDestinationSheet
+                  options={comboboxOptions}
+                  value={
+                    countryId
+                      ? `country-${countryId}`
+                      : tripId
+                      ? `trip-${tripId}`
+                      : ""
+                  }
+                  onValueChange={(v) => {
+                    handleDestinationChange(v);
+                    setShowMobileSheet(false);
+                  }}
+                  onClose={() => setShowMobileSheet(false)}
+                />
+              )}
+            </Suspense>
+          </div>
+        ) : (
+          <FuzzyCombobox
+            options={comboboxOptions}
+            value={
+              countryId
+                ? `country-${countryId}`
+                : tripId
+                ? `trip-${tripId}`
+                : ""
+            }
+            onValueChange={handleDestinationChange}
+            placeholder={countryId || tripId ? "שנה יעד..." : "לאן נוסעים?"}
+            searchPlaceholder="חפש..."
+            emptyMessage="לא נמצאו תוצאות"
+            className="border-border focus:border-ring focus:ring-ring/20"
+          />
+        )}
       </div>
 
       {/* Duration Selection - Always Visible */}
@@ -221,7 +295,7 @@ export function EsimExperienceSelector() {
                 onValueChange={(value) => setNumOfDays(value[0])}
                 max={30}
                 min={1}
-                className="w-full"
+                className={`w-full ${isMobile ? 'slider-thumb-lg' : ''}`}
                 dir="rtl"
               />
             </div>
@@ -355,21 +429,28 @@ export function EsimExperienceSelector() {
         </div>
       )}
 
-      {/* Purchase Button */}
-      <div className="p-4 border-t bg-muted">
-        <Button
-          className={cn(
-            "w-full h-12 font-medium transition-all duration-200",
-            isReadyToPurchase
-              ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-              : "bg-muted-foreground/20 text-muted-foreground cursor-not-allowed"
-          )}
-          disabled={!isReadyToPurchase}
-          onClick={handlePurchase}
-        >
-          {isReadyToPurchase ? "קנה עכשיו" : "בחר יעד ומשך זמן"}
-        </Button>
-      </div>
+      {/* Animated Purchase Button/Footer */}
+      <AnimatePresence>
+        {footerVisible && (
+          <motion.div
+            key="footer"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ duration: 0.3 }}
+            className="p-4 border-t bg-muted"
+          >
+            <Button
+              className={cn(
+                "w-full h-12 font-medium transition-all duration-200 bg-primary hover:bg-primary/90 text-primary-foreground"
+              )}
+              onClick={handlePurchase}
+            >
+              קנה עכשיו
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

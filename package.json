@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "motion": "^12.23.5",
+    "react-modal-sheet": "^4.4.0"
+  }
+}

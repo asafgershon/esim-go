@@ -3,13 +3,16 @@
 import { cn } from "@/lib/utils";
 import { Card, Input, Label } from "@workspace/ui";
 import { Mail, QrCode, Truck } from "lucide-react";
-import { useState } from "react";
 
-type DeliveryMethod = "qr" | "email";
+interface DeliveryMethodSectionProps {
+  sectionNumber?: number;
+  selectedMethod: "qr" | "email";
+  setSelectedMethod: (method: "qr" | "email") => void;
+  email: string;
+  setEmail: (email: string) => void;
+}
 
-export function DeliveryMethodSection() {
-  const [selectedMethod, setSelectedMethod] = useState<DeliveryMethod>("qr");
-  const [email, setEmail] = useState("");
+export function DeliveryMethodSection({ sectionNumber, selectedMethod, setSelectedMethod, email, setEmail }: DeliveryMethodSectionProps) {
 
   const deliveryOptions = [
     {
@@ -29,8 +32,13 @@ export function DeliveryMethodSection() {
   ];
 
   return (
-    <Card className="p-6" dir="rtl">
+    <Card className="p-6 relative" dir="rtl">
       <div className="flex items-center gap-2 mb-4">
+        {sectionNumber && (
+          <div className="bg-primary/80 text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
+            {sectionNumber}
+          </div>
+        )}
         <Truck className="h-5 w-5 text-primary" />
         <h2 className="text-xl font-semibold">שיטת משלוח</h2>
       </div>

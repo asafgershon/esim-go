@@ -11,15 +11,12 @@ export default function CheckoutPage() {
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-primary rounded-lg p-2">
-              <span className="text-xl font-bold text-primary-foreground">
-                🌍
-              </span>
-            </div>
-            <span className="text-xl font-bold text-foreground">Hiilo</span>
+          <div className="flex items-center">
+            <span className="text-2xl font-bold">
+              <span className="text-primary font-extrabold">Hiii</span>
+              <span className="text-foreground font-medium">lo</span>
+            </span>
           </div>
-          <div className="text-sm text-muted-foreground">תשלום</div>
         </div>
       </header>
 

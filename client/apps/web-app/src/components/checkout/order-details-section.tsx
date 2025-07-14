@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { Card } from "@workspace/ui";
 import { useCountries, type EnhancedCountry } from "@/hooks/useCountries";
 import { useTrips, type EnhancedTrip } from "@/hooks/useTrips";
 import { usePricing } from "@/hooks/usePricing";
@@ -13,6 +13,7 @@ interface OrderDetailsSectionProps {
   countryId: string | null;
   tripId: string | null;
   totalPrice: number;
+  sectionNumber?: number;
 }
 
 export function OrderDetailsSection({
@@ -20,6 +21,7 @@ export function OrderDetailsSection({
   countryId,
   tripId,
   totalPrice,
+  sectionNumber,
 }: OrderDetailsSectionProps) {
   const { countries } = useCountries();
   const { trips } = useTrips();
@@ -40,7 +42,14 @@ export function OrderDetailsSection({
 
   return (
     <Card className="p-6" dir="rtl">
-      <h2 className="text-xl font-semibold mb-4">פרטי הזמנה</h2>
+      <div className="flex items-center gap-3 mb-4">
+        {sectionNumber && (
+          <div className="bg-primary/80 text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
+            {sectionNumber}
+          </div>
+        )}
+        <h2 className="text-xl font-semibold">פרטי הזמנה</h2>
+      </div>
       
       {selectedDestination && (
         <div className="space-y-4">
