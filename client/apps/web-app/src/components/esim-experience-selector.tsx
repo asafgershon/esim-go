@@ -2,8 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Combobox } from "@/components/ui/combobox";
-import { SliderWithValue } from "@/components/ui/slider";
+import { Combobox, SliderWithValue } from "@workspace/ui";
 import type { CountryISOCode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Calendar, Info } from "lucide-react";

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import { User as UserIcon } from "lucide-react";
 
 export default function Home() {

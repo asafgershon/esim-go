@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label, Input, Card } from "@workspace/ui";
 import { CreditCard, Lock } from "lucide-react";
 
 export function PaymentSection() {
@@ -13,16 +11,16 @@ export function PaymentSection() {
 
   const formatCardNumber = (value: string) => {
     // Remove all non-digit characters
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
     // Add spaces every 4 digits
     const matches = v.match(/\d{4,16}/g);
-    const match = matches && matches[0] || '';
+    const match = (matches && matches[0]) || "";
     const parts = [];
     for (let i = 0, len = match.length; i < len; i += 4) {
       parts.push(match.substring(i, i + 4));
     }
     if (parts.length) {
-      return parts.join(' ');
+      return parts.join(" ");
     } else {
       return v;
     }
@@ -30,10 +28,10 @@ export function PaymentSection() {
 
   const formatExpiry = (value: string) => {
     // Remove all non-digit characters
-    const v = value.replace(/\D/g, '');
+    const v = value.replace(/\D/g, "");
     // Add slash after 2 digits
     if (v.length >= 2) {
-      return v.substring(0, 2) + '/' + v.substring(2, 4);
+      return v.substring(0, 2) + "/" + v.substring(2, 4);
     }
     return v;
   };
@@ -49,7 +47,7 @@ export function PaymentSection() {
   };
 
   const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').substring(0, 4);
+    const value = e.target.value.replace(/\D/g, "").substring(0, 4);
     setCvv(value);
   };
 
@@ -59,7 +57,7 @@ export function PaymentSection() {
         <CreditCard className="h-5 w-5 text-primary" />
         <h2 className="text-xl font-semibold">פרטי תשלום</h2>
       </div>
-      
+
       <div className="space-y-4">
         {/* Card Number */}
         <div className="space-y-2">
@@ -91,7 +89,7 @@ export function PaymentSection() {
               dir="ltr"
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="cvv">CVV</Label>
             <Input
@@ -115,4 +113,4 @@ export function PaymentSection() {
       </div>
     </Card>
   );
-} 
+}

@@ -1,6 +1,5 @@
 @import "tailwindcss";
-@source "../components";
-@source "../../../apps/dashboard/src";
+
 
 @layer base {
   :root {

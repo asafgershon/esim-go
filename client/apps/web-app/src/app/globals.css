@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../../../../packages/ui/src/styles/globals.css";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -81,37 +82,41 @@
 
 .dark {
   /* Custom Dark Theme with Deep Space Blue Palette */
-  --background: oklch(0.18 0.06 264);        /* Deep Space Blue #1C1C3A */
-  --foreground: oklch(0.96 0.02 264);        /* Ghost White #F0F2FF */
-  --card: oklch(0.24 0.06 264);              /* Midnight Blue #2A2A4E */
-  --card-foreground: oklch(0.96 0.02 264);   /* Ghost White #F0F2FF */
-  --popover: oklch(0.24 0.06 264);           /* Midnight Blue #2A2A4E */
+  --background: oklch(0.18 0.06 264); /* Deep Space Blue #1C1C3A */
+  --foreground: oklch(0.96 0.02 264); /* Ghost White #F0F2FF */
+  --card: oklch(0.24 0.06 264); /* Midnight Blue #2A2A4E */
+  --card-foreground: oklch(0.96 0.02 264); /* Ghost White #F0F2FF */
+  --popover: oklch(0.24 0.06 264); /* Midnight Blue #2A2A4E */
   --popover-foreground: oklch(0.96 0.02 264); /* Ghost White #F0F2FF */
-  --primary: oklch(0.68 0.18 264);           /* Lavender Blue #7B8CDE */
+  --primary: oklch(0.68 0.18 264); /* Lavender Blue #7B8CDE */
   --primary-foreground: oklch(0.18 0.06 264); /* Deep Space Blue #1C1C3A */
-  --secondary: oklch(0.24 0.06 264);         /* Midnight Blue #2A2A4E */
+  --secondary: oklch(0.24 0.06 264); /* Midnight Blue #2A2A4E */
   --secondary-foreground: oklch(0.96 0.02 264); /* Ghost White #F0F2FF */
-  --muted: oklch(0.24 0.06 264);             /* Midnight Blue #2A2A4E */
-  --muted-foreground: oklch(0.58 0.04 264);  /* Cool Gray #8A8AA4 */
-  --accent: oklch(0.88 0.12 180);            /* Minty Cyan #B3F6E8 */
+  --muted: oklch(0.24 0.06 264); /* Midnight Blue #2A2A4E */
+  --muted-foreground: oklch(0.58 0.04 264); /* Cool Gray #8A8AA4 */
+  --accent: oklch(0.88 0.12 180); /* Minty Cyan #B3F6E8 */
   --accent-foreground: oklch(0.18 0.06 264); /* Deep Space Blue #1C1C3A */
-  --destructive: oklch(0.65 0.22 25);        /* Red for destructive actions */
-  --border: oklch(0.35 0.06 264);            /* Slightly lighter than card */
-  --input: oklch(0.35 0.06 264);             /* Slightly lighter than card */
-  --ring: oklch(0.78 0.15 264);              /* Periwinkle #A8B6F0 */
-  --chart-1: oklch(0.68 0.18 264);           /* Lavender Blue */
-  --chart-2: oklch(0.78 0.15 264);           /* Periwinkle */
-  --chart-3: oklch(0.88 0.12 180);           /* Minty Cyan */
-  --chart-4: oklch(0.58 0.04 264);           /* Cool Gray */
-  --chart-5: oklch(0.96 0.02 264);           /* Ghost White */
-  --sidebar: oklch(0.24 0.06 264);           /* Midnight Blue #2A2A4E */
+  --destructive: oklch(0.65 0.22 25); /* Red for destructive actions */
+  --border: oklch(0.35 0.06 264); /* Slightly lighter than card */
+  --input: oklch(0.35 0.06 264); /* Slightly lighter than card */
+  --ring: oklch(0.78 0.15 264); /* Periwinkle #A8B6F0 */
+  --chart-1: oklch(0.68 0.18 264); /* Lavender Blue */
+  --chart-2: oklch(0.78 0.15 264); /* Periwinkle */
+  --chart-3: oklch(0.88 0.12 180); /* Minty Cyan */
+  --chart-4: oklch(0.58 0.04 264); /* Cool Gray */
+  --chart-5: oklch(0.96 0.02 264); /* Ghost White */
+  --sidebar: oklch(0.24 0.06 264); /* Midnight Blue #2A2A4E */
   --sidebar-foreground: oklch(0.96 0.02 264); /* Ghost White #F0F2FF */
-  --sidebar-primary: oklch(0.68 0.18 264);   /* Lavender Blue #7B8CDE */
-  --sidebar-primary-foreground: oklch(0.18 0.06 264); /* Deep Space Blue #1C1C3A */
-  --sidebar-accent: oklch(0.88 0.12 180);    /* Minty Cyan #B3F6E8 */
-  --sidebar-accent-foreground: oklch(0.18 0.06 264); /* Deep Space Blue #1C1C3A */
-  --sidebar-border: oklch(0.35 0.06 264);    /* Slightly lighter than card */
-  --sidebar-ring: oklch(0.78 0.15 264);      /* Periwinkle #A8B6F0 */
+  --sidebar-primary: oklch(0.68 0.18 264); /* Lavender Blue #7B8CDE */
+  --sidebar-primary-foreground: oklch(
+    0.18 0.06 264
+  ); /* Deep Space Blue #1C1C3A */
+  --sidebar-accent: oklch(0.88 0.12 180); /* Minty Cyan #B3F6E8 */
+  --sidebar-accent-foreground: oklch(
+    0.18 0.06 264
+  ); /* Deep Space Blue #1C1C3A */
+  --sidebar-border: oklch(0.35 0.06 264); /* Slightly lighter than card */
+  --sidebar-ring: oklch(0.78 0.15 264); /* Periwinkle #A8B6F0 */
 }
 
 @layer base {
