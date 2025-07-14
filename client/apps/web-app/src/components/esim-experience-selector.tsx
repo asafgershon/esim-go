@@ -132,7 +132,7 @@ export function EsimExperienceSelector() {
   const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [footerVisible, setFooterVisible] = useState(false);
   const [firstSelectionMade, setFirstSelectionMade] = useState(false);
-  const [pendingFooter, setPendingFooter] = useState(false);
+  const [, setPendingFooter] = useState(false);
   // Effect: On mobile, delay footer appearance after first selection
   useEffect(() => {
     if (!isMobile) {
