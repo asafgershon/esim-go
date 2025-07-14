@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { QrCode, Mail, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Card, Input, Label } from "@workspace/ui";
+import { Mail, QrCode, Truck } from "lucide-react";
+import { useState } from "react";
 
 type DeliveryMethod = "qr" | "email";
 
