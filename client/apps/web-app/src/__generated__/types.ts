@@ -12,7 +12,9 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
+  DateTime: { input: any; output: any; }
   ISOCountryCode: { input: any; output: any; }
+  JSON: { input: any; output: any; }
 };
 
 export type ActivateEsimResponse = {
@@ -31,6 +33,27 @@ export enum BundleState {
   Suspended = 'SUSPENDED'
 }
 
+export type CheckoutSession = {
+  __typename?: 'CheckoutSession';
+  createdAt: Scalars['DateTime']['output'];
+  expiresAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  isComplete: Scalars['Boolean']['output'];
+  metadata?: Maybe<Scalars['JSON']['output']>;
+  paymentStatus?: Maybe<Scalars['String']['output']>;
+  planSnapshot?: Maybe<Scalars['JSON']['output']>;
+  pricing?: Maybe<Scalars['JSON']['output']>;
+  steps?: Maybe<Scalars['JSON']['output']>;
+  timeRemaining?: Maybe<Scalars['Int']['output']>;
+  token: Scalars['String']['output'];
+};
+
+export enum CheckoutStepType {
+  Authentication = 'AUTHENTICATION',
+  Delivery = 'DELIVERY',
+  Payment = 'PAYMENT'
+}
+
 export type Country = {
   __typename?: 'Country';
   flag?: Maybe<Scalars['String']['output']>;
@@ -38,6 +61,17 @@ export type Country = {
   name: Scalars['String']['output'];
   nameHebrew: Scalars['String']['output'];
   region: Scalars['String']['output'];
+};
+
+export type CreateCheckoutSessionInput = {
+  planId: Scalars['ID']['input'];
+};
+
+export type CreateCheckoutSessionResponse = {
+  __typename?: 'CreateCheckoutSessionResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  session?: Maybe<CheckoutSession>;
+  success: Scalars['Boolean']['output'];
 };
 
 export type DataPlan = {
@@ -125,10 +159,19 @@ export type EsimUsage = {
   totalUsed: Scalars['Float']['output'];
 };
 
+export type GetCheckoutSessionResponse = {
+  __typename?: 'GetCheckoutSessionResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  session?: Maybe<CheckoutSession>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   activateESIM?: Maybe<ActivateEsimResponse>;
   cancelESIM?: Maybe<EsimActionResponse>;
+  createCheckoutSession: CreateCheckoutSessionResponse;
+  processCheckoutPayment: ProcessCheckoutPaymentResponse;
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
   restoreESIM?: Maybe<EsimActionResponse>;
   sendPhoneOTP?: Maybe<SendOtpResponse>;
@@ -137,6 +180,7 @@ export type Mutation = {
   signInWithGoogle?: Maybe<SignInResponse>;
   signUp?: Maybe<SignUpResponse>;
   suspendESIM?: Maybe<EsimActionResponse>;
+  updateCheckoutStep: UpdateCheckoutStepResponse;
   updateESIMReference?: Maybe<EsimActionResponse>;
   verifyPhoneOTP?: Maybe<SignInResponse>;
 };
@@ -149,6 +193,16 @@ export type MutationActivateEsimArgs = {
 
 export type MutationCancelEsimArgs = {
   esimId: Scalars['ID']['input'];
+};
+
+
+export type MutationCreateCheckoutSessionArgs = {
+  input: CreateCheckoutSessionInput;
+};
+
+
+export type MutationProcessCheckoutPaymentArgs = {
+  input: ProcessCheckoutPaymentInput;
 };
 
 
@@ -193,6 +247,11 @@ export type MutationSuspendEsimArgs = {
 };
 
 
+export type MutationUpdateCheckoutStepArgs = {
+  input: UpdateCheckoutStepInput;
+};
+
+
 export type MutationUpdateEsimReferenceArgs = {
   esimId: Scalars['ID']['input'];
   reference: Scalars['String']['input'];
@@ -230,6 +289,22 @@ export enum OrderStatus {
   Refunded = 'REFUNDED'
 }
 
+export type ProcessCheckoutPaymentInput = {
+  paymentMethodId: Scalars['String']['input'];
+  savePaymentMethod?: InputMaybe<Scalars['Boolean']['input']>;
+  token: Scalars['String']['input'];
+};
+
+export type ProcessCheckoutPaymentResponse = {
+  __typename?: 'ProcessCheckoutPaymentResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  orderId?: Maybe<Scalars['ID']['output']>;
+  paymentIntentId?: Maybe<Scalars['String']['output']>;
+  session?: Maybe<CheckoutSession>;
+  success: Scalars['Boolean']['output'];
+  webhookProcessing?: Maybe<Scalars['Boolean']['output']>;
+};
+
 export type PurchaseEsimInput = {
   autoActivate?: InputMaybe<Scalars['Boolean']['input']>;
   customerReference?: InputMaybe<Scalars['String']['input']>;
@@ -250,6 +325,7 @@ export type Query = {
   dataPlan?: Maybe<DataPlan>;
   dataPlans: Array<DataPlan>;
   esimDetails?: Maybe<Esim>;
+  getCheckoutSession: GetCheckoutSessionResponse;
   hello: Scalars['String']['output'];
   me?: Maybe<User>;
   myESIMs: Array<Esim>;
@@ -278,6 +354,11 @@ export type QueryDataPlansArgs = {
 
 export type QueryEsimDetailsArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryGetCheckoutSessionArgs = {
+  token: Scalars['String']['input'];
 };
 
 
@@ -353,6 +434,20 @@ export type Trip = {
   regionId: Scalars['String']['output'];
 };
 
+export type UpdateCheckoutStepInput = {
+  data: Scalars['JSON']['input'];
+  stepType: CheckoutStepType;
+  token: Scalars['String']['input'];
+};
+
+export type UpdateCheckoutStepResponse = {
+  __typename?: 'UpdateCheckoutStepResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  nextStep?: Maybe<CheckoutStepType>;
+  session?: Maybe<CheckoutSession>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type User = {
   __typename?: 'User';
   createdAt: Scalars['String']['output'];
@@ -370,6 +465,41 @@ export type VerifyOtpInput = {
   otp: Scalars['String']['input'];
   phoneNumber: Scalars['String']['input'];
 };
+
+export type CreateCheckoutSessionMutationVariables = Exact<{
+  input: CreateCheckoutSessionInput;
+}>;
+
+
+export type CreateCheckoutSessionMutation = { __typename?: 'Mutation', createCheckoutSession: { __typename?: 'CreateCheckoutSessionResponse', success: boolean, error?: string | null, session?: { __typename?: 'CheckoutSession', id: string, token: string, expiresAt: any, isComplete: boolean, timeRemaining?: number | null, planSnapshot?: any | null, pricing?: any | null, steps?: any | null, paymentStatus?: string | null, metadata?: any | null } | null } };
+
+export type UpdateCheckoutStepMutationVariables = Exact<{
+  input: UpdateCheckoutStepInput;
+}>;
+
+
+export type UpdateCheckoutStepMutation = { __typename?: 'Mutation', updateCheckoutStep: { __typename?: 'UpdateCheckoutStepResponse', success: boolean, nextStep?: CheckoutStepType | null, error?: string | null, session?: { __typename?: 'CheckoutSession', id: string, isComplete: boolean, steps?: any | null, timeRemaining?: number | null } | null } };
+
+export type ProcessCheckoutPaymentMutationVariables = Exact<{
+  input: ProcessCheckoutPaymentInput;
+}>;
+
+
+export type ProcessCheckoutPaymentMutation = { __typename?: 'Mutation', processCheckoutPayment: { __typename?: 'ProcessCheckoutPaymentResponse', success: boolean, orderId?: string | null, webhookProcessing?: boolean | null, error?: string | null, session?: { __typename?: 'CheckoutSession', isComplete: boolean, paymentStatus?: string | null } | null } };
+
+export type GetCheckoutSessionQueryVariables = Exact<{
+  token: Scalars['String']['input'];
+}>;
+
+
+export type GetCheckoutSessionQuery = { __typename?: 'Query', getCheckoutSession: { __typename?: 'GetCheckoutSessionResponse', success: boolean, error?: string | null, session?: { __typename?: 'CheckoutSession', id: string, isComplete: boolean, paymentStatus?: string | null, timeRemaining?: number | null, steps?: any | null, metadata?: any | null, planSnapshot?: any | null, pricing?: any | null } | null } };
+
+export type OrderDetailsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type OrderDetailsQuery = { __typename?: 'Query', orderDetails?: { __typename?: 'Order', id: string, reference: string, status: OrderStatus, totalPrice: number, esims: Array<{ __typename?: 'ESIM', id: string, iccid: string, qrCode?: string | null, status: EsimStatus }> } | null };
 
 export type SignInMutationVariables = Exact<{
   input: SignInInput;
@@ -412,6 +542,11 @@ export type VerifyPhoneOtpMutationVariables = Exact<{
 
 
 export type VerifyPhoneOtpMutation = { __typename?: 'Mutation', verifyPhoneOTP?: { __typename?: 'SignInResponse', success: boolean, error?: string | null, sessionToken?: string | null, refreshToken?: string | null, user?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, createdAt: string, updatedAt: string } | null } | null };
+
+export type MeQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MeQuery = { __typename?: 'Query', me?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, createdAt: string, updatedAt: string } | null };
 
 export type GetCountriesQueryVariables = Exact<{ [key: string]: never; }>;
 

@@ -14,23 +14,35 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\nmutation CreateCheckoutSession($input: CreateCheckoutSessionInput!) {\n  createCheckoutSession(input: $input) {\n    success\n    session {\n      id\n      token\n      expiresAt\n      isComplete\n      timeRemaining\n      planSnapshot\n      pricing\n      steps\n      paymentStatus\n      metadata\n    }\n    error\n  }\n}": typeof types.CreateCheckoutSessionDocument,
+    "\nmutation UpdateCheckoutStep($input: UpdateCheckoutStepInput!) {\n  updateCheckoutStep(input: $input) {\n    success\n    session {\n      id\n      isComplete\n      steps\n      timeRemaining\n    }\n    nextStep\n    error\n  }\n}": typeof types.UpdateCheckoutStepDocument,
+    "\nmutation ProcessCheckoutPayment($input: ProcessCheckoutPaymentInput!) {\n  processCheckoutPayment(input: $input) {\n    success\n    orderId\n    session {\n      isComplete\n      paymentStatus\n    }\n    webhookProcessing\n    error\n  }\n}": typeof types.ProcessCheckoutPaymentDocument,
+    "\nquery GetCheckoutSession($token: String!) {\n  getCheckoutSession(token: $token) {\n    success\n    session {\n      id\n      isComplete\n      paymentStatus\n      timeRemaining\n      steps\n      metadata\n      planSnapshot\n      pricing\n    }\n    error\n  }\n}": typeof types.GetCheckoutSessionDocument,
+    "\nquery OrderDetails($id: ID!) {\n  orderDetails(id: $id) {\n    id\n    reference\n    status\n    totalPrice\n    esims {\n      id\n      iccid\n      qrCode\n      status\n    }\n  }\n}": typeof types.OrderDetailsDocument,
     "\n  mutation SignIn($input: SignInInput!) {\n    signIn(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": typeof types.SignInDocument,
     "\n  mutation SignUp($input: SignUpInput!) {\n    signUp(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": typeof types.SignUpDocument,
     "\n  mutation SignInWithApple($input: SocialSignInInput!) {\n    signInWithApple(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": typeof types.SignInWithAppleDocument,
     "\n  mutation SignInWithGoogle($input: SocialSignInInput!) {\n    signInWithGoogle(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": typeof types.SignInWithGoogleDocument,
     "\n  mutation SendPhoneOTP($phoneNumber: String!) {\n    sendPhoneOTP(phoneNumber: $phoneNumber) {\n      success\n      error\n      messageId\n    }\n  }\n": typeof types.SendPhoneOtpDocument,
     "\n  mutation VerifyPhoneOTP($input: VerifyOTPInput!) {\n    verifyPhoneOTP(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": typeof types.VerifyPhoneOtpDocument,
+    "\n  query Me {\n    me {\n      id\n      email\n      firstName\n      lastName\n      phoneNumber\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.MeDocument,
     "\n  query GetCountries {\n    countries {\n      iso\n      name\n      nameHebrew\n      region\n      flag\n    }\n  }\n": typeof types.GetCountriesDocument,
     "\n  query GetTrips {\n    trips {\n      name\n      description\n      regionId\n      countryIds\n    }\n  }\n": typeof types.GetTripsDocument,
     "\n  query CalculatePrice($numOfDays: Int!, $regionId: String!, $countryId: String!) {\n    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId)\n  }\n": typeof types.CalculatePriceDocument,
 };
 const documents: Documents = {
+    "\nmutation CreateCheckoutSession($input: CreateCheckoutSessionInput!) {\n  createCheckoutSession(input: $input) {\n    success\n    session {\n      id\n      token\n      expiresAt\n      isComplete\n      timeRemaining\n      planSnapshot\n      pricing\n      steps\n      paymentStatus\n      metadata\n    }\n    error\n  }\n}": types.CreateCheckoutSessionDocument,
+    "\nmutation UpdateCheckoutStep($input: UpdateCheckoutStepInput!) {\n  updateCheckoutStep(input: $input) {\n    success\n    session {\n      id\n      isComplete\n      steps\n      timeRemaining\n    }\n    nextStep\n    error\n  }\n}": types.UpdateCheckoutStepDocument,
+    "\nmutation ProcessCheckoutPayment($input: ProcessCheckoutPaymentInput!) {\n  processCheckoutPayment(input: $input) {\n    success\n    orderId\n    session {\n      isComplete\n      paymentStatus\n    }\n    webhookProcessing\n    error\n  }\n}": types.ProcessCheckoutPaymentDocument,
+    "\nquery GetCheckoutSession($token: String!) {\n  getCheckoutSession(token: $token) {\n    success\n    session {\n      id\n      isComplete\n      paymentStatus\n      timeRemaining\n      steps\n      metadata\n      planSnapshot\n      pricing\n    }\n    error\n  }\n}": types.GetCheckoutSessionDocument,
+    "\nquery OrderDetails($id: ID!) {\n  orderDetails(id: $id) {\n    id\n    reference\n    status\n    totalPrice\n    esims {\n      id\n      iccid\n      qrCode\n      status\n    }\n  }\n}": types.OrderDetailsDocument,
     "\n  mutation SignIn($input: SignInInput!) {\n    signIn(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": types.SignInDocument,
     "\n  mutation SignUp($input: SignUpInput!) {\n    signUp(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": types.SignUpDocument,
     "\n  mutation SignInWithApple($input: SocialSignInInput!) {\n    signInWithApple(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": types.SignInWithAppleDocument,
     "\n  mutation SignInWithGoogle($input: SocialSignInInput!) {\n    signInWithGoogle(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": types.SignInWithGoogleDocument,
     "\n  mutation SendPhoneOTP($phoneNumber: String!) {\n    sendPhoneOTP(phoneNumber: $phoneNumber) {\n      success\n      error\n      messageId\n    }\n  }\n": types.SendPhoneOtpDocument,
     "\n  mutation VerifyPhoneOTP($input: VerifyOTPInput!) {\n    verifyPhoneOTP(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n": types.VerifyPhoneOtpDocument,
+    "\n  query Me {\n    me {\n      id\n      email\n      firstName\n      lastName\n      phoneNumber\n      createdAt\n      updatedAt\n    }\n  }\n": types.MeDocument,
     "\n  query GetCountries {\n    countries {\n      iso\n      name\n      nameHebrew\n      region\n      flag\n    }\n  }\n": types.GetCountriesDocument,
     "\n  query GetTrips {\n    trips {\n      name\n      description\n      regionId\n      countryIds\n    }\n  }\n": types.GetTripsDocument,
     "\n  query CalculatePrice($numOfDays: Int!, $regionId: String!, $countryId: String!) {\n    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId)\n  }\n": types.CalculatePriceDocument,
@@ -50,6 +62,26 @@ const documents: Documents = {
  */
 export function gql(source: string): unknown;
 
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\nmutation CreateCheckoutSession($input: CreateCheckoutSessionInput!) {\n  createCheckoutSession(input: $input) {\n    success\n    session {\n      id\n      token\n      expiresAt\n      isComplete\n      timeRemaining\n      planSnapshot\n      pricing\n      steps\n      paymentStatus\n      metadata\n    }\n    error\n  }\n}"): (typeof documents)["\nmutation CreateCheckoutSession($input: CreateCheckoutSessionInput!) {\n  createCheckoutSession(input: $input) {\n    success\n    session {\n      id\n      token\n      expiresAt\n      isComplete\n      timeRemaining\n      planSnapshot\n      pricing\n      steps\n      paymentStatus\n      metadata\n    }\n    error\n  }\n}"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\nmutation UpdateCheckoutStep($input: UpdateCheckoutStepInput!) {\n  updateCheckoutStep(input: $input) {\n    success\n    session {\n      id\n      isComplete\n      steps\n      timeRemaining\n    }\n    nextStep\n    error\n  }\n}"): (typeof documents)["\nmutation UpdateCheckoutStep($input: UpdateCheckoutStepInput!) {\n  updateCheckoutStep(input: $input) {\n    success\n    session {\n      id\n      isComplete\n      steps\n      timeRemaining\n    }\n    nextStep\n    error\n  }\n}"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\nmutation ProcessCheckoutPayment($input: ProcessCheckoutPaymentInput!) {\n  processCheckoutPayment(input: $input) {\n    success\n    orderId\n    session {\n      isComplete\n      paymentStatus\n    }\n    webhookProcessing\n    error\n  }\n}"): (typeof documents)["\nmutation ProcessCheckoutPayment($input: ProcessCheckoutPaymentInput!) {\n  processCheckoutPayment(input: $input) {\n    success\n    orderId\n    session {\n      isComplete\n      paymentStatus\n    }\n    webhookProcessing\n    error\n  }\n}"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\nquery GetCheckoutSession($token: String!) {\n  getCheckoutSession(token: $token) {\n    success\n    session {\n      id\n      isComplete\n      paymentStatus\n      timeRemaining\n      steps\n      metadata\n      planSnapshot\n      pricing\n    }\n    error\n  }\n}"): (typeof documents)["\nquery GetCheckoutSession($token: String!) {\n  getCheckoutSession(token: $token) {\n    success\n    session {\n      id\n      isComplete\n      paymentStatus\n      timeRemaining\n      steps\n      metadata\n      planSnapshot\n      pricing\n    }\n    error\n  }\n}"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\nquery OrderDetails($id: ID!) {\n  orderDetails(id: $id) {\n    id\n    reference\n    status\n    totalPrice\n    esims {\n      id\n      iccid\n      qrCode\n      status\n    }\n  }\n}"): (typeof documents)["\nquery OrderDetails($id: ID!) {\n  orderDetails(id: $id) {\n    id\n    reference\n    status\n    totalPrice\n    esims {\n      id\n      iccid\n      qrCode\n      status\n    }\n  }\n}"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -74,6 +106,10 @@ export function gql(source: "\n  mutation SendPhoneOTP($phoneNumber: String!) {\
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  mutation VerifyPhoneOTP($input: VerifyOTPInput!) {\n    verifyPhoneOTP(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n"): (typeof documents)["\n  mutation VerifyPhoneOTP($input: VerifyOTPInput!) {\n    verifyPhoneOTP(input: $input) {\n      success\n      error\n      user {\n        id\n        email\n        firstName\n        lastName\n        phoneNumber\n        createdAt\n        updatedAt\n      }\n      sessionToken\n      refreshToken\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query Me {\n    me {\n      id\n      email\n      firstName\n      lastName\n      phoneNumber\n      createdAt\n      updatedAt\n    }\n  }\n"): (typeof documents)["\n  query Me {\n    me {\n      id\n      email\n      firstName\n      lastName\n      phoneNumber\n      createdAt\n      updatedAt\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
