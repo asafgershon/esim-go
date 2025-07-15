@@ -6,8 +6,10 @@ import {
   verifyPhoneOTP,
 } from "./context/supabase-auth";
 import type { Context } from "./context/types";
-import type { Resolvers } from "./types";
+import type { DataPlan, Order, Resolvers } from "./types";
 import { esimResolvers } from "./resolvers/esim-resolvers";
+import { checkoutResolvers } from "./resolvers/checkout-resolvers";
+import { GraphQLError } from "graphql";
 
 export const resolvers: Resolvers = {
   Query: {
@@ -32,6 +34,28 @@ export const resolvers: Resolvers = {
       // TODO: Implement actual eSIM details fetching
       return null;
     },
+    orderDetails: async (_, { id }, context: Context) => {
+      const { data, error } = await supabaseAdmin
+        .from("esim_orders")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching order details:", error);
+        throw new Error("Failed to fetch order details");
+      }
+
+      const camelCaseData = Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [
+          key.replace(/([-_][a-z])/gi, (match) =>
+            match.toUpperCase().replace("-", "").replace("_", "")
+          ),
+          value,
+        ])
+      );
+      return camelCaseData as Order;
+    },
     countries: async (_, __, context: Context) => {
       const countries = await context.dataSources.countries.getCountries();
       return countries.map((country) => ({
@@ -47,16 +71,56 @@ export const resolvers: Resolvers = {
       return regions.map((region) => ({
         name: region.name,
         description: `${region.nameHebrew} - ${region.countryIds.length} countries`,
-        regionId: region.name.toLowerCase().replace(/\s+/g, '-'),
+        regionId: region.name.toLowerCase().replace(/\s+/g, "-"),
         countryIds: region.countryIds,
         countries: [], // Placeholder - will be resolved by field resolver
       }));
     },
-    calculatePrice: async (_, { numOfDays, regionId, countryId }, context: Context) => {
-      return context.services.pricing.calculatePrice(numOfDays, regionId, countryId, context.dataSources.catalogue);
+    calculatePrice: async (
+      _,
+      { numOfDays, regionId, countryId },
+      context: Context
+    ) => {
+      return context.services.pricing.calculatePrice(
+        numOfDays,
+        regionId,
+        countryId,
+        context.dataSources.catalogue
+      );
+    },
+    ...checkoutResolvers.Query!,
+  },
+  Order: {
+    esims: async (parent, _, context: Context) => {
+      const { data, error } = await supabaseAdmin
+        .from("esims")
+        .select("*")
+        .eq("order_id", parent.id);
+      return data || [];
+    },
+    dataPlan: async (parent, _, context: Context) => {
+      const dataPlanId = parent.dataPlan?.id;
+
+      if (!dataPlanId) {
+        throw new GraphQLError("Data plan ID not found", {
+          extensions: {
+            code: "DATA_PLAN_ID_NOT_FOUND",
+          },
+        });
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("data_plans")
+        .select("*")
+        .eq("id", parent.dataPlan.id);
+
+      if (!data) {
+        throw new Error("Data plan not found");
+      }
+
+      return data[0] as unknown as DataPlan;
     },
   },
-
   // Field resolvers for Trip type
   Trip: {
     countries: async (parent, _, context: Context) => {
@@ -64,27 +128,28 @@ export const resolvers: Resolvers = {
       if (!parent.countryIds || parent.countryIds.length === 0) {
         return [];
       }
-      
+
       // Return empty array to prevent N+1 queries during initial load
       // Frontend can fetch countries separately if needed
       return [];
-      
+
       // TODO: Implement DataLoader pattern for batching country requests
-      // const countries = await context.dataSources.countries.getCountries({
-      //   isos: parent.countryIds
-      // });
-      // 
-      // return countries.map((country) => ({
-      //   iso: country.iso,
-      //   name: country.country,
-      //   nameHebrew: country.hebrewName,
-      //   region: country.region,
-      //   flag: country.flag,
-      // }));
+      const countries = await context.dataSources.countries.getCountries({
+        isos: parent.countryIds
+      });
+      
+      return countries.map((country) => ({
+        iso: country.iso,
+        name: country.country,
+        nameHebrew: country.hebrewName,
+        region: country.region,
+        flag: country.flag,
+      }));
     },
   },
 
   Mutation: {
+    ...checkoutResolvers.Mutation!,
     signUp: async (_, { input }) => {
       try {
         const { data, error } = await supabaseAdmin.auth.admin.createUser({

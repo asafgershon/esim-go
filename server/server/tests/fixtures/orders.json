@@ -1,0 +1,59 @@
+{
+  "completed_order": {
+    "id": "order_123",
+    "user_id": "user_123",
+    "reference": "order_2024_001",
+    "status": "COMPLETED",
+    "plan_data": {
+      "id": "europe-30gb-30days",
+      "name": "Europe 30GB - 30 Days",
+      "duration": 30,
+      "price": 29.99,
+      "currency": "USD",
+      "countries": ["DE", "FR", "IT", "ES", "NL"]
+    },
+    "quantity": 1,
+    "total_price": 29.99,
+    "esim_go_order_ref": "esimg_order_abc123",
+    "created_at": "2024-01-01T12:00:00Z",
+    "updated_at": "2024-01-01T12:10:00Z"
+  },
+  "processing_order": {
+    "id": "order_456",
+    "user_id": "user_456",
+    "reference": "order_2024_002",
+    "status": "PROCESSING",
+    "plan_data": {
+      "id": "asia-20gb-15days",
+      "name": "Asia 20GB - 15 Days",
+      "duration": 15,
+      "price": 19.99,
+      "currency": "USD",
+      "countries": ["JP", "KR", "SG", "TH"]
+    },
+    "quantity": 1,
+    "total_price": 19.99,
+    "esim_go_order_ref": "esimg_order_def456",
+    "created_at": "2024-01-01T13:00:00Z",
+    "updated_at": "2024-01-01T13:00:00Z"
+  },
+  "failed_order": {
+    "id": "order_789",
+    "user_id": "user_789",
+    "reference": "order_2024_003",
+    "status": "FAILED",
+    "plan_data": {
+      "id": "usa-unlimited-7days",
+      "name": "USA Unlimited - 7 Days",
+      "duration": 7,
+      "price": 14.99,
+      "currency": "USD",
+      "countries": ["US"]
+    },
+    "quantity": 1,
+    "total_price": 14.99,
+    "esim_go_order_ref": "esimg_order_ghi789",
+    "created_at": "2024-01-01T14:00:00Z",
+    "updated_at": "2024-01-01T14:05:00Z"
+  }
+}

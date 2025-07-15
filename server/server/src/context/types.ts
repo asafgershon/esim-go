@@ -1,7 +1,4 @@
 import type { User } from "../types";
-// TODO: Import eSIM Go specific repositories when implemented
-// import * as usersRepository from "./repositories/users.repository";
-// import * as esimRepository from "./repositories/esim.repository";
 import type { Redis } from "ioredis";
 import type { RedisPubSub } from "graphql-redis-subscriptions";
 import type { SupabaseAuthContext } from "./supabase-auth";
@@ -14,6 +11,11 @@ import type {
   InventoryDataSource,
 } from "../datasources/esim-go";
 import { PricingService } from "../services";
+import {
+  CheckoutSessionRepository,
+  OrderRepository,
+  ESIMRepository,
+} from "../repositories";
 
 export type Context = {
   auth: SupabaseAuthContext;
@@ -24,8 +26,9 @@ export type Context = {
     pricing: typeof PricingService;
   };
   repositories: {
-    // users: typeof usersRepository; // TODO: Add user repository
-    // esim: typeof esimRepository; // TODO: Add eSIM repository
+    checkoutSessions: CheckoutSessionRepository;
+    orders: OrderRepository;
+    esims: ESIMRepository;
   };
   dataSources: {
     catalogue: CatalogueDataSource;

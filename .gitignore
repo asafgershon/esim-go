@@ -1,2 +1,3 @@
 client/web-app/.next
 ./node_modules
+supabase/.temp/cli-latest

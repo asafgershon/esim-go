@@ -4,17 +4,17 @@
 type Query {
   # Basic hello query for testing
   hello: String!
-  
+
   # User authentication and profile
   me: User @auth
-  
+
   # eSIM queries
   myESIMs: [ESIM!]! @auth
   esimDetails(id: ID!): ESIM @auth
-  
+
   dataPlans(filter: DataPlanFilter): [DataPlan!]!
   dataPlan(id: ID!): DataPlan
-  
+
   # Order queries
   myOrders(filter: OrderFilter): [Order!]! @auth
   orderDetails(id: ID!): Order @auth
@@ -30,17 +30,18 @@ type Mutation {
   # Authentication
   signIn(input: SignInInput!): SignInResponse
   signUp(input: SignUpInput!): SignUpResponse
-  
+
   # Social Authentication
   signInWithApple(input: SocialSignInInput!): SignInResponse
   signInWithGoogle(input: SocialSignInInput!): SignInResponse
-  
+
   # Phone Authentication
   sendPhoneOTP(phoneNumber: String!): SendOTPResponse
   verifyPhoneOTP(input: VerifyOTPInput!): SignInResponse
-  
+
   # eSIM operations
-  purchaseESIM(planId: ID!, input: PurchaseESIMInput!): PurchaseESIMResponse @auth
+  purchaseESIM(planId: ID!, input: PurchaseESIMInput!): PurchaseESIMResponse
+    @auth
   activateESIM(esimId: ID!): ActivateESIMResponse @auth
   suspendESIM(esimId: ID!): ESIMActionResponse @auth
   restoreESIM(esimId: ID!): ESIMActionResponse @auth
@@ -72,15 +73,13 @@ type Country {
   flag: String
 }
 
-
-type Trip { 
+type Trip {
   name: String!
   description: String!
   regionId: String!
   countries: [Country!]!
   countryIds: [ISOCountryCode!]!
 }
-
 
 # Authentication Types
 input SignInInput {
@@ -148,7 +147,6 @@ type DataPlan {
   features: [String!]!
   availableQuantity: Int
 }
-
 
 # Data plan filtering
 input DataPlanFilter {
@@ -271,4 +269,95 @@ type ESIMStatusUpdate {
   updatedAt: String!
 }
 
+# Basic checkout session type (enhanced)
+type CheckoutSession {
+  id: ID!
+  token: String! # JWT token for secure navigation
+  expiresAt: DateTime!
+  isComplete: Boolean!
+  timeRemaining: Int # seconds until expiration
+  createdAt: DateTime!
+  # Additional fields for frontend
+  planSnapshot: JSON
+  pricing: JSON
+  steps: JSON
+  paymentStatus: String
+  metadata: JSON # Contains orderId after completion
+}
+
+# Input for creating a checkout session
+input CreateCheckoutSessionInput {
+  planId: ID!
+}
+
+# Response types
+type CreateCheckoutSessionResponse {
+  success: Boolean!
+  session: CheckoutSession
+  error: String
+}
+
+type GetCheckoutSessionResponse {
+  success: Boolean!
+  session: CheckoutSession
+  error: String
+}
+
+# Input for updating checkout steps
+input UpdateCheckoutStepInput {
+  token: String!
+  stepType: CheckoutStepType!
+  data: JSON! # Flexible data based on step type
+}
+
+# Response for step updates
+type UpdateCheckoutStepResponse {
+  success: Boolean!
+  session: CheckoutSession
+  nextStep: CheckoutStepType
+  error: String
+}
+
+# Enum for step types
+enum CheckoutStepType {
+  AUTHENTICATION
+  DELIVERY
+  PAYMENT
+}
+
+# Input for processing final payment
+input ProcessCheckoutPaymentInput {
+  token: String!
+  paymentMethodId: String! # From Stripe/payment provider
+  savePaymentMethod: Boolean = false
+}
+
+# Response for payment processing
+type ProcessCheckoutPaymentResponse {
+  success: Boolean!
+  orderId: ID
+  session: CheckoutSession
+  paymentIntentId: String
+  webhookProcessing: Boolean # Indicates webhook is handling completion
+  error: String
+}
+
+extend type Query {
+  getCheckoutSession(token: String!): GetCheckoutSessionResponse!
+}
+
+extend type Mutation {
+  createCheckoutSession(
+    input: CreateCheckoutSessionInput!
+  ): CreateCheckoutSessionResponse!
+  updateCheckoutStep(
+    input: UpdateCheckoutStepInput!
+  ): UpdateCheckoutStepResponse!
+  processCheckoutPayment(
+    input: ProcessCheckoutPaymentInput!
+  ): ProcessCheckoutPaymentResponse!
+}
+
 scalar ISOCountryCode
+scalar DateTime
+scalar JSON

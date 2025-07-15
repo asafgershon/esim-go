@@ -30,6 +30,11 @@ import {
 } from "./datasources/esim-go";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook, PricingService } from "./services";
+import {
+  CheckoutSessionRepository,
+  OrderRepository,
+  ESIMRepository,
+} from "./repositories";
 import { cleanEnv, port, str } from "envalid";
 import { logger } from "./lib/logger";
 
@@ -51,6 +56,12 @@ async function startServer() {
 
     // Redis is now configured at Apollo Server level for caching
     const redis = await getRedis();
+    
+    // Initialize repositories
+    const checkoutSessionRepository = new CheckoutSessionRepository();
+    const orderRepository = new OrderRepository();
+    const esimRepository = new ESIMRepository();
+    
     // Create an Express app and HTTP server
     const app = express();
     const httpServer = createServer(app);
@@ -85,7 +96,9 @@ async function startServer() {
               pricing: PricingService,
             },
             repositories: {
-              // TODO: Add eSIM Go repositories
+              checkoutSessions: checkoutSessionRepository,
+              orders: orderRepository,
+              esims: esimRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSource({ cache: redis }),
@@ -238,7 +251,9 @@ async function startServer() {
               pricing: PricingService,
             },
             repositories: {
-              // TODO: Add eSIM Go repositories
+              checkoutSessions: checkoutSessionRepository,
+              orders: orderRepository,
+              esims: esimRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSource({ cache: redis }),
