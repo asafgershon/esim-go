@@ -23,23 +23,13 @@ export const esimResolvers: Partial<Resolvers> = {
           duration: filter?.duration || undefined,
           maxPrice: filter?.maxPrice || undefined,
           bundleGroup: filter?.bundleGroup || undefined,
+          search: filter?.search || undefined,
           limit,
           offset,
         });
 
-        // Map plans directly from API without requiring database entries
-        let filteredPlans = response.bundles.map((plan) => mapDataPlan(plan));
-        
-        // Apply search filter if provided (client-side for now)
-        if (filter?.search) {
-          const searchTerm = filter.search.toLowerCase();
-          filteredPlans = filteredPlans.filter(plan => 
-            plan.name.toLowerCase().includes(searchTerm) ||
-            plan.description.toLowerCase().includes(searchTerm) ||
-            plan.region.toLowerCase().includes(searchTerm) ||
-            plan.bundleGroup?.toLowerCase().includes(searchTerm)
-          );
-        }
+        // Map plans directly from API (filtering now handled in datasource)
+        const filteredPlans = response.bundles.map((plan) => mapDataPlan(plan));
         
         // Calculate pagination metadata
         const totalCount = response.totalCount;

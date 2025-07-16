@@ -150,6 +150,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     duration?: number;
     maxPrice?: number;
     bundleGroup?: string;
+    search?: string;
     limit?: number;
     offset?: number;
   }): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number }> {
@@ -164,15 +165,16 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     // Prepare API parameters
     const params: Record<string, any> = {};
     
-    // Add pagination parameters
+    // Add pagination parameters - eSIM-Go uses 'perPage' and 'page'
     if (criteria.limit !== undefined) {
-      params.limit = Math.min(criteria.limit, 200); // Max 200 items per page
+      params.perPage = Math.min(criteria.limit, 200); // Max 200 items per page
     } else {
-      params.limit = 50; // Default limit
+      params.perPage = 50; // Default limit
     }
     
     if (criteria.offset !== undefined) {
-      params.offset = Math.max(0, criteria.offset); // Ensure non-negative offset
+      const page = Math.floor(criteria.offset / (criteria.limit || 50)) + 1;
+      params.page = Math.max(1, page); // Ensure page is at least 1
     }
     
     // Add filtering parameters that the eSIM Go API supports
@@ -184,6 +186,10 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       params.group = criteria.bundleGroup;
     }
     
+    if (criteria.region) {
+      params.region = criteria.region;
+    }
+    
     if (criteria.duration !== undefined) {
       params.duration = criteria.duration;
     }
@@ -191,8 +197,13 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     if (criteria.maxPrice !== undefined) {
       params.maxPrice = criteria.maxPrice;
     }
+    
+    // Add search parameter - eSIM-Go API uses 'description' for wildcard search
+    if (criteria.search) {
+      params.description = criteria.search;
+    }
 
-    // Call the eSIM Go API with parameters
+    // Call the eSIM Go API with all parameters (now supports search and region natively)
     const response = await this.getWithErrorHandling<{ 
       bundles: ESIMGoDataPlan[], 
       totalCount: number,
@@ -200,24 +211,8 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       offset: number 
     }>("/v2.5/catalogue", params);
 
-    // If API doesn't return totalCount, we need to handle it
-    // For now, we'll calculate it based on the response
     const totalCount = response.totalCount || response.bundles.length;
-    
     let plans = response.bundles;
-
-    // Apply client-side filters for criteria not supported by API
-    if (criteria.region) {
-      plans = plans.filter(
-        (plan) =>
-          plan.baseCountry.region.toLowerCase() ===
-            criteria.region!.toLowerCase() ||
-          plan.countries.some(
-            (country) =>
-              country.region.toLowerCase() === criteria.region!.toLowerCase()
-          )
-      );
-    }
 
     // Sort by price (lowest first)
     plans.sort((a, b) => a.price - b.price);
