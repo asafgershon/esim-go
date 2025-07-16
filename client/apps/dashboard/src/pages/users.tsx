@@ -15,6 +15,7 @@ import {
   TableRow,
 } from '@workspace/ui/components/table'
 import { formatDistanceToNow } from 'date-fns'
+import { RoleSelector } from '@/components/role-selector'
 
 export function UsersPage() {
   const { data, loading, error } = useQuery<GetUsersQuery>(GET_USERS)
@@ -98,11 +99,12 @@ export function UsersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={user.role === 'ADMIN' ? 'default' : user.role === 'PARTNER' ? 'secondary' : 'outline'}
-                      >
-                        {user.role}
-                      </Badge>
+                      <RoleSelector 
+                        userId={user.id}
+                        currentRole={user.role}
+                        userEmail={user.email}
+                        userName={user.firstName || user.lastName ? `${user.firstName} ${user.lastName}`.trim() : ''}
+                      />
                     </TableCell>
                     <TableCell>
                       {user.phoneNumber || 'N/A'}

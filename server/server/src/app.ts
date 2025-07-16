@@ -34,6 +34,7 @@ import {
   CheckoutSessionRepository,
   OrderRepository,
   ESIMRepository,
+  UserRepository,
 } from "./repositories";
 import { cleanEnv, port, str } from "envalid";
 import { logger } from "./lib/logger";
@@ -61,6 +62,7 @@ async function startServer() {
     const checkoutSessionRepository = new CheckoutSessionRepository();
     const orderRepository = new OrderRepository();
     const esimRepository = new ESIMRepository();
+    const userRepository = new UserRepository();
     
     // Create an Express app and HTTP server
     const app = express();
@@ -99,6 +101,7 @@ async function startServer() {
               checkoutSessions: checkoutSessionRepository,
               orders: orderRepository,
               esims: esimRepository,
+              users: userRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSource({ cache: redis }),
@@ -254,6 +257,7 @@ async function startServer() {
               checkoutSessions: checkoutSessionRepository,
               orders: orderRepository,
               esims: esimRepository,
+              users: userRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSource({ cache: redis }),

@@ -41,6 +41,9 @@ type Mutation {
   sendPhoneOTP(phoneNumber: String!): SendOTPResponse
   verifyPhoneOTP(input: VerifyOTPInput!): SignInResponse
 
+  # User Management
+  updateUserRole(userId: ID!, role: String!): User @auth(role: "ADMIN")
+
   # eSIM operations
   purchaseESIM(planId: ID!, input: PurchaseESIMInput!): PurchaseESIMResponse
     @auth

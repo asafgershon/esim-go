@@ -22,5 +22,6 @@ export * from "./components/popover"
 export * from "./components/slider"
 export * from "./components/input-otp"
 export * from "./components/social-button"
+export * from "./components/alert"
 // Utils
 export * from "./lib/utils" 

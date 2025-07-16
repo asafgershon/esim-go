@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client"
+import { gql } from '@/__generated__/gql'
 
 export const GET_TRIPS = gql(`
   query GetTrips {
@@ -45,6 +45,21 @@ export const GET_ORDERS = gql(`
         price
         currency
       }
+    }
+  }
+`)
+
+export const UPDATE_USER_ROLE = gql(`
+  mutation UpdateUserRole($userId: ID!, $role: String!) {
+    updateUserRole(userId: $userId, role: $role) {
+      id
+      email
+      firstName
+      lastName
+      phoneNumber
+      role
+      createdAt
+      updatedAt
     }
   }
 `)

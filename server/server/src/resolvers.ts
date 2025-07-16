@@ -9,6 +9,7 @@ import type { Context } from "./context/types";
 import type { DataPlan, Order, Resolvers } from "./types";
 import { esimResolvers } from "./resolvers/esim-resolvers";
 import { checkoutResolvers } from "./resolvers/checkout-resolvers";
+import { usersResolvers } from "./resolvers/users-resolvers";
 import { GraphQLError } from "graphql";
 
 export const resolvers: Resolvers = {
@@ -19,29 +20,6 @@ export const resolvers: Resolvers = {
     me: async (_, __, context: Context) => {
       // This will be protected by @auth directive
       return context.auth.user;
-    },
-
-    // Admin-only resolver to get all users
-    users: async (_, __, context: Context) => {
-      // This will be protected by @auth(role: "ADMIN") directive
-      const { data, error } = await supabaseAdmin.auth.admin.listUsers();
-      
-      if (error) {
-        throw new GraphQLError("Failed to fetch users", {
-          extensions: { code: "INTERNAL_ERROR" },
-        });
-      }
-
-      return data.users.map(user => ({
-        id: user.id,
-        email: user.email || "",
-        firstName: user.user_metadata?.first_name || "",
-        lastName: user.user_metadata?.last_name || "",
-        phoneNumber: user.phone || null,
-        role: user.user_metadata?.role || "USER",
-        createdAt: user.created_at,
-        updatedAt: user.updated_at || user.created_at,
-      }));
     },
 
     // Admin-only resolver to get all orders
@@ -71,6 +49,9 @@ export const resolvers: Resolvers = {
       }));
     },
 
+    // Users resolvers are merged from users-resolvers.ts
+    ...usersResolvers.Query!,
+    
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Query!,
     myESIMs: async (_, __, context: Context) => {
@@ -209,6 +190,7 @@ export const resolvers: Resolvers = {
 
   Mutation: {
     ...checkoutResolvers.Mutation!,
+    ...usersResolvers.Mutation!,
     signUp: async (_, { input }) => {
       try {
         const { data, error } = await supabaseAdmin.auth.admin.createUser({

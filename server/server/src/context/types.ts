@@ -15,6 +15,7 @@ import {
   CheckoutSessionRepository,
   OrderRepository,
   ESIMRepository,
+  UserRepository,
 } from "../repositories";
 
 export type Context = {
@@ -29,6 +30,7 @@ export type Context = {
     checkoutSessions: CheckoutSessionRepository;
     orders: OrderRepository;
     esims: ESIMRepository;
+    users: UserRepository;
   };
   dataSources: {
     catalogue: CatalogueDataSource;
