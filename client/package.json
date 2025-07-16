@@ -4,14 +4,20 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "ui:add": "cd packages/ui && bunx shadcn@canary add"
+    "ui:add": "cd packages/ui && bunx shadcn@canary add",
+    "build": "turbo build",
+    "build:web-app": "turbo build --filter=...web-app",
+    "build:dashboard": "turbo build --filter=...dashboard",
+    "dev": "turbo dev",
+    "lint": "turbo lint"
   },
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "turbo": "^2.5.4"
   },
   "engines": {
     "node": ">= 22.0.0"
@@ -19,5 +25,5 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "packageManager": "bun@1.2."
+  "packageManager": "bun@1.2.9"
 }

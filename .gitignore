@@ -2,3 +2,7 @@ client/web-app/.next
 ./node_modules
 supabase/.temp/cli-latest
 supabase/.temp/cli-latest
+client/.turbo
+client/apps/web-app/.turbo
+client/packages/ui/.turbo
+
