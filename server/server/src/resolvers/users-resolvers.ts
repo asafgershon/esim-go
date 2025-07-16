@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { Context } from '../context/types';
 import type { Resolvers } from '../types';
-import { getUserRole } from '../context/supabase-auth';
+import { getUserRole, inviteUserByEmail } from '../context/supabase-auth';
 
 export const usersResolvers: Resolvers = {
   Query: {
@@ -71,6 +71,52 @@ export const usersResolvers: Resolvers = {
           throw error;
         }
         throw new GraphQLError('Failed to update user role', {
+          extensions: { code: 'INTERNAL_ERROR' },
+        });
+      }
+    },
+
+    inviteAdminUser: async (_, { input }, context: Context) => {
+      try {
+        // Additional validation: ensure current user is admin
+        const currentUserRole = getUserRole(context.auth.supabaseUser);
+        if (currentUserRole !== 'ADMIN') {
+          throw new GraphQLError('Only administrators can invite other admins', {
+            extensions: { code: 'INSUFFICIENT_PERMISSIONS' },
+          });
+        }
+
+        // Validate role is either ADMIN or PARTNER
+        if (!['ADMIN', 'PARTNER'].includes(input.role)) {
+          throw new GraphQLError('Invalid role. Only ADMIN and PARTNER roles can be invited', {
+            extensions: { code: 'INVALID_ROLE' },
+          });
+        }
+
+        // Invite the user
+        const result = await inviteUserByEmail(
+          input.email,
+          input.role,
+          input.redirectUrl
+        );
+
+        if (!result.success) {
+          throw new GraphQLError(result.error || 'Failed to invite user', {
+            extensions: { code: 'INVITATION_FAILED' },
+          });
+        }
+
+        return {
+          success: true,
+          error: null,
+          invitedEmail: input.email,
+        };
+      } catch (error) {
+        console.error('Error inviting admin user:', error);
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
+        throw new GraphQLError('Failed to invite admin user', {
           extensions: { code: 'INTERNAL_ERROR' },
         });
       }

@@ -25,8 +25,8 @@ export default defineConfig(() => {
         }
       }
     },
-    manualChunks: {
-      '@workspace/ui': ['@workspace/ui']
+    optimizeDeps: {
+      needsInterop: ['@graphql-typed-document-node/core']
     },
     resolve: {
       alias: {

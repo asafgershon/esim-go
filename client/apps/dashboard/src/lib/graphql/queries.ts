@@ -63,3 +63,13 @@ export const UPDATE_USER_ROLE = gql(`
     }
   }
 `)
+
+export const INVITE_ADMIN_USER = gql(`
+  mutation InviteAdminUser($input: InviteAdminUserInput!) {
+    inviteAdminUser(input: $input) {
+      success
+      error
+      invitedEmail
+    }
+  }
+`)

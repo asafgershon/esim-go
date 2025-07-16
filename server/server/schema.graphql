@@ -43,6 +43,7 @@ type Mutation {
 
   # User Management
   updateUserRole(userId: ID!, role: String!): User @auth(role: "ADMIN")
+  inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse @auth(role: "ADMIN")
 
   # eSIM operations
   purchaseESIM(planId: ID!, input: PurchaseESIMInput!): PurchaseESIMResponse
@@ -136,6 +137,19 @@ type SignUpResponse {
   sessionToken: String
   refreshToken: String
   error: String
+}
+
+# Admin Invitation Types
+input InviteAdminUserInput {
+  email: String!
+  role: String!
+  redirectUrl: String
+}
+
+type InviteAdminUserResponse {
+  success: Boolean!
+  error: String
+  invitedEmail: String
 }
 
 # Data Plan Types (from eSIM Go catalogue)

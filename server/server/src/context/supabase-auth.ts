@@ -311,3 +311,45 @@ export const verifyPhoneOTP = async (
     };
   }
 };
+
+/**
+ * Invite a user by email (admin only)
+ */
+export const inviteUserByEmail = async (
+  email: string,
+  role: string,
+  redirectUrl?: string
+) => {
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+      email,
+      {
+        redirectTo: redirectUrl || `${process.env.DASHBOARD_URL || 'http://localhost:3000'}/auth/callback`,
+        data: {
+          role: role,
+        },
+      }
+    );
+
+    if (error) {
+      return {
+        success: false,
+        error: error.message,
+        user: null,
+      };
+    }
+
+    return {
+      success: true,
+      error: null,
+      user: data.user,
+    };
+  } catch (error) {
+    console.error("Invite user error:", error);
+    return {
+      success: false,
+      error: "Failed to invite user",
+      user: null,
+    };
+  }
+};
