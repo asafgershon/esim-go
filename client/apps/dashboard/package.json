@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "http-server dist -p 6000"
+    "start": "http-server dist -p 6000 --proxy http://localhost:6000?",
+    "codegen": "graphql-codegen",
+    "codegen:watch": "graphql-codegen --watch"
   },
   "dependencies": {
     "@apollo/client": "^3.13.8",
@@ -38,6 +40,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
+    "@graphql-codegen/cli": "^5.0.3",
+    "@graphql-codegen/client-preset": "^4.5.1",
     "@tailwindcss/vite": "^4.1.11",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",

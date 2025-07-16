@@ -1,4 +1,10 @@
-import { useEffect, useState } from 'react'
+import type { GetUsersQuery } from '@/__generated__/graphql'
+import { GET_USERS } from '@/lib/graphql/queries'
+import { useQuery } from '@apollo/client'
+import { Avatar, AvatarFallback } from '@workspace/ui/components/avatar'
+import { Badge } from '@workspace/ui/components/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card'
+import { Skeleton } from '@workspace/ui/components/skeleton'
 import {
   Table,
   TableBody,
@@ -8,53 +14,16 @@ import {
   TableHeader,
   TableRow,
 } from '@workspace/ui/components/table'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card'
-import { Badge } from '@workspace/ui/components/badge'
-import { Skeleton } from '@workspace/ui/components/skeleton'
-import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar'
-import { supabase } from '@/lib/supabase'
 import { formatDistanceToNow } from 'date-fns'
 
-interface User {
-  id: string
-  email: string
-  created_at: string
-  last_sign_in_at: string
-  user_metadata: {
-    full_name?: string
-    avatar_url?: string
-  }
-  app_metadata: {
-    provider?: string
-  }
-}
-
 export function UsersPage() {
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, loading, error } = useQuery<GetUsersQuery>(GET_USERS)
 
-  useEffect(() => {
-    fetchUsers()
-  }, [])
-
-  const fetchUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-
-      if (data) {
-        setUsers(data)
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error)
-    } finally {
-      setLoading(false)
-    }
+  if (error) {
+    console.error('Error fetching users:', error)
   }
+
+  const users = data?.users || []
 
   return (
     <div className="space-y-6">
@@ -85,6 +54,10 @@ export function UsersPage() {
                 </div>
               ))}
             </div>
+          ) : error ? (
+            <div className="p-6">
+              <p className="text-sm text-destructive">Error loading users: {error.message}</p>
+            </div>
           ) : users.length === 0 ? (
             <div className="p-6">
               <p className="text-sm text-muted-foreground">No users found</p>
@@ -95,9 +68,10 @@ export function UsersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
-                  <TableHead>Provider</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Phone</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead>Last Sign In</TableHead>
+                  <TableHead>Updated</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -106,14 +80,16 @@ export function UsersPage() {
                     <TableCell>
                       <div className="flex items-center space-x-3">
                         <Avatar>
-                          <AvatarImage src={user.user_metadata?.avatar_url} />
                           <AvatarFallback>
-                            {user.email.substring(0, 2).toUpperCase()}
+                            {(user.firstName?.[0] || user.email[0])?.toUpperCase()}
+                            {(user.lastName?.[0] || user.email[1])?.toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="text-sm font-medium">
-                            {user.user_metadata?.full_name || user.email}
+                            {user.firstName || user.lastName 
+                              ? `${user.firstName} ${user.lastName}`.trim()
+                              : user.email}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {user.email}
@@ -122,21 +98,24 @@ export function UsersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
-                        {user.app_metadata?.provider || 'email'}
+                      <Badge 
+                        variant={user.role === 'ADMIN' ? 'default' : user.role === 'PARTNER' ? 'secondary' : 'outline'}
+                      >
+                        {user.role}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {formatDistanceToNow(new Date(user.created_at), {
+                      {user.phoneNumber || 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {formatDistanceToNow(new Date(user.createdAt), {
                         addSuffix: true,
                       })}
                     </TableCell>
                     <TableCell>
-                      {user.last_sign_in_at
-                        ? formatDistanceToNow(new Date(user.last_sign_in_at), {
-                            addSuffix: true,
-                          })
-                        : 'Never'}
+                      {formatDistanceToNow(new Date(user.updatedAt), {
+                        addSuffix: true,
+                      })}
                     </TableCell>
                   </TableRow>
                 ))}

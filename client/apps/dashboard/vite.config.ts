@@ -14,7 +14,6 @@ const env = cleanEnv(process.env, {
 // https://vite.dev/config/
 export default defineConfig(() => {
   const allowedHosts = env.VITE_ALLOWED_HOSTS.split(',').map(h => h.trim()).filter(Boolean);
-  console.debug(allowedHosts)
   return {
     plugins: [react(), tailwindcss()],
     build: {

@@ -7,6 +7,8 @@ type Query {
 
   # User authentication and profile
   me: User @auth
+  users: [User!]! @auth(role: "ADMIN")
+  orders: [Order!]! @auth(role: "ADMIN")
 
   # eSIM queries
   myESIMs: [ESIM!]! @auth
@@ -61,6 +63,7 @@ type User {
   firstName: String!
   lastName: String!
   phoneNumber: String
+  role: String!
   createdAt: String!
   updatedAt: String!
 }
@@ -162,7 +165,7 @@ type Order {
   id: ID!
   reference: String! # eSIM Go order reference
   status: OrderStatus!
-  dataPlan: DataPlan!
+  dataPlan: DataPlan
   quantity: Int!
   totalPrice: Float!
   esims: [ESIM!]!

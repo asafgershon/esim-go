@@ -1,12 +1,13 @@
 import { cn } from '@workspace/ui/lib/utils'
 import { Button } from '@workspace/ui'
-import { Home, Users, MapPin, LogOut } from 'lucide-react'
+import { Home, Users, ShoppingCart, MapPin, LogOut } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
 
 const navigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Users', href: '/users', icon: Users },
+  { name: 'Orders', href: '/orders', icon: ShoppingCart },
   { name: 'Trips', href: '/trips', icon: MapPin },
 ]
 

@@ -21,6 +21,56 @@ export const resolvers: Resolvers = {
       return context.auth.user;
     },
 
+    // Admin-only resolver to get all users
+    users: async (_, __, context: Context) => {
+      // This will be protected by @auth(role: "ADMIN") directive
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (error) {
+        throw new GraphQLError("Failed to fetch users", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
+      }
+
+      return data.users.map(user => ({
+        id: user.id,
+        email: user.email || "",
+        firstName: user.user_metadata?.first_name || "",
+        lastName: user.user_metadata?.last_name || "",
+        phoneNumber: user.phone || null,
+        role: user.user_metadata?.role || "USER",
+        createdAt: user.created_at,
+        updatedAt: user.updated_at || user.created_at,
+      }));
+    },
+
+    // Admin-only resolver to get all orders
+    orders: async (_, __, context: Context) => {
+      // This will be protected by @auth(role: "ADMIN") directive
+      const { data, error } = await supabaseAdmin
+        .from("esim_orders")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (error) {
+        throw new GraphQLError("Failed to fetch orders", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
+      }
+
+      return data.map(order => ({
+        id: order.id,
+        reference: order.reference,
+        status: order.status,
+        quantity: order.quantity,
+        totalPrice: order.total_price,
+        createdAt: order.created_at,
+        updatedAt: order.updated_at,
+        dataPlan: { id: order.data_plan_id } as DataPlan, // Will be resolved by field resolver
+        esims: [], // Will be resolved by field resolver
+      }));
+    },
+
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Query!,
     myESIMs: async (_, __, context: Context) => {
@@ -127,26 +177,7 @@ export const resolvers: Resolvers = {
       }));
     },
     dataPlan: async (parent, _, context: Context) => {
-      const dataPlanId = parent.dataPlan?.id;
-
-      if (!dataPlanId) {
-        throw new GraphQLError("Data plan ID not found", {
-          extensions: {
-            code: "DATA_PLAN_ID_NOT_FOUND",
-          },
-        });
-      }
-
-      const { data, error } = await supabaseAdmin
-        .from("data_plans")
-        .select("*")
-        .eq("id", parent.dataPlan.id);
-
-      if (!data) {
-        throw new Error("Data plan not found");
-      }
-
-      return data[0] as unknown as DataPlan;
+      return null;
     },
   },
   // Field resolvers for Trip type
@@ -227,6 +258,7 @@ export const resolvers: Resolvers = {
           firstName: input.firstName,
           lastName: input.lastName,
           phoneNumber: input.phoneNumber,
+          role: "USER",
           createdAt: data.user!.created_at,
           updatedAt: data.user!.updated_at || data.user!.created_at,
         };
@@ -272,6 +304,7 @@ export const resolvers: Resolvers = {
           lastName: data.user!.user_metadata?.last_name || "",
           phoneNumber:
             data.user!.phone || data.user!.user_metadata?.phone_number || null,
+          role: data.user!.user_metadata?.role || "USER",
           createdAt: data.user!.created_at,
           updatedAt: data.user!.updated_at || data.user!.created_at,
         };
@@ -322,6 +355,7 @@ export const resolvers: Resolvers = {
           lastName:
             result.user!.user_metadata?.last_name || input.lastName || "",
           phoneNumber: result.user!.phone || null,
+          role: result.user!.user_metadata?.role || "USER",
           createdAt: result.user!.created_at,
           updatedAt: result.user!.updated_at || result.user!.created_at,
         };
@@ -371,6 +405,7 @@ export const resolvers: Resolvers = {
           lastName:
             result.user!.user_metadata?.last_name || input.lastName || "",
           phoneNumber: result.user!.phone || null,
+          role: result.user!.user_metadata?.role || "USER",
           createdAt: result.user!.created_at,
           updatedAt: result.user!.updated_at || result.user!.created_at,
         };
@@ -440,6 +475,7 @@ export const resolvers: Resolvers = {
           lastName:
             result.user!.user_metadata?.last_name || input.lastName || "",
           phoneNumber: result.user!.phone || input.phoneNumber,
+          role: result.user!.user_metadata?.role || "USER",
           createdAt: result.user!.created_at,
           updatedAt: result.user!.updated_at || result.user!.created_at,
         };

@@ -12,7 +12,7 @@
   },
   "sideEffects": [
     "**/*.css"
-  ],
+],
   "scripts": {
     "build": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts",
     "dev": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts --watch",

@@ -77,6 +77,7 @@ export const createSupabaseAuthContext = async (
         "",
       phoneNumber:
         supabaseUser.phone || supabaseUser.user_metadata?.phone_number || null,
+      role: getUserRole(supabaseUser),
       createdAt: supabaseUser.created_at,
       updatedAt: supabaseUser.updated_at || supabaseUser.created_at,
     };

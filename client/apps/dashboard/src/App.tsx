@@ -7,6 +7,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { LoginPage } from '@/pages/login'
 import { HomePage } from '@/pages/home'
 import { UsersPage } from '@/pages/users'
+import { OrdersPage } from '@/pages/orders'
 import { TripsPage } from '@/pages/trips'
 import { apolloClient } from '@/lib/apollo-client'
 
@@ -30,6 +31,7 @@ function App() {
               >
                 <Route index element={<HomePage />} />
                 <Route path="users" element={<UsersPage />} />
+                <Route path="orders" element={<OrdersPage />} />
                 <Route path="trips" element={<TripsPage />} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
