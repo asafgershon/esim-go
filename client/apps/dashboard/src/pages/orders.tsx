@@ -1,4 +1,3 @@
-import type { Order } from "@/__generated__/graphql";
 import { GET_ORDERS } from "@/lib/graphql/queries";
 import { useQuery } from "@apollo/client";
 import { Badge } from "@workspace/ui/components/badge";
@@ -98,7 +97,7 @@ export function OrdersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orders.map((order: Order) => (
+                {orders.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell>
                       <div>

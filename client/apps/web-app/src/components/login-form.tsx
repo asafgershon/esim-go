@@ -2,6 +2,7 @@
 
 import { GalleryVerticalEnd } from "lucide-react";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { Button } from "@workspace/ui";
 import { Input } from "@workspace/ui";
@@ -10,6 +11,15 @@ import { useAppleSignIn } from "@/hooks/useAppleSignIn";
 import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 import { usePhoneOTP } from "@/hooks/usePhoneOTP";
 
+// Form validation schemas
+interface PhoneFormData {
+  phoneNumber: string;
+}
+
+interface OTPFormData {
+  otp: string;
+}
+
 export function LoginForm({
   className,
   ...props
@@ -17,44 +27,48 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
-  const [phoneInput, setPhoneInput] = useState("");
   
   const { signInWithApple, loading: appleLoading } = useAppleSignIn();
   const { signInWithGoogle, loading: googleLoading } = useGoogleSignIn();
   const { loading: otpLoading, step, phoneNumber, sendOTP, verifyOTP, resetFlow } = usePhoneOTP();
 
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Phone form with react-hook-form
+  const phoneForm = useForm<PhoneFormData>({
+    defaultValues: {
+      phoneNumber: "",
+    },
+    mode: "onChange",
+  });
+
+  // OTP form with react-hook-form
+  const otpForm = useForm<OTPFormData>({
+    defaultValues: {
+      otp: "",
+    },
+    mode: "onChange",
+  });
+
+  const handlePhoneSubmit = async (data: PhoneFormData) => {
     setError("");
     
-    if (!phoneInput.trim()) {
-      setError("Please enter your phone number");
-      return;
-    }
-    
-    const result = await sendOTP(phoneInput);
+    const result = await sendOTP(data.phoneNumber);
     
     if (!result.success) {
       setError(result.error || "Failed to send OTP");
     }
   };
 
-  const handleOTPSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleOTPSubmit = async (data: OTPFormData) => {
     setError("");
     
-    if (otp.length !== 6) {
-      setError("Please enter the complete 6-digit code");
-      return;
-    }
-    
-    const result = await verifyOTP(otp);
+    const result = await verifyOTP(data.otp);
     
     if (result.success) {
       window.location.href = "/";
     } else {
       setError(result.error || "Invalid OTP");
       setOtp("");
+      otpForm.setValue("otp", "");
     }
   };
 
@@ -98,6 +112,8 @@ export function LoginForm({
     resetFlow();
     setOtp("");
     setError("");
+    otpForm.reset();
+    phoneForm.clearErrors();
   };
 
   return (
@@ -120,19 +136,40 @@ export function LoginForm({
 
       {step === "phone" && (
         <div className="grid gap-6">
-          <form onSubmit={handlePhoneSubmit} className="grid gap-2">
+          <form onSubmit={phoneForm.handleSubmit(handlePhoneSubmit)} className="grid gap-2">
             <Label htmlFor="phone">Phone number</Label>
             <Input
               id="phone"
               placeholder="+1 (555) 123-4567"
               type="tel"
-              value={phoneInput}
-              onChange={(e) => setPhoneInput(e.target.value)}
+              {...phoneForm.register("phoneNumber", {
+                required: "Phone number is required",
+                pattern: {
+                  value: /^\+?[\d\s\-\(\)]+$/,
+                  message: "Please enter a valid phone number",
+                },
+                minLength: {
+                  value: 10,
+                  message: "Phone number must be at least 10 digits",
+                },
+                validate: (value) => {
+                  const digitsOnly = value.replace(/\D/g, '');
+                  if (digitsOnly.length < 10) {
+                    return "Phone number must have at least 10 digits";
+                  }
+                  return true;
+                },
+              })}
               autoComplete="tel"
-              required
               disabled={otpLoading}
+              className={phoneForm.formState.errors.phoneNumber ? "border-destructive" : ""}
             />
-            <Button type="submit" disabled={otpLoading}>
+            {phoneForm.formState.errors.phoneNumber && (
+              <p className="text-sm text-destructive">
+                {phoneForm.formState.errors.phoneNumber.message}
+              </p>
+            )}
+            <Button type="submit" disabled={otpLoading || !phoneForm.formState.isValid}>
               {otpLoading ? "Sending..." : "Send verification code"}
             </Button>
           </form>
@@ -187,12 +224,15 @@ export function LoginForm({
             </p>
           </div>
           
-          <form onSubmit={handleOTPSubmit} className="grid gap-4">
+          <form onSubmit={otpForm.handleSubmit(handleOTPSubmit)} className="grid gap-4">
             <div className="flex justify-center">
               <InputOTP
                 maxLength={6}
                 value={otp}
-                onChange={setOtp}
+                onChange={(value) => {
+                  setOtp(value);
+                  otpForm.setValue("otp", value, { shouldValidate: true });
+                }}
                 disabled={otpLoading}
               >
                 <InputOTPGroup>
@@ -206,7 +246,32 @@ export function LoginForm({
               </InputOTP>
             </div>
             
-            <Button type="submit" disabled={otpLoading || otp.length !== 6}>
+            {/* Hidden input for react-hook-form validation */}
+            <input
+              type="hidden"
+              {...otpForm.register("otp", {
+                required: "Verification code is required",
+                minLength: {
+                  value: 6,
+                  message: "Please enter the complete 6-digit code",
+                },
+                maxLength: {
+                  value: 6,
+                  message: "Code must be exactly 6 digits",
+                },
+              })}
+            />
+            
+            {otpForm.formState.errors.otp && (
+              <p className="text-sm text-destructive text-center">
+                {otpForm.formState.errors.otp.message}
+              </p>
+            )}
+            
+            <Button 
+              type="submit" 
+              disabled={otpLoading || !otpForm.formState.isValid || otp.length !== 6}
+            >
               {otpLoading ? "Verifying..." : "Verify code"}
             </Button>
             

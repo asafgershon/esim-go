@@ -1,10 +1,16 @@
-import type { GetUsersQuery } from '@/__generated__/graphql'
-import { GET_USERS } from '@/lib/graphql/queries'
-import { useQuery } from '@apollo/client'
-import { Avatar, AvatarFallback } from '@workspace/ui/components/avatar'
-import { Badge } from '@workspace/ui/components/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card'
-import { Skeleton } from '@workspace/ui/components/skeleton'
+import type { GetUsersQuery } from "@/__generated__/graphql";
+import { RoleSelector } from "@/components/role-selector";
+import { GET_USERS } from "@/lib/graphql/queries";
+import { useQuery } from "@apollo/client";
+import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import {
   Table,
   TableBody,
@@ -13,18 +19,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@workspace/ui/components/table'
-import { formatDistanceToNow } from 'date-fns'
-import { RoleSelector } from '@/components/role-selector'
+} from "@workspace/ui/components/table";
+import { formatDistanceToNow } from "date-fns";
 
 export function UsersPage() {
-  const { data, loading, error } = useQuery<GetUsersQuery>(GET_USERS)
+  const { data, loading, error } = useQuery<GetUsersQuery>(GET_USERS);
 
   if (error) {
-    console.error('Error fetching users:', error)
+    console.error("Error fetching users:", error);
   }
 
-  const users = data?.users || []
+  const users = data?.users || [];
 
   return (
     <div className="space-y-6">
@@ -57,7 +62,9 @@ export function UsersPage() {
             </div>
           ) : error ? (
             <div className="p-6">
-              <p className="text-sm text-destructive">Error loading users: {error.message}</p>
+              <p className="text-sm text-destructive">
+                Error loading users: {error.message}
+              </p>
             </div>
           ) : users.length === 0 ? (
             <div className="p-6">
@@ -82,13 +89,17 @@ export function UsersPage() {
                       <div className="flex items-center space-x-3">
                         <Avatar>
                           <AvatarFallback>
-                            {(user.firstName?.[0] || user.email[0])?.toUpperCase()}
-                            {(user.lastName?.[0] || user.email[1])?.toUpperCase()}
+                            {(
+                              user.firstName?.[0] || user.email[0]
+                            )?.toUpperCase()}
+                            {(
+                              user.lastName?.[0] || user.email[1]
+                            )?.toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="text-sm font-medium">
-                            {user.firstName || user.lastName 
+                            {user.firstName || user.lastName
                               ? `${user.firstName} ${user.lastName}`.trim()
                               : user.email}
                           </p>
@@ -99,16 +110,18 @@ export function UsersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <RoleSelector 
+                      <RoleSelector
                         userId={user.id}
                         currentRole={user.role}
                         userEmail={user.email}
-                        userName={user.firstName || user.lastName ? `${user.firstName} ${user.lastName}`.trim() : ''}
+                        userName={
+                          user.firstName || user.lastName
+                            ? `${user.firstName} ${user.lastName}`.trim()
+                            : ""
+                        }
                       />
                     </TableCell>
-                    <TableCell>
-                      {user.phoneNumber || 'N/A'}
-                    </TableCell>
+                    <TableCell>{user.phoneNumber || "N/A"}</TableCell>
                     <TableCell>
                       {formatDistanceToNow(new Date(user.createdAt), {
                         addSuffix: true,
@@ -127,5 +140,5 @@ export function UsersPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

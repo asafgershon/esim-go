@@ -4,18 +4,34 @@ import { Input } from '@workspace/ui/components/input'
 import { Loader2, Mail, Eye, EyeOff, Shield } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+
+// Form validation schema
+interface LoginFormData {
+  email: string
+  password: string
+}
 
 export function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [emailError, setEmailError] = useState<string | null>(null)
-  const [passwordError, setPasswordError] = useState<string | null>(null)
   const { signIn, signInWithGoogle, signInWithApple, user } = useAuth()
   const navigate = useNavigate()
+
+  // React Hook Form setup
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+  } = useForm<LoginFormData>({
+    mode: 'onChange',
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  })
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -24,50 +40,12 @@ export function LoginPage() {
     }
   }, [user, navigate])
 
-  // Form validation
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!email) {
-      setEmailError('Email is required')
-      return false
-    }
-    if (!emailRegex.test(email)) {
-      setEmailError('Please enter a valid email address')
-      return false
-    }
-    setEmailError(null)
-    return true
-  }
-
-  const validatePassword = (password: string) => {
-    if (!password) {
-      setPasswordError('Password is required')
-      return false
-    }
-    if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters')
-      return false
-    }
-    setPasswordError(null)
-    return true
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSubmit = async (data: LoginFormData) => {
     setError(null)
-
-    // Validate form
-    const isEmailValid = validateEmail(email)
-    const isPasswordValid = validatePassword(password)
-
-    if (!isEmailValid || !isPasswordValid) {
-      return
-    }
-
     setLoading(true)
 
     try {
-      await signIn(email, password)
+      await signIn(data.email, data.password)
       navigate('/')
     } catch (err) {
       console.error('Login error:', err)
@@ -181,7 +159,7 @@ export function LoginPage() {
           </div>
 
           {/* Email/Password Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
                 Email address
@@ -190,18 +168,18 @@ export function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="name@example.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  if (emailError) validateEmail(e.target.value)
-                }}
-                onBlur={() => validateEmail(email)}
-                required
+                {...register('email', {
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: 'Please enter a valid email address',
+                  },
+                })}
                 disabled={loading || socialLoading !== null}
-                className={emailError ? 'border-destructive focus:border-destructive' : ''}
+                className={errors.email ? 'border-destructive focus:border-destructive' : ''}
               />
-              {emailError && (
-                <p className="text-sm text-destructive">{emailError}</p>
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
             </div>
 
@@ -214,15 +192,15 @@ export function LoginPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value)
-                    if (passwordError) validatePassword(e.target.value)
-                  }}
-                  onBlur={() => validatePassword(password)}
-                  required
+                  {...register('password', {
+                    required: 'Password is required',
+                    minLength: {
+                      value: 6,
+                      message: 'Password must be at least 6 characters',
+                    },
+                  })}
                   disabled={loading || socialLoading !== null}
-                  className={passwordError ? 'border-destructive focus:border-destructive pr-10' : 'pr-10'}
+                  className={errors.password ? 'border-destructive focus:border-destructive pr-10' : 'pr-10'}
                 />
                 <button
                   type="button"
@@ -233,15 +211,15 @@ export function LoginPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {passwordError && (
-                <p className="text-sm text-destructive">{passwordError}</p>
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
               )}
             </div>
 
             <Button 
               type="submit" 
               className="w-full h-11" 
-              disabled={loading || socialLoading !== null}
+              disabled={loading || socialLoading !== null || !isValid}
             >
               {loading ? (
                 <>
