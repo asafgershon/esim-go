@@ -1,6 +1,12 @@
 import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
+import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev";
 
+if (import.meta.env.DEV) {
+  // Adds messages only in a dev environment
+  loadDevMessages();
+  loadErrorMessages();
+}
 const httpLink = createHttpLink({
   uri: import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:5001/graphql',
 })

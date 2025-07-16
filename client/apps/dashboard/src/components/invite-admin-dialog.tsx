@@ -68,9 +68,38 @@ export function InviteAdminDialog() {
       } else {
         setError(result.data?.inviteAdminUser.error || 'Failed to send invitation');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error inviting admin user:', err);
-      setError('Failed to send invitation. Please try again.');
+      
+      // Enhanced error handling based on error type
+      let errorMessage = 'Failed to send invitation. Please try again.';
+      
+      if (err?.networkError) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (err?.graphQLErrors?.length > 0) {
+        const gqlError = err.graphQLErrors[0];
+        switch (gqlError.extensions?.code) {
+          case 'USER_ALREADY_EXISTS':
+            errorMessage = 'A user with this email already exists in the system.';
+            break;
+          case 'INVALID_EMAIL':
+            errorMessage = 'Please enter a valid email address.';
+            break;
+          case 'RATE_LIMIT_EXCEEDED':
+            errorMessage = 'Too many invitations sent. Please try again later.';
+            break;
+          case 'FORBIDDEN':
+            errorMessage = 'You do not have permission to invite users.';
+            break;
+          case 'SELF_INVITATION_FORBIDDEN':
+            errorMessage = 'You cannot invite yourself to the system.';
+            break;
+          default:
+            errorMessage = gqlError.message || errorMessage;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

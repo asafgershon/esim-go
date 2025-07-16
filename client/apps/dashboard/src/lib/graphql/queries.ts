@@ -1,4 +1,4 @@
-import { gql } from '@/__generated__/gql'
+import { gql } from '@apollo/client'
 
 export const GET_TRIPS = gql(`
   query GetTrips {
@@ -70,6 +70,71 @@ export const INVITE_ADMIN_USER = gql(`
       success
       error
       invitedEmail
+    }
+  }
+`)
+
+export const GET_DATA_PLANS = gql(`
+  query GetDataPlans($filter: DataPlanFilter) {
+    dataPlans(filter: $filter) {
+      items {
+        id
+        name
+        description
+        region
+        duration
+        price
+        currency
+        isUnlimited
+        bundleGroup
+        features
+        availableQuantity
+        countries {
+          iso
+          name
+          nameHebrew
+          region
+          flag
+        }
+      }
+      totalCount
+      hasNextPage
+      hasPreviousPage
+      pageInfo {
+        limit
+        offset
+        total
+        pages
+        currentPage
+      }
+    }
+  }
+`)
+
+export const ASSIGN_PACKAGE_TO_USER = gql(`
+  mutation AssignPackageToUser($userId: ID!, $planId: ID!) {
+    assignPackageToUser(userId: $userId, planId: $planId) {
+      success
+      error
+      assignment {
+        id
+        user {
+          id
+          email
+          firstName
+          lastName
+        }
+        dataPlan {
+          id
+          name
+          description
+          region
+          duration
+          price
+          currency
+        }
+        assignedAt
+      }
     }
   }
 `)

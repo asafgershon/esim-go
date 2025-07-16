@@ -24,6 +24,21 @@ export type ActivateEsimResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type AssignPackageResponse = {
+  __typename?: 'AssignPackageResponse';
+  assignment?: Maybe<PackageAssignment>;
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export enum AssignmentStatus {
+  Activated = 'ACTIVATED',
+  Assigned = 'ASSIGNED',
+  Cancelled = 'CANCELLED',
+  Expired = 'EXPIRED',
+  Pending = 'PENDING'
+}
+
 export enum BundleState {
   Active = 'ACTIVE',
   Cancelled = 'CANCELLED',
@@ -169,11 +184,26 @@ export type GetCheckoutSessionResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type InviteAdminUserInput = {
+  email: Scalars['String']['input'];
+  redirectUrl?: InputMaybe<Scalars['String']['input']>;
+  role: Scalars['String']['input'];
+};
+
+export type InviteAdminUserResponse = {
+  __typename?: 'InviteAdminUserResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  invitedEmail?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   activateESIM?: Maybe<ActivateEsimResponse>;
+  assignPackageToUser?: Maybe<AssignPackageResponse>;
   cancelESIM?: Maybe<EsimActionResponse>;
   createCheckoutSession: CreateCheckoutSessionResponse;
+  inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
   restoreESIM?: Maybe<EsimActionResponse>;
@@ -185,12 +215,19 @@ export type Mutation = {
   suspendESIM?: Maybe<EsimActionResponse>;
   updateCheckoutStep: UpdateCheckoutStepResponse;
   updateESIMReference?: Maybe<EsimActionResponse>;
+  updateUserRole?: Maybe<User>;
   verifyPhoneOTP?: Maybe<SignInResponse>;
 };
 
 
 export type MutationActivateEsimArgs = {
   esimId: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignPackageToUserArgs = {
+  planId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -201,6 +238,11 @@ export type MutationCancelEsimArgs = {
 
 export type MutationCreateCheckoutSessionArgs = {
   input: CreateCheckoutSessionInput;
+};
+
+
+export type MutationInviteAdminUserArgs = {
+  input: InviteAdminUserInput;
 };
 
 
@@ -261,6 +303,12 @@ export type MutationUpdateEsimReferenceArgs = {
 };
 
 
+export type MutationUpdateUserRoleArgs = {
+  role: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
 export type MutationVerifyPhoneOtpArgs = {
   input: VerifyOtpInput;
 };
@@ -268,7 +316,7 @@ export type MutationVerifyPhoneOtpArgs = {
 export type Order = {
   __typename?: 'Order';
   createdAt: Scalars['String']['output'];
-  dataPlan: DataPlan;
+  dataPlan?: Maybe<DataPlan>;
   esims: Array<Esim>;
   id: Scalars['ID']['output'];
   quantity: Scalars['Int']['output'];
@@ -291,6 +339,18 @@ export enum OrderStatus {
   Processing = 'PROCESSING',
   Refunded = 'REFUNDED'
 }
+
+export type PackageAssignment = {
+  __typename?: 'PackageAssignment';
+  assignedAt: Scalars['String']['output'];
+  assignedBy: User;
+  createdAt: Scalars['String']['output'];
+  dataPlan: DataPlan;
+  id: Scalars['ID']['output'];
+  status: AssignmentStatus;
+  updatedAt: Scalars['String']['output'];
+  user: User;
+};
 
 export type ProcessCheckoutPaymentInput = {
   paymentMethodId: Scalars['String']['input'];
@@ -334,7 +394,9 @@ export type Query = {
   myESIMs: Array<Esim>;
   myOrders: Array<Order>;
   orderDetails?: Maybe<Order>;
+  orders: Array<Order>;
   trips: Array<Trip>;
+  users: Array<User>;
 };
 
 
@@ -459,6 +521,7 @@ export type User = {
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
   phoneNumber?: Maybe<Scalars['String']['output']>;
+  role: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
 };
 

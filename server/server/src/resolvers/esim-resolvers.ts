@@ -14,26 +14,53 @@ export const esimResolvers: Partial<Resolvers> = {
     // Data plan browsing (public, no auth required)
     dataPlans: async (_, { filter }, context: Context) => {
       try {
-        const plans = await context.dataSources.catalogue.searchPlans({
+        const limit = filter?.limit || 50;
+        const offset = filter?.offset || 0;
+        
+        const response = await context.dataSources.catalogue.searchPlans({
           region: filter?.region || undefined,
           country: filter?.country || undefined,
           duration: filter?.duration || undefined,
           maxPrice: filter?.maxPrice || undefined,
           bundleGroup: filter?.bundleGroup || undefined,
+          limit,
+          offset,
         });
 
-        // Get plans from database to include DB IDs
-        const { data: dbPlans } = await supabaseAdmin
-          .from("data_plans")
-          .select("*")
-          .in(
-            "name",
-            plans.map((p) => p.name)
+        // Map plans directly from API without requiring database entries
+        let filteredPlans = response.bundles.map((plan) => mapDataPlan(plan));
+        
+        // Apply search filter if provided (client-side for now)
+        if (filter?.search) {
+          const searchTerm = filter.search.toLowerCase();
+          filteredPlans = filteredPlans.filter(plan => 
+            plan.name.toLowerCase().includes(searchTerm) ||
+            plan.description.toLowerCase().includes(searchTerm) ||
+            plan.region.toLowerCase().includes(searchTerm) ||
+            plan.bundleGroup?.toLowerCase().includes(searchTerm)
           );
-
-        const dbPlanMap = new Map(dbPlans?.map((p) => [p.name, p]) || []);
-
-        return plans.map((plan) => mapDataPlan(plan, dbPlanMap.get(plan.name)));
+        }
+        
+        // Calculate pagination metadata
+        const totalCount = response.totalCount;
+        const hasNextPage = offset + limit < totalCount;
+        const hasPreviousPage = offset > 0;
+        const pages = Math.ceil(totalCount / limit);
+        const currentPage = Math.floor(offset / limit) + 1;
+        
+        return {
+          items: filteredPlans,
+          totalCount,
+          hasNextPage,
+          hasPreviousPage,
+          pageInfo: {
+            limit,
+            offset,
+            total: totalCount,
+            pages,
+            currentPage,
+          },
+        };
       } catch (error) {
         console.error("Error fetching data plans:", error);
         throw new GraphQLError("Failed to fetch data plans", {

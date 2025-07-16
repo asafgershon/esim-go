@@ -1,45 +1,57 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ApolloProvider } from '@apollo/client'
+import { Toaster } from 'sonner'
 import { AuthProvider } from '@/contexts/auth-context'
 import { ProtectedRoute } from '@/components/protected-route'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { LoginPage } from '@/pages/login'
+import { AuthCallbackPage } from '@/pages/auth/callback'
 import { HomePage } from '@/pages/home'
 import { UsersPage } from '@/pages/users'
 import { OrdersPage } from '@/pages/orders'
+import { BundlesPage } from '@/pages/bundles'
 import { TripsPage } from '@/pages/trips'
+import { PackageAssignmentPage } from '@/pages/package-assignment'
 import { apolloClient } from '@/lib/apollo-client'
+
 
 const queryClient = new QueryClient()
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ApolloProvider client={apolloClient}>
-        <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <DashboardLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<HomePage />} />
-                <Route path="users" element={<UsersPage />} />
-                <Route path="orders" element={<OrdersPage />} />
-                <Route path="trips" element={<TripsPage />} />
-              </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </ApolloProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ApolloProvider client={apolloClient}>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<ErrorBoundary><HomePage /></ErrorBoundary>} />
+                  <Route path="users" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><UsersPage /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="orders" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><OrdersPage /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="bundles" element={<BundlesPage />} />
+                  <Route path="trips" element={<ErrorBoundary><TripsPage /></ErrorBoundary>} />
+                  <Route path="package-assignment" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><PackageAssignmentPage /></ProtectedRoute></ErrorBoundary>} />
+                </Route>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+              <Toaster />
+            </BrowserRouter>
+          </AuthProvider>
+        </ApolloProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
 

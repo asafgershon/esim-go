@@ -26,6 +26,21 @@ export type ActivateEsimResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type AssignPackageResponse = {
+  __typename?: 'AssignPackageResponse';
+  assignment?: Maybe<PackageAssignment>;
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export enum AssignmentStatus {
+  Activated = 'ACTIVATED',
+  Assigned = 'ASSIGNED',
+  Cancelled = 'CANCELLED',
+  Expired = 'EXPIRED',
+  Pending = 'PENDING'
+}
+
 export enum BundleState {
   Active = 'ACTIVE',
   Cancelled = 'CANCELLED',
@@ -62,7 +77,7 @@ export type Country = {
   flag?: Maybe<Scalars['String']['output']>;
   iso: Scalars['ISOCountryCode']['output'];
   name: Scalars['String']['output'];
-  nameHebrew: Scalars['String']['output'];
+  nameHebrew?: Maybe<Scalars['String']['output']>;
   region: Scalars['String']['output'];
 };
 
@@ -95,12 +110,24 @@ export type DataPlan = {
   region: Scalars['String']['output'];
 };
 
+export type DataPlanConnection = {
+  __typename?: 'DataPlanConnection';
+  hasNextPage: Scalars['Boolean']['output'];
+  hasPreviousPage: Scalars['Boolean']['output'];
+  items: Array<DataPlan>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
 export type DataPlanFilter = {
   bundleGroup?: InputMaybe<Scalars['String']['input']>;
   country?: InputMaybe<Scalars['String']['input']>;
   duration?: InputMaybe<Scalars['Int']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
   maxPrice?: InputMaybe<Scalars['Float']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
   region?: InputMaybe<Scalars['String']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Esim = {
@@ -187,6 +214,7 @@ export type InviteAdminUserResponse = {
 export type Mutation = {
   __typename?: 'Mutation';
   activateESIM?: Maybe<ActivateEsimResponse>;
+  assignPackageToUser?: Maybe<AssignPackageResponse>;
   cancelESIM?: Maybe<EsimActionResponse>;
   createCheckoutSession: CreateCheckoutSessionResponse;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
@@ -208,6 +236,12 @@ export type Mutation = {
 
 export type MutationActivateEsimArgs = {
   esimId: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignPackageToUserArgs = {
+  planId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -320,6 +354,27 @@ export enum OrderStatus {
   Refunded = 'REFUNDED'
 }
 
+export type PackageAssignment = {
+  __typename?: 'PackageAssignment';
+  assignedAt: Scalars['String']['output'];
+  assignedBy: User;
+  createdAt: Scalars['String']['output'];
+  dataPlan: DataPlan;
+  id: Scalars['ID']['output'];
+  status: AssignmentStatus;
+  updatedAt: Scalars['String']['output'];
+  user: User;
+};
+
+export type PageInfo = {
+  __typename?: 'PageInfo';
+  currentPage: Scalars['Int']['output'];
+  limit: Scalars['Int']['output'];
+  offset: Scalars['Int']['output'];
+  pages: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+};
+
 export type ProcessCheckoutPaymentInput = {
   paymentMethodId: Scalars['String']['input'];
   savePaymentMethod?: InputMaybe<Scalars['Boolean']['input']>;
@@ -354,7 +409,7 @@ export type Query = {
   calculatePrice: Scalars['Float']['output'];
   countries: Array<Country>;
   dataPlan?: Maybe<DataPlan>;
-  dataPlans: Array<DataPlan>;
+  dataPlans: DataPlanConnection;
   esimDetails?: Maybe<Esim>;
   getCheckoutSession: GetCheckoutSessionResponse;
   hello: Scalars['String']['output'];
@@ -530,9 +585,26 @@ export type InviteAdminUserMutationVariables = Exact<{
 
 export type InviteAdminUserMutation = { __typename?: 'Mutation', inviteAdminUser?: { __typename?: 'InviteAdminUserResponse', success: boolean, error?: string | null, invitedEmail?: string | null } | null };
 
+export type GetDataPlansQueryVariables = Exact<{
+  filter?: InputMaybe<DataPlanFilter>;
+}>;
+
+
+export type GetDataPlansQuery = { __typename?: 'Query', dataPlans: { __typename?: 'DataPlanConnection', totalCount: number, hasNextPage: boolean, hasPreviousPage: boolean, items: Array<{ __typename?: 'DataPlan', id: string, name: string, description: string, region: string, duration: number, price: number, currency: string, isUnlimited: boolean, bundleGroup?: string | null, features: Array<string>, availableQuantity?: number | null, countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region: string, flag?: string | null }> }>, pageInfo: { __typename?: 'PageInfo', limit: number, offset: number, total: number, pages: number, currentPage: number } } };
+
+export type AssignPackageToUserMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  planId: Scalars['ID']['input'];
+}>;
+
+
+export type AssignPackageToUserMutation = { __typename?: 'Mutation', assignPackageToUser?: { __typename?: 'AssignPackageResponse', success: boolean, error?: string | null, assignment?: { __typename?: 'PackageAssignment', id: string, assignedAt: string, user: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string }, dataPlan: { __typename?: 'DataPlan', id: string, name: string, description: string, region: string, duration: number, price: number, currency: string } } | null } | null };
+
 
 export const GetTripsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetTrips"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"trips"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"regionId"}},{"kind":"Field","name":{"kind":"Name","value":"countryIds"}}]}}]}}]} as unknown as DocumentNode<GetTripsQuery, GetTripsQueryVariables>;
 export const GetUsersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUsers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"users"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetUsersQuery, GetUsersQueryVariables>;
 export const GetOrdersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetOrders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"orders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"reference"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"totalPrice"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"dataPlan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}}]}}]}}]} as unknown as DocumentNode<GetOrdersQuery, GetOrdersQueryVariables>;
 export const UpdateUserRoleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateUserRole"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"role"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateUserRole"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"role"},"value":{"kind":"Variable","name":{"kind":"Name","value":"role"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<UpdateUserRoleMutation, UpdateUserRoleMutationVariables>;
 export const InviteAdminUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"InviteAdminUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"InviteAdminUserInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"inviteAdminUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"invitedEmail"}}]}}]}}]} as unknown as DocumentNode<InviteAdminUserMutation, InviteAdminUserMutationVariables>;
+export const GetDataPlansDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDataPlans"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"DataPlanFilter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"dataPlans"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"filter"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}},{"kind":"Field","name":{"kind":"Name","value":"isUnlimited"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}},{"kind":"Field","name":{"kind":"Name","value":"features"}},{"kind":"Field","name":{"kind":"Name","value":"availableQuantity"}},{"kind":"Field","name":{"kind":"Name","value":"countries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"iso"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"nameHebrew"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"flag"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasPreviousPage"}},{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"limit"}},{"kind":"Field","name":{"kind":"Name","value":"offset"}},{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"pages"}},{"kind":"Field","name":{"kind":"Name","value":"currentPage"}}]}}]}}]}}]} as unknown as DocumentNode<GetDataPlansQuery, GetDataPlansQueryVariables>;
+export const AssignPackageToUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AssignPackageToUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"planId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"assignPackageToUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"planId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"planId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"assignment"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"dataPlan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"assignedAt"}}]}}]}}]}}]} as unknown as DocumentNode<AssignPackageToUserMutation, AssignPackageToUserMutationVariables>;

@@ -14,7 +14,7 @@ type Query {
   myESIMs: [ESIM!]! @auth
   esimDetails(id: ID!): ESIM @auth
 
-  dataPlans(filter: DataPlanFilter): [DataPlan!]!
+  dataPlans(filter: DataPlanFilter): DataPlanConnection!
   dataPlan(id: ID!): DataPlan
 
   # Order queries
@@ -44,6 +44,9 @@ type Mutation {
   # User Management
   updateUserRole(userId: ID!, role: String!): User @auth(role: "ADMIN")
   inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse @auth(role: "ADMIN")
+  
+  # Package Assignment
+  assignPackageToUser(userId: ID!, planId: ID!): AssignPackageResponse @auth(role: "ADMIN")
 
   # eSIM operations
   purchaseESIM(planId: ID!, input: PurchaseESIMInput!): PurchaseESIMResponse
@@ -75,7 +78,7 @@ type User {
 type Country {
   iso: ISOCountryCode! # ISO 3166-1 alpha-2 code
   name: String! # English name
-  nameHebrew: String!
+  nameHebrew: String
   region: String!
   flag: String
 }
@@ -152,6 +155,32 @@ type InviteAdminUserResponse {
   invitedEmail: String
 }
 
+# Package Assignment Types
+type PackageAssignment {
+  id: ID!
+  user: User!
+  dataPlan: DataPlan!
+  assignedAt: String!
+  assignedBy: User!
+  status: AssignmentStatus!
+  createdAt: String!
+  updatedAt: String!
+}
+
+enum AssignmentStatus {
+  PENDING
+  ASSIGNED
+  ACTIVATED
+  EXPIRED
+  CANCELLED
+}
+
+type AssignPackageResponse {
+  success: Boolean!
+  error: String
+  assignment: PackageAssignment
+}
+
 # Data Plan Types (from eSIM Go catalogue)
 type DataPlan {
   id: ID!
@@ -175,6 +204,26 @@ input DataPlanFilter {
   duration: Int # Days
   maxPrice: Float
   bundleGroup: String
+  search: String # Search term for name/description
+  limit: Int # Number of items per page (default: 50, max: 200)
+  offset: Int # Starting position for pagination (default: 0)
+}
+
+# Pagination types for data plans
+type DataPlanConnection {
+  items: [DataPlan!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  pageInfo: PageInfo!
+}
+
+type PageInfo {
+  limit: Int!
+  offset: Int!
+  total: Int!
+  pages: Int!
+  currentPage: Int!
 }
 
 # Order Types

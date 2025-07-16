@@ -113,7 +113,7 @@ export const resolvers: Resolvers = {
       return countries.map((country) => ({
         iso: country.iso,
         name: country.country,
-        nameHebrew: country.hebrewName,
+        nameHebrew: country.hebrewName || country.country,
         region: country.region,
         flag: country.flag,
       }));
@@ -181,7 +181,7 @@ export const resolvers: Resolvers = {
       return countries.map((country) => ({
         iso: country.iso,
         name: country.country,
-        nameHebrew: country.hebrewName,
+        nameHebrew: country.hebrewName || country.country,
         region: country.region,
         flag: country.flag,
       }));
@@ -503,6 +503,122 @@ export const resolvers: Resolvers = {
 
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Mutation!,
+    
+    // Package Assignment
+    assignPackageToUser: async (_, { userId, planId }, context: Context) => {
+      try {
+        // Get the plan details from eSIM Go
+        const plans = await context.dataSources.catalogue.getAllBundels();
+        const plan = plans.find(p => p.name === planId);
+        
+        if (!plan) {
+          return {
+            success: false,
+            error: "Package not found",
+            assignment: null,
+          };
+        }
+
+        // Get the user to assign to
+        const { data: userData, error: userError } = await supabaseAdmin
+          .from("auth.users")
+          .select("id, email, raw_user_meta_data")
+          .eq("id", userId)
+          .single();
+
+        if (userError || !userData) {
+          return {
+            success: false,
+            error: "User not found",
+            assignment: null,
+          };
+        }
+
+        // Create the assignment
+        const { data: assignment, error: assignmentError } = await supabaseAdmin
+          .from("package_assignments")
+          .insert({
+            user_id: userId,
+            data_plan_id: planId,
+            assigned_by: context.auth.user!.id,
+            plan_snapshot: {
+              name: plan.name,
+              description: plan.description,
+              region: plan.baseCountry?.region || "Unknown",
+              duration: plan.duration,
+              price: plan.price,
+              currency: plan.currency,
+              isUnlimited: plan.isUnlimited,
+              bundleGroup: plan.bundleGroup,
+              features: plan.features || [],
+              countries: plan.countries || [],
+            },
+            status: "ASSIGNED",
+          })
+          .select()
+          .single();
+
+        if (assignmentError) {
+          console.error("Error creating assignment:", assignmentError);
+          return {
+            success: false,
+            error: "Failed to create assignment",
+            assignment: null,
+          };
+        }
+
+        // Return the assignment with resolved user and plan data
+        return {
+          success: true,
+          error: null,
+          assignment: {
+            id: assignment.id,
+            user: {
+              id: userData.id,
+              email: userData.email,
+              firstName: userData.raw_user_meta_data?.first_name || "",
+              lastName: userData.raw_user_meta_data?.last_name || "",
+              phoneNumber: userData.raw_user_meta_data?.phone_number || null,
+              role: userData.raw_user_meta_data?.role || "USER",
+              createdAt: userData.created_at,
+              updatedAt: userData.updated_at,
+            },
+            dataPlan: {
+              id: planId,
+              name: plan.name,
+              description: plan.description,
+              region: plan.baseCountry?.region || "Unknown",
+              duration: plan.duration,
+              price: plan.price,
+              currency: plan.currency,
+              isUnlimited: plan.isUnlimited,
+              bundleGroup: plan.bundleGroup,
+              features: plan.features || [],
+              availableQuantity: plan.availableQuantity,
+              countries: plan.countries?.map(c => ({
+                iso: c.iso,
+                name: c.country,
+                nameHebrew: c.hebrewName || c.country,
+                region: c.region,
+                flag: c.flag,
+              })) || [],
+            },
+            assignedAt: assignment.assigned_at,
+            assignedBy: context.auth.user!,
+            status: assignment.status,
+            createdAt: assignment.created_at,
+            updatedAt: assignment.updated_at,
+          },
+        };
+      } catch (error) {
+        console.error("Error in assignPackageToUser:", error);
+        return {
+          success: false,
+          error: "Internal server error",
+          assignment: null,
+        };
+      }
+    },
   },
 
   Subscription: {

@@ -142,7 +142,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   }
 
   /**
-   * Search plans by multiple criteria
+   * Search plans by multiple criteria with pagination
    */
   async searchPlans(criteria: {
     region?: string;
@@ -150,7 +150,9 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     duration?: number;
     maxPrice?: number;
     bundleGroup?: string;
-  }): Promise<ESIMGoDataPlan[]> {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number }> {
     const cacheKey = this.getCacheKey("catalogue:search", criteria);
 
     // Try to get from cache first
@@ -159,9 +161,52 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       return JSON.parse(cached);
     }
 
-    // Get all plans and apply filters
-    let plans = await this.getAllBundels();
+    // Prepare API parameters
+    const params: Record<string, any> = {};
+    
+    // Add pagination parameters
+    if (criteria.limit !== undefined) {
+      params.limit = Math.min(criteria.limit, 200); // Max 200 items per page
+    } else {
+      params.limit = 50; // Default limit
+    }
+    
+    if (criteria.offset !== undefined) {
+      params.offset = Math.max(0, criteria.offset); // Ensure non-negative offset
+    }
+    
+    // Add filtering parameters that the eSIM Go API supports
+    if (criteria.country) {
+      params.countries = criteria.country.toUpperCase();
+    }
+    
+    if (criteria.bundleGroup) {
+      params.group = criteria.bundleGroup;
+    }
+    
+    if (criteria.duration !== undefined) {
+      params.duration = criteria.duration;
+    }
+    
+    if (criteria.maxPrice !== undefined) {
+      params.maxPrice = criteria.maxPrice;
+    }
 
+    // Call the eSIM Go API with parameters
+    const response = await this.getWithErrorHandling<{ 
+      bundles: ESIMGoDataPlan[], 
+      totalCount: number,
+      limit: number,
+      offset: number 
+    }>("/v2.5/catalogue", params);
+
+    // If API doesn't return totalCount, we need to handle it
+    // For now, we'll calculate it based on the response
+    const totalCount = response.totalCount || response.bundles.length;
+    
+    let plans = response.bundles;
+
+    // Apply client-side filters for criteria not supported by API
     if (criteria.region) {
       plans = plans.filter(
         (plan) =>
@@ -174,37 +219,18 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       );
     }
 
-    if (criteria.country) {
-      plans = plans.filter(
-        (plan) =>
-          plan.countries.some(
-            (country) => country.iso === criteria.country!.toUpperCase()
-          ) ||
-          plan.roamingCountries.some(
-            (country) => country.iso === criteria.country!.toUpperCase()
-          )
-      );
-    }
-
-    if (criteria.duration !== undefined) {
-      plans = plans.filter((plan) => plan.duration === criteria.duration);
-    }
-
-    if (criteria.maxPrice !== undefined) {
-      plans = plans.filter((plan) => plan.price <= criteria.maxPrice!);
-    }
-
-    if (criteria.bundleGroup) {
-      plans = plans.filter((plan) => plan.bundleGroup === criteria.bundleGroup);
-    }
-
     // Sort by price (lowest first)
     plans.sort((a, b) => a.price - b.price);
 
-    // Cache for 1 hour
-    await this.cache?.set(cacheKey, JSON.stringify(plans), { ttl: 3600 });
+    const result = {
+      bundles: plans,
+      totalCount: totalCount
+    };
 
-    return plans;
+    // Cache for 1 hour
+    await this.cache?.set(cacheKey, JSON.stringify(result), { ttl: 3600 });
+
+    return result;
   }
 
   /**
