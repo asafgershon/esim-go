@@ -296,7 +296,7 @@ function BundlesPageContent() {
     
     const csvContent = [
       ['Name', 'Description', 'Region', 'Countries', 'Duration', 'Price', 'Currency', 'Bundle Group', 'Features', 'Stock', 'Type'],
-      ...filteredPlans.map(plan => [
+      ...(filteredPlans || []).map(plan => [
         plan.name,
         plan.description,
         plan.region,
@@ -322,12 +322,12 @@ function BundlesPageContent() {
 
   const uniqueRegions = useMemo(() => {
     if (!data?.dataPlans) return [];
-    return [...new Set(data.dataPlans.map(plan => plan.region).filter(region => region && region.trim() !== ''))];
+    return [...new Set(data.dataPlans.items.map(plan => plan.region).filter(region => region && region.trim() !== ''))];
   }, [data?.dataPlans]);
 
   const uniqueBundleGroups = useMemo(() => {
     if (!data?.dataPlans) return [];
-    return [...new Set(data.dataPlans.map(plan => plan.bundleGroup).filter(group => group && group.trim() !== ''))];
+    return [...new Set(data.dataPlans.items.map(plan => plan.bundleGroup).filter(group => group && group.trim() !== ''))];
   }, [data?.dataPlans]);
 
   if (error) {
@@ -448,7 +448,7 @@ function BundlesPageContent() {
                 <SelectContent>
                   <SelectItem value="all">All groups</SelectItem>
                   {uniqueBundleGroups.map((group) => (
-                    <SelectItem key={group} value={group}>
+                    <SelectItem key={group} value={group || ''}>
                       {group}
                     </SelectItem>
                   ))}

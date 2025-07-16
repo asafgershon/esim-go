@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
-import { useQuery, useMutation } from "@apollo/client";
-import { GET_USERS } from "@/lib/graphql/queries";
-import { GET_DATA_PLANS, ASSIGN_PACKAGE_TO_USER } from "@/lib/graphql/queries";
+import type { GetDataPlansQuery, GetUsersQuery } from "@/__generated__/graphql";
+import { ASSIGN_PACKAGE_TO_USER, GET_DATA_PLANS, GET_USERS } from "@/lib/graphql/queries";
+import { useMutation, useQuery } from "@apollo/client";
+import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
+import { Button } from "@workspace/ui/components/button";
 import {
   Card,
   CardContent,
@@ -9,20 +10,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@workspace/ui/components/select";
-import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
-import { Search, Package, User, CheckCircle, AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Package, Search, User } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import type { GetUsersQuery, GetDataPlansQuery } from "@/__generated__/graphql";
 
 type User = {
   id: string;
@@ -76,7 +68,7 @@ export function PackageAssignmentPage() {
   const [assignPackage] = useMutation(ASSIGN_PACKAGE_TO_USER);
 
   const users = usersData?.users || [];
-  const plans = plansData?.dataPlans || [];
+  const plans = plansData?.dataPlans?.items || [];
 
   // Keep client-side filtering for users (smaller dataset)
   const filteredUsers = users.filter(
@@ -86,7 +78,7 @@ export function PackageAssignmentPage() {
   );
 
   // Use plans directly from API (server-side filtered)
-  const filteredPlans = plans;
+  const filteredPlans = plans || [];
 
   const handleAssignPackage = async () => {
     if (!selectedUser || !selectedPlan) {
@@ -234,7 +226,7 @@ export function PackageAssignmentPage() {
                         ? "border-primary bg-primary/5"
                         : "hover:bg-muted/50"
                     }`}
-                    onClick={() => setSelectedPlan(plan)}
+                    onClick={() => plan && setSelectedPlan(plan as DataPlan)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
