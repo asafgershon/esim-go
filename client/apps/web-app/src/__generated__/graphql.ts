@@ -66,7 +66,9 @@ export type Country = {
 };
 
 export type CreateCheckoutSessionInput = {
-  planId: Scalars['ID']['input'];
+  countryId: Scalars['String']['input'];
+  numOfDays: Scalars['Int']['input'];
+  regionId: Scalars['String']['input'];
 };
 
 export type CreateCheckoutSessionResponse = {

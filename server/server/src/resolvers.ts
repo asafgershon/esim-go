@@ -86,7 +86,7 @@ export const resolvers: Resolvers = {
         regionId,
         countryId,
         context.dataSources.catalogue
-      );
+      ).then((pricing) => pricing.finalPrice);
     },
     ...checkoutResolvers.Query!,
   },

@@ -13,15 +13,19 @@ export interface ESIMGoDataPlan {
   description: string;
   bundleGroup?: string;
   baseCountry: ESIMGoCountry;
-  countries: ESIMGoCountry[];
+  countries: {
+    name: string;
+    iso: string;
+  }[];
+  unlimited: boolean;
   dataAmount: number; // MB, -1 for unlimited
   duration: number; // days
   speed: string;
-  unlimited: boolean;
   roamingCountries: ESIMGoCountry[];
   price: number;
   billingType: string;
   availableQuantity?: number;
+  id?: string;
 }
 
 export interface ESIMGoOrder {

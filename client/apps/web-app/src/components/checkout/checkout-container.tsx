@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card } from "@workspace/ui";
-import { Button } from "@workspace/ui";
 import { useAuth } from "@/hooks/useAuth";
 import { useSessionToken } from "@/hooks/useSessionToken";
 import { useCheckoutSession } from "@/hooks/useCheckoutSession";
@@ -17,23 +15,21 @@ import { CheckoutStepType } from "@/__generated__/graphql";
 export function CheckoutContainer() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
   const { token, saveToken, clearToken } = useSessionToken();
 
   // Get checkout parameters from URL
   const numOfDays = parseInt(searchParams.get("numOfDays") || "7");
-  const countryId = searchParams.get("countryId");
-  const tripId = searchParams.get("tripId");
-  const planId = countryId || tripId || "";
+  const countryId = searchParams.get("countryId") || "";
+  const regionId = searchParams.get("regionId") || "";
 
   // UI state
-  const [selectedMethod, setSelectedMethod] = useState<"qr" | "email">("qr");
+  const [selectedMethod, setSelectedMethod] = useState<"QR" | "EMAIL">("QR");
   const [email, setEmail] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentStep, setCurrentStep] = useState<CheckoutStepType | null>(null);
 
   // Backend session
   const {
@@ -44,86 +40,138 @@ export function CheckoutContainer() {
     error: sessionError,
   } = useCheckoutSession(token || undefined, isProcessing);
 
+  // Handle session errors (expired token, invalid session, etc.)
+  useEffect(() => {
+    if (sessionError && token) {
+      console.warn("Session error detected, clearing token:", sessionError);
+      clearToken();
+    }
+  }, [sessionError, token, clearToken]);
+
   // Step and payment hooks
-  const { updateStepWithData } = useCheckoutSteps(token || "");
+  const { updateStepWithData, updateStepError } = useCheckoutSteps(token || "");
   const { handlePayment } = useCheckoutPayment();
 
   // Initialize session if needed
   useEffect(() => {
-    if (!token && planId) {
-      (async () => {
+    const initializeSession = async () => {
+      // Create new session with current parameters
+      if (countryId || regionId) {
         try {
-          const result = await createSession({ variables: { input: { planId } } });
+          const result = await createSession({ variables: { input: { numOfDays, regionId, countryId } } });
           const newToken = result.data?.createCheckoutSession?.session?.token;
           if (newToken) {
             saveToken(newToken);
           }
-        } catch {
-          // handle error
+        } catch (error) {
+          console.error("Failed to create checkout session:", error);
         }
-      })();
-    }
-  }, [token, planId, createSession, saveToken]);
+      }
+    };
 
-  // Set current step from backend session
+    // Only create session if we don't have a valid one and have checkout parameters
+    if ((countryId || regionId) && !token && !sessionLoading) {
+      initializeSession();
+    }
+  }, [numOfDays, regionId, countryId, token, createSession, saveToken, sessionLoading]);
+
+  // Clear token when checkout parameters change (different order)
   useEffect(() => {
-    if (session?.steps) {
-      if (!session.steps.authentication?.completed) setCurrentStep(CheckoutStepType.Authentication);
-      else if (!session.steps.delivery?.completed) setCurrentStep(CheckoutStepType.Delivery);
-      else if (!session.steps.payment?.completed) setCurrentStep(CheckoutStepType.Payment);
-      else if (session.isComplete) setCurrentStep(null);
+    if (token) {
+      clearToken();
     }
-  }, [session]);
+  }, [numOfDays, regionId, countryId]); // Only depend on the parameters, not token functions
 
-  // Delivery step completion
-  const handleDeliveryComplete = useCallback(async () => {
+  // Auto-complete delivery step if auth is already completed when session loads
+  useEffect(() => {
+    if (session && session.steps?.authentication?.completed && !session.steps?.delivery?.completed && token) {
+      // User is already authenticated, auto-complete delivery with default QR method
+      updateStepWithData(CheckoutStepType.Delivery, {
+        method: "QR",
+      }).then(() => {
+        refetchSession();
+      });
+    }
+  }, [session?.steps?.authentication?.completed, session?.steps?.delivery?.completed, token, updateStepWithData, refetchSession]);
+
+  const isDeliveryValid = selectedMethod === "QR" || (selectedMethod === "EMAIL" && email.length > 3);
+
+  // Delivery step completion or update
+  const handleDeliveryUpdate = useCallback(async () => {
+    if (updateStepError) {
+      console.error("Error updating delivery step", updateStepError);
+      return;
+    }
     if (token) {
       await updateStepWithData(CheckoutStepType.Delivery, {
         method: selectedMethod,
-        email: selectedMethod === "email" ? email : undefined,
+        email: selectedMethod === "EMAIL" ? email : undefined,
       });
       refetchSession();
     }
-  }, [token, selectedMethod, email, updateStepWithData, refetchSession]);
+  }, [token, selectedMethod, email, updateStepWithData, refetchSession, updateStepError]);
 
   // Auth step completion
   const handleAuthComplete = useCallback(async () => {
     if (token && user) {
+      console.log("handleAuthComplete", user.id);
       await updateStepWithData(CheckoutStepType.Authentication, { userId: user.id });
       refetchSession();
     }
   }, [token, user, updateStepWithData, refetchSession]);
 
-  // Payment step completion
-  const handlePaymentSubmit = useCallback(async () => {
+  useEffect(() => {
+    // When user authenticates, complete the auth step (only if not already completed)
+    if (user && session && (!session.steps.authentication?.completed || !session.steps.authentication?.userId)) {
+      handleAuthComplete();
+    }
+  }, [user, session, handleAuthComplete]);
+
+  useEffect(() => {
+    // When delivery method changes, update it if the step is already completed.
+    if (isDeliveryValid && session?.steps.delivery?.completed) {
+      const deliveryData = session.steps.delivery;
+      if (deliveryData?.method !== selectedMethod || (selectedMethod === "EMAIL" && deliveryData?.email !== email)) {
+        console.log("Delivery method changed, updating step", deliveryData?.method, selectedMethod, deliveryData?.email, email);
+        handleDeliveryUpdate();
+      }
+    }
+  }, [selectedMethod, email, isDeliveryValid, session, handleDeliveryUpdate]);
+
+  // Payment callback from PaymentSection
+  const handlePaymentSubmit = useCallback(async (paymentMethodId: string) => {
     if (!token) return;
     setIsProcessing(true);
     try {
-      // For now, use a mock payment method ID
-      const mockPaymentMethodId = `pm_mock_${Date.now()}`;
-      const result = await handlePayment(token, mockPaymentMethodId);
+      // Send payment method to backend - this triggers webhook waiting process
+      // Backend will wait for payment provider webhook to confirm final status
+      const result = await handlePayment(token, paymentMethodId);
       if (result.data?.processCheckoutPayment?.success) {
+        // Payment initiated successfully - backend is now waiting for webhook
+        // Start polling to monitor webhook completion
         await refetchSession();
       }
     } catch {
-      // handle error
-    } finally {
+      // handle error - stop processing on actual errors
       setIsProcessing(false);
     }
+    // Note: We don't setIsProcessing(false) on success because we need to keep
+    // polling until the webhook completes and session.isComplete = true
   }, [token, handlePayment, refetchSession]);
 
-  // Poll for completion and redirect
+  // Poll for webhook completion and redirect
   useEffect(() => {
     if (session?.isComplete && session?.metadata?.orderId) {
+      // Webhook has completed successfully - stop processing and redirect
+      setIsProcessing(false);
       clearToken();
       router.push(`/order/${session.metadata.orderId}`);
     }
   }, [session, clearToken, router]);
 
   // UI helpers
-  const isPaymentValid = cardNumber.replace(/\s/g, "").length >= 16 && expiry.length === 5 && cvv.length >= 3;
-  const isDeliveryValid = selectedMethod === "qr" || (selectedMethod === "email" && email.length > 3);
-  const allSectionsCompleted = isAuthenticated && isPaymentValid && isDeliveryValid;
+  const canSubmitPayment =
+    session?.steps.authentication?.completed
 
   // Loading and error states
   if (sessionLoading) {
@@ -141,7 +189,7 @@ export function CheckoutContainer() {
           <OrderDetailsSection 
             numOfDays={numOfDays}
             countryId={countryId}
-            tripId={tripId}
+            tripId={regionId}
             totalPrice={session?.pricing?.total || 0}
             sectionNumber={1}
           />
@@ -152,23 +200,11 @@ export function CheckoutContainer() {
             email={email}
             setEmail={setEmail}
           />
-          {/* Delivery step completion button */}
-          {currentStep === CheckoutStepType.Delivery && (
-            <Button onClick={handleDeliveryComplete} disabled={!isDeliveryValid} className="w-full">
-              המשך לאימות
-            </Button>
-          )}
         </div>
         {/* Right Column - Payment & Login */}
         <div className="space-y-6">
           <LoginSection sectionNumber={3} />
-          {/* Auth step completion button */}
-          {currentStep === CheckoutStepType.Authentication && isAuthenticated && (
-            <Button onClick={handleAuthComplete} className="w-full">
-              המשך למשלוח
-            </Button>
-          )}
-          <PaymentSection 
+          <PaymentSection
             sectionNumber={4}
             cardNumber={cardNumber}
             setCardNumber={setCardNumber}
@@ -176,27 +212,10 @@ export function CheckoutContainer() {
             setExpiry={setExpiry}
             cvv={cvv}
             setCvv={setCvv}
+            onPaymentSubmit={handlePaymentSubmit}
+            isProcessing={isProcessing}
+            canSubmit={canSubmitPayment}
           />
-          {/* Payment step completion button */}
-          {currentStep === CheckoutStepType.Payment && (
-            <Card className="p-6">
-              <Button
-                onClick={handlePaymentSubmit}
-                disabled={!allSectionsCompleted || isProcessing}
-                className="w-full h-12 text-lg font-medium"
-              >
-                {isProcessing 
-                  ? "מעבד..." 
-                  : "קבל קוד"
-                }
-              </Button>
-              {!allSectionsCompleted && (
-                <p className="text-sm text-muted-foreground text-center mt-2">
-                  יש להשלים את כל השלבים כדי להמשיך
-                </p>
-              )}
-            </Card>
-          )}
           {/* Payment processing screen */}
           {isProcessing && (
             <div className="p-6 text-center">

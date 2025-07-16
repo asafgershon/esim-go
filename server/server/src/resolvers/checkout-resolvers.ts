@@ -1,33 +1,23 @@
-// checkout.resolvers.ts
-// Step 1: Basic checkout session creation and management
-
-import crypto from 'crypto';
-import { GraphQLError } from 'graphql';
-import jwt from 'jsonwebtoken';
-import { z } from 'zod';
-import type { Context } from '../context/types';
-import type { Database } from '../database.types';
+import crypto from "crypto";
+import { GraphQLError } from "graphql";
+import jwt from "jsonwebtoken";
+import { z } from "zod";
+import type { Context } from "../context/types";
+import type { Database } from "../database.types";
+import { CheckoutSessionStepsSchema } from "../repositories/checkout/checkout-session.repository";
 import {
-  CheckoutSessionStepsSchema
-} from '../repositories/checkout/checkout-session.repository';
-import { createDeliveryService } from '../services/delivery';
-import { createPaymentService } from '../services/payment';
-import type { EsimStatus, OrderStatus, Resolvers } from '../types';
+  createDeliveryService,
+  type DeliveryMethod,
+} from "../services/delivery";
+import { createPaymentService } from "../services/payment";
+import type { EsimStatus, OrderStatus, Resolvers } from "../types";
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS
 // ===============================================
 
 type CheckoutSessionRow =
-  Database['public']['Tables']['checkout_sessions']['Row'];
-
-const PricingSchema = z.object({
-  subtotal: z.number(),
-  taxes: z.number(),
-  fees: z.number(),
-  total: z.number(),
-  currency: z.string(),
-});
+  Database["public"]["Tables"]["checkout_sessions"]["Row"];
 
 const PlanSnapshotSchema = z.object({
   id: z.string(),
@@ -71,6 +61,7 @@ function validateCheckoutToken(token: string): CheckoutSessionToken {
 
     return decoded;
   } catch (error) {
+    console.error("Error in validateCheckoutToken:", error);
     throw new GraphQLError("Invalid or expired checkout token", {
       extensions: { code: "INVALID_TOKEN" },
     });
@@ -113,7 +104,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
         // Parse JSON fields into typed objects
         const steps = CheckoutSessionStepsSchema.parse(session.steps || {});
-        const pricing = PricingSchema.parse(session.pricing);
+        const pricing = session.pricing;
         const planSnapshot = PlanSnapshotSchema.parse(session.plan_snapshot);
 
         // Check if session is expired
@@ -140,16 +131,10 @@ export const checkoutResolvers: Partial<Resolvers> = {
           )
         );
 
-        console.log(
-          "Session found, isComplete:",
-          isComplete,
-          "timeRemaining:",
-          timeRemaining
-        );
-
         return {
           success: true,
           session: {
+            orderId: session.order_id,
             id: session.id,
             token,
             expiresAt: session.expires_at,
@@ -160,7 +145,8 @@ export const checkoutResolvers: Partial<Resolvers> = {
             planSnapshot: planSnapshot,
             pricing: pricing,
             steps: steps,
-            paymentStatus: session.payment_status || 'PENDING',
+            paymentStatus: session.payment_status || "PENDING",
+            metadata: session.metadata, // Added missing metadata field
           },
           error: null,
         };
@@ -179,46 +165,38 @@ export const checkoutResolvers: Partial<Resolvers> = {
     // Create a new checkout session
     createCheckoutSession: async (_, { input }, context: Context) => {
       try {
-        const { planId } = input;
-        console.log("Creating checkout session for planId:", planId);
+        const { countryId, numOfDays, regionId } = input;
+        console.log(
+          "Creating checkout session for countryId:",
+          countryId,
+          "numOfDays:",
+          numOfDays,
+          "regionId:",
+          regionId
+        );
+        const pricing = await context.services.pricing.calculatePrice(
+          numOfDays,
+          regionId,
+          countryId,
+          context.dataSources.catalogue
+        );
 
-        // Get plan details from catalogue API (same as your dataPlans query)
-        const plans = await context.dataSources.catalogue.searchPlans({});
-        const plan = plans.find((p) => p.name === planId);
-
-        if (!plan) {
-          console.error("Plan not found in catalogue:", planId);
-          return {
-            success: false,
-            error: `Plan not found: ${planId}`,
-            session: null,
-          };
-        }
-
+        const { plan } = pricing;
         console.log("Found plan:", plan.name, "Price:", plan.price);
-
-        // Calculate pricing (same as your calculatePrice logic)
-        const pricing = {
-          subtotal: Math.round(plan.price * 100), // Convert to cents
-          taxes: 0, // Add tax calculation if needed
-          fees: 0, // Add fee calculation if needed
-          total: Math.round(plan.price * 100),
-          currency: "USD",
-        };
 
         console.log("Calculated pricing:", pricing);
 
         // Create session in database using repository
         const session = await context.repositories.checkoutSessions.create({
           user_id: context.auth?.user?.id,
-          plan_id: planId,
+          plan_id: plan.id,
           plan_snapshot: {
-            id: planId,
+            id: plan.id,
             name: plan.name,
             duration: plan.duration,
             price: plan.price,
-            currency: 'USD',
-            countries: plan.countries?.map(c => c.iso) || [],
+            currency: "USD",
+            countries: plan.countries,
           },
           pricing,
           steps: {
@@ -234,7 +212,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
         });
 
-        console.log('Created session:', session.id);
+        console.log("Created session:", session.id);
 
         // Generate JWT token (include session ID even if user not authenticated)
         const token = generateCheckoutToken(
@@ -243,7 +221,10 @@ export const checkoutResolvers: Partial<Resolvers> = {
         );
 
         // Store token hash in database for lookup
-        await context.repositories.checkoutSessions.updateTokenHash(session.id, hashToken(token));
+        await context.repositories.checkoutSessions.updateTokenHash(
+          session.id,
+          hashToken(token)
+        );
 
         return {
           success: true,
@@ -270,7 +251,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
     updateCheckoutStep: async (_, { input }, context: Context) => {
       try {
         const { token, stepType, data } = input;
-        console.log('Updating checkout step:', stepType, 'with data:', data);
+        console.log("Updating checkout step:", stepType, "with data:", data);
 
         // Validate token
         const decoded = validateCheckoutToken(token);
@@ -294,7 +275,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         const now = new Date().toISOString();
 
         switch (stepType) {
-          case 'AUTHENTICATION':
+          case "AUTHENTICATION":
             // User has logged in or signed up
             steps.authentication = {
               completed: true,
@@ -313,7 +294,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             }
             break;
 
-          case 'DELIVERY':
+          case "DELIVERY":
             // User has selected delivery method for QR code
             steps.delivery = {
               completed: true,
@@ -324,7 +305,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             };
             break;
 
-          case 'PAYMENT':
+          case "PAYMENT":
             // User has selected payment method (not yet processed)
             steps.payment = {
               completed: false, // Will be completed after actual payment
@@ -343,15 +324,13 @@ export const checkoutResolvers: Partial<Resolvers> = {
             };
         }
 
-        console.log('Updated steps:', steps);
+        console.log("Updated steps:", steps);
 
         // Update session in database using repository
-        const updatedSession = await context.repositories.checkoutSessions.update(
-          session.id,
-          {
+        const updatedSession =
+          await context.repositories.checkoutSessions.update(session.id, {
             steps: steps,
-          }
-        );
+          });
 
         // Re-parse for consistency
         const updatedSteps = CheckoutSessionStepsSchema.parse(
@@ -361,11 +340,11 @@ export const checkoutResolvers: Partial<Resolvers> = {
         // Determine next step
         let nextStep: string | null = null;
         if (!updatedSteps.authentication?.completed) {
-          nextStep = 'AUTHENTICATION';
+          nextStep = "AUTHENTICATION";
         } else if (!updatedSteps.delivery?.completed) {
-          nextStep = 'DELIVERY';
+          nextStep = "DELIVERY";
         } else if (!updatedSteps.payment?.readyForPayment) {
-          nextStep = 'PAYMENT';
+          nextStep = "PAYMENT";
         }
         // If nextStep is null, all steps are ready for final payment processing
 
@@ -373,7 +352,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           !nextStep && updatedSteps.payment?.readyForPayment
         );
 
-        console.log('Next step:', nextStep, 'Is complete:', isComplete);
+        console.log("Next step:", nextStep, "Is complete:", isComplete);
 
         return {
           success: true,
@@ -393,7 +372,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             planSnapshot: updatedSession.plan_snapshot,
             pricing: updatedSession.pricing,
             steps: updatedSteps,
-            paymentStatus: updatedSession.payment_status || 'PENDING',
+            paymentStatus: updatedSession.payment_status || "PENDING",
           },
           nextStep: nextStep as any,
           error: null,
@@ -414,8 +393,8 @@ export const checkoutResolvers: Partial<Resolvers> = {
       try {
         const { token, paymentMethodId, savePaymentMethod } = input;
         console.log(
-          'Processing checkout payment for token:',
-          token.substring(0, 20) + '...'
+          "Processing checkout payment for token:",
+          token.substring(0, 20) + "..."
         );
 
         // Validate token
@@ -439,7 +418,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
         // Parse JSON fields
         const steps = CheckoutSessionStepsSchema.parse(session.steps || {});
-        const pricing = PricingSchema.parse(session.pricing);
+        const pricing = session.pricing;
         const planSnapshot = PlanSnapshotSchema.parse(session.plan_snapshot);
 
         // Check if session is expired
@@ -485,12 +464,12 @@ export const checkoutResolvers: Partial<Resolvers> = {
           .substr(2, 9)}`;
 
         // Create payment service and process payment
-        const paymentService = createPaymentService('mock');
+        const paymentService = createPaymentService("mock");
         await paymentService.initialize({});
 
         const paymentResult = await paymentService.createPaymentIntent({
-          amount: pricing.total,
-          currency: pricing.currency.toLowerCase(),
+          amount: (pricing as any)?.finalPrice,
+          currency: "USD",
           payment_method_id: paymentMethodId,
           description: `eSIM purchase: ${planSnapshot.name}`,
           metadata: {
@@ -512,7 +491,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         }
 
         const paymentIntent = paymentResult.payment_intent;
-        console.log('Payment intent created:', paymentIntent.id);
+        console.log("Payment intent created:", paymentIntent.id);
 
         // Update session with payment processing status
         const updatedSteps = {
@@ -534,7 +513,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             updatedSteps
           );
 
-        console.log('Session updated, starting webhook simulation...');
+        console.log("Session updated, starting webhook simulation...");
 
         // Start webhook simulation (Step 2: Timer to simulate webhook)
         // In production, this would be a real webhook from Stripe
@@ -573,6 +552,8 @@ export const checkoutResolvers: Partial<Resolvers> = {
             pricing: updatedSession.pricing,
             steps: updatedSteps,
             paymentStatus: "PROCESSING",
+            orderId: updatedSession.order_id,
+            metadata: updatedSession.metadata, // Added missing metadata field
           },
           paymentIntentId: paymentIntent.id,
           webhookProcessing: true,
@@ -617,23 +598,21 @@ async function simulateWebhookProcessing(
       true // Simulate success - in real webhook this would be determined by the actual payment result
     );
 
-    const paymentSucceeded = completedPayment.status === 'succeeded';
+    const paymentSucceeded = completedPayment.status === "succeeded";
 
     if (paymentSucceeded) {
-      console.log('Payment succeeded, creating order and provisioning eSIM...');
+      console.log("Payment succeeded, creating order and provisioning eSIM...");
 
-      const steps = CheckoutSessionStepsSchema.parse(originalSession.steps || {});
-      const pricing = PricingSchema.parse(originalSession.pricing);
+      const steps = CheckoutSessionStepsSchema.parse(
+        originalSession.steps || {}
+      );
+      const pricing = originalSession.pricing;
       const planSnapshot = PlanSnapshotSchema.parse(
         originalSession.plan_snapshot
       );
 
       // Step 2: Real eSIM provisioning using eSIM Go API
-      const esimData = await provisionESIM(
-        planSnapshot,
-        orderId,
-        context
-      );
+      const esimData = await provisionESIM(planSnapshot, orderId, context);
 
       if (!steps.authentication?.userId) {
         throw new Error("Cannot create order without a user ID");
@@ -643,14 +622,14 @@ async function simulateWebhookProcessing(
       const orderRecord = await context.repositories.orders.create({
         user_id: steps.authentication.userId,
         reference: orderId, // This becomes the order reference
-        status: 'COMPLETED' as OrderStatus,
+        status: "COMPLETED" as OrderStatus,
         plan_data: planSnapshot, // Store plan info in JSONB field
         quantity: 1,
-        total_price: pricing.total / 100, // Convert cents back to dollars
+        total_price: (pricing as any)?.finalPrice, // Convert cents back to dollars
         esim_go_order_ref: esimData.esimGoOrderRef, // Real eSIM Go order reference
       });
 
-      console.log('Order record created:', orderRecord.id);
+      console.log("Order record created:", orderRecord.id);
 
       // Step 3: Create ESIM record using repository
       const esimRecord = await context.repositories.esims.create({
@@ -659,48 +638,48 @@ async function simulateWebhookProcessing(
         iccid: esimData.iccid,
         customer_ref: orderId,
         qr_code_url: esimData.qrCode,
-        status: 'ASSIGNED' as EsimStatus,
+        status: "ASSIGNED" as EsimStatus,
         assigned_date: new Date().toISOString(),
-        last_action: 'ASSIGNED',
+        last_action: "ASSIGNED",
         action_date: new Date().toISOString(),
       });
 
-      console.log('eSIM record created:', esimRecord.id);
+      console.log("eSIM record created:", esimRecord.id);
 
       // Step 4: Deliver eSIM QR code to customer
       const deliveryService = createDeliveryService();
       const deliveryMethod = steps.delivery;
 
-      if (deliveryMethod?.completed) {
-        try {
-          const deliveryResult = await deliveryService.deliverESIM(
-            {
-              esimId: esimRecord.id,
-              iccid: esimData.iccid,
-              qrCodeUrl: esimData.qrCode,
-              activationCode: esimData.activationCode,
-              activationUrl: esimData.activationUrl,
-              instructions: esimData.instructions,
-              planName: planSnapshot.name,
-              customerName: 'Customer', // TODO: Get actual customer name from user profile
-              orderReference: orderId,
-            },
-            {
-              type: deliveryMethod.method || 'EMAIL',
-              email: deliveryMethod.email,
-              phoneNumber: deliveryMethod.phoneNumber,
-            }
-          );
+      // if (deliveryMethod?.completed) {
+      //   try {
+      //     const deliveryResult = await deliveryService.deliverESIM(
+      //       {
+      //         esimId: esimRecord.id,
+      //         iccid: esimData.iccid,
+      //         qrCodeUrl: esimData.qrCode,
+      //         activationCode: esimData.activationCode,
+      //         activationUrl: esimData.activationUrl,
+      //         instructions: esimData.instructions,
+      //         planName: planSnapshot.name,
+      //         customerName: "Customer", // TODO: Get actual customer name from user profile
+      //         orderReference: orderId,
+      //       },
+      //       {
+      //         type: (deliveryMethod.method || "EMAIL") as  unknown as DeliveryMethod,
+      //         email: deliveryMethod.email,
+      //         phoneNumber: deliveryMethod.phoneNumber,
+      //       }
+      //     );
 
-          console.log('eSIM delivery result:', deliveryResult);
-          
-          if (!deliveryResult.success) {
-            console.error('Failed to deliver eSIM:', deliveryResult.error);
-          }
-        } catch (error) {
-          console.error('Error delivering eSIM:', error);
-        }
-      }
+      //     console.log("eSIM delivery result:", deliveryResult);
+
+      //     if (!deliveryResult.success) {
+      //       console.error("Failed to deliver eSIM:", deliveryResult.error);
+      //     }
+      //   } catch (error) {
+      //     console.error("Error delivering eSIM:", error);
+      //   }
+      // }
 
       // Step 5: Update checkout session to completed
       const completedSteps = {
@@ -712,6 +691,13 @@ async function simulateWebhookProcessing(
           paymentIntentId,
         },
       };
+
+      // Update payment step and global isCompleted flag
+      await context.repositories.checkoutSessions.updatePaymentProcessing(
+        sessionId,
+        paymentIntentId,
+        completedSteps
+      );
 
       await context.repositories.checkoutSessions.markCompleted(sessionId, {
         orderId: orderRecord.id, // This is the database order ID, not the reference
@@ -727,13 +713,18 @@ async function simulateWebhookProcessing(
       // Payment failed
       console.log("Payment failed, updating session...");
 
-      await context.repositories.checkoutSessions.updatePaymentFailed(sessionId);
+      await context.repositories.checkoutSessions.updatePaymentFailed(
+        sessionId
+      );
     }
   } catch (error: any) {
     console.error("Webhook simulation error:", error);
 
     // Update session to failed state
-    await context.repositories.checkoutSessions.updatePaymentFailed(sessionId, error.message);
+    await context.repositories.checkoutSessions.updatePaymentFailed(
+      sessionId,
+      error.message
+    );
   }
 }
 
@@ -746,8 +737,20 @@ async function provisionESIM(
   customerReference: string,
   context: Context
 ) {
-  console.log('Real eSIM provisioning for plan:', planSnapshot.name);
+  console.log("Real eSIM provisioning for plan:", planSnapshot.name);
 
+  // Return mock for now
+  return {
+    iccid: `89000000000000000${Math.random().toString().substr(2, 6)}`, // Mock ICCID
+    qrCode: `https://mock-qr-service.com/qr/${planSnapshot.id}/${customerReference}`, // Mock QR code URL
+    activationCode: `ACT-${customerReference}`, // Mock activation code
+    activationUrl: `https://esim-activate.com/activate/${customerReference}`, // Mock activation URL
+    instructions: `To activate your eSIM for ${planSnapshot.name}:\n1. Scan the QR code\n2. Follow setup instructions\n3. Enjoy your data!`,
+    status: "ASSIGNED",
+    esimGoOrderRef: `ESG-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 6)}`, // Mock eSIM Go order reference
+  };
   try {
     // Step 1: Create order in eSIM Go API
     const esimGoOrder = await context.dataSources.orders.createOrder({
@@ -781,13 +784,14 @@ async function provisionESIM(
       qrCode: assignment.qrCode, // This is the real QR code from eSIM Go
       activationCode: (assignment as any).activationCode || null,
       activationUrl: (assignment as any).activationUrl || null,
-      instructions: (assignment as any).instructions || generateDefaultInstructions(),
+      instructions:
+        (assignment as any).instructions || generateDefaultInstructions(),
       status: "ASSIGNED",
       esimGoOrderRef: esimGoOrder.reference,
     };
   } catch (error) {
     console.error("Error provisioning eSIM:", error);
-    
+
     // If real provisioning fails, we could fall back to mock for development
     // But in production, we should throw the error
     throw new Error(`Failed to provision eSIM: ${(error as Error).message}`);

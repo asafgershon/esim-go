@@ -23,7 +23,7 @@ export const CheckoutSessionStepsSchema = z.object({
     .object({
       completed: z.boolean(),
       completedAt: z.string().optional(),
-      method: z.enum(['EMAIL', 'SMS', 'BOTH']).optional(),
+      method: z.enum(['EMAIL', 'SMS', 'BOTH', 'QR']).optional(),
       email: z.string().optional(),
       phoneNumber: z.string().optional(),
     })
@@ -117,6 +117,7 @@ export class CheckoutSessionRepository extends BaseSupabaseRepository<
     return this.update(id, {
       payment_status: 'SUCCEEDED',
       metadata,
+      order_id: metadata.orderId,
     });
   }
 

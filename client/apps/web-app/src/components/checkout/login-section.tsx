@@ -10,6 +10,7 @@ import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 import { usePhoneOTP } from "@/hooks/usePhoneOTP";
 import { useAuth } from "@/hooks/useAuth";
 import { User, CheckCircle, LogOut } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 
 interface LoginSectionProps {
   sectionNumber?: number;
@@ -19,23 +20,30 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
-  
+
   const { user, isAuthenticated, isLoading, signOut, refreshAuth } = useAuth();
   const { signInWithApple, loading: appleLoading } = useAppleSignIn();
   const { signInWithGoogle, loading: googleLoading } = useGoogleSignIn();
-  const { loading: otpLoading, step, phoneNumber, sendOTP, verifyOTP, resetFlow } = usePhoneOTP();
+  const {
+    loading: otpLoading,
+    step,
+    phoneNumber,
+    sendOTP,
+    verifyOTP,
+    resetFlow,
+  } = usePhoneOTP();
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (!phoneInput.trim()) {
       setError("אנא הכנס את מספר הטלפון שלך");
       return;
     }
-    
+
     const result = await sendOTP(phoneInput);
-    
+
     if (!result.success) {
       setError(result.error || "שליחת הקוד נכשלה");
     }
@@ -44,14 +52,14 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
   const handleOTPSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (otp.length !== 6) {
       setError("אנא הכנס את הקוד המלא בן 6 הספרות");
       return;
     }
-    
+
     const result = await verifyOTP(otp);
-    
+
     if (!result.success) {
       setError(result.error || "קוד לא תקין");
     } else {
@@ -64,7 +72,7 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
     setError("");
     try {
       const result = await signInWithApple(false); // false for manual trigger
-      
+
       if (result.success) {
         // Refresh auth state after successful login
         refreshAuth();
@@ -80,7 +88,7 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
     setError("");
     try {
       const result = await signInWithGoogle(false); // false for manual trigger
-      
+
       if (result.success) {
         // Refresh auth state after successful login
         refreshAuth();
@@ -118,74 +126,77 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
     const formatPhoneNumber = (phoneNumber: string) => {
       try {
         // Remove any non-digit characters first
-        const cleaned = phoneNumber.replace(/\D/g, '');
-        
+        const cleaned = phoneNumber.replace(/\D/g, "");
+
         // Israeli phone numbers
-        if (cleaned.startsWith('972') && cleaned.length === 12) {
+        if (cleaned.startsWith("972") && cleaned.length === 12) {
           // International format: +972-XX-XXX-XXXX
-          return `+972-${cleaned.slice(3, 5)}-${cleaned.slice(5, 8)}-${cleaned.slice(8, 12)}`;
-        } else if (cleaned.startsWith('0') && cleaned.length === 10) {
+          return `+972-${cleaned.slice(3, 5)}-${cleaned.slice(
+            5,
+            8
+          )}-${cleaned.slice(8, 12)}`;
+        } else if (cleaned.startsWith("0") && cleaned.length === 10) {
           // Local format: 0XX-XXX-XXXX
-          return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
-        } else if (cleaned.length === 9 && !cleaned.startsWith('0')) {
+          return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(
+            6,
+            10
+          )}`;
+        } else if (cleaned.length === 9 && !cleaned.startsWith("0")) {
           // Missing leading zero: XX-XXX-XXXX -> 0XX-XXX-XXXX
-          return `0${cleaned.slice(0, 2)}-${cleaned.slice(2, 5)}-${cleaned.slice(5, 9)}`;
+          return `0${cleaned.slice(0, 2)}-${cleaned.slice(
+            2,
+            5
+          )}-${cleaned.slice(5, 9)}`;
         }
-        
+
         return phoneNumber; // Return original if formatting fails
       } catch {
         return phoneNumber; // Return original if formatting fails
       }
     };
 
-          return (
-        <Card className="p-6 relative" dir="rtl">
-          <div className="flex items-center justify-between mb-4">
+    return (
+      <Card className="p-6 relative" dir="rtl">
+        <div className="flex items-center justify-between mb-4">
+          <CheckCircle className="h-5 w-5 text-green-500" />
+          <h2 className="text-xl font-semibold">מחובר</h2>
 
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            <h2 className="text-xl font-semibold">מחובר</h2>
-            
-            <Button
-              onClick={signOut}
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+          <Button
+            onClick={signOut}
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <div className="flex-1">
+            <p className="font-medium">
+              {user.firstName} {user.lastName}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {user.email ||
+                (user.phoneNumber && formatPhoneNumber(user.phoneNumber))}
+            </p>
           </div>
-          
-          <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div className="flex-1">
-              <p className="font-medium">
-                {user.firstName} {user.lastName}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {user.email || (user.phoneNumber && formatPhoneNumber(user.phoneNumber))}
-              </p>
-            </div>
-          </div>
-        </Card>
-      );
+        </div>
+      </Card>
+    );
   }
 
   return (
     <Card className="p-6 relative" dir="rtl">
       <div className="flex items-center gap-2 mb-4">
         {sectionNumber && (
-          <div className="bg-primary/80 text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
+          <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
             {sectionNumber}
           </div>
         )}
         <User className="h-5 w-5 text-primary" />
         <h2 className="text-xl font-semibold">התחבר כדי להמשיך</h2>
       </div>
-
-      {error && (
-        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-          <p className="text-sm text-destructive">{error}</p>
-        </div>
-      )}
 
       {step === "phone" && (
         <div className="space-y-4">
@@ -211,39 +222,56 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
             </AppleSignInButton>
           </div>
 
-                      <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  או המשך עם טלפון
-                </span>
-              </div>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
             </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                המשך כאורח עם מספר טלפון
+              </span>
+            </div>
+          </div>
 
           {/* Phone Number Input */}
-                      <form onSubmit={handlePhoneSubmit} className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="phone">מספר טלפון</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="050-123-4567"
-                  value={phoneInput}
-                  onChange={(e) => setPhoneInput(e.target.value)}
-                  disabled={otpLoading}
-                />
-              </div>
-              
-              <Button
-                type="submit"
-                disabled={otpLoading || !phoneInput.trim()}
-                className="w-full"
-              >
-                {otpLoading ? "שולח..." : "שלח קוד"}
-              </Button>
-            </form>
+          <form onSubmit={handlePhoneSubmit} className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="phone">מספר טלפון</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="050-123-4567"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                disabled={otpLoading}
+              />
+            </div>
+
+            {phoneInput.trim() && (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key="footer"
+                  initial={{ opacity: 0, y: 10, height: 0, marginBottom: 0 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    height: "auto",
+                    marginBottom: 6,
+                  }}
+                  exit={{ opacity: 0, y: 10, height: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Button
+                    type="submit"
+                    disabled={otpLoading || !phoneInput.trim()}
+                    className="w-full"
+                  >
+                    {otpLoading ? "שולח..." : "שלח קוד אימות"}
+                  </Button>
+                </motion.div>
+              </AnimatePresence>
+            )}
+          </form>
         </div>
       )}
 
@@ -284,18 +312,23 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
             </Button>
           </form>
 
-                      <div className="text-center">
-                              <Button
-                  variant="ghost"
-                  onClick={handleBackToPhone}
-                  disabled={otpLoading}
-                  className="text-sm"
-                >
-                  חזור למספר טלפון →
-                </Button>
-            </div>
+          <div className="text-center">
+            <Button
+              variant="ghost"
+              onClick={handleBackToPhone}
+              disabled={otpLoading}
+              className="text-sm"
+            >
+              חזור למספר טלפון →
+            </Button>
+          </div>
+        </div>
+      )}
+      {error && (
+        <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
     </Card>
   );
-} 
+}

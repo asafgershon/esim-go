@@ -10,7 +10,7 @@ import { useMutation } from "@apollo/client";
 
 // Step progression hook
 export const useCheckoutSteps = (token: string) => {
-  const [updateStep] = useMutation<
+  const [updateStep,{error}] = useMutation<
     UpdateCheckoutStepMutation,
     UpdateCheckoutStepMutationVariables
   >(UpdateCheckoutStep);
@@ -23,7 +23,7 @@ export const useCheckoutSteps = (token: string) => {
     });
   };
 
-  return { updateStepWithData };
+  return { updateStepWithData, updateStepError: error };
 };
 
 export const useCheckoutPayment = () => {

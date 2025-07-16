@@ -6,8 +6,8 @@ import { Mail, QrCode, Truck } from "lucide-react";
 
 interface DeliveryMethodSectionProps {
   sectionNumber?: number;
-  selectedMethod: "qr" | "email";
-  setSelectedMethod: (method: "qr" | "email") => void;
+  selectedMethod: "QR" | "EMAIL";
+  setSelectedMethod: (method: "QR" | "EMAIL") => void;
   email: string;
   setEmail: (email: string) => void;
 }
@@ -16,14 +16,14 @@ export function DeliveryMethodSection({ sectionNumber, selectedMethod, setSelect
 
   const deliveryOptions = [
     {
-      id: "qr" as const,
+      id: "QR" as const,
       name: "QR Code",
       description: "הפעלה מיידית באמצעות QR Code",
       icon: QrCode,
       recommended: true,
     },
     {
-      id: "email" as const,
+      id: "EMAIL" as const,
       name: "משלוח למייל",
       description: "קבלת eSIM באמצעות מייל",
       icon: Mail,
@@ -32,10 +32,10 @@ export function DeliveryMethodSection({ sectionNumber, selectedMethod, setSelect
   ];
 
   return (
-    <Card className="p-6 relative" dir="rtl">
+    <Card className="p-6 relative bg-muted-foreground" dir="rtl">
       <div className="flex items-center gap-2 mb-4">
         {sectionNumber && (
-          <div className="bg-primary/80 text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
+          <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
             {sectionNumber}
           </div>
         )}
@@ -95,7 +95,7 @@ export function DeliveryMethodSection({ sectionNumber, selectedMethod, setSelect
         </div>
 
         {/* Email Input for Email Delivery */}
-        {selectedMethod === "email" && (
+        {selectedMethod === "EMAIL" && (
           <div className="space-y-2 p-4 bg-muted rounded-lg">
             <Label htmlFor="deliveryEmail">כתובת מייל</Label>
             <Input
@@ -114,7 +114,7 @@ export function DeliveryMethodSection({ sectionNumber, selectedMethod, setSelect
         )}
 
         {/* QR Code Info */}
-        {selectedMethod === "qr" && (
+        {selectedMethod === "QR" && (
           <div className="p-4 bg-primary/5 rounded-lg">
             <div className="flex items-start gap-3">
               <QrCode className="h-5 w-5 text-primary mt-0.5" />

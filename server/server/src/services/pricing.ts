@@ -1,6 +1,7 @@
 import { GraphQLError } from "graphql";
 import type { CatalogueDataSource } from "../datasources/esim-go";
 import type { ESIMGoDataPlan } from "../datasources/esim-go/types";
+import z from "zod";
 
 // Types for the pricing service
 interface PricingService {
@@ -8,13 +9,33 @@ interface PricingService {
     numOfDays: number,
     regionId: string,
     countryId: string
-  ) => Promise<number>;
+  ) => Promise<PricingResponse>; // Updated return type
   calculateCountryPrice: (
     countryId: string,
-    duration: number
-  ) => Promise<number>;
-  calculateRegionPrice: (regionId: string, duration: number) => Promise<number>;
+    requestedDays: number,
+    bundleDuration: number
+  ) => Promise<PricingResponse>; // Updated signature and return type
+  calculateRegionPrice: (
+    regionId: string,
+    requestedDays: number,
+    bundleDuration: number
+  ) => Promise<PricingResponse>; // Updated signature and return type
 }
+
+const PricingResponseSchema = z.object({
+  plan: z.object({
+    id: z.string(),
+    name: z.string(),
+    duration: z.number(),
+    price: z.number(),
+    countries: z.array(z.string()),
+  }),
+  costPlusPrice: z.number(),
+  dayDiscount: z.number(),
+  finalPrice: z.number(),
+});
+
+type PricingResponse = z.infer<typeof PricingResponseSchema>;
 
 // Factory function to create the pricing service
 const getPricingService = (
@@ -98,28 +119,36 @@ const getPricingService = (
   };
 
   /**
-   * Calculate final price including cost-plus markup and day discounts
+   * Builds the complete pricing response object
    */
-  const calculateFinalPrice = (
+  const buildPricingResponse = (
     bundle: ESIMGoDataPlan,
-    requestedDays: number,
-    bundleDuration: number
-  ): number => {
-    // For inventory bundles, we don't have a price field, so we need to calculate it
-    // This is a temporary calculation - you should implement proper pricing logic
-    const basePrice = bundle.price; // $10 per day as base price
+    requestedDays: number
+  ): PricingResponse => {
+    const bundleDuration = bundle.duration;
+    const basePrice = bundle.price;
     const costPlusMarkup = getCostPlusPrice(bundleDuration);
 
-    // If bundle duration is longer than requested, apply discount
     const dayDiscount =
       bundleDuration > requestedDays
         ? getDaysDiscount(requestedDays, bundleDuration)
         : 0;
 
-    const finalPrice = basePrice + costPlusMarkup - dayDiscount;
+    const finalPriceRaw = basePrice + costPlusMarkup - dayDiscount;
+    const finalPrice = Math.round(finalPriceRaw * 4) / 4;
 
-    // Round to the nearest quarter dollar
-    return Math.round(finalPrice * 4) / 4;
+    return {
+      plan: {
+        id: bundle.id || "",
+        name: bundle.name,
+        duration: bundle.duration,
+        price: bundle.price,
+        countries: bundle.countries.map((country) => country.iso),
+      },
+      costPlusPrice: costPlusMarkup,
+      dayDiscount: dayDiscount,
+      finalPrice: finalPrice,
+    };
   };
 
   // Main service methods
@@ -127,7 +156,7 @@ const getPricingService = (
     numOfDays: number,
     regionId: string,
     countryId: string
-  ): Promise<number> => {
+  ): Promise<PricingResponse> => {
     const bundleDuration = matchBundleDuration(numOfDays);
     if (!bundleDuration) {
       throw new GraphQLError("No bundle found for the given number of days", {
@@ -136,12 +165,13 @@ const getPricingService = (
         },
       });
     }
+
     if (countryId) {
-      return calculateCountryPrice(countryId, bundleDuration);
+      return calculateCountryPrice(countryId, numOfDays, bundleDuration);
     }
 
     if (regionId) {
-      return calculateRegionPrice(regionId, bundleDuration);
+      return calculateRegionPrice(regionId, numOfDays, bundleDuration);
     }
 
     throw new GraphQLError("Either regionId or countryId must be provided", {
@@ -153,12 +183,12 @@ const getPricingService = (
 
   const calculateCountryPrice = async (
     countryId: string,
-    duration: number
-  ): Promise<number> => {
+    requestedDays: number,
+    bundleDuration: number
+  ): Promise<PricingResponse> => {
     try {
-      const group = "Standard Unlimited Lite"; //
+      const group = "Standard Unlimited Lite";
 
-      // Get country available bundles from inventory
       const countryBundles = await catalogueDataSource.getPlansByCountry(
         countryId,
         group
@@ -175,12 +205,11 @@ const getPricingService = (
       const unlimitedBundles = countryBundles.filter(
         (bundle) => bundle.unlimited || bundle.dataAmount === -1
       );
-      // Find the best bundle that matches the duration
-      const bestBundle = await findBestBundle(unlimitedBundles, duration);
+      const bestBundle = await findBestBundle(unlimitedBundles, bundleDuration);
 
       if (!bestBundle) {
         throw new GraphQLError(
-          `No suitable bundle found for country: ${countryId} and duration: ${duration}`,
+          `No suitable bundle found for country: ${countryId} and duration: ${bundleDuration}`,
           {
             extensions: {
               code: "NO_SUITABLE_BUNDLE",
@@ -189,13 +218,7 @@ const getPricingService = (
         );
       }
 
-      // Calculate final price with cost-plus and discounts
-      const price = calculateFinalPrice(
-        bestBundle,
-        duration,
-        bestBundle.duration
-      );
-      return price;
+      return buildPricingResponse(bestBundle, requestedDays);
     } catch (error) {
       console.error(`Error calculating country price for ${countryId}:`, error);
       throw error;
@@ -204,10 +227,10 @@ const getPricingService = (
 
   const calculateRegionPrice = async (
     regionId: string,
-    duration: number
-  ): Promise<number> => {
+    requestedDays: number,
+    bundleDuration: number
+  ): Promise<PricingResponse> => {
     try {
-      // Get region available bundles from inventory
       const regionBundles = await catalogueDataSource.getPlansByRegion(
         regionId
       );
@@ -220,12 +243,11 @@ const getPricingService = (
         });
       }
 
-      // Find the best bundle that matches the duration
-      const bestBundle = await findBestBundle(regionBundles, duration);
+      const bestBundle = await findBestBundle(regionBundles, bundleDuration);
 
       if (!bestBundle) {
         throw new GraphQLError(
-          `No suitable bundle found for region: ${regionId} and duration: ${duration}`,
+          `No suitable bundle found for region: ${regionId} and duration: ${bundleDuration}`,
           {
             extensions: {
               code: "NO_SUITABLE_BUNDLE",
@@ -234,8 +256,7 @@ const getPricingService = (
         );
       }
 
-      // Calculate final price with cost-plus and discounts
-      return calculateFinalPrice(bestBundle, duration, bestBundle.duration);
+      return buildPricingResponse(bestBundle, requestedDays);
     } catch (error) {
       console.error(`Error calculating region price for ${regionId}:`, error);
       throw error;
@@ -269,7 +290,7 @@ export const calculatePrice = async (
   regionId: string,
   countryId: string,
   catalogueDataSource: CatalogueDataSource
-): Promise<number> => {
+): Promise<PricingResponse> => {
   const service = getPricingServiceInstance(catalogueDataSource);
   return service.calculatePrice(numOfDays, regionId, countryId);
 };

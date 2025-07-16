@@ -1,6 +1,7 @@
 "use client";
 
-import { Label, Input, Card } from "@workspace/ui";
+import { useState } from "react";
+import { Label, Input, Card, Button } from "@workspace/ui";
 import { CreditCard, Lock } from "lucide-react";
 
 interface PaymentSectionProps {
@@ -11,6 +12,9 @@ interface PaymentSectionProps {
   setExpiry: (v: string) => void;
   cvv: string;
   setCvv: (v: string) => void;
+  onPaymentSubmit: (paymentMethodId: string) => Promise<void>;
+  isProcessing?: boolean;
+  canSubmit?: boolean;
 }
 
 export function PaymentSection({
@@ -21,7 +25,12 @@ export function PaymentSection({
   setExpiry,
   cvv,
   setCvv,
+  onPaymentSubmit,
+  isProcessing = false,
+  canSubmit = false,
 }: PaymentSectionProps) {
+  const [isCreatingPaymentMethod, setIsCreatingPaymentMethod] = useState(false);
+
   const formatCardNumber = (value: string) => {
     // Remove all non-digit characters
     const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
@@ -64,11 +73,35 @@ export function PaymentSection({
     setCvv(value);
   };
 
+  const handlePaymentSubmit = async () => {
+    setIsCreatingPaymentMethod(true);
+    try {
+      // TODO: Integration with real payment provider (Stripe, etc.)
+      // For now, create a mock payment method ID
+      const mockPaymentMethodId = `pm_mock_${Date.now()}`;
+      
+      // In real implementation, this would be:
+      // const paymentMethod = await stripe.createPaymentMethod({
+      //   type: 'card',
+      //   card: cardElement,
+      // });
+      
+      // Send payment method to backend - backend will process and wait for webhook
+      await onPaymentSubmit(mockPaymentMethodId);
+    } catch (error) {
+      console.error("Payment submission failed:", error);
+    } finally {
+      setIsCreatingPaymentMethod(false);
+    }
+  };
+
+  const isPaymentValid = cardNumber.replace(/\s/g, "").length >= 16 && expiry.length === 5 && cvv.length >= 3;
+
   return (
     <Card className="p-6 relative" dir="rtl">
       <div className="flex items-center gap-2 mb-4">
         {sectionNumber && (
-          <div className="bg-primary/80 text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
+          <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
             {sectionNumber}
           </div>
         )}
@@ -128,6 +161,18 @@ export function PaymentSection({
           <Lock className="h-4 w-4" />
           <span>פרטי התשלום שלך מוצפנים ומאובטחים</span>
         </div>
+
+        {/* Payment Submit Button */}
+        <Button
+          onClick={handlePaymentSubmit}
+          disabled={false}
+          // disabled={!canSubmit || !isPaymentValid || isCreatingPaymentMethod || isProcessing}
+          className="w-full h-12 text-lg font-medium"
+        >
+          {isCreatingPaymentMethod ? "יוצר אמצעי תשלום..." : 
+           isProcessing ? "מעבד תשלום..." : 
+           "שלח תשלום"}
+        </Button>
       </div>
     </Card>
   );

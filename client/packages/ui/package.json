@@ -6,11 +6,15 @@
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
     "./lib/*": "./src/lib/*.ts",
-    "./styles/*": "./src/styles/*.css"
+    "./styles/*": "./src/styles/*.css",
+    "./styles.css": "./dist/globals.css"
   },
+  "sideEffects": [
+    "**/*.css"
+  ],
   "scripts": {
-    "build": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css",
-    "dev": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css --watch",
+    "build": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts",
+    "dev": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts --watch",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -25,7 +29,7 @@
     "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-select": "^2.1.2",
     "@radix-ui/react-separator": "^1.1.0",
-    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.1",
     "@radix-ui/react-toast": "^1.2.2",
@@ -39,12 +43,13 @@
     "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.1.11",
+    "@tailwindcss/vite": "^4.1.11",
     "@types/bun": "latest",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.6",
-    "@tailwindcss/vite": "^4.1.11",
     "tailwindcss": "^4.1.11",
     "typescript": "^5"
   },

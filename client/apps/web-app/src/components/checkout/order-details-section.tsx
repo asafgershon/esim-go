@@ -44,7 +44,7 @@ export function OrderDetailsSection({
     <Card className="p-6" dir="rtl">
       <div className="flex items-center gap-3 mb-4">
         {sectionNumber && (
-          <div className="bg-primary/80 text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
+          <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
             {sectionNumber}
           </div>
         )}

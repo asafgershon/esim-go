@@ -125,7 +125,8 @@ export function EsimExperienceSelector() {
     params.set("numOfDays", numOfDays.toString());
     if (countryId) params.set("countryId", countryId);
     if (tripId) params.set("tripId", tripId);
-    if (pricing?.totalPrice) params.set("totalPrice", pricing.totalPrice.toString());
+    if (pricing?.totalPrice)
+      params.set("totalPrice", pricing.totalPrice.toString());
     router.push(`/checkout?${params.toString()}`);
   };
   const isMobile = useIsMobile();
@@ -170,7 +171,7 @@ export function EsimExperienceSelector() {
 
   return (
     <div
-      className="w-full mx-auto bg-card rounded-2xl shadow-lg overflow-hidden"
+      className="w-full mx-auto max-w-xl bg-card rounded-2xl shadow-lg overflow-hidden"
       dir="rtl"
       style={{
         fontFamily: '"Segoe UI", "Tahoma", "Helvetica Neue", Arial, sans-serif',
@@ -295,7 +296,7 @@ export function EsimExperienceSelector() {
                 onValueChange={(value) => setNumOfDays(value[0])}
                 max={30}
                 min={1}
-                className={`w-full ${isMobile ? 'slider-thumb-lg' : ''}`}
+                className={`w-full ${isMobile ? "slider-thumb-lg" : ""}`}
                 dir="rtl"
               />
             </div>

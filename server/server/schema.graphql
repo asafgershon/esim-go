@@ -282,12 +282,15 @@ type CheckoutSession {
   pricing: JSON
   steps: JSON
   paymentStatus: String
-  metadata: JSON # Contains orderId after completion
+  metadata: JSON
+  orderId: ID # Order ID after completion
 }
 
 # Input for creating a checkout session
 input CreateCheckoutSessionInput {
-  planId: ID!
+  numOfDays: Int!
+  regionId: String!
+  countryId: String!
 }
 
 # Response types

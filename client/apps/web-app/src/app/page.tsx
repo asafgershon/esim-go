@@ -1,6 +1,7 @@
 "use client";
 
 import { EsimExperienceSelector } from "@/components/esim-experience-selector";
+import { EsimSkeleton } from "@/components/esim-skeleton";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/hooks/useAuth";
 import { Button, Card } from "@workspace/ui";
@@ -98,7 +99,7 @@ export default function Home() {
 
         {/* eSIM Selector - Centered */}
         <div id="esim-selector" className="flex justify-center mb-16">
-          <Suspense>
+          <Suspense fallback={<EsimSkeleton />}>
             <EsimExperienceSelector />
           </Suspense>
         </div>

@@ -20,6 +20,7 @@ export type Database = {
           expires_at: string
           id: string
           metadata: Json | null
+          order_id: string | null
           payment_intent_id: string | null
           payment_status: string | null
           plan_id: string
@@ -35,6 +36,7 @@ export type Database = {
           expires_at?: string
           id?: string
           metadata?: Json | null
+          order_id?: string | null
           payment_intent_id?: string | null
           payment_status?: string | null
           plan_id: string
@@ -50,6 +52,7 @@ export type Database = {
           expires_at?: string
           id?: string
           metadata?: Json | null
+          order_id?: string | null
           payment_intent_id?: string | null
           payment_status?: string | null
           plan_id?: string
@@ -60,7 +63,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "checkout_sessions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "esim_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       data_plans: {
         Row: {
