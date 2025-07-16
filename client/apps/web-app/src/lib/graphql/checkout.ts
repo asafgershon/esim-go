@@ -84,3 +84,18 @@ query OrderDetails($id: ID!) {
     }
   }
 }`
+
+export const GetUserOrders = gql`
+query GetUserOrders {
+  myOrders {
+    id
+    reference
+    status
+    totalPrice
+    createdAt
+    esims {
+      id
+      status
+    }
+  }
+}`

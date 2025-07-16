@@ -2,11 +2,15 @@
 
 import { ArrowLeft, Calendar, ChevronRight, Plus, QrCode, User, Wifi } from "lucide-react";
 import Link from "next/link";
+import { useQuery } from "@apollo/client";
 import { Button } from "@workspace/ui";
 import { Card } from "@workspace/ui";
 import { Progress } from "@workspace/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
+import { Skeleton } from "@workspace/ui/components/skeleton";
+import { GetUserOrders } from "@/lib/graphql/checkout";
+import { ME } from "@/lib/graphql/mutations";
 
 // Mock data - will be replaced with real API calls
 const mockProfile = {
@@ -61,6 +65,9 @@ const mockOrders = [
 ];
 
 export default function ProfilePage() {
+  const { data: userData, loading: userLoading } = useQuery(ME);
+  const { data: ordersData, loading: ordersLoading } = useQuery(GetUserOrders);
+
   const handleExtendPackage = () => {
     // TODO: Implement extend package functionality
     console.log("Extending package...");
@@ -69,6 +76,37 @@ export default function ProfilePage() {
   const handleShowQRCode = (qrCode: string) => {
     // TODO: Implement QR code display modal
     console.log("Showing QR code:", qrCode);
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return 'פעיל';
+      case 'delivered':
+        return 'נמסר';
+      case 'pending':
+        return 'ממתין';
+      case 'completed':
+        return 'הושלם';
+      case 'failed':
+        return 'נכשל';
+      default:
+        return 'הושלם';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active':
+      case 'delivered':
+        return 'default';
+      case 'pending':
+        return 'secondary';
+      case 'failed':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
   };
 
   const dataUsagePercentage = (mockCurrentPlan.dataUsed / mockCurrentPlan.dataTotal) * 100;
@@ -94,15 +132,27 @@ export default function ProfilePage() {
         <Card className="p-6 mb-6">
           <div className="flex items-center gap-4 mb-4">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={mockProfile.avatar || ""} />
+              <AvatarImage src={""} />
               <AvatarFallback>
                 <User className="h-8 w-8" />
               </AvatarFallback>
             </Avatar>
             <div>
-              <h2 className="text-xl font-semibold">{mockProfile.name}</h2>
-              <p className="text-muted-foreground">{mockProfile.email}</p>
-              <p className="text-sm text-muted-foreground">{mockProfile.phone}</p>
+              {userLoading ? (
+                <>
+                  <Skeleton className="h-6 w-32 mb-2" />
+                  <Skeleton className="h-4 w-48 mb-1" />
+                  <Skeleton className="h-4 w-36" />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-semibold">
+                    {userData?.me?.firstName} {userData?.me?.lastName}
+                  </h2>
+                  <p className="text-muted-foreground">{userData?.me?.email}</p>
+                  <p className="text-sm text-muted-foreground">{userData?.me?.phoneNumber}</p>
+                </>
+              )}
             </div>
           </div>
         </Card>
@@ -175,40 +225,49 @@ export default function ProfilePage() {
           </h3>
           
           <div className="space-y-4">
-            {mockOrders.map((order) => (
-              <div
-                key={order.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h4 className="font-medium">{order.country}</h4>
-                    <Badge variant={order.status === "פעיל" ? "default" : "secondary"}>
-                      {order.status}
-                    </Badge>
+            {ordersLoading ? (
+              <>
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </>
+            ) : ordersData?.myOrders?.length > 0 ? (
+              ordersData.myOrders.map((order: any) => (
+                <Link
+                  key={order.id}
+                  href={`/order/${order.id}`}
+                  className="block"
+                >
+                  <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h4 className="font-medium">הזמנה #{order.reference}</h4>
+                        <Badge variant={getStatusColor(order.status)}>
+                          {getStatusText(order.status)}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>{order.esims?.length || 0} eSIM(s)</p>
+                        <p>הוזמן: {new Date(order.createdAt).toLocaleDateString('he-IL')}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="text-left">
+                        <p className="font-semibold">₪{order.totalPrice}</p>
+                        <p className="text-xs text-muted-foreground">#{order.id}</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>{order.duration} • {order.data}</p>
-                    <p>הוזמן: {order.date.toLocaleDateString('he-IL')}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="text-left">
-                    <p className="font-semibold">{order.price}</p>
-                    <p className="text-xs text-muted-foreground">#{order.id}</p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleShowQRCode(order.qrCode)}
-                  >
-                    <QrCode className="h-4 w-4" />
-                  </Button>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
+                </Link>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>אין הזמנות עדיין</p>
+                <p className="text-sm">כל ההזמנות שלך יופיעו כאן</p>
               </div>
-            ))}
+            )}
           </div>
         </Card>
       </div>

@@ -3,6 +3,7 @@ import type { Database } from '../../database.types';
 import { GraphQLError } from 'graphql';
 import { z } from 'zod';
 import { BaseSupabaseRepository } from '../base-supabase.repository';
+import type { ESIMGoOrder } from '../../datasources/esim-go';
 
 type OrderRow = Database['public']['Tables']['esim_orders']['Row'];
 type OrderInsert = Database['public']['Tables']['esim_orders']['Insert'];
@@ -134,6 +135,26 @@ export class OrderRepository extends BaseSupabaseRepository<
     }
 
     return orders || [];
+  }
+
+  async getOrderWithESIMs(orderId: string): Promise<OrderRow & { esims: Database['public']['Tables']['esims']['Row'][] } | null> {
+    const { data: order, error } = await this.supabase
+      .from('esim_orders')
+      .select(`
+        *,
+        esims (*)
+      `)
+      .eq('id', orderId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // Not found
+      }
+      this.handleError(error, 'fetching order with eSIMs');
+    }
+
+    return order;
   }
 
   async getOrderSummary(userId: string): Promise<{

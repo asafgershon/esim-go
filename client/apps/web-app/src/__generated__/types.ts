@@ -40,6 +40,7 @@ export type CheckoutSession = {
   id: Scalars['ID']['output'];
   isComplete: Scalars['Boolean']['output'];
   metadata?: Maybe<Scalars['JSON']['output']>;
+  orderId?: Maybe<Scalars['ID']['output']>;
   paymentStatus?: Maybe<Scalars['String']['output']>;
   planSnapshot?: Maybe<Scalars['JSON']['output']>;
   pricing?: Maybe<Scalars['JSON']['output']>;
@@ -502,6 +503,11 @@ export type OrderDetailsQueryVariables = Exact<{
 
 
 export type OrderDetailsQuery = { __typename?: 'Query', orderDetails?: { __typename?: 'Order', id: string, reference: string, status: OrderStatus, totalPrice: number, esims: Array<{ __typename?: 'ESIM', id: string, iccid: string, qrCode?: string | null, status: EsimStatus }> } | null };
+
+export type GetUserOrdersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetUserOrdersQuery = { __typename?: 'Query', myOrders: Array<{ __typename?: 'Order', id: string, reference: string, status: OrderStatus, totalPrice: number, createdAt: string, esims: Array<{ __typename?: 'ESIM', id: string, status: EsimStatus }> }> };
 
 export type SignInMutationVariables = Exact<{
   input: SignInInput;

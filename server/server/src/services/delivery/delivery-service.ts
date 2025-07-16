@@ -9,7 +9,7 @@ export interface DeliveryMethod {
 export interface ESIMDeliveryData {
   esimId: string;
   iccid: string;
-  qrCodeUrl: string;
+  qrCode: string;
   activationCode?: string;
   activationUrl?: string;
   instructions: string;
@@ -195,7 +195,7 @@ export class DeliveryService {
             
             <div class="qr-section">
               <h3>Installation QR Code</h3>
-              <img src="${deliveryData.qrCodeUrl}" alt="eSIM QR Code" class="qr-code">
+              <img src="${deliveryData.qrCode}" alt="eSIM QR Code" class="qr-code">
               <p><strong>ICCID:</strong> ${deliveryData.iccid}</p>
               ${deliveryData.activationCode ? `<p><strong>Activation Code:</strong> ${deliveryData.activationCode}</p>` : ''}
             </div>
@@ -230,7 +230,7 @@ ${deliveryData.instructions}
 
 Order Reference: ${deliveryData.orderReference}
 
-QR Code: ${deliveryData.qrCodeUrl}
+QR Code: ${deliveryData.qrCode}
 
 Thank you for choosing eSIM Go!
     `;
@@ -244,7 +244,7 @@ Thank you for choosing eSIM Go!
 ICCID: ${deliveryData.iccid}
 ${deliveryData.activationCode ? `Code: ${deliveryData.activationCode}` : ''}
 
-Install: ${deliveryData.qrCodeUrl}
+Install: ${deliveryData.qrCode}
 
 Order: ${deliveryData.orderReference}
 

@@ -35,26 +35,47 @@ export const resolvers: Resolvers = {
       return null;
     },
     orderDetails: async (_, { id }, context: Context) => {
-      const { data, error } = await supabaseAdmin
-        .from("esim_orders")
-        .select("*")
-        .eq("id", id)
-        .single();
+      try {
+        const order = await context.repositories.orders.getOrderWithESIMs(id);
+        if (!order) {
+          throw new GraphQLError("Order not found", {
+            extensions: { code: "ORDER_NOT_FOUND" },
+          });
+        }
+        // Transform eSIMs to map qr_code_url to qrCode
+        const transformedEsims = order.esims.map((esim) => {
+          return {
+            ...esim,
+            qrCode: esim.qr_code_url,
+          };
+        });
 
-      if (error) {
+        // Convert snake_case to camelCase for the main order object
+        const camelCaseOrder = Object.fromEntries(
+          Object.entries(order).map(([key, value]) => {
+            if (key === 'esims') {
+              // Use the transformed eSIMs with qrCode field
+              return [key, transformedEsims];
+            }
+            return [
+              key.replace(/([-_][a-z])/gi, (match) =>
+                match.toUpperCase().replace("-", "").replace("_", "")
+              ),
+              value,
+            ];
+          })
+        );
+
+        const response = camelCaseOrder as Order;
+        console.log("response", response);
+
+        return response;
+      } catch (error) {
         console.error("Error fetching order details:", error);
-        throw new Error("Failed to fetch order details");
+        throw new GraphQLError("Failed to fetch order details", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
       }
-
-      const camelCaseData = Object.fromEntries(
-        Object.entries(data).map(([key, value]) => [
-          key.replace(/([-_][a-z])/gi, (match) =>
-            match.toUpperCase().replace("-", "").replace("_", "")
-          ),
-          value,
-        ])
-      );
-      return camelCaseData as Order;
     },
     countries: async (_, __, context: Context) => {
       const countries = await context.dataSources.countries.getCountries();
@@ -96,7 +117,14 @@ export const resolvers: Resolvers = {
         .from("esims")
         .select("*")
         .eq("order_id", parent.id);
-      return data || [];
+      
+      if (!data) return [];
+      
+      // Transform the data to map qr_code_url to qrCode for GraphQL schema
+      return data.map((esim) => ({
+        ...esim,
+        qrCode: esim.qr_code_url,
+      }));
     },
     dataPlan: async (parent, _, context: Context) => {
       const dataPlanId = parent.dataPlan?.id;

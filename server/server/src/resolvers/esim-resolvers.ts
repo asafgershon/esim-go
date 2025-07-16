@@ -74,12 +74,6 @@ export const esimResolvers: Partial<Resolvers> = {
 
     // Order queries (auth required)
     myOrders: async (_, { filter }, context: Context) => {
-      if (!context.auth?.isAuthenticated) {
-        throw new GraphQLError("Not authenticated", {
-          extensions: { code: "UNAUTHORIZED" },
-        });
-      }
-
       try {
         // Get orders from database
         let query = supabaseAdmin
@@ -103,6 +97,7 @@ export const esimResolvers: Partial<Resolvers> = {
           return [];
         }
 
+        return dbOrders;
         // Get order details from eSIM Go API
         const orders = await Promise.all(
           dbOrders.map(async (dbOrder) => {
@@ -136,74 +131,6 @@ export const esimResolvers: Partial<Resolvers> = {
         });
       }
     },
-
-    orderDetails: async (_, { id }, context: Context) => {
-      if (!context.auth?.isAuthenticated) {
-        throw new GraphQLError("Not authenticated", {
-          extensions: { code: "UNAUTHORIZED" },
-        });
-      }
-
-      try {
-        // Get order from database
-        const { data: dbOrder } = await supabaseAdmin
-          .from("esim_orders")
-          .select("*")
-          .eq("id", id)
-          .eq("user_id", context.auth.user!.id)
-          .single();
-
-        if (!dbOrder) {
-          return null;
-        }
-
-        // Get order details from eSIM Go API
-        const apiOrder = await context.dataSources.orders.getOrder(
-          dbOrder.reference
-        );
-        if (!apiOrder) {
-          return null;
-        }
-
-        // Get data plan
-        const { data: dbPlan } = await supabaseAdmin
-          .from("data_plans")
-          .select("*")
-          .eq("id", dbOrder.data_plan_id)
-          .single();
-
-        const plan = await context.dataSources.catalogue.getPlanByName(
-          dbPlan.name
-        );
-
-        const order = mapOrder(apiOrder, dbOrder, plan);
-
-        // Get eSIMs for this order
-        const { data: dbESIMs } = await supabaseAdmin
-          .from("esims")
-          .select("*")
-          .eq("order_id", id);
-
-        if (dbESIMs && dbESIMs.length > 0) {
-          order.esims = await Promise.all(
-            dbESIMs.map(async (dbESIM) => {
-              const apiESIM = await context.dataSources.esims.getESIM(
-                dbESIM.iccid
-              );
-              if (!apiESIM) return null;
-              return mapESIM(apiESIM, dbESIM, order, plan);
-            })
-          );
-          order.esims = order.esims.filter(Boolean);
-        }
-
-        return order;
-      } catch (error) {
-        console.error("Error fetching order details:", error);
-        return null;
-      }
-    },
-
     // eSIM queries
     myESIMs: async (_, __, context: Context) => {
       if (!context.auth?.isAuthenticated) {

@@ -11,6 +11,7 @@ import {
 } from "../services/delivery";
 import { createPaymentService } from "../services/payment";
 import type { EsimStatus, OrderStatus, Resolvers } from "../types";
+import QRCode from 'qrcode'
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS
@@ -656,7 +657,7 @@ async function simulateWebhookProcessing(
       //       {
       //         esimId: esimRecord.id,
       //         iccid: esimData.iccid,
-      //         qrCodeUrl: esimData.qrCode,
+      //         qrCode: esimData.qrCode,
       //         activationCode: esimData.activationCode,
       //         activationUrl: esimData.activationUrl,
       //         instructions: esimData.instructions,
@@ -739,10 +740,10 @@ async function provisionESIM(
 ) {
   console.log("Real eSIM provisioning for plan:", planSnapshot.name);
 
-  // Return mock for now
-  return {
+  const esimGoOrder = {
     iccid: `89000000000000000${Math.random().toString().substr(2, 6)}`, // Mock ICCID
-    qrCode: `https://mock-qr-service.com/qr/${planSnapshot.id}/${customerReference}`, // Mock QR code URL
+    matchingId: 'mock-matching-id',
+    smdpAddress: 'rsp-3104.idemia.io',
     activationCode: `ACT-${customerReference}`, // Mock activation code
     activationUrl: `https://esim-activate.com/activate/${customerReference}`, // Mock activation URL
     instructions: `To activate your eSIM for ${planSnapshot.name}:\n1. Scan the QR code\n2. Follow setup instructions\n3. Enjoy your data!`,
@@ -750,6 +751,11 @@ async function provisionESIM(
     esimGoOrderRef: `ESG-${Date.now()}-${Math.random()
       .toString(36)
       .substr(2, 6)}`, // Mock eSIM Go order reference
+  }
+  // Return mock for now
+  return {
+    ...esimGoOrder,
+    qrCode: await QRCode.toDataURL(`LPA:1$${esimGoOrder.smdpAddress}$${esimGoOrder.activationCode}`),
   };
   try {
     // Step 1: Create order in eSIM Go API
