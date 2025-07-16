@@ -23,5 +23,7 @@ export * from "./components/slider"
 export * from "./components/input-otp"
 export * from "./components/social-button"
 export * from "./components/alert"
+export * from "./components/select"
+export * from "./components/data-table"
 // Utils
 export * from "./lib/utils" 

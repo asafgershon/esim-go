@@ -9,15 +9,18 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import { Skeleton } from "@workspace/ui/components/skeleton";
+import { DataTable } from "@workspace/ui/components/data-table";
+import { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@workspace/ui/components/table";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 
 function getStatusColor(
@@ -35,6 +38,152 @@ function getStatusColor(
       return "outline";
   }
 }
+
+type Order = {
+  id: string;
+  reference: string;
+  status: string;
+  dataPlan?: {
+    id: string;
+    name: string;
+    description: string;
+    region: string;
+    duration: number;
+    price: number;
+    currency: string;
+  } | null | undefined;
+  quantity: number;
+  totalPrice: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const columns: ColumnDef<Order>[] = [
+  {
+    accessorKey: "reference",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Order
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const order = row.original;
+      return (
+        <div>
+          <p className="text-sm font-medium">{order.reference}</p>
+          <p className="text-xs text-muted-foreground">{order.id}</p>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "dataPlan",
+    header: "Plan",
+    cell: ({ row }) => {
+      const order = row.original;
+      return (
+        <div>
+          <p className="text-sm font-medium">{order.dataPlan?.name}</p>
+          <p className="text-xs text-muted-foreground">
+            {order.dataPlan?.region} • {order.dataPlan?.duration} days
+          </p>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string;
+      return <Badge variant={getStatusColor(status)}>{status}</Badge>;
+    },
+  },
+  {
+    accessorKey: "quantity",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Quantity
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: "totalPrice",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Total
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const order = row.original;
+      return `$${order.totalPrice.toFixed(2)} ${order.dataPlan?.currency || ""}`;
+    },
+  },
+  {
+    accessorKey: "createdAt",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Created
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const createdAt = row.getValue("createdAt") as string;
+      return formatDistanceToNow(new Date(createdAt), { addSuffix: true });
+    },
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const order = row.original;
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(order.id)}
+            >
+              Copy order ID
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>View order details</DropdownMenuItem>
+            <DropdownMenuItem>View customer</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+  },
+];
 
 export function OrdersPage() {
   const { data, loading, error } = useQuery(GET_ORDERS);
@@ -61,9 +210,9 @@ export function OrdersPage() {
             A list of all orders placed on the platform
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-6">
           {loading ? (
-            <div className="p-6 space-y-3">
+            <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="flex items-center space-x-4">
                   <div className="space-y-2">
@@ -74,68 +223,18 @@ export function OrdersPage() {
               ))}
             </div>
           ) : error ? (
-            <div className="p-6">
+            <div className="text-center">
               <p className="text-sm text-destructive">
                 Error loading orders: {error.message}
               </p>
             </div>
-          ) : orders.length === 0 ? (
-            <div className="p-6">
-              <p className="text-sm text-muted-foreground">No orders found</p>
-            </div>
           ) : (
-            <Table>
-              <TableCaption>Total orders: {orders.length}</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Created</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>
-                      <div>
-                        <p className="text-sm font-medium">{order.reference}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {order.id}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="text-sm font-medium">
-                          {order.dataPlan?.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {order.dataPlan?.region} • {order.dataPlan?.duration}{" "}
-                          days
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusColor(order.status)}>
-                        {order.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{order.quantity}</TableCell>
-                    <TableCell>
-                      ${order.totalPrice.toFixed(2)} {order.dataPlan?.currency}
-                    </TableCell>
-                    <TableCell>
-                      {formatDistanceToNow(new Date(order.createdAt), {
-                        addSuffix: true,
-                      })}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <DataTable 
+              columns={columns} 
+              data={orders} 
+              searchKey="reference"
+              searchPlaceholder="Search orders..."
+            />
           )}
         </CardContent>
       </Card>
