@@ -1,92 +1,66 @@
-import { supabaseAdmin } from '../../context/supabase-auth';
-import type { Esim, EsimStatus } from '../../types';
 import { GraphQLError } from 'graphql';
+import { z } from 'zod';
+import type { Database } from '../../database.types';
+import { BaseSupabaseRepository } from '../base-supabase.repository';
 
-export interface CreateESIMData {
-  user_id: string;
-  order_id: string;
-  iccid: string;
-  customer_ref: string;
-  qr_code_url: string;
-  status: EsimStatus;
-  assigned_date?: string;
-  last_action?: string;
-  action_date?: string;
-}
+// Zod enum for eSIM status
+export const EsimStatusEnum = z.enum([
+  'ACTIVE',
+  'ASSIGNED',
+  'SUSPENDED',
+  'EXPIRED',
+  'CANCELLED',
+]);
+export type EsimStatus = z.infer<typeof EsimStatusEnum>;
 
-export interface ESIMData {
-  id: string;
-  user_id: string;
-  order_id: string;
-  iccid: string;
-  customer_ref: string;
-  qr_code_url: string;
-  status: EsimStatus;
-  assigned_date?: string;
-  last_action?: string;
-  action_date?: string;
-  created_at: string;
-  updated_at: string;
-}
+type EsimRow = Database['public']['Tables']['esims']['Row'];
+type EsimInsert = Database['public']['Tables']['esims']['Insert'];
+type EsimUpdate = Database['public']['Tables']['esims']['Update'];
 
-export interface UpdateESIMData {
-  status?: EsimStatus;
-  last_action?: string;
-  action_date?: string;
-  qr_code_url?: string;
-  customer_ref?: string;
-}
-
-export class ESIMRepository {
-  async create(esimData: CreateESIMData): Promise<ESIMData> {
-    const { data: esim, error } = await supabaseAdmin
-      .from('esims')
-      .insert({
-        user_id: esimData.user_id,
-        order_id: esimData.order_id,
-        iccid: esimData.iccid,
-        customer_ref: esimData.customer_ref,
-        qr_code_url: esimData.qr_code_url,
-        status: esimData.status,
-        assigned_date: esimData.assigned_date || new Date().toISOString(),
-        last_action: esimData.last_action || 'ASSIGNED',
-        action_date: esimData.action_date || new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Database error creating eSIM:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
-    }
-
-    return esim;
+export class ESIMRepository extends BaseSupabaseRepository<
+  EsimRow,
+  EsimInsert,
+  EsimUpdate
+> {
+  constructor() {
+    super('esims');
   }
 
-  async getById(id: string): Promise<ESIMData | null> {
-    const { data: esim, error } = await supabaseAdmin
-      .from('esims')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null; // Not found
-      }
-      console.error('Database error fetching eSIM:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+  protected async validateInsert(data: EsimInsert): Promise<void> {
+    if (data.status) {
+      this.validateStatus(data.status);
     }
-
-    return esim;
   }
 
-  async getByICCID(iccid: string): Promise<ESIMData | null> {
-    const { data: esim, error } = await supabaseAdmin
+  protected async validateUpdate(data: EsimUpdate): Promise<void> {
+    if (data.status) {
+      this.validateStatus(data.status);
+    }
+  }
+
+  private validateStatus(status: string) {
+    try {
+      EsimStatusEnum.parse(status);
+    } catch (err) {
+      throw new GraphQLError(
+        `Invalid eSIM status: ${(err as Error).message}`,
+        { extensions: { code: 'INVALID_ESIM_STATUS' } }
+      );
+    }
+  }
+
+  async create(esimData: EsimInsert): Promise<EsimRow> {
+    const dataWithDefaults = {
+      ...esimData,
+      assigned_date: esimData.assigned_date || new Date().toISOString(),
+      last_action: esimData.last_action || 'ASSIGNED',
+      action_date: esimData.action_date || new Date().toISOString(),
+    };
+    return super.create(dataWithDefaults);
+  }
+
+  async getByICCID(iccid: string): Promise<EsimRow | null> {
+    const { data: esim, error } = await this.supabase
       .from('esims')
       .select('*')
       .eq('iccid', iccid)
@@ -96,38 +70,32 @@ export class ESIMRepository {
       if (error.code === 'PGRST116') {
         return null; // Not found
       }
-      console.error('Database error fetching eSIM by ICCID:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+      this.handleError(error, 'fetching eSIM by ICCID');
     }
 
     return esim;
   }
 
-  async getByOrderId(orderId: string): Promise<ESIMData[]> {
-    const { data: esims, error } = await supabaseAdmin
+  async getByOrderId(orderId: string): Promise<EsimRow[]> {
+    const { data: esims, error } = await this.supabase
       .from('esims')
       .select('*')
       .eq('order_id', orderId)
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Database error fetching eSIMs by order ID:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+      this.handleError(error, 'fetching eSIMs by order ID');
     }
 
     return esims || [];
   }
 
   async getByUserId(userId: string, filters?: {
-    status?: EsimStatus;
-    limit?: number;
-    offset?: number;
-  }): Promise<ESIMData[]> {
-    let query = supabaseAdmin
+    status?: EsimRow['status'];
+     limit?: number;
+     offset?: number;
+  }): Promise<EsimRow[]> {
+    let query = this.supabase
       .from('esims')
       .select('*')
       .eq('user_id', userId)
@@ -148,17 +116,16 @@ export class ESIMRepository {
     const { data: esims, error } = await query;
 
     if (error) {
-      console.error('Database error fetching user eSIMs:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+      this.handleError(error, 'fetching user eSIMs');
     }
 
     return esims || [];
   }
 
-  async updateStatus(id: string, status: EsimStatus, action?: string): Promise<ESIMData> {
-    const updates: UpdateESIMData = {
+  async updateStatus(id: string, status: EsimRow['status'], action?: string): Promise<EsimRow> {
+    this.validateStatus(status);
+
+    const updates: EsimUpdate = {
       status,
       action_date: new Date().toISOString(),
     };
@@ -170,26 +137,9 @@ export class ESIMRepository {
     return this.update(id, updates);
   }
 
-  async update(id: string, updates: UpdateESIMData): Promise<ESIMData> {
-    const { data: updatedESIM, error } = await supabaseAdmin
-      .from('esims')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Database error updating eSIM:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
-    }
-
-    return updatedESIM;
-  }
-
-  async updateByICCID(iccid: string, updates: UpdateESIMData): Promise<ESIMData> {
-    const { data: updatedESIM, error } = await supabaseAdmin
+  async updateByICCID(iccid: string, updates: EsimUpdate): Promise<EsimRow> {
+    await this.validateUpdate(updates);
+    const { data: updatedESIM, error } = await this.supabase
       .from('esims')
       .update(updates)
       .eq('iccid', iccid)
@@ -197,37 +147,34 @@ export class ESIMRepository {
       .single();
 
     if (error) {
-      console.error('Database error updating eSIM by ICCID:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+      this.handleError(error, 'updating eSIM by ICCID');
     }
 
     return updatedESIM;
   }
 
-  async markActive(id: string): Promise<ESIMData> {
-    return this.updateStatus(id, 'ACTIVE' as EsimStatus, 'INSTALLED');
+  async markActive(id: string): Promise<EsimRow> {
+    return this.updateStatus(id, 'ACTIVE', 'INSTALLED');
   }
 
-  async markSuspended(id: string): Promise<ESIMData> {
-    return this.updateStatus(id, 'SUSPENDED' as EsimStatus, 'SUSPENDED');
+  async markSuspended(id: string): Promise<EsimRow> {
+    return this.updateStatus(id, 'SUSPENDED', 'SUSPENDED');
   }
 
-  async markRestored(id: string): Promise<ESIMData> {
-    return this.updateStatus(id, 'ACTIVE' as EsimStatus, 'RESTORED');
+  async markRestored(id: string): Promise<EsimRow> {
+    return this.updateStatus(id, 'ACTIVE', 'RESTORED');
   }
 
-  async markCancelled(id: string): Promise<ESIMData> {
-    return this.updateStatus(id, 'CANCELLED' as EsimStatus, 'CANCELLED');
+  async markCancelled(id: string): Promise<EsimRow> {
+    return this.updateStatus(id, 'CANCELLED', 'CANCELLED');
   }
 
-  async markExpired(id: string): Promise<ESIMData> {
-    return this.updateStatus(id, 'EXPIRED' as EsimStatus, 'EXPIRED');
+  async markExpired(id: string): Promise<EsimRow> {
+    return this.updateStatus(id, 'EXPIRED', 'EXPIRED');
   }
 
   async getESIMsWithOrders(userId: string): Promise<any[]> {
-    const { data: esims, error } = await supabaseAdmin
+    const { data: esims, error } = await this.supabase
       .from('esims')
       .select(`
         *,
@@ -237,17 +184,14 @@ export class ESIMRepository {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Database error fetching eSIMs with orders:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+      this.handleError(error, 'fetching eSIMs with orders');
     }
 
     return esims || [];
   }
 
   async getESIMsWithBundles(userId: string): Promise<any[]> {
-    const { data: esims, error } = await supabaseAdmin
+    const { data: esims, error } = await this.supabase
       .from('esims')
       .select(`
         *,
@@ -257,10 +201,7 @@ export class ESIMRepository {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Database error fetching eSIMs with bundles:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+      this.handleError(error, 'fetching eSIMs with bundles');
     }
 
     return esims || [];
@@ -274,16 +215,13 @@ export class ESIMRepository {
     expired: number;
     cancelled: number;
   }> {
-    const { data: summary, error } = await supabaseAdmin
+    const { data: summary, error } = await this.supabase
       .from('esims')
       .select('status')
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Database error fetching eSIM status summary:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+      this.handleError(error, 'fetching eSIM status summary');
     }
 
     const esims = summary || [];
@@ -299,10 +237,11 @@ export class ESIMRepository {
 
   async bulkUpdateStatus(
     iccids: string[],
-    status: EsimStatus,
+    status: EsimRow['status'],
     action?: string
-  ): Promise<ESIMData[]> {
-    const updates: UpdateESIMData = {
+  ): Promise<EsimRow[]> {
+    this.validateStatus(status);
+    const updates: EsimUpdate = {
       status,
       action_date: new Date().toISOString(),
     };
@@ -311,17 +250,14 @@ export class ESIMRepository {
       updates.last_action = action;
     }
 
-    const { data: updatedESIMs, error } = await supabaseAdmin
+    const { data: updatedESIMs, error } = await this.supabase
       .from('esims')
       .update(updates)
       .in('iccid', iccids)
       .select();
 
     if (error) {
-      console.error('Database error bulk updating eSIMs:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+      this.handleError(error, 'bulk updating eSIMs');
     }
 
     return updatedESIMs || [];

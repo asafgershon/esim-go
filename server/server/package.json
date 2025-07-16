@@ -6,9 +6,11 @@
   "scripts": {
     "codegen": "graphql-codegen",
     "codegen:watch": "graphql-codegen --watch",
+    "codegen:dbtypes": "bunx supabase gen types typescript --project-id \"dgkyjkzkwzmjjurzvcxy\" --schema public > src/database.types.ts",
     "dev": "bun run --watch src/app.ts",
     "debug": "bun --inspect --watch src/app.ts",
-    "start": "bun run src/app.ts"
+    "start": "bun run src/app.ts",
+    "postinstall": "bun run codegen:dbtypes"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.7",

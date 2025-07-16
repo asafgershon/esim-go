@@ -2,6 +2,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { cleanEnv, str } from "envalid";
 import type { IncomingMessage } from "node:http";
 import type { User } from "../types";
+import type { Database } from "../database.types";
 
 const env = cleanEnv(process.env, {
   SUPABASE_URL: str(),
@@ -21,7 +22,7 @@ export const supabaseAdmin = createClient(
   }
 );
 
-export const supabaseClient = createClient(
+export const supabaseClient = createClient<Database>(
   env.SUPABASE_URL,
   env.SUPABASE_ANON_KEY
 );

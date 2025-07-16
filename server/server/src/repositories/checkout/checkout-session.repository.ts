@@ -1,31 +1,47 @@
-import { supabaseAdmin } from '../../context/supabase-auth';
-import type { CheckoutSession } from '../../types';
 import { GraphQLError } from 'graphql';
+import { z } from 'zod';
+import type { Database, Json } from '../../database.types';
+import { BaseSupabaseRepository } from '../base-supabase.repository';
 
-export interface CheckoutSessionSteps {
-  authentication?: {
-    completed: boolean;
-    completedAt?: string;
-    userId?: string;
-  };
-  delivery?: {
-    completed: boolean;
-    completedAt?: string;
-    method?: 'EMAIL' | 'SMS' | 'BOTH';
-    email?: string;
-    phoneNumber?: string;
-  };
-  payment?: {
-    completed: boolean;
-    completedAt?: string;
-    paymentMethodId?: string;
-    paymentMethodType?: string;
-    paymentIntentId?: string;
-    processing?: boolean;
-    processedAt?: string;
-    readyForPayment?: boolean;
-  };
-}
+type CheckoutSessionRow =
+  Database['public']['Tables']['checkout_sessions']['Row'];
+type CheckoutSessionInsert =
+  Database['public']['Tables']['checkout_sessions']['Insert'];
+type CheckoutSessionUpdate =
+  Database['public']['Tables']['checkout_sessions']['Update'];
+
+// Define your Zod schemas
+export const CheckoutSessionStepsSchema = z.object({
+  authentication: z
+    .object({
+      completed: z.boolean(),
+      completedAt: z.string().optional(),
+      userId: z.string().optional(),
+    })
+    .optional(),
+  delivery: z
+    .object({
+      completed: z.boolean(),
+      completedAt: z.string().optional(),
+      method: z.enum(['EMAIL', 'SMS', 'BOTH']).optional(),
+      email: z.string().optional(),
+      phoneNumber: z.string().optional(),
+    })
+    .optional(),
+  payment: z
+    .object({
+      completed: z.boolean(),
+      completedAt: z.string().optional(),
+      paymentMethodId: z.string().optional(),
+      paymentMethodType: z.string().optional(),
+      paymentIntentId: z.string().optional(),
+      processing: z.boolean().optional(),
+      processedAt: z.string().optional(),
+      readyForPayment: z.boolean().optional(),
+    })
+    .optional(),
+});
+export type CheckoutSessionSteps = z.infer<typeof CheckoutSessionStepsSchema>;
 
 export interface CheckoutSessionPricing {
   subtotal: number;
@@ -44,95 +60,40 @@ export interface CheckoutSessionPlanSnapshot {
   countries: string[];
 }
 
-export interface CreateCheckoutSessionData {
-  user_id?: string;
-  plan_id: string;
-  plan_snapshot: CheckoutSessionPlanSnapshot;
-  pricing: CheckoutSessionPricing;
-  steps: CheckoutSessionSteps;
-  expires_at: string;
-  token_hash?: string;
-  payment_intent_id?: string;
-  payment_status?: string;
-  metadata?: any;
-}
-
-export interface UpdateCheckoutSessionData {
-  steps?: CheckoutSessionSteps;
-  token_hash?: string;
-  payment_intent_id?: string;
-  payment_status?: string;
-  metadata?: any;
-  user_id?: string;
-}
-
-export interface CheckoutSessionData {
-  id: string;
-  user_id?: string;
-  plan_id: string;
-  plan_snapshot: CheckoutSessionPlanSnapshot;
-  pricing: CheckoutSessionPricing;
-  steps: CheckoutSessionSteps;
-  expires_at: string;
-  token_hash?: string;
-  payment_intent_id?: string;
-  payment_status?: string;
-  metadata?: any;
-  created_at: string;
-  updated_at: string;
-}
-
-export class CheckoutSessionRepository {
-  async create(sessionData: CreateCheckoutSessionData): Promise<CheckoutSessionData> {
-    const { data: session, error } = await supabaseAdmin
-      .from('checkout_sessions')
-      .insert({
-        user_id: sessionData.user_id || null,
-        plan_id: sessionData.plan_id,
-        plan_snapshot: sessionData.plan_snapshot,
-        pricing: sessionData.pricing,
-        steps: sessionData.steps,
-        expires_at: sessionData.expires_at,
-        token_hash: sessionData.token_hash,
-        payment_intent_id: sessionData.payment_intent_id,
-        payment_status: sessionData.payment_status,
-        metadata: sessionData.metadata,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Database error creating checkout session:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
-    }
-
-    return session;
+export class CheckoutSessionRepository extends BaseSupabaseRepository<
+  CheckoutSessionRow,
+  CheckoutSessionInsert,
+  CheckoutSessionUpdate
+> {
+  constructor() {
+    super('checkout_sessions');
   }
 
-  async getById(id: string): Promise<CheckoutSessionData | null> {
-    const { data: session, error } = await supabaseAdmin
-      .from('checkout_sessions')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null; // Not found
-      }
-      console.error('Database error fetching checkout session:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+  protected async validateInsert(data: CheckoutSessionInsert): Promise<void> {
+    if (data.steps) {
+      this.validateSteps(data.steps);
     }
-
-    return session;
   }
 
-  async getByTokenHash(tokenHash: string): Promise<CheckoutSessionData | null> {
-    const { data: session, error } = await supabaseAdmin
+  protected async validateUpdate(data: CheckoutSessionUpdate): Promise<void> {
+    if (data.steps) {
+      this.validateSteps(data.steps);
+    }
+  }
+
+  private validateSteps(steps: Json) {
+    try {
+      CheckoutSessionStepsSchema.parse(steps);
+    } catch (err) {
+      throw new GraphQLError(
+        `Invalid steps structure: ${(err as Error).message}`,
+        { extensions: { code: 'INVALID_STEPS' } }
+      );
+    }
+  }
+
+  async getByTokenHash(tokenHash: string): Promise<CheckoutSessionRow | null> {
+    const { data: session, error } = await this.supabase
       .from('checkout_sessions')
       .select('*')
       .eq('token_hash', tokenHash)
@@ -142,34 +103,17 @@ export class CheckoutSessionRepository {
       if (error.code === 'PGRST116') {
         return null; // Not found
       }
-      console.error('Database error fetching checkout session by token:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+      this.handleError(error, 'fetching checkout session by token');
+    }
+
+    if (session?.steps) {
+      this.validateSteps(session.steps);
     }
 
     return session;
   }
 
-  async update(id: string, updates: UpdateCheckoutSessionData): Promise<CheckoutSessionData> {
-    const { data: updatedSession, error } = await supabaseAdmin
-      .from('checkout_sessions')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Database error updating checkout session:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
-    }
-
-    return updatedSession;
-  }
-
-  async markCompleted(id: string, metadata: any): Promise<CheckoutSessionData> {
+  async markCompleted(id: string, metadata: any): Promise<CheckoutSessionRow> {
     return this.update(id, {
       payment_status: 'SUCCEEDED',
       metadata,
@@ -177,16 +121,13 @@ export class CheckoutSessionRepository {
   }
 
   async updateTokenHash(id: string, tokenHash: string): Promise<void> {
-    const { error } = await supabaseAdmin
+    const { error } = await this.supabase
       .from('checkout_sessions')
       .update({ token_hash: tokenHash })
       .eq('id', id);
 
     if (error) {
-      console.error('Database error updating token hash:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+      this.handleError(error, 'updating token hash');
     }
   }
 
@@ -194,36 +135,33 @@ export class CheckoutSessionRepository {
     id: string,
     paymentIntentId: string,
     updatedSteps: CheckoutSessionSteps
-  ): Promise<CheckoutSessionData> {
+  ): Promise<CheckoutSessionRow> {
     return this.update(id, {
-      steps: updatedSteps,
+      steps: updatedSteps as Json,
       payment_intent_id: paymentIntentId,
       payment_status: 'PROCESSING',
     });
   }
 
-  async updatePaymentFailed(id: string, errorMessage?: string): Promise<CheckoutSessionData> {
+  async updatePaymentFailed(id: string, errorMessage?: string): Promise<CheckoutSessionRow> {
     return this.update(id, {
       payment_status: 'FAILED',
       metadata: errorMessage ? { error: errorMessage } : undefined,
     });
   }
 
-  async isExpired(session: CheckoutSessionData): Promise<boolean> {
+  async isExpired(session: CheckoutSessionRow): Promise<boolean> {
     return new Date(session.expires_at) <= new Date();
   }
 
   async deleteExpired(): Promise<number> {
-    const { count, error } = await supabaseAdmin
+    const { count, error } = await this.supabase
       .from('checkout_sessions')
       .delete()
       .lt('expires_at', new Date().toISOString());
 
     if (error) {
-      console.error('Database error deleting expired sessions:', error);
-      throw new GraphQLError(`Database error: ${error.message}`, {
-        extensions: { code: 'DATABASE_ERROR' },
-      });
+      this.handleError(error, 'deleting expired sessions');
     }
 
     return count || 0;

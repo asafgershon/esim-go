@@ -1,17 +1,42 @@
 // checkout.resolvers.ts
 // Step 1: Basic checkout session creation and management
 
-import { GraphQLError } from "graphql";
-import jwt from "jsonwebtoken";
-import crypto from "crypto";
-import type { Context } from "../context/types";
-import type { CheckoutSession, Resolvers, OrderStatus, EsimStatus } from "../types";
-import { createPaymentService } from "../services/payment";
-import { createDeliveryService } from "../services/delivery";
+import crypto from 'crypto';
+import { GraphQLError } from 'graphql';
+import jwt from 'jsonwebtoken';
+import { z } from 'zod';
+import type { Context } from '../context/types';
+import type { Database } from '../database.types';
+import {
+  CheckoutSessionStepsSchema
+} from '../repositories/checkout/checkout-session.repository';
+import { createDeliveryService } from '../services/delivery';
+import { createPaymentService } from '../services/payment';
+import type { EsimStatus, OrderStatus, Resolvers } from '../types';
 
 // ===============================================
-// UTILITY FUNCTIONS
+// TYPE DEFINITIONS & SCHEMAS
 // ===============================================
+
+type CheckoutSessionRow =
+  Database['public']['Tables']['checkout_sessions']['Row'];
+
+const PricingSchema = z.object({
+  subtotal: z.number(),
+  taxes: z.number(),
+  fees: z.number(),
+  total: z.number(),
+  currency: z.string(),
+});
+
+const PlanSnapshotSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  duration: z.number(),
+  price: z.number(),
+  currency: z.string(),
+  countries: z.array(z.string()),
+});
 
 interface CheckoutSessionToken {
   userId: string;
@@ -73,7 +98,9 @@ export const checkoutResolvers: Partial<Resolvers> = {
         console.log("Token decoded, sessionId:", decoded.sessionId);
 
         // Get session from database using repository
-        const session = await context.repositories.checkoutSessions.getById(decoded.sessionId);
+        const session = await context.repositories.checkoutSessions.getById(
+          decoded.sessionId
+        );
 
         if (!session) {
           console.error("Session not found");
@@ -83,6 +110,11 @@ export const checkoutResolvers: Partial<Resolvers> = {
             session: null,
           };
         }
+
+        // Parse JSON fields into typed objects
+        const steps = CheckoutSessionStepsSchema.parse(session.steps || {});
+        const pricing = PricingSchema.parse(session.pricing);
+        const planSnapshot = PlanSnapshotSchema.parse(session.plan_snapshot);
 
         // Check if session is expired
         if (await context.repositories.checkoutSessions.isExpired(session)) {
@@ -94,11 +126,10 @@ export const checkoutResolvers: Partial<Resolvers> = {
         }
 
         // Check if all steps are completed
-        const steps = session.steps || {};
         const isComplete = Boolean(
           steps.authentication?.completed &&
-          steps.delivery?.completed &&
-          steps.payment?.completed
+            steps.delivery?.completed &&
+            steps.payment?.completed
         );
 
         // Calculate time remaining
@@ -126,10 +157,10 @@ export const checkoutResolvers: Partial<Resolvers> = {
             timeRemaining,
             createdAt: session.created_at,
             // Add these fields for frontend use
-            planSnapshot: session.plan_snapshot,
-            pricing: session.pricing,
+            planSnapshot: planSnapshot,
+            pricing: pricing,
             steps: steps,
-            paymentStatus: session.payment_status || "PENDING",
+            paymentStatus: session.payment_status || 'PENDING',
           },
           error: null,
         };
@@ -186,7 +217,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             name: plan.name,
             duration: plan.duration,
             price: plan.price,
-            currency: "USD",
+            currency: 'USD',
             countries: plan.countries?.map(c => c.iso) || [],
           },
           pricing,
@@ -203,7 +234,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
         });
 
-        console.log("Created session:", session.id);
+        console.log('Created session:', session.id);
 
         // Generate JWT token (include session ID even if user not authenticated)
         const token = generateCheckoutToken(
@@ -239,13 +270,15 @@ export const checkoutResolvers: Partial<Resolvers> = {
     updateCheckoutStep: async (_, { input }, context: Context) => {
       try {
         const { token, stepType, data } = input;
-        console.log("Updating checkout step:", stepType, "with data:", data);
+        console.log('Updating checkout step:', stepType, 'with data:', data);
 
         // Validate token
         const decoded = validateCheckoutToken(token);
 
         // Get current session using repository
-        const session = await context.repositories.checkoutSessions.getById(decoded.sessionId);
+        const session = await context.repositories.checkoutSessions.getById(
+          decoded.sessionId
+        );
 
         if (!session) {
           return {
@@ -256,24 +289,14 @@ export const checkoutResolvers: Partial<Resolvers> = {
           };
         }
 
-        // Check if session is expired
-        if (await context.repositories.checkoutSessions.isExpired(session)) {
-          return {
-            success: false,
-            error: "Session has expired",
-            session: null,
-            nextStep: null,
-          };
-        }
-
-        // Update the specific step
-        const updatedSteps = { ...session.steps };
+        // Parse steps for safe manipulation
+        const steps = CheckoutSessionStepsSchema.parse(session.steps || {});
         const now = new Date().toISOString();
 
         switch (stepType) {
-          case "AUTHENTICATION":
+          case 'AUTHENTICATION':
             // User has logged in or signed up
-            updatedSteps.authentication = {
+            steps.authentication = {
               completed: true,
               completedAt: now,
               userId: context.auth?.user?.id || data.userId,
@@ -290,9 +313,9 @@ export const checkoutResolvers: Partial<Resolvers> = {
             }
             break;
 
-          case "DELIVERY":
+          case 'DELIVERY':
             // User has selected delivery method for QR code
-            updatedSteps.delivery = {
+            steps.delivery = {
               completed: true,
               completedAt: now,
               method: data.method, // 'EMAIL', 'SMS', or 'BOTH'
@@ -301,9 +324,9 @@ export const checkoutResolvers: Partial<Resolvers> = {
             };
             break;
 
-          case "PAYMENT":
+          case 'PAYMENT':
             // User has selected payment method (not yet processed)
-            updatedSteps.payment = {
+            steps.payment = {
               completed: false, // Will be completed after actual payment
               paymentMethodId: data.paymentMethodId,
               paymentMethodType: data.paymentMethodType, // 'card', 'paypal', etc
@@ -320,27 +343,37 @@ export const checkoutResolvers: Partial<Resolvers> = {
             };
         }
 
-        console.log("Updated steps:", updatedSteps);
+        console.log('Updated steps:', steps);
 
         // Update session in database using repository
-        const updatedSession = await context.repositories.checkoutSessions.update(session.id, {
-          steps: updatedSteps,
-        });
+        const updatedSession = await context.repositories.checkoutSessions.update(
+          session.id,
+          {
+            steps: steps,
+          }
+        );
+
+        // Re-parse for consistency
+        const updatedSteps = CheckoutSessionStepsSchema.parse(
+          updatedSession.steps || {}
+        );
 
         // Determine next step
         let nextStep: string | null = null;
         if (!updatedSteps.authentication?.completed) {
-          nextStep = "AUTHENTICATION";
+          nextStep = 'AUTHENTICATION';
         } else if (!updatedSteps.delivery?.completed) {
-          nextStep = "DELIVERY";
+          nextStep = 'DELIVERY';
         } else if (!updatedSteps.payment?.readyForPayment) {
-          nextStep = "PAYMENT";
+          nextStep = 'PAYMENT';
         }
         // If nextStep is null, all steps are ready for final payment processing
 
-        const isComplete = Boolean(!nextStep && updatedSteps.payment?.readyForPayment);
+        const isComplete = Boolean(
+          !nextStep && updatedSteps.payment?.readyForPayment
+        );
 
-        console.log("Next step:", nextStep, "Is complete:", isComplete);
+        console.log('Next step:', nextStep, 'Is complete:', isComplete);
 
         return {
           success: true,
@@ -360,7 +393,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             planSnapshot: updatedSession.plan_snapshot,
             pricing: updatedSession.pricing,
             steps: updatedSteps,
-            paymentStatus: updatedSession.payment_status || "PENDING",
+            paymentStatus: updatedSession.payment_status || 'PENDING',
           },
           nextStep: nextStep as any,
           error: null,
@@ -381,15 +414,17 @@ export const checkoutResolvers: Partial<Resolvers> = {
       try {
         const { token, paymentMethodId, savePaymentMethod } = input;
         console.log(
-          "Processing checkout payment for token:",
-          token.substring(0, 20) + "..."
+          'Processing checkout payment for token:',
+          token.substring(0, 20) + '...'
         );
 
         // Validate token
         const decoded = validateCheckoutToken(token);
 
         // Get session using repository
-        const session = await context.repositories.checkoutSessions.getById(decoded.sessionId);
+        const session = await context.repositories.checkoutSessions.getById(
+          decoded.sessionId
+        );
 
         if (!session) {
           return {
@@ -401,6 +436,11 @@ export const checkoutResolvers: Partial<Resolvers> = {
             webhookProcessing: false,
           };
         }
+
+        // Parse JSON fields
+        const steps = CheckoutSessionStepsSchema.parse(session.steps || {});
+        const pricing = PricingSchema.parse(session.pricing);
+        const planSnapshot = PlanSnapshotSchema.parse(session.plan_snapshot);
 
         // Check if session is expired
         if (await context.repositories.checkoutSessions.isExpired(session)) {
@@ -415,7 +455,6 @@ export const checkoutResolvers: Partial<Resolvers> = {
         }
 
         // Validate that all required steps are completed
-        const steps = session.steps;
         if (!steps.authentication?.completed) {
           return {
             success: false,
@@ -450,10 +489,10 @@ export const checkoutResolvers: Partial<Resolvers> = {
         await paymentService.initialize({});
 
         const paymentResult = await paymentService.createPaymentIntent({
-          amount: session.pricing.total,
-          currency: session.pricing.currency.toLowerCase(),
+          amount: pricing.total,
+          currency: pricing.currency.toLowerCase(),
           payment_method_id: paymentMethodId,
-          description: `eSIM purchase: ${session.plan_snapshot.name}`,
+          description: `eSIM purchase: ${planSnapshot.name}`,
           metadata: {
             sessionId: session.id,
             orderId,
@@ -473,7 +512,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         }
 
         const paymentIntent = paymentResult.payment_intent;
-        console.log("Payment intent created:", paymentIntent.id);
+        console.log('Payment intent created:', paymentIntent.id);
 
         // Update session with payment processing status
         const updatedSteps = {
@@ -488,13 +527,14 @@ export const checkoutResolvers: Partial<Resolvers> = {
           },
         };
 
-        const updatedSession = await context.repositories.checkoutSessions.updatePaymentProcessing(
-          session.id,
-          paymentIntent.id,
-          updatedSteps
-        );
+        const updatedSession =
+          await context.repositories.checkoutSessions.updatePaymentProcessing(
+            session.id,
+            paymentIntent.id,
+            updatedSteps
+          );
 
-        console.log("Session updated, starting webhook simulation...");
+        console.log('Session updated, starting webhook simulation...');
 
         // Start webhook simulation (Step 2: Timer to simulate webhook)
         // In production, this would be a real webhook from Stripe
@@ -561,7 +601,7 @@ async function simulateWebhookProcessing(
   sessionId: string,
   paymentIntentId: string,
   orderId: string,
-  originalSession: any,
+  originalSession: CheckoutSessionRow,
   context: Context,
   paymentService: any
 ) {
@@ -580,47 +620,57 @@ async function simulateWebhookProcessing(
     const paymentSucceeded = completedPayment.status === 'succeeded';
 
     if (paymentSucceeded) {
-      console.log("Payment succeeded, creating order and provisioning eSIM...");
+      console.log('Payment succeeded, creating order and provisioning eSIM...');
+
+      const steps = CheckoutSessionStepsSchema.parse(originalSession.steps || {});
+      const pricing = PricingSchema.parse(originalSession.pricing);
+      const planSnapshot = PlanSnapshotSchema.parse(
+        originalSession.plan_snapshot
+      );
 
       // Step 2: Real eSIM provisioning using eSIM Go API
       const esimData = await provisionESIM(
-        originalSession.plan_snapshot,
+        planSnapshot,
         orderId,
         context
       );
 
+      if (!steps.authentication?.userId) {
+        throw new Error("Cannot create order without a user ID");
+      }
+
       // Step 1: Create Order record using repository with real eSIM Go reference
       const orderRecord = await context.repositories.orders.create({
-        user_id: originalSession.steps.authentication.userId,
+        user_id: steps.authentication.userId,
         reference: orderId, // This becomes the order reference
-        status: "COMPLETED" as OrderStatus,
-        plan_data: originalSession.plan_snapshot, // Store plan info in JSONB field
+        status: 'COMPLETED' as OrderStatus,
+        plan_data: planSnapshot, // Store plan info in JSONB field
         quantity: 1,
-        total_price: originalSession.pricing.total / 100, // Convert cents back to dollars
+        total_price: pricing.total / 100, // Convert cents back to dollars
         esim_go_order_ref: esimData.esimGoOrderRef, // Real eSIM Go order reference
       });
 
-      console.log("Order record created:", orderRecord.id);
+      console.log('Order record created:', orderRecord.id);
 
       // Step 3: Create ESIM record using repository
       const esimRecord = await context.repositories.esims.create({
-        user_id: originalSession.steps.authentication.userId,
+        user_id: steps.authentication.userId,
         order_id: orderRecord.id,
         iccid: esimData.iccid,
         customer_ref: orderId,
         qr_code_url: esimData.qrCode,
-        status: "ASSIGNED" as EsimStatus,
+        status: 'ASSIGNED' as EsimStatus,
         assigned_date: new Date().toISOString(),
-        last_action: "ASSIGNED",
+        last_action: 'ASSIGNED',
         action_date: new Date().toISOString(),
       });
 
-      console.log("eSIM record created:", esimRecord.id);
+      console.log('eSIM record created:', esimRecord.id);
 
       // Step 4: Deliver eSIM QR code to customer
       const deliveryService = createDeliveryService();
-      const deliveryMethod = originalSession.steps.delivery;
-      
+      const deliveryMethod = steps.delivery;
+
       if (deliveryMethod?.completed) {
         try {
           const deliveryResult = await deliveryService.deliverESIM(
@@ -631,12 +681,12 @@ async function simulateWebhookProcessing(
               activationCode: esimData.activationCode,
               activationUrl: esimData.activationUrl,
               instructions: esimData.instructions,
-              planName: originalSession.plan_snapshot.name,
+              planName: planSnapshot.name,
               customerName: 'Customer', // TODO: Get actual customer name from user profile
               orderReference: orderId,
             },
             {
-              type: deliveryMethod.method,
+              type: deliveryMethod.method || 'EMAIL',
               email: deliveryMethod.email,
               phoneNumber: deliveryMethod.phoneNumber,
             }
@@ -654,9 +704,9 @@ async function simulateWebhookProcessing(
 
       // Step 5: Update checkout session to completed
       const completedSteps = {
-        ...originalSession.steps,
+        ...steps,
         payment: {
-          ...originalSession.steps.payment,
+          ...steps.payment,
           completed: true,
           completedAt: new Date().toISOString(),
           paymentIntentId,
@@ -691,8 +741,12 @@ async function simulateWebhookProcessing(
 // REAL eSIM PROVISIONING (Step 3) - Using eSIM Go API
 // ===============================================
 
-async function provisionESIM(planSnapshot: any, customerReference: string, context: Context) {
-  console.log("Real eSIM provisioning for plan:", planSnapshot.name);
+async function provisionESIM(
+  planSnapshot: z.infer<typeof PlanSnapshotSchema>,
+  customerReference: string,
+  context: Context
+) {
+  console.log('Real eSIM provisioning for plan:', planSnapshot.name);
 
   try {
     // Step 1: Create order in eSIM Go API
