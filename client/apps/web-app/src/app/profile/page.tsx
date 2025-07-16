@@ -1,24 +1,37 @@
 "use client";
 
-import { ArrowLeft, Calendar, ChevronRight, Plus, QrCode, User, Wifi } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  ChevronRight,
+  Plus,
+  QrCode,
+  User,
+  Wifi,
+} from "lucide-react";
 import Link from "next/link";
 import { useQuery } from "@apollo/client";
 import { Button } from "@workspace/ui";
 import { Card } from "@workspace/ui";
 import { Progress } from "@workspace/ui";
-import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { GetUserOrders } from "@/lib/graphql/checkout";
 import { ME } from "@/lib/graphql/mutations";
+import { Order } from "@/__generated__/graphql";
 
 // Mock data - will be replaced with real API calls
-const mockProfile = {
-  name: "יעל כהן",
-  email: "yael.cohen@example.com",
-  phone: "+972-50-123-4567",
-  avatar: null,
-};
+// const mockProfile = {
+//   name: "יעל כהן",
+//   email: "yael.cohen@example.com",
+//   phone: "+972-50-123-4567",
+//   avatar: null,
+// };
 
 const mockCurrentPlan = {
   country: "צרפת",
@@ -26,43 +39,43 @@ const mockCurrentPlan = {
   dataTotal: 1000, // MB (1GB)
   daysLeft: 4,
   totalDays: 30,
-  expiryDate: new Date('2025-01-18'),
+  expiryDate: new Date("2025-01-18"),
   qrCode: "mock-qr-code-data",
   isActive: true,
 };
 
-const mockOrders = [
-  {
-    id: "ORD-001",
-    country: "צרפת",
-    duration: "30 ימים",
-    data: "1GB יומי",
-    price: "₪89",
-    date: new Date('2024-12-19'),
-    status: "פעיל",
-    qrCode: "mock-qr-1",
-  },
-  {
-    id: "ORD-002", 
-    country: "איטליה",
-    duration: "14 ימים",
-    data: "1GB יומי",
-    price: "₪59",
-    date: new Date('2024-11-15'),
-    status: "הושלם",
-    qrCode: "mock-qr-2",
-  },
-  {
-    id: "ORD-003",
-    country: "ספרד",
-    duration: "7 ימים", 
-    data: "1GB יומי",
-    price: "₪39",
-    date: new Date('2024-10-10'),
-    status: "הושלם",
-    qrCode: "mock-qr-3",
-  },
-];
+// const mockOrders = [
+//   {
+//     id: "ORD-001",
+//     country: "צרפת",
+//     duration: "30 ימים",
+//     data: "1GB יומי",
+//     price: "₪89",
+//     date: new Date('2024-12-19'),
+//     status: "פעיל",
+//     qrCode: "mock-qr-1",
+//   },
+//   {
+//     id: "ORD-002",
+//     country: "איטליה",
+//     duration: "14 ימים",
+//     data: "1GB יומי",
+//     price: "₪59",
+//     date: new Date('2024-11-15'),
+//     status: "הושלם",
+//     qrCode: "mock-qr-2",
+//   },
+//   {
+//     id: "ORD-003",
+//     country: "ספרד",
+//     duration: "7 ימים",
+//     data: "1GB יומי",
+//     price: "₪39",
+//     date: new Date('2024-10-10'),
+//     status: "הושלם",
+//     qrCode: "mock-qr-3",
+//   },
+// ];
 
 export default function ProfilePage() {
   const { data: userData, loading: userLoading } = useQuery(ME);
@@ -80,37 +93,41 @@ export default function ProfilePage() {
 
   const getStatusText = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'active':
-        return 'פעיל';
-      case 'delivered':
-        return 'נמסר';
-      case 'pending':
-        return 'ממתין';
-      case 'completed':
-        return 'הושלם';
-      case 'failed':
-        return 'נכשל';
+      case "active":
+        return "פעיל";
+      case "delivered":
+        return "נמסר";
+      case "pending":
+        return "ממתין";
+      case "completed":
+        return "הושלם";
+      case "failed":
+        return "נכשל";
       default:
-        return 'הושלם';
+        return "הושלם";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'active':
-      case 'delivered':
-        return 'default';
-      case 'pending':
-        return 'secondary';
-      case 'failed':
-        return 'destructive';
+      case "active":
+      case "delivered":
+        return "default";
+      case "pending":
+        return "secondary";
+      case "failed":
+        return "destructive";
       default:
-        return 'secondary';
+        return "secondary";
     }
   };
 
-  const dataUsagePercentage = (mockCurrentPlan.dataUsed / mockCurrentPlan.dataTotal) * 100;
-  const daysUsagePercentage = ((mockCurrentPlan.totalDays - mockCurrentPlan.daysLeft) / mockCurrentPlan.totalDays) * 100;
+  const dataUsagePercentage =
+    (mockCurrentPlan.dataUsed / mockCurrentPlan.dataTotal) * 100;
+  const daysUsagePercentage =
+    ((mockCurrentPlan.totalDays - mockCurrentPlan.daysLeft) /
+      mockCurrentPlan.totalDays) *
+    100;
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -150,7 +167,9 @@ export default function ProfilePage() {
                     {userData?.me?.firstName} {userData?.me?.lastName}
                   </h2>
                   <p className="text-muted-foreground">{userData?.me?.email}</p>
-                  <p className="text-sm text-muted-foreground">{userData?.me?.phoneNumber}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {userData?.me?.phoneNumber}
+                  </p>
                 </>
               )}
             </div>
@@ -172,7 +191,9 @@ export default function ProfilePage() {
               >
                 <QrCode className="h-4 w-4" />
               </Button>
-              <Badge variant={mockCurrentPlan.isActive ? "default" : "secondary"}>
+              <Badge
+                variant={mockCurrentPlan.isActive ? "default" : "secondary"}
+              >
                 {mockCurrentPlan.isActive ? "פעיל" : "לא פעיל"}
               </Badge>
             </div>
@@ -202,16 +223,12 @@ export default function ProfilePage() {
             </div>
             <Progress value={daysUsagePercentage} className="h-2 mb-2" />
             <p className="text-xs text-muted-foreground">
-              תפוגה: {mockCurrentPlan.expiryDate.toLocaleDateString('he-IL')}
+              תפוגה: {mockCurrentPlan.expiryDate.toLocaleDateString("he-IL")}
             </p>
           </div>
 
           {/* Extend Package CTA */}
-          <Button 
-            onClick={handleExtendPackage}
-            className="w-full"
-            size="lg"
-          >
+          <Button onClick={handleExtendPackage} className="w-full" size="lg">
             <Plus className="h-4 w-4 ml-2" />
             הוספת ימים לחבילה
           </Button>
@@ -223,7 +240,7 @@ export default function ProfilePage() {
             <Calendar className="h-5 w-5" />
             היסטוריית הזמנות
           </h3>
-          
+
           <div className="space-y-4">
             {ordersLoading ? (
               <>
@@ -232,7 +249,7 @@ export default function ProfilePage() {
                 <Skeleton className="h-20 w-full" />
               </>
             ) : ordersData?.myOrders?.length > 0 ? (
-              ordersData.myOrders.map((order: any) => (
+              ordersData.myOrders.map((order: Order) => (
                 <Link
                   key={order.id}
                   href={`/order/${order.id}`}
@@ -241,21 +258,30 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h4 className="font-medium">הזמנה #{order.reference}</h4>
+                        <h4 className="font-medium">
+                          הזמנה #{order.reference}
+                        </h4>
                         <Badge variant={getStatusColor(order.status)}>
                           {getStatusText(order.status)}
                         </Badge>
                       </div>
                       <div className="text-sm text-muted-foreground space-y-1">
                         <p>{order.esims?.length || 0} eSIM(s)</p>
-                        <p>הוזמן: {new Date(order.createdAt).toLocaleDateString('he-IL')}</p>
+                        <p>
+                          הוזמן:{" "}
+                          {new Date(order.createdAt).toLocaleDateString(
+                            "he-IL"
+                          )}
+                        </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
                       <div className="text-left">
                         <p className="font-semibold">₪{order.totalPrice}</p>
-                        <p className="text-xs text-muted-foreground">#{order.id}</p>
+                        <p className="text-xs text-muted-foreground">
+                          #{order.id}
+                        </p>
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>

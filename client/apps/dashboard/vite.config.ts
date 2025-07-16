@@ -17,6 +17,18 @@ export default defineConfig(() => {
   console.debug(allowedHosts)
   return {
     plugins: [react(), tailwindcss()],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'ui': ['@workspace/ui']
+          }
+        }
+      }
+    },
+    manualChunks: {
+      '@workspace/ui': ['@workspace/ui']
+    },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),

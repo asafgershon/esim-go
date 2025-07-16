@@ -27,7 +27,6 @@ export function PaymentSection({
   setCvv,
   onPaymentSubmit,
   isProcessing = false,
-  canSubmit = false,
 }: PaymentSectionProps) {
   const [isCreatingPaymentMethod, setIsCreatingPaymentMethod] = useState(false);
 
@@ -79,13 +78,13 @@ export function PaymentSection({
       // TODO: Integration with real payment provider (Stripe, etc.)
       // For now, create a mock payment method ID
       const mockPaymentMethodId = `pm_mock_${Date.now()}`;
-      
+
       // In real implementation, this would be:
       // const paymentMethod = await stripe.createPaymentMethod({
       //   type: 'card',
       //   card: cardElement,
       // });
-      
+
       // Send payment method to backend - backend will process and wait for webhook
       await onPaymentSubmit(mockPaymentMethodId);
     } catch (error) {
@@ -94,8 +93,6 @@ export function PaymentSection({
       setIsCreatingPaymentMethod(false);
     }
   };
-
-  const isPaymentValid = cardNumber.replace(/\s/g, "").length >= 16 && expiry.length === 5 && cvv.length >= 3;
 
   return (
     <Card className="p-6 relative" dir="rtl">
@@ -169,9 +166,11 @@ export function PaymentSection({
           // disabled={!canSubmit || !isPaymentValid || isCreatingPaymentMethod || isProcessing}
           className="w-full h-12 text-lg font-medium"
         >
-          {isCreatingPaymentMethod ? "יוצר אמצעי תשלום..." : 
-           isProcessing ? "מעבד תשלום..." : 
-           "שלח תשלום"}
+          {isCreatingPaymentMethod
+            ? "יוצר אמצעי תשלום..."
+            : isProcessing
+            ? "מעבד תשלום..."
+            : "שלח תשלום"}
         </Button>
       </div>
     </Card>

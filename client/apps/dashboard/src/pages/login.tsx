@@ -1,12 +1,11 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Button, GoogleSignInButton, AppleSignInButton } from '@workspace/ui/components/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card'
-import { Input } from '@workspace/ui/components/input'
-import { Separator } from '@workspace/ui/components/separator'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
+import { AppleSignInButton, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, GoogleSignInButton } from '@workspace/ui'
+import { Input } from '@workspace/ui/components/input'
+import { Separator } from '@workspace/ui/components/separator'
 import { Loader2, Mail } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')

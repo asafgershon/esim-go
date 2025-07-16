@@ -10,6 +10,7 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { OrderDetails } from "@/lib/graphql/checkout";
 import Image from "next/image";
+import { Esim } from "@/__generated__/graphql";
 export default function OrderPage() {
   const { orderId } = useParams();
   
@@ -171,7 +172,7 @@ export default function OrderPage() {
           <Card className="p-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">כרטיסי eSIM</h3>
             <div className="space-y-4">
-              {order.esims.map((esim: any, index: number) => (
+              {order.esims.map((esim: Esim, index: number) => (
                 <div key={esim.id} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>

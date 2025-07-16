@@ -1,5 +1,5 @@
 import { cn } from '@workspace/ui/lib/utils'
-import { Button } from '@workspace/ui/components/button'
+import { Button } from '@workspace/ui'
 import { Home, Users, MapPin, LogOut } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'

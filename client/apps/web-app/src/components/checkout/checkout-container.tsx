@@ -58,7 +58,9 @@ export function CheckoutContainer() {
       // Create new session with current parameters
       if (countryId || regionId) {
         try {
-          const result = await createSession({ variables: { input: { numOfDays, regionId, countryId } } });
+          const result = await createSession({
+            variables: { input: { numOfDays, regionId, countryId } },
+          });
           const newToken = result.data?.createCheckoutSession?.session?.token;
           if (newToken) {
             saveToken(newToken);
@@ -73,18 +75,32 @@ export function CheckoutContainer() {
     if ((countryId || regionId) && !token && !sessionLoading) {
       initializeSession();
     }
-  }, [numOfDays, regionId, countryId, token, createSession, saveToken, sessionLoading]);
+  }, [
+    numOfDays,
+    regionId,
+    countryId,
+    token,
+    createSession,
+    saveToken,
+    sessionLoading,
+  ]);
 
   // Clear token when checkout parameters change (different order)
   useEffect(() => {
     if (token) {
       clearToken();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [numOfDays, regionId, countryId]); // Only depend on the parameters, not token functions
 
   // Auto-complete delivery step if auth is already completed when session loads
   useEffect(() => {
-    if (session && session.steps?.authentication?.completed && !session.steps?.delivery?.completed && token) {
+    if (
+      session &&
+      session.steps?.authentication?.completed &&
+      !session.steps?.delivery?.completed &&
+      token
+    ) {
       // User is already authenticated, auto-complete delivery with default QR method
       updateStepWithData(CheckoutStepType.Delivery, {
         method: "QR",
@@ -92,9 +108,17 @@ export function CheckoutContainer() {
         refetchSession();
       });
     }
-  }, [session?.steps?.authentication?.completed, session?.steps?.delivery?.completed, token, updateStepWithData, refetchSession]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    session?.steps?.authentication?.completed,
+    session?.steps?.delivery?.completed,
+    token,
+    updateStepWithData,
+    refetchSession,
+  ]);
 
-  const isDeliveryValid = selectedMethod === "QR" || (selectedMethod === "EMAIL" && email.length > 3);
+  const isDeliveryValid =
+    selectedMethod === "QR" || (selectedMethod === "EMAIL" && email.length > 3);
 
   // Delivery step completion or update
   const handleDeliveryUpdate = useCallback(async () => {
@@ -109,20 +133,34 @@ export function CheckoutContainer() {
       });
       refetchSession();
     }
-  }, [token, selectedMethod, email, updateStepWithData, refetchSession, updateStepError]);
+  }, [
+    token,
+    selectedMethod,
+    email,
+    updateStepWithData,
+    refetchSession,
+    updateStepError,
+  ]);
 
   // Auth step completion
   const handleAuthComplete = useCallback(async () => {
     if (token && user) {
       console.log("handleAuthComplete", user.id);
-      await updateStepWithData(CheckoutStepType.Authentication, { userId: user.id });
+      await updateStepWithData(CheckoutStepType.Authentication, {
+        userId: user.id,
+      });
       refetchSession();
     }
   }, [token, user, updateStepWithData, refetchSession]);
 
   useEffect(() => {
     // When user authenticates, complete the auth step (only if not already completed)
-    if (user && session && (!session.steps.authentication?.completed || !session.steps.authentication?.userId)) {
+    if (
+      user &&
+      session &&
+      (!session.steps.authentication?.completed ||
+        !session.steps.authentication?.userId)
+    ) {
       handleAuthComplete();
     }
   }, [user, session, handleAuthComplete]);
@@ -131,33 +169,45 @@ export function CheckoutContainer() {
     // When delivery method changes, update it if the step is already completed.
     if (isDeliveryValid && session?.steps.delivery?.completed) {
       const deliveryData = session.steps.delivery;
-      if (deliveryData?.method !== selectedMethod || (selectedMethod === "EMAIL" && deliveryData?.email !== email)) {
-        console.log("Delivery method changed, updating step", deliveryData?.method, selectedMethod, deliveryData?.email, email);
+      if (
+        deliveryData?.method !== selectedMethod ||
+        (selectedMethod === "EMAIL" && deliveryData?.email !== email)
+      ) {
+        console.log(
+          "Delivery method changed, updating step",
+          deliveryData?.method,
+          selectedMethod,
+          deliveryData?.email,
+          email
+        );
         handleDeliveryUpdate();
       }
     }
   }, [selectedMethod, email, isDeliveryValid, session, handleDeliveryUpdate]);
 
   // Payment callback from PaymentSection
-  const handlePaymentSubmit = useCallback(async (paymentMethodId: string) => {
-    if (!token) return;
-    setIsProcessing(true);
-    try {
-      // Send payment method to backend - this triggers webhook waiting process
-      // Backend will wait for payment provider webhook to confirm final status
-      const result = await handlePayment(token, paymentMethodId);
-      if (result.data?.processCheckoutPayment?.success) {
-        // Payment initiated successfully - backend is now waiting for webhook
-        // Start polling to monitor webhook completion
-        await refetchSession();
+  const handlePaymentSubmit = useCallback(
+    async (paymentMethodId: string) => {
+      if (!token) return;
+      setIsProcessing(true);
+      try {
+        // Send payment method to backend - this triggers webhook waiting process
+        // Backend will wait for payment provider webhook to confirm final status
+        const result = await handlePayment(token, paymentMethodId);
+        if (result.data?.processCheckoutPayment?.success) {
+          // Payment initiated successfully - backend is now waiting for webhook
+          // Start polling to monitor webhook completion
+          await refetchSession();
+        }
+      } catch {
+        // handle error - stop processing on actual errors
+        setIsProcessing(false);
       }
-    } catch {
-      // handle error - stop processing on actual errors
-      setIsProcessing(false);
-    }
-    // Note: We don't setIsProcessing(false) on success because we need to keep
-    // polling until the webhook completes and session.isComplete = true
-  }, [token, handlePayment, refetchSession]);
+      // Note: We don't setIsProcessing(false) on success because we need to keep
+      // polling until the webhook completes and session.isComplete = true
+    },
+    [token, handlePayment, refetchSession]
+  );
 
   // Poll for webhook completion and redirect
   useEffect(() => {
@@ -170,15 +220,16 @@ export function CheckoutContainer() {
   }, [session, clearToken, router]);
 
   // UI helpers
-  const canSubmitPayment =
-    session?.steps.authentication?.completed
+  const canSubmitPayment = session?.steps.authentication?.completed;
 
   // Loading and error states
   if (sessionLoading) {
     return <div className="p-8 text-center">טוען...</div>;
   }
   if (sessionError) {
-    return <div className="p-8 text-center text-red-500">שגיאה בטעינת ההזמנה</div>;
+    return (
+      <div className="p-8 text-center text-red-500">שגיאה בטעינת ההזמנה</div>
+    );
   }
 
   return (
@@ -186,14 +237,14 @@ export function CheckoutContainer() {
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Left Column - Order Details */}
         <div className="space-y-6">
-          <OrderDetailsSection 
+          <OrderDetailsSection
             numOfDays={numOfDays}
             countryId={countryId}
             tripId={regionId}
             totalPrice={session?.pricing?.total || 0}
             sectionNumber={1}
           />
-          <DeliveryMethodSection 
+          <DeliveryMethodSection
             sectionNumber={2}
             selectedMethod={selectedMethod}
             setSelectedMethod={setSelectedMethod}
@@ -230,4 +281,4 @@ export function CheckoutContainer() {
       </div>
     </div>
   );
-} 
+}

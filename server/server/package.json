@@ -6,7 +6,7 @@
   "scripts": {
     "codegen": "graphql-codegen",
     "codegen:watch": "graphql-codegen --watch",
-    "codegen:dbtypes": "bunx supabase gen types typescript --project-id \"dgkyjkzkwzmjjurzvcxy\" --schema public > src/database.types.ts",
+    "codegen:dbtypes": "bunx supabase gen types typescript --project-id \"dgkyjkzkwzmjjurzvcxy\" --schema public > src/database.types.ts || echo \"Skipping Supabase codegen (no token available)\"",
     "dev": "bun run --watch src/app.ts",
     "debug": "bun --inspect --watch src/app.ts",
     "start": "bun run src/app.ts",
