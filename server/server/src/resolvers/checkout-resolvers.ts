@@ -206,6 +206,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
               completedAt: context.auth?.isAuthenticated
                 ? new Date().toISOString()
                 : undefined,
+              userId: context.auth?.user?.id,
             },
             delivery: { completed: false },
             payment: { completed: false },
@@ -214,6 +215,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         });
 
         console.log("Created session:", session.id);
+        console.log("Authentication pre-completed:", context.auth?.isAuthenticated ? "YES" : "NO");
 
         // Generate JWT token (include session ID even if user not authenticated)
         const token = generateCheckoutToken(
