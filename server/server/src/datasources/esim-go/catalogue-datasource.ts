@@ -153,13 +153,80 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     search?: string;
     limit?: number;
     offset?: number;
-  }): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number }> {
+  }): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string }> {
+    console.log('🚀 searchPlans called with criteria:', criteria);
+    
+    // Check if we can use country-specific cache (for country-filtered requests)
+    if (criteria.country) {
+      console.log(`🔍 Checking country cache for ${criteria.country}...`);
+      const countryCatalog = await this.cache?.get(`esim-go:country-catalog:${criteria.country}`);
+      if (countryCatalog) {
+        console.log(`💾 Using country cache for ${criteria.country}`);
+        const catalogData = JSON.parse(countryCatalog);
+        console.log(`💾 ${criteria.country} durations:`, [...new Set(catalogData.bundles.map(b => b.duration))]);
+        
+        let filteredBundles = catalogData.bundles;
+        
+        // Apply additional filters
+        if (criteria.duration !== undefined) {
+          filteredBundles = filteredBundles.filter(bundle => bundle.duration === criteria.duration);
+        }
+        if (criteria.bundleGroup) {
+          filteredBundles = filteredBundles.filter(bundle => bundle.bundleGroup === criteria.bundleGroup);
+        }
+        if (criteria.search) {
+          filteredBundles = filteredBundles.filter(bundle => 
+            bundle.name.toLowerCase().includes(criteria.search.toLowerCase()) ||
+            bundle.description?.toLowerCase().includes(criteria.search.toLowerCase())
+          );
+        }
+        
+        // Apply pagination to cached data
+        const limit = criteria.limit || 50;
+        const offset = criteria.offset || 0;
+        const paginatedBundles = filteredBundles.slice(offset, offset + limit);
+        
+        return {
+          bundles: paginatedBundles,
+          totalCount: filteredBundles.length,
+          lastFetched: catalogData.syncedAt
+        };
+      }
+    }
+
+    // Check if we can use the full catalog cache (for unfiltered requests)
+    const isUnfilteredRequest = !criteria.country && !criteria.region && !criteria.bundleGroup && !criteria.search && !criteria.duration;
+    
+    if (isUnfilteredRequest) {
+      console.log('🔍 Checking full catalog cache...');
+      const fullCatalog = await this.cache?.get('esim-go:full-catalog');
+      if (fullCatalog) {
+        console.log('💾 Using full catalog cache');
+        const catalogData = JSON.parse(fullCatalog);
+        console.log('💾 Full catalog durations:', [...new Set(catalogData.bundles.map(b => b.duration))]);
+        
+        // Apply pagination to cached data
+        const limit = criteria.limit || 50;
+        const offset = criteria.offset || 0;
+        const paginatedBundles = catalogData.bundles.slice(offset, offset + limit);
+        
+        return {
+          bundles: paginatedBundles,
+          totalCount: catalogData.totalCount,
+          lastFetched: catalogData.syncedAt
+        };
+      }
+    }
+    
     const cacheKey = this.getCacheKey("catalogue:search", criteria);
 
     // Try to get from cache first
     const cached = await this.cache?.get(cacheKey);
     if (cached) {
-      return JSON.parse(cached);
+      console.log('💾 Returning cached result for:', cacheKey);
+      const cachedResult = JSON.parse(cached);
+      console.log('💾 Cached durations:', [...new Set(cachedResult.bundles.map(b => b.duration))]);
+      return cachedResult;
     }
 
     // Prepare API parameters
@@ -190,9 +257,10 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       params.region = criteria.region;
     }
     
-    if (criteria.duration !== undefined) {
-      params.duration = criteria.duration;
-    }
+    // NOTE: eSIM Go API doesn't support duration filtering - we'll filter client-side
+    // if (criteria.duration !== undefined) {
+    //   params.duration = criteria.duration;
+    // }
     
     if (criteria.maxPrice !== undefined) {
       params.maxPrice = criteria.maxPrice;
@@ -202,24 +270,86 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     if (criteria.search) {
       params.description = criteria.search;
     }
+    
+    console.log('🎯 Trying to fetch multiple pages to get diverse durations...');
 
     // Call the eSIM Go API with all parameters (now supports search and region natively)
+    console.log('🔍 Calling eSIM Go API with params:', params);
     const response = await this.getWithErrorHandling<{ 
       bundles: ESIMGoDataPlan[], 
       totalCount: number,
       limit: number,
       offset: number 
     }>("/v2.5/catalogue", params);
+    
+    // For now, only fetch additional pages if we're getting the full catalog (no specific filters)
+    const shouldFetchMultiplePages = !criteria.country && !criteria.region && !criteria.bundleGroup;
+    
+    if (shouldFetchMultiplePages) {
+      console.log('🔍 Fetching additional pages to get diverse durations...');
+      const additionalPages = [];
+      
+      // Fetch pages 2-5 to get more diverse bundles (compromise between performance and completeness)
+      for (let page = 2; page <= 5; page++) {
+        try {
+          const pageResponse = await this.getWithErrorHandling<{ 
+            bundles: ESIMGoDataPlan[], 
+            totalCount: number,
+            limit: number,
+            offset: number 
+          }>("/v2.5/catalogue", { ...params, page });
+          
+          if (pageResponse.bundles.length === 0) {
+            console.log(`📄 Page ${page} is empty, stopping pagination`);
+            break;
+          }
+          
+          additionalPages.push(...pageResponse.bundles);
+          console.log(`📄 Page ${page} durations:`, [...new Set(pageResponse.bundles.map(b => b.duration))]);
+        } catch (error) {
+          console.log(`❌ Error fetching page ${page}:`, error);
+          break;
+        }
+      }
+      
+      // Combine all bundles from multiple pages
+      const allBundles = [...response.bundles, ...additionalPages];
+      console.log('🔍 Combined durations from all pages:', [...new Set(allBundles.map(b => b.duration))]);
+      
+      // Update response with combined bundles
+      response.bundles = allBundles;
+    } else {
+      console.log('🚀 Skipping multi-page fetch due to specific filters');
+    }
+    
+    console.log('📦 eSIM Go API response:', {
+      totalCount: response.totalCount,
+      bundleCount: response.bundles.length,
+      durations: [...new Set(response.bundles.map(b => b.duration))],
+      sampleBundles: response.bundles.slice(0, 3).map(b => ({
+        name: b.name,
+        duration: b.duration,
+        region: b.region
+      }))
+    });
 
     const totalCount = response.totalCount || response.bundles.length;
     let plans = response.bundles;
+
+    // Apply client-side filtering for duration (since API doesn't support it)
+    if (criteria.duration !== undefined) {
+      console.log(`🔍 Filtering ${plans.length} bundles for duration: ${criteria.duration}`);
+      plans = plans.filter(plan => plan.duration === criteria.duration);
+      console.log(`✅ Found ${plans.length} bundles matching duration ${criteria.duration}`);
+    }
 
     // Sort by price (lowest first)
     plans.sort((a, b) => a.price - b.price);
 
     const result = {
       bundles: plans,
-      totalCount: totalCount
+      totalCount: totalCount,
+      lastFetched: new Date().toISOString()
     };
 
     // Cache for 1 hour

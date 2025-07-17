@@ -30,6 +30,7 @@ import {
 } from "./datasources/esim-go";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook, PricingService } from "./services";
+import { CatalogSyncService } from "./services/catalog-sync.service";
 import {
   CheckoutSessionRepository,
   OrderRepository,
@@ -282,6 +283,11 @@ async function startServer() {
         `🚀 eSIM Go Server is now running on http://localhost:${PORT}/graphql`
       );
       console.log(`🔗 WebSocket endpoint: ws://localhost:${PORT}/graphql`);
+      
+      // Start catalog sync service
+      const catalogueDataSource = new CatalogueDataSource();
+      const catalogSyncService = new CatalogSyncService(catalogueDataSource);
+      catalogSyncService.startPeriodicSync();
     });
   } catch (error) {
     console.error("Failed to start eSIM Go server:", error);

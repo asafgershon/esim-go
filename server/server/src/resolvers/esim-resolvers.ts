@@ -50,6 +50,7 @@ export const esimResolvers: Partial<Resolvers> = {
             pages,
             currentPage,
           },
+          lastFetched: (response as any).lastFetched || null,
         };
       } catch (error) {
         console.error("Error fetching data plans:", error);

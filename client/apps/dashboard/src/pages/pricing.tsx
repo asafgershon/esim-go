@@ -1,12 +1,7 @@
 import { Country, PricingConfiguration } from '@/__generated__/graphql';
 import { useLazyQuery, useQuery } from '@apollo/client';
-import { ColumnDef } from '@tanstack/react-table';
-import { Badge } from '@workspace/ui/components/badge';
-import { Button } from '@workspace/ui/components/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select';
-import { ArrowUpDown } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
-import { GroupedDataTable } from '../components/grouped-data-table';
+import React, { useEffect, useState } from 'react';
+import { CountryPricingTable } from '../components/country-pricing-table';
 import { PricingConfigDrawer } from '../components/pricing-config-drawer';
 import { CALCULATE_BATCH_PRICING, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
 
@@ -27,206 +22,56 @@ interface PricingData {
   currency: string;
 }
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
-};
+interface CountryGroupData {
+  countryName: string;
+  countryId: string;
+  totalBundles: number;
+  avgPricePerDay: number;
+  hasCustomDiscount: boolean;
+  discountRate?: number;
+  bundles?: PricingData[]; // Lazy loaded
+  lastFetched?: string; // ISO date string
+}
 
-const formatPercentage = (rate: number) => {
-  return (rate * 100).toFixed(2) + '%';
-};
-
-// Helper function to check if a row uses a custom configuration
-const isUsingCustomConfig = (pricingData: PricingData, configs: PricingConfiguration[]) => {
-  if (!configs) return false;
-  
-  // Check if there's a specific configuration for this country/duration combination
-  return configs.some(config => 
-    config.isActive && 
-    config.countryId === (pricingData.countryName === 'Austria' ? 'AT' : null) &&
-    config.duration === pricingData.duration &&
-    config.priority > 1 // Higher than default priority
-  );
-};
-
-const createColumns = (
-  pricingConfigs: PricingConfiguration[],
-  onRowClick: (row: PricingData) => void
-): ColumnDef<PricingData>[] => [
-  {
-    accessorKey: 'bundleName',
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      >
-        Bundle
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      const hasCustomConfig = isUsingCustomConfig(row.original, pricingConfigs);
-      return (
-        <div 
-          className={`cursor-pointer ${hasCustomConfig ? 'border-l-4 border-red-500 pl-2' : ''}`}
-          onClick={() => onRowClick(row.original)}
-        >
-          <div className="font-medium">{row.original.bundleName}</div>
-          <div className="text-sm text-gray-500">{row.original.duration} days</div>
-        </div>
-      );
-    },
-    enableGrouping: true,
-  },
-  {
-    accessorKey: 'countryName',
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      >
-        Country
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    enableGrouping: true,
-  },
-  {
-    accessorKey: 'cost',
-    header: 'Cost',
-    cell: ({ row }) => formatCurrency(row.original.cost),
-  },
-  {
-    accessorKey: 'costPlus',
-    header: 'Cost Plus',
-    cell: ({ row }) => formatCurrency(row.original.costPlus),
-  },
-  {
-    accessorKey: 'totalCost',
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      >
-        Total Cost
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <div className="font-medium">{formatCurrency(row.original.totalCost)}</div>
-    ),
-  },
-  {
-    accessorKey: 'discountRate',
-    header: 'Discount',
-    cell: ({ row }) => (
-      <Badge variant="secondary">
-        {formatPercentage(row.original.discountRate)}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: 'discountValue',
-    header: 'Discount Value',
-    cell: ({ row }) => (
-      <span className="text-green-600">
-        -{formatCurrency(row.original.discountValue)}
-      </span>
-    ),
-  },
-  {
-    accessorKey: 'priceAfterDiscount',
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      >
-        Price After Discount
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <div className="font-medium text-blue-600">
-        {formatCurrency(row.original.priceAfterDiscount)}
-      </div>
-    ),
-  },
-  {
-    accessorKey: 'processingRate',
-    header: 'Processing',
-    cell: ({ row }) => (
-      <Badge variant="outline">
-        {formatPercentage(row.original.processingRate)}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: 'processingCost',
-    header: 'Processing Cost',
-    cell: ({ row }) => (
-      <span className="text-yellow-600">
-        -{formatCurrency(row.original.processingCost)}
-      </span>
-    ),
-  },
-  {
-    accessorKey: 'revenueAfterProcessing',
-    header: 'Revenue After Processing',
-    cell: ({ row }) => formatCurrency(row.original.revenueAfterProcessing),
-  },
-  {
-    accessorKey: 'finalRevenue',
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      >
-        Final Revenue
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <div className="font-medium text-green-600">
-        {formatCurrency(row.original.finalRevenue)}
-      </div>
-    ),
-  },
-  {
-    accessorKey: 'duration',
-    header: 'Duration',
-    cell: ({ row }) => `${row.original.duration} days`,
-    enableGrouping: true,
-  },
-];
 
 const PricingPage: React.FC = () => {
-  const [pricingData, setPricingData] = useState<PricingData[]>([]);
+  const [countryGroups, setCountryGroups] = useState<CountryGroupData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [grouping, setGrouping] = useState<string>('none'); // 'none', 'country', 'duration'
   const [selectedRow, setSelectedRow] = useState<PricingData | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Fetch countries, data plans, and pricing configurations
   const { data: countriesData } = useQuery(GET_COUNTRIES);
-  const { data: dataPlansData } = useQuery(GET_DATA_PLANS);
+  const { data: dataPlansData } = useQuery(GET_DATA_PLANS, {
+    variables: {
+      filter: {
+        limit: 1000 // Fetch more bundles to show all durations
+      }
+    },
+    onCompleted: (data) => {
+      console.log('GET_DATA_PLANS response:', data);
+      console.log('Total bundles received:', data?.dataPlans?.items?.length);
+      console.log('Bundle durations:', data?.dataPlans?.items?.map(plan => plan.duration));
+      console.log('Unique durations:', [...new Set(data?.dataPlans?.items?.map(plan => plan.duration))]);
+    }
+  });
   const { data: pricingConfigsData, refetch: refetchPricingConfigs } = useQuery(GET_PRICING_CONFIGURATIONS);
   const [calculateBatchPricing] = useLazyQuery(CALCULATE_BATCH_PRICING);
+  const [getCountryDataPlans] = useLazyQuery(GET_DATA_PLANS);
 
-  // Generate pricing configurations from actual data
+  // Generate country groups from actual data
   useEffect(() => {
-    const fetchAllPricing = async () => {
+    const fetchCountryGroups = async () => {
       if (!countriesData?.countries || !dataPlansData?.dataPlans?.items) {
         return;
       }
 
       setLoading(true);
       setError(null);
-      const allPricing: PricingData[] = [];
+      const groups: CountryGroupData[] = [];
 
-      // Group data plans by country and duration
+      // Group data plans by country
       const plansByCountry = new Map<string, Set<number>>();
       
       for (const plan of dataPlansData.dataPlans.items) {
@@ -240,13 +85,68 @@ const PricingPage: React.FC = () => {
         }
       }
 
-      // Build batch input for all country-duration combinations
-      const batchInputs: Array<{numOfDays: number; regionId: string; countryId: string}> = [];
-      
+      // Create country groups with summary data
       for (const [countryId, durations] of plansByCountry) {
         const country = countriesData.countries.find((c: Country) => c.iso === countryId);
         if (!country) continue;
 
+        // Calculate basic summary for now (will be enhanced)
+        const totalBundles = durations.size;
+        
+        // Check if country has custom discount
+        const hasCustomDiscount = pricingConfigsData?.pricingConfigurations?.some(
+          (config: PricingConfiguration) => config.countryId === countryId && config.isActive
+        ) || false;
+
+        const customConfig = pricingConfigsData?.pricingConfigurations?.find(
+          (config: PricingConfiguration) => config.countryId === countryId && config.isActive
+        );
+
+        groups.push({
+          countryName: country.name,
+          countryId: countryId,
+          totalBundles,
+          avgPricePerDay: 0, // Will be calculated when bundles are loaded
+          hasCustomDiscount,
+          discountRate: customConfig?.discountRate,
+          bundles: undefined, // Lazy loaded
+          lastFetched: dataPlansData?.dataPlans?.lastFetched, // Show global cache time initially
+        });
+      }
+
+      setCountryGroups(groups);
+      setLoading(false);
+    };
+
+    fetchCountryGroups();
+  }, [countriesData, dataPlansData, pricingConfigsData]);
+
+  // Lazy load bundles for a country when expanded
+  const handleExpandCountry = async (countryId: string) => {
+    const country = countriesData?.countries?.find((c: Country) => c.iso === countryId);
+    if (!country) return;
+
+    try {
+      // Fetch bundles for this specific country using the country filter
+      const countryDataResult = await getCountryDataPlans({
+        variables: {
+          filter: {
+            country: countryId,
+            limit: 1000
+          }
+        }
+      });
+
+      if (countryDataResult.data?.dataPlans?.items) {
+        const countryDataPlans = countryDataResult.data;
+        // Get all durations for this country from the fetched data
+        const durations = new Set<number>();
+        for (const plan of countryDataPlans.dataPlans.items) {
+          durations.add(plan.duration);
+        }
+
+        // Build batch input for this country
+        const batchInputs: Array<{numOfDays: number; regionId: string; countryId: string}> = [];
         for (const duration of durations) {
           batchInputs.push({
             numOfDays: duration,
@@ -254,37 +154,73 @@ const PricingPage: React.FC = () => {
             countryId: countryId,
           });
         }
-      }
 
-      // Make single batch query instead of multiple individual queries
-      try {
-        const result = await calculateBatchPricing({
+        const pricingResult = await calculateBatchPricing({
           variables: {
             inputs: batchInputs,
           },
         });
 
-        if (result.data?.calculatePrices) {
-          allPricing.push(...result.data.calculatePrices);
+        if (pricingResult.data?.calculatePrices) {
+          const bundles: PricingData[] = pricingResult.data.calculatePrices;
+          
+          // Calculate average price per day
+          const avgPricePerDay = bundles.reduce((sum, bundle) => 
+            sum + (bundle.priceAfterDiscount / bundle.duration), 0
+          ) / bundles.length;
+
+          // Update the country group with loaded bundles and last fetched info
+          setCountryGroups(prev => prev.map(group => 
+            group.countryId === countryId 
+              ? { 
+                  ...group, 
+                  bundles, 
+                  avgPricePerDay,
+                  lastFetched: countryDataPlans.dataPlans.lastFetched
+                }
+              : group
+          ));
         }
-      } catch (error) {
-        console.error('Error fetching batch pricing:', error);
-        setError('Failed to fetch pricing configurations');
       }
+    } catch (error) {
+      console.error('Error fetching bundles for country:', countryId, error);
+    }
+  };
 
-      setPricingData(allPricing);
-      setLoading(false);
-    };
-
-    fetchAllPricing();
-  }, [countriesData, dataPlansData, calculateBatchPricing]);
-
-  // Handle row click to open drawer
-  const handleRowClick = (row: PricingData) => {
-    console.log('Row clicked:', row);
-    setSelectedRow(row);
+  // Handle country click to open drawer
+  const handleCountryClick = (country: CountryGroupData) => {
+    // Use first bundle if available, or create a dummy one
+    const firstBundle = country.bundles?.[0];
+    if (firstBundle) {
+      setSelectedRow(firstBundle);
+    } else {
+      // Create a dummy bundle for country configuration
+      const dummyBundle: PricingData = {
+        bundleName: `${country.countryName} Configuration`,
+        countryName: country.countryName,
+        duration: 7,
+        cost: 0,
+        costPlus: 0,
+        totalCost: 0,
+        discountRate: country.discountRate || 0.3,
+        discountValue: 0,
+        priceAfterDiscount: 0,
+        processingRate: 0.045,
+        processingCost: 0,
+        revenueAfterProcessing: 0,
+        finalRevenue: 0,
+        currency: 'USD',
+      };
+      setSelectedRow(dummyBundle);
+    }
     setIsDrawerOpen(true);
-    console.log('Drawer should be open now:', true);
+  };
+
+  // Handle bundle click to open drawer
+  const handleBundleClick = (bundle: PricingData) => {
+    console.log('handleBundleClick called with:', bundle);
+    setSelectedRow(bundle);
+    setIsDrawerOpen(true);
   };
 
   // Handle drawer close
@@ -297,35 +233,10 @@ const PricingPage: React.FC = () => {
   const handleConfigurationSaved = () => {
     refetchPricingConfigs();
     // Optionally refresh pricing data to see changes
-    setPricingData([]); // Clear current data
+    setCountryGroups([]); // Clear current data
     setLoading(true);
   };
 
-  // Create columns with current pricing configs
-  const columns = useMemo(() => {
-    return createColumns(
-      pricingConfigsData?.pricingConfigurations || [],
-      handleRowClick
-    );
-  }, [pricingConfigsData]);
-
-  // Configure table grouping
-  const tableOptions = useMemo(() => {
-    const options: { grouping: string[] } = { grouping: [] };
-    
-    switch (grouping) {
-      case 'country':
-        options.grouping = ['countryName'];
-        break;
-      case 'duration':
-        options.grouping = ['duration'];
-        break;
-      default:
-        options.grouping = [];
-    }
-    
-    return options;
-  }, [grouping]);
 
   if (loading) {
     return (
@@ -358,29 +269,15 @@ const PricingPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Pricing Management</h1>
         <div className="text-sm text-gray-500">
-          {pricingData.length} pricing configurations
+          {countryGroups.length} countries
         </div>
       </div>
 
-      {/* Grouping Controls */}
-      <div className="flex items-center gap-4">
-        <span className="text-sm font-medium">Group by:</span>
-        <Select value={grouping} onValueChange={setGrouping}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select grouping" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No grouping</SelectItem>
-            <SelectItem value="country">Country</SelectItem>
-            <SelectItem value="duration">Duration</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <GroupedDataTable 
-        columns={columns} 
-        data={pricingData}
-        grouping={tableOptions.grouping}
+      <CountryPricingTable 
+        countries={countryGroups}
+        onCountryClick={handleCountryClick}
+        onBundleClick={handleBundleClick}
+        onExpandCountry={handleExpandCountry}
       />
 
       {/* Drawer for pricing configuration */}
@@ -392,16 +289,13 @@ const PricingPage: React.FC = () => {
       />
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 mb-2">Pricing Breakdown Information</h3>
+        <h3 className="text-sm font-medium text-blue-900 mb-2">Country-Based Pricing Management</h3>
         <div className="text-sm text-blue-800 space-y-1">
-          <p><strong>Cost:</strong> Base cost from supplier</p>
-          <p><strong>Cost Plus:</strong> Additional markup cost</p>
-          <p><strong>Total Cost:</strong> Cost + Cost Plus</p>
-          <p><strong>Discount:</strong> Percentage discount applied to total cost</p>
-          <p><strong>Processing:</strong> Payment processing fee percentage</p>
-          <p><strong>Final Revenue:</strong> Revenue after all costs and fees</p>
-          <p><strong>Red Border:</strong> Indicates custom pricing configuration is active</p>
-          <p><strong>Click Row:</strong> Edit pricing configuration for specific bundle</p>
+          <p><strong>Country Row:</strong> Shows total bundles, average price per day, and discount status</p>
+          <p><strong>Click to Expand:</strong> Loads all bundles for that country</p>
+          <p><strong>Configure Button:</strong> Opens pricing configuration for the country</p>
+          <p><strong>Bundle Rows:</strong> Individual bundle pricing details</p>
+          <p><strong>Custom Discount:</strong> Blue badge shows country-specific discount rates</p>
         </div>
       </div>
     </div>

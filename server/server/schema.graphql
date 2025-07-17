@@ -231,6 +231,7 @@ type DataPlanConnection {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!
   pageInfo: PageInfo!
+  lastFetched: String
 }
 
 type PageInfo {

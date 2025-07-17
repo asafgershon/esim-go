@@ -107,6 +107,7 @@ export const GET_DATA_PLANS = gql(`
         pages
         currentPage
       }
+      lastFetched
     }
   }
 `)
