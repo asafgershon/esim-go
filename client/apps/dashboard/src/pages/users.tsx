@@ -167,9 +167,6 @@ const createColumns = (
               Copy user ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View user details</DropdownMenuItem>
-            <DropdownMenuItem>Send message</DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleAssignESim(user)}>
               Assign ESim
             </DropdownMenuItem>
