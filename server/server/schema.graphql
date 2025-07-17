@@ -25,7 +25,13 @@ type Query {
   trips: [Trip!]!
 
   # Calculate price
-  calculatePrice(numOfDays: Int!, regionId: String!, countryId: String!): Float!
+  calculatePrice(numOfDays: Int!, regionId: String!, countryId: String!): PricingBreakdown!
+  
+  # Batch calculate prices for multiple bundles
+  calculatePrices(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
+  
+  # Pricing configurations
+  pricingConfigurations: [PricingConfiguration!]!
 }
 
 type Mutation {
@@ -44,6 +50,9 @@ type Mutation {
   # User Management
   updateUserRole(userId: ID!, role: String!): User @auth(role: "ADMIN")
   inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse @auth(role: "ADMIN")
+  
+  # Pricing configuration management
+  updatePricingConfiguration(input: UpdatePricingConfigurationInput!): UpdatePricingConfigurationResponse @auth(role: "ADMIN")
   
   # Package Assignment
   assignPackageToUser(userId: ID!, planId: ID!): AssignPackageResponse @auth(role: "ADMIN")
@@ -428,8 +437,116 @@ extend type Mutation {
   processCheckoutPayment(
     input: ProcessCheckoutPaymentInput!
   ): ProcessCheckoutPaymentResponse!
+  validateOrder(
+    input: ValidateOrderInput!
+  ): ValidateOrderResponse!
+}
+
+# Pricing Types
+type PricingBreakdown {
+  # Bundle Information
+  bundleName: String!
+  countryName: String!
+  duration: Int!
+  
+  # Base Costs (configured values)
+  cost: Float!
+  costPlus: Float!
+  totalCost: Float!
+  
+  # Discount Configuration
+  discountRate: Float! # percentage (e.g., 0.30 for 30%)
+  discountValue: Float! # computed: totalCost * discountRate
+  priceAfterDiscount: Float! # computed: totalCost - discountValue
+  
+  # Processing Fees
+  processingRate: Float! # percentage (e.g., 0.045 for 4.5%)
+  processingCost: Float! # computed: priceAfterDiscount * processingRate
+  revenueAfterProcessing: Float! # computed: priceAfterDiscount - processingCost
+  
+  # Final Revenue
+  finalRevenue: Float! # computed: revenueAfterProcessing - cost - costPlus
+  
+  # Currency
+  currency: String!
+}
+
+
+# Batch pricing input
+input CalculatePriceInput {
+  numOfDays: Int!
+  regionId: String!
+  countryId: String!
+}
+
+# Pricing Configuration Types
+type PricingConfiguration {
+  id: ID!
+  name: String!
+  description: String!
+  
+  # Bundle filters (null = applies to all)
+  countryId: String
+  regionId: String
+  duration: Int
+  bundleGroup: String
+  
+  # Configuration values
+  costSplitPercent: Float! # What % of bundle price is base cost (default: 60%)
+  discountRate: Float! # Discount percentage (default: 30%)
+  processingRate: Float! # Processing fee percentage (default: 4.5%)
+  
+  # Metadata
+  isActive: Boolean!
+  priority: Int! # Higher priority overrides lower priority
+  createdBy: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+input UpdatePricingConfigurationInput {
+  id: ID # If provided, update existing; if null, create new
+  name: String!
+  description: String!
+  
+  # Bundle filters
+  countryId: String
+  regionId: String
+  duration: Int
+  bundleGroup: String
+  
+  # Configuration values
+  costSplitPercent: Float!
+  discountRate: Float!
+  processingRate: Float!
+  
+  isActive: Boolean!
+  priority: Int!
+}
+
+type UpdatePricingConfigurationResponse {
+  success: Boolean!
+  configuration: PricingConfiguration
+  error: String
 }
 
 scalar ISOCountryCode
 scalar DateTime
 scalar JSON
+
+# Order Validation Types
+input ValidateOrderInput {
+  bundleName: String!
+  quantity: Int!
+  customerReference: String
+}
+
+type ValidateOrderResponse {
+  success: Boolean!
+  isValid: Boolean!
+  bundleDetails: JSON
+  totalPrice: Float
+  currency: String
+  error: String
+  errorCode: String
+}

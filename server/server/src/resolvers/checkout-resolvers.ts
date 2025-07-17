@@ -572,6 +572,56 @@ export const checkoutResolvers: Partial<Resolvers> = {
         };
       }
     },
+
+    // Validate order before purchase (eSIM Go recommended flow)
+    validateOrder: async (_, { input }, context: Context) => {
+      try {
+        const { bundleName, quantity, customerReference } = input;
+        console.log("Validating order:", { bundleName, quantity, customerReference });
+
+        // Use the eSIM Go API to validate the order
+        const validationResult = await context.dataSources.orders.validateOrder(
+          bundleName,
+          quantity,
+          customerReference
+        );
+
+        if (!validationResult.isValid) {
+          console.log("Order validation failed:", validationResult.error);
+          return {
+            success: true, // API call succeeded
+            isValid: false,
+            bundleDetails: null,
+            totalPrice: null,
+            currency: null,
+            error: validationResult.error,
+            errorCode: validationResult.errorCode,
+          };
+        }
+
+        console.log("Order validation succeeded");
+        return {
+          success: true,
+          isValid: true,
+          bundleDetails: validationResult.bundleDetails,
+          totalPrice: validationResult.totalPrice,
+          currency: validationResult.currency,
+          error: null,
+          errorCode: null,
+        };
+      } catch (error: any) {
+        console.error("Error in validateOrder:", error);
+        return {
+          success: false,
+          isValid: false,
+          bundleDetails: null,
+          totalPrice: null,
+          currency: null,
+          error: error.message || "Failed to validate order",
+          errorCode: "VALIDATION_ERROR",
+        };
+      }
+    },
   },
 };
 
@@ -619,16 +669,33 @@ async function simulateWebhookProcessing(
         throw new Error("Cannot create order without a user ID");
       }
 
-      // Step 1: Create Order record using repository with real eSIM Go reference
-      const orderRecord = await context.repositories.orders.create({
+      // Calculate detailed pricing breakdown for the order
+      const { PricingService } = await import('../services/pricing.service');
+      const pricingConfig = await PricingService.getPricingConfig(
+        planSnapshot.countryIds[0], // Use first country for pricing
+        planSnapshot.duration,
+        context.dataSources.catalogue
+      );
+      
+      const bundleName = PricingService.getBundleName(planSnapshot.duration);
+      const countryName = PricingService.getCountryName(planSnapshot.countryIds[0]);
+      
+      const detailedPricing = PricingService.calculatePricing(
+        bundleName,
+        countryName,
+        planSnapshot.duration,
+        pricingConfig
+      );
+
+      // Step 1: Create Order record using repository with detailed pricing
+      const orderRecord = await context.repositories.orders.createOrderWithPricing({
         user_id: steps.authentication.userId,
         reference: orderId, // This becomes the order reference
         status: "COMPLETED" as OrderStatus,
         plan_data: planSnapshot, // Store plan info in JSONB field
         quantity: 1,
-        total_price: (pricing as any)?.finalPrice, // Convert cents back to dollars
         esim_go_order_ref: esimData.esimGoOrderRef, // Real eSIM Go order reference
-      });
+      }, detailedPricing);
 
       console.log("Order record created:", orderRecord.id);
 

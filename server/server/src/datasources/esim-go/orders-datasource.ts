@@ -190,6 +190,67 @@ export class OrdersDataSource extends ESIMGoDataSource {
   }
 
   /**
+   * Validate an order before purchase (recommended by eSIM Go)
+   * Tests if the order will be successful without committing to purchase
+   */
+  async validateOrder(
+    bundleName: string,
+    quantity: number,
+    customerReference?: string
+  ): Promise<{
+    isValid: boolean;
+    bundleDetails?: any;
+    totalPrice?: number;
+    currency?: string;
+    error?: string;
+    errorCode?: string;
+  }> {
+    try {
+      const response = await this.postWithErrorHandling<{
+        success: boolean;
+        bundle?: any;
+        total_price?: number;
+        currency?: string;
+        error?: string;
+        error_code?: string;
+      }>('/orders', {
+        type: 'validate', // Key parameter for validation
+        bundle_name: bundleName,
+        quantity,
+        customer_reference: customerReference,
+      });
+
+      if (!response.success) {
+        return {
+          isValid: false,
+          error: response.error || 'Validation failed',
+          errorCode: response.error_code || 'VALIDATION_FAILED',
+        };
+      }
+
+      return {
+        isValid: true,
+        bundleDetails: response.bundle,
+        totalPrice: response.total_price,
+        currency: response.currency,
+      };
+    } catch (error) {
+      if (error instanceof GraphQLError) {
+        return {
+          isValid: false,
+          error: error.message,
+          errorCode: error.extensions?.code as string || 'VALIDATION_ERROR',
+        };
+      }
+      return {
+        isValid: false,
+        error: 'Failed to validate order',
+        errorCode: 'VALIDATION_ERROR',
+      };
+    }
+  }
+
+  /**
    * Calculate total price for an order (useful for preview)
    */
   async calculateOrderPrice(
