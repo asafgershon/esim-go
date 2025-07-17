@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { AutoAuthPrompt } from "@/components/auto-auth-prompt";
+import { CheckoutSkeleton } from "@/components/checkout/checkout-skeleton";
 import CheckoutHandler from "./checkout-handler";
 
 interface CheckoutPageProps {
@@ -32,7 +33,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <Suspense fallback={<div className="p-8 text-center">טוען הזמנה...</div>}>
+        <Suspense fallback={<CheckoutSkeleton />}>
           <CheckoutHandler searchParams={params} />
         </Suspense>
       </main>

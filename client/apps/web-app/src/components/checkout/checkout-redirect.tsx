@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { CheckoutSkeleton } from './checkout-skeleton';
 
 interface CheckoutRedirectProps {
   token: string;
@@ -25,10 +26,5 @@ export function CheckoutRedirect({ token, numOfDays, countryId, regionId }: Chec
     router.replace(`/checkout?${params.toString()}`);
   }, [token, numOfDays, countryId, regionId, router]);
   
-  return (
-    <div className="p-8 text-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-      <p>מכין הזמנה...</p>
-    </div>
-  );
+  return <CheckoutSkeleton />;
 }

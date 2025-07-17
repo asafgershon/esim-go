@@ -12,6 +12,7 @@ import { PaymentSection } from "./payment-section";
 import { LoginSection } from "./login-section";
 import { DeliveryMethodSection } from "./delivery-method-section";
 import { ValidationStatus } from "./validation-status";
+import { CheckoutSkeleton } from "./checkout-skeleton";
 import { CheckoutStepType } from "@/__generated__/graphql";
 
 export function CheckoutContainer() {
@@ -232,17 +233,12 @@ export function CheckoutContainer() {
   // Session creation is now handled server-side
   // If we don't have a token, the server should have redirected us
   if (!hasToken) {
-    return (
-      <div className="p-8 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-        <p>מכין הזמנה...</p>
-      </div>
-    );
+    return <CheckoutSkeleton />;
   }
 
   // Loading and error states
   if (sessionLoading) {
-    return <div className="p-8 text-center">טוען...</div>;
+    return <CheckoutSkeleton />;
   }
   if (sessionError) {
     return (
