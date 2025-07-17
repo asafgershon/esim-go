@@ -51,12 +51,13 @@ export function InviteAdminDialog() {
           input: {
             email,
             role,
-            redirectUrl: `${window.location.origin}/auth/callback`,
+            redirectUrl: 'https://manage.hiiilo.yarinsa.me/auth/callback',
+            // redirectUrl: `${window.location.origin}/auth/callback`,
           },
         },
       });
 
-      if (result.data?.inviteAdminUser.success) {
+      if (result.data?.inviteAdminUser?.success) {
         setSuccess(`Invitation sent successfully to ${email}`);
         setEmail('');
         setRole('ADMIN');
@@ -66,9 +67,9 @@ export function InviteAdminDialog() {
           setSuccess(null);
         }, 2000);
       } else {
-        setError(result.data?.inviteAdminUser.error || 'Failed to send invitation');
+        setError(result.data?.inviteAdminUser?.error || 'Failed to send invitation');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error inviting admin user:', err);
       
       // Enhanced error handling based on error type

@@ -97,7 +97,7 @@ export const usersResolvers: Resolvers = {
         const result = await inviteUserByEmail(
           input.email,
           input.role,
-          input.redirectUrl
+          input.redirectUrl || ''
         );
 
         if (!result.success) {

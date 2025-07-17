@@ -176,7 +176,6 @@ async function startServer() {
     console.log("Setting up CORS middleware", {
       origin: env.CORS_ORIGINS.split(","),
     });
-
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
