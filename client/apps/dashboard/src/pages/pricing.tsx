@@ -1,13 +1,14 @@
-import { useQuery, useLazyQuery } from '@apollo/client';
-import React, { useEffect, useState, useMemo } from 'react';
-import { GET_COUNTRIES, GET_DATA_PLANS, CALCULATE_BATCH_PRICING, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
-import { GroupedDataTable } from '../components/grouped-data-table';
-import { ColumnDef, Row } from '@tanstack/react-table';
-import { Button } from '@workspace/ui/components/button';
+import { Country, PricingConfiguration } from '@/__generated__/graphql';
+import { useLazyQuery, useQuery } from '@apollo/client';
+import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@workspace/ui/components/badge';
+import { Button } from '@workspace/ui/components/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select';
 import { ArrowUpDown } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { GroupedDataTable } from '../components/grouped-data-table';
 import { PricingConfigDrawer } from '../components/pricing-config-drawer';
+import { CALCULATE_BATCH_PRICING, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
 
 interface PricingData {
   bundleName: string;
@@ -38,7 +39,7 @@ const formatPercentage = (rate: number) => {
 };
 
 // Helper function to check if a row uses a custom configuration
-const isUsingCustomConfig = (pricingData: PricingData, configs: any[]) => {
+const isUsingCustomConfig = (pricingData: PricingData, configs: PricingConfiguration[]) => {
   if (!configs) return false;
   
   // Check if there's a specific configuration for this country/duration combination
@@ -51,7 +52,7 @@ const isUsingCustomConfig = (pricingData: PricingData, configs: any[]) => {
 };
 
 const createColumns = (
-  pricingConfigs: any[],
+  pricingConfigs: PricingConfiguration[],
   onRowClick: (row: PricingData) => void
 ): ColumnDef<PricingData>[] => [
   {
@@ -243,7 +244,7 @@ const PricingPage: React.FC = () => {
       const batchInputs: Array<{numOfDays: number; regionId: string; countryId: string}> = [];
       
       for (const [countryId, durations] of plansByCountry) {
-        const country = countriesData.countries.find((c: any) => c.iso === countryId);
+        const country = countriesData.countries.find((c: Country) => c.iso === countryId);
         if (!country) continue;
 
         for (const duration of durations) {
@@ -310,7 +311,7 @@ const PricingPage: React.FC = () => {
 
   // Configure table grouping
   const tableOptions = useMemo(() => {
-    const options: any = {};
+    const options: { grouping: string[] } = { grouping: [] };
     
     switch (grouping) {
       case 'country':
@@ -382,16 +383,13 @@ const PricingPage: React.FC = () => {
         grouping={tableOptions.grouping}
       />
 
-<div>
-
       {/* Drawer for pricing configuration */}
       <PricingConfigDrawer
         isOpen={isDrawerOpen}
         onClose={handleDrawerClose}
         pricingData={selectedRow}
         onConfigurationSaved={handleConfigurationSaved}
-        />
-        </div>
+      />
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="text-sm font-medium text-blue-900 mb-2">Pricing Breakdown Information</h3>

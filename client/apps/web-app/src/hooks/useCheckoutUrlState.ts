@@ -3,7 +3,7 @@ import { useQueryState } from "nuqs";
 // Type-safe wrappers for URL state
 const useTokenState = () => useQueryState("token");
 const useNumOfDaysState = () => useQueryState("numOfDays", { 
-  default: 7,
+  defaultValue: 7,
   parse: (value) => parseInt(value) || 7,
   serialize: (value) => value.toString(),
 });

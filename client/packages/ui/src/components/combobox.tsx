@@ -19,7 +19,7 @@ import {
   PopoverTrigger,
 } from "@workspace/ui/components/popover";
 
-interface ComboboxOption {
+export interface ComboboxOption {
   value: string;
   label: string;
   icon?: string;

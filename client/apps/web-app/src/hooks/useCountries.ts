@@ -39,7 +39,7 @@ export function useCountries() {
 
   // Sort by Hebrew name
   const sortedCountries = countries.sort((a, b) => 
-    a.nameHebrew.localeCompare(b.nameHebrew, 'he')
+    (a.nameHebrew || '').localeCompare(b.nameHebrew || '', 'he')
   );
 
   return {

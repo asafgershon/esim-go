@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@workspace/ui";
+import { Button, ComboboxOption } from "@workspace/ui";
 import { Card } from "@workspace/ui";
 import { FuzzyCombobox, SliderWithValue } from "@workspace/ui";
 import type { CountryISOCode } from "@/lib/types";
@@ -219,7 +219,7 @@ export function EsimExperienceSelector() {
         {isMobile ? (
           <div className="relative">
             <FuzzyCombobox
-              options={comboboxOptions}
+              options={comboboxOptions as ComboboxOption[]}
               value={
                 countryId
                   ? `country-${countryId}`
@@ -245,7 +245,7 @@ export function EsimExperienceSelector() {
             <Suspense fallback={<div>...</div>}>
               {showMobileSheet && (
                 <MobileDestinationSheet
-                  options={comboboxOptions}
+                  options={comboboxOptions as ComboboxOption[]}
                   value={
                     countryId
                       ? `country-${countryId}`
@@ -264,7 +264,7 @@ export function EsimExperienceSelector() {
           </div>
         ) : (
           <FuzzyCombobox
-            options={comboboxOptions}
+            options={comboboxOptions as ComboboxOption[]}
             value={
               countryId
                 ? `country-${countryId}`
