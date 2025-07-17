@@ -25,5 +25,9 @@ export * from "./components/social-button"
 export * from "./components/alert"
 export * from "./components/select"
 export * from "./components/data-table"
+export * from './components/drawer'
+export * from './components/switch'
+export * from './components/collapsible'
+export * from './components/textarea'
 // Utils
 export * from "./lib/utils" 

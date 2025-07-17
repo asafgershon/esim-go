@@ -14,6 +14,7 @@ import { OrdersPage } from '@/pages/orders'
 import { BundlesPage } from '@/pages/bundles'
 import { TripsPage } from '@/pages/trips'
 import { PackageAssignmentPage } from '@/pages/package-assignment'
+import PricingPage from '@/pages/pricing'
 import { apolloClient } from '@/lib/apollo-client'
 
 
@@ -43,6 +44,7 @@ function App() {
                   <Route path="bundles" element={<BundlesPage />} />
                   <Route path="trips" element={<ErrorBoundary><TripsPage /></ErrorBoundary>} />
                   <Route path="package-assignment" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><PackageAssignmentPage /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="pricing" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><PricingPage /></ProtectedRoute></ErrorBoundary>} />
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

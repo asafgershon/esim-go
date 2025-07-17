@@ -138,3 +138,105 @@ export const ASSIGN_PACKAGE_TO_USER = gql(`
     }
   }
 `)
+
+export const CALCULATE_PRICING = gql(`
+  query CalculatePricing($numOfDays: Int!, $regionId: String!, $countryId: String!) {
+    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId) {
+      bundleName
+      countryName
+      duration
+      cost
+      costPlus
+      totalCost
+      discountRate
+      discountValue
+      priceAfterDiscount
+      processingRate
+      processingCost
+      revenueAfterProcessing
+      finalRevenue
+      currency
+    }
+  }
+`)
+
+export const CALCULATE_BATCH_PRICING = gql(`
+  query CalculateBatchPricing($inputs: [CalculatePriceInput!]!) {
+    calculatePrices(inputs: $inputs) {
+      bundleName
+      countryName
+      duration
+      cost
+      costPlus
+      totalCost
+      discountRate
+      discountValue
+      priceAfterDiscount
+      processingRate
+      processingCost
+      revenueAfterProcessing
+      finalRevenue
+      currency
+    }
+  }
+`)
+
+export const GET_COUNTRIES = gql(`
+  query GetCountries {
+    countries {
+      iso
+      name
+      nameHebrew
+      region
+      flag
+    }
+  }
+`)
+
+export const GET_PRICING_CONFIGURATIONS = gql(`
+  query GetPricingConfigurations {
+    pricingConfigurations {
+      id
+      name
+      description
+      countryId
+      regionId
+      duration
+      bundleGroup
+      costSplitPercent
+      discountRate
+      processingRate
+      isActive
+      priority
+      createdBy
+      createdAt
+      updatedAt
+    }
+  }
+`)
+
+export const UPDATE_PRICING_CONFIGURATION = gql(`
+  mutation UpdatePricingConfiguration($input: UpdatePricingConfigurationInput!) {
+    updatePricingConfiguration(input: $input) {
+      success
+      error
+      configuration {
+        id
+        name
+        description
+        countryId
+        regionId
+        duration
+        bundleGroup
+        costSplitPercent
+        discountRate
+        processingRate
+        isActive
+        priority
+        createdBy
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`)
