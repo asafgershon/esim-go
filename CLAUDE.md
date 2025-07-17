@@ -13,6 +13,71 @@
 ## Development Practices
 - Always use graphql-codegen
 
+## Authentication Flow Architecture
+
+### Overview
+The application implements a comprehensive authentication system with multiple sign-in methods and seamless user experience integration.
+
+### Authentication Methods
+1. **Phone OTP**: Primary authentication method using SMS verification
+2. **Apple Sign-In**: Social authentication with Apple ID
+3. **Google Sign-In**: Social authentication with Google account
+
+### Key Components
+
+#### Frontend Components
+- **`/src/components/login-form.tsx`**: Main login form with all authentication methods
+- **`/src/components/login-modal.tsx`**: Modal wrapper for login form with responsive design
+- **`/src/hooks/useAuth.ts`**: Authentication state management hook
+- **`/src/hooks/usePhoneOTP.ts`**: Phone OTP flow management
+- **`/src/hooks/useAppleSignIn.ts`**: Apple authentication integration
+- **`/src/hooks/useGoogleSignIn.ts`**: Google authentication integration
+
+#### Authentication Flow States
+1. **Landing Page Avatar Click**:
+   - **Unauthenticated**: Opens login modal (`LoginModal`)
+   - **Authenticated**: Direct link to profile page
+   
+2. **Login Modal**:
+   - **Responsive**: 420px max-width on desktop, full-width on mobile
+   - **Multi-method**: Phone OTP, Apple, Google sign-in options
+   - **Success handling**: Redirects to profile page after successful authentication
+
+3. **Profile Page**:
+   - **Real Data Integration**: Connected to backend GraphQL queries
+   - **Active eSIM Display**: Shows current plan, usage, and expiry data
+   - **Order History**: Real-time order tracking from database
+
+### Authentication Hook (`useAuth`)
+- **Conditional Queries**: Only makes ME query when auth token exists
+- **Token Management**: Handles localStorage token lifecycle
+- **Error Handling**: Automatic token cleanup on auth errors
+- **State Management**: Consistent authentication state across app
+
+### GraphQL Integration
+- **ME Query**: `query Me { me { id, email, firstName, lastName, phoneNumber } }`
+- **Conditional Execution**: Skipped when no auth token present
+- **Error Handling**: Automatic token cleanup on UNAUTHORIZED errors
+
+### Profile Page Data Flow
+- **User Data**: Real user information from ME query
+- **eSIM Data**: Active plan information from `GET_ACTIVE_ESIM_PLAN` query
+- **Order History**: Real order data from `GetUserOrders` query
+- **Mock Data Elimination**: Replaced all mock data with real backend integration
+
+### Best Practices Implemented
+1. **Conditional API Calls**: Prevent unnecessary queries for unauthenticated users
+2. **Responsive Design**: Modal adapts to screen size appropriately
+3. **Error Boundaries**: Graceful handling of authentication failures
+4. **State Consistency**: Unified authentication state across components
+5. **Token Security**: Automatic cleanup of expired/invalid tokens
+
+### Performance Optimizations
+- **Query Skipping**: ME query only runs when auth token exists
+- **Cache Management**: Efficient Apollo Client caching strategy
+- **Loading States**: Proper loading indicators during authentication
+- **Error Recovery**: Automatic retry mechanisms for failed auth attempts
+
 ## Package Management
 - Using bun as package manager
 
