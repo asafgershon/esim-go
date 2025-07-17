@@ -181,6 +181,15 @@ export const CALCULATE_BATCH_PRICING = gql(`
   }
 `)
 
+export const DELETE_USER = gql(`
+  mutation DeleteUser($userId: ID!) {
+    deleteUser(userId: $userId) {
+      success
+      error
+    }
+  }
+`)
+
 export const GET_COUNTRIES = gql(`
   query GetCountries {
     countries {

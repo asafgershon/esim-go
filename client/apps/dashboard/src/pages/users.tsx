@@ -1,7 +1,7 @@
 import type { GetUsersQuery } from "@/__generated__/graphql";
 import { RoleSelector } from "@/components/role-selector";
-import { GET_USERS } from "@/lib/graphql/queries";
-import { useQuery } from "@apollo/client";
+import { GET_USERS, DELETE_USER } from "@/lib/graphql/queries";
+import { useQuery, useMutation } from "@apollo/client";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import {
   Card,
@@ -37,7 +37,7 @@ type User = {
   updatedAt: string;
 };
 
-const columns: ColumnDef<User>[] = [
+const createColumns = (handleDeleteUser: (userId: string, userEmail: string) => void): ColumnDef<User>[] => [
   {
     accessorKey: "email",
     header: ({ column }) => {
@@ -159,6 +159,13 @@ const columns: ColumnDef<User>[] = [
             <DropdownMenuSeparator />
             <DropdownMenuItem>View user details</DropdownMenuItem>
             <DropdownMenuItem>Send message</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              className="text-destructive"
+              onClick={() => handleDeleteUser(user.id, user.email)}
+            >
+              Delete user
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );
@@ -167,7 +174,33 @@ const columns: ColumnDef<User>[] = [
 ];
 
 export function UsersPage() {
-  const { data, loading, error } = useQuery<GetUsersQuery>(GET_USERS);
+  const { data, loading, error, refetch } = useQuery<GetUsersQuery>(GET_USERS);
+  const [deleteUser] = useMutation(DELETE_USER);
+
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete user "${userEmail}"? This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      const result = await deleteUser({
+        variables: { userId },
+      });
+
+      if (result.data?.deleteUser.success) {
+        await refetch();
+      } else {
+        alert(`Error deleting user: ${result.data?.deleteUser.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      alert('An error occurred while deleting the user');
+    }
+  };
+
+  const columns = createColumns(handleDeleteUser);
 
   if (error) {
     console.error("Error fetching users:", error);

@@ -121,5 +121,40 @@ export const usersResolvers: Resolvers = {
         });
       }
     },
+
+    deleteUser: async (_, { userId }, context: Context) => {
+      try {
+        // Additional validation: ensure current user is admin
+        const currentUserRole = getUserRole(context.auth.supabaseUser);
+        if (currentUserRole !== 'ADMIN') {
+          throw new GraphQLError('Only administrators can delete users', {
+            extensions: { code: 'INSUFFICIENT_PERMISSIONS' },
+          });
+        }
+
+        // Prevent self-deletion
+        if (context.auth.user?.id === userId) {
+          throw new GraphQLError('You cannot delete your own account', {
+            extensions: { code: 'SELF_DELETION_FORBIDDEN' },
+          });
+        }
+
+        const result = await context.repositories.users.deleteUser(userId);
+
+        return {
+          success: result.success,
+          error: result.error || null,
+        };
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
+        return {
+          success: false,
+          error: 'Failed to delete user',
+        };
+      }
+    },
   },
 };

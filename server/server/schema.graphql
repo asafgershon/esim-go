@@ -50,6 +50,7 @@ type Mutation {
   # User Management
   updateUserRole(userId: ID!, role: String!): User @auth(role: "ADMIN")
   inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse @auth(role: "ADMIN")
+  deleteUser(userId: ID!): DeleteUserResponse @auth(role: "ADMIN")
   
   # Pricing configuration management
   updatePricingConfiguration(input: UpdatePricingConfigurationInput!): UpdatePricingConfigurationResponse @auth(role: "ADMIN")
@@ -162,6 +163,11 @@ type InviteAdminUserResponse {
   success: Boolean!
   error: String
   invitedEmail: String
+}
+
+type DeleteUserResponse {
+  success: Boolean!
+  error: String
 }
 
 # Package Assignment Types

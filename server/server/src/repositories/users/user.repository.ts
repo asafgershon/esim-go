@@ -129,4 +129,46 @@ export class UserRepository extends BaseSupabaseRepository<UserRow, never, UserU
       });
     }
   }
+
+  async deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // First check if user exists
+      const { data: userData, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+      
+      if (getUserError) {
+        if (getUserError.message.includes('not found')) {
+          return {
+            success: false,
+            error: 'User not found'
+          };
+        }
+        throw new GraphQLError(`Failed to get user: ${getUserError.message}`, {
+          extensions: { code: 'USER_NOT_FOUND' },
+        });
+      }
+
+      // Delete the user from auth.users (this will cascade delete related records)
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+      if (deleteError) {
+        throw new GraphQLError(`Failed to delete user: ${deleteError.message}`, {
+          extensions: { code: 'DELETE_FAILED' },
+        });
+      }
+
+      return {
+        success: true
+      };
+
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      if (error instanceof GraphQLError) {
+        throw error;
+      }
+      return {
+        success: false,
+        error: 'Failed to delete user'
+      };
+    }
+  }
 }
