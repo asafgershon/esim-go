@@ -167,3 +167,106 @@ export const CALCULATE_PRICE = gql`
     }
   }
 `;
+
+export const GET_MY_ESIMS = gql`
+  query GetMyESIMs {
+    myESIMs {
+      id
+      iccid
+      qrCode
+      status
+      assignedDate
+      lastAction
+      actionDate
+      plan {
+        id
+        name
+        description
+        region
+        countries {
+          iso
+          name
+          nameHebrew
+        }
+        duration
+        dataAllowance
+        price
+        currency
+      }
+      usage {
+        totalUsed
+        totalRemaining
+        activeBundles {
+          name
+          state
+          dataUsed
+          dataRemaining
+          startDate
+          endDate
+        }
+      }
+      bundles {
+        name
+        state
+        dataUsed
+        dataRemaining
+        startDate
+        endDate
+      }
+      order {
+        id
+        reference
+        status
+        totalPrice
+        createdAt
+      }
+    }
+  }
+`;
+
+export const GET_ACTIVE_ESIM_PLAN = gql`
+  query GetActiveESIMPlan {
+    myESIMs {
+      id
+      iccid
+      qrCode
+      status
+      assignedDate
+      plan {
+        id
+        name
+        description
+        region
+        countries {
+          iso
+          name
+          nameHebrew
+        }
+        duration
+        dataAllowance
+        price
+        currency
+      }
+      usage {
+        totalUsed
+        totalRemaining
+        activeBundles {
+          name
+          state
+          dataUsed
+          dataRemaining
+          startDate
+          endDate
+        }
+      }
+      bundles {
+        name
+        state
+        dataUsed
+        dataRemaining
+        startDate
+        endDate
+      }
+    }
+  }
+`;
