@@ -23,59 +23,8 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { GetUserOrders } from "@/lib/graphql/checkout";
 import { ME, GET_ACTIVE_ESIM_PLAN } from "@/lib/graphql/mutations";
-import { Order } from "@/__generated__/graphql";
+import { Esim, EsimBundle, Order } from "@/__generated__/graphql";
 
-// Mock data - will be replaced with real API calls
-// const mockProfile = {
-//   name: "יעל כהן",
-//   email: "yael.cohen@example.com",
-//   phone: "+972-50-123-4567",
-//   avatar: null,
-// };
-
-const mockCurrentPlan = {
-  country: "צרפת",
-  dataUsed: 650, // MB
-  dataTotal: 1000, // MB (1GB)
-  daysLeft: 4,
-  totalDays: 30,
-  expiryDate: new Date("2025-01-18"),
-  qrCode: "mock-qr-code-data",
-  isActive: true,
-};
-
-// const mockOrders = [
-//   {
-//     id: "ORD-001",
-//     country: "צרפת",
-//     duration: "30 ימים",
-//     data: "1GB יומי",
-//     price: "₪89",
-//     date: new Date('2024-12-19'),
-//     status: "פעיל",
-//     qrCode: "mock-qr-1",
-//   },
-//   {
-//     id: "ORD-002",
-//     country: "איטליה",
-//     duration: "14 ימים",
-//     data: "1GB יומי",
-//     price: "₪59",
-//     date: new Date('2024-11-15'),
-//     status: "הושלם",
-//     qrCode: "mock-qr-2",
-//   },
-//   {
-//     id: "ORD-003",
-//     country: "ספרד",
-//     duration: "7 ימים",
-//     data: "1GB יומי",
-//     price: "₪39",
-//     date: new Date('2024-10-10'),
-//     status: "הושלם",
-//     qrCode: "mock-qr-3",
-//   },
-// ];
 
 export default function ProfilePage() {
   const { data: userData, loading: userLoading } = useQuery(ME);
@@ -90,7 +39,7 @@ export default function ProfilePage() {
     
     // Find the first active or assigned eSIM
     const activeESIM = esimsData.myESIMs.find(
-      esim => esim.status === 'ACTIVE' || esim.status === 'ASSIGNED'
+      (esim: Esim) => esim.status === 'ACTIVE' || esim.status === 'ASSIGNED'
     );
     
     return activeESIM || esimsData.myESIMs[0]; // Fallback to first eSIM
@@ -102,7 +51,7 @@ export default function ProfilePage() {
   const getCurrentPlan = () => {
     if (!activeESIM) return null;
     
-    const activeBundle = activeESIM.bundles?.find(bundle => bundle.state === 'ACTIVE');
+    const activeBundle = activeESIM.bundles?.find((bundle: EsimBundle) => bundle.state === 'ACTIVE');
     
     if (!activeBundle) return null;
     
