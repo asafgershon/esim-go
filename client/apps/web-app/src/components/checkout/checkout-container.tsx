@@ -1,27 +1,33 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useSessionToken } from "@/hooks/useSessionToken";
+import { useCheckoutUrlState } from "@/hooks/useCheckoutUrlState";
 import { useCheckoutSession } from "@/hooks/useCheckoutSession";
 import { useCheckoutSteps, useCheckoutPayment } from "@/hooks/useCheckoutSteps";
+import { useOrderValidation } from "@/hooks/useOrderValidation";
 import { OrderDetailsSection } from "./order-details-section";
 import { PaymentSection } from "./payment-section";
 import { LoginSection } from "./login-section";
 import { DeliveryMethodSection } from "./delivery-method-section";
+import { ValidationStatus } from "./validation-status";
 import { CheckoutStepType } from "@/__generated__/graphql";
 
 export function CheckoutContainer() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
-  const { token, saveToken, clearToken } = useSessionToken();
-
-  // Get checkout parameters from URL
-  const numOfDays = parseInt(searchParams.get("numOfDays") || "7");
-  const countryId = searchParams.get("countryId") || "";
-  const regionId = searchParams.get("regionId") || "";
+  
+  // URL state management with nuqs
+  const {
+    token,
+    numOfDays,
+    countryId,
+    regionId,
+    setToken,
+    hasToken,
+    clearCheckoutState,
+  } = useCheckoutUrlState();
 
   // UI state
   const [selectedMethod, setSelectedMethod] = useState<"QR" | "EMAIL">("QR");
@@ -30,68 +36,69 @@ export function CheckoutContainer() {
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [validationStatus, setValidationStatus] = useState<"pending" | "valid" | "invalid" | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Backend session
   const {
     session,
-    createSession,
     refetch: refetchSession,
     loading: sessionLoading,
     error: sessionError,
-  } = useCheckoutSession(token || undefined, isProcessing);
+  } = useCheckoutSession(token as string | undefined, isProcessing);
+
+  // Step and payment hooks
+  const { updateStepWithData, updateStepError } = useCheckoutSteps((token as string) || "");
+  const { handlePayment } = useCheckoutPayment();
+  
+  // Order validation hook
+  const { validateOrder, loading: validationLoading } = useOrderValidation();
 
   // Handle session errors (expired token, invalid session, etc.)
   useEffect(() => {
     if (sessionError && token) {
       console.warn("Session error detected, clearing token:", sessionError);
-      clearToken();
+      setToken("");
     }
-  }, [sessionError, token, clearToken]);
+  }, [sessionError, token, setToken]);
 
-  // Step and payment hooks
-  const { updateStepWithData, updateStepError } = useCheckoutSteps(token || "");
-  const { handlePayment } = useCheckoutPayment();
+  // Note: Token clearing when params change is now handled by updateCheckoutParams in useCheckoutUrlState
 
-  // Initialize session if needed
+  // Validate order when session and plan snapshot are available
   useEffect(() => {
-    const initializeSession = async () => {
-      // Create new session with current parameters
-      if (countryId || regionId) {
+    const performValidation = async () => {
+      if (session?.planSnapshot && validationStatus === null) {
+        setValidationStatus("pending");
+        setValidationError(null);
+        
         try {
-          const result = await createSession({
-            variables: { input: { numOfDays, regionId, countryId } },
-          });
-          const newToken = result.data?.createCheckoutSession?.session?.token;
-          if (newToken) {
-            saveToken(newToken);
+          const planSnapshot = session.planSnapshot as { name: string };
+          const bundleName = planSnapshot.name;
+          const quantity = 1; // Always 1 for now
+          const customerReference = session.orderId;
+          
+          console.log("Validating order:", { bundleName, quantity, customerReference });
+          
+          const result = await validateOrder(bundleName, quantity, customerReference || undefined);
+          
+          if (result?.success && result?.isValid) {
+            setValidationStatus("valid");
+            console.log("Order validation successful");
+          } else {
+            setValidationStatus("invalid");
+            setValidationError(result?.error || "Order validation failed");
+            console.warn("Order validation failed:", result?.error);
           }
         } catch (error) {
-          console.error("Failed to create checkout session:", error);
+          setValidationStatus("invalid");
+          setValidationError("Failed to validate order");
+          console.error("Order validation error:", error);
         }
       }
     };
 
-    // Only create session if we don't have a valid one and have checkout parameters
-    if ((countryId || regionId) && !token && !sessionLoading) {
-      initializeSession();
-    }
-  }, [
-    numOfDays,
-    regionId,
-    countryId,
-    token,
-    createSession,
-    saveToken,
-    sessionLoading,
-  ]);
-
-  // Clear token when checkout parameters change (different order)
-  useEffect(() => {
-    if (token) {
-      clearToken();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [numOfDays, regionId, countryId]); // Only depend on the parameters, not token functions
+    performValidation();
+  }, [session?.planSnapshot, session?.orderId, validationStatus, validateOrder]);
 
   // Auto-complete delivery step if auth is already completed when session loads
   useEffect(() => {
@@ -214,13 +221,24 @@ export function CheckoutContainer() {
     if (session?.isComplete && session?.metadata?.orderId) {
       // Webhook has completed successfully - stop processing and redirect
       setIsProcessing(false);
-      clearToken();
+      clearCheckoutState();
       router.push(`/order/${session.metadata.orderId}`);
     }
-  }, [session, clearToken, router]);
+  }, [session, clearCheckoutState, router]);
 
   // UI helpers
-  const canSubmitPayment = session?.steps.authentication?.completed;
+  const canSubmitPayment = session?.steps.authentication?.completed && validationStatus === "valid";
+
+  // Session creation is now handled server-side
+  // If we don't have a token, the server should have redirected us
+  if (!hasToken) {
+    return (
+      <div className="p-8 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <p>מכין הזמנה...</p>
+      </div>
+    );
+  }
 
   // Loading and error states
   if (sessionLoading) {
@@ -238,9 +256,9 @@ export function CheckoutContainer() {
         {/* Left Column - Order Details */}
         <div className="space-y-6">
           <OrderDetailsSection
-            numOfDays={numOfDays}
-            countryId={countryId}
-            tripId={regionId}
+            numOfDays={numOfDays as number}
+            countryId={countryId as string}
+            tripId={regionId as string}
             totalPrice={session?.pricing?.total || 0}
             sectionNumber={1}
           />
@@ -255,6 +273,14 @@ export function CheckoutContainer() {
         {/* Right Column - Payment & Login */}
         <div className="space-y-6">
           <LoginSection sectionNumber={3} />
+          
+          {/* Order Validation Status */}
+          <ValidationStatus 
+            status={validationStatus}
+            error={validationError}
+            loading={validationLoading}
+          />
+          
           <PaymentSection
             sectionNumber={4}
             cardNumber={cardNumber}
