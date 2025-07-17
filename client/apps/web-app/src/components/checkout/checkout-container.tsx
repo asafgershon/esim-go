@@ -219,11 +219,15 @@ export function CheckoutContainer() {
 
   // Poll for webhook completion and redirect
   useEffect(() => {
-    if (session?.isComplete && session?.metadata?.orderId) {
+    if (session?.isComplete && session?.orderId) {
       // Webhook has completed successfully - stop processing and redirect
       setIsProcessing(false);
-      clearCheckoutState();
-      router.push(`/order/${session.metadata.orderId}`);
+      
+      router.push(`/order/${session.orderId}`);
+
+      return () => {
+        // clearCheckoutState();
+      }
     }
   }, [session, clearCheckoutState, router]);
 

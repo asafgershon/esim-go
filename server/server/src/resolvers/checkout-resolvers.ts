@@ -674,13 +674,13 @@ async function simulateWebhookProcessing(
       // Calculate detailed pricing breakdown for the order
       const { PricingService } = await import('../services/pricing.service');
       const pricingConfig = await PricingService.getPricingConfig(
-        planSnapshot.countryIds[0], // Use first country for pricing
+        planSnapshot.countries[0] || '', // Use first country for pricing
         planSnapshot.duration,
         context.dataSources.catalogue
       );
       
       const bundleName = PricingService.getBundleName(planSnapshot.duration);
-      const countryName = PricingService.getCountryName(planSnapshot.countryIds[0]);
+      const countryName = PricingService.getCountryName(planSnapshot.countries[0] || '');
       
       const detailedPricing = PricingService.calculatePricing(
         bundleName,
