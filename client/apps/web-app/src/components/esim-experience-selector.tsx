@@ -25,7 +25,7 @@ const CountUp = lazy(() => import("react-countup"));
 // Backend handles discount logic, so this is no longer needed
 
 // Lazy load the mobile bottom sheet
-const MobileDestinationSheet = lazy(() => import("./mobile-destination-sheet"));
+const MobileDestinationDrawer = lazy(() => import("./mobile-destination-drawer"));
 
 export function EsimExperienceSelector() {
   const router = useRouter();
@@ -244,7 +244,7 @@ export function EsimExperienceSelector() {
             />
             <Suspense fallback={<div>...</div>}>
               {showMobileSheet && (
-                <MobileDestinationSheet
+                <MobileDestinationDrawer
                   options={comboboxOptions as ComboboxOption[]}
                   value={
                     countryId
@@ -258,6 +258,7 @@ export function EsimExperienceSelector() {
                     setShowMobileSheet(false);
                   }}
                   onClose={() => setShowMobileSheet(false)}
+                  isOpen={showMobileSheet}
                 />
               )}
             </Suspense>
