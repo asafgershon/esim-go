@@ -179,6 +179,7 @@ export type Database = {
           esim_go_order_ref: string | null
           id: string
           plan_data: Json | null
+          pricing_breakdown: Json | null
           quantity: number
           reference: string
           status: string
@@ -192,6 +193,7 @@ export type Database = {
           esim_go_order_ref?: string | null
           id?: string
           plan_data?: Json | null
+          pricing_breakdown?: Json | null
           quantity?: number
           reference: string
           status?: string
@@ -205,6 +207,7 @@ export type Database = {
           esim_go_order_ref?: string | null
           id?: string
           plan_data?: Json | null
+          pricing_breakdown?: Json | null
           quantity?: number
           reference?: string
           status?: string
@@ -266,6 +269,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      package_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          created_at: string
+          data_plan_id: string
+          id: string
+          plan_snapshot: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          created_at?: string
+          data_plan_id: string
+          id?: string
+          plan_snapshot?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          created_at?: string
+          data_plan_id?: string
+          id?: string
+          plan_snapshot?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pricing_configurations: {
+        Row: {
+          bundle_group: string | null
+          cost_split_percent: number
+          country_id: string | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          discount_rate: number
+          duration: number | null
+          id: string
+          is_active: boolean
+          name: string
+          priority: number
+          processing_rate: number
+          region_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bundle_group?: string | null
+          cost_split_percent: number
+          country_id?: string | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          discount_rate: number
+          duration?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          priority?: number
+          processing_rate: number
+          region_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bundle_group?: string | null
+          cost_split_percent?: number
+          country_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          discount_rate?: number
+          duration?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          priority?: number
+          processing_rate?: number
+          region_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

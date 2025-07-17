@@ -4,6 +4,7 @@ import { GraphQLError } from 'graphql';
 import { z } from 'zod';
 import { BaseSupabaseRepository } from '../base-supabase.repository';
 import type { ESIMGoOrder } from '../../datasources/esim-go';
+import type { PricingBreakdown } from '../../services/pricing.service';
 
 type OrderRow = Database['public']['Tables']['esim_orders']['Row'];
 type OrderInsert = Database['public']['Tables']['esim_orders']['Insert'];
@@ -178,6 +179,36 @@ export class OrderRepository extends BaseSupabaseRepository<
       completed: orders.filter(o => o.status === 'COMPLETED').length,
       processing: orders.filter(o => o.status === 'PROCESSING').length,
       failed: orders.filter(o => o.status === 'FAILED').length,
+    };
+  }
+
+  async createOrderWithPricing(
+    orderData: Omit<OrderInsert, 'id' | 'created_at' | 'updated_at'>,
+    pricingBreakdown: PricingBreakdown
+  ): Promise<OrderRow> {
+    const orderWithPricing = {
+      ...orderData,
+      pricing_breakdown: pricingBreakdown,
+      total_price: pricingBreakdown.priceAfterDiscount,
+    };
+
+    return this.create(orderWithPricing);
+  }
+
+  async updateOrderPricing(id: string, pricingBreakdown: PricingBreakdown): Promise<OrderRow> {
+    return this.update(id, {
+      pricing_breakdown: pricingBreakdown,
+      total_price: pricingBreakdown.priceAfterDiscount,
+    });
+  }
+
+  async getOrderWithPricing(id: string): Promise<(OrderRow & { pricingBreakdown: PricingBreakdown }) | null> {
+    const order = await this.findById(id);
+    if (!order) return null;
+
+    return {
+      ...order,
+      pricingBreakdown: order.pricing_breakdown as PricingBreakdown,
     };
   }
 }

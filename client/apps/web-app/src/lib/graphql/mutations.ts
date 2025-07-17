@@ -149,6 +149,21 @@ export const GET_TRIPS = gql`
 
 export const CALCULATE_PRICE = gql`
   query CalculatePrice($numOfDays: Int!, $regionId: String!, $countryId: String!) {
-    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId)
+    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId) {
+      bundleName
+      countryName
+      duration
+      cost
+      costPlus
+      totalCost
+      discountRate
+      discountValue
+      priceAfterDiscount
+      processingRate
+      processingCost
+      revenueAfterProcessing
+      finalRevenue
+      currency
+    }
   }
 `;

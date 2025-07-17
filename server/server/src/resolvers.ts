@@ -133,12 +133,98 @@ export const resolvers: Resolvers = {
       { numOfDays, regionId, countryId },
       context: Context
     ) => {
-      return context.services.pricing.calculatePrice(
+      const { PricingService } = await import('./services/pricing.service');
+      
+      // Get pricing configuration for the bundle (now uses eSIM Go API + configuration rules)
+      const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
+      const configRepository = new PricingConfigRepository();
+      const config = await PricingService.getPricingConfig(countryId, numOfDays, context.dataSources.catalogue, configRepository);
+      
+      // Get bundle and country names
+      const bundleName = PricingService.getBundleName(numOfDays);
+      const countryName = PricingService.getCountryName(countryId);
+      
+      // Calculate detailed pricing breakdown
+      const pricingBreakdown = PricingService.calculatePricing(
+        bundleName,
+        countryName,
         numOfDays,
-        regionId,
-        countryId,
-        context.dataSources.catalogue
-      ).then((pricing) => pricing.finalPrice);
+        config
+      );
+
+      return pricingBreakdown;
+    },
+    calculatePrices: async (_, { inputs }, context: Context) => {
+      const { PricingService } = await import('./services/pricing.service');
+      const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
+      const configRepository = new PricingConfigRepository();
+      
+      const results = await Promise.all(
+        inputs.map(async (input: { numOfDays: number; regionId: string; countryId: string }) => {
+          try {
+            // Get pricing configuration for the bundle
+            const config = await PricingService.getPricingConfig(input.countryId, input.numOfDays, context.dataSources.catalogue, configRepository);
+            
+            // Get bundle and country names
+            const bundleName = PricingService.getBundleName(input.numOfDays);
+            const countryName = PricingService.getCountryName(input.countryId);
+            
+            // Calculate detailed pricing breakdown
+            const pricingBreakdown = PricingService.calculatePricing(
+              bundleName,
+              countryName,
+              input.numOfDays,
+              config
+            );
+
+            return pricingBreakdown;
+          } catch (error) {
+            console.error(`Error calculating pricing for ${input.countryId} ${input.numOfDays}d:`, error);
+            // Return a fallback pricing breakdown
+            return {
+              bundleName: PricingService.getBundleName(input.numOfDays),
+              countryName: PricingService.getCountryName(input.countryId),
+              duration: input.numOfDays,
+              cost: 0,
+              costPlus: 0,
+              totalCost: 0,
+              discountRate: 0,
+              discountValue: 0,
+              priceAfterDiscount: 0,
+              processingRate: 0,
+              processingCost: 0,
+              revenueAfterProcessing: 0,
+              finalRevenue: 0,
+              currency: 'USD'
+            };
+          }
+        })
+      );
+
+      return results;
+    },
+    pricingConfigurations: async (_, __, context: Context) => {
+      const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
+      const repository = new PricingConfigRepository();
+      
+      const configurations = await repository.getAllConfigurations();
+      return configurations.map(config => ({
+        id: config.id,
+        name: config.name,
+        description: config.description,
+        countryId: config.countryId,
+        regionId: config.regionId,
+        duration: config.duration,
+        bundleGroup: config.bundleGroup,
+        costSplitPercent: config.costSplitPercent,
+        discountRate: config.discountRate,
+        processingRate: config.processingRate,
+        isActive: config.isActive,
+        priority: config.priority,
+        createdBy: config.createdBy,
+        createdAt: config.createdAt,
+        updatedAt: config.updatedAt,
+      }));
     },
     ...checkoutResolvers.Query!,
   },
@@ -616,6 +702,44 @@ export const resolvers: Resolvers = {
           success: false,
           error: "Internal server error",
           assignment: null,
+        };
+      }
+    },
+
+    // Pricing Configuration Management
+    updatePricingConfiguration: async (_, { input }, context: Context) => {
+      try {
+        const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
+        const repository = new PricingConfigRepository();
+
+        const configuration = await repository.upsertConfiguration(input, context.auth.user!.id);
+
+        return {
+          success: true,
+          configuration: {
+            id: configuration.id,
+            name: configuration.name,
+            description: configuration.description,
+            countryId: configuration.countryId,
+            regionId: configuration.regionId,
+            duration: configuration.duration,
+            bundleGroup: configuration.bundleGroup,
+            costSplitPercent: configuration.costSplitPercent,
+            discountRate: configuration.discountRate,
+            processingRate: configuration.processingRate,
+            isActive: configuration.isActive,
+            priority: configuration.priority,
+            createdBy: configuration.createdBy,
+            createdAt: configuration.createdAt,
+            updatedAt: configuration.updatedAt,
+          },
+          error: null,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          configuration: null,
+          error: (error as Error).message,
         };
       }
     },

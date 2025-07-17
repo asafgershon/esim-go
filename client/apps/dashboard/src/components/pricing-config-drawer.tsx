@@ -12,6 +12,7 @@ import {
   Label,
   Separator,
   Slider,
+  SliderWithValue,
   Switch, Textarea
 } from '@workspace/ui';
 import React, { useEffect, useState } from 'react';
@@ -67,6 +68,24 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   
   // Simulator state
   const [simulatorDays, setSimulatorDays] = useState(7);
+  
+  // Available bundle durations (common eSIM Go durations)
+  const availableBundles = [3, 5, 7, 10, 14, 21, 30];
+  
+  // Find the best bundle for simulator
+  const getBestBundle = (requestedDays: number) => {
+    // Try exact match first
+    if (availableBundles.includes(requestedDays)) {
+      return requestedDays;
+    }
+    // Find smallest bundle that covers the requested days
+    const suitableBundles = availableBundles.filter(bundle => bundle >= requestedDays);
+    if (suitableBundles.length > 0) {
+      return Math.min(...suitableBundles);
+    }
+    // If no bundle covers it, use the largest
+    return Math.max(...availableBundles);
+  };
 
   // Initialize form data when pricing data changes
   useEffect(() => {
@@ -381,18 +400,19 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
             
             <div className="space-y-4">
               <div>
-                <Label htmlFor="simulatorDays">Days</Label>
-                <Input
-                  id="simulatorDays"
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={simulatorDays}
-                  onChange={(e) => setSimulatorDays(parseInt(e.target.value) || 1)}
-                  className="mt-1"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  Simulate pricing for any number of days
+                <Label htmlFor="simulatorDays">Days: {simulatorDays}</Label>
+                <div className="mt-3">
+                  <SliderWithValue
+                    value={[simulatorDays]}
+                    onValueChange={(value) => setSimulatorDays(value[0])}
+                    min={1}
+                    max={30}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Simulate pricing for 1-30 days (maximum eSIM Go bundle length)
                 </p>
               </div>
 
@@ -400,60 +420,65 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium mb-3">Simulated Pricing</h4>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Days Requested:</span>
-                    <Badge variant="outline">{simulatorDays}</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Bundle Used:</span>
-                    <span>UL essential {Math.max(simulatorDays, 7)} days</span>
-                  </div>
-                  {simulatorDays < 7 && (
-                    <div className="flex justify-between text-orange-600">
-                      <span>Unused Days:</span>
-                      <span>{7 - simulatorDays} days</span>
-                    </div>
-                  )}
-                  <Separator className="my-2" />
-                  <div className="flex justify-between">
-                    <span>eSIM Go Cost:</span>
-                    <span>{formatCurrency(pricingData?.cost || 0)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Our Markup ({Math.round((formData.costSplitPercent / (1 - formData.costSplitPercent)) * 100)}%):</span>
-                    <span>{formatCurrency(pricingData?.costPlus || 0)}</span>
-                  </div>
-                  {simulatorDays < 7 && (
-                    <div className="flex justify-between text-orange-600">
-                      <span>Unused Days Discount:</span>
-                      <span>-{formatCurrency(((7 - simulatorDays) / 7) * (pricingData?.totalCost || 0) * 0.1)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>Customer Discount ({formatPercentage(formData.discountRate)}):</span>
-                    <span className="text-green-600">-{formatCurrency((pricingData?.totalCost || 0) * formData.discountRate)}</span>
-                  </div>
-                  <Separator className="my-2" />
-                  <div className="flex justify-between font-medium text-lg">
-                    <span>Final Price:</span>
-                    <span className="text-blue-600">
-                      {formatCurrency(
-                        ((pricingData?.totalCost || 0) * 
-                        (1 - (simulatorDays < 7 ? ((7 - simulatorDays) / 7) * 0.1 : 0))) * 
-                        (1 - formData.discountRate)
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Price per day:</span>
-                    <span>
-                      {formatCurrency(
-                        (((pricingData?.totalCost || 0) * 
-                        (1 - (simulatorDays < 7 ? ((7 - simulatorDays) / 7) * 0.1 : 0))) * 
-                        (1 - formData.discountRate)) / simulatorDays
-                      )}
-                    </span>
-                  </div>
+                  {(() => {
+                    const bestBundle = getBestBundle(simulatorDays);
+                    const unusedDays = Math.max(0, bestBundle - simulatorDays);
+                    const unusedDaysDiscount = unusedDays > 0 ? (unusedDays / bestBundle) * 0.1 : 0;
+                    const basePrice = pricingData?.totalCost || 0;
+                    const priceAfterUnusedDiscount = basePrice * (1 - unusedDaysDiscount);
+                    const finalPrice = priceAfterUnusedDiscount * (1 - formData.discountRate);
+                    
+                    return (
+                      <>
+                        <div className="flex justify-between">
+                          <span>Days Requested:</span>
+                          <Badge variant="outline">{simulatorDays}</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Bundle Used:</span>
+                          <span>UL essential {bestBundle} days</span>
+                        </div>
+                        {unusedDays > 0 && (
+                          <div className="flex justify-between text-orange-600">
+                            <span>Unused Days:</span>
+                            <span>{unusedDays} days</span>
+                          </div>
+                        )}
+                        <Separator className="my-2" />
+                        <div className="flex justify-between">
+                          <span>eSIM Go Cost:</span>
+                          <span>{formatCurrency(pricingData?.cost || 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Our Markup ({Math.round((formData.costSplitPercent / (1 - formData.costSplitPercent)) * 100)}%):</span>
+                          <span>{formatCurrency(pricingData?.costPlus || 0)}</span>
+                        </div>
+                        {unusedDays > 0 && (
+                          <div className="flex justify-between text-orange-600">
+                            <span>Unused Days Discount ({(unusedDaysDiscount * 100).toFixed(1)}%):</span>
+                            <span>-{formatCurrency(basePrice * unusedDaysDiscount)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span>Customer Discount ({formatPercentage(formData.discountRate)}):</span>
+                          <span className="text-green-600">-{formatCurrency(priceAfterUnusedDiscount * formData.discountRate)}</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between font-medium text-lg">
+                          <span>Final Price:</span>
+                          <span className="text-blue-600">
+                            {formatCurrency(finalPrice)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-600">
+                          <span>Price per day:</span>
+                          <span>
+                            {formatCurrency(finalPrice / simulatorDays)}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 

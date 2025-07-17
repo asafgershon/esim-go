@@ -26,6 +26,24 @@ export type ActivateEsimResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type AdminCostBreakdown = {
+  __typename?: 'AdminCostBreakdown';
+  baseCostSplitPercent: Scalars['Float']['output'];
+  baseDiscountRate: Scalars['Float']['output'];
+  baseProcessingRate: Scalars['Float']['output'];
+  competitiveAnalysis?: Maybe<Scalars['String']['output']>;
+  costMargin: Scalars['Float']['output'];
+  costPlusMargin: Scalars['Float']['output'];
+  dailyRate: Scalars['Float']['output'];
+  estimatedEsimGoCost: Scalars['Float']['output'];
+  grossProfit: Scalars['Float']['output'];
+  markupPercent: Scalars['Float']['output'];
+  netProfit: Scalars['Float']['output'];
+  ourMarkup: Scalars['Float']['output'];
+  profitMarginPercent: Scalars['Float']['output'];
+  totalMargin: Scalars['Float']['output'];
+};
+
 export type AssignPackageResponse = {
   __typename?: 'AssignPackageResponse';
   assignment?: Maybe<PackageAssignment>;
@@ -49,6 +67,12 @@ export enum BundleState {
   Processing = 'PROCESSING',
   Suspended = 'SUSPENDED'
 }
+
+export type CalculatePriceInput = {
+  countryId: Scalars['String']['input'];
+  numOfDays: Scalars['Int']['input'];
+  regionId: Scalars['String']['input'];
+};
 
 export type CheckoutSession = {
   __typename?: 'CheckoutSession';
@@ -229,7 +253,9 @@ export type Mutation = {
   suspendESIM?: Maybe<EsimActionResponse>;
   updateCheckoutStep: UpdateCheckoutStepResponse;
   updateESIMReference?: Maybe<EsimActionResponse>;
+  updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
   updateUserRole?: Maybe<User>;
+  validateOrder: ValidateOrderResponse;
   verifyPhoneOTP?: Maybe<SignInResponse>;
 };
 
@@ -317,9 +343,19 @@ export type MutationUpdateEsimReferenceArgs = {
 };
 
 
+export type MutationUpdatePricingConfigurationArgs = {
+  input: UpdatePricingConfigurationInput;
+};
+
+
 export type MutationUpdateUserRoleArgs = {
   role: Scalars['String']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationValidateOrderArgs = {
+  input: ValidateOrderInput;
 };
 
 
@@ -375,6 +411,44 @@ export type PageInfo = {
   total: Scalars['Int']['output'];
 };
 
+export type PricingBreakdown = {
+  __typename?: 'PricingBreakdown';
+  adminBreakdown?: Maybe<AdminCostBreakdown>;
+  bundleName: Scalars['String']['output'];
+  cost: Scalars['Float']['output'];
+  costPlus: Scalars['Float']['output'];
+  countryName: Scalars['String']['output'];
+  currency: Scalars['String']['output'];
+  discountRate: Scalars['Float']['output'];
+  discountValue: Scalars['Float']['output'];
+  duration: Scalars['Int']['output'];
+  finalRevenue: Scalars['Float']['output'];
+  priceAfterDiscount: Scalars['Float']['output'];
+  processingCost: Scalars['Float']['output'];
+  processingRate: Scalars['Float']['output'];
+  revenueAfterProcessing: Scalars['Float']['output'];
+  totalCost: Scalars['Float']['output'];
+};
+
+export type PricingConfiguration = {
+  __typename?: 'PricingConfiguration';
+  bundleGroup?: Maybe<Scalars['String']['output']>;
+  costSplitPercent: Scalars['Float']['output'];
+  countryId?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  createdBy: Scalars['String']['output'];
+  description: Scalars['String']['output'];
+  discountRate: Scalars['Float']['output'];
+  duration?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  processingRate: Scalars['Float']['output'];
+  regionId?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['String']['output'];
+};
+
 export type ProcessCheckoutPaymentInput = {
   paymentMethodId: Scalars['String']['input'];
   savePaymentMethod?: InputMaybe<Scalars['Boolean']['input']>;
@@ -406,7 +480,8 @@ export type PurchaseEsimResponse = {
 
 export type Query = {
   __typename?: 'Query';
-  calculatePrice: Scalars['Float']['output'];
+  calculatePrice: PricingBreakdown;
+  calculatePrices: Array<PricingBreakdown>;
   countries: Array<Country>;
   dataPlan?: Maybe<DataPlan>;
   dataPlans: DataPlanConnection;
@@ -418,6 +493,7 @@ export type Query = {
   myOrders: Array<Order>;
   orderDetails?: Maybe<Order>;
   orders: Array<Order>;
+  pricingConfigurations: Array<PricingConfiguration>;
   trips: Array<Trip>;
   users: Array<User>;
 };
@@ -427,6 +503,12 @@ export type QueryCalculatePriceArgs = {
   countryId: Scalars['String']['input'];
   numOfDays: Scalars['Int']['input'];
   regionId: Scalars['String']['input'];
+  showAdminBreakdown?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type QueryCalculatePricesArgs = {
+  inputs: Array<CalculatePriceInput>;
 };
 
 
@@ -536,6 +618,28 @@ export type UpdateCheckoutStepResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type UpdatePricingConfigurationInput = {
+  bundleGroup?: InputMaybe<Scalars['String']['input']>;
+  costSplitPercent: Scalars['Float']['input'];
+  countryId?: InputMaybe<Scalars['String']['input']>;
+  description: Scalars['String']['input'];
+  discountRate: Scalars['Float']['input'];
+  duration?: InputMaybe<Scalars['Int']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  isActive: Scalars['Boolean']['input'];
+  name: Scalars['String']['input'];
+  priority: Scalars['Int']['input'];
+  processingRate: Scalars['Float']['input'];
+  regionId?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdatePricingConfigurationResponse = {
+  __typename?: 'UpdatePricingConfigurationResponse';
+  configuration?: Maybe<PricingConfiguration>;
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type User = {
   __typename?: 'User';
   createdAt: Scalars['String']['output'];
@@ -546,6 +650,23 @@ export type User = {
   phoneNumber?: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
+};
+
+export type ValidateOrderInput = {
+  bundleName: Scalars['String']['input'];
+  customerReference?: InputMaybe<Scalars['String']['input']>;
+  quantity: Scalars['Int']['input'];
+};
+
+export type ValidateOrderResponse = {
+  __typename?: 'ValidateOrderResponse';
+  bundleDetails?: Maybe<Scalars['JSON']['output']>;
+  currency?: Maybe<Scalars['String']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  errorCode?: Maybe<Scalars['String']['output']>;
+  isValid: Scalars['Boolean']['output'];
+  success: Scalars['Boolean']['output'];
+  totalPrice?: Maybe<Scalars['Float']['output']>;
 };
 
 export type VerifyOtpInput = {
@@ -600,6 +721,40 @@ export type AssignPackageToUserMutationVariables = Exact<{
 
 export type AssignPackageToUserMutation = { __typename?: 'Mutation', assignPackageToUser?: { __typename?: 'AssignPackageResponse', success: boolean, error?: string | null, assignment?: { __typename?: 'PackageAssignment', id: string, assignedAt: string, user: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string }, dataPlan: { __typename?: 'DataPlan', id: string, name: string, description: string, region: string, duration: number, price: number, currency: string } } | null } | null };
 
+export type CalculatePricingQueryVariables = Exact<{
+  numOfDays: Scalars['Int']['input'];
+  regionId: Scalars['String']['input'];
+  countryId: Scalars['String']['input'];
+  showAdminBreakdown?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type CalculatePricingQuery = { __typename?: 'Query', calculatePrice: { __typename?: 'PricingBreakdown', bundleName: string, countryName: string, duration: number, cost: number, costPlus: number, totalCost: number, discountRate: number, discountValue: number, priceAfterDiscount: number, processingRate: number, processingCost: number, revenueAfterProcessing: number, finalRevenue: number, currency: string, adminBreakdown?: { __typename?: 'AdminCostBreakdown', baseCostSplitPercent: number, baseDiscountRate: number, baseProcessingRate: number, costMargin: number, costPlusMargin: number, totalMargin: number, grossProfit: number, netProfit: number, profitMarginPercent: number, estimatedEsimGoCost: number, ourMarkup: number, markupPercent: number, dailyRate: number, competitiveAnalysis?: string | null } | null } };
+
+export type CalculateBatchPricingQueryVariables = Exact<{
+  inputs: Array<CalculatePriceInput> | CalculatePriceInput;
+}>;
+
+
+export type CalculateBatchPricingQuery = { __typename?: 'Query', calculatePrices: Array<{ __typename?: 'PricingBreakdown', bundleName: string, countryName: string, duration: number, cost: number, costPlus: number, totalCost: number, discountRate: number, discountValue: number, priceAfterDiscount: number, processingRate: number, processingCost: number, revenueAfterProcessing: number, finalRevenue: number, currency: string }> };
+
+export type GetCountriesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetCountriesQuery = { __typename?: 'Query', countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region: string, flag?: string | null }> };
+
+export type GetPricingConfigurationsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetPricingConfigurationsQuery = { __typename?: 'Query', pricingConfigurations: Array<{ __typename?: 'PricingConfiguration', id: string, name: string, description: string, countryId?: string | null, regionId?: string | null, duration?: number | null, bundleGroup?: string | null, costSplitPercent: number, discountRate: number, processingRate: number, isActive: boolean, priority: number, createdBy: string, createdAt: string, updatedAt: string }> };
+
+export type UpdatePricingConfigurationMutationVariables = Exact<{
+  input: UpdatePricingConfigurationInput;
+}>;
+
+
+export type UpdatePricingConfigurationMutation = { __typename?: 'Mutation', updatePricingConfiguration?: { __typename?: 'UpdatePricingConfigurationResponse', success: boolean, error?: string | null, configuration?: { __typename?: 'PricingConfiguration', id: string, name: string, description: string, countryId?: string | null, regionId?: string | null, duration?: number | null, bundleGroup?: string | null, costSplitPercent: number, discountRate: number, processingRate: number, isActive: boolean, priority: number, createdBy: string, createdAt: string, updatedAt: string } | null } | null };
+
 
 export const GetTripsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetTrips"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"trips"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"regionId"}},{"kind":"Field","name":{"kind":"Name","value":"countryIds"}}]}}]}}]} as unknown as DocumentNode<GetTripsQuery, GetTripsQueryVariables>;
 export const GetUsersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUsers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"users"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetUsersQuery, GetUsersQueryVariables>;
@@ -608,3 +763,8 @@ export const UpdateUserRoleDocument = {"kind":"Document","definitions":[{"kind":
 export const InviteAdminUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"InviteAdminUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"InviteAdminUserInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"inviteAdminUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"invitedEmail"}}]}}]}}]} as unknown as DocumentNode<InviteAdminUserMutation, InviteAdminUserMutationVariables>;
 export const GetDataPlansDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDataPlans"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"DataPlanFilter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"dataPlans"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"filter"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}},{"kind":"Field","name":{"kind":"Name","value":"isUnlimited"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}},{"kind":"Field","name":{"kind":"Name","value":"features"}},{"kind":"Field","name":{"kind":"Name","value":"availableQuantity"}},{"kind":"Field","name":{"kind":"Name","value":"countries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"iso"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"nameHebrew"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"flag"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasPreviousPage"}},{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"limit"}},{"kind":"Field","name":{"kind":"Name","value":"offset"}},{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"pages"}},{"kind":"Field","name":{"kind":"Name","value":"currentPage"}}]}}]}}]}}]} as unknown as DocumentNode<GetDataPlansQuery, GetDataPlansQueryVariables>;
 export const AssignPackageToUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AssignPackageToUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"planId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"assignPackageToUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"planId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"planId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"assignment"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"dataPlan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"assignedAt"}}]}}]}}]}}]} as unknown as DocumentNode<AssignPackageToUserMutation, AssignPackageToUserMutationVariables>;
+export const CalculatePricingDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CalculatePricing"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"numOfDays"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"regionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"countryId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"showAdminBreakdown"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}},"defaultValue":{"kind":"BooleanValue","value":false}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"calculatePrice"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"numOfDays"},"value":{"kind":"Variable","name":{"kind":"Name","value":"numOfDays"}}},{"kind":"Argument","name":{"kind":"Name","value":"regionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"regionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"countryId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"countryId"}}},{"kind":"Argument","name":{"kind":"Name","value":"showAdminBreakdown"},"value":{"kind":"Variable","name":{"kind":"Name","value":"showAdminBreakdown"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bundleName"}},{"kind":"Field","name":{"kind":"Name","value":"countryName"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"cost"}},{"kind":"Field","name":{"kind":"Name","value":"costPlus"}},{"kind":"Field","name":{"kind":"Name","value":"totalCost"}},{"kind":"Field","name":{"kind":"Name","value":"discountRate"}},{"kind":"Field","name":{"kind":"Name","value":"discountValue"}},{"kind":"Field","name":{"kind":"Name","value":"priceAfterDiscount"}},{"kind":"Field","name":{"kind":"Name","value":"processingRate"}},{"kind":"Field","name":{"kind":"Name","value":"processingCost"}},{"kind":"Field","name":{"kind":"Name","value":"revenueAfterProcessing"}},{"kind":"Field","name":{"kind":"Name","value":"finalRevenue"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}},{"kind":"Field","name":{"kind":"Name","value":"adminBreakdown"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"baseCostSplitPercent"}},{"kind":"Field","name":{"kind":"Name","value":"baseDiscountRate"}},{"kind":"Field","name":{"kind":"Name","value":"baseProcessingRate"}},{"kind":"Field","name":{"kind":"Name","value":"costMargin"}},{"kind":"Field","name":{"kind":"Name","value":"costPlusMargin"}},{"kind":"Field","name":{"kind":"Name","value":"totalMargin"}},{"kind":"Field","name":{"kind":"Name","value":"grossProfit"}},{"kind":"Field","name":{"kind":"Name","value":"netProfit"}},{"kind":"Field","name":{"kind":"Name","value":"profitMarginPercent"}},{"kind":"Field","name":{"kind":"Name","value":"estimatedEsimGoCost"}},{"kind":"Field","name":{"kind":"Name","value":"ourMarkup"}},{"kind":"Field","name":{"kind":"Name","value":"markupPercent"}},{"kind":"Field","name":{"kind":"Name","value":"dailyRate"}},{"kind":"Field","name":{"kind":"Name","value":"competitiveAnalysis"}}]}}]}}]}}]} as unknown as DocumentNode<CalculatePricingQuery, CalculatePricingQueryVariables>;
+export const CalculateBatchPricingDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CalculateBatchPricing"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"inputs"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CalculatePriceInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"calculatePrices"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"inputs"},"value":{"kind":"Variable","name":{"kind":"Name","value":"inputs"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bundleName"}},{"kind":"Field","name":{"kind":"Name","value":"countryName"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"cost"}},{"kind":"Field","name":{"kind":"Name","value":"costPlus"}},{"kind":"Field","name":{"kind":"Name","value":"totalCost"}},{"kind":"Field","name":{"kind":"Name","value":"discountRate"}},{"kind":"Field","name":{"kind":"Name","value":"discountValue"}},{"kind":"Field","name":{"kind":"Name","value":"priceAfterDiscount"}},{"kind":"Field","name":{"kind":"Name","value":"processingRate"}},{"kind":"Field","name":{"kind":"Name","value":"processingCost"}},{"kind":"Field","name":{"kind":"Name","value":"revenueAfterProcessing"}},{"kind":"Field","name":{"kind":"Name","value":"finalRevenue"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}}]}}]} as unknown as DocumentNode<CalculateBatchPricingQuery, CalculateBatchPricingQueryVariables>;
+export const GetCountriesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCountries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"countries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"iso"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"nameHebrew"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"flag"}}]}}]}}]} as unknown as DocumentNode<GetCountriesQuery, GetCountriesQueryVariables>;
+export const GetPricingConfigurationsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPricingConfigurations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pricingConfigurations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"countryId"}},{"kind":"Field","name":{"kind":"Name","value":"regionId"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}},{"kind":"Field","name":{"kind":"Name","value":"costSplitPercent"}},{"kind":"Field","name":{"kind":"Name","value":"discountRate"}},{"kind":"Field","name":{"kind":"Name","value":"processingRate"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetPricingConfigurationsQuery, GetPricingConfigurationsQueryVariables>;
+export const UpdatePricingConfigurationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdatePricingConfiguration"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdatePricingConfigurationInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updatePricingConfiguration"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"countryId"}},{"kind":"Field","name":{"kind":"Name","value":"regionId"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}},{"kind":"Field","name":{"kind":"Name","value":"costSplitPercent"}},{"kind":"Field","name":{"kind":"Name","value":"discountRate"}},{"kind":"Field","name":{"kind":"Name","value":"processingRate"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]}}]} as unknown as DocumentNode<UpdatePricingConfigurationMutation, UpdatePricingConfigurationMutationVariables>;

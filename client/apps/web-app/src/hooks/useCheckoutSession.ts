@@ -1,19 +1,13 @@
 import {
-  CreateCheckoutSessionMutation,
-  CreateCheckoutSessionMutationVariables,
   GetCheckoutSessionQuery,
   GetCheckoutSessionQueryVariables,
 } from "@/__generated__/graphql";
 import {
-  CreateCheckoutSession,
   GetCheckoutSession,
 } from "@/lib/graphql/checkout";
-import { useMutation, useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 
 export const useCheckoutSession = (token?: string, isProcessing?: boolean) => {
-  const [createSession] = useMutation<CreateCheckoutSessionMutation, CreateCheckoutSessionMutationVariables>(
-    CreateCheckoutSession
-  );
   const { data, loading, error, refetch } = useQuery<
     GetCheckoutSessionQuery,
     GetCheckoutSessionQueryVariables
@@ -25,7 +19,6 @@ export const useCheckoutSession = (token?: string, isProcessing?: boolean) => {
 
   return {
     session: data?.getCheckoutSession?.session,
-    createSession,
     refetch,
     loading,
     error,

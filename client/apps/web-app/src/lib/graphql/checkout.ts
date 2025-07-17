@@ -57,6 +57,7 @@ query GetCheckoutSession($token: String!) {
     success
     session {
       id
+      orderId
       isComplete
       paymentStatus
       timeRemaining
@@ -97,5 +98,18 @@ query GetUserOrders {
       id
       status
     }
+  }
+}`
+
+export const ValidateOrder = gql`
+mutation ValidateOrder($input: ValidateOrderInput!) {
+  validateOrder(input: $input) {
+    success
+    isValid
+    bundleDetails
+    totalPrice
+    currency
+    error
+    errorCode
   }
 }`

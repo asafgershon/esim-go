@@ -75,7 +75,7 @@ export type Country = {
   flag?: Maybe<Scalars['String']['output']>;
   iso: Scalars['ISOCountryCode']['output'];
   name: Scalars['String']['output'];
-  nameHebrew: Scalars['String']['output'];
+  nameHebrew?: Maybe<Scalars['String']['output']>;
   region: Scalars['String']['output'];
 };
 
@@ -108,12 +108,24 @@ export type DataPlan = {
   region: Scalars['String']['output'];
 };
 
+export type DataPlanConnection = {
+  __typename?: 'DataPlanConnection';
+  hasNextPage: Scalars['Boolean']['output'];
+  hasPreviousPage: Scalars['Boolean']['output'];
+  items: Array<DataPlan>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
 export type DataPlanFilter = {
   bundleGroup?: InputMaybe<Scalars['String']['input']>;
   country?: InputMaybe<Scalars['String']['input']>;
   duration?: InputMaybe<Scalars['Int']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
   maxPrice?: InputMaybe<Scalars['Float']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
   region?: InputMaybe<Scalars['String']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Esim = {
@@ -215,7 +227,9 @@ export type Mutation = {
   suspendESIM?: Maybe<EsimActionResponse>;
   updateCheckoutStep: UpdateCheckoutStepResponse;
   updateESIMReference?: Maybe<EsimActionResponse>;
+  updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
   updateUserRole?: Maybe<User>;
+  validateOrder: ValidateOrderResponse;
   verifyPhoneOTP?: Maybe<SignInResponse>;
 };
 
@@ -303,9 +317,19 @@ export type MutationUpdateEsimReferenceArgs = {
 };
 
 
+export type MutationUpdatePricingConfigurationArgs = {
+  input: UpdatePricingConfigurationInput;
+};
+
+
 export type MutationUpdateUserRoleArgs = {
   role: Scalars['String']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationValidateOrderArgs = {
+  input: ValidateOrderInput;
 };
 
 
@@ -352,6 +376,52 @@ export type PackageAssignment = {
   user: User;
 };
 
+export type PageInfo = {
+  __typename?: 'PageInfo';
+  currentPage: Scalars['Int']['output'];
+  limit: Scalars['Int']['output'];
+  offset: Scalars['Int']['output'];
+  pages: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+};
+
+export type PricingBreakdown = {
+  __typename?: 'PricingBreakdown';
+  bundleName: Scalars['String']['output'];
+  cost: Scalars['Float']['output'];
+  costPlus: Scalars['Float']['output'];
+  countryName: Scalars['String']['output'];
+  currency: Scalars['String']['output'];
+  discountRate: Scalars['Float']['output'];
+  discountValue: Scalars['Float']['output'];
+  duration: Scalars['Int']['output'];
+  finalRevenue: Scalars['Float']['output'];
+  priceAfterDiscount: Scalars['Float']['output'];
+  processingCost: Scalars['Float']['output'];
+  processingRate: Scalars['Float']['output'];
+  revenueAfterProcessing: Scalars['Float']['output'];
+  totalCost: Scalars['Float']['output'];
+};
+
+export type PricingConfiguration = {
+  __typename?: 'PricingConfiguration';
+  bundleGroup?: Maybe<Scalars['String']['output']>;
+  costSplitPercent: Scalars['Float']['output'];
+  countryId?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  createdBy: Scalars['String']['output'];
+  description: Scalars['String']['output'];
+  discountRate: Scalars['Float']['output'];
+  duration?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  processingRate: Scalars['Float']['output'];
+  regionId?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['String']['output'];
+};
+
 export type ProcessCheckoutPaymentInput = {
   paymentMethodId: Scalars['String']['input'];
   savePaymentMethod?: InputMaybe<Scalars['Boolean']['input']>;
@@ -383,10 +453,10 @@ export type PurchaseEsimResponse = {
 
 export type Query = {
   __typename?: 'Query';
-  calculatePrice: Scalars['Float']['output'];
+  calculatePrice: PricingBreakdown;
   countries: Array<Country>;
   dataPlan?: Maybe<DataPlan>;
-  dataPlans: Array<DataPlan>;
+  dataPlans: DataPlanConnection;
   esimDetails?: Maybe<Esim>;
   getCheckoutSession: GetCheckoutSessionResponse;
   hello: Scalars['String']['output'];
@@ -395,6 +465,7 @@ export type Query = {
   myOrders: Array<Order>;
   orderDetails?: Maybe<Order>;
   orders: Array<Order>;
+  pricingConfigurations: Array<PricingConfiguration>;
   trips: Array<Trip>;
   users: Array<User>;
 };
@@ -513,6 +584,28 @@ export type UpdateCheckoutStepResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type UpdatePricingConfigurationInput = {
+  bundleGroup?: InputMaybe<Scalars['String']['input']>;
+  costSplitPercent: Scalars['Float']['input'];
+  countryId?: InputMaybe<Scalars['String']['input']>;
+  description: Scalars['String']['input'];
+  discountRate: Scalars['Float']['input'];
+  duration?: InputMaybe<Scalars['Int']['input']>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  isActive: Scalars['Boolean']['input'];
+  name: Scalars['String']['input'];
+  priority: Scalars['Int']['input'];
+  processingRate: Scalars['Float']['input'];
+  regionId?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdatePricingConfigurationResponse = {
+  __typename?: 'UpdatePricingConfigurationResponse';
+  configuration?: Maybe<PricingConfiguration>;
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type User = {
   __typename?: 'User';
   createdAt: Scalars['String']['output'];
@@ -523,6 +616,23 @@ export type User = {
   phoneNumber?: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
+};
+
+export type ValidateOrderInput = {
+  bundleName: Scalars['String']['input'];
+  customerReference?: InputMaybe<Scalars['String']['input']>;
+  quantity: Scalars['Int']['input'];
+};
+
+export type ValidateOrderResponse = {
+  __typename?: 'ValidateOrderResponse';
+  bundleDetails?: Maybe<Scalars['JSON']['output']>;
+  currency?: Maybe<Scalars['String']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  errorCode?: Maybe<Scalars['String']['output']>;
+  isValid: Scalars['Boolean']['output'];
+  success: Scalars['Boolean']['output'];
+  totalPrice?: Maybe<Scalars['Float']['output']>;
 };
 
 export type VerifyOtpInput = {
@@ -558,7 +668,7 @@ export type GetCheckoutSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetCheckoutSessionQuery = { __typename?: 'Query', getCheckoutSession: { __typename?: 'GetCheckoutSessionResponse', success: boolean, error?: string | null, session?: { __typename?: 'CheckoutSession', id: string, isComplete: boolean, paymentStatus?: string | null, timeRemaining?: number | null, steps?: any | null, metadata?: any | null, planSnapshot?: any | null, pricing?: any | null } | null } };
+export type GetCheckoutSessionQuery = { __typename?: 'Query', getCheckoutSession: { __typename?: 'GetCheckoutSessionResponse', success: boolean, error?: string | null, session?: { __typename?: 'CheckoutSession', id: string, orderId?: string | null, isComplete: boolean, paymentStatus?: string | null, timeRemaining?: number | null, steps?: any | null, metadata?: any | null, planSnapshot?: any | null, pricing?: any | null } | null } };
 
 export type OrderDetailsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -571,6 +681,13 @@ export type GetUserOrdersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetUserOrdersQuery = { __typename?: 'Query', myOrders: Array<{ __typename?: 'Order', id: string, reference: string, status: OrderStatus, totalPrice: number, createdAt: string, esims: Array<{ __typename?: 'ESIM', id: string, status: EsimStatus }> }> };
+
+export type ValidateOrderMutationVariables = Exact<{
+  input: ValidateOrderInput;
+}>;
+
+
+export type ValidateOrderMutation = { __typename?: 'Mutation', validateOrder: { __typename?: 'ValidateOrderResponse', success: boolean, isValid: boolean, bundleDetails?: any | null, totalPrice?: number | null, currency?: string | null, error?: string | null, errorCode?: string | null } };
 
 export type SignInMutationVariables = Exact<{
   input: SignInInput;
@@ -622,7 +739,7 @@ export type MeQuery = { __typename?: 'Query', me?: { __typename?: 'User', id: st
 export type GetCountriesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetCountriesQuery = { __typename?: 'Query', countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew: string, region: string, flag?: string | null }> };
+export type GetCountriesQuery = { __typename?: 'Query', countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region: string, flag?: string | null }> };
 
 export type GetTripsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -636,4 +753,4 @@ export type CalculatePriceQueryVariables = Exact<{
 }>;
 
 
-export type CalculatePriceQuery = { __typename?: 'Query', calculatePrice: number };
+export type CalculatePriceQuery = { __typename?: 'Query', calculatePrice: { __typename?: 'PricingBreakdown', bundleName: string, countryName: string, duration: number, cost: number, costPlus: number, totalCost: number, discountRate: number, discountValue: number, priceAfterDiscount: number, processingRate: number, processingCost: number, revenueAfterProcessing: number, finalRevenue: number, currency: string } };

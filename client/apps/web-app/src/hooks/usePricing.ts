@@ -52,13 +52,14 @@ export function usePricing({ numOfDays, regionId, countryId, debounceMs = 300 }:
   const pricing: PricingData | null = useMemo(() => {
     if (!priceData?.calculatePrice) return null;
 
-    const totalPrice = priceData.calculatePrice;
+    const totalPrice = priceData.calculatePrice.totalCost;
     const dailyPrice = totalPrice / numOfDays;
+    const hasDiscount = priceData.calculatePrice.discountValue > 0;
 
     return {
       dailyPrice,
       totalPrice,
-      hasDiscount: false, // Backend handles discount logic
+      hasDiscount,
       days: numOfDays,
     };
   }, [priceData, numOfDays]);
