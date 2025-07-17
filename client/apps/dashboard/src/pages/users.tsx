@@ -27,6 +27,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { InviteAdminDialog } from "@/components/invite-admin-dialog";
 import { UserDetailsDrawer } from "@/components/user-details-drawer";
+import { AssignESimModal } from "@/components/assign-esim-modal";
 
 type User = {
   id: string;
@@ -41,7 +42,8 @@ type User = {
 
 const createColumns = (
   handleDeleteUser: (userId: string, userEmail: string) => void,
-  handleOpenUserDetails: (user: User) => void
+  handleOpenUserDetails: (user: User) => void,
+  handleAssignESim: (user: User) => void
 ): ColumnDef<User>[] => [
   {
     accessorKey: "email",
@@ -168,6 +170,10 @@ const createColumns = (
             <DropdownMenuItem>View user details</DropdownMenuItem>
             <DropdownMenuItem>Send message</DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => handleAssignESim(user)}>
+              Assign ESim
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem 
               className="text-destructive"
               onClick={() => handleDeleteUser(user.id, user.email)}
@@ -186,6 +192,8 @@ export function UsersPage() {
   const [deleteUser] = useMutation(DELETE_USER);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+  const [assignModalUser, setAssignModalUser] = React.useState<User | null>(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = React.useState(false);
 
   const handleDeleteUser = async (userId: string, userEmail: string) => {
     const confirmed = window.confirm(
@@ -215,7 +223,12 @@ export function UsersPage() {
     setIsDrawerOpen(true);
   };
 
-  const columns = createColumns(handleDeleteUser, handleOpenUserDetails);
+  const handleAssignESim = (user: User) => {
+    setAssignModalUser(user);
+    setIsAssignModalOpen(true);
+  };
+
+  const columns = createColumns(handleDeleteUser, handleOpenUserDetails, handleAssignESim);
 
   if (error) {
     console.error("Error fetching users:", error);
@@ -276,6 +289,12 @@ export function UsersPage() {
         user={selectedUser}
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
+      />
+      
+      <AssignESimModal
+        user={assignModalUser}
+        open={isAssignModalOpen}
+        onOpenChange={setIsAssignModalOpen}
       />
     </div>
   );
