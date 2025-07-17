@@ -18,14 +18,19 @@ export const useAuth = () => {
     error: null,
   });
 
+  // Only run the ME query if there's an auth token
+  const hasAuthToken = typeof window !== 'undefined' && localStorage.getItem('authToken');
+  
   const { data, loading, error, refetch } = useQuery(ME, {
     errorPolicy: 'all',
     fetchPolicy: 'cache-and-network',
+    skip: !hasAuthToken, // Skip the query if no auth token
   });
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     
+    // If no token, set unauthenticated state immediately
     if (!token) {
       setAuthState({
         user: null,
@@ -36,11 +41,13 @@ export const useAuth = () => {
       return;
     }
 
+    // If we have a token but query is loading, show loading state
     if (loading) {
       setAuthState(prev => ({ ...prev, isLoading: true }));
       return;
     }
 
+    // If there's an error with the ME query
     if (error) {
       // If there's an auth error, clear the token
       if (error.graphQLErrors.some(e => e.extensions?.code === 'UNAUTHORIZED')) {
@@ -63,6 +70,7 @@ export const useAuth = () => {
       return;
     }
 
+    // If we have token and query succeeded
     if (data?.me) {
       setAuthState({
         user: data.me,
@@ -70,7 +78,8 @@ export const useAuth = () => {
         isLoading: false,
         error: null,
       });
-    } else {
+    } else if (hasAuthToken) {
+      // We have a token but no user data - this shouldn't happen
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -78,7 +87,7 @@ export const useAuth = () => {
         error: null,
       });
     }
-  }, [data, loading, error]);
+  }, [data, loading, error, hasAuthToken]);
 
   const signOut = () => {
     localStorage.removeItem('authToken');
