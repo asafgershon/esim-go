@@ -3,10 +3,82 @@ import { gql } from '@apollo/client'
 export const GET_TRIPS = gql(`
   query GetTrips {
     trips {
+      id
       name
       description
       regionId
       countryIds
+      createdAt
+      updatedAt
+      createdBy
+      countries {
+        iso
+        name
+        nameHebrew
+        region
+        flag
+      }
+    }
+  }
+`)
+
+export const CREATE_TRIP = gql(`
+  mutation CreateTrip($input: CreateTripInput!) {
+    createTrip(input: $input) {
+      success
+      error
+      trip {
+        id
+        name
+        description
+        regionId
+        countryIds
+        createdAt
+        updatedAt
+        createdBy
+        countries {
+          iso
+          name
+          nameHebrew
+          region
+          flag
+        }
+      }
+    }
+  }
+`)
+
+export const UPDATE_TRIP = gql(`
+  mutation UpdateTrip($input: UpdateTripInput!) {
+    updateTrip(input: $input) {
+      success
+      error
+      trip {
+        id
+        name
+        description
+        regionId
+        countryIds
+        createdAt
+        updatedAt
+        createdBy
+        countries {
+          iso
+          name
+          nameHebrew
+          region
+          flag
+        }
+      }
+    }
+  }
+`)
+
+export const DELETE_TRIP = gql(`
+  mutation DeleteTrip($id: ID!) {
+    deleteTrip(id: $id) {
+      success
+      error
     }
   }
 `)

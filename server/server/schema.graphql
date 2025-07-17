@@ -51,6 +51,11 @@ type Mutation {
   updateUserRole(userId: ID!, role: String!): User @auth(role: "ADMIN")
   inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse @auth(role: "ADMIN")
   deleteUser(userId: ID!): DeleteUserResponse @auth(role: "ADMIN")
+
+  # Trip Management
+  createTrip(input: CreateTripInput!): CreateTripResponse @auth(role: "ADMIN")
+  updateTrip(input: UpdateTripInput!): UpdateTripResponse @auth(role: "ADMIN")
+  deleteTrip(id: ID!): DeleteTripResponse @auth(role: "ADMIN")
   
   # Pricing configuration management
   updatePricingConfiguration(input: UpdatePricingConfigurationInput!): UpdatePricingConfigurationResponse @auth(role: "ADMIN")
@@ -94,11 +99,15 @@ type Country {
 }
 
 type Trip {
+  id: ID!
   name: String!
   description: String!
   regionId: String!
   countries: [Country!]!
   countryIds: [ISOCountryCode!]!
+  createdAt: String!
+  updatedAt: String!
+  createdBy: String
 }
 
 # Authentication Types
@@ -166,6 +175,39 @@ type InviteAdminUserResponse {
 }
 
 type DeleteUserResponse {
+  success: Boolean!
+  error: String
+}
+
+# Trip Management Types
+input CreateTripInput {
+  name: String!
+  description: String!
+  regionId: String!
+  countryIds: [ISOCountryCode!]!
+}
+
+input UpdateTripInput {
+  id: ID!
+  name: String!
+  description: String!
+  regionId: String!
+  countryIds: [ISOCountryCode!]!
+}
+
+type CreateTripResponse {
+  success: Boolean!
+  error: String
+  trip: Trip
+}
+
+type UpdateTripResponse {
+  success: Boolean!
+  error: String
+  trip: Trip
+}
+
+type DeleteTripResponse {
   success: Boolean!
   error: String
 }

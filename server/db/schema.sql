@@ -39,6 +39,26 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- Trips table for admin-defined country bundles
+CREATE TABLE IF NOT EXISTS trips (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR NOT NULL,
+  description TEXT NOT NULL,
+  region_id VARCHAR NOT NULL,
+  country_ids JSON NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id)
+);
+
+-- Add index for faster queries
+CREATE INDEX IF NOT EXISTS idx_trips_region_id ON trips(region_id);
+CREATE INDEX IF NOT EXISTS idx_trips_created_by ON trips(created_by);
+
+-- Add trigger for updated_at
+CREATE TRIGGER update_trips_updated_at BEFORE UPDATE ON trips
+FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
 -- Data plans from eSIM Go catalogue
 CREATE TABLE IF NOT EXISTS data_plans (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

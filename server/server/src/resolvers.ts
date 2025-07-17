@@ -10,6 +10,7 @@ import type { DataPlan, Order, Resolvers } from "./types";
 import { esimResolvers } from "./resolvers/esim-resolvers";
 import { checkoutResolvers } from "./resolvers/checkout-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
+import { tripsResolvers } from "./resolvers/trips-resolvers";
 import { GraphQLError } from "graphql";
 
 export const resolvers: Resolvers = {
@@ -51,6 +52,9 @@ export const resolvers: Resolvers = {
 
     // Users resolvers are merged from users-resolvers.ts
     ...usersResolvers.Query!,
+    
+    // Trips resolvers are merged from trips-resolvers.ts
+    ...tripsResolvers.Query!,
     
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Query!,
@@ -118,16 +122,7 @@ export const resolvers: Resolvers = {
         flag: country.flag,
       }));
     },
-    trips: async (_, __, context: Context) => {
-      const regions = context.dataSources.regions.getRegions();
-      return regions.map((region) => ({
-        name: region.name,
-        description: `${region.nameHebrew} - ${region.countryIds.length} countries`,
-        regionId: region.name.toLowerCase().replace(/\s+/g, "-"),
-        countryIds: region.countryIds,
-        countries: [], // Placeholder - will be resolved by field resolver
-      }));
-    },
+    // trips resolver moved to tripsResolvers
     calculatePrice: async (
       _,
       { numOfDays, regionId, countryId },
@@ -277,6 +272,7 @@ export const resolvers: Resolvers = {
   Mutation: {
     ...checkoutResolvers.Mutation!,
     ...usersResolvers.Mutation!,
+    ...tripsResolvers.Mutation!,
     signUp: async (_, { input }) => {
       try {
         const { data, error } = await supabaseAdmin.auth.admin.createUser({
