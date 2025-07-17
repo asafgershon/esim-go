@@ -3,6 +3,7 @@
 import { EsimExperienceSelector } from "@/components/esim-experience-selector";
 import { EsimSkeleton } from "@/components/esim-skeleton";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LoginModal } from "@/components/login-modal";
 import { useAuth } from "@/hooks/useAuth";
 import { Button, Card } from "@workspace/ui";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
@@ -44,12 +45,14 @@ export default function Home() {
             <ThemeToggle />
             {isLoading ? null : isAuthenticated && user ? (
               <div className="flex items-center gap-2">
-                <Avatar>
-                  {/* If you have a user image, use <AvatarImage src={user.imageUrl} /> */}
-                  <AvatarFallback>
-                    <UserIcon className="h-6 w-6" />
-                  </AvatarFallback>
-                </Avatar>
+                <Link href="/profile">
+                  <Avatar className="cursor-pointer">
+                    {/* If you have a user image, use <AvatarImage src={user.imageUrl} /> */}
+                    <AvatarFallback>
+                      <UserIcon className="h-6 w-6" />
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
                 <span className="text-sm font-medium text-foreground">
                   אזור אישי
                 </span>
@@ -64,15 +67,7 @@ export default function Home() {
                 </Button>
               </div>
             ) : (
-              <Link href="/profile">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full flex items-center justify-center"
-                >
-                  <UserIcon className="h-5 w-5" />
-                </Button>
-              </Link>
+              <LoginModal redirectTo="/profile" />
             )}
           </div>
         </div>
