@@ -218,7 +218,7 @@ export function FuzzyCombobox({
           )}
           disabled={disabled}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2">
             <ChevronsUpDown className="mr-2 h-4 w-4 shrink-0 opacity-50" />
 
             {selectedOption ? (
@@ -247,7 +247,10 @@ export function FuzzyCombobox({
             value={searchValue}
             onValueChange={setSearchValue}
           />
-          <CommandList className="overflow-y-auto" style={{ maxHeight: "200px" }}>
+          <CommandList
+            className="overflow-y-auto"
+            style={{ maxHeight: "200px" }}
+          >
             {filteredOptions.length === 0 ? (
               <CommandEmpty>{emptyMessage}</CommandEmpty>
             ) : (

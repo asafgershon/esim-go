@@ -48,6 +48,12 @@ export enum BundleState {
   Suspended = 'SUSPENDED'
 }
 
+export type CalculatePriceInput = {
+  countryId: Scalars['String']['input'];
+  numOfDays: Scalars['Int']['input'];
+  regionId: Scalars['String']['input'];
+};
+
 export type CheckoutSession = {
   __typename?: 'CheckoutSession';
   createdAt: Scalars['DateTime']['output'];
@@ -454,6 +460,7 @@ export type PurchaseEsimResponse = {
 export type Query = {
   __typename?: 'Query';
   calculatePrice: PricingBreakdown;
+  calculatePrices: Array<PricingBreakdown>;
   countries: Array<Country>;
   dataPlan?: Maybe<DataPlan>;
   dataPlans: DataPlanConnection;
@@ -475,6 +482,11 @@ export type QueryCalculatePriceArgs = {
   countryId: Scalars['String']['input'];
   numOfDays: Scalars['Int']['input'];
   regionId: Scalars['String']['input'];
+};
+
+
+export type QueryCalculatePricesArgs = {
+  inputs: Array<CalculatePriceInput>;
 };
 
 

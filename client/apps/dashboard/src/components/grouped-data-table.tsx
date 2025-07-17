@@ -25,12 +25,14 @@ interface GroupedDataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   grouping?: string[];
+  onGroupClick?: (groupValue: string, groupData: TData[]) => void;
 }
 
 export function GroupedDataTable<TData, TValue>({
   columns,
   data,
   grouping = [],
+  onGroupClick,
 }: GroupedDataTableProps<TData, TValue>) {
   const [groupingState, setGroupingState] = useState<GroupingState>(grouping);
   const [expanded, setExpanded] = useState<ExpandedState>({});
@@ -84,7 +86,17 @@ export function GroupedDataTable<TData, TValue>({
                   <React.Fragment key={row.id}>
                     <TableRow 
                       className="bg-gray-50 font-medium hover:bg-gray-100 cursor-pointer"
-                      onClick={row.getToggleExpandedHandler()}
+                      onClick={() => {
+                        // Expand/collapse the group
+                        row.getToggleExpandedHandler()();
+                        
+                        // Also trigger group click if handler provided
+                        if (onGroupClick) {
+                          const groupValue = row.getGroupingValue(groupingState[0]);
+                          const groupData = row.subRows.map(subRow => subRow.original);
+                          onGroupClick(String(groupValue), groupData);
+                        }
+                      }}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>

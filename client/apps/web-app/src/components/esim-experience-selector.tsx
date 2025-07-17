@@ -117,7 +117,7 @@ export function EsimExperienceSelector() {
       setCountryId(null);
     }
   };
-  const isReadyToPurchase = (countryId || tripId) && numOfDays >= 7;
+  const isReadyToPurchase = (countryId || tripId);
   const handlePurchase = () => {
     if (!isReadyToPurchase) return;
     // Navigate to checkout with current parameters
