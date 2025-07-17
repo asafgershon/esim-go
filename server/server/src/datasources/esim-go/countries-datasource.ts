@@ -185,4 +185,9 @@ export class CountriesDataSource extends ESIMGoDataSource {
       };
     });
   }
+  
+  async getCountryByCode(iso: string) {
+    const countries = await this.getCountries();
+    return countries.find((country: any) => country.iso === iso);
+  }
 }
