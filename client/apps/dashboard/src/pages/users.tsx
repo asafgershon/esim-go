@@ -1,9 +1,9 @@
 import React from "react";
 import type { GetUsersQuery } from "@/__generated__/graphql";
-import { RoleSelector } from "@/components/role-selector";
-import { GET_USERS, DELETE_USER } from "@/lib/graphql/queries";
+import { GET_USERS, DELETE_USER, UPDATE_USER_ROLE } from "@/lib/graphql/queries";
 import { useQuery, useMutation } from "@apollo/client";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
+import { Badge } from "@workspace/ui/components/badge";
 import {
   Card,
   CardContent,
@@ -11,10 +11,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import { Label } from "@workspace/ui/components/label";
 import { Skeleton } from "@workspace/ui/components/skeleton";
-import { DataTable } from "@workspace/ui/components/data-table";
+import { AdvancedDataTable } from "@workspace/ui/components/advanced-data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Package } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
@@ -38,12 +46,14 @@ type User = {
   role: string;
   createdAt: string;
   updatedAt: string;
+  orderCount?: number;
 };
 
 const createColumns = (
   handleDeleteUser: (userId: string, userEmail: string) => void,
   handleOpenUserDetails: (user: User) => void,
-  handleAssignESim: (user: User) => void
+  handleAssignESim: (user: User) => void,
+  handleRoleChange: (userId: string, newRole: string) => void
 ): ColumnDef<User>[] => [
   {
     accessorKey: "email",
@@ -88,17 +98,56 @@ const createColumns = (
     header: "Role",
     cell: ({ row }) => {
       const user = row.original;
+      
+      // Role configuration
+      const ROLES = [
+        { value: 'USER', label: 'User', variant: 'outline' as const },
+        { value: 'PARTNER', label: 'Partner', variant: 'secondary' as const },
+        { value: 'ADMIN', label: 'Admin', variant: 'default' as const },
+      ];
+      
+      const currentRoleConfig = ROLES.find(role => role.value === user.role) || ROLES[0];
+      
       return (
-        <RoleSelector
-          userId={user.id}
-          currentRole={user.role}
-          userEmail={user.email}
-          userName={
-            user.firstName || user.lastName
-              ? `${user.firstName} ${user.lastName}`.trim()
-              : ""
-          }
-        />
+        <div className="w-32">
+          <Label htmlFor={`${user.id}-role`} className="sr-only">
+            Role
+          </Label>
+          <Select
+            value={user.role}
+            onValueChange={(newRole) => {
+              if (newRole !== user.role) {
+                // Handle role change with confirmation
+                const confirmed = window.confirm(
+                  `Change ${user.firstName || user.email}'s role to ${ROLES.find(r => r.value === newRole)?.label}?`
+                );
+                                 if (confirmed) {
+                   handleRoleChange(user.id, newRole);
+                 }
+              }
+            }}
+          >
+            <SelectTrigger 
+              className="h-8 border-transparent bg-transparent hover:bg-muted/50 focus:bg-background focus:border-border"
+              id={`${user.id}-role`}
+            >
+              <SelectValue>
+                <Badge variant={currentRoleConfig.variant} className="text-xs">
+                  {currentRoleConfig.label}
+                </Badge>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent align="end">
+              {ROLES.map((role) => (
+                <SelectItem key={role.value} value={role.value}>
+                  <Badge variant={role.variant} className="text-xs">
+                    {role.label}
+                  </Badge>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       );
     },
   },
@@ -108,6 +157,19 @@ const createColumns = (
     cell: ({ row }) => {
       const phoneNumber = row.getValue("phoneNumber") as string | null | undefined;
       return phoneNumber || "N/A";
+    },
+  },
+  {
+    accessorKey: "orderCount",
+    header: "Orders",
+    cell: ({ row }) => {
+      const user = row.original;
+      return (
+        <div className="flex items-center gap-2">
+          <Package className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">{user.orderCount || 0}</span>
+        </div>
+      );
     },
   },
   {
@@ -170,6 +232,15 @@ const createColumns = (
             <DropdownMenuItem onClick={() => handleAssignESim(user)}>
               Assign ESim
             </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => {
+                // Navigate to orders page with user filter
+                const ordersUrl = `/orders?user=${user.id}`;
+                window.open(ordersUrl, '_blank');
+              }}
+            >
+              View Orders ({user.orderCount})
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               className="text-destructive"
@@ -187,6 +258,18 @@ const createColumns = (
 export function UsersPage() {
   const { data, loading, error, refetch } = useQuery<GetUsersQuery>(GET_USERS);
   const [deleteUser] = useMutation(DELETE_USER);
+  const [updateUserRole] = useMutation(UPDATE_USER_ROLE, {
+    refetchQueries: [{ query: GET_USERS }],
+    onCompleted: (data) => {
+      if (data.updateUserRole) {
+        console.log(`Successfully updated user role to ${data.updateUserRole.role}`);
+      }
+    },
+    onError: (error) => {
+      console.error('Error updating user role:', error.message);
+      alert(`Error: ${error.message}`);
+    },
+  });
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
   const [assignModalUser, setAssignModalUser] = React.useState<User | null>(null);
@@ -225,7 +308,16 @@ export function UsersPage() {
     setIsAssignModalOpen(true);
   };
 
-  const columns = createColumns(handleDeleteUser, handleOpenUserDetails, handleAssignESim);
+  const handleRoleChange = (userId: string, newRole: string) => {
+    updateUserRole({
+      variables: {
+        userId,
+        role: newRole,
+      },
+    });
+  };
+
+  const columns = createColumns(handleDeleteUser, handleOpenUserDetails, handleAssignESim, handleRoleChange);
 
   if (error) {
     console.error("Error fetching users:", error);
@@ -272,11 +364,15 @@ export function UsersPage() {
               </p>
             </div>
           ) : (
-            <DataTable 
+            <AdvancedDataTable 
               columns={columns} 
               data={users} 
               searchKey="email"
               searchPlaceholder="Search users..."
+              enableSorting={true}
+              enableFiltering={true}
+              enablePagination={true}
+              initialPageSize={10}
             />
           )}
         </CardContent>
