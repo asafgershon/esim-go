@@ -156,67 +156,163 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   }): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string }> {
     console.log('🚀 searchPlans called with criteria:', criteria);
     
-    // Check if we can use country-specific cache (for country-filtered requests)
-    if (criteria.country) {
-      console.log(`🔍 Checking country cache for ${criteria.country}...`);
-      const countryCatalog = await this.cache?.get(`esim-go:country-catalog:${criteria.country}`);
-      if (countryCatalog) {
-        console.log(`💾 Using country cache for ${criteria.country}`);
-        const catalogData = JSON.parse(countryCatalog);
-        console.log(`💾 ${criteria.country} durations:`, [...new Set(catalogData.bundles.map(b => b.duration))]);
-        
-        let filteredBundles = catalogData.bundles;
-        
-        // Apply additional filters
-        if (criteria.duration !== undefined) {
-          filteredBundles = filteredBundles.filter(bundle => bundle.duration === criteria.duration);
-        }
-        if (criteria.bundleGroup) {
-          filteredBundles = filteredBundles.filter(bundle => bundle.bundleGroup === criteria.bundleGroup);
-        }
-        if (criteria.search) {
-          filteredBundles = filteredBundles.filter(bundle => 
-            bundle.name.toLowerCase().includes(criteria.search.toLowerCase()) ||
-            bundle.description?.toLowerCase().includes(criteria.search.toLowerCase())
-          );
-        }
-        
-        // Apply pagination to cached data
-        const limit = criteria.limit || 50;
-        const offset = criteria.offset || 0;
-        const paginatedBundles = filteredBundles.slice(offset, offset + limit);
-        
-        return {
-          bundles: paginatedBundles,
-          totalCount: filteredBundles.length,
-          lastFetched: catalogData.syncedAt
-        };
-      }
+    // Check if catalog is fresh
+    const metadata = await this.cache?.get('esim-go:catalog:metadata');
+    if (!metadata) {
+      console.log('⚠️ No catalog metadata found, triggering sync...');
+      // Note: In production, this would trigger an async sync
+      // For now, fallback to API call
+      return this.fallbackToApiCall(criteria);
     }
 
-    // Check if we can use the full catalog cache (for unfiltered requests)
-    const isUnfilteredRequest = !criteria.country && !criteria.region && !criteria.bundleGroup && !criteria.search && !criteria.duration;
+    const catalogMetadata = JSON.parse(metadata);
+    console.log(`💾 Using cached catalog (last synced: ${catalogMetadata.lastSynced})`);
     
-    if (isUnfilteredRequest) {
-      console.log('🔍 Checking full catalog cache...');
-      const fullCatalog = await this.cache?.get('esim-go:full-catalog');
-      if (fullCatalog) {
-        console.log('💾 Using full catalog cache');
-        const catalogData = JSON.parse(fullCatalog);
-        console.log('💾 Full catalog durations:', [...new Set(catalogData.bundles.map(b => b.duration))]);
-        
-        // Apply pagination to cached data
-        const limit = criteria.limit || 50;
-        const offset = criteria.offset || 0;
-        const paginatedBundles = catalogData.bundles.slice(offset, offset + limit);
-        
-        return {
-          bundles: paginatedBundles,
-          totalCount: catalogData.totalCount,
-          lastFetched: catalogData.syncedAt
-        };
+    let bundles: ESIMGoDataPlan[] = [];
+
+    // Optimized query path based on criteria
+    if (criteria.bundleGroup) {
+      console.log(`🔍 Direct bundle group lookup: ${criteria.bundleGroup}`);
+      bundles = await this.getBundlesByGroup(criteria.bundleGroup);
+    } else if (criteria.country && criteria.duration) {
+      console.log(`🔍 Using combined index: ${criteria.country}:${criteria.duration}`);
+      bundles = await this.getBundlesByCountryAndDuration(criteria.country, criteria.duration);
+    } else if (criteria.country) {
+      console.log(`🔍 Using country index: ${criteria.country}`);
+      bundles = await this.getBundlesByCountry(criteria.country);
+    } else if (criteria.duration) {
+      console.log(`🔍 Using duration index: ${criteria.duration}`);
+      bundles = await this.getBundlesByDuration(criteria.duration);
+    } else {
+      console.log('🔍 Getting all bundles from all groups');
+      bundles = await this.getAllBundles(catalogMetadata);
+    }
+
+    // Apply additional filters if not already filtered
+    if (criteria.country && !criteria.bundleGroup) {
+      bundles = bundles.filter(b => 
+        b.countries?.some(c => c.iso === criteria.country)
+      );
+    }
+    if (criteria.duration && !criteria.bundleGroup) {
+      bundles = bundles.filter(b => b.duration === criteria.duration);
+    }
+    if (criteria.search) {
+      bundles = bundles.filter(b => 
+        b.name.toLowerCase().includes(criteria.search!.toLowerCase()) ||
+        b.description?.toLowerCase().includes(criteria.search!.toLowerCase())
+      );
+    }
+    
+    // Apply pagination
+    const limit = criteria.limit || 50;
+    const offset = criteria.offset || 0;
+    const paginatedBundles = bundles.slice(offset, offset + limit);
+    
+    console.log(`📊 Found ${bundles.length} bundles, returning ${paginatedBundles.length} with pagination`);
+    
+    return {
+      bundles: paginatedBundles,
+      totalCount: bundles.length,
+      lastFetched: catalogMetadata.lastSynced
+    };
+  }
+
+  /**
+   * Get bundles by bundle group
+   */
+  private async getBundlesByGroup(groupName: string): Promise<ESIMGoDataPlan[]> {
+    const groupKey = this.getGroupKey(groupName);
+    const groupData = await this.cache?.get(groupKey);
+    if (groupData) {
+      return JSON.parse(groupData);
+    }
+    return [];
+  }
+
+  /**
+   * Get bundles by country using index
+   */
+  private async getBundlesByCountry(country: string): Promise<ESIMGoDataPlan[]> {
+    const indexKey = `esim-go:catalog:index:country:${country}`;
+    const bundleIds = await this.cache?.get(indexKey);
+    if (bundleIds) {
+      return this.getBundlesByIds(JSON.parse(bundleIds));
+    }
+    return [];
+  }
+
+  /**
+   * Get bundles by duration using index
+   */
+  private async getBundlesByDuration(duration: number): Promise<ESIMGoDataPlan[]> {
+    const indexKey = `esim-go:catalog:index:duration:${duration}`;
+    const bundleIds = await this.cache?.get(indexKey);
+    if (bundleIds) {
+      return this.getBundlesByIds(JSON.parse(bundleIds));
+    }
+    return [];
+  }
+
+  /**
+   * Get bundles by country and duration using combined index
+   */
+  private async getBundlesByCountryAndDuration(country: string, duration: number): Promise<ESIMGoDataPlan[]> {
+    const indexKey = `esim-go:catalog:index:country:${country}:duration:${duration}`;
+    const bundleIds = await this.cache?.get(indexKey);
+    if (bundleIds) {
+      return this.getBundlesByIds(JSON.parse(bundleIds));
+    }
+    return [];
+  }
+
+  /**
+   * Get all bundles from all groups
+   */
+  private async getAllBundles(metadata: any): Promise<ESIMGoDataPlan[]> {
+    const allBundles: ESIMGoDataPlan[] = [];
+    
+    for (const groupName of metadata.bundleGroups || []) {
+      const groupKey = this.getGroupKey(groupName);
+      const groupData = await this.cache?.get(groupKey);
+      if (groupData) {
+        allBundles.push(...JSON.parse(groupData));
       }
     }
+    
+    return allBundles;
+  }
+
+  /**
+   * Get individual bundles by their IDs
+   */
+  private async getBundlesByIds(bundleIds: string[]): Promise<ESIMGoDataPlan[]> {
+    const bundles: ESIMGoDataPlan[] = [];
+    
+    // Batch get bundles
+    for (const id of bundleIds) {
+      const bundleData = await this.cache?.get(`esim-go:catalog:bundle:${id}`);
+      if (bundleData) {
+        bundles.push(JSON.parse(bundleData));
+      }
+    }
+    
+    return bundles;
+  }
+
+  /**
+   * Get Redis key for bundle group
+   */
+  private getGroupKey(groupName: string): string {
+    return `esim-go:catalog:group:${groupName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+  }
+
+  /**
+   * Fallback to API call if cache is not available
+   */
+  private async fallbackToApiCall(criteria: any): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string }> {
+    console.log('🔄 Falling back to API call...');
+    // Keep the existing API call logic as fallback
     
     const cacheKey = this.getCacheKey("catalogue:search", criteria);
 

@@ -4,6 +4,16 @@ import { ESIMGoDataPlan } from '../datasources/esim-go/types';
 export class CatalogSyncService {
   private catalogueDataSource: CatalogueDataSource;
   private syncInterval: NodeJS.Timeout | null = null;
+  
+  // Official bundle groups from eSIM Go
+  private readonly BUNDLE_GROUPS = [
+    'Standard - Fixed',
+    'Standard - Unlimited Lite', 
+    'Standard - Unlimited Essential',
+    'Standard - Unlimited Plus',
+    'Standard - Long Duration Bundle',
+    'Regional Bundels'
+  ];
 
   constructor(catalogueDataSource: CatalogueDataSource) {
     this.catalogueDataSource = catalogueDataSource;
@@ -108,76 +118,153 @@ export class CatalogSyncService {
   }
 
   /**
-   * Sync the complete eSIM Go catalog by fetching all pages
+   * Sync the complete eSIM Go catalog by fetching bundle groups
    */
   async syncFullCatalog(): Promise<void> {
-    console.log('🔄 Starting full catalog sync...');
+    console.log('🔄 Starting optimized catalog sync by bundle groups...');
     const startTime = Date.now();
     
     try {
-      const allBundles: ESIMGoDataPlan[] = [];
-      let page = 1;
-      let hasMore = true;
+      const metadata = {
+        lastSynced: new Date().toISOString(),
+        bundleGroups: [] as string[],
+        totalBundles: 0,
+        syncVersion: this.getCurrentMonthVersion()
+      };
       
-      while (hasMore) {
+      // Fetch each bundle group separately (as recommended by eSIM Go)
+      for (const groupName of this.BUNDLE_GROUPS) {
+        console.log(`📦 Syncing bundle group: ${groupName}`);
+        
         try {
-          console.log(`📄 Fetching catalog page ${page}...`);
-          
           const response = await this.catalogueDataSource.getWithErrorHandling<{
             bundles: ESIMGoDataPlan[];
             totalCount: number;
           }>('/v2.5/catalogue', {
-            perPage: 200,
-            page: page
+            group: groupName,
+            perPage: 200
           });
           
-          if (response.bundles.length === 0) {
-            console.log(`📄 Page ${page} is empty, stopping sync`);
-            break;
+          if (response.bundles.length > 0) {
+            // Store by group with 30-day TTL (monthly updates)
+            const groupKey = this.getGroupKey(groupName);
+            await this.catalogueDataSource.cache?.set(groupKey, JSON.stringify(response.bundles), {
+              ttl: 30 * 24 * 60 * 60 // 30 days
+            });
+            
+            // Create indexes for fast lookups
+            await this.createIndexes(response.bundles, groupName);
+            
+            metadata.bundleGroups.push(groupName);
+            metadata.totalBundles += response.bundles.length;
+            
+            const durations = [...new Set(response.bundles.map(b => b.duration))];
+            console.log(`📦 ${groupName}: ${response.bundles.length} bundles, durations: ${durations.sort((a, b) => a - b)}`);
+          } else {
+            console.log(`📦 ${groupName}: No bundles found`);
           }
-          
-          allBundles.push(...response.bundles);
-          console.log(`📄 Page ${page}: ${response.bundles.length} bundles, durations: ${[...new Set(response.bundles.map(b => b.duration))]}`);
-          
-          // Stop if we got less than a full page (indicates last page)
-          hasMore = response.bundles.length === 200;
-          page++;
-          
-          // Safety limit to prevent infinite loops
-          if (page > 50) {
-            console.log('⚠️ Reached page limit (50), stopping sync');
-            break;
-          }
-          
         } catch (error) {
-          console.error(`❌ Error fetching page ${page}:`, error);
-          break;
+          console.error(`❌ Error syncing group ${groupName}:`, error);
         }
       }
       
-      // Cache the complete catalog
-      const cacheKey = 'esim-go:full-catalog';
-      await this.catalogueDataSource.cache?.set(
-        cacheKey, 
-        JSON.stringify({
-          bundles: allBundles,
-          totalCount: allBundles.length,
-          syncedAt: new Date().toISOString(),
-          pages: page - 1
-        }), 
-        { ttl: 7200 } // 2 hours TTL
-      );
+      // Store metadata
+      await this.catalogueDataSource.cache?.set('esim-go:catalog:metadata', JSON.stringify(metadata), {
+        ttl: 30 * 24 * 60 * 60 // 30 days
+      });
       
       const duration = Date.now() - startTime;
-      const durations = [...new Set(allBundles.map(b => b.duration))];
-      
-      console.log(`✅ Full catalog sync completed in ${duration}ms`);
-      console.log(`📊 Synced ${allBundles.length} bundles across ${page - 1} pages`);
-      console.log(`📊 Available durations: ${durations.sort((a, b) => a - b)}`);
+      console.log(`✅ Optimized catalog sync completed in ${duration}ms`);
+      console.log(`📊 Synced ${metadata.totalBundles} bundles across ${metadata.bundleGroups.length} groups`);
+      console.log(`📊 Active groups: ${metadata.bundleGroups.join(', ')}`);
       
     } catch (error) {
-      console.error('❌ Full catalog sync failed:', error);
+      console.error('❌ Optimized catalog sync failed:', error);
     }
+  }
+
+  /**
+   * Create Redis indexes for fast lookups
+   */
+  private async createIndexes(bundles: ESIMGoDataPlan[], groupName: string): Promise<void> {
+    const countryIndex = new Map<string, Set<string>>();
+    const durationIndex = new Map<number, Set<string>>();
+    const combinedIndex = new Map<string, Set<string>>();
+    
+    for (const bundle of bundles) {
+      const bundleId = bundle.name;
+      
+      // Store individual bundle for quick access
+      await this.catalogueDataSource.cache?.set(
+        `esim-go:catalog:bundle:${bundleId}`,
+        JSON.stringify(bundle),
+        { ttl: 30 * 24 * 60 * 60 }
+      );
+      
+      // Build country index
+      for (const country of bundle.countries || []) {
+        if (!countryIndex.has(country.iso)) {
+          countryIndex.set(country.iso, new Set());
+        }
+        countryIndex.get(country.iso)!.add(bundleId);
+        
+        // Build combined country+duration index
+        const combinedKey = `${country.iso}:${bundle.duration}`;
+        if (!combinedIndex.has(combinedKey)) {
+          combinedIndex.set(combinedKey, new Set());
+        }
+        combinedIndex.get(combinedKey)!.add(bundleId);
+      }
+      
+      // Build duration index
+      if (!durationIndex.has(bundle.duration)) {
+        durationIndex.set(bundle.duration, new Set());
+      }
+      durationIndex.get(bundle.duration)!.add(bundleId);
+    }
+    
+    // Store country indexes
+    for (const [country, bundleIds] of countryIndex) {
+      await this.catalogueDataSource.cache?.set(
+        `esim-go:catalog:index:country:${country}`,
+        JSON.stringify([...bundleIds]),
+        { ttl: 30 * 24 * 60 * 60 }
+      );
+    }
+    
+    // Store duration indexes
+    for (const [duration, bundleIds] of durationIndex) {
+      await this.catalogueDataSource.cache?.set(
+        `esim-go:catalog:index:duration:${duration}`,
+        JSON.stringify([...bundleIds]),
+        { ttl: 30 * 24 * 60 * 60 }
+      );
+    }
+    
+    // Store combined indexes
+    for (const [key, bundleIds] of combinedIndex) {
+      const [country, duration] = key.split(':');
+      await this.catalogueDataSource.cache?.set(
+        `esim-go:catalog:index:country:${country}:duration:${duration}`,
+        JSON.stringify([...bundleIds]),
+        { ttl: 30 * 24 * 60 * 60 }
+      );
+    }
+  }
+
+  /**
+   * Get Redis key for bundle group
+   */
+  private getGroupKey(groupName: string): string {
+    return `esim-go:catalog:group:${groupName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+  }
+
+  /**
+   * Get current month version for sync tracking
+   */
+  private getCurrentMonthVersion(): string {
+    const now = new Date();
+    return `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}`;
   }
 
   /**
@@ -202,18 +289,45 @@ export class CatalogSyncService {
   }
 
   /**
-   * Start periodic sync (every 2 hours)
+   * Start periodic sync (monthly as recommended by eSIM Go)
    */
   startPeriodicSync(): void {
-    console.log('🔄 Starting periodic catalog sync (every 2 hours)...');
+    console.log('🔄 Starting periodic catalog sync (monthly as per eSIM Go recommendations)...');
     
     // Initial sync
     this.syncFullCatalog();
     
-    // Schedule periodic sync every 2 hours
+    // Schedule periodic sync every 24 hours to check for monthly updates
     this.syncInterval = setInterval(() => {
-      this.syncFullCatalog();
-    }, 2 * 60 * 60 * 1000); // 2 hours in milliseconds
+      this.checkAndSync();
+    }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
+  }
+
+  /**
+   * Check if sync is needed and perform it
+   */
+  private async checkAndSync(): Promise<void> {
+    try {
+      const metadata = await this.catalogueDataSource.cache?.get('esim-go:catalog:metadata');
+      if (!metadata) {
+        console.log('🔄 No catalog metadata found, performing full sync...');
+        await this.syncFullCatalog();
+        return;
+      }
+
+      const catalogMetadata = JSON.parse(metadata);
+      const lastSynced = new Date(catalogMetadata.lastSynced);
+      const daysSinceSync = (Date.now() - lastSynced.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (daysSinceSync >= 30) {
+        console.log(`🔄 Catalog is ${daysSinceSync.toFixed(1)} days old, performing refresh...`);
+        await this.syncFullCatalog();
+      } else {
+        console.log(`✅ Catalog is fresh (${daysSinceSync.toFixed(1)} days old), skipping sync`);
+      }
+    } catch (error) {
+      console.error('❌ Error checking catalog sync status:', error);
+    }
   }
 
   /**

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@apollo/client";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
@@ -13,7 +16,20 @@ import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Badge } from "@workspace/ui/components/badge";
 import { Separator } from "@workspace/ui/components/separator";
-import { X, Plus, MapPin, Globe } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@workspace/ui/components/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@workspace/ui/components/popover";
+import { X, Plus, MapPin, Globe, Search, Check } from "lucide-react";
 import { toast } from "sonner";
 import { CREATE_TRIP, UPDATE_TRIP, GET_COUNTRIES } from "@/lib/graphql/queries";
 
@@ -37,6 +53,16 @@ interface Trip {
   createdBy?: string;
 }
 
+// Zod validation schema
+const tripFormSchema = z.object({
+  name: z.string().min(1, "Trip name is required").max(100, "Trip name must be less than 100 characters"),
+  description: z.string().min(1, "Description is required").max(500, "Description must be less than 500 characters"),
+  regionId: z.string().min(1, "Region ID is required").max(50, "Region ID must be less than 50 characters"),
+  countryIds: z.array(z.string()).min(1, "At least one country must be selected"),
+});
+
+type TripFormData = z.infer<typeof tripFormSchema>;
+
 interface TripFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -45,19 +71,25 @@ interface TripFormModalProps {
 }
 
 export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormModalProps) {
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    regionId: "",
-    countryIds: [] as string[],
-  });
   const [countrySearch, setCountrySearch] = useState("");
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCountryPopover, setShowCountryPopover] = useState(false);
 
   const { data: countriesData } = useQuery(GET_COUNTRIES);
   const [createTrip] = useMutation(CREATE_TRIP);
   const [updateTrip] = useMutation(UPDATE_TRIP);
+
+  const form = useForm<TripFormData>({
+    resolver: zodResolver(tripFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      regionId: "",
+      countryIds: [],
+    },
+  });
+
+  const { control, handleSubmit, formState: { errors, isSubmitting }, reset, setValue, watch } = form;
+  const watchedCountryIds = watch("countryIds");
 
   const countries = countriesData?.countries || [];
   const filteredCountries = countries.filter((country: Country) => {
@@ -73,14 +105,14 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
   useEffect(() => {
     if (open) {
       if (trip) {
-        setFormData({
+        reset({
           name: trip.name,
           description: trip.description,
           regionId: trip.regionId,
           countryIds: trip.countryIds,
         });
       } else {
-        setFormData({
+        reset({
           name: "",
           description: "",
           regionId: "",
@@ -89,52 +121,21 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
       }
     }
     setCountrySearch("");
-    setIsSubmitting(false);
-  }, [open, trip]);
+  }, [open, trip, reset]);
 
   const handleAddCountry = (countryId: string) => {
-    if (!formData.countryIds.includes(countryId)) {
-      setFormData(prev => ({
-        ...prev,
-        countryIds: [...prev.countryIds, countryId],
-      }));
+    if (!watchedCountryIds.includes(countryId)) {
+      setValue("countryIds", [...watchedCountryIds, countryId]);
     }
     setCountrySearch("");
-    setShowCountryDropdown(false);
+    setShowCountryPopover(false);
   };
 
   const handleRemoveCountry = (countryId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      countryIds: prev.countryIds.filter(id => id !== countryId),
-    }));
+    setValue("countryIds", watchedCountryIds.filter(id => id !== countryId));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name.trim()) {
-      toast.error("Trip name is required");
-      return;
-    }
-    
-    if (!formData.description.trim()) {
-      toast.error("Trip description is required");
-      return;
-    }
-    
-    if (!formData.regionId.trim()) {
-      toast.error("Region ID is required");
-      return;
-    }
-    
-    if (formData.countryIds.length === 0) {
-      toast.error("At least one country must be selected");
-      return;
-    }
-
-    setIsSubmitting(true);
-    
+  const onSubmit = async (data: TripFormData) => {
     try {
       if (trip) {
         // Update existing trip
@@ -142,10 +143,10 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
           variables: {
             input: {
               id: trip.id,
-              name: formData.name.trim(),
-              description: formData.description.trim(),
-              regionId: formData.regionId.trim(),
-              countryIds: formData.countryIds,
+              name: data.name.trim(),
+              description: data.description.trim(),
+              regionId: data.regionId.trim(),
+              countryIds: data.countryIds,
             },
           },
         });
@@ -162,10 +163,10 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
         const result = await createTrip({
           variables: {
             input: {
-              name: formData.name.trim(),
-              description: formData.description.trim(),
-              regionId: formData.regionId.trim(),
-              countryIds: formData.countryIds,
+              name: data.name.trim(),
+              description: data.description.trim(),
+              regionId: data.regionId.trim(),
+              countryIds: data.countryIds,
             },
           },
         });
@@ -181,12 +182,10 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
     } catch (error) {
       console.error("Error submitting trip:", error);
       toast.error("An error occurred while saving the trip");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const selectedCountries = formData.countryIds.map(id => 
+  const selectedCountries = watchedCountryIds.map(id => 
     countries.find((country: Country) => country.iso === id)
   ).filter(Boolean) as Country[];
 
@@ -203,10 +202,10 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 overflow-y-auto max-h-[calc(90vh-120px)] px-1">
+        <form onSubmit={handleSubmit} className="space-y-6 overflow-y-auto max-h-[calc(90vh-120px)] px-1 pb-4">
           {/* Basic Information */}
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="name">Trip Name *</Label>
               <Input
                 id="name"
@@ -217,7 +216,7 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
               />
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="description">Description *</Label>
               <Textarea
                 id="description"
@@ -229,7 +228,7 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
               />
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="regionId">Region ID *</Label>
               <Input
                 id="regionId"
@@ -255,89 +254,81 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
               </p>
             </div>
 
-            {/* Selected Countries */}
-            {selectedCountries.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Selected Countries</Label>
-                <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg">
-                  {selectedCountries.map((country) => (
-                    <Badge
-                      key={country.iso}
-                      variant="secondary"
-                      className="flex items-center gap-2"
+            {/* Countries Selection Area */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-3 p-4 bg-muted/30 rounded-lg min-h-[60px]">
+                {/* Selected Countries */}
+                {selectedCountries.map((country) => (
+                  <Badge
+                    key={country.iso}
+                    variant="secondary"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium"
+                  >
+                    <span className="text-base">{country.flag}</span>
+                    <span>{country.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCountry(country.iso)}
+                      className="ml-1 hover:bg-destructive hover:text-destructive-foreground rounded-full p-1 transition-colors"
                     >
-                      <span>{country.flag}</span>
-                      <span>{country.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCountry(country.iso)}
-                        className="ml-1 hover:bg-destructive hover:text-destructive-foreground rounded-full p-0.5"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Country Search */}
-            <div className="relative">
-              <Label htmlFor="countrySearch">Add Countries</Label>
-              <div className="relative">
-                <Input
-                  id="countrySearch"
-                  value={countrySearch}
-                  onChange={(e) => {
-                    setCountrySearch(e.target.value);
-                    setShowCountryDropdown(e.target.value.length > 0);
-                  }}
-                  onFocus={() => setShowCountryDropdown(countrySearch.length > 0)}
-                  onBlur={() => {
-                    // Delay to allow click on dropdown items
-                    setTimeout(() => setShowCountryDropdown(false), 200);
-                  }}
-                  placeholder="Search by country name or code..."
-                  autoComplete="off"
-                />
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                
+                {/* Add Country Button */}
+                <Popover open={showCountryPopover} onOpenChange={setShowCountryPopover}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-dashed border-2 px-3 py-2 text-sm font-medium hover:bg-muted/50"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Country
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search by country name or code..."
+                        value={countrySearch}
+                        onValueChange={setCountrySearch}
+                      />
+                      <CommandList>
+                        <CommandEmpty>No countries found.</CommandEmpty>
+                        <CommandGroup>
+                          {filteredCountries.slice(0, 20).map((country: Country) => (
+                            <CommandItem
+                              key={country.iso}
+                              value={`${country.name} ${country.iso} ${country.nameHebrew}`}
+                              onSelect={() => handleAddCountry(country.iso)}
+                              disabled={watchedCountryIds.includes(country.iso)}
+                              className={watchedCountryIds.includes(country.iso) ? "opacity-50" : ""}
+                            >
+                              <span className="text-lg mr-2">{country.flag}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium truncate">{country.name}</div>
+                                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                  <span className="font-mono">{country.iso}</span>
+                                  <span>•</span>
+                                  <span className="truncate">{country.nameHebrew}</span>
+                                </div>
+                              </div>
+                              {watchedCountryIds.includes(country.iso) ? (
+                                <Check className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <Plus className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
-
-            {/* Country Dropdown */}
-            {showCountryDropdown && filteredCountries.length > 0 && (
-              <div className="absolute z-50 w-full max-h-60 overflow-y-auto bg-background border rounded-lg shadow-lg">
-                {filteredCountries.slice(0, 20).map((country: Country) => (
-                  <button
-                    key={country.iso}
-                    type="button"
-                    onClick={() => handleAddCountry(country.iso)}
-                    disabled={formData.countryIds.includes(country.iso)}
-                    className={`w-full flex items-center gap-3 p-3 text-left hover:bg-muted transition-colors border-b last:border-b-0 ${
-                      formData.countryIds.includes(country.iso) 
-                        ? "bg-muted opacity-60 cursor-not-allowed" 
-                        : "cursor-pointer"
-                    }`}
-                  >
-                    <span className="text-lg">{country.flag}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{country.name}</div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-2">
-                        <span className="font-mono">{country.iso}</span>
-                        <span>•</span>
-                        <span className="truncate">{country.nameHebrew}</span>
-                      </div>
-                    </div>
-                    {formData.countryIds.includes(country.iso) ? (
-                      <Badge variant="outline" className="text-xs">
-                        Selected
-                      </Badge>
-                    ) : (
-                      <Plus className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Form Actions */}
@@ -354,7 +345,7 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
             <Button
               type="submit"
               className="flex-1"
-              disabled={isSubmitting || formData.countryIds.length === 0}
+              disabled={isSubmitting || watchedCountryIds.length === 0}
             >
               {isSubmitting ? "Saving..." : trip ? "Update Trip" : "Create Trip"}
             </Button>
