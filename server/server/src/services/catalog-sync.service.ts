@@ -1,18 +1,24 @@
 import { CatalogueDataSource } from '../datasources/esim-go/catalogue-datasource';
 import { ESIMGoDataPlan } from '../datasources/esim-go/types';
+import { cleanEnv, str } from "envalid";
+
+const env = cleanEnv(process.env, {
+  ESIM_GO_API_KEY: str({ desc: "The API key for the eSIM Go API" }),
+});
 
 export class CatalogSyncService {
   private catalogueDataSource: CatalogueDataSource;
   private syncInterval: NodeJS.Timeout | null = null;
   
-  // Official bundle groups from eSIM Go
+  // Test without bundle group filtering first
   private readonly BUNDLE_GROUPS = [
+    'Standard eSIM Bundles',
     'Standard - Fixed',
     'Standard - Unlimited Lite', 
     'Standard - Unlimited Essential',
     'Standard - Unlimited Plus',
     'Standard - Long Duration Bundle',
-    'Regional Bundels'
+    'Regional Bundles',
   ];
 
   constructor(catalogueDataSource: CatalogueDataSource) {
@@ -39,9 +45,14 @@ export class CatalogSyncService {
             bundles: ESIMGoDataPlan[];
             totalCount: number;
           }>('/v2.5/catalogue', {
-            perPage: 200,
+            perPage: 50,
+            
             page: page,
             countries: countryId.toUpperCase()
+          }, {
+            headers: {
+              'X-API-Key': env.ESIM_GO_API_KEY,
+            },
           });
           
           if (response.bundles.length === 0) {
@@ -53,7 +64,7 @@ export class CatalogSyncService {
           console.log(`📄 ${countryId} page ${page}: ${response.bundles.length} bundles, durations: ${[...new Set(response.bundles.map(b => b.duration))]}`);
           
           // Stop if we got less than a full page (indicates last page)
-          hasMore = response.bundles.length === 200;
+          hasMore = response.bundles.length === 100;
           page++;
           
           // Safety limit to prevent infinite loops
@@ -132,40 +143,54 @@ export class CatalogSyncService {
         syncVersion: this.getCurrentMonthVersion()
       };
       
-      // Fetch each bundle group separately (as recommended by eSIM Go)
-      for (const groupName of this.BUNDLE_GROUPS) {
-        console.log(`📦 Syncing bundle group: ${groupName}`);
+      // Fallback to multi-page fetching while waiting for group filtering access
+      console.log(`📦 Using multi-page fallback (waiting for group filtering access)...`);
+      
+      try {
+        const allBundles: ESIMGoDataPlan[] = [];
+        let page = 1;
+        let hasMore = true;
         
-        try {
+        // Fetch multiple pages to get diverse bundles
+        while (hasMore && page <= 5) {
           const response = await this.catalogueDataSource.getWithErrorHandling<{
             bundles: ESIMGoDataPlan[];
             totalCount: number;
           }>('/v2.5/catalogue', {
-            group: groupName,
-            perPage: 200
+            perPage: 50,
+            page: page
           });
           
-          if (response.bundles.length > 0) {
-            // Store by group with 30-day TTL (monthly updates)
-            const groupKey = this.getGroupKey(groupName);
-            await this.catalogueDataSource.cache?.set(groupKey, JSON.stringify(response.bundles), {
-              ttl: 30 * 24 * 60 * 60 // 30 days
-            });
-            
-            // Create indexes for fast lookups
-            await this.createIndexes(response.bundles, groupName);
-            
-            metadata.bundleGroups.push(groupName);
-            metadata.totalBundles += response.bundles.length;
-            
-            const durations = [...new Set(response.bundles.map(b => b.duration))];
-            console.log(`📦 ${groupName}: ${response.bundles.length} bundles, durations: ${durations.sort((a, b) => a - b)}`);
-          } else {
-            console.log(`📦 ${groupName}: No bundles found`);
+          if (response.bundles.length === 0) {
+            console.log(`📄 Page ${page} is empty, stopping`);
+            break;
           }
-        } catch (error) {
-          console.error(`❌ Error syncing group ${groupName}:`, error);
+          
+          allBundles.push(...response.bundles);
+          const durations = [...new Set(response.bundles.map(b => b.duration))];
+          console.log(`📄 Page ${page}: ${response.bundles.length} bundles, durations: ${durations.sort((a, b) => a - b)}`);
+          
+          hasMore = response.bundles.length === 100;
+          page++;
         }
+        
+        if (allBundles.length > 0) {
+          // Store with 30-day TTL (will switch to group-based when access is restored)
+          await this.catalogueDataSource.cache?.set('esim-go:catalog:fallback', JSON.stringify(allBundles), {
+            ttl: 30 * 24 * 60 * 60 // 30 days
+          });
+          
+          // Create indexes for fast lookups
+          await this.createIndexes(allBundles, 'fallback');
+          
+          metadata.bundleGroups.push('fallback');
+          metadata.totalBundles += allBundles.length;
+          
+          const allDurations = [...new Set(allBundles.map(b => b.duration))];
+          console.log(`📦 Fallback complete: ${allBundles.length} bundles, durations: ${allDurations.sort((a, b) => a - b)}`);
+        }
+      } catch (error) {
+        console.error(`❌ Error with fallback sync:`, error);
       }
       
       // Store metadata

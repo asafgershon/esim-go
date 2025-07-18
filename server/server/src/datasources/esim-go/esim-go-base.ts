@@ -1,4 +1,4 @@
-import { RESTDataSource, type DataSourceConfig } from "@apollo/datasource-rest";
+import { RESTDataSource, type DataSourceConfig, type GetRequest } from "@apollo/datasource-rest";
 import type { KeyValueCache } from "@apollo/utils.keyvaluecache";
 import { cleanEnv, str } from "envalid";
 import { GraphQLError } from "graphql";
@@ -49,14 +49,15 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
         },
       });
     }
-    request.headers["X-API-KEY"] = apiKey;
+    console.log(apiKey, 'apiKey')
+    request.headers["X-API-Key"] = apiKey;
     request.headers["Content-Type"] = "application/json";
     
     // Set timeout to prevent hanging requests
     request.timeout = 15000; // 15 seconds
     
     // Set body size limits to handle large API responses
-    request.maxBodyLength = 50 * 1024 * 1024; // 50MB
+    request.maxBodyLength = Infinity
     request.maxContentLength = 50 * 1024 * 1024; // 50MB
   }
 
@@ -86,10 +87,30 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     this.requestCount++;
   }
 
+  protected async get<TResult = any>(
+    path: string,
+    request?: GetRequest<any>,
+  ): Promise<TResult> {
+    return (
+      // console.log(path, 'path'),
+      // console.log(request, 'request',request?.headers, env.ESIM_GO_API_KEY),
+      await this.fetch<TResult>(path, {
+        method: 'GET',
+        ...request,
+        headers: {
+          ...request?.headers,
+          'Content-Type': 'application/json',
+          'X-API-Key': env.ESIM_GO_API_KEY,
+        },
+      })
+    ).parsedBody;
+  }
+
+
   /**
    * Wrapper for GET requests with error handling
    */
-  protected async getWithErrorHandling<T>(
+  async getWithErrorHandling<T>(
     path: string,
     params?: Record<string, any>,
     init: any = {}
