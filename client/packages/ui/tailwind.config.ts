@@ -6,6 +6,12 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'sans': ['Rubik', 'system-ui', '-apple-system', 'sans-serif'], // Default font
+        'hebrew': ['Rubik', 'system-ui', '-apple-system', 'sans-serif'],
+        'english': ['Agency FB', 'Agency', 'Arial', 'sans-serif'],
+        'fallback': ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+      },
       colors: {
         border: "border",
         input: "input",

@@ -53,7 +53,7 @@ export default function Home() {
                     </AvatarFallback>
                   </Avatar>
                 </Link>
-                <span className="text-sm font-medium text-foreground">
+                <span className="text-sm font-medium text-foreground font-hebrew">
                   אזור אישי
                 </span>
                 <Button
@@ -76,13 +76,13 @@ export default function Home() {
       {/* Hero Section with eSIM Selector */}
       <main className="container mx-auto px-4 py-8">
         <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-8 tracking-tight">
+          <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-8 tracking-tight font-hebrew">
             חיבור אינסופי ושקט נפשי
             <span className="block text-primary mt-2">
               אינטרנט ללא הגבלה בחו״ל
             </span>
           </h1>
-          <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed font-hebrew">
             נגמר לכם ה-1GB היומי? אל דאגה, בחצות הוא מתאפס!
             <br />
             <strong className="text-foreground">

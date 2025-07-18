@@ -171,19 +171,16 @@ export function EsimExperienceSelector() {
 
   return (
     <div
-      className="w-full mx-auto max-w-xl bg-card rounded-2xl shadow-lg overflow-hidden"
+      className="w-full mx-auto max-w-xl bg-card rounded-2xl shadow-lg overflow-hidden font-hebrew"
       dir="rtl"
-      style={{
-        fontFamily: '"Segoe UI", "Tahoma", "Helvetica Neue", Arial, sans-serif',
-      }}
     >
       {/* Header */}
       <div className="bg-gradient-to-r from-muted to-secondary p-6 text-center">
         <div className="text-2xl mb-2">🌍</div>
-        <h1 className="text-xl font-bold text-card-foreground mb-1">
+        <h1 className="text-xl font-bold text-card-foreground mb-1 font-hebrew">
           חבילות eSIM לטיולים
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground font-hebrew">
           חיבור מושלם בכל מקום בעולם
         </p>
       </div>
@@ -193,7 +190,7 @@ export function EsimExperienceSelector() {
         <button
           onClick={() => handleTabChange("countries")}
           className={cn(
-            "flex-1 py-3 px-4 text-sm font-medium rounded-lg transition-all duration-200",
+            "flex-1 py-3 px-4 text-sm font-medium rounded-lg transition-all duration-200 font-hebrew",
             activeTab === "countries"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
@@ -204,7 +201,7 @@ export function EsimExperienceSelector() {
         <button
           onClick={() => handleTabChange("trips")}
           className={cn(
-            "flex-1 py-3 px-4 text-sm font-medium rounded-lg transition-all duration-200",
+            "flex-1 py-3 px-4 text-sm font-medium rounded-lg transition-all duration-200 font-hebrew",
             activeTab === "trips"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
