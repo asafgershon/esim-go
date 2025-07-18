@@ -49,9 +49,20 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
         },
       });
     }
-    console.log(apiKey, 'apiKey')
+    
+    // Set headers
     request.headers["X-API-Key"] = apiKey;
     request.headers["Content-Type"] = "application/json";
+    request.headers["User-Agent"] = "curl/8.7.1"; // Mimic curl user agent
+    
+    // Debug: Log the final request details
+    console.log('🔍 Final Request Details:', {
+      url: this.baseURL + _path,
+      method: request.method || 'GET',
+      headers: request.headers,
+      apiKeyLength: apiKey.length,
+      allHeaders: Object.keys(request.headers).sort()
+    });
     
     // Set timeout to prevent hanging requests
     request.timeout = 15000; // 15 seconds
@@ -91,17 +102,11 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     path: string,
     request?: GetRequest<any>,
   ): Promise<TResult> {
+    // willSendRequest already sets the headers, so we don't need to duplicate them here
     return (
-      // console.log(path, 'path'),
-      // console.log(request, 'request',request?.headers, env.ESIM_GO_API_KEY),
       await this.fetch<TResult>(path, {
         method: 'GET',
         ...request,
-        headers: {
-          ...request?.headers,
-          'Content-Type': 'application/json',
-          'X-API-Key': env.ESIM_GO_API_KEY,
-        },
       })
     ).parsedBody;
   }
@@ -116,12 +121,38 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     init: any = {}
   ): Promise<T> {
     try {
-      return await this.get<T>(path, {
-        params,
-        ...init,
-        timeout: 15000, // 15 second timeout
+      // TEMPORARY: Use native fetch to test if Apollo is the issue
+      console.log('🧪 Testing with native fetch...');
+      const url = new URL(path, this.baseURL);
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          url.searchParams.append(key, String(value));
+        });
+      }
+      
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'X-API-Key': env.ESIM_GO_API_KEY,
+          'Content-Type': 'application/json',
+          'User-Agent': 'curl/8.7.1',
+        },
+        signal: AbortSignal.timeout(15000),
       });
+      
+      if (!response.ok) {
+        console.log('❌ Native fetch failed:', response.status, response.statusText);
+        const errorBody = await response.text();
+        console.log('Error body:', errorBody);
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Native fetch succeeded!');
+      return result;
+      
     } catch (error: any) {
+      console.log('❌ Native fetch error:', error.message);
       this.log.error('eSIM Go API error', error);
       this.handleApiError(error);
       throw error; // This line won't be reached but TypeScript needs it
