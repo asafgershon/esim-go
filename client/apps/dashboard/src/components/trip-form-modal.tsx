@@ -202,41 +202,62 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 overflow-y-auto max-h-[calc(90vh-120px)] px-1 pb-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 overflow-y-auto max-h-[calc(90vh-120px)] px-1 pb-4">
           {/* Basic Information */}
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Trip Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., European Adventure"
-                required
+              <Controller
+                name="name"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="name"
+                    placeholder="e.g., European Adventure"
+                    {...field}
+                  />
+                )}
               />
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="description">Description *</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Enter trip description..."
-                rows={3}
-                required
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    id="description"
+                    placeholder="Enter trip description..."
+                    rows={3}
+                    {...field}
+                  />
+                )}
               />
+              {errors.description && (
+                <p className="text-sm text-destructive">{errors.description.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="regionId">Region ID *</Label>
-              <Input
-                id="regionId"
-                value={formData.regionId}
-                onChange={(e) => setFormData(prev => ({ ...prev, regionId: e.target.value }))}
-                placeholder="e.g., europe, asia, north-america"
-                required
+              <Controller
+                name="regionId"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="regionId"
+                    placeholder="e.g., europe, asia, north-america"
+                    {...field}
+                  />
+                )}
               />
+              {errors.regionId && (
+                <p className="text-sm text-destructive">{errors.regionId.message}</p>
+              )}
             </div>
           </div>
 
@@ -247,7 +268,7 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
             <div>
               <Label className="text-base font-semibold flex items-center gap-2">
                 <Globe className="h-4 w-4" />
-                Countries ({formData.countryIds.length})
+                Countries ({watchedCountryIds.length})
               </Label>
               <p className="text-sm text-muted-foreground">
                 Select countries to include in this trip
