@@ -31,6 +31,7 @@ import {
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook, PricingService } from "./services";
 import { CatalogSyncService } from "./services/catalog-sync.service";
+import { CatalogBackupService } from "./services/catalog-backup.service";
 import {
   CheckoutSessionRepository,
   OrderRepository,
@@ -282,11 +283,20 @@ async function startServer() {
     const PORT = process.env.PORT || 4000;
 
     // Now that our HTTP server is fully set up, we can listen to it
-    httpServer.listen(PORT, () => {
+    httpServer.listen(PORT, async () => {
       console.log(
         `🚀 eSIM Go Server is now running on http://localhost:${PORT}/graphql`
       );
       console.log(`🔗 WebSocket endpoint: ws://localhost:${PORT}/graphql`);
+      
+      // Initialize backup service and load backup data
+      const catalogBackupService = new CatalogBackupService(redis);
+      try {
+        await catalogBackupService.loadBackupData();
+      } catch (error) {
+        console.error('Failed to load backup data:', error);
+        // Don't fail server startup if backup loading fails
+      }
       
       // Start catalog sync service
       const catalogueDataSource = new CatalogueDataSource();

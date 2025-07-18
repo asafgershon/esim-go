@@ -1,11 +1,18 @@
 import { ESIMGoDataSource } from "./esim-go-base";
 import type { ESIMGoDataPlan } from "./types";
+import { CatalogBackupService } from "../../services/catalog-backup.service";
 
 /**
  * DataSource for eSIM Go Catalogue API
  * Handles browsing and searching available data plans
  */
 export class CatalogueDataSource extends ESIMGoDataSource {
+  private backupService: CatalogBackupService;
+
+  constructor(config?: any) {
+    super(config);
+    this.backupService = new CatalogBackupService(this.cache);
+  }
   /**
    * Get all available data plans
    * Caches for 1 hour as plans don't change frequently
@@ -312,6 +319,85 @@ export class CatalogueDataSource extends ESIMGoDataSource {
    */
   private async fallbackToApiCall(criteria: any): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string }> {
     console.log('🔄 Falling back to API call...');
+    
+    try {
+      // First try the API call
+      return await this.performApiCall(criteria);
+    } catch (error) {
+      this.log.error('API call failed, trying backup data:', error);
+      
+      // If API fails, try backup data
+      const backupData = await this.getBackupData(criteria);
+      if (backupData.bundles.length > 0) {
+        console.log('✅ Using backup data as fallback');
+        return backupData;
+      }
+      
+      // If no backup data, re-throw the original error
+      throw error;
+    }
+  }
+
+  /**
+   * Get backup data based on criteria
+   */
+  private async getBackupData(criteria: any): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string }> {
+    let bundles: ESIMGoDataPlan[] = [];
+    
+    // Check if backup data is available
+    const hasBackup = await this.backupService.hasBackupData();
+    if (!hasBackup) {
+      console.log('⚠️ No backup data available');
+      return { bundles: [], totalCount: 0 };
+    }
+    
+    // Get backup data based on criteria
+    if (criteria.country) {
+      bundles = await this.backupService.getBackupPlansForCountry(criteria.country);
+    } else if (criteria.bundleGroup) {
+      bundles = await this.backupService.getBackupPlansByGroup(criteria.bundleGroup);
+    } else {
+      // Get all available backup data
+      const metadata = await this.backupService.getBackupMetadata();
+      if (metadata) {
+        // We don't have a method to get all backup data, so we'll try common bundle groups
+        const commonGroups = ['Standard - Fixed', 'Standard - Unlimited Lite', 'Standard - Unlimited Essential'];
+        for (const group of commonGroups) {
+          const groupBundles = await this.backupService.getBackupPlansByGroup(group);
+          bundles.push(...groupBundles);
+        }
+      }
+    }
+    
+    // Apply additional filters
+    if (criteria.duration !== undefined) {
+      bundles = bundles.filter(b => b.duration === criteria.duration);
+    }
+    if (criteria.search) {
+      bundles = bundles.filter(b => 
+        b.name.toLowerCase().includes(criteria.search.toLowerCase()) ||
+        b.description?.toLowerCase().includes(criteria.search.toLowerCase())
+      );
+    }
+    
+    // Apply pagination
+    const limit = criteria.limit || 50;
+    const offset = criteria.offset || 0;
+    const paginatedBundles = bundles.slice(offset, offset + limit);
+    
+    const metadata = await this.backupService.getBackupMetadata();
+    
+    return {
+      bundles: paginatedBundles,
+      totalCount: bundles.length,
+      lastFetched: metadata?.lastLoaded || new Date().toISOString()
+    };
+  }
+
+  /**
+   * Perform the actual API call
+   */
+  private async performApiCall(criteria: any): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string }> {
     // Keep the existing API call logic as fallback
     
     const cacheKey = this.getCacheKey("catalogue:search", criteria);
