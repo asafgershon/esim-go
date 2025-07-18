@@ -1,0 +1,165 @@
+[
+  {
+    "country": "Americas",
+    "countryCode": "AR;BR;CL;CO;CR;EC;SV;PE;UY;GF;MX",
+    "bundleGroup": "Standard - Unlimited Lite",
+    "region": "Americas",
+    "plans": [
+      {"dataAllowance": "Unlimited", "duration": 1, "price": 4.63, "esimRef": "esim_UL_1D_RLA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 3, "price": 12.79, "esimRef": "esim_UL_3D_RLA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 5, "price": 20.95, "esimRef": "esim_UL_5D_RLA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 7, "price": 29.11, "esimRef": "esim_UL_7D_RLA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 10, "price": 41.35, "esimRef": "esim_UL_10D_RLA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 15, "price": 61.75, "esimRef": "esim_UL_15D_RLA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 30, "price": 122.95, "esimRef": "esim_UL_30D_RLA_V2"}
+    ]
+  },
+  {
+    "country": "Argentina",
+    "countryCode": "AR",
+    "bundleGroup": "Standard - Unlimited Lite",
+    "region": "South America",
+    "plans": [
+      {"dataAllowance": "Unlimited", "duration": 1, "price": 4.54, "esimRef": "esim_UL_1D_AR_V2"},
+      {"dataAllowance": "Unlimited", "duration": 3, "price": 12.53, "esimRef": "esim_UL_3D_AR_V2"},
+      {"dataAllowance": "Unlimited", "duration": 5, "price": 20.51, "esimRef": "esim_UL_5D_AR_V2"},
+      {"dataAllowance": "Unlimited", "duration": 7, "price": 28.50, "esimRef": "esim_UL_7D_AR_V2"},
+      {"dataAllowance": "Unlimited", "duration": 10, "price": 40.48, "esimRef": "esim_UL_10D_AR_V2"},
+      {"dataAllowance": "Unlimited", "duration": 15, "price": 60.44, "esimRef": "esim_UL_15D_AR_V2"},
+      {"dataAllowance": "Unlimited", "duration": 30, "price": 120.34, "esimRef": "esim_UL_30D_AR_V2"}
+    ]
+  },
+  {
+    "country": "Asia",
+    "countryCode": "AU;HK;ID;KR;MO;MY;PK;SG;LK;TW;TH;UZ;VN;NZ",
+    "bundleGroup": "Standard - Unlimited Lite",
+    "region": "Asia",
+    "plans": [
+      {"dataAllowance": "Unlimited", "duration": 1, "price": 4.00, "esimRef": "esim_UL_1D_RAS_V2"},
+      {"dataAllowance": "Unlimited", "duration": 3, "price": 10.90, "esimRef": "esim_UL_3D_RAS_V2"},
+      {"dataAllowance": "Unlimited", "duration": 5, "price": 17.80, "esimRef": "esim_UL_5D_RAS_V2"},
+      {"dataAllowance": "Unlimited", "duration": 7, "price": 24.70, "esimRef": "esim_UL_7D_RAS_V2"},
+      {"dataAllowance": "Unlimited", "duration": 10, "price": 35.05, "esimRef": "esim_UL_10D_RAS_V2"},
+      {"dataAllowance": "Unlimited", "duration": 15, "price": 52.30, "esimRef": "esim_UL_15D_RAS_V2"},
+      {"dataAllowance": "Unlimited", "duration": 30, "price": 104.05, "esimRef": "esim_UL_30D_RAS_V2"}
+    ]
+  },
+  {
+    "country": "Australia",
+    "countryCode": "AU",
+    "bundleGroup": "Standard - Unlimited Lite",
+    "region": "Oceania",
+    "plans": [
+      {"dataAllowance": "Unlimited", "duration": 1, "price": 2.23, "esimRef": "esim_UL_1D_AU_V2"},
+      {"dataAllowance": "Unlimited", "duration": 3, "price": 5.97, "esimRef": "esim_UL_3D_AU_V2"},
+      {"dataAllowance": "Unlimited", "duration": 5, "price": 9.58, "esimRef": "esim_UL_5D_AU_V2"},
+      {"dataAllowance": "Unlimited", "duration": 7, "price": 13.20, "esimRef": "esim_UL_7D_AU_V2"},
+      {"dataAllowance": "Unlimited", "duration": 10, "price": 18.15, "esimRef": "esim_UL_10D_AU_V2"},
+      {"dataAllowance": "Unlimited", "duration": 15, "price": 26.95, "esimRef": "esim_UL_15D_AU_V2"},
+      {"dataAllowance": "Unlimited", "duration": 30, "price": 54.55, "esimRef": "esim_UL_30D_AU_V2"}
+    ]
+  },
+  {
+    "country": "United States of America",
+    "countryCode": "US",
+    "bundleGroup": "Standard - Unlimited Lite",
+    "region": "North America",
+    "plans": [
+      {"dataAllowance": "Unlimited", "duration": 1, "price": 2.30, "esimRef": "esim_UL_1D_US_V2"},
+      {"dataAllowance": "Unlimited", "duration": 3, "price": 5.99, "esimRef": "esim_UL_3D_US_V2"},
+      {"dataAllowance": "Unlimited", "duration": 5, "price": 9.58, "esimRef": "esim_UL_5D_US_V2"},
+      {"dataAllowance": "Unlimited", "duration": 7, "price": 13.20, "esimRef": "esim_UL_7D_US_V2"},
+      {"dataAllowance": "Unlimited", "duration": 10, "price": 18.26, "esimRef": "esim_UL_10D_US_V2"},
+      {"dataAllowance": "Unlimited", "duration": 15, "price": 27.11, "esimRef": "esim_UL_15D_US_V2"},
+      {"dataAllowance": "Unlimited", "duration": 30, "price": 53.59, "esimRef": "esim_UL_30D_US_V2"}
+    ]
+  },
+  {
+    "country": "Global",
+    "countryCode": "AT;DK;IE;IT;SE;IM;FR;BG;CY;EE;FI;GR;HU;LV;LT;NL;NO;PL;RO;SK;ES;GB;TR;DE;MT;CH;BE;HR;CZ;LI;LU;PT;SI;IS;UA;JE;SG;MO;HK;IL;AX;ID;VN;RU;AE;AU;TH;TW;LK;MY;PK;UZ;EG;NZ;AL;KR;CA;KZ;MD;MK;KW;MX;GG;JO;OM;GI;MA;BR;CL;RS;JP;ME;GU;US;TZ;UG;CR;EC;NI;IN;AR;SV;PE;UY;CN;PA;RE;TN;BA;ZA;ZM;MG;NG;KE;AD;IQ;QA;SC;MU;CO;GT;CM;GY;SA;PY;BO",
+    "bundleGroup": "Standard - Unlimited Lite",
+    "region": "Global",
+    "plans": [
+      {"dataAllowance": "Unlimited", "duration": 1, "price": 11.27, "esimRef": "esim_UL_1D_RGB_V2"},
+      {"dataAllowance": "Unlimited", "duration": 3, "price": 32.72, "esimRef": "esim_UL_3D_RGB_V2"},
+      {"dataAllowance": "Unlimited", "duration": 5, "price": 54.17, "esimRef": "esim_UL_5D_RGB_V2"},
+      {"dataAllowance": "Unlimited", "duration": 7, "price": 75.62, "esimRef": "esim_UL_7D_RGB_V2"},
+      {"dataAllowance": "Unlimited", "duration": 10, "price": 107.80, "esimRef": "esim_UL_10D_RGB_V2"}
+    ]
+  },
+  {
+    "country": "EU+",
+    "countryCode": "AT;DK;IE;IT;SE;FR;BG;CY;EE;FI;GR;HU;LV;LT;NL;NO;PL;RO;SK;ES;GB;TR;DE;MT;CH;BE;HR;CZ;LI;LU;PT;SI;IS;IC;VA;CYP",
+    "bundleGroup": "Standard - Unlimited Lite",
+    "region": "Europe",
+    "plans": [
+      {"dataAllowance": "Unlimited", "duration": 1, "price": 1.87, "esimRef": "esim_UL_1D_REUP_V2"},
+      {"dataAllowance": "Unlimited", "duration": 3, "price": 4.25, "esimRef": "esim_UL_3D_REUP_V2"},
+      {"dataAllowance": "Unlimited", "duration": 5, "price": 6.90, "esimRef": "esim_UL_5D_REUP_V2"},
+      {"dataAllowance": "Unlimited", "duration": 7, "price": 9.45, "esimRef": "esim_UL_7D_REUP_V2"},
+      {"dataAllowance": "Unlimited", "duration": 10, "price": 13.45, "esimRef": "esim_UL_10D_REUP_V2"},
+      {"dataAllowance": "Unlimited", "duration": 15, "price": 19.70, "esimRef": "esim_UL_15D_REUP_V2"},
+      {"dataAllowance": "Unlimited", "duration": 30, "price": 38.50, "esimRef": "esim_UL_30D_REUP_V2"}
+    ]
+  },
+  {
+    "country": "Europe Lite",
+    "countryCode": "AT;DK;IE;IT;SE;FR;BG;CY;EE;FI;GR;HU;LV;LT;NL;NO;PL;RO;SK;ES;DE;MT;CH;BE;HR;CZ;LI;LU;PT;SI;IS;IC;VA",
+    "bundleGroup": "Standard - Unlimited Lite",
+    "region": "Europe",
+    "plans": [
+      {"dataAllowance": "Unlimited", "duration": 1, "price": 1.77, "esimRef": "esim_UL_1D_REUL_V2"},
+      {"dataAllowance": "Unlimited", "duration": 3, "price": 4.10, "esimRef": "esim_UL_3D_REUL_V2"},
+      {"dataAllowance": "Unlimited", "duration": 5, "price": 6.65, "esimRef": "esim_UL_5D_REUL_V2"},
+      {"dataAllowance": "Unlimited", "duration": 7, "price": 9.15, "esimRef": "esim_UL_7D_REUL_V2"},
+      {"dataAllowance": "Unlimited", "duration": 10, "price": 12.50, "esimRef": "esim_UL_10D_REUL_V2"},
+      {"dataAllowance": "Unlimited", "duration": 15, "price": 17.85, "esimRef": "esim_UL_15D_REUL_V2"},
+      {"dataAllowance": "Unlimited", "duration": 30, "price": 35.70, "esimRef": "esim_UL_30D_REUL_V2"}
+    ]
+  },
+  {
+    "country": "North America",
+    "countryCode": "CA;MX;US",
+    "bundleGroup": "Standard - Unlimited Lite",
+    "region": "North America",
+    "plans": [
+      {"dataAllowance": "Unlimited", "duration": 1, "price": 3.92, "esimRef": "esim_UL_1D_RNA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 3, "price": 10.53, "esimRef": "esim_UL_3D_RNA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 5, "price": 17.20, "esimRef": "esim_UL_5D_RNA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 7, "price": 23.85, "esimRef": "esim_UL_7D_RNA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 10, "price": 33.80, "esimRef": "esim_UL_10D_RNA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 15, "price": 50.50, "esimRef": "esim_UL_15D_RNA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 30, "price": 99.99, "esimRef": "esim_UL_30D_RNA_V2"}
+    ]
+  },
+  {
+    "country": "Middle East & Africa",
+    "countryCode": "EG;IL;JO;KW;MA;OM;TR;AE",
+    "bundleGroup": "Standard - Unlimited Lite",
+    "region": "Middle East",
+    "plans": [
+      {"dataAllowance": "Unlimited", "duration": 1, "price": 5.35, "esimRef": "esim_UL_1D_RME_V2"},
+      {"dataAllowance": "Unlimited", "duration": 3, "price": 14.95, "esimRef": "esim_UL_3D_RME_V2"},
+      {"dataAllowance": "Unlimited", "duration": 5, "price": 24.55, "esimRef": "esim_UL_5D_RME_V2"},
+      {"dataAllowance": "Unlimited", "duration": 7, "price": 34.15, "esimRef": "esim_UL_7D_RME_V2"},
+      {"dataAllowance": "Unlimited", "duration": 10, "price": 48.55, "esimRef": "esim_UL_10D_RME_V2"},
+      {"dataAllowance": "Unlimited", "duration": 15, "price": 72.55, "esimRef": "esim_UL_15D_RME_V2"},
+      {"dataAllowance": "Unlimited", "duration": 30, "price": 144.55, "esimRef": "esim_UL_30D_RME_V2"}
+    ]
+  },
+  {
+    "country": "Middle East and North Africa",
+    "countryCode": "AE;BH;EG;IL;MA;SA;TN",
+    "bundleGroup": "Standard - Unlimited Lite",
+    "region": "Middle East",
+    "plans": [
+      {"dataAllowance": "Unlimited", "duration": 1, "price": 4.15, "esimRef": "esim_UL_1D_RMENA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 3, "price": 11.75, "esimRef": "esim_UL_3D_RMENA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 5, "price": 18.60, "esimRef": "esim_UL_5D_RMENA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 7, "price": 24.15, "esimRef": "esim_UL_7D_RMENA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 10, "price": 35.15, "esimRef": "esim_UL_10D_RMENA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 15, "price": 51.99, "esimRef": "esim_UL_15D_RMENA_V2"},
+      {"dataAllowance": "Unlimited", "duration": 30, "price": 99.99, "esimRef": "esim_UL_30D_RMENA_V2"}
+    ]
+  }
+]
