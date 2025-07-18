@@ -381,6 +381,39 @@ export type Database = {
         }
         Relationships: []
       }
+      trips: {
+        Row: {
+          country_ids: Json
+          created_at: string | null
+          created_by: string | null
+          description: string
+          id: string
+          name: string
+          region_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          country_ids: Json
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          id?: string
+          name: string
+          region_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          country_ids?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          id?: string
+          name?: string
+          region_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       active_bundles: {
@@ -481,6 +514,10 @@ export type Database = {
       cleanup_expired_checkout_sessions: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
       }
       is_checkout_session_complete: {
         Args: { session_id: string }

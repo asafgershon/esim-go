@@ -11,33 +11,42 @@ export const tripsResolvers: Resolvers = {
         const trips = await context.repositories.trips.getAllTrips();
         
         // Convert database format to GraphQL format
-        return trips.map(trip => ({
-          id: trip.id,
-          name: trip.name,
-          description: trip.description,
-          regionId: trip.region_id,
-          countryIds: trip.country_ids,
-          countries: trip.country_ids.map(countryId => {
-            // Find country details from context data sources
-            const country = context.dataSources.countries.getCountryByCode(countryId);
-            return country ? {
-              iso: country.iso,
-              name: country.name,
-              nameHebrew: country.hebrewName || country.name,
-              region: country.region,
-              flag: country.flag,
-            } : {
-              iso: countryId,
-              name: countryId,
-              nameHebrew: countryId,
-              region: '',
-              flag: '',
-            };
-          }),
-          createdAt: trip.created_at,
-          updatedAt: trip.updated_at,
-          createdBy: trip.created_by,
-        }));
+        return trips.map(trip => {
+          // Ensure country_ids is an array (parse from JSON if needed)
+          const countryIds = Array.isArray(trip.country_ids) 
+            ? trip.country_ids 
+            : typeof trip.country_ids === 'string' 
+              ? JSON.parse(trip.country_ids) 
+              : [];
+
+          return {
+            id: trip.id,
+            name: trip.name,
+            description: trip.description,
+            regionId: trip.region_id,
+            countryIds: countryIds,
+            countries: countryIds.map(countryId => {
+              // Find country details from context data sources
+              const country = context.dataSources.countries.getCountryByCode(countryId);
+              return country ? {
+                iso: country.iso,
+                name: country.name,
+                nameHebrew: country.hebrewName || country.name,
+                region: country.region,
+                flag: country.flag,
+              } : {
+                iso: countryId,
+                name: countryId,
+                nameHebrew: countryId,
+                region: '',
+                flag: '',
+              };
+            }),
+            createdAt: trip.created_at,
+            updatedAt: trip.updated_at,
+            createdBy: trip.created_by,
+          };
+        });
       } catch (error) {
         console.error('Error fetching trips in resolver:', error);
         throw new GraphQLError('Failed to fetch trips', {
@@ -66,7 +75,7 @@ export const tripsResolvers: Resolvers = {
         }
 
         // Validate country codes exist
-        const validCountries = context.dataSources.countries.getCountries();
+        const validCountries = await context.dataSources.countries.getCountries();
         const validCountryCodes = validCountries.map(c => c.iso);
         const invalidCountries = input.countryIds.filter(id => !validCountryCodes.includes(id));
         
@@ -150,7 +159,7 @@ export const tripsResolvers: Resolvers = {
         }
 
         // Validate country codes exist
-        const validCountries = context.dataSources.countries.getCountries();
+        const validCountries = await context.dataSources.countries.getCountries();
         const validCountryCodes = validCountries.map(c => c.iso);
         const invalidCountries = input.countryIds.filter(id => !validCountryCodes.includes(id));
         

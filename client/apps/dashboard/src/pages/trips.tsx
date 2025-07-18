@@ -1,18 +1,40 @@
 import { useState, useMemo } from 'react'
-import { useQuery } from '@apollo/client'
+import { useQuery, useMutation } from '@apollo/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
 import { Input } from '@workspace/ui/components/input'
 import { Skeleton } from '@workspace/ui/components/skeleton'
-import { MapPin, Edit2, Plus, Search, AlertCircle } from 'lucide-react'
-import { GET_TRIPS } from '@/lib/graphql/queries'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@workspace/ui/components/dropdown-menu'
+import { MapPin, Edit2, Plus, Search, AlertCircle, MoreHorizontal, Trash2 } from 'lucide-react'
+import { GET_TRIPS, DELETE_TRIP } from '@/lib/graphql/queries'
+import { TripFormModal } from '@/components/trip-form-modal'
+import { toast } from 'sonner'
+
+interface Country {
+  iso: string
+  name: string
+  nameHebrew: string
+  region: string
+  flag: string
+}
 
 interface Trip {
+  id: string
   name: string
   description: string
   regionId: string
   countryIds: string[]
+  countries: Country[]
+  createdAt: string
+  updatedAt: string
+  createdBy?: string
 }
 
 // Map for region names to Hebrew names (from the description field)
@@ -41,7 +63,10 @@ const regionEmojis: Record<string, string> = {
 
 export function TripsPage() {
   const [searchTerm, setSearchTerm] = useState('')
-  const { data, loading, error } = useQuery<{ trips: Trip[] }>(GET_TRIPS)
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false)
+  const { data, loading, error, refetch } = useQuery<{ trips: Trip[] }>(GET_TRIPS)
+  const [deleteTrip] = useMutation(DELETE_TRIP)
 
   const filteredTrips = useMemo(() => {
     if (!data?.trips) return []
@@ -56,6 +81,44 @@ export function TripsPage() {
       )
     })
   }, [data?.trips, searchTerm])
+
+  const handleCreateTrip = () => {
+    setSelectedTrip(null)
+    setIsFormModalOpen(true)
+  }
+
+  const handleEditTrip = (trip: Trip) => {
+    setSelectedTrip(trip)
+    setIsFormModalOpen(true)
+  }
+
+  const handleDeleteTrip = async (trip: Trip) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the trip "${trip.name}"? This action cannot be undone.`
+    )
+    
+    if (!confirmed) return
+
+    try {
+      const result = await deleteTrip({
+        variables: { id: trip.id },
+      })
+
+      if (result.data?.deleteTrip?.success) {
+        toast.success('Trip deleted successfully')
+        refetch()
+      } else {
+        toast.error(result.data?.deleteTrip?.error || 'Failed to delete trip')
+      }
+    } catch (error) {
+      console.error('Error deleting trip:', error)
+      toast.error('An error occurred while deleting the trip')
+    }
+  }
+
+  const handleFormSuccess = () => {
+    refetch()
+  }
 
   if (error) {
     return (
@@ -99,9 +162,9 @@ export function TripsPage() {
             className="pl-10"
           />
         </div>
-        <Button>
+        <Button onClick={handleCreateTrip}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Region
+          Add Trip
         </Button>
       </div>
 
@@ -134,7 +197,7 @@ export function TripsPage() {
             const emoji = regionEmojis[trip.regionId.toLowerCase()] || '🌍'
             
             return (
-              <Card key={trip.regionId}>
+              <Card key={trip.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -145,9 +208,27 @@ export function TripsPage() {
                       </CardTitle>
                       <CardDescription>{hebrewName}</CardDescription>
                     </div>
-                    <Button variant="ghost" size="sm">
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditTrip(trip)}>
+                          <Edit2 className="mr-2 h-4 w-4" />
+                          Edit Trip
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteTrip(trip)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Trip
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -175,6 +256,13 @@ export function TripsPage() {
           })}
         </div>
       )}
+      
+      <TripFormModal
+        open={isFormModalOpen}
+        onOpenChange={setIsFormModalOpen}
+        trip={selectedTrip}
+        onSuccess={handleFormSuccess}
+      />
     </div>
   )
 }
