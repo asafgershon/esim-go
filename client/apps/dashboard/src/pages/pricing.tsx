@@ -1,7 +1,7 @@
 import { Country, PricingConfiguration } from '@/__generated__/graphql';
 import { useLazyQuery, useQuery } from '@apollo/client';
 import React, { useEffect, useState } from 'react';
-import { CountryPricingTable } from '../components/country-pricing-table';
+import { CountryPricingTableGrouped } from '../components/country-pricing-table-grouped';
 import { PricingConfigDrawer } from '../components/pricing-config-drawer';
 import { CALCULATE_BATCH_PRICING, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
 
@@ -273,7 +273,7 @@ const PricingPage: React.FC = () => {
         </div>
       </div>
 
-      <CountryPricingTable 
+      <CountryPricingTableGrouped 
         countries={countryGroups}
         onCountryClick={handleCountryClick}
         onBundleClick={handleBundleClick}
@@ -289,13 +289,13 @@ const PricingPage: React.FC = () => {
       />
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 mb-2">Country-Based Pricing Management</h3>
+        <h3 className="text-sm font-medium text-blue-900 mb-2">Enhanced Pricing Management with Native Grouping</h3>
         <div className="text-sm text-blue-800 space-y-1">
-          <p><strong>Country Row:</strong> Shows total bundles, average price per day, and discount status</p>
-          <p><strong>Click to Expand:</strong> Loads all bundles for that country</p>
-          <p><strong>Configure Button:</strong> Opens pricing configuration for the country</p>
-          <p><strong>Bundle Rows:</strong> Individual bundle pricing details</p>
-          <p><strong>Custom Discount:</strong> Blue badge shows country-specific discount rates</p>
+          <p><strong>Native Grouping:</strong> Use "Group by" button to organize data by country, duration, or other fields</p>
+          <p><strong>Advanced Filtering:</strong> Filter by country, price range, duration, or custom criteria</p>
+          <p><strong>Expand/Collapse:</strong> Expand all or collapse all grouped sections</p>
+          <p><strong>Interactive Rows:</strong> Click any row to configure pricing for that bundle</p>
+          <p><strong>Real-time Data:</strong> All pricing calculated from live eSIM Go API data</p>
         </div>
       </div>
     </div>

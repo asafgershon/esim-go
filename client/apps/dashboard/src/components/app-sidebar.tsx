@@ -7,17 +7,9 @@ import {
   Package,
   Zap,
   DollarSign,
-  Settings,
-  HelpCircle,
-  BarChart3,
-  Database,
-  FileText,
-  Search,
 } from "lucide-react"
 
-import { NavDocuments } from "./nav-documents"
 import { NavMain } from "./nav-main"
-import { NavSecondary } from "./nav-secondary"
 import { NavUser } from "./nav-user"
 import {
   Sidebar,
@@ -72,49 +64,15 @@ const data = {
       icon: DollarSign,
     },
   ],
-  navAnalytics: [
-    {
-      name: "Analytics",
-      url: "/analytics",
-      icon: BarChart3,
-    },
-    {
-      name: "Data Management",
-      url: "/data-management",
-      icon: Database,
-    },
-    {
-      name: "Reports",
-      url: "/reports",
-      icon: FileText,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: Settings,
-    },
-    {
-      title: "Help",
-      url: "/help",
-      icon: HelpCircle,
-    },
-    {
-      title: "Search",
-      url: "/search",
-      icon: Search,
-    },
-  ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+    <Sidebar collapsible="offcanvas" className="border-r" {...props}>
+      <SidebarHeader className="border-b">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="data-[slot=sidebar-menu-button]:!p-1.5">
+            <SidebarMenuButton className="data-[slot=sidebar-menu-button]:!p-3">
               <div className="flex items-center gap-2">
                 <Zap className="h-5 w-5 text-primary" />
                 <span className="text-base font-semibold">
@@ -125,12 +83,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.navAnalytics} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+      <SidebarContent className="flex-1 overflow-y-auto">
+        <div className="p-2">
+          <NavMain items={data.navMain} />
+        </div>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t p-3">
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
