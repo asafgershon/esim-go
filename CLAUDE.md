@@ -13,6 +13,54 @@
 ## Development Practices
 - Always use graphql-codegen
 
+## eSIM Go API Integration Best Practices
+
+### Catalog API Optimization (From Jason Koolman - eSIM Go Support)
+
+**Issue**: High latency when calling the Catalogue endpoint with standard pagination approach.
+
+**Solution**: Use bundle group filtering to reduce API calls and improve performance.
+
+#### Implementation Strategy:
+1. **Bundle Group Filtering**: Use the `group` query parameter to fetch each bundle group separately
+   - Example: `/v2.5/catalogue?group=Standard Fixed&perPage=200`
+   - Available groups: `Standard Fixed`, `Standard - Unlimited Lite`, `Standard - Unlimited Essential`, `Standard - Unlimited Plus`, `Regional Bundles`
+
+2. **Local Caching**: Store responses locally with 30-day TTL
+   - eSIM Go updates catalog monthly with each rate release
+   - Cache key format: `esim-go:catalog:group:{group-name}`
+   - TTL: 30 days (aligned with monthly update cycle)
+
+3. **Reduced API Calls**: 
+   - Instead of paginating through all bundles (potentially 100+ API calls)
+   - Fetch 5 bundle groups (5 API calls total)
+   - Use `perPage=200` to minimize calls per group
+
+#### Benefits:
+- **Reduced Latency**: Fewer API calls required
+- **Better Performance**: Less strain on both client and eSIM Go servers
+- **Organized Data**: Data stored by bundle group for efficient queries
+- **Monthly Sync**: Aligned with eSIM Go's update schedule
+
+#### Fallback Strategy:
+If bundle group filtering fails, system falls back to multi-page pagination approach to ensure reliability.
+
+#### Implementation Location:
+- **Primary**: `server/server/src/services/catalog-sync.service.ts`
+- **Cache Integration**: `server/server/src/datasources/esim-go/catalogue-datasource.ts`
+- **Backup System**: `server/server/src/services/catalog-backup.service.ts`
+
+#### API Request Format:
+```javascript
+// Optimized approach (recommended)
+GET /v2.5/catalogue?group=Standard Fixed&perPage=200
+
+// vs. Previous approach (high latency)
+GET /v2.5/catalogue?perPage=50&page=1
+GET /v2.5/catalogue?perPage=50&page=2
+// ... potentially 100+ more requests
+```
+
 ## Authentication Flow Architecture
 
 ### Overview

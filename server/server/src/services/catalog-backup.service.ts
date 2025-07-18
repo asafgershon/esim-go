@@ -127,6 +127,10 @@ export class CatalogBackupService {
       bundleGroup: bundle.bundleGroup,
       region: bundle.region,
       dataAllowance: plan.dataAllowance,
+      // Add required fields for schema validation
+      dataAmount: this.parseDataAmount(plan.dataAllowance),
+      billingType: 'FixedCost',
+      speed: ['2G', '3G', '4G', '5G'],
       countries: bundle.countryCode.split(';').map(code => ({
         iso: code.trim(),
         name: code === bundle.countryCode ? bundle.country : code.trim(),
@@ -138,6 +142,37 @@ export class CatalogBackupService {
       availableQuantity: 1000, // Default high quantity for backup data
       source: 'backup' // Mark as backup data
     }));
+  }
+
+  /**
+   * Parse data allowance string to number (in MB)
+   */
+  private parseDataAmount(dataAllowance: string): number {
+    const cleaned = dataAllowance.toLowerCase().trim();
+    
+    if (cleaned.includes('unlimited')) {
+      return 999999; // Large number to represent unlimited
+    }
+    
+    // Extract number from string like "1GB", "500MB", etc.
+    const match = cleaned.match(/(\d+(?:\.\d+)?)\s*(gb|mb|tb)?/);
+    if (match) {
+      const amount = parseFloat(match[1]);
+      const unit = match[2] || 'gb'; // Default to GB if no unit specified
+      
+      switch (unit) {
+        case 'tb':
+          return amount * 1024 * 1024; // TB to MB
+        case 'gb':
+          return amount * 1024; // GB to MB
+        case 'mb':
+          return amount; // Already in MB
+        default:
+          return amount * 1024; // Default to GB
+      }
+    }
+    
+    return 1024; // Default to 1GB if parsing fails
   }
 
   /**

@@ -10,14 +10,12 @@ export class CatalogSyncService {
   private catalogueDataSource: CatalogueDataSource;
   private syncInterval: NodeJS.Timeout | null = null;
   
-  // Test without bundle group filtering first
+  // Bundle groups as recommended by Jason from eSIM Go support
   private readonly BUNDLE_GROUPS = [
-    'Standard eSIM Bundles',
-    'Standard - Fixed',
+    'Standard Fixed',
     'Standard - Unlimited Lite', 
     'Standard - Unlimited Essential',
     'Standard - Unlimited Plus',
-    'Standard - Long Duration Bundle',
     'Regional Bundles',
   ];
 
@@ -143,54 +141,101 @@ export class CatalogSyncService {
         syncVersion: this.getCurrentMonthVersion()
       };
       
-      // Fallback to multi-page fetching while waiting for group filtering access
-      console.log(`📦 Using multi-page fallback (waiting for group filtering access)...`);
+      // Implement Jason's recommendation: fetch each bundle group separately
+      console.log(`📦 Implementing Jason's bundle group filtering strategy...`);
       
-      try {
-        const allBundles: ESIMGoDataPlan[] = [];
-        let page = 1;
-        let hasMore = true;
-        
-        // Fetch multiple pages to get diverse bundles
-        while (hasMore && page <= 5) {
+      // First, try the optimized bundle group approach
+      let bundleGroupSuccess = false;
+      
+      for (const groupName of this.BUNDLE_GROUPS) {
+        try {
+          console.log(`📦 Syncing bundle group: ${groupName}`);
+          
           const response = await this.catalogueDataSource.getWithErrorHandling<{
             bundles: ESIMGoDataPlan[];
             totalCount: number;
           }>('/v2.5/catalogue', {
-            perPage: 50,
-            page: page
+            group: groupName,
+            perPage: 200 // Increase to reduce API calls
           });
           
-          if (response.bundles.length === 0) {
-            console.log(`📄 Page ${page} is empty, stopping`);
-            break;
+          if (response.bundles && response.bundles.length > 0) {
+            console.log(`📦 ${groupName}: ${response.bundles.length} bundles`);
+            
+            // Store by group with 30-day TTL as Jason recommended
+            const groupKey = this.getGroupKey(groupName);
+            await this.catalogueDataSource.cache?.set(groupKey, JSON.stringify(response.bundles), {
+              ttl: 30 * 24 * 60 * 60 // 30 days (monthly update cycle)
+            });
+            
+            // Create indexes for this group
+            await this.createIndexes(response.bundles, groupName);
+            
+            metadata.bundleGroups.push(groupName);
+            metadata.totalBundles += response.bundles.length;
+            
+            bundleGroupSuccess = true;
+            
+            const durations = [...new Set(response.bundles.map(b => b.duration))];
+            console.log(`📦 ${groupName} complete: ${response.bundles.length} bundles, durations: ${durations.sort((a, b) => a - b)}`);
+          } else {
+            console.log(`⚠️ ${groupName}: No bundles returned`);
+          }
+        } catch (error) {
+          console.error(`❌ Error syncing group ${groupName}:`, error);
+        }
+      }
+      
+      // If bundle group filtering failed, fall back to multi-page approach
+      if (!bundleGroupSuccess) {
+        console.log(`📦 Bundle group filtering failed, falling back to multi-page approach...`);
+        
+        try {
+          const allBundles: ESIMGoDataPlan[] = [];
+          let page = 1;
+          let hasMore = true;
+          
+          // Fetch multiple pages to get diverse bundles
+          while (hasMore && page <= 5) {
+            const response = await this.catalogueDataSource.getWithErrorHandling<{
+              bundles: ESIMGoDataPlan[];
+              totalCount: number;
+            }>('/v2.5/catalogue', {
+              perPage: 50,
+              page: page
+            });
+            
+            if (response.bundles.length === 0) {
+              console.log(`📄 Page ${page} is empty, stopping`);
+              break;
+            }
+            
+            allBundles.push(...response.bundles);
+            const durations = [...new Set(response.bundles.map(b => b.duration))];
+            console.log(`📄 Page ${page}: ${response.bundles.length} bundles, durations: ${durations.sort((a, b) => a - b)}`);
+            
+            hasMore = response.bundles.length === 50;
+            page++;
           }
           
-          allBundles.push(...response.bundles);
-          const durations = [...new Set(response.bundles.map(b => b.duration))];
-          console.log(`📄 Page ${page}: ${response.bundles.length} bundles, durations: ${durations.sort((a, b) => a - b)}`);
-          
-          hasMore = response.bundles.length === 100;
-          page++;
+          if (allBundles.length > 0) {
+            // Store with 30-day TTL
+            await this.catalogueDataSource.cache?.set('esim-go:catalog:fallback', JSON.stringify(allBundles), {
+              ttl: 30 * 24 * 60 * 60 // 30 days
+            });
+            
+            // Create indexes for fast lookups
+            await this.createIndexes(allBundles, 'fallback');
+            
+            metadata.bundleGroups.push('fallback');
+            metadata.totalBundles += allBundles.length;
+            
+            const allDurations = [...new Set(allBundles.map(b => b.duration))];
+            console.log(`📦 Fallback complete: ${allBundles.length} bundles, durations: ${allDurations.sort((a, b) => a - b)}`);
+          }
+        } catch (error) {
+          console.error(`❌ Error with fallback sync:`, error);
         }
-        
-        if (allBundles.length > 0) {
-          // Store with 30-day TTL (will switch to group-based when access is restored)
-          await this.catalogueDataSource.cache?.set('esim-go:catalog:fallback', JSON.stringify(allBundles), {
-            ttl: 30 * 24 * 60 * 60 // 30 days
-          });
-          
-          // Create indexes for fast lookups
-          await this.createIndexes(allBundles, 'fallback');
-          
-          metadata.bundleGroups.push('fallback');
-          metadata.totalBundles += allBundles.length;
-          
-          const allDurations = [...new Set(allBundles.map(b => b.duration))];
-          console.log(`📦 Fallback complete: ${allBundles.length} bundles, durations: ${allDurations.sort((a, b) => a - b)}`);
-        }
-      } catch (error) {
-        console.error(`❌ Error with fallback sync:`, error);
       }
       
       // Store metadata
