@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import { Skeleton } from "@workspace/ui/components/skeleton";
-import { DataTable } from "@workspace/ui/components/data-table";
+import { AdvancedDataTable } from "@workspace/ui/components/advanced-data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
@@ -22,6 +22,9 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
+import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
+import { OrderDetailsDrawer } from "@/components/order-details-drawer";
+import { useState } from "react";
 
 function getStatusColor(
   status: string
@@ -43,6 +46,14 @@ type Order = {
   id: string;
   reference: string;
   status: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string | null;
+    role: string;
+  } | null;
   dataPlan?: {
     id: string;
     name: string;
@@ -58,7 +69,7 @@ type Order = {
   updatedAt: string;
 };
 
-const columns: ColumnDef<Order>[] = [
+const getColumns = (handleOrderClick: (orderId: string) => void): ColumnDef<Order>[] => [
   {
     accessorKey: "reference",
     header: ({ column }) => {
@@ -75,9 +86,57 @@ const columns: ColumnDef<Order>[] = [
     cell: ({ row }) => {
       const order = row.original;
       return (
-        <div>
+        <div 
+          className="cursor-pointer hover:bg-muted/50 p-2 -m-2 rounded"
+          onClick={() => handleOrderClick(order.id)}
+        >
           <p className="text-sm font-medium">{order.reference}</p>
           <p className="text-xs text-muted-foreground">{order.id}</p>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "user",
+    header: "Customer",
+    cell: ({ row }) => {
+      const order = row.original;
+      const user = order.user;
+      
+      if (!user) {
+        return (
+          <div className="flex items-center space-x-3">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="text-xs">
+                ?
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm font-medium">Unknown User</p>
+              <p className="text-xs text-muted-foreground">User not found</p>
+            </div>
+          </div>
+        );
+      }
+      
+      const displayName = user.firstName || user.lastName
+        ? `${user.firstName} ${user.lastName}`.trim()
+        : user.email;
+      const initials = user.firstName && user.lastName
+        ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+        : user.email.slice(0, 2).toUpperCase();
+      
+      return (
+        <div className="flex items-center space-x-3">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="text-xs">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-sm font-medium">{displayName}</p>
+            <p className="text-xs text-muted-foreground">{user.email}</p>
+          </div>
         </div>
       );
     },
@@ -176,8 +235,19 @@ const columns: ColumnDef<Order>[] = [
               Copy order ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View order details</DropdownMenuItem>
-            <DropdownMenuItem>View customer</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleOrderClick(order.id)}>
+              View order details
+            </DropdownMenuItem>
+            {order.user && (
+              <>
+                <DropdownMenuItem
+                  onClick={() => navigator.clipboard.writeText(order.user.email)}
+                >
+                  Copy customer email
+                </DropdownMenuItem>
+                <DropdownMenuItem>View customer profile</DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       );
@@ -187,12 +257,25 @@ const columns: ColumnDef<Order>[] = [
 
 export function OrdersPage() {
   const { data, loading, error } = useQuery(GET_ORDERS);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   if (error) {
     console.error("Error fetching orders:", error);
   }
 
   const orders = data?.orders || [];
+
+  const handleOrderClick = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setDrawerOpen(true);
+  };
+  
+  // Custom search function to search across multiple fields
+  const searchableOrders = orders.map((order: any) => ({
+    ...order,
+    searchableText: `${order.reference} ${order.user?.email || ''} ${order.user?.firstName || ''} ${order.user?.lastName || ''} ${order.dataPlan?.name || ''} ${order.status}`.toLowerCase()
+  }));
 
   return (
     <div className="space-y-6">
@@ -229,15 +312,25 @@ export function OrdersPage() {
               </p>
             </div>
           ) : (
-            <DataTable 
-              columns={columns} 
-              data={orders} 
-              searchKey="reference"
-              searchPlaceholder="Search orders..."
+            <AdvancedDataTable 
+              columns={getColumns(handleOrderClick)} 
+              data={searchableOrders} 
+              searchKey="searchableText"
+              searchPlaceholder="Search orders or customers..."
+              enableSorting={true}
+              enableFiltering={true}
+              enablePagination={true}
+              initialPageSize={10}
             />
           )}
         </CardContent>
       </Card>
+
+      <OrderDetailsDrawer
+        orderId={selectedOrderId}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+      />
     </div>
   );
 }
