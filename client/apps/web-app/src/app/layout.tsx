@@ -12,8 +12,8 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "Hiilo - Global eSIM",
-  description: "Stay connected worldwide with Hiilo's global eSIM solutions",
+  title: "Hilo ESIM - Unlimited Travel. Unlimited Data",
+  description: "Stay connected worldwide with Hilo ESIM's global eSIM solutions. Unlimited travel, unlimited data.",
 };
 
 export default function RootLayout({
