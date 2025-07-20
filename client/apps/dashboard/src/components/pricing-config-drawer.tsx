@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
 import {
   Badge,
   Button,
@@ -9,15 +9,21 @@ import {
   DrawerHeader,
   DrawerTitle,
   Input,
+  InputWithAdornment,
   Label,
   Separator,
   Slider,
   SliderWithValue,
-  Switch, Textarea
+  Switch, 
+  Textarea,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
 } from '@workspace/ui';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { UPDATE_PRICING_CONFIGURATION } from '../lib/graphql/queries';
+import { ChevronDown, ChevronRight, Info } from 'lucide-react';
+import { UPDATE_PRICING_CONFIGURATION, GET_CURRENT_PROCESSING_FEE_CONFIGURATION } from '../lib/graphql/queries';
 
 interface PricingData {
   bundleName: string;
@@ -50,6 +56,11 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   onConfigurationSaved,
 }) => {
   const [updatePricingConfiguration, { loading }] = useMutation(UPDATE_PRICING_CONFIGURATION);
+  const { data: processingFeeConfig } = useQuery(GET_CURRENT_PROCESSING_FEE_CONFIGURATION, {
+    skip: !isOpen,
+  });
+  
+  const [isProcessingDetailsOpen, setIsProcessingDetailsOpen] = useState(false);
   
   
   // Form state
@@ -87,6 +98,14 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
     return Math.max(...availableBundles);
   };
 
+  // Get the actual processing rate being used (default Israeli card rate)
+  const getCurrentProcessingRate = () => {
+    if (processingFeeConfig?.currentProcessingFeeConfiguration) {
+      return processingFeeConfig.currentProcessingFeeConfiguration.israeliCardsRate;
+    }
+    return pricingData?.processingRate || 0.045; // Fallback to pricing data or default
+  };
+
   // Initialize form data when pricing data changes
   useEffect(() => {
     if (pricingData) {
@@ -95,7 +114,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
         description: `Custom pricing configuration for ${pricingData.countryName} ${pricingData.duration}-day bundles`,
         costSplitPercent: pricingData.cost / pricingData.totalCost,
         discountRate: pricingData.discountRate,
-        processingRate: pricingData.processingRate,
+        processingRate: getCurrentProcessingRate(),
         isActive: true,
         priority: 10,
       });
@@ -109,7 +128,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
       
       setPriceRange([breakEvenPrice, maxRecommendedPrice]);
     }
-  }, [pricingData]);
+  }, [pricingData, processingFeeConfig]);
 
   const handleSave = async () => {
     if (!pricingData) return;
@@ -217,7 +236,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="markupPercent">Markup Percentage</Label>
-                  <Input
+                  <InputWithAdornment
                     id="markupPercent"
                     type="number"
                     min="0"
@@ -229,6 +248,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                       const costSplit = 1 / (1 + markup);
                       setFormData(prev => ({ ...prev, costSplitPercent: costSplit }));
                     }}
+                    rightAdornment="%"
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     Markup percentage over eSIM Go cost (e.g., 40 for 40% markup)
@@ -237,7 +257,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
 
                 <div>
                   <Label htmlFor="discountRate">Discount Rate</Label>
-                  <Input
+                  <InputWithAdornment
                     id="discountRate"
                     type="number"
                     min="0"
@@ -245,6 +265,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                     step="1"
                     value={Math.round(formData.discountRate * 100)}
                     onChange={(e) => setFormData(prev => ({ ...prev, discountRate: parseFloat(e.target.value) / 100 }))}
+                    rightAdornment="%"
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     Discount percentage (e.g., 30 for 30%)
@@ -252,30 +273,70 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                 </div>
 
                 <div>
-                  <Label htmlFor="processingRate">Processing Rate</Label>
-                  <Input
-                    id="processingRate"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={Math.round(formData.processingRate * 1000) / 10}
-                    onChange={(e) => setFormData(prev => ({ ...prev, processingRate: parseFloat(e.target.value) / 100 }))}
-                  />
+                  <Label>Processing Rate</Label>
+                  <div className="mt-2">
+                    <Collapsible open={isProcessingDetailsOpen} onOpenChange={setIsProcessingDetailsOpen}>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-lg">{formatPercentage(getCurrentProcessingRate())}</span>
+                            <Badge variant="secondary" className="text-xs">
+                              {processingFeeConfig?.currentProcessingFeeConfiguration ? 'Dynamic' : 'Default'}
+                            </Badge>
+                          </div>
+                          {isProcessingDetailsOpen ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-2">
+                        <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Info className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium text-blue-900">Processing Fee Details</span>
+                          </div>
+                          {processingFeeConfig?.currentProcessingFeeConfiguration ? (
+                            <div className="text-sm text-blue-800 space-y-1">
+                              <p><strong>Israeli Cards:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.israeliCardsRate)}</p>
+                              <p><strong>Foreign Cards:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.foreignCardsRate)}</p>
+                              <p><strong>Bit Payments:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.bitPaymentRate)}</p>
+                              <p><strong>Premium Amex:</strong> +{formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.premiumAmexRate)}</p>
+                              <p><strong>Premium Diners:</strong> +{formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.premiumDinersRate)}</p>
+                              <div className="mt-2 pt-2 border-t border-blue-200">
+                                <p className="text-xs text-blue-600">
+                                  Rates are managed centrally in Processing Fee Configuration
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-sm text-blue-800">
+                              <p>Using default processing rate of {formatPercentage(0.045)}</p>
+                              <p className="text-xs text-blue-600 mt-1">
+                                Configure dynamic rates in Processing Fee Management
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
                   <p className="text-sm text-gray-500 mt-1">
-                    Processing fee percentage (e.g., 4.5 for 4.5%)
+                    Processing fee is managed centrally and updates automatically
                   </p>
                 </div>
 
                 <div>
                   <Label htmlFor="priority">Priority</Label>
-                  <Input
+                  <InputWithAdornment
                     id="priority"
                     type="number"
                     min="1"
                     max="100"
                     value={formData.priority}
                     onChange={(e) => setFormData(prev => ({ ...prev, priority: parseInt(e.target.value) }))}
+                    rightAdornment="priority"
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     Higher priority overrides lower priority

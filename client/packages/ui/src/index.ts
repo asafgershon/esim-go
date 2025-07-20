@@ -14,6 +14,7 @@ export * from './components/drawer'
 export * from './components/dropdown-menu'
 export * from './components/input-otp'
 export * from './components/input'
+export * from './components/input-with-adornment'
 export * from './components/label'
 export * from './components/navigation-menu'
 export * from './components/popover'
@@ -29,10 +30,9 @@ export * from './components/table'
 export * from './components/tabs'
 export * from './components/textarea'
 export * from './components/tooltip'
-// Temporarily commented out problematic exports
-// export * from './components/advanced-data-table'
-// export * from './components/table-plugins'
-// export * from './components/checkbox'
+export * from './components/advanced-data-table'
+export * from './components/checkbox'
+export * from './components/table-plugins'
 // Utils
 export * from "./lib/utils" 
 export * from "./lib/font-utils" 
