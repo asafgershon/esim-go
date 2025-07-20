@@ -27,6 +27,7 @@ import {
   OrdersDataSource,
   RegionsDataSource,
   InventoryDataSource,
+  PricingDataSource,
 } from "./datasources/esim-go";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook, PricingService } from "./services";
@@ -115,6 +116,7 @@ async function startServer() {
               countries: new CountriesDataSource({ cache: redis }),
               regions: RegionsDataSource,
               inventory: new InventoryDataSource({ cache: redis }),
+              pricing: new PricingDataSource({ cache: redis }),
             },
             // Legacy support
             token,
@@ -177,9 +179,6 @@ async function startServer() {
     await server.start();
 
     // Set up our Express middleware to handle CORS, body parsing
-    logger.debug("Setting up CORS middleware", {
-      origin: env.CORS_ORIGINS.split(","),
-    });
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
@@ -280,6 +279,7 @@ async function startServer() {
               countries: new CountriesDataSource({ cache: redis }),
               regions: RegionsDataSource,
               inventory: new InventoryDataSource({ cache: redis }),
+              pricing: new PricingDataSource({ cache: redis }),
             },
             // Legacy support
             req,
@@ -355,10 +355,6 @@ setInterval(() => {
 
   // Log memory usage every 5 minutes
   if (Date.now() % (5 * 60 * 1000) < 30000) {
-    logger.debug("Memory usage report", {
-      memoryMB: memoryMB.toFixed(2),
-      heapUsedMB: `${(usage.heapUsed / 1024 / 1024).toFixed(2)}MB Heap`,
-    });
   }
 
   // Warn if memory usage is high (>500MB)

@@ -1,10 +1,12 @@
 import { GraphQLError } from 'graphql';
+import { createLogger } from '../lib/logger';
+import type { CatalogueDataSource } from '../datasources/esim-go';
 
 export interface PricingConfig {
   cost: number;
   costPlus: number;
   totalCost: number;
-  discountRate: number; // as decimal (0.30 for 30%)
+  discountRate: number; // as decimal (0 for 0%)
   processingRate: number; // as decimal (0.045 for 4.5%)
   bundleInfo?: {
     originalDuration: number;
@@ -33,9 +35,13 @@ export interface PricingBreakdown {
 }
 
 export class PricingService {
-  private static readonly DEFAULT_DISCOUNT_RATE = 0.30; // 30%
+  private static readonly DEFAULT_DISCOUNT_RATE = 0.0; // 0%
   private static readonly DEFAULT_PROCESSING_RATE = 0.045; // 4.5%
   private static readonly DEFAULT_CURRENCY = 'USD';
+  private static readonly logger = createLogger({ 
+    component: 'PricingService',
+    operationType: 'pricing-calculations'
+  });
 
   /**
    * Calculate detailed pricing breakdown for a bundle
@@ -88,37 +94,232 @@ export class PricingService {
    * Get pricing configuration for a specific bundle
    * This combines eSIM Go API data with our business logic and configuration rules
    */
-  static async getPricingConfig(countryId: string, duration: number, catalogueAPI: any, configRepository?: any, paymentMethod: 'israeli_card' | 'foreign_card' | 'bit' | 'amex' | 'diners' = 'israeli_card'): Promise<PricingConfig> {
+  static async getPricingConfig(countryId: string, duration: number, catalogueAPI: CatalogueDataSource, configRepository?: any, paymentMethod: 'israeli_card' | 'foreign_card' | 'bit' | 'amex' | 'diners' = 'israeli_card', pricingAPI?: any): Promise<PricingConfig> {
     try {
-      // Get bundles from eSIM Go API
-      const bundles = await catalogueAPI.getAllBundels();
+      // Get bundles directly for this country using optimized eSIM Go API endpoint
+      // Prioritize unlimited bundles by trying unlimited groups first
+      let availableBundles;
       
-      // Find bundles available for this country
-      const availableBundles = bundles.filter((bundle: any) => {
-        return bundle.countries?.some((country: any) => country.iso === countryId);
+      // Try to get unlimited essential bundles first (preferred for pricing)
+      try {
+        availableBundles = await catalogueAPI.searchPlans({
+          country: countryId,
+          bundleGroup: 'Standard - Unlimited Essential',
+          limit: 200
+        });
+        
+        this.logger.info('Unlimited Essential bundles search', {
+          countryId,
+          bundlesFound: availableBundles.bundles.length,
+          operationType: 'unlimited-essential-search'
+        });
+        
+        // If no unlimited essential, try unlimited lite
+        if (availableBundles.bundles.length === 0) {
+          availableBundles = await catalogueAPI.searchPlans({
+            country: countryId,
+            bundleGroup: 'Standard - Unlimited Lite',
+            limit: 200
+          });
+          
+          this.logger.info('Unlimited Lite bundles search', {
+            countryId,
+            bundlesFound: availableBundles.bundles.length,
+            operationType: 'unlimited-lite-search'
+          });
+        }
+        
+        // If no unlimited bundles, fall back to all bundles for this country
+        if (availableBundles.bundles.length === 0) {
+          availableBundles = await catalogueAPI.searchPlans({
+            country: countryId,
+            limit: 200
+          });
+          
+          this.logger.warn('No unlimited bundles found, using all available bundles', {
+            countryId,
+            bundlesFound: availableBundles.bundles.length,
+            operationType: 'fallback-all-bundles'
+          });
+        }
+      } catch (error) {
+        this.logger.error('Error searching for unlimited bundles, falling back to all bundles', error as Error, {
+          countryId,
+          operationType: 'unlimited-search-error'
+        });
+        
+        // Fallback to all bundles for this country
+        availableBundles = await catalogueAPI.searchPlans({
+          country: countryId,
+          limit: 200
+        });
+      }
+
+      this.logger.info('Country-specific bundle search completed', {
+        countryId,
+        requestedDuration: duration,
+        bundlesFound: availableBundles.bundles.length,
+        totalCount: availableBundles.totalCount,
+        operationType: 'optimized-bundle-search'
       });
 
-      if (availableBundles.length === 0) {
-        // Fallback to mock data if no bundles for this country
-        return this.getMockPricingConfig(countryId, duration);
+      // Extract the bundles array from the search result
+      const bundles = availableBundles.bundles;
+      
+      if (bundles.length <= 10) {
+        this.logger.debug('Available bundles for country', {
+          countryId,
+          bundles: bundles.map(b => ({
+            name: b.name,
+            duration: b.duration,
+            price: b.price,
+            bundleGroup: b.bundleGroup
+          })),
+          operationType: 'bundle-listing'
+        });
+      } else {
+        this.logger.debug('Sample available bundles', {
+          countryId,
+          totalBundles: bundles.length,
+          sampleBundles: bundles.slice(0, 5).map(b => ({
+            name: b.name,
+            duration: b.duration,
+            price: b.price,
+            bundleGroup: b.bundleGroup
+          })),
+          operationType: 'bundle-listing'
+        });
+      }
+
+      if (bundles.length === 0) {
+        // Log warning and throw exception - we should use real data only
+        this.logger.warn('No bundles found for country, cannot provide real pricing', {
+          countryId,
+          requestedDuration: duration,
+          operationType: 'pricing-no-data'
+        });
+        throw new GraphQLError(`No eSIM bundles available for country ${countryId}`, {
+          extensions: {
+            code: 'NO_BUNDLES_AVAILABLE',
+            countryId,
+            duration
+          }
+        });
       }
 
       // Find best matching bundle for the requested duration
-      let matchingBundle = availableBundles.find((bundle: any) => bundle.duration === duration);
+      // Prioritize unlimited bundles (dataAmount: -1) over limited ones
+      const unlimitedBundles = bundles.filter((bundle: any) => bundle.dataAmount === -1);
+      const limitedBundles = bundles.filter((bundle: any) => bundle.dataAmount !== -1);
       
-      if (!matchingBundle) {
-        // If no exact match, find the smallest bundle that covers the requested duration
-        const suitableBundles = availableBundles
+      this.logger.info('Bundle type analysis', {
+        countryId,
+        totalBundles: bundles.length,
+        unlimitedBundles: unlimitedBundles.length,
+        limitedBundles: limitedBundles.length,
+        unlimitedSample: unlimitedBundles.slice(0, 2).map(b => ({ name: b.name, duration: b.duration, price: b.price })),
+        operationType: 'bundle-type-analysis'
+      });
+      
+      // Try to find unlimited bundle first
+      let matchingBundle = unlimitedBundles.find((bundle: any) => bundle.duration === duration);
+      
+      if (!matchingBundle && unlimitedBundles.length > 0) {
+        // No exact unlimited match, find smallest unlimited bundle that covers duration
+        const suitableUnlimited = unlimitedBundles
           .filter((bundle: any) => bundle.duration >= duration)
           .sort((a: any, b: any) => a.duration - b.duration);
         
-        if (suitableBundles.length > 0) {
-          matchingBundle = suitableBundles[0]; // Smallest bundle that covers the duration
+        if (suitableUnlimited.length > 0) {
+          matchingBundle = suitableUnlimited[0];
+          this.logger.info('Using smallest suitable unlimited bundle', {
+            countryId,
+            requestedDuration: duration,
+            selectedBundle: {
+              name: matchingBundle.name,
+              duration: matchingBundle.duration,
+              price: matchingBundle.price,
+              isUnlimited: true
+            },
+            operationType: 'unlimited-bundle-selection'
+          });
         } else {
-          // If no bundle covers the duration, use the largest available bundle
-          matchingBundle = availableBundles
+          // Use largest unlimited bundle if none cover the duration
+          matchingBundle = unlimitedBundles
             .sort((a: any, b: any) => b.duration - a.duration)[0];
+          this.logger.info('Using largest unlimited bundle available', {
+            countryId,
+            requestedDuration: duration,
+            selectedBundle: {
+              name: matchingBundle.name,
+              duration: matchingBundle.duration,
+              price: matchingBundle.price,
+              isUnlimited: true
+            },
+            operationType: 'unlimited-bundle-selection'
+          });
         }
+      }
+      
+      // If no unlimited bundles found, fall back to limited bundles
+      if (!matchingBundle) {
+        this.logger.debug('No unlimited bundles available, trying limited bundles', {
+          countryId,
+          requestedDuration: duration,
+          operationType: 'limited-bundle-fallback'
+        });
+        
+        matchingBundle = limitedBundles.find((bundle: any) => bundle.duration === duration);
+        
+        if (!matchingBundle) {
+          // Find smallest limited bundle that covers duration
+          const suitableLimited = limitedBundles
+            .filter((bundle: any) => bundle.duration >= duration)
+            .sort((a: any, b: any) => a.duration - b.duration);
+          
+          if (suitableLimited.length > 0) {
+            matchingBundle = suitableLimited[0];
+            this.logger.info('Using smallest suitable limited bundle', {
+              countryId,
+              requestedDuration: duration,
+              selectedBundle: {
+                name: matchingBundle.name,
+                duration: matchingBundle.duration,
+                price: matchingBundle.price,
+                isUnlimited: false,
+                dataAmount: matchingBundle.dataAmount
+              },
+              operationType: 'limited-bundle-selection'
+            });
+          } else if (limitedBundles.length > 0) {
+            // Use largest limited bundle
+            matchingBundle = limitedBundles
+              .sort((a: any, b: any) => b.duration - a.duration)[0];
+            this.logger.info('Using largest limited bundle available', {
+              countryId,
+              requestedDuration: duration,
+              selectedBundle: {
+                name: matchingBundle.name,
+                duration: matchingBundle.duration,
+                price: matchingBundle.price,
+                isUnlimited: false,
+                dataAmount: matchingBundle.dataAmount
+              },
+              operationType: 'limited-bundle-selection'
+            });
+          }
+        }
+      } else {
+        this.logger.info('Found exact duration match', {
+          countryId,
+          requestedDuration: duration,
+          selectedBundle: {
+            name: matchingBundle.name,
+            duration: matchingBundle.duration,
+            price: matchingBundle.price
+          },
+          operationType: 'bundle-selection'
+        });
       }
 
       // Get configuration rules from repository
@@ -132,7 +333,13 @@ export class PricingService {
             matchingBundle.bundleGroup
           );
         } catch (error) {
-          console.error('Error fetching pricing configuration:', error);
+          this.logger.error('Failed to fetch pricing configuration', error as Error, {
+            countryId,
+            region: matchingBundle.baseCountry?.region || 'unknown',
+            duration,
+            bundleGroup: matchingBundle.bundleGroup,
+            operationType: 'config-fetch'
+          });
         }
       }
 
@@ -147,7 +354,11 @@ export class PricingService {
         const processingFeeRepository = new ProcessingFeeRepository();
         processingRate = await processingFeeRepository.getProcessingRate(paymentMethod);
       } catch (error) {
-        console.error('Error fetching processing rate, using default:', error);
+        this.logger.warn('Failed to fetch processing rate, using default', {
+          error: error instanceof Error ? error.message : String(error),
+          defaultRate: configRule?.processingRate || this.DEFAULT_PROCESSING_RATE,
+          operationType: 'processing-rate-fallback'
+        });
         // Fallback to configuration rule or default
         processingRate = configRule?.processingRate || this.DEFAULT_PROCESSING_RATE;
       }
@@ -156,13 +367,65 @@ export class PricingService {
       const unusedDays = Math.max(0, matchingBundle.duration - duration);
       const unusedDaysDiscount = unusedDays > 0 ? (unusedDays / matchingBundle.duration) * 0.1 : 0; // 10% discount per unused day ratio
 
+      // IMPORTANT: Log the selected bundle to debug Austria pricing issue
+      this.logger.info('Bundle selected for pricing calculation', {
+        countryId,
+        requestedDuration: duration,
+        selectedBundle: {
+          name: matchingBundle.name,
+          duration: matchingBundle.duration,
+          catalogPrice: matchingBundle.price,
+          bundleGroup: matchingBundle.bundleGroup,
+          countries: matchingBundle.countries?.map(c => c.iso).join(',')
+        },
+        unusedDays: Math.max(0, matchingBundle.duration - duration),
+        operationType: 'bundle-selected-debug'
+      });
+
+      // Get real-time pricing from eSIM Go API if available
+      let esimGoCost = matchingBundle.price; // Fallback to catalog price
+      let realTimePricing = null;
+      
+      if (pricingAPI) {
+        try {
+          realTimePricing = await pricingAPI.getBundlePricing(matchingBundle.name, countryId, 1);
+          
+          if (realTimePricing.basePrice === 0) {
+            this.logger.warn('Real-time pricing returned zero - no real data available', {
+              bundleName: matchingBundle.name,
+              countryId,
+              catalogPrice: matchingBundle.price,
+              operationType: 'pricing-zero-returned'
+            });
+            // Use catalog price as fallback when pricing API returns 0
+            esimGoCost = matchingBundle.price;
+          } else {
+            esimGoCost = realTimePricing.basePrice;
+            this.logger.info('Real-time pricing retrieved successfully', {
+              bundleName: matchingBundle.name,
+              realTimePrice: esimGoCost,
+              catalogPrice: matchingBundle.price,
+              priceDifference: Math.abs(esimGoCost - matchingBundle.price),
+              operationType: 'real-time-pricing'
+            });
+          }
+        } catch (error) {
+          this.logger.warn('Failed to get real-time pricing, using catalog price', {
+            bundleName: matchingBundle.name,
+            catalogPrice: matchingBundle.price,
+            error: error instanceof Error ? error.message : String(error),
+            operationType: 'pricing-fallback'
+          });
+          // Continue with catalog price as fallback
+        }
+      }
+
       // Calculate pricing based on eSIM Go data + configuration rules
-      const esimGoCost = matchingBundle.price; // This is our actual cost from eSIM Go
       const markup = esimGoCost * (markupPercent / 100); // Convert percentage to decimal for calculation
       const totalCostBeforeUnusedDiscount = esimGoCost + markup;
       const totalCost = totalCostBeforeUnusedDiscount * (1 - unusedDaysDiscount);
 
-      return {
+      const result = {
         cost: Number(esimGoCost.toFixed(2)), // eSIM Go cost (our base cost)
         costPlus: Number(markup.toFixed(2)), // Our markup
         totalCost: Number(totalCost.toFixed(2)), // Total with unused days discount applied
@@ -174,13 +437,35 @@ export class PricingService {
           requestedDuration: duration,
           unusedDays,
           unusedDaysDiscount: Number((unusedDaysDiscount * 100).toFixed(1)), // As percentage
-          esimGoPrice: matchingBundle.price
+          esimGoPrice: realTimePricing ? realTimePricing.basePrice : matchingBundle.price
         }
       };
+
+      // Log final pricing calculation for debugging
+      this.logger.info('Pricing calculation completed', {
+        countryId,
+        requestedDuration: duration,
+        selectedBundle: matchingBundle.name,
+        bundleDuration: matchingBundle.duration,
+        catalogPrice: matchingBundle.price,
+        realTimePrice: realTimePricing?.basePrice,
+        finalCost: result.cost,
+        markup: result.costPlus,
+        totalCost: result.totalCost,
+        unusedDays,
+        unusedDaysDiscount,
+        operationType: 'pricing-final-calculation'
+      });
+
+      return result;
     } catch (error) {
-      console.error('Error fetching pricing from eSIM Go API:', error);
-      // Fallback to mock data
-      return this.getMockPricingConfig(countryId, duration);
+      this.logger.error('Failed to fetch pricing from eSIM Go API', error as Error, {
+        countryId,
+        duration,
+        operationType: 'pricing-api-error'
+      });
+      // Re-throw the error - we should not estimate base costs
+      throw error;
     }
   }
 
@@ -277,7 +562,7 @@ export class PricingService {
     // Linear interpolation between two known points
     const ratio = (duration - lowerDuration) / (upperDuration - lowerDuration);
     const totalCost = lowerConfig.totalCost + ratio * (upperConfig.totalCost - lowerConfig.totalCost);
-    const cost = lowerConfig.cost + ratio * (upperConfig.cost - lowerConfig.cost);
+    const cost = lowerConfig.cost
     const costPlus = lowerConfig.costPlus + ratio * (upperConfig.costPlus - lowerConfig.costPlus);
 
     return {
@@ -322,7 +607,7 @@ export class PricingService {
     const totalMargin = ((totalCost - (cost + costPlus)) / totalCost) * 100;
     
     // eSIM Go integration estimates
-    const estimatedEsimGoCost = cost * 0.7; // Estimate eSIM Go takes 70% of cost component
+    const estimatedEsimGoCost = cost;
     const ourMarkup = totalCost - estimatedEsimGoCost;
     const markupPercent = (ourMarkup / estimatedEsimGoCost) * 100;
     

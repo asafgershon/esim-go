@@ -195,7 +195,8 @@ export const resolvers: Resolvers = {
         numOfDays, 
         context.dataSources.catalogue, 
         configRepository,
-        mapPaymentMethodEnum(paymentMethod)
+        mapPaymentMethodEnum(paymentMethod),
+        context.dataSources.pricing
       );
       
       // Get bundle and country names
@@ -226,7 +227,8 @@ export const resolvers: Resolvers = {
               input.numOfDays, 
               context.dataSources.catalogue, 
               configRepository,
-              mapPaymentMethodEnum(input.paymentMethod)
+              mapPaymentMethodEnum(input.paymentMethod),
+              context.dataSources.pricing
             );
             
             // Get bundle and country names
