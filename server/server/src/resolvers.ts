@@ -224,7 +224,7 @@ export const resolvers: Resolvers = {
         context.dataSources.catalogue, 
         configRepository,
         mapPaymentMethodEnum(paymentMethod),
-        context.dataSources.pricing
+        context.services.pricing
       );
       
       // Get bundle and country names
@@ -256,7 +256,7 @@ export const resolvers: Resolvers = {
               context.dataSources.catalogue, 
               configRepository,
               mapPaymentMethodEnum(input.paymentMethod),
-              context.dataSources.pricing
+              context.services.pricing
             );
             
             // Get bundle and country names
@@ -273,7 +273,11 @@ export const resolvers: Resolvers = {
 
             return pricingBreakdown;
           } catch (error) {
-            console.error(`Error calculating pricing for ${input.countryId} ${input.numOfDays}d:`, error);
+            logger.error(`Error calculating pricing for ${input.countryId} ${input.numOfDays}d`, error as Error, {
+              countryId: input.countryId,
+              duration: input.numOfDays,
+              operationType: 'pricing-calculation'
+            });
             // Return a fallback pricing breakdown
             return {
               bundleName: PricingService.getBundleName(input.numOfDays),
@@ -761,7 +765,10 @@ export const resolvers: Resolvers = {
         .eq("user_id", parent.id);
       
       if (error) {
-        console.error("Error fetching order count:", error);
+        logger.error("Error fetching order count", error as Error, {
+          userId: parent.id,
+          operationType: 'order-count-fetch'
+        });
         return 0;
       }
       
@@ -1172,7 +1179,11 @@ export const resolvers: Resolvers = {
           .single();
 
         if (assignmentError) {
-          console.error("Error creating assignment:", assignmentError);
+          logger.error("Error creating assignment", assignmentError as Error, {
+            userId,
+            planId,
+            operationType: 'package-assignment'
+          });
           return {
             success: false,
             error: "Failed to create assignment",
@@ -1224,7 +1235,11 @@ export const resolvers: Resolvers = {
           },
         };
       } catch (error) {
-        console.error("Error in assignPackageToUser:", error);
+        logger.error("Error in assignPackageToUser", error as Error, {
+          userId,
+          planId,
+          operationType: 'package-assignment'
+        });
         return {
           success: false,
           error: "Internal server error",
