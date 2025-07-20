@@ -15,9 +15,12 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
 } from "@workspace/ui";
 import React, { useState, useEffect } from "react";
-import { DollarSign, Save, RotateCcw, Loader2, Plus, Trash2, Shield } from "lucide-react";
+import { DollarSign, Save, RotateCcw, Loader2, Plus, Trash2, Shield, ChevronDown, ChevronRight } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import {
@@ -77,6 +80,11 @@ export const MarkupTableDrawer: React.FC<MarkupTableDrawerProps> = ({
   const [markupConfig, setMarkupConfig] = useState<MarkupConfigItem[]>(defaultMarkupConfig);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Collapsible state for each bundle group
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
+  const [isNewItemsOpen, setIsNewItemsOpen] = useState(true); // Open by default for new items
 
   // GraphQL queries and mutations
   const { data: currentConfig, loading: loadingCurrent, refetch } = useQuery(
@@ -111,6 +119,28 @@ export const MarkupTableDrawer: React.FC<MarkupTableDrawerProps> = ({
   // Helper function to format currency with proper decimals
   const formatCurrencyForDisplay = (amount: number) => {
     return amount.toFixed(2);
+  };
+
+  // Toggle collapsible state for bundle groups
+  const toggleGroup = (bundleGroup: string) => {
+    setCollapsedGroups(prev => ({
+      ...prev,
+      [bundleGroup]: !prev[bundleGroup]
+    }));
+  };
+
+  // Get summary info for a bundle group
+  const getGroupSummary = (items: MarkupConfigItem[]) => {
+    const count = items.length;
+    const minMarkup = Math.min(...items.map(item => item.markupAmount));
+    const maxMarkup = Math.max(...items.map(item => item.markupAmount));
+    const avgMarkup = items.reduce((sum, item) => sum + item.markupAmount, 0) / count;
+    
+    return {
+      count,
+      range: minMarkup === maxMarkup ? `$${minMarkup.toFixed(2)}` : `$${minMarkup.toFixed(2)} - $${maxMarkup.toFixed(2)}`,
+      average: `$${avgMarkup.toFixed(2)}`
+    };
   };
 
   // Group markup config by bundle group for better organization
@@ -248,182 +278,241 @@ export const MarkupTableDrawer: React.FC<MarkupTableDrawerProps> = ({
           ) : (
             <>
               {/* Markup Configuration by Bundle Group */}
-              {Object.entries(groupedMarkupConfig).map(([bundleGroup, items]) => (
-                <Card key={bundleGroup}>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{bundleGroup}</CardTitle>
-                    <CardDescription>
-                      סכומי מארק-אפ קבועים בדולרים עבור משכי זמן שונים
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-                      {items.map((item, itemIndex) => {
-                        const globalIndex = markupConfig.findIndex(
-                          config => config.bundleGroup === item.bundleGroup && 
-                                   config.durationDays === item.durationDays
-                        );
-                        
-                        return (
-                          <div key={`${bundleGroup}-${item.durationDays}`} className="space-y-2 p-3 border rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <Label className="text-xs font-medium">
-                                {item.durationDays} ימים
-                              </Label>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveMarkup(globalIndex)}
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                            
-                            <div className="space-y-1">
-                              <Label htmlFor={`duration-${globalIndex}`} className="text-xs">
-                                משך זמן (ימים)
-                              </Label>
-                              <Input
-                                id={`duration-${globalIndex}`}
-                                type="number"
-                                min="1"
-                                value={item.durationDays}
-                                onChange={(e) =>
-                                  handleMarkupChange(globalIndex, "durationDays", e.target.value)
-                                }
-                                className="text-sm"
-                              />
-                            </div>
-                            
-                            <div className="space-y-1">
-                              <Label htmlFor={`markup-${globalIndex}`} className="text-xs">
-                                מארק-אפ ($)
-                              </Label>
-                              <InputWithAdornment
-                                id={`markup-${globalIndex}`}
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={formatCurrencyForDisplay(item.markupAmount)}
-                                onChange={(e) =>
-                                  handleMarkupChange(globalIndex, "markupAmount", e.target.value)
-                                }
-                                leftAdornment="$"
-                                className="text-sm"
-                              />
+              {Object.entries(groupedMarkupConfig).map(([bundleGroup, items]) => {
+                const summary = getGroupSummary(items);
+                const isCollapsed = collapsedGroups[bundleGroup];
+                
+                return (
+                  <Card key={bundleGroup}>
+                    <Collapsible open={!isCollapsed} onOpenChange={() => toggleGroup(bundleGroup)}>
+                      <CollapsibleTrigger asChild>
+                        <CardHeader className="hover:bg-gray-50 cursor-pointer">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <CardTitle className="text-lg flex items-center gap-2">
+                                {bundleGroup}
+                                {isCollapsed ? (
+                                  <ChevronRight className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </CardTitle>
+                              <CardDescription>
+                                {isCollapsed ? (
+                                  `${summary.count} תצורות • טווח: ${summary.range} • ממוצע: ${summary.average}`
+                                ) : (
+                                  "סכומי מארק-אפ קבועים בדולרים עבור משכי זמן שונים"
+                                )}
+                              </CardDescription>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                        </CardHeader>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+                            {items.map((item, itemIndex) => {
+                              const globalIndex = markupConfig.findIndex(
+                                config => config.bundleGroup === item.bundleGroup && 
+                                         config.durationDays === item.durationDays
+                              );
+                              
+                              return (
+                                <div key={`${bundleGroup}-${item.durationDays}`} className="space-y-2 p-3 border rounded-lg">
+                                  <div className="flex items-center justify-between">
+                                    <Label className="text-xs font-medium">
+                                      {item.durationDays} ימים
+                                    </Label>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleRemoveMarkup(globalIndex)}
+                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                  
+                                  <div className="space-y-1">
+                                    <Label htmlFor={`duration-${globalIndex}`} className="text-xs">
+                                      משך זמן (ימים)
+                                    </Label>
+                                    <Input
+                                      id={`duration-${globalIndex}`}
+                                      type="number"
+                                      min="1"
+                                      value={item.durationDays}
+                                      onChange={(e) =>
+                                        handleMarkupChange(globalIndex, "durationDays", e.target.value)
+                                      }
+                                      className="text-sm"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-1">
+                                    <Label htmlFor={`markup-${globalIndex}`} className="text-xs">
+                                      מארק-אפ ($)
+                                    </Label>
+                                    <InputWithAdornment
+                                      id={`markup-${globalIndex}`}
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={formatCurrencyForDisplay(item.markupAmount)}
+                                      onChange={(e) =>
+                                        handleMarkupChange(globalIndex, "markupAmount", e.target.value)
+                                      }
+                                      leftAdornment="$"
+                                      className="text-sm"
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </Card>
+                );
+              })}
 
               {/* Add New Markup Configuration */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    הוסף תצורת מארק-אפ חדשה
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    variant="outline"
-                    onClick={handleAddMarkup}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    הוסף מארק-אפ חדש
-                  </Button>
-                </CardContent>
+                <Collapsible open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="hover:bg-gray-50 cursor-pointer">
+                      <CardTitle className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        הוסף תצורת מארק-אפ חדשה
+                        {isAddSectionOpen ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </CardTitle>
+                      {!isAddSectionOpen && (
+                        <CardDescription>
+                          לחץ כאן כדי להוסיף תצורות מארק-אפ חדשות
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent>
+                      <Button
+                        variant="outline"
+                        onClick={handleAddMarkup}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        הוסף מארק-אפ חדש
+                      </Button>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
               </Card>
 
               {/* New/Unsaved Items */}
               {markupConfig.filter(item => item.isNew).length > 0 && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle>תצורות חדשות (לא נשמרו)</CardTitle>
-                    <CardDescription>
-                      תצורות אלו ייווספו כאשר תשמור את השינויים
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {markupConfig.map((item, index) => {
-                        if (!item.isNew) return null;
-                        
-                        return (
-                          <div key={index} className="flex items-end gap-3 p-3 bg-blue-50 rounded-lg">
-                            <div className="space-y-1 flex-1">
-                              <Label htmlFor={`new-group-${index}`} className="text-xs">
-                                קבוצת חבילות
-                              </Label>
-                              <select
-                                id={`new-group-${index}`}
-                                value={item.bundleGroup}
-                                onChange={(e) =>
-                                  handleMarkupChange(index, "bundleGroup", e.target.value)
-                                }
-                                className="w-full p-2 border rounded text-sm"
-                              >
-                                {bundleGroupOptions.map(option => (
-                                  <option key={option} value={option}>
-                                    {option}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
+                  <Collapsible open={isNewItemsOpen} onOpenChange={setIsNewItemsOpen}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="hover:bg-gray-50 cursor-pointer">
+                        <CardTitle className="flex items-center gap-2">
+                          תצורות חדשות (לא נשמרו)
+                          {isNewItemsOpen ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          {isNewItemsOpen ? (
+                            "תצורות אלו ייווספו כאשר תשמור את השינויים"
+                          ) : (
+                            `${markupConfig.filter(item => item.isNew).length} תצורות חדשות ממתינות לשמירה`
+                          )}
+                        </CardDescription>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {markupConfig.map((item, index) => {
+                            if (!item.isNew) return null;
                             
-                            <div className="space-y-1">
-                              <Label htmlFor={`new-duration-${index}`} className="text-xs">
-                                ימים
-                              </Label>
-                              <Input
-                                id={`new-duration-${index}`}
-                                type="number"
-                                min="1"
-                                value={item.durationDays}
-                                onChange={(e) =>
-                                  handleMarkupChange(index, "durationDays", e.target.value)
-                                }
-                                className="w-20 text-sm"
-                              />
-                            </div>
-                            
-                            <div className="space-y-1">
-                              <Label htmlFor={`new-markup-${index}`} className="text-xs">
-                                מארק-אפ ($)
-                              </Label>
-                              <InputWithAdornment
-                                id={`new-markup-${index}`}
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={formatCurrencyForDisplay(item.markupAmount)}
-                                onChange={(e) =>
-                                  handleMarkupChange(index, "markupAmount", e.target.value)
-                                }
-                                leftAdornment="$"
-                                className="w-24 text-sm"
-                              />
-                            </div>
-                            
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveMarkup(index)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
+                            return (
+                              <div key={index} className="flex items-end gap-3 p-3 bg-blue-50 rounded-lg">
+                                <div className="space-y-1 flex-1">
+                                  <Label htmlFor={`new-group-${index}`} className="text-xs">
+                                    קבוצת חבילות
+                                  </Label>
+                                  <select
+                                    id={`new-group-${index}`}
+                                    value={item.bundleGroup}
+                                    onChange={(e) =>
+                                      handleMarkupChange(index, "bundleGroup", e.target.value)
+                                    }
+                                    className="w-full p-2 border rounded text-sm"
+                                  >
+                                    {bundleGroupOptions.map(option => (
+                                      <option key={option} value={option}>
+                                        {option}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                
+                                <div className="space-y-1">
+                                  <Label htmlFor={`new-duration-${index}`} className="text-xs">
+                                    ימים
+                                  </Label>
+                                  <Input
+                                    id={`new-duration-${index}`}
+                                    type="number"
+                                    min="1"
+                                    value={item.durationDays}
+                                    onChange={(e) =>
+                                      handleMarkupChange(index, "durationDays", e.target.value)
+                                    }
+                                    className="w-20 text-sm"
+                                  />
+                                </div>
+                                
+                                <div className="space-y-1">
+                                  <Label htmlFor={`new-markup-${index}`} className="text-xs">
+                                    מארק-אפ ($)
+                                  </Label>
+                                  <InputWithAdornment
+                                    id={`new-markup-${index}`}
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={formatCurrencyForDisplay(item.markupAmount)}
+                                    onChange={(e) =>
+                                      handleMarkupChange(index, "markupAmount", e.target.value)
+                                    }
+                                    leftAdornment="$"
+                                    className="w-24 text-sm"
+                                  />
+                                </div>
+                                
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveMarkup(index)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </Card>
               )}
             </>

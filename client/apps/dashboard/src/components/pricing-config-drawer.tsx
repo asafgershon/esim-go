@@ -61,7 +61,9 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   });
   
   const [isProcessingDetailsOpen, setIsProcessingDetailsOpen] = useState(false);
-  
+  const [isBasicConfigOpen, setIsBasicConfigOpen] = useState(false);
+  const [isMarkupConfigOpen, setIsMarkupConfigOpen] = useState(false);
+  const [isPricingConfigOpen, setIsPricingConfigOpen] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -264,145 +266,268 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
           <div className="w-1/3 p-6 border-r overflow-y-auto max-h-[65vh]">
             <h3 className="text-lg font-semibold mb-4">Configuration</h3>
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Configuration Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter configuration name"
-                />
-              </div>
+              
+              {/* Basic Configuration Section */}
+              <Collapsible open={isBasicConfigOpen} onOpenChange={setIsBasicConfigOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between p-4 h-auto">
+                    <div className="text-left">
+                      <div className="font-medium">Basic Configuration</div>
+                      <div className="text-sm text-gray-500">Configuration name and description</div>
+                    </div>
+                    {isBasicConfigOpen ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-3 space-y-4">
+                  <div>
+                    <Label htmlFor="name">Configuration Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter configuration name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Describe this pricing configuration"
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
 
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe this pricing configuration"
-                />
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="markupPercent">Markup Percentage</Label>
-                  <InputWithAdornment
-                    id="markupPercent"
-                    type="number"
-                    min="0"
-                    max="200"
-                    step="1"
-                    value={Math.round((formData.costSplitPercent / (1 - formData.costSplitPercent)) * 100)}
-                    onChange={(e) => {
-                      const markup = parseFloat(e.target.value) / 100;
-                      const costSplit = 1 / (1 + markup);
-                      setFormData(prev => ({ ...prev, costSplitPercent: costSplit }));
-                    }}
-                    rightAdornment="%"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Markup percentage over eSIM Go cost (e.g., 40 for 40% markup)
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="discountRate">Discount Rate</Label>
-                  <InputWithAdornment
-                    id="discountRate"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={Math.round(formData.discountRate * 100)}
-                    onChange={(e) => setFormData(prev => ({ ...prev, discountRate: parseFloat(e.target.value) / 100 }))}
-                    rightAdornment="%"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Discount percentage (e.g., 30 for 30%)
-                  </p>
-                </div>
-
-                <div>
-                  <Label>Processing Rate</Label>
-                  <div className="mt-2">
-                    <Collapsible open={isProcessingDetailsOpen} onOpenChange={setIsProcessingDetailsOpen}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-lg">{formatPercentage(getCurrentProcessingRate())}</span>
-                            <Badge variant="secondary" className="text-xs">
-                              {processingFeeConfig?.currentProcessingFeeConfiguration ? 'Dynamic' : 'Default'}
-                            </Badge>
-                          </div>
-                          {isProcessingDetailsOpen ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
+              {/* Markup Configuration Section */}
+              <Collapsible open={isMarkupConfigOpen} onOpenChange={setIsMarkupConfigOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between p-4 h-auto">
+                    <div className="text-left">
+                      <div className="font-medium">Markup Configuration</div>
+                      <div className="text-sm text-gray-500">
+                        {hasMarkupOverride ? 'Custom Override' : 'Table Value'}: {formatCurrency(getEffectiveMarkup())}
+                      </div>
+                    </div>
+                    {isMarkupConfigOpen ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-3 space-y-4">
+                  <div>
+                    <Label htmlFor="markup">Fixed Markup Amount</Label>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">
+                            {hasMarkupOverride ? 'Custom Override' : `Table Value (${getMarkupSource()})`}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-lg font-semibold ${hasMarkupOverride ? 'text-orange-600' : 'text-gray-900'}`}>
+                            {formatCurrency(getEffectiveMarkup())}
+                          </span>
+                          {!isMarkupOverrideOpen && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsMarkupOverrideOpen(true)}
+                              className="h-7 w-7 p-0"
+                              title="Override markup for this specific bundle"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </Button>
                           )}
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="mt-2">
-                        <div className="bg-blue-50 p-3 rounded-lg space-y-2">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Info className="h-4 w-4 text-blue-600" />
-                            <span className="text-sm font-medium text-blue-900">Processing Fee Details</span>
+                        </div>
+                      </div>
+                      
+                      {/* Markup Override Input */}
+                      {isMarkupOverrideOpen && (
+                        <div className="bg-gray-50 p-3 rounded-lg space-y-3">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Info className="h-4 w-4 text-blue-500" />
+                            <span className="text-gray-600">Override markup for this specific bundle configuration</span>
                           </div>
-                          {processingFeeConfig?.currentProcessingFeeConfiguration ? (
-                            <div className="text-sm text-blue-800 space-y-1">
-                              <p><strong>Israeli Cards:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.israeliCardsRate)}</p>
-                              <p><strong>Foreign Cards:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.foreignCardsRate)}</p>
-                              <p><strong>Bit Payments:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.bitPaymentRate)}</p>
-                              <p><strong>Premium Amex:</strong> +{formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.premiumAmexRate)}</p>
-                              <p><strong>Premium Diners:</strong> +{formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.premiumDinersRate)}</p>
-                              <div className="mt-2 pt-2 border-t border-blue-200">
-                                <p className="text-xs text-blue-600">
-                                  Rates are managed centrally in Processing Fee Configuration
-                                </p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-sm text-blue-800">
-                              <p>Using default processing rate of {formatPercentage(0.045)}</p>
-                              <p className="text-xs text-blue-600 mt-1">
-                                Configure dynamic rates in Processing Fee Management
-                              </p>
+                          <div className="flex items-center gap-2">
+                            <InputWithAdornment
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={customMarkupAmount}
+                              onChange={(e) => setCustomMarkupAmount(e.target.value)}
+                              placeholder="Enter custom markup"
+                              leftAdornment="$"
+                              className="flex-1"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleMarkupOverride}
+                              className="h-8 w-8 p-0 text-green-600"
+                              title="Apply custom markup"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsMarkupOverrideOpen(false)}
+                              className="h-8 w-8 p-0 text-red-600"
+                              title="Cancel"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {hasMarkupOverride && (
+                            <div className="flex items-center justify-between pt-2 border-t">
+                              <span className="text-sm text-gray-600">Current override active</span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={cancelMarkupOverride}
+                                className="text-xs"
+                              >
+                                Remove Override
+                              </Button>
                             </div>
                           )}
                         </div>
-                      </CollapsibleContent>
-                    </Collapsible>
+                      )}
+                      
+                      <p className="text-sm text-gray-500">
+                        Fixed markup amount added to eSIM Go base cost. 
+                        {!hasMarkupOverride && ' Values come from your markup configuration table.'}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Processing fee is managed centrally and updates automatically
-                  </p>
-                </div>
+                </CollapsibleContent>
+              </Collapsible>
 
-                <div>
-                  <Label htmlFor="priority">Priority</Label>
-                  <InputWithAdornment
-                    id="priority"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={formData.priority}
-                    onChange={(e) => setFormData(prev => ({ ...prev, priority: parseInt(e.target.value) }))}
-                    rightAdornment="priority"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Higher priority overrides lower priority
-                  </p>
-                </div>
-              </div>
+              {/* Pricing Configuration Section */}
+              <Collapsible open={isPricingConfigOpen} onOpenChange={setIsPricingConfigOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between p-4 h-auto">
+                    <div className="text-left">
+                      <div className="font-medium">Pricing Rules</div>
+                      <div className="text-sm text-gray-500">
+                        Discount: {formatPercentage(formData.discountRate)} • Processing: {formatPercentage(getCurrentProcessingRate())} • Priority: {formData.priority}
+                      </div>
+                    </div>
+                    {isPricingConfigOpen ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-3 space-y-4">
+                  <div>
+                    <Label htmlFor="discountRate">Discount Rate</Label>
+                    <InputWithAdornment
+                      id="discountRate"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={Math.round(formData.discountRate * 100)}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discountRate: parseFloat(e.target.value) / 100 }))}
+                      rightAdornment="%"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Discount percentage (e.g., 30 for 30%)
+                    </p>
+                  </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="isActive"
-                  checked={formData.isActive}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
-                />
-                <Label htmlFor="isActive">Active Configuration</Label>
-              </div>
+                  <div>
+                    <Label>Processing Rate</Label>
+                    <div className="mt-2">
+                      <Collapsible open={isProcessingDetailsOpen} onOpenChange={setIsProcessingDetailsOpen}>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="outline" className="w-full justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-lg">{formatPercentage(getCurrentProcessingRate())}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {processingFeeConfig?.currentProcessingFeeConfiguration ? 'Dynamic' : 'Default'}
+                              </Badge>
+                            </div>
+                            {isProcessingDetailsOpen ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-2">
+                          <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Info className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm font-medium text-blue-900">Processing Fee Details</span>
+                            </div>
+                            {processingFeeConfig?.currentProcessingFeeConfiguration ? (
+                              <div className="text-sm text-blue-800 space-y-1">
+                                <p><strong>Israeli Cards:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.israeliCardsRate)}</p>
+                                <p><strong>Foreign Cards:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.foreignCardsRate)}</p>
+                                <p><strong>Bit Payments:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.bitPaymentRate)}</p>
+                                <p><strong>Premium Amex:</strong> +{formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.premiumAmexRate)}</p>
+                                <p><strong>Premium Diners:</strong> +{formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.premiumDinersRate)}</p>
+                                <div className="mt-2 pt-2 border-t border-blue-200">
+                                  <p className="text-xs text-blue-600">
+                                    Rates are managed centrally in Processing Fee Configuration
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-blue-800">
+                                <p>Using default processing rate of {formatPercentage(0.045)}</p>
+                                <p className="text-xs text-blue-600 mt-1">
+                                  Configure dynamic rates in Processing Fee Management
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Processing fee is managed centrally and updates automatically
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="priority">Priority</Label>
+                    <InputWithAdornment
+                      id="priority"
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={formData.priority}
+                      onChange={(e) => setFormData(prev => ({ ...prev, priority: parseInt(e.target.value) }))}
+                      rightAdornment="priority"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Higher priority overrides lower priority
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="isActive"
+                      checked={formData.isActive}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                    />
+                    <Label htmlFor="isActive">Active Configuration</Label>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
             </div>
           </div>
 
@@ -430,84 +555,12 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                   <span>eSIM Go Cost:</span>
                   <span>{formatCurrency(pricingData?.cost || 0)}</span>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex flex-col">
-                      <span>Our Markup:</span>
-                      <span className="text-xs text-gray-500">
-                        ({hasMarkupOverride ? 'Custom Override' : `from ${getMarkupSource()}`})
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={hasMarkupOverride ? 'text-orange-600 font-medium' : ''}>
-                        {formatCurrency(getEffectiveMarkup())}
-                      </span>
-                      {!isMarkupOverrideOpen && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setIsMarkupOverrideOpen(true)}
-                          className="h-6 w-6 p-0"
-                          title="Override markup for this specific bundle"
-                        >
-                          <Edit3 className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Markup Override Input */}
-                  {isMarkupOverrideOpen && (
-                    <div className="bg-gray-50 p-3 rounded-lg space-y-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Info className="h-4 w-4 text-blue-500" />
-                        <span className="text-gray-600">Override markup for this specific bundle configuration</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <InputWithAdornment
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={customMarkupAmount}
-                          onChange={(e) => setCustomMarkupAmount(e.target.value)}
-                          placeholder="Enter custom markup"
-                          leftAdornment="$"
-                          className="flex-1"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleMarkupOverride}
-                          className="h-8 w-8 p-0 text-green-600"
-                          title="Apply custom markup"
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setIsMarkupOverrideOpen(false)}
-                          className="h-8 w-8 p-0 text-red-600"
-                          title="Cancel"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      {hasMarkupOverride && (
-                        <div className="flex items-center justify-between pt-2 border-t">
-                          <span className="text-sm text-gray-600">Current override active</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={cancelMarkupOverride}
-                            className="text-xs"
-                          >
-                            Remove Override
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                <div className="flex justify-between">
+                  <span>Our Markup:</span>
+                  <span className={hasMarkupOverride ? 'text-orange-600 font-medium' : ''}>
+                    {formatCurrency(getEffectiveMarkup())}
+                    {hasMarkupOverride && <span className="text-xs ml-1">(Override)</span>}
+                  </span>
                 </div>
                 <div className="flex justify-between font-medium border-t pt-2">
                   <span>Total Cost:</span>
