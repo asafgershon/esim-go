@@ -166,11 +166,11 @@ export const ProcessingFeeDrawer: React.FC<ProcessingFeeDrawerProps> = ({
     setIsSubmitting(true);
     try {
       const input = {
-        israeliCardsRate: fees.israeliCardsRate / 100, // Convert percentage to decimal
-        foreignCardsRate: fees.foreignCardsRate / 100,
-        premiumDinersRate: fees.premiumDinersRate / 100,
-        premiumAmexRate: fees.premiumAmexRate / 100,
-        bitPaymentRate: fees.bitPaymentRate / 100,
+        israeliCardsRate: fees.israeliCardsRate, // Already in decimal format
+        foreignCardsRate: fees.foreignCardsRate,
+        premiumDinersRate: fees.premiumDinersRate,
+        premiumAmexRate: fees.premiumAmexRate,
+        bitPaymentRate: fees.bitPaymentRate,
         fixedFeeNIS: fees.fixedFeeNIS,
         fixedFeeForeign: fees.fixedFeeForeign,
         monthlyFixedCost: fees.monthlyFixedCost,

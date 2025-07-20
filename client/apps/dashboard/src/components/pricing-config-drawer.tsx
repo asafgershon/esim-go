@@ -1,7 +1,11 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { CountryBundle } from "@/__generated__/graphql";
+import { useMutation, useQuery } from "@apollo/client";
 import {
   Badge,
   Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
   Drawer,
   DrawerContent,
   DrawerDescription,
@@ -12,40 +16,22 @@ import {
   InputWithAdornment,
   Label,
   Separator,
-  Slider,
   SliderWithValue,
-  Switch, 
+  Switch,
   Textarea,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@workspace/ui';
-import React, { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { ChevronDown, ChevronRight, Info, Edit3, Check, X } from 'lucide-react';
-import { UPDATE_PRICING_CONFIGURATION, GET_CURRENT_PROCESSING_FEE_CONFIGURATION } from '../lib/graphql/queries';
-
-interface PricingData {
-  bundleName: string;
-  countryName: string;
-  duration: number;
-  cost: number;
-  costPlus: number;
-  totalCost: number;
-  discountRate: number;
-  discountValue: number;
-  priceAfterDiscount: number;
-  processingRate: number;
-  processingCost: number;
-  revenueAfterProcessing: number;
-  finalRevenue: number;
-  currency: string;
-}
+} from "@workspace/ui";
+import { Check, ChevronDown, ChevronRight, Edit3, Info, X } from "lucide-react";
+import React, { useEffect, useState, useCallback } from "react";
+import { toast } from "sonner";
+import {
+  GET_CURRENT_PROCESSING_FEE_CONFIGURATION,
+  UPDATE_PRICING_CONFIGURATION,
+} from "../lib/graphql/queries";
 
 interface PricingConfigDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  pricingData: PricingData | null;
+  pricingData: CountryBundle | null;
   onConfigurationSaved?: () => void;
 }
 
@@ -55,20 +41,25 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   pricingData,
   onConfigurationSaved,
 }) => {
-  const [updatePricingConfiguration, { loading }] = useMutation(UPDATE_PRICING_CONFIGURATION);
-  const { data: processingFeeConfig } = useQuery(GET_CURRENT_PROCESSING_FEE_CONFIGURATION, {
-    skip: !isOpen,
-  });
-  
+  const [updatePricingConfiguration, { loading }] = useMutation(
+    UPDATE_PRICING_CONFIGURATION
+  );
+  const { data: processingFeeConfig } = useQuery(
+    GET_CURRENT_PROCESSING_FEE_CONFIGURATION,
+    {
+      skip: !isOpen,
+    }
+  );
+
   const [isProcessingDetailsOpen, setIsProcessingDetailsOpen] = useState(false);
   const [isBasicConfigOpen, setIsBasicConfigOpen] = useState(false);
   const [isMarkupConfigOpen, setIsMarkupConfigOpen] = useState(false);
   const [isPricingConfigOpen, setIsPricingConfigOpen] = useState(false);
-  
+
   // Form state
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     costSplitPercent: 0.6,
     discountRate: 0.3,
     processingRate: 0.045,
@@ -78,18 +69,18 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
 
   // Price range state for dynamic pricing
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
-  
+
   // Simulator state
   const [simulatorDays, setSimulatorDays] = useState(7);
-  
+
   // Markup override state
   const [isMarkupOverrideOpen, setIsMarkupOverrideOpen] = useState(false);
-  const [customMarkupAmount, setCustomMarkupAmount] = useState<string>('');
+  const [customMarkupAmount, setCustomMarkupAmount] = useState<string>("");
   const [hasMarkupOverride, setHasMarkupOverride] = useState(false);
-  
+
   // Available bundle durations (common eSIM Go durations)
   const availableBundles = [3, 5, 7, 10, 14, 21, 30];
-  
+
   // Find the best bundle for simulator
   const getBestBundle = (requestedDays: number) => {
     // Try exact match first
@@ -97,7 +88,9 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
       return requestedDays;
     }
     // Find smallest bundle that covers the requested days
-    const suitableBundles = availableBundles.filter(bundle => bundle >= requestedDays);
+    const suitableBundles = availableBundles.filter(
+      (bundle) => bundle >= requestedDays
+    );
     if (suitableBundles.length > 0) {
       return Math.min(...suitableBundles);
     }
@@ -107,19 +100,19 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
 
   // Get markup source information based on bundle name and duration
   const getMarkupSource = () => {
-    if (!pricingData) return 'Unknown';
-    
+    if (!pricingData) return "Unknown";
+
     // Extract bundle group from bundle name
     // This is a simplified mapping - you might need to adjust based on actual bundle names
-    let bundleGroup = 'Standard - Unlimited Essential'; // Default
-    if (pricingData.bundleName.toLowerCase().includes('lite')) {
-      bundleGroup = 'Standard - Unlimited Lite';
-    } else if (pricingData.bundleName.toLowerCase().includes('essential')) {
-      bundleGroup = 'Standard - Unlimited Essential';
-    } else if (pricingData.bundleName.toLowerCase().includes('fixed')) {
-      bundleGroup = 'Standard Fixed';
+    let bundleGroup = "Standard - Unlimited Essential"; // Default
+    if (pricingData.bundleName.toLowerCase().includes("lite")) {
+      bundleGroup = "Standard - Unlimited Lite";
+    } else if (pricingData.bundleName.toLowerCase().includes("essential")) {
+      bundleGroup = "Standard - Unlimited Essential";
+    } else if (pricingData.bundleName.toLowerCase().includes("fixed")) {
+      bundleGroup = "Standard Fixed";
     }
-    
+
     return `${bundleGroup}, ${pricingData.duration} days`;
   };
 
@@ -130,16 +123,16 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
       setIsMarkupOverrideOpen(false);
       toast.success(`Custom markup of $${customMarkupAmount} applied`);
     } else {
-      toast.error('Please enter a valid markup amount');
+      toast.error("Please enter a valid markup amount");
     }
   };
 
   // Cancel markup override
   const cancelMarkupOverride = () => {
     setHasMarkupOverride(false);
-    setCustomMarkupAmount('');
+    setCustomMarkupAmount("");
     setIsMarkupOverrideOpen(false);
-    toast.info('Markup override removed');
+    toast.info("Markup override removed");
   };
 
   // Get effective markup amount (override or original)
@@ -153,41 +146,49 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   // Get the actual processing rate being used (default Israeli card rate)
   const getCurrentProcessingRate = () => {
     if (processingFeeConfig?.currentProcessingFeeConfiguration) {
-      return processingFeeConfig.currentProcessingFeeConfiguration.israeliCardsRate;
+      return processingFeeConfig.currentProcessingFeeConfiguration
+        .israeliCardsRate;
     }
     return pricingData?.processingRate || 0.045; // Fallback to pricing data or default
   };
 
   // Initialize form data when pricing data changes
-  useEffect(() => {
-    if (pricingData) {
-      setFormData({
-        name: `${pricingData.countryName} ${pricingData.duration}d Custom Config`,
-        description: `Custom pricing configuration for ${pricingData.countryName} ${pricingData.duration}-day bundles`,
-        costSplitPercent: pricingData.cost / pricingData.totalCost,
-        discountRate: pricingData.discountRate,
-        processingRate: getCurrentProcessingRate(),
-        isActive: true,
-        priority: 10,
-      });
-      
-      // Calculate profit-based price boundaries using effective markup
-      const currentPrice = pricingData.priceAfterDiscount;
-      const baseCosts = pricingData.cost + getEffectiveMarkup();
-      const processingCost = currentPrice * pricingData.processingRate;
-      const breakEvenPrice = baseCosts + processingCost + 0.01; // Minimum profitable price
-      const maxRecommendedPrice = Math.round(currentPrice * 1.5 * 100) / 100; // 50% above current
-      
-      setPriceRange([breakEvenPrice, maxRecommendedPrice]);
-    }
-  }, [pricingData, processingFeeConfig, hasMarkupOverride, customMarkupAmount]);
+  // useEffect(() => {
+  //   if (pricingData) {
+  //     setFormData({
+  //       name: `${pricingData.countryName} ${pricingData.duration}d Custom Config`,
+  //       description: `Custom pricing configuration for ${pricingData.countryName} ${pricingData.duration}-day bundles`,
+  //       costSplitPercent: pricingData.cost / pricingData.totalCost,
+  //       discountRate: pricingData.discountRate,
+  //       processingRate: getCurrentProcessingRate(),
+  //       isActive: true,
+  //       priority: 10,
+  //     });
+
+  //     // Calculate profit-based price boundaries using effective markup
+  //     const currentPrice = pricingData.priceAfterDiscount;
+  //     const baseCosts = pricingData.cost + getEffectiveMarkup();
+  //     const processingCost = currentPrice * pricingData.processingRate;
+  //     const breakEvenPrice = baseCosts + processingCost + 0.01; // Minimum profitable price
+  //     const maxRecommendedPrice = Math.round(currentPrice * 1.5 * 100) / 100; // 50% above current
+
+  //     setPriceRange([breakEvenPrice, maxRecommendedPrice]);
+  //   }
+  // }, [
+  //   pricingData,
+  //   processingFeeConfig,
+  //   hasMarkupOverride,
+  //   customMarkupAmount,
+  //   getCurrentProcessingRate,
+  //   getEffectiveMarkup,
+  // ]);
 
   const handleSave = async () => {
     if (!pricingData) return;
 
     try {
       // Extract country code from country name (this is a simplified approach)
-      const countryCode = pricingData.countryName === 'Austria' ? 'AT' : null;
+      const countryCode = pricingData.countryName === "Austria" ? "AT" : null;
 
       const result = await updatePricingConfiguration({
         variables: {
@@ -206,15 +207,18 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
       });
 
       if (result.data?.updatePricingConfiguration?.success) {
-        toast.success('Pricing configuration saved successfully!');
+        toast.success("Pricing configuration saved successfully!");
         onConfigurationSaved?.();
         onClose();
       } else {
-        toast.error(result.data?.updatePricingConfiguration?.error || 'Failed to save configuration');
+        toast.error(
+          result.data?.updatePricingConfiguration?.error ||
+            "Failed to save configuration"
+        );
       }
     } catch (error) {
-      console.error('Error saving pricing configuration:', error);
-      toast.error('Failed to save configuration');
+      console.error("Error saving pricing configuration:", error);
+      toast.error("Failed to save configuration");
     }
   };
 
@@ -223,14 +227,20 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
   const formatPercentage = (rate: number) => {
-    return (rate * 100).toFixed(1) + '%';
+    return (rate * 100).toFixed(1) + "%";
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
   };
 
   // Calculate preview values using actual costs and effective markup
@@ -239,23 +249,25 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   const previewTotalCost = previewCost + previewCostPlus;
   const previewDiscountValue = previewTotalCost * formData.discountRate;
   const previewPriceAfterDiscount = previewTotalCost - previewDiscountValue;
-  const previewProcessingCost = previewPriceAfterDiscount * formData.processingRate;
-  const previewRevenueAfterProcessing = previewPriceAfterDiscount - previewProcessingCost;
-  const previewFinalRevenue = previewRevenueAfterProcessing - previewCost - previewCostPlus;
+  const previewProcessingCost =
+    previewPriceAfterDiscount * formData.processingRate;
+  const previewRevenueAfterProcessing =
+    previewPriceAfterDiscount - previewProcessingCost;
+  const previewFinalRevenue =
+    previewRevenueAfterProcessing - previewCost - previewCostPlus;
 
-  if (!isOpen) {
-    return null;
-  }
 
   return (
-    <Drawer direction="bottom" open={isOpen} onOpenChange={onClose}>
+    <Drawer direction="bottom" open={isOpen} onOpenChange={handleOpenChange}>
       <DrawerContent className="fixed bottom-0 left-0 right-0 max-h-[85vh] z-50 bg-background border-t rounded-t-lg">
         <DrawerHeader>
           <DrawerTitle>Configure Pricing</DrawerTitle>
           <DrawerDescription>
             {pricingData && (
               <>
-                Adjust pricing configuration for <strong>{pricingData.bundleName}</strong> in <strong>{pricingData.countryName}</strong>
+                Adjust pricing configuration for{" "}
+                <strong>{pricingData.bundleName}</strong> in{" "}
+                <strong>{pricingData.countryName}</strong>
               </>
             )}
           </DrawerDescription>
@@ -266,14 +278,21 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
           <div className="w-1/3 p-6 border-r overflow-y-auto max-h-[65vh]">
             <h3 className="text-lg font-semibold mb-4">Configuration</h3>
             <div className="space-y-4">
-              
               {/* Basic Configuration Section */}
-              <Collapsible open={isBasicConfigOpen} onOpenChange={setIsBasicConfigOpen}>
+              <Collapsible
+                open={isBasicConfigOpen}
+                onOpenChange={setIsBasicConfigOpen}
+              >
                 <CollapsibleTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between p-4 h-auto">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between p-4 h-auto"
+                  >
                     <div className="text-left">
                       <div className="font-medium">Basic Configuration</div>
-                      <div className="text-sm text-gray-500">Configuration name and description</div>
+                      <div className="text-sm text-gray-500">
+                        Configuration name and description
+                      </div>
                     </div>
                     {isBasicConfigOpen ? (
                       <ChevronDown className="h-4 w-4" />
@@ -288,7 +307,12 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
+                      }
                       placeholder="Enter configuration name"
                     />
                   </div>
@@ -297,7 +321,12 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                     <Textarea
                       id="description"
                       value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
                       placeholder="Describe this pricing configuration"
                     />
                   </div>
@@ -305,13 +334,20 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
               </Collapsible>
 
               {/* Markup Configuration Section */}
-              <Collapsible open={isMarkupConfigOpen} onOpenChange={setIsMarkupConfigOpen}>
+              <Collapsible
+                open={isMarkupConfigOpen}
+                onOpenChange={setIsMarkupConfigOpen}
+              >
                 <CollapsibleTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between p-4 h-auto">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between p-4 h-auto"
+                  >
                     <div className="text-left">
                       <div className="font-medium">Markup Configuration</div>
                       <div className="text-sm text-gray-500">
-                        {hasMarkupOverride ? 'Custom Override' : 'Table Value'}: {formatCurrency(getEffectiveMarkup())}
+                        {hasMarkupOverride ? "Custom Override" : "Table Value"}:{" "}
+                        {formatCurrency(getEffectiveMarkup())}
                       </div>
                     </div>
                     {isMarkupConfigOpen ? (
@@ -328,11 +364,19 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col">
                           <span className="text-sm font-medium">
-                            {hasMarkupOverride ? 'Custom Override' : `Table Value (${getMarkupSource()})`}
+                            {hasMarkupOverride
+                              ? "Custom Override"
+                              : `Table Value (${getMarkupSource()})`}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`text-lg font-semibold ${hasMarkupOverride ? 'text-orange-600' : 'text-gray-900'}`}>
+                          <span
+                            className={`text-lg font-semibold ${
+                              hasMarkupOverride
+                                ? "text-orange-600"
+                                : "text-gray-900"
+                            }`}
+                          >
                             {formatCurrency(getEffectiveMarkup())}
                           </span>
                           {!isMarkupOverrideOpen && (
@@ -348,13 +392,16 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Markup Override Input */}
                       {isMarkupOverrideOpen && (
                         <div className="bg-gray-50 p-3 rounded-lg space-y-3">
                           <div className="flex items-center gap-2 text-sm">
                             <Info className="h-4 w-4 text-blue-500" />
-                            <span className="text-gray-600">Override markup for this specific bundle configuration</span>
+                            <span className="text-gray-600">
+                              Override markup for this specific bundle
+                              configuration
+                            </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <InputWithAdornment
@@ -362,7 +409,9 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                               min="0"
                               step="0.01"
                               value={customMarkupAmount}
-                              onChange={(e) => setCustomMarkupAmount(e.target.value)}
+                              onChange={(e) =>
+                                setCustomMarkupAmount(e.target.value)
+                              }
                               placeholder="Enter custom markup"
                               leftAdornment="$"
                               className="flex-1"
@@ -388,7 +437,9 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                           </div>
                           {hasMarkupOverride && (
                             <div className="flex items-center justify-between pt-2 border-t">
-                              <span className="text-sm text-gray-600">Current override active</span>
+                              <span className="text-sm text-gray-600">
+                                Current override active
+                              </span>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -401,10 +452,11 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                           )}
                         </div>
                       )}
-                      
+
                       <p className="text-sm text-gray-500">
-                        Fixed markup amount added to eSIM Go base cost. 
-                        {!hasMarkupOverride && ' Values come from your markup configuration table.'}
+                        Fixed markup amount added to eSIM Go base cost.
+                        {!hasMarkupOverride &&
+                          " Values come from your markup configuration table."}
                       </p>
                     </div>
                   </div>
@@ -412,13 +464,22 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
               </Collapsible>
 
               {/* Pricing Configuration Section */}
-              <Collapsible open={isPricingConfigOpen} onOpenChange={setIsPricingConfigOpen}>
+              <Collapsible
+                open={isPricingConfigOpen}
+                onOpenChange={setIsPricingConfigOpen}
+              >
                 <CollapsibleTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between p-4 h-auto">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between p-4 h-auto"
+                  >
                     <div className="text-left">
                       <div className="font-medium">Pricing Rules</div>
                       <div className="text-sm text-gray-500">
-                        Discount: {formatPercentage(formData.discountRate)} • Processing: {formatPercentage(getCurrentProcessingRate())} • Priority: {formData.priority}
+                        Discount: {formatPercentage(formData.discountRate)} •
+                        Processing:{" "}
+                        {formatPercentage(getCurrentProcessingRate())} •
+                        Priority: {formData.priority}
                       </div>
                     </div>
                     {isPricingConfigOpen ? (
@@ -438,7 +499,12 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                       max="100"
                       step="1"
                       value={Math.round(formData.discountRate * 100)}
-                      onChange={(e) => setFormData(prev => ({ ...prev, discountRate: parseFloat(e.target.value) / 100 }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          discountRate: parseFloat(e.target.value) / 100,
+                        }))
+                      }
                       rightAdornment="%"
                     />
                     <p className="text-sm text-gray-500 mt-1">
@@ -449,13 +515,23 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                   <div>
                     <Label>Processing Rate</Label>
                     <div className="mt-2">
-                      <Collapsible open={isProcessingDetailsOpen} onOpenChange={setIsProcessingDetailsOpen}>
+                      <Collapsible
+                        open={isProcessingDetailsOpen}
+                        onOpenChange={setIsProcessingDetailsOpen}
+                      >
                         <CollapsibleTrigger asChild>
-                          <Button variant="outline" className="w-full justify-between">
+                          <Button
+                            variant="outline"
+                            className="w-full justify-between"
+                          >
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-lg">{formatPercentage(getCurrentProcessingRate())}</span>
+                              <span className="font-medium text-lg">
+                                {formatPercentage(getCurrentProcessingRate())}
+                              </span>
                               <Badge variant="secondary" className="text-xs">
-                                {processingFeeConfig?.currentProcessingFeeConfiguration ? 'Dynamic' : 'Default'}
+                                {processingFeeConfig?.currentProcessingFeeConfiguration
+                                  ? "Dynamic"
+                                  : "Default"}
                               </Badge>
                             </div>
                             {isProcessingDetailsOpen ? (
@@ -469,26 +545,68 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                           <div className="bg-blue-50 p-3 rounded-lg space-y-2">
                             <div className="flex items-center gap-2 mb-2">
                               <Info className="h-4 w-4 text-blue-600" />
-                              <span className="text-sm font-medium text-blue-900">Processing Fee Details</span>
+                              <span className="text-sm font-medium text-blue-900">
+                                Processing Fee Details
+                              </span>
                             </div>
                             {processingFeeConfig?.currentProcessingFeeConfiguration ? (
                               <div className="text-sm text-blue-800 space-y-1">
-                                <p><strong>Israeli Cards:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.israeliCardsRate)}</p>
-                                <p><strong>Foreign Cards:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.foreignCardsRate)}</p>
-                                <p><strong>Bit Payments:</strong> {formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.bitPaymentRate)}</p>
-                                <p><strong>Premium Amex:</strong> +{formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.premiumAmexRate)}</p>
-                                <p><strong>Premium Diners:</strong> +{formatPercentage(processingFeeConfig.currentProcessingFeeConfiguration.premiumDinersRate)}</p>
+                                <p>
+                                  <strong>Israeli Cards:</strong>{" "}
+                                  {formatPercentage(
+                                    processingFeeConfig
+                                      .currentProcessingFeeConfiguration
+                                      .israeliCardsRate
+                                  )}
+                                </p>
+                                <p>
+                                  <strong>Foreign Cards:</strong>{" "}
+                                  {formatPercentage(
+                                    processingFeeConfig
+                                      .currentProcessingFeeConfiguration
+                                      .foreignCardsRate
+                                  )}
+                                </p>
+                                <p>
+                                  <strong>Bit Payments:</strong>{" "}
+                                  {formatPercentage(
+                                    processingFeeConfig
+                                      .currentProcessingFeeConfiguration
+                                      .bitPaymentRate
+                                  )}
+                                </p>
+                                <p>
+                                  <strong>Premium Amex:</strong> +
+                                  {formatPercentage(
+                                    processingFeeConfig
+                                      .currentProcessingFeeConfiguration
+                                      .premiumAmexRate
+                                  )}
+                                </p>
+                                <p>
+                                  <strong>Premium Diners:</strong> +
+                                  {formatPercentage(
+                                    processingFeeConfig
+                                      .currentProcessingFeeConfiguration
+                                      .premiumDinersRate
+                                  )}
+                                </p>
                                 <div className="mt-2 pt-2 border-t border-blue-200">
                                   <p className="text-xs text-blue-600">
-                                    Rates are managed centrally in Processing Fee Configuration
+                                    Rates are managed centrally in Processing
+                                    Fee Configuration
                                   </p>
                                 </div>
                               </div>
                             ) : (
                               <div className="text-sm text-blue-800">
-                                <p>Using default processing rate of {formatPercentage(0.045)}</p>
+                                <p>
+                                  Using default processing rate of{" "}
+                                  {formatPercentage(0.045)}
+                                </p>
                                 <p className="text-xs text-blue-600 mt-1">
-                                  Configure dynamic rates in Processing Fee Management
+                                  Configure dynamic rates in Processing Fee
+                                  Management
                                 </p>
                               </div>
                             )}
@@ -497,7 +615,8 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                       </Collapsible>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">
-                      Processing fee is managed centrally and updates automatically
+                      Processing fee is managed centrally and updates
+                      automatically
                     </p>
                   </div>
 
@@ -509,7 +628,12 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                       min="1"
                       max="100"
                       value={formData.priority}
-                      onChange={(e) => setFormData(prev => ({ ...prev, priority: parseInt(e.target.value) }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          priority: parseInt(e.target.value),
+                        }))
+                      }
                       rightAdornment="priority"
                     />
                     <p className="text-sm text-gray-500 mt-1">
@@ -521,29 +645,45 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                     <Switch
                       id="isActive"
                       checked={formData.isActive}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({ ...prev, isActive: checked }))
+                      }
                     />
                     <Label htmlFor="isActive">Active Configuration</Label>
                   </div>
                 </CollapsibleContent>
               </Collapsible>
-
             </div>
           </div>
 
           {/* Middle: Preview and Price Range */}
           <div className="w-1/3 p-6 border-r overflow-y-auto max-h-[65vh]">
             <h3 className="text-lg font-semibold mb-4">Preview & Analysis</h3>
-            
+
             {/* Bundle Information */}
             {pricingData && (
               <div className="bg-blue-50 p-3 rounded-lg mb-4">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">Bundle Information</h4>
+                <h4 className="text-sm font-medium text-blue-900 mb-2">
+                  Bundle Information
+                </h4>
                 <div className="text-sm text-blue-800 space-y-1">
-                  <p><strong>Requested:</strong> {pricingData.duration} days</p>
-                  <p><strong>eSIM Go Bundle:</strong> {pricingData.bundleName}</p>
-                  <p><strong>eSIM Go Cost:</strong> {formatCurrency(pricingData.cost)}</p>
-                  <p><strong>Our Markup:</strong> {formatCurrency(getEffectiveMarkup())} {hasMarkupOverride && <span className="text-orange-600">(Override)</span>}</p>
+                  <p>
+                    <strong>Requested:</strong> {pricingData.duration} days
+                  </p>
+                  <p>
+                    <strong>eSIM Go Bundle:</strong> {pricingData.bundleName}
+                  </p>
+                  <p>
+                    <strong>eSIM Go Cost:</strong>{" "}
+                    {formatCurrency(pricingData.cost)}
+                  </p>
+                  <p>
+                    <strong>Our Markup:</strong>{" "}
+                    {formatCurrency(getEffectiveMarkup())}{" "}
+                    {hasMarkupOverride && (
+                      <span className="text-orange-600">(Override)</span>
+                    )}
+                  </p>
                 </div>
               </div>
             )}
@@ -557,40 +697,63 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span>Our Markup:</span>
-                  <span className={hasMarkupOverride ? 'text-orange-600 font-medium' : ''}>
+                  <span
+                    className={
+                      hasMarkupOverride ? "text-orange-600 font-medium" : ""
+                    }
+                  >
                     {formatCurrency(getEffectiveMarkup())}
-                    {hasMarkupOverride && <span className="text-xs ml-1">(Override)</span>}
+                    {hasMarkupOverride && (
+                      <span className="text-xs ml-1">(Override)</span>
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between font-medium border-t pt-2">
                   <span>Total Cost:</span>
                   <span>
-                    {pricingData 
-                      ? formatCurrency((pricingData.cost || 0) + getEffectiveMarkup()) 
-                      : '$0.00'
-                    }
+                    {pricingData
+                      ? formatCurrency(
+                          (pricingData.cost || 0) + getEffectiveMarkup()
+                        )
+                      : "$0.00"}
                   </span>
                 </div>
-                
+
                 {/* Show unused days discount if applicable */}
-                {pricingData && pricingData.bundleName.includes('days') && (
+                {pricingData && pricingData.bundleName.includes("days") && (
                   <div className="flex justify-between text-orange-600">
                     <span>Unused Days Discount:</span>
-                    <span>-{formatCurrency((pricingData.cost + getEffectiveMarkup()) * 0.1)}</span>
+                    <span>
+                      -
+                      {formatCurrency(
+                        (pricingData.cost + getEffectiveMarkup()) * 0.1
+                      )}
+                    </span>
                   </div>
                 )}
-                
+
                 <div className="flex justify-between">
-                  <span>Customer Discount ({formatPercentage(formData.discountRate)}):</span>
-                  <span className="text-green-600">-{formatCurrency(previewDiscountValue)}</span>
+                  <span>
+                    Customer Discount ({formatPercentage(formData.discountRate)}
+                    ):
+                  </span>
+                  <span className="text-green-600">
+                    -{formatCurrency(previewDiscountValue)}
+                  </span>
                 </div>
                 <div className="flex justify-between font-medium">
                   <span>Price After Discount:</span>
-                  <span className="text-blue-600">{formatCurrency(previewPriceAfterDiscount)}</span>
+                  <span className="text-blue-600">
+                    {formatCurrency(previewPriceAfterDiscount)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Processing ({formatPercentage(formData.processingRate)}):</span>
-                  <span className="text-yellow-600">-{formatCurrency(previewProcessingCost)}</span>
+                  <span>
+                    Processing ({formatPercentage(formData.processingRate)}):
+                  </span>
+                  <span className="text-yellow-600">
+                    -{formatCurrency(previewProcessingCost)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Revenue After Processing:</span>
@@ -598,7 +761,9 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                 </div>
                 <div className="flex justify-between font-medium border-t pt-2">
                   <span>Final Revenue (Profit):</span>
-                  <span className="text-green-600">{formatCurrency(previewFinalRevenue)}</span>
+                  <span className="text-green-600">
+                    {formatCurrency(previewFinalRevenue)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -613,7 +778,11 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                   <div className="flex justify-between items-center text-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-600">Break-even:</span>
-                      <Badge variant="destructive">{formatCurrency(previewCost + previewCostPlus + previewProcessingCost)}</Badge>
+                      <Badge variant="destructive">
+                        {formatCurrency(
+                          previewCost + previewCostPlus + previewProcessingCost
+                        )}
+                      </Badge>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-gray-600">Current:</span>
@@ -623,16 +792,31 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-gray-600">Max Recommended:</span>
-                      <Badge variant="outline">{formatCurrency(priceRange[1])}</Badge>
+                      <Badge variant="outline">
+                        {formatCurrency(priceRange[1])}
+                      </Badge>
                     </div>
                   </div>
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <p className="text-sm text-gray-700">
-                      <strong>Profit Margin:</strong> {formatCurrency(previewFinalRevenue)} 
-                      ({previewFinalRevenue > 0 ? '+' : ''}{((previewFinalRevenue / (previewCost + previewCostPlus)) * 100).toFixed(1)}%)
+                      <strong>Profit Margin:</strong>{" "}
+                      {formatCurrency(previewFinalRevenue)}(
+                      {previewFinalRevenue > 0 ? "+" : ""}
+                      {(
+                        (previewFinalRevenue /
+                          (previewCost + previewCostPlus)) *
+                        100
+                      ).toFixed(1)}
+                      %)
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
-                      Minimum profitable price: {formatCurrency(previewCost + previewCostPlus + previewProcessingCost + 0.01)}
+                      Minimum profitable price:{" "}
+                      {formatCurrency(
+                        previewCost +
+                          previewCostPlus +
+                          previewProcessingCost +
+                          0.01
+                      )}
                     </p>
                   </div>
                 </div>
@@ -643,7 +827,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
           {/* Right Side: Price Simulator */}
           <div className="w-1/3 p-6 overflow-y-auto max-h-[65vh]">
             <h3 className="text-lg font-semibold mb-4">Price Simulator</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="simulatorDays">Days: {simulatorDays}</Label>
@@ -669,11 +853,14 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                   {(() => {
                     const bestBundle = getBestBundle(simulatorDays);
                     const unusedDays = Math.max(0, bestBundle - simulatorDays);
-                    const unusedDaysDiscount = unusedDays > 0 ? (unusedDays / bestBundle) * 0.1 : 0;
+                    const unusedDaysDiscount =
+                      unusedDays > 0 ? (unusedDays / bestBundle) * 0.1 : 0;
                     const basePrice = pricingData?.totalCost || 0;
-                    const priceAfterUnusedDiscount = basePrice * (1 - unusedDaysDiscount);
-                    const finalPrice = priceAfterUnusedDiscount * (1 - formData.discountRate);
-                    
+                    const priceAfterUnusedDiscount =
+                      basePrice * (1 - unusedDaysDiscount);
+                    const finalPrice =
+                      priceAfterUnusedDiscount * (1 - formData.discountRate);
+
                     return (
                       <>
                         <div className="flex justify-between">
@@ -696,18 +883,41 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                           <span>{formatCurrency(pricingData?.cost || 0)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Our Markup ({Math.round((formData.costSplitPercent / (1 - formData.costSplitPercent)) * 100)}%):</span>
-                          <span>{formatCurrency(pricingData?.costPlus || 0)}</span>
+                          <span>
+                            Our Markup (
+                            {Math.round(
+                              (formData.costSplitPercent /
+                                (1 - formData.costSplitPercent)) *
+                                100
+                            )}
+                            %):
+                          </span>
+                          <span>
+                            {formatCurrency(pricingData?.costPlus || 0)}
+                          </span>
                         </div>
                         {unusedDays > 0 && (
                           <div className="flex justify-between text-orange-600">
-                            <span>Unused Days Discount ({(unusedDaysDiscount * 100).toFixed(1)}%):</span>
-                            <span>-{formatCurrency(basePrice * unusedDaysDiscount)}</span>
+                            <span>
+                              Unused Days Discount (
+                              {(unusedDaysDiscount * 100).toFixed(1)}%):
+                            </span>
+                            <span>
+                              -{formatCurrency(basePrice * unusedDaysDiscount)}
+                            </span>
                           </div>
                         )}
                         <div className="flex justify-between">
-                          <span>Customer Discount ({formatPercentage(formData.discountRate)}):</span>
-                          <span className="text-green-600">-{formatCurrency(priceAfterUnusedDiscount * formData.discountRate)}</span>
+                          <span>
+                            Customer Discount (
+                            {formatPercentage(formData.discountRate)}):
+                          </span>
+                          <span className="text-green-600">
+                            -
+                            {formatCurrency(
+                              priceAfterUnusedDiscount * formData.discountRate
+                            )}
+                          </span>
                         </div>
                         <Separator className="my-2" />
                         <div className="flex justify-between font-medium text-lg">
@@ -751,7 +961,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
         <DrawerFooter>
           <div className="flex gap-2">
             <Button onClick={handleSave} disabled={loading}>
-              {loading ? 'Saving...' : 'Save Configuration'}
+              {loading ? "Saving..." : "Save Configuration"}
             </Button>
             <Button variant="outline" onClick={handleCancel}>
               Cancel
