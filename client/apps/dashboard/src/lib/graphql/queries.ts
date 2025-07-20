@@ -308,7 +308,6 @@ export const CALCULATE_PRICING = gql(`
       priceAfterDiscount
       processingRate
       processingCost
-      revenueAfterProcessing
       finalRevenue
       currency
     }
@@ -329,7 +328,6 @@ export const CALCULATE_BATCH_PRICING = gql(`
       priceAfterDiscount
       processingRate
       processingCost
-      revenueAfterProcessing
       finalRevenue
       currency
     }
@@ -556,6 +554,53 @@ export const DEACTIVATE_PROCESSING_FEE_CONFIGURATION = gql(`
       updatedAt
       createdBy
       notes
+    }
+  }
+`)
+
+export const GET_BUNDLES_BY_COUNTRY = gql(`
+  query GetBundlesByCountry {
+    bundlesByCountry {
+      countryName
+      countryId
+      totalBundles
+      avgPricePerDay
+      hasCustomDiscount
+      avgDiscountRate
+      totalDiscountValue
+      avgCost
+      avgCostPlus
+      avgTotalCost
+      avgProcessingRate
+      avgProcessingCost
+      avgFinalRevenue
+      totalRevenue
+      avgNetProfit
+      avgProfitMargin
+      lastFetched
+    }
+  }
+`)
+
+export const GET_COUNTRY_BUNDLES = gql(`
+  query GetCountryBundles($countryId: String!) {
+    countryBundles(countryId: $countryId) {
+      bundleName
+      countryName
+      countryId
+      duration
+      cost
+      costPlus
+      totalCost
+      discountRate
+      discountValue
+      priceAfterDiscount
+      processingRate
+      processingCost
+      finalRevenue
+      currency
+      pricePerDay
+      hasCustomDiscount
     }
   }
 `)
