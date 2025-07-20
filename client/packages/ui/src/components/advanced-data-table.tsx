@@ -94,6 +94,10 @@ interface AdvancedDataTableProps<TData, TValue> {
   
   // Grouping support
   grouping?: string[]
+  autoExpandOnSearch?: boolean
+  
+  // Table meta data for passing state to cell renderers
+  meta?: any
 }
 
 export function AdvancedDataTable<TData, TValue>({
@@ -117,6 +121,8 @@ export function AdvancedDataTable<TData, TValue>({
   showSelectedCount = true,
   stickyHeader = false,
   grouping = [],
+  autoExpandOnSearch = true,
+  meta,
 }: AdvancedDataTableProps<TData, TValue>) {
   // Core table state
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -129,6 +135,7 @@ export function AdvancedDataTable<TData, TValue>({
   })
   const [groupingState, setGroupingState] = React.useState<GroupingState>(grouping || [])
   const [expanded, setExpanded] = React.useState<ExpandedState>({})
+  const [savedExpandedState, setSavedExpandedState] = React.useState<ExpandedState>({})
   const [columnPinning, setColumnPinning] = React.useState<ColumnPinningState>(() => {
     // Initialize with plugin state if available
     const initialState = plugins.reduce((acc, plugin) => {
@@ -225,7 +232,7 @@ export function AdvancedDataTable<TData, TValue>({
   }, [])
 
   // Helper function for column pinning styles (enhanced with scroll-aware shadows)
-  const getCommonPinningStyles = (column: any) => {
+  const getCommonPinningStyles = (column: any): React.CSSProperties => {
     const isPinned = column.getIsPinned()
     const isLastLeftPinnedColumn = isPinned === "left" && column.getIsLastColumn("left")
     const isFirstRightPinnedColumn = isPinned === "right" && column.getIsFirstColumn("right")
@@ -239,7 +246,7 @@ export function AdvancedDataTable<TData, TValue>({
         : undefined,
       left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
       right: isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
-      position: isPinned ? "sticky" : "relative",
+      position: isPinned ? ("sticky" as const) : ("relative" as const),
       // Add solid background to prevent see-through effect using container's background
       backgroundColor: isPinned ? containerBgColor : undefined,
       width: column.getSize(),
@@ -251,6 +258,14 @@ export function AdvancedDataTable<TData, TValue>({
   const table = useReactTable({
     data,
     columns: enhancedColumns,
+    getRowId: (row, index) => {
+      // Use stable IDs for rows to prevent scroll jumping
+      if (row.id) return String(row.id)
+      if (row.countryId && row.duration !== undefined) {
+        return row.duration === 0 ? `summary-${row.countryId}` : `bundle-${row.countryId}-${row.duration}`
+      }
+      return String(index)
+    },
     state: {
       sorting: enableSorting ? sorting : [],
       columnFilters: enableFiltering ? columnFilters : [],
@@ -262,6 +277,9 @@ export function AdvancedDataTable<TData, TValue>({
       columnPinning: columnPinning,
       ...pluginState,
     },
+    meta, // Pass the meta data to the table - this is the key!
+    autoResetPageIndex: false,
+    
     onSortingChange: enableSorting ? setSorting : undefined,
     onColumnFiltersChange: enableFiltering ? setColumnFilters : undefined,
     onColumnVisibilityChange: enableColumnVisibility ? setColumnVisibility : undefined,
@@ -284,6 +302,45 @@ export function AdvancedDataTable<TData, TValue>({
     enableColumnPinning: true, // Enable column pinning
     ...pluginOptions,
   })
+
+  // Handle search and grouping interaction
+  React.useEffect(() => {
+    if (!searchKey || !enableFiltering || !autoExpandOnSearch) return
+
+    const searchColumn = table.getColumn(searchKey)
+    if (!searchColumn) return
+    
+    const searchValue = searchColumn.getFilterValue() as string
+    
+    if (searchValue && searchValue.trim()) {
+      // Save current expanded state before auto-expanding
+      setSavedExpandedState(expanded)
+      
+      // Auto-expand groups that contain search results
+      const rowModel = table.getRowModel()
+      const newExpanded: ExpandedState = {}
+      
+      rowModel.rows.forEach(row => {
+        if (row.getIsGrouped()) {
+          // Check if this group or its children match the search
+          const hasMatchingChild = row.subRows?.some(subRow => {
+            const cellValue = subRow.getValue(searchKey)
+            return cellValue && 
+              String(cellValue).toLowerCase().includes(searchValue.toLowerCase())
+          })
+          
+          if (hasMatchingChild) {
+            newExpanded[row.id] = true
+          }
+        }
+      })
+      
+      setExpanded(newExpanded)
+    } else {
+      // Restore saved expanded state when search is cleared
+      setExpanded(savedExpandedState)
+    }
+  }, [searchKey, enableFiltering, autoExpandOnSearch, table, expanded, setSavedExpandedState])
 
   // Handle row selection callback
   React.useEffect(() => {
@@ -368,21 +425,12 @@ export function AdvancedDataTable<TData, TValue>({
                 onChange={(event) =>
                   table.getColumn(searchKey)?.setFilterValue(event.target.value)
                 }
-                className="max-w-sm"
+                className="w-80"
               />
             </div>
           )}
           
-          {/* Selected count */}
-          {enableRowSelection && showSelectedCount && selectedRowCount > 0 && (
-            <div className="text-sm text-muted-foreground">
-              {selectedRowCount} of {totalRowCount} row(s) selected
-            </div>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {/* Column visibility */}
+          {/* Column visibility - moved inline with search */}
           {enableColumnVisibility && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -409,6 +457,17 @@ export function AdvancedDataTable<TData, TValue>({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+          
+          {/* Selected count */}
+          {enableRowSelection && showSelectedCount && selectedRowCount > 0 && (
+            <div className="text-sm text-muted-foreground">
+              {selectedRowCount} of {totalRowCount} row(s) selected
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {/* Empty space for future controls */}
         </div>
       </div>
 
