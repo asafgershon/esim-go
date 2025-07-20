@@ -23,7 +23,7 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
-import { OrderDetailsDrawer } from "@/components/order-details-drawer";
+// import { OrderDetailsDrawer } from "@/components/order-details-drawer";
 import { useState } from "react";
 
 function getStatusColor(
@@ -326,11 +326,11 @@ export function OrdersPage() {
         </CardContent>
       </Card>
 
-      <OrderDetailsDrawer
+      {/* <OrderDetailsDrawer
         orderId={selectedOrderId}
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
-      />
+      /> */}
     </div>
   );
 }

@@ -5,6 +5,7 @@ export interface LogContext {
   correlationId?: string;
   userId?: string;
   operationType?: string;
+  code?: string;
   duration?: number;
   [key: string]: any;
 }

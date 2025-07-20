@@ -33,6 +33,8 @@ export * from './components/tooltip'
 export * from './components/advanced-data-table'
 export * from './components/checkbox'
 export * from './components/table-plugins'
+export * from './components/table-builder'
+export * from './components/column-context-menu'
 // Utils
 export * from "./lib/utils" 
 export * from "./lib/font-utils" 

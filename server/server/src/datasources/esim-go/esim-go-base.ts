@@ -55,14 +55,6 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     request.headers["Content-Type"] = "application/json";
     request.headers["User-Agent"] = "curl/8.7.1"; // Mimic curl user agent
     
-    // Debug: Log the final request details
-    this.log.debug('Final request details', {
-      url: this.baseURL + _path,
-      method: request.method || 'GET',
-      apiKeyLength: apiKey.length,
-      headerCount: Object.keys(request.headers).length,
-      operationType: 'api-request'
-    });
     
     // Set timeout to prevent hanging requests
     request.timeout = 15000; // 15 seconds
@@ -122,10 +114,6 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
   ): Promise<T> {
     try {
       // TEMPORARY: Use native fetch to test if Apollo is the issue
-      this.log.debug('Testing with native fetch', { 
-        path,
-        operationType: 'api-request-fallback'
-      });
       const url = new URL(path, this.baseURL);
       if (params) {
         Object.entries(params).forEach(([key, value]) => {
@@ -155,7 +143,6 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
       }
       
       const result = await response.json();
-      this.log.debug('Native fetch succeeded', { operationType: 'api-request-fallback' });
       return result;
       
     } catch (error: any) {

@@ -55,6 +55,7 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
   // Simulation state
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [simulatorDays, setSimulatorDays] = useState(7);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('ISRAELI_CARD');
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   
@@ -87,12 +88,12 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
     return (rate * 100).toFixed(1) + '%';
   };
 
-  // Run simulation when country or duration changes
+  // Run simulation when country, duration, or payment method changes
   useEffect(() => {
     if (selectedCountry && simulatorDays) {
       runSimulation();
     }
-  }, [selectedCountry, simulatorDays]);
+  }, [selectedCountry, simulatorDays, selectedPaymentMethod]);
 
   const runSimulation = async () => {
     if (!selectedCountry) {
@@ -117,6 +118,7 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
             numOfDays: bestBundle,
             regionId: country.region,
             countryId: selectedCountry,
+            paymentMethod: selectedPaymentMethod,
           }],
         },
       });
@@ -186,7 +188,7 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
               Configuration
             </h3>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               {/* Country Selection */}
               <div>
                 <Label htmlFor="country">Select Country</Label>
@@ -205,6 +207,28 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
                         </div>
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Payment Method Selection */}
+              <div>
+                <Label htmlFor="paymentMethod">Payment Method</Label>
+                <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ISRAELI_CARD">
+                      <div className="flex items-center gap-2">
+                        <span>Israeli Card</span>
+                        <Badge variant="outline" className="text-xs">Default</Badge>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="FOREIGN_CARD">Foreign Card</SelectItem>
+                    <SelectItem value="BIT">Bit Payment</SelectItem>
+                    <SelectItem value="AMEX">American Express</SelectItem>
+                    <SelectItem value="DINERS">Diners Club</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

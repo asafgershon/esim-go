@@ -47,7 +47,6 @@ export class CatalogSyncService {
       
       while (hasMore) {
         try {
-          this.logger.debug('Fetching country page', { countryId, page, operationType: 'country-sync' });
           
           const response = await this.catalogueDataSource.getWithErrorHandling<{
             bundles: ESIMGoDataPlan[];
@@ -69,14 +68,6 @@ export class CatalogSyncService {
           }
           
           allBundles.push(...response.bundles);
-          const durations = [...new Set(response.bundles.map(b => b.duration))];
-          this.logger.debug('Page fetched successfully', { 
-            countryId, 
-            page, 
-            bundleCount: response.bundles.length,
-            durations,
-            operationType: 'country-sync'
-          });
           
           // Stop if we got less than a full page (indicates last page)
           hasMore = response.bundles.length === 100;
@@ -238,7 +229,6 @@ export class CatalogSyncService {
       
       for (const groupName of this.BUNDLE_GROUPS) {
         try {
-          this.logger.debug('Syncing bundle group', { groupName, operationType: 'bundle-group-sync' });
           
           const response = await this.catalogueDataSource.getWithErrorHandling<{
             bundles: ESIMGoDataPlan[];
@@ -249,11 +239,6 @@ export class CatalogSyncService {
           });
           
           if (response.bundles && response.bundles.length > 0) {
-            this.logger.debug('Bundle group fetched', { 
-              groupName, 
-              bundleCount: response.bundles.length,
-              operationType: 'bundle-group-sync'
-            });
             
             // Store by group with 30-day TTL as Jason recommended
             const groupKey = this.getGroupKey(groupName);
@@ -325,12 +310,6 @@ export class CatalogSyncService {
             
             allBundles.push(...response.bundles);
             const durations = [...new Set(response.bundles.map(b => b.duration))];
-            this.logger.debug('Fallback page fetched', {
-              page,
-              bundleCount: response.bundles.length,
-              durations: durations.sort((a, b) => a - b),
-              operationType: 'fallback-sync'
-            });
             
             hasMore = response.bundles.length === 50;
             page++;
@@ -622,10 +601,6 @@ export class CatalogSyncService {
         });
         await this.syncFullCatalog();
       } else {
-        this.logger.debug('Catalog is fresh, skipping sync', { 
-          daysSinceSync: daysSinceSync.toFixed(1),
-          operationType: 'periodic-sync'
-        });
       }
     } catch (error) {
       this.logger.error('Error checking catalog sync status', error as Error, { operationType: 'periodic-sync' });

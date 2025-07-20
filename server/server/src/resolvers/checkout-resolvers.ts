@@ -86,11 +86,9 @@ export const checkoutResolvers: Partial<Resolvers> = {
     // Get checkout session by token
     getCheckoutSession: async (_, { token }, context: Context) => {
       try {
-        logger.debug('Getting checkout session for token', { operationType: 'session-retrieval' });
 
         // Validate token and extract session info
         const decoded = validateCheckoutToken(token);
-        logger.debug('Token decoded', { sessionId: decoded.sessionId, operationType: 'session-retrieval' });
 
         // Get session from database using repository
         const session = await context.repositories.checkoutSessions.getById(
@@ -186,9 +184,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         );
 
         const { plan } = pricing;
-        logger.debug('Found plan', { planName: plan.name, price: plan.price, operationType: 'pricing-calculation' });
 
-        logger.debug('Calculated pricing', { pricing, operationType: 'pricing-calculation' });
 
         // Create session in database using repository
         const session = await context.repositories.checkoutSessions.create({
@@ -218,7 +214,6 @@ export const checkoutResolvers: Partial<Resolvers> = {
         });
 
         logger.info('Created session', { sessionId: session.id, operationType: 'session-creation' });
-        logger.debug('Authentication status', { isAuthenticated: context.auth?.isAuthenticated, operationType: 'session-creation' });
 
         // Generate JWT token (include session ID even if user not authenticated)
         const token = generateCheckoutToken(

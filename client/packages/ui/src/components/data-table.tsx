@@ -84,7 +84,7 @@ export function DataTable<TData, TValue>({
             placeholder={searchPlaceholder}
             value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
-              table.getColumn(searchKey)?.setFilterValue(event.target.value)
+              table.getColumn(searchKey)?.setFilterValue((event.target as HTMLInputElement).value)
             }
             className="max-w-sm"
           />

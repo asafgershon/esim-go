@@ -61,7 +61,7 @@ INSERT INTO public.pricing_configurations (
     'Default Global Pricing',
     'Default pricing configuration that applies to all bundles when no specific rules match',
     0.60, -- 60% cost split
-    0.30, -- 30% discount
+    0.0, -- 0% discount
     0.045, -- 4.5% processing
     true,
     1, -- Low priority (will be overridden by specific rules)

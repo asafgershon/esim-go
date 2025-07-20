@@ -360,6 +360,114 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_markup_config: {
+        Row: {
+          bundle_group: string
+          created_at: string | null
+          duration_days: number
+          id: string
+          markup_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          bundle_group: string
+          created_at?: string | null
+          duration_days: number
+          id?: string
+          markup_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          bundle_group?: string
+          created_at?: string | null
+          duration_days?: number
+          id?: string
+          markup_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      processing_fee_configurations: {
+        Row: {
+          apple_google_pay_fee: number
+          bank_withdrawal_fee: number
+          bit_payment_rate: number
+          cancellation_fee: number
+          chargeback_fee: number
+          created_at: string
+          created_by: string
+          effective_from: string
+          effective_to: string | null
+          fixed_fee_foreign: number
+          fixed_fee_nis: number
+          foreign_cards_rate: number
+          id: string
+          invoice_service_fee: number
+          is_active: boolean
+          israeli_cards_rate: number
+          monthly_fixed_cost: number
+          monthly_minimum_fee: number
+          notes: string | null
+          premium_amex_rate: number
+          premium_diners_rate: number
+          setup_cost: number
+          three_d_secure_fee: number
+          updated_at: string
+        }
+        Insert: {
+          apple_google_pay_fee?: number
+          bank_withdrawal_fee?: number
+          bit_payment_rate?: number
+          cancellation_fee?: number
+          chargeback_fee?: number
+          created_at?: string
+          created_by: string
+          effective_from?: string
+          effective_to?: string | null
+          fixed_fee_foreign?: number
+          fixed_fee_nis?: number
+          foreign_cards_rate?: number
+          id?: string
+          invoice_service_fee?: number
+          is_active?: boolean
+          israeli_cards_rate?: number
+          monthly_fixed_cost?: number
+          monthly_minimum_fee?: number
+          notes?: string | null
+          premium_amex_rate?: number
+          premium_diners_rate?: number
+          setup_cost?: number
+          three_d_secure_fee?: number
+          updated_at?: string
+        }
+        Update: {
+          apple_google_pay_fee?: number
+          bank_withdrawal_fee?: number
+          bit_payment_rate?: number
+          cancellation_fee?: number
+          chargeback_fee?: number
+          created_at?: string
+          created_by?: string
+          effective_from?: string
+          effective_to?: string | null
+          fixed_fee_foreign?: number
+          fixed_fee_nis?: number
+          foreign_cards_rate?: number
+          id?: string
+          invoice_service_fee?: number
+          is_active?: boolean
+          israeli_cards_rate?: number
+          monthly_fixed_cost?: number
+          monthly_minimum_fee?: number
+          notes?: string | null
+          premium_amex_rate?: number
+          premium_diners_rate?: number
+          setup_cost?: number
+          three_d_secure_fee?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           first_name: string | null

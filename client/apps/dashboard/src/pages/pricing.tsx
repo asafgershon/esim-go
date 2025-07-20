@@ -2,11 +2,12 @@ import { Country, PricingConfiguration } from '@/__generated__/graphql';
 import { useLazyQuery, useQuery } from '@apollo/client';
 import React, { useEffect, useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
-import { Calculator, CreditCard } from 'lucide-react';
+import { Calculator, CreditCard, DollarSign } from 'lucide-react';
 import { CountryPricingTableGrouped } from '../components/country-pricing-table-grouped';
 import { PricingConfigDrawer } from '../components/pricing-config-drawer';
 import { PricingSimulatorDrawer } from '../components/pricing-simulator-drawer';
 import { ProcessingFeeDrawer } from '../components/processing-fee-drawer';
+import { MarkupTableDrawer } from '../components/markup-table-drawer';
 import { CALCULATE_BATCH_PRICING, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
 
 interface PricingData {
@@ -46,6 +47,7 @@ const PricingPage: React.FC = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [isProcessingFeeOpen, setIsProcessingFeeOpen] = useState(false);
+  const [isMarkupTableOpen, setIsMarkupTableOpen] = useState(false);
 
   // Fetch countries, data plans, and pricing configurations
   const { data: countriesData } = useQuery(GET_COUNTRIES);
@@ -277,12 +279,20 @@ const PricingPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Pricing Management</h1>
         <div className="flex items-center gap-4">
           <Button
+            onClick={() => setIsMarkupTableOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <DollarSign className="h-4 w-4" />
+            Markup Table
+          </Button>
+          <Button
             onClick={() => setIsProcessingFeeOpen(true)}
             variant="outline"
             className="flex items-center gap-2"
           >
             <CreditCard className="h-4 w-4" />
-            Manage Processing Fee
+            Processing Fee
           </Button>
           <Button
             onClick={() => setIsSimulatorOpen(true)}
@@ -324,6 +334,12 @@ const PricingPage: React.FC = () => {
       <ProcessingFeeDrawer
         isOpen={isProcessingFeeOpen}
         onClose={() => setIsProcessingFeeOpen(false)}
+      />
+
+      {/* Markup Table Management Drawer */}
+      <MarkupTableDrawer
+        isOpen={isMarkupTableOpen}
+        onClose={() => setIsMarkupTableOpen(false)}
       />
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

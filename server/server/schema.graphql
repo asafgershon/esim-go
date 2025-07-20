@@ -38,6 +38,9 @@ type Query {
   currentProcessingFeeConfiguration: ProcessingFeeConfiguration @auth(role: "ADMIN")
   processingFeeConfigurations(limit: Int = 10, offset: Int = 0, includeInactive: Boolean = false): [ProcessingFeeConfiguration!]! @auth(role: "ADMIN")
   processingFeeConfiguration(id: ID!): ProcessingFeeConfiguration @auth(role: "ADMIN")
+  
+  # Markup configurations
+  markupConfig: [MarkupConfig!]! @auth(role: "ADMIN")
 }
 
 type Mutation {
@@ -70,6 +73,11 @@ type Mutation {
   createProcessingFeeConfiguration(input: ProcessingFeeConfigurationInput!): ProcessingFeeConfiguration @auth(role: "ADMIN")
   updateProcessingFeeConfiguration(id: ID!, input: ProcessingFeeConfigurationInput!): ProcessingFeeConfiguration @auth(role: "ADMIN")
   deactivateProcessingFeeConfiguration(id: ID!): ProcessingFeeConfiguration @auth(role: "ADMIN")
+  
+  # Markup configuration management
+  createMarkupConfig(input: CreateMarkupConfigInput!): MarkupConfig @auth(role: "ADMIN")
+  updateMarkupConfig(id: ID!, input: UpdateMarkupConfigInput!): MarkupConfig @auth(role: "ADMIN")
+  deleteMarkupConfig(id: ID!): DeleteMarkupConfigResponse @auth(role: "ADMIN")
   
   # Package Assignment
   assignPackageToUser(userId: ID!, planId: ID!): AssignPackageResponse @auth(role: "ADMIN")
@@ -556,7 +564,7 @@ type PricingConfiguration {
   
   # Configuration values
   costSplitPercent: Float! # What % of bundle price is base cost (default: 60%)
-  discountRate: Float! # Discount percentage (default: 30%)
+  discountRate: Float! # Discount percentage (default: 0%)
   processingRate: Float! # Processing fee percentage (default: 4.5%)
   
   # Metadata
@@ -662,6 +670,36 @@ input ProcessingFeeConfigurationInput {
   effectiveFrom: DateTime!
   effectiveTo: DateTime
   notes: String
+}
+
+# Markup Configuration Types
+type MarkupConfig {
+  id: ID!
+  bundleGroup: String!              # Bundle group name (e.g., "Standard - Unlimited Essential")
+  durationDays: Int!                # Duration in days
+  markupAmount: Float!              # Fixed markup amount in USD
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+# Input for creating markup configuration
+input CreateMarkupConfigInput {
+  bundleGroup: String!
+  durationDays: Int!
+  markupAmount: Float!
+}
+
+# Input for updating markup configuration
+input UpdateMarkupConfigInput {
+  bundleGroup: String
+  durationDays: Int
+  markupAmount: Float
+}
+
+# Response for delete operations
+type DeleteMarkupConfigResponse {
+  success: Boolean!
+  message: String
 }
 
 # Order Validation Types

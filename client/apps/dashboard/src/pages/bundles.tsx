@@ -3,7 +3,7 @@ import { useQuery } from '@apollo/client';
 import { GET_DATA_PLANS } from '@/lib/graphql/queries';
 import type { GetDataPlansQuery, DataPlanFilter } from '@/__generated__/graphql';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
-import { DataTable } from '@workspace/ui/components/data-table';
+import { AdvancedDataTable } from '@workspace/ui/components/advanced-data-table';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
@@ -497,11 +497,16 @@ function BundlesPageContent() {
               </p>
             </div>
           ) : (
-            <DataTable 
+            <AdvancedDataTable 
               columns={columns} 
               data={filteredPlans} 
               searchKey="name"
               searchPlaceholder="Search bundles..."
+              enableSorting={true}
+              enableFiltering={true}
+              enablePagination={true}
+              initialPageSize={20}
+              pageSizeOptions={[10, 20, 30, 50]}
             />
           )}
           

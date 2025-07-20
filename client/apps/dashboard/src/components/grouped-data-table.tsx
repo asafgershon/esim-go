@@ -1,3 +1,9 @@
+  /**
+ * @deprecated This component has been replaced by AdvancedDataTable with plugins.
+ * Use AdvancedDataTable with createGroupingPlugin() instead.
+ * This file should be removed after confirming no usage.
+ */
+
 import {
   ColumnDef,
   ExpandedState,

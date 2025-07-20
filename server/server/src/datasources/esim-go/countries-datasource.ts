@@ -11,7 +11,7 @@ import { createLogger } from "../../lib/logger";
  * Handles retrieving country information from the networks endpoint
  */
 export class CountriesDataSource extends ESIMGoDataSource {
-  private countriesLogger = createLogger('CountriesDataSource');
+  private countriesLogger = createLogger({ component: 'CountriesDataSource' });
 
   /**
    * Get all available countries that have eSIM coverage

@@ -56,10 +56,6 @@ export class DistributedLock {
       await this.redisClient.connect();
       this.lock = redisLock(this.redisClient);
       
-      this.logger.debug('Redis client connected for distributed lock', { 
-        lockName: this.lockName,
-        operationType: 'lock-initialization'
-      });
     }
   }
 
@@ -82,12 +78,6 @@ export class DistributedLock {
 
     for (let attempt = 1; attempt <= retryAttempts; attempt++) {
       try {
-        this.logger.debug('Attempting to acquire lock', { 
-          lockName: this.lockName,
-          attempt,
-          retryAttempts,
-          operationType: 'lock-acquisition'
-        });
         
         // Try to acquire the lock with timeout
         const releaseLock = await new Promise<any>((resolve, reject) => {
@@ -110,10 +100,6 @@ export class DistributedLock {
           release: async () => {
             try {
               await releaseLock();
-              this.logger.debug('Distributed lock released', { 
-                lockName: this.lockName,
-                operationType: 'lock-release'
-              });
             } catch (error) {
               console.error(`❌ Error releasing lock ${this.lockName}:`, error);
             }
@@ -130,10 +116,6 @@ export class DistributedLock {
         });
         
         if (attempt < retryAttempts) {
-          this.logger.debug('Retrying lock acquisition', { 
-            retryDelay,
-            operationType: 'lock-acquisition'
-          });
           await this.sleep(retryDelay);
         }
       }
@@ -159,10 +141,6 @@ export class DistributedLock {
     if (this.redisClient) {
       try {
         await this.redisClient.quit();
-        this.logger.debug('Redis client disconnected for lock', { 
-          lockName: this.lockName,
-          operationType: 'lock-cleanup'
-        });
       } catch (error) {
         console.error(`❌ Error closing Redis connection for lock ${this.lockName}:`, error);
       }

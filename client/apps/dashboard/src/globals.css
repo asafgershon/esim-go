@@ -2,36 +2,18 @@
 @import "tw-animate-css";
 @import "../../../packages/ui/dist/globals.css";
 
-/* Font System - Dashboard always uses Rubik */
+/* Font System - Dashboard uses ONLY Rubik */
 @layer base {
   :root {
-    --font-hebrew: 'Rubik', system-ui, -apple-system, sans-serif;
-    --font-english: 'Agency FB', 'Agency', Arial, sans-serif;
-    --font-fallback: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-rubik: 'Rubik', system-ui, -apple-system, sans-serif;
   }
   
-  /* Dashboard always uses Rubik font */
+  /* Dashboard uses ONLY Rubik font everywhere */
+  * {
+    font-family: 'Rubik', system-ui, -apple-system, sans-serif !important;
+  }
+  
   body {
-    font-family: 'Rubik', system-ui, -apple-system, sans-serif;
-  }
-}
-
-/* Font Family Utilities */
-@layer utilities {
-  .font-hebrew {
-    font-family: var(--font-hebrew);
-  }
-  
-  .font-english {
-    font-family: var(--font-english);
-  }
-  
-  .font-fallback {
-    font-family: var(--font-fallback);
-  }
-  
-  /* Dashboard-specific: Always Rubik */
-  .font-dashboard {
     font-family: 'Rubik', system-ui, -apple-system, sans-serif;
   }
 }

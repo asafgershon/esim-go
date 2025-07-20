@@ -22,7 +22,7 @@ import {
 } from '@workspace/ui';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronRight, Info } from 'lucide-react';
+import { ChevronDown, ChevronRight, Info, Edit3, Check, X } from 'lucide-react';
 import { UPDATE_PRICING_CONFIGURATION, GET_CURRENT_PROCESSING_FEE_CONFIGURATION } from '../lib/graphql/queries';
 
 interface PricingData {
@@ -80,6 +80,11 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   // Simulator state
   const [simulatorDays, setSimulatorDays] = useState(7);
   
+  // Markup override state
+  const [isMarkupOverrideOpen, setIsMarkupOverrideOpen] = useState(false);
+  const [customMarkupAmount, setCustomMarkupAmount] = useState<string>('');
+  const [hasMarkupOverride, setHasMarkupOverride] = useState(false);
+  
   // Available bundle durations (common eSIM Go durations)
   const availableBundles = [3, 5, 7, 10, 14, 21, 30];
   
@@ -96,6 +101,51 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
     }
     // If no bundle covers it, use the largest
     return Math.max(...availableBundles);
+  };
+
+  // Get markup source information based on bundle name and duration
+  const getMarkupSource = () => {
+    if (!pricingData) return 'Unknown';
+    
+    // Extract bundle group from bundle name
+    // This is a simplified mapping - you might need to adjust based on actual bundle names
+    let bundleGroup = 'Standard - Unlimited Essential'; // Default
+    if (pricingData.bundleName.toLowerCase().includes('lite')) {
+      bundleGroup = 'Standard - Unlimited Lite';
+    } else if (pricingData.bundleName.toLowerCase().includes('essential')) {
+      bundleGroup = 'Standard - Unlimited Essential';
+    } else if (pricingData.bundleName.toLowerCase().includes('fixed')) {
+      bundleGroup = 'Standard Fixed';
+    }
+    
+    return `${bundleGroup}, ${pricingData.duration} days`;
+  };
+
+  // Handle markup override
+  const handleMarkupOverride = () => {
+    if (customMarkupAmount && parseFloat(customMarkupAmount) >= 0) {
+      setHasMarkupOverride(true);
+      setIsMarkupOverrideOpen(false);
+      toast.success(`Custom markup of $${customMarkupAmount} applied`);
+    } else {
+      toast.error('Please enter a valid markup amount');
+    }
+  };
+
+  // Cancel markup override
+  const cancelMarkupOverride = () => {
+    setHasMarkupOverride(false);
+    setCustomMarkupAmount('');
+    setIsMarkupOverrideOpen(false);
+    toast.info('Markup override removed');
+  };
+
+  // Get effective markup amount (override or original)
+  const getEffectiveMarkup = () => {
+    if (hasMarkupOverride && customMarkupAmount) {
+      return parseFloat(customMarkupAmount);
+    }
+    return pricingData?.costPlus || 0;
   };
 
   // Get the actual processing rate being used (default Israeli card rate)
@@ -119,16 +169,16 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
         priority: 10,
       });
       
-      // Calculate profit-based price boundaries
+      // Calculate profit-based price boundaries using effective markup
       const currentPrice = pricingData.priceAfterDiscount;
-      const baseCosts = pricingData.cost + pricingData.costPlus;
+      const baseCosts = pricingData.cost + getEffectiveMarkup();
       const processingCost = currentPrice * pricingData.processingRate;
       const breakEvenPrice = baseCosts + processingCost + 0.01; // Minimum profitable price
       const maxRecommendedPrice = Math.round(currentPrice * 1.5 * 100) / 100; // 50% above current
       
       setPriceRange([breakEvenPrice, maxRecommendedPrice]);
     }
-  }, [pricingData, processingFeeConfig]);
+  }, [pricingData, processingFeeConfig, hasMarkupOverride, customMarkupAmount]);
 
   const handleSave = async () => {
     if (!pricingData) return;
@@ -181,11 +231,12 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
     return (rate * 100).toFixed(1) + '%';
   };
 
-  // Calculate preview values based on form data
-  const previewCost = pricingData ? pricingData.totalCost * formData.costSplitPercent : 0;
-  const previewCostPlus = pricingData ? pricingData.totalCost * (1 - formData.costSplitPercent) : 0;
-  const previewDiscountValue = pricingData ? pricingData.totalCost * formData.discountRate : 0;
-  const previewPriceAfterDiscount = pricingData ? pricingData.totalCost - previewDiscountValue : 0;
+  // Calculate preview values using actual costs and effective markup
+  const previewCost = pricingData ? pricingData.cost : 0;
+  const previewCostPlus = getEffectiveMarkup();
+  const previewTotalCost = previewCost + previewCostPlus;
+  const previewDiscountValue = previewTotalCost * formData.discountRate;
+  const previewPriceAfterDiscount = previewTotalCost - previewDiscountValue;
   const previewProcessingCost = previewPriceAfterDiscount * formData.processingRate;
   const previewRevenueAfterProcessing = previewPriceAfterDiscount - previewProcessingCost;
   const previewFinalRevenue = previewRevenueAfterProcessing - previewCost - previewCostPlus;
@@ -366,7 +417,8 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                 <div className="text-sm text-blue-800 space-y-1">
                   <p><strong>Requested:</strong> {pricingData.duration} days</p>
                   <p><strong>eSIM Go Bundle:</strong> {pricingData.bundleName}</p>
-                  <p><strong>eSIM Go Price:</strong> {formatCurrency(pricingData.cost + pricingData.costPlus)}</p>
+                  <p><strong>eSIM Go Cost:</strong> {formatCurrency(pricingData.cost)}</p>
+                  <p><strong>Our Markup:</strong> {formatCurrency(getEffectiveMarkup())} {hasMarkupOverride && <span className="text-orange-600">(Override)</span>}</p>
                 </div>
               </div>
             )}
@@ -378,20 +430,100 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                   <span>eSIM Go Cost:</span>
                   <span>{formatCurrency(pricingData?.cost || 0)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Our Markup:</span>
-                  <span>{formatCurrency(pricingData?.costPlus || 0)}</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex flex-col">
+                      <span>Our Markup:</span>
+                      <span className="text-xs text-gray-500">
+                        ({hasMarkupOverride ? 'Custom Override' : `from ${getMarkupSource()}`})
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={hasMarkupOverride ? 'text-orange-600 font-medium' : ''}>
+                        {formatCurrency(getEffectiveMarkup())}
+                      </span>
+                      {!isMarkupOverrideOpen && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsMarkupOverrideOpen(true)}
+                          className="h-6 w-6 p-0"
+                          title="Override markup for this specific bundle"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Markup Override Input */}
+                  {isMarkupOverrideOpen && (
+                    <div className="bg-gray-50 p-3 rounded-lg space-y-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Info className="h-4 w-4 text-blue-500" />
+                        <span className="text-gray-600">Override markup for this specific bundle configuration</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <InputWithAdornment
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={customMarkupAmount}
+                          onChange={(e) => setCustomMarkupAmount(e.target.value)}
+                          placeholder="Enter custom markup"
+                          leftAdornment="$"
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleMarkupOverride}
+                          className="h-8 w-8 p-0 text-green-600"
+                          title="Apply custom markup"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsMarkupOverrideOpen(false)}
+                          className="h-8 w-8 p-0 text-red-600"
+                          title="Cancel"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {hasMarkupOverride && (
+                        <div className="flex items-center justify-between pt-2 border-t">
+                          <span className="text-sm text-gray-600">Current override active</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={cancelMarkupOverride}
+                            className="text-xs"
+                          >
+                            Remove Override
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-between font-medium border-t pt-2">
                   <span>Total Cost:</span>
-                  <span>{pricingData ? formatCurrency(pricingData.totalCost) : '$0.00'}</span>
+                  <span>
+                    {pricingData 
+                      ? formatCurrency((pricingData.cost || 0) + getEffectiveMarkup()) 
+                      : '$0.00'
+                    }
+                  </span>
                 </div>
                 
                 {/* Show unused days discount if applicable */}
                 {pricingData && pricingData.bundleName.includes('days') && (
                   <div className="flex justify-between text-orange-600">
                     <span>Unused Days Discount:</span>
-                    <span>-{formatCurrency((pricingData.cost + pricingData.costPlus) * 0.1)}</span>
+                    <span>-{formatCurrency((pricingData.cost + getEffectiveMarkup()) * 0.1)}</span>
                   </div>
                 )}
                 

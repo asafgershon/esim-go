@@ -49,7 +49,7 @@ export interface StreamingOptions extends BatchOperationOptions {
 }
 
 export class BatchCacheOperations {
-  private logger = createLogger('BatchCacheOperations');
+  private logger = createLogger({ component: 'BatchCacheOperations' });
   private redisClient: any = null;
   private cache: KeyvAdapter<any> | null;
   

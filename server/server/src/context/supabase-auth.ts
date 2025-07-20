@@ -80,6 +80,7 @@ export const createSupabaseAuthContext = async (
       role: getUserRole(supabaseUser),
       createdAt: supabaseUser.created_at,
       updatedAt: supabaseUser.updated_at || supabaseUser.created_at,
+      orderCount: 0, // Will be resolved by field resolver
     };
 
     return {

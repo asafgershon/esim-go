@@ -11,6 +11,7 @@ import { esimResolvers } from "./resolvers/esim-resolvers";
 import { checkoutResolvers } from "./resolvers/checkout-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import { tripsResolvers } from "./resolvers/trips-resolvers";
+import { markupConfigResolvers } from "./resolvers/markup-config-resolvers";
 import { GraphQLError } from "graphql";
 import { PaymentMethod } from "./types";
 import { createLogger } from "./lib/logger";
@@ -107,6 +108,9 @@ export const resolvers: Resolvers = {
     
     // Trips resolvers are merged from trips-resolvers.ts
     ...tripsResolvers.Query!,
+    
+    // Markup config resolvers are merged from markup-config-resolvers.ts
+    ...markupConfigResolvers.Query!,
     
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Query!,
@@ -507,6 +511,7 @@ export const resolvers: Resolvers = {
     ...checkoutResolvers.Mutation!,
     ...usersResolvers.Mutation!,
     ...tripsResolvers.Mutation!,
+    ...markupConfigResolvers.Mutation!,
     signUp: async (_, { input }) => {
       try {
         const { data, error } = await supabaseAdmin.auth.admin.createUser({
