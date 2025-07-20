@@ -1,6 +1,7 @@
 import { createClient } from 'redis';
 import redisLock from 'redis-lock';
 import { cleanEnv, str } from "envalid";
+import { createLogger } from './logger';
 
 const env = cleanEnv(process.env, {
   REDIS_HOST: str({ default: "localhost" }),
@@ -35,6 +36,7 @@ export class DistributedLock {
   private redisClient: any;
   private lock: any;
   private lockName: string;
+  private logger = createLogger({ component: 'DistributedLock' });
 
   constructor(lockName: string) {
     this.lockName = lockName;
@@ -54,7 +56,10 @@ export class DistributedLock {
       await this.redisClient.connect();
       this.lock = redisLock(this.redisClient);
       
-      console.log(`🔗 Redis client connected for distributed lock: ${this.lockName}`);
+      this.logger.debug('Redis client connected for distributed lock', { 
+        lockName: this.lockName,
+        operationType: 'lock-initialization'
+      });
     }
   }
 
@@ -77,7 +82,12 @@ export class DistributedLock {
 
     for (let attempt = 1; attempt <= retryAttempts; attempt++) {
       try {
-        console.log(`🔒 Attempting to acquire lock: ${this.lockName} (attempt ${attempt}/${retryAttempts})`);
+        this.logger.debug('Attempting to acquire lock', { 
+          lockName: this.lockName,
+          attempt,
+          retryAttempts,
+          operationType: 'lock-acquisition'
+        });
         
         // Try to acquire the lock with timeout
         const releaseLock = await new Promise<any>((resolve, reject) => {
@@ -90,14 +100,20 @@ export class DistributedLock {
           });
         });
 
-        console.log(`✅ Distributed lock acquired: ${this.lockName}`);
+        this.logger.info('Distributed lock acquired', { 
+          lockName: this.lockName,
+          operationType: 'lock-acquisition'
+        });
         
         return {
           acquired: true,
           release: async () => {
             try {
               await releaseLock();
-              console.log(`🔓 Distributed lock released: ${this.lockName}`);
+              this.logger.debug('Distributed lock released', { 
+                lockName: this.lockName,
+                operationType: 'lock-release'
+              });
             } catch (error) {
               console.error(`❌ Error releasing lock ${this.lockName}:`, error);
             }
@@ -105,10 +121,19 @@ export class DistributedLock {
         };
         
       } catch (error) {
-        console.log(`🔒 Failed to acquire lock ${this.lockName} (attempt ${attempt}/${retryAttempts}):`, error instanceof Error ? error.message : 'Unknown error');
+        this.logger.warn('Failed to acquire lock', {
+          lockName: this.lockName,
+          attempt,
+          retryAttempts,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          operationType: 'lock-acquisition'
+        });
         
         if (attempt < retryAttempts) {
-          console.log(`⏳ Retrying in ${retryDelay}ms...`);
+          this.logger.debug('Retrying lock acquisition', { 
+            retryDelay,
+            operationType: 'lock-acquisition'
+          });
           await this.sleep(retryDelay);
         }
       }
@@ -134,7 +159,10 @@ export class DistributedLock {
     if (this.redisClient) {
       try {
         await this.redisClient.quit();
-        console.log(`🔗 Redis client disconnected for lock: ${this.lockName}`);
+        this.logger.debug('Redis client disconnected for lock', { 
+          lockName: this.lockName,
+          operationType: 'lock-cleanup'
+        });
       } catch (error) {
         console.error(`❌ Error closing Redis connection for lock ${this.lockName}:`, error);
       }

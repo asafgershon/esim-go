@@ -1,6 +1,8 @@
 import type { EmailService } from './delivery-service';
+import { createLogger } from '../../lib/logger';
 
 export class MockEmailService implements EmailService {
+  private logger = createLogger({ component: 'MockEmailService' });
   async sendEmail(
     to: string,
     subject: string,
@@ -12,14 +14,13 @@ export class MockEmailService implements EmailService {
     error?: string;
   }> {
     // Mock email sending - in production, replace with real email service
-    console.log('Mock Email Service: Sending email');
-    console.log('To:', to);
-    console.log('Subject:', subject);
-    console.log('HTML Content Length:', htmlContent.length);
-    
-    if (attachments) {
-      console.log('Attachments:', attachments.length);
-    }
+    this.logger.info('Mock Email Service: Sending email', {
+      to,
+      subject,
+      htmlContentLength: htmlContent.length,
+      attachmentCount: attachments?.length || 0,
+      operationType: 'mock-email'
+    });
 
     // Simulate email sending delay
     await new Promise(resolve => setTimeout(resolve, 100));

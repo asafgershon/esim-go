@@ -18,7 +18,7 @@ interface BackupBundle {
 }
 
 export class CatalogBackupService {
-  private log = createLogger('CatalogBackupService');
+  private log = createLogger({ component: 'CatalogBackupService' });
   private cache?: KeyValueCache;
   private readonly BACKUP_CACHE_PREFIX = 'backup:catalog:';
   private readonly BACKUP_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -31,7 +31,7 @@ export class CatalogBackupService {
    * Load all JSON backup files into cache at server startup
    */
   async loadBackupData(): Promise<void> {
-    this.log.info('Loading catalog backup data from JSON files...');
+    this.log.info('Loading catalog backup data from JSON files', { operationType: 'backup-load' });
     
     const backupFiles = [
       'standard-fixed-bundles.json',
@@ -63,9 +63,16 @@ export class CatalogBackupService {
           await this.setCacheValue(groupKey, [...existingGroupPlans, ...transformedPlans]);
         }
         
-        this.log.info(`Loaded ${backupData.length} bundles from ${fileName}`);
+        this.log.info('Loaded backup file', { 
+          fileName, 
+          bundleCount: backupData.length,
+          operationType: 'backup-load'
+        });
       } catch (error) {
-        this.log.error(`Failed to load backup file ${fileName}:`, error);
+        this.log.error('Failed to load backup file', error as Error, { 
+          fileName,
+          operationType: 'backup-load'
+        });
       }
     }
     
@@ -77,7 +84,10 @@ export class CatalogBackupService {
       version: '2025.07'
     });
     
-    this.log.info(`✅ Backup data loaded successfully: ${totalPlans} plans available`);
+    this.log.info('Backup data loaded successfully', { 
+      totalPlans, 
+      operationType: 'backup-load' 
+    });
   }
 
   /**

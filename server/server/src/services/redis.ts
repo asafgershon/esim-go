@@ -2,6 +2,7 @@ import { KeyvAdapter } from "@apollo/utils.keyvadapter";
 import KeyvRedis from "@keyv/redis";
 import { cleanEnv, str } from "envalid";
 import Keyv from "keyv";
+import { createLogger } from "../lib/logger";
 
 const env = cleanEnv(process.env, {
   REDIS_HOST: str({ default: "localhost" }),
@@ -9,6 +10,8 @@ const env = cleanEnv(process.env, {
   REDIS_PASSWORD: str({ default: "mypassword" }),
   REDIS_USER: str({ default: "default" }),
 });
+
+const logger = createLogger({ component: 'redis' });
 
 let redisInstance: KeyvAdapter<any>;
 
@@ -33,9 +36,9 @@ export async function getRedis() {
     // Wait for Redis connection to be established
     try {
       await keyv.get("connection-test");
-      console.log("🔥 Redis connected", redisUrl);
+      logger.info('Redis connected', { redisUrl, operationType: 'redis-connection' });
     } catch (error) {
-      console.log("🔥 Redis connection error", error);
+      logger.error('Redis connection error', error as Error, { redisUrl, operationType: 'redis-connection' });
       throw error;
     }
 

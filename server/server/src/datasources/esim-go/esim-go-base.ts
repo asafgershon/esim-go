@@ -22,7 +22,7 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
   protected cache?: KeyValueCache;
 
   // Logger instance
-  protected log = createLogger('ESIMGoDataSource');
+  protected log = createLogger({ component: 'ESIMGoDataSource' });
 
   // Rate limiting properties
   private requestCount = 0;
@@ -56,12 +56,12 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     request.headers["User-Agent"] = "curl/8.7.1"; // Mimic curl user agent
     
     // Debug: Log the final request details
-    console.log('🔍 Final Request Details:', {
+    this.log.debug('Final request details', {
       url: this.baseURL + _path,
       method: request.method || 'GET',
-      headers: request.headers,
       apiKeyLength: apiKey.length,
-      allHeaders: Object.keys(request.headers).sort()
+      headerCount: Object.keys(request.headers).length,
+      operationType: 'api-request'
     });
     
     // Set timeout to prevent hanging requests
@@ -122,7 +122,10 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
   ): Promise<T> {
     try {
       // TEMPORARY: Use native fetch to test if Apollo is the issue
-      console.log('🧪 Testing with native fetch...');
+      this.log.debug('Testing with native fetch', { 
+        path,
+        operationType: 'api-request-fallback'
+      });
       const url = new URL(path, this.baseURL);
       if (params) {
         Object.entries(params).forEach(([key, value]) => {
@@ -141,18 +144,22 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
       });
       
       if (!response.ok) {
-        console.log('❌ Native fetch failed:', response.status, response.statusText);
         const errorBody = await response.text();
-        console.log('Error body:', errorBody);
+        this.log.error('Native fetch failed', undefined, {
+          status: response.status,
+          statusText: response.statusText,
+          errorBody,
+          operationType: 'api-request-fallback'
+        });
         throw new Error(`${response.status}: ${response.statusText}`);
       }
       
       const result = await response.json();
-      console.log('✅ Native fetch succeeded!');
+      this.log.debug('Native fetch succeeded', { operationType: 'api-request-fallback' });
       return result;
       
     } catch (error: any) {
-      console.log('❌ Native fetch error:', error.message);
+      this.log.error('Native fetch error', error, { operationType: 'api-request-fallback' });
       this.log.error('eSIM Go API error', error);
       this.handleApiError(error);
       throw error; // This line won't be reached but TypeScript needs it

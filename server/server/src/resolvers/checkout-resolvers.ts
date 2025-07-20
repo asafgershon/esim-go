@@ -11,11 +11,14 @@ import {
 } from "../services/delivery";
 import { createPaymentService } from "../services/payment";
 import type { EsimStatus, OrderStatus, Resolvers } from "../types";
-import QRCode from 'qrcode'
+import QRCode from 'qrcode';
+import { createLogger } from "../lib/logger";
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS
 // ===============================================
+
+const logger = createLogger({ component: 'checkout-resolvers' });
 
 type CheckoutSessionRow =
   Database["public"]["Tables"]["checkout_sessions"]["Row"];
@@ -83,11 +86,11 @@ export const checkoutResolvers: Partial<Resolvers> = {
     // Get checkout session by token
     getCheckoutSession: async (_, { token }, context: Context) => {
       try {
-        console.log("Getting checkout session for token");
+        logger.debug('Getting checkout session for token', { operationType: 'session-retrieval' });
 
         // Validate token and extract session info
         const decoded = validateCheckoutToken(token);
-        console.log("Token decoded, sessionId:", decoded.sessionId);
+        logger.debug('Token decoded', { sessionId: decoded.sessionId, operationType: 'session-retrieval' });
 
         // Get session from database using repository
         const session = await context.repositories.checkoutSessions.getById(
@@ -183,9 +186,9 @@ export const checkoutResolvers: Partial<Resolvers> = {
         );
 
         const { plan } = pricing;
-        console.log("Found plan:", plan.name, "Price:", plan.price);
+        logger.debug('Found plan', { planName: plan.name, price: plan.price, operationType: 'pricing-calculation' });
 
-        console.log("Calculated pricing:", pricing);
+        logger.debug('Calculated pricing', { pricing, operationType: 'pricing-calculation' });
 
         // Create session in database using repository
         const session = await context.repositories.checkoutSessions.create({
@@ -214,8 +217,8 @@ export const checkoutResolvers: Partial<Resolvers> = {
           expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
         });
 
-        console.log("Created session:", session.id);
-        console.log("Authentication pre-completed:", context.auth?.isAuthenticated ? "YES" : "NO");
+        logger.info('Created session', { sessionId: session.id, operationType: 'session-creation' });
+        logger.debug('Authentication status', { isAuthenticated: context.auth?.isAuthenticated, operationType: 'session-creation' });
 
         // Generate JWT token (include session ID even if user not authenticated)
         const token = generateCheckoutToken(

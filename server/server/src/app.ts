@@ -60,14 +60,14 @@ async function startServer() {
 
     // Redis is now configured at Apollo Server level for caching
     const redis = await getRedis();
-    
+
     // Initialize repositories
     const checkoutSessionRepository = new CheckoutSessionRepository();
     const orderRepository = new OrderRepository();
     const esimRepository = new ESIMRepository();
     const userRepository = new UserRepository();
     const tripRepository = new TripRepository();
-    
+
     // Create an Express app and HTTP server
     const app = express();
     const httpServer = createServer(app);
@@ -151,9 +151,11 @@ async function startServer() {
                 // Log slow requests for debugging
                 const duration = Date.now() - startTime;
                 if (duration > 5000) {
-                  console.warn(
-                    `Slow GraphQL request: ${duration}ms for operation ${requestContext.request.operationName}`
-                  );
+                  logger.warn("Slow GraphQL request detected", {
+                    duration,
+                    operationName: requestContext.request.operationName,
+                    operationType: "performance-warning",
+                  });
                 }
               },
             };
@@ -178,9 +180,6 @@ async function startServer() {
     logger.debug("Setting up CORS middleware", {
       origin: env.CORS_ORIGINS.split(","),
     });
-    console.log("Setting up CORS middleware", {
-      origin: env.CORS_ORIGINS.split(","),
-    });
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
@@ -195,7 +194,11 @@ async function startServer() {
     app.use((req, res, next) => {
       // Set timeout for all requests (60 seconds)
       req.setTimeout(60000, () => {
-        console.error(`Request timeout for ${req.method} ${req.path}`);
+        logger.error("Request timeout", undefined, {
+          method: req.method,
+          path: req.path,
+          operationType: "request-timeout",
+        });
         if (!res.headersSent) {
           res.status(408).json({
             error: "Request timeout",
@@ -205,7 +208,11 @@ async function startServer() {
       });
 
       res.setTimeout(60000, () => {
-        console.error(`Response timeout for ${req.method} ${req.path}`);
+        logger.error("Response timeout", undefined, {
+          method: req.method,
+          path: req.path,
+          operationType: "response-timeout",
+        });
         res.status(408).json({
           error: "Response timeout",
           message: "The response took too long to send",
@@ -232,7 +239,9 @@ async function startServer() {
         const result = await handleESIMGoWebhook(req.body, signature);
         res.json(result);
       } catch (error: any) {
-        console.error("Webhook error:", error);
+        logger.error("Webhook error", error as Error, {
+          operationType: "webhook",
+        });
         res.status(400).json({
           success: false,
           message: error.message || "Webhook processing failed",
@@ -284,44 +293,56 @@ async function startServer() {
 
     // Now that our HTTP server is fully set up, we can listen to it
     httpServer.listen(PORT, async () => {
-      console.log(
-        `🚀 eSIM Go Server is now running on http://localhost:${PORT}/graphql`
-      );
-      console.log(`🔗 WebSocket endpoint: ws://localhost:${PORT}/graphql`);
-      
+      logger.info("eSIM Go Server is ready", {
+        httpEndpoint: `http://localhost:${PORT}/graphql`,
+        wsEndpoint: `ws://localhost:${PORT}/graphql`,
+        port: PORT,
+        operationType: "server-startup",
+      });
+
       // Initialize backup service and load backup data
       const catalogBackupService = new CatalogBackupService(redis);
       try {
         await catalogBackupService.loadBackupData();
       } catch (error) {
-        console.error('Failed to load backup data:', error);
+        logger.error("Failed to load backup data", error as Error, {
+          operationType: "backup-load",
+        });
         // Don't fail server startup if backup loading fails
       }
-      
+
       // Start catalog sync service
       const catalogueDataSource = new CatalogueDataSource();
       const catalogSyncService = new CatalogSyncService(catalogueDataSource);
       catalogSyncService.startPeriodicSync();
     });
   } catch (error) {
-    console.error("Failed to start eSIM Go server:", error);
+    logger.error("Failed to start eSIM Go server", error as Error, {
+      operationType: "server-startup",
+    });
     process.exit(1);
   }
 }
 
 // Handle graceful shutdown
 process.on("SIGTERM", async () => {
-  console.log("Received SIGTERM. Shutting down gracefully...");
+  logger.info("Received SIGTERM, shutting down gracefully", {
+    operationType: "shutdown",
+  });
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
-  console.log("Received SIGINT. Shutting down gracefully...");
+  logger.info("Received SIGINT, shutting down gracefully", {
+    operationType: "shutdown",
+  });
   process.exit(0);
 });
 
 startServer().catch((error) => {
-  console.error("Failed to start eSIM Go server:", error);
+  logger.error("Failed to start eSIM Go server", error as Error, {
+    operationType: "server-startup",
+  });
   process.exit(1);
 });
 
@@ -334,20 +355,19 @@ setInterval(() => {
 
   // Log memory usage every 5 minutes
   if (Date.now() % (5 * 60 * 1000) < 30000) {
-    console.log(
-      `Memory usage: ${memoryMB.toFixed(2)}MB RSS, ${(
-        usage.heapUsed /
-        1024 /
-        1024
-      ).toFixed(2)}MB Heap`
-    );
+    logger.debug("Memory usage report", {
+      memoryMB: memoryMB.toFixed(2),
+      heapUsedMB: `${(usage.heapUsed / 1024 / 1024).toFixed(2)}MB Heap`,
+    });
   }
 
   // Warn if memory usage is high (>500MB)
   if (memoryMB > 500 && !memoryWarningLogged) {
-    console.warn(
-      `HIGH MEMORY USAGE: ${memoryMB.toFixed(2)}MB - potential memory leak`
-    );
+    logger.warn("High memory usage detected", {
+      memoryMB: memoryMB.toFixed(2),
+      threshold: 500,
+      operationType: "memory-warning",
+    });
     memoryWarningLogged = true;
   }
 
@@ -359,15 +379,22 @@ setInterval(() => {
 
 // Handle uncaught exceptions gracefully
 process.on("uncaughtException", (error) => {
-  console.error("Uncaught Exception:", error);
+  logger.error("Uncaught Exception", error as Error, {
+    operationType: "uncaught-exception",
+  });
   // Don't crash immediately, try to handle gracefully
   setTimeout(() => {
-    console.error("Exiting due to uncaught exception");
+    logger.error("Exiting due to uncaught exception", undefined, {
+      operationType: "uncaught-exception",
+    });
     process.exit(1);
   }, 1000);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  logger.error("Unhandled Promise Rejection", reason as Error, {
+    promise: promise.toString(),
+    operationType: "unhandled-rejection",
+  });
   // Don't crash for unhandled rejections, just log them
 });

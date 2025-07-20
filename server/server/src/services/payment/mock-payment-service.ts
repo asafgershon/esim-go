@@ -5,6 +5,7 @@ import type {
   PaymentWebhookEvent,
   PaymentResult,
 } from './payment-types';
+import { createLogger } from '../../lib/logger';
 
 /**
  * Mock payment service for development and testing
@@ -13,11 +14,12 @@ import type {
 export class MockPaymentService implements PaymentService {
   private initialized = false;
   private config: any = {};
+  private logger = createLogger({ component: 'MockPaymentService' });
 
   async initialize(config: any): Promise<void> {
     this.config = config;
     this.initialized = true;
-    console.log('MockPaymentService initialized');
+    this.logger.info('MockPaymentService initialized', { operationType: 'service-init' });
   }
 
   async createPaymentIntent(request: CreatePaymentIntentRequest): Promise<PaymentResult> {
@@ -38,7 +40,12 @@ export class MockPaymentService implements PaymentService {
       client_secret: `pi_mock_${Date.now()}_secret_${Math.random().toString(36).substr(2, 9)}`,
     };
 
-    console.log('Mock payment intent created:', paymentIntent.id);
+    this.logger.info('Mock payment intent created', { 
+      paymentIntentId: paymentIntent.id,
+      amount: request.amount,
+      currency: request.currency,
+      operationType: 'payment-creation'
+    });
 
     return {
       success: true,
@@ -93,7 +100,10 @@ export class MockPaymentService implements PaymentService {
       throw new Error('PaymentService not initialized');
     }
 
-    console.log('Processing mock webhook event:', event.type);
+    this.logger.info('Processing mock webhook event', { 
+      eventType: event.type,
+      operationType: 'webhook-processing'
+    });
 
     // Simulate webhook processing
     return {

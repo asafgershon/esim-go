@@ -3,6 +3,7 @@ import type { ESIMGoDataPlan } from "./types";
 import { CatalogBackupService } from "../../services/catalog-backup.service";
 import { CacheHealthService } from "../../services/cache-health.service";
 import { BatchCacheOperations } from "../../lib/batch-cache-operations";
+import { createLogger, withPerformanceLogging } from "../../lib/logger";
 
 /**
  * DataSource for eSIM Go Catalogue API
@@ -12,6 +13,10 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   private backupService: CatalogBackupService;
   private cacheHealth: CacheHealthService;
   private batchOperations: BatchCacheOperations;
+  private logger = createLogger({ 
+    component: 'CatalogueDataSource',
+    operationType: 'catalog-operations'
+  });
 
   constructor(config?: any) {
     super(config);
@@ -251,12 +256,16 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     limit?: number;
     offset?: number;
   }): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string }> {
-    console.log('🚀 searchPlans called with criteria:', criteria);
+    return withPerformanceLogging(
+      this.logger,
+      'catalog-search-plans',
+      async () => {
+        this.logger.debug('searchPlans called', { criteria, operationType: 'search-plans' });
     
     // Check if catalog is fresh with error handling
     const metadataResult = await this.cacheHealth.safeGet('esim-go:catalog:metadata');
     if (!metadataResult.success || !metadataResult.data) {
-      console.log('⚠️ No catalog metadata found, triggering sync...');
+      this.logger.warn('No catalog metadata found, triggering sync', { operationType: 'search-plans' });
       // Note: In production, this would trigger an async sync
       // For now, fallback to API call
       return this.fallbackToApiCall(criteria);
@@ -269,25 +278,41 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       this.log.warn('Failed to parse catalog metadata', { error });
       return this.fallbackToApiCall(criteria);
     }
-    console.log(`💾 Using cached catalog (last synced: ${catalogMetadata.lastSynced})`);
+    this.logger.debug('Using cached catalog', { 
+      lastSynced: catalogMetadata.lastSynced,
+      operationType: 'search-plans'
+    });
     
     let bundles: ESIMGoDataPlan[] = [];
 
     // Optimized query path based on criteria
     if (criteria.bundleGroup) {
-      console.log(`🔍 Direct bundle group lookup: ${criteria.bundleGroup}`);
+      this.logger.debug('Direct bundle group lookup', { 
+        bundleGroup: criteria.bundleGroup,
+        operationType: 'search-plans'
+      });
       bundles = await this.getBundlesByGroup(criteria.bundleGroup);
     } else if (criteria.country && criteria.duration) {
-      console.log(`🔍 Using combined index: ${criteria.country}:${criteria.duration}`);
+      this.logger.debug('Using combined index', { 
+        country: criteria.country,
+        duration: criteria.duration,
+        operationType: 'search-plans'
+      });
       bundles = await this.getBundlesByCountryAndDuration(criteria.country, criteria.duration);
     } else if (criteria.country) {
-      console.log(`🔍 Using country index: ${criteria.country}`);
+      this.logger.debug('Using country index', { 
+        country: criteria.country,
+        operationType: 'search-plans'
+      });
       bundles = await this.getBundlesByCountry(criteria.country);
     } else if (criteria.duration) {
-      console.log(`🔍 Using duration index: ${criteria.duration}`);
+      this.logger.debug('Using duration index', { 
+        duration: criteria.duration,
+        operationType: 'search-plans'
+      });
       bundles = await this.getBundlesByDuration(criteria.duration);
     } else {
-      console.log('🔍 Getting all bundles from all groups');
+      this.logger.debug('Getting all bundles from all groups', { operationType: 'search-plans' });
       bundles = await this.getAllBundles(catalogMetadata);
     }
 
@@ -312,13 +337,25 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const offset = criteria.offset || 0;
     const paginatedBundles = bundles.slice(offset, offset + limit);
     
-    console.log(`📊 Found ${bundles.length} bundles, returning ${paginatedBundles.length} with pagination`);
+    this.logger.info('Search completed', { 
+      foundBundles: bundles.length,
+      returnedBundles: paginatedBundles.length,
+      operationType: 'search-plans'
+    });
     
     return {
       bundles: paginatedBundles,
       totalCount: bundles.length,
       lastFetched: catalogMetadata.lastSynced
     };
+      },
+      { 
+        country: criteria.country,
+        duration: criteria.duration,
+        bundleGroup: criteria.bundleGroup,
+        hasSearch: !!criteria.search
+      }
+    );
   }
 
   /**
@@ -598,7 +635,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
    * Fallback to API call if cache is not available
    */
   private async fallbackToApiCall(criteria: any): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string }> {
-    console.log('🔄 Falling back to API call...');
+    this.logger.info('Falling back to API call', { operationType: 'api-fallback' });
     
     try {
       // First try the API call
@@ -609,7 +646,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       // If API fails, try backup data
       const backupData = await this.getBackupData(criteria);
       if (backupData.bundles.length > 0) {
-        console.log('✅ Using backup data as fallback');
+        this.logger.info('Using backup data as fallback', { operationType: 'api-fallback' });
         return backupData;
       }
       
@@ -627,7 +664,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     // Check if backup data is available
     const hasBackup = await this.backupService.hasBackupData();
     if (!hasBackup) {
-      console.log('⚠️ No backup data available');
+      this.logger.warn('No backup data available', { operationType: 'api-fallback' });
       return { bundles: [], totalCount: 0 };
     }
     
@@ -687,8 +724,13 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     if (cacheResult.success && cacheResult.data) {
       try {
         const cachedResult = JSON.parse(cacheResult.data) as { bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string };
-        console.log('💾 Returning cached result for:', cacheKey);
-        console.log('💾 Cached durations:', [...new Set(cachedResult.bundles.map(b => b.duration))]);
+        const cachedDurations = [...new Set(cachedResult.bundles.map(b => b.duration))];
+        this.logger.debug('Returning cached result', { 
+          cacheKey,
+          cachedDurations,
+          bundleCount: cachedResult.bundles.length,
+          operationType: 'cache-hit'
+        });
         return cachedResult;
       } catch (error) {
         this.log.warn('Failed to parse cached search data for performApiCall', { error, cacheKey });
@@ -738,10 +780,10 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       params.description = criteria.search;
     }
     
-    console.log('🎯 Trying to fetch multiple pages to get diverse durations...');
+    this.logger.debug('Trying to fetch multiple pages for diverse durations', { operationType: 'multi-page-fetch' });
 
     // Call the eSIM Go API with all parameters (now supports search and region natively)
-    console.log('🔍 Calling eSIM Go API with params:', params);
+    this.logger.debug('Calling eSIM Go API', { params, operationType: 'api-call' });
     const response = await this.getWithErrorHandling<{ 
       bundles: ESIMGoDataPlan[], 
       totalCount: number,
@@ -753,7 +795,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const shouldFetchMultiplePages = !criteria.country && !criteria.region && !criteria.bundleGroup;
     
     if (shouldFetchMultiplePages) {
-      console.log('🔍 Fetching additional pages to get diverse durations...');
+      this.logger.debug('Fetching additional pages for diverse durations', { operationType: 'multi-page-fetch' });
       const additionalPages = [];
       
       // Fetch pages 2-5 to get more diverse bundles (compromise between performance and completeness)
@@ -767,31 +809,49 @@ export class CatalogueDataSource extends ESIMGoDataSource {
           }>("/v2.5/catalogue", { ...params, page });
           
           if (pageResponse.bundles.length === 0) {
-            console.log(`📄 Page ${page} is empty, stopping pagination`);
+            this.logger.debug('Empty page detected, stopping pagination', { 
+              page,
+              operationType: 'multi-page-fetch'
+            });
             break;
           }
           
           additionalPages.push(...pageResponse.bundles);
-          console.log(`📄 Page ${page} durations:`, [...new Set(pageResponse.bundles.map(b => b.duration))]);
+          const pageDurations = [...new Set(pageResponse.bundles.map(b => b.duration))];
+          this.logger.debug('Page fetched', { 
+            page,
+            bundleCount: pageResponse.bundles.length,
+            durations: pageDurations,
+            operationType: 'multi-page-fetch'
+          });
         } catch (error) {
-          console.log(`❌ Error fetching page ${page}:`, error);
+          this.logger.error('Error fetching page', error as Error, { 
+            page,
+            operationType: 'multi-page-fetch'
+          });
           break;
         }
       }
       
       // Combine all bundles from multiple pages
       const allBundles = [...response.bundles, ...additionalPages];
-      console.log('🔍 Combined durations from all pages:', [...new Set(allBundles.map(b => b.duration))]);
+      const combinedDurations = [...new Set(allBundles.map(b => b.duration))];
+      this.logger.debug('Combined durations from all pages', { 
+        durations: combinedDurations,
+        totalBundles: allBundles.length,
+        operationType: 'multi-page-fetch'
+      });
       
       // Update response with combined bundles
       response.bundles = allBundles;
     } else {
-      console.log('🚀 Skipping multi-page fetch due to specific filters');
+      this.logger.debug('Skipping multi-page fetch due to specific filters', { operationType: 'multi-page-fetch' });
     }
     
-    console.log('📦 eSIM Go API response:', {
+    this.logger.info('eSIM Go API response received', {
       totalCount: response.totalCount,
       bundleCount: response.bundles.length,
+      operationType: 'api-response',
       durations: [...new Set(response.bundles.map(b => b.duration))],
       sampleBundles: response.bundles.slice(0, 3).map(b => ({
         name: b.name,
@@ -805,9 +865,17 @@ export class CatalogueDataSource extends ESIMGoDataSource {
 
     // Apply client-side filtering for duration (since API doesn't support it)
     if (criteria.duration !== undefined) {
-      console.log(`🔍 Filtering ${plans.length} bundles for duration: ${criteria.duration}`);
+      this.logger.debug('Filtering bundles for duration', { 
+        totalBundles: plans.length,
+        duration: criteria.duration,
+        operationType: 'duration-filter'
+      });
       plans = plans.filter(plan => plan.duration === criteria.duration);
-      console.log(`✅ Found ${plans.length} bundles matching duration ${criteria.duration}`);
+      this.logger.info('Duration filter completed', { 
+        matchingBundles: plans.length,
+        duration: criteria.duration,
+        operationType: 'duration-filter'
+      });
     }
 
     // Sort by price (lowest first)

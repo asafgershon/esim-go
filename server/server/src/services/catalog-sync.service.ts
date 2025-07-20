@@ -3,6 +3,7 @@ import { ESIMGoDataPlan } from '../datasources/esim-go/types';
 import { cleanEnv, str } from "envalid";
 import { createDistributedLock, LockResult } from '../lib/distributed-lock';
 import { CacheHealthService } from './cache-health.service';
+import { createLogger, withPerformanceLogging } from '../lib/logger';
 
 const env = cleanEnv(process.env, {
   ESIM_GO_API_KEY: str({ desc: "The API key for the eSIM Go API" }),
@@ -13,6 +14,10 @@ export class CatalogSyncService {
   private syncInterval: NodeJS.Timeout | null = null;
   private syncLock = createDistributedLock('catalog-sync');
   private cacheHealth: CacheHealthService;
+  private logger = createLogger({ 
+    component: 'CatalogSyncService',
+    operationType: 'catalog-sync'
+  });
   
   // Bundle groups as recommended by Jason from eSIM Go support
   private readonly BUNDLE_GROUPS = [
@@ -32,7 +37,7 @@ export class CatalogSyncService {
    * Sync bundles for a specific country
    */
   async syncCountryBundles(countryId: string): Promise<void> {
-    console.log(`🔄 Starting country sync for ${countryId}...`);
+    this.logger.info('Starting country sync', { countryId, operationType: 'country-sync' });
     const startTime = Date.now();
     
     try {
@@ -42,7 +47,7 @@ export class CatalogSyncService {
       
       while (hasMore) {
         try {
-          console.log(`📄 Fetching ${countryId} page ${page}...`);
+          this.logger.debug('Fetching country page', { countryId, page, operationType: 'country-sync' });
           
           const response = await this.catalogueDataSource.getWithErrorHandling<{
             bundles: ESIMGoDataPlan[];
@@ -59,12 +64,19 @@ export class CatalogSyncService {
           });
           
           if (response.bundles.length === 0) {
-            console.log(`📄 ${countryId} page ${page} is empty, stopping sync`);
+            this.logger.info('Empty page detected, stopping sync', { countryId, page, operationType: 'country-sync' });
             break;
           }
           
           allBundles.push(...response.bundles);
-          console.log(`📄 ${countryId} page ${page}: ${response.bundles.length} bundles, durations: ${[...new Set(response.bundles.map(b => b.duration))]}`);
+          const durations = [...new Set(response.bundles.map(b => b.duration))];
+          this.logger.debug('Page fetched successfully', { 
+            countryId, 
+            page, 
+            bundleCount: response.bundles.length,
+            durations,
+            operationType: 'country-sync'
+          });
           
           // Stop if we got less than a full page (indicates last page)
           hasMore = response.bundles.length === 100;
@@ -72,12 +84,16 @@ export class CatalogSyncService {
           
           // Safety limit to prevent infinite loops
           if (page > 10) {
-            console.log(`⚠️ ${countryId} reached page limit (10), stopping sync`);
+            this.logger.warn('Reached page limit, stopping sync', { countryId, pageLimit: 10, operationType: 'country-sync' });
             break;
           }
           
         } catch (error) {
-          console.error(`❌ Error fetching ${countryId} page ${page}:`, error);
+          this.logger.error('Error fetching country page', error as Error, { 
+            countryId, 
+            page,
+            operationType: 'country-sync'
+          });
           break;
         }
       }
@@ -101,18 +117,30 @@ export class CatalogSyncService {
       );
       
       if (!cacheResult.success) {
-        console.warn(`⚠️ Failed to cache country ${countryId} data:`, cacheResult.error?.message);
+        this.logger.warn('Failed to cache country data', { 
+          countryId, 
+          error: cacheResult.error?.message,
+          operationType: 'country-sync'
+        });
       }
       
       const duration = Date.now() - startTime;
       const durations = [...new Set(allBundles.map(b => b.duration))];
       
-      console.log(`✅ Country ${countryId} sync completed in ${duration}ms`);
-      console.log(`📊 Synced ${allBundles.length} bundles across ${page - 1} pages`);
-      console.log(`📊 Available durations: ${durations.sort((a, b) => a - b)}`);
+      this.logger.info('Country sync completed', {
+        countryId,
+        duration,
+        bundleCount: allBundles.length,
+        pageCount: page - 1,
+        durations: durations.sort((a, b) => a - b),
+        operationType: 'country-sync'
+      });
       
     } catch (error) {
-      console.error(`❌ Country ${countryId} sync failed:`, error);
+      this.logger.error('Country sync failed', error as Error, { 
+        countryId,
+        operationType: 'country-sync'
+      });
     }
   }
 
@@ -135,12 +163,19 @@ export class CatalogSyncService {
       }
       
       if (!cacheResult.success) {
-        console.warn(`⚠️ Cache get failed for country ${countryId}:`, cacheResult.error?.message);
+        this.logger.warn('Cache get failed for country', { 
+          countryId, 
+          error: cacheResult.error?.message,
+          operationType: 'cache-get'
+        });
       }
       
       return null;
     } catch (error) {
-      console.error(`❌ Error getting cached catalog for ${countryId}:`, error);
+      this.logger.error('Error getting cached catalog for country', error as Error, { 
+        countryId,
+        operationType: 'cache-get'
+      });
       return null;
     }
   }
@@ -169,12 +204,16 @@ export class CatalogSyncService {
    * Sync the complete eSIM Go catalog by fetching bundle groups
    */
   async syncFullCatalog(): Promise<void> {
-    console.log('🔄 Starting optimized catalog sync by bundle groups...');
+    return withPerformanceLogging(
+      this.logger,
+      'catalog-full-sync',
+      async () => {
+        this.logger.info('Starting optimized catalog sync by bundle groups', { operationType: 'full-catalog-sync' });
     
     // Acquire distributed lock to prevent race conditions
     const lockResult = await this.acquireSyncLock();
     if (!lockResult.acquired) {
-      console.log(`🔒 Catalog sync already in progress: ${lockResult.error}`);
+      this.logger.warn('Catalog sync already in progress', { error: lockResult.error, operationType: 'full-catalog-sync' });
       return;
     }
     
@@ -189,14 +228,17 @@ export class CatalogSyncService {
       };
       
       // Implement Jason's recommendation: fetch each bundle group separately
-      console.log(`📦 Implementing Jason's bundle group filtering strategy...`);
+      this.logger.info('Implementing bundle group filtering strategy', { 
+        bundleGroups: this.BUNDLE_GROUPS,
+        operationType: 'full-catalog-sync'
+      });
       
       // First, try the optimized bundle group approach
       let bundleGroupSuccess = false;
       
       for (const groupName of this.BUNDLE_GROUPS) {
         try {
-          console.log(`📦 Syncing bundle group: ${groupName}`);
+          this.logger.debug('Syncing bundle group', { groupName, operationType: 'bundle-group-sync' });
           
           const response = await this.catalogueDataSource.getWithErrorHandling<{
             bundles: ESIMGoDataPlan[];
@@ -207,7 +249,11 @@ export class CatalogSyncService {
           });
           
           if (response.bundles && response.bundles.length > 0) {
-            console.log(`📦 ${groupName}: ${response.bundles.length} bundles`);
+            this.logger.debug('Bundle group fetched', { 
+              groupName, 
+              bundleCount: response.bundles.length,
+              operationType: 'bundle-group-sync'
+            });
             
             // Store by group with 30-day TTL as Jason recommended
             const groupKey = this.getGroupKey(groupName);
@@ -220,7 +266,11 @@ export class CatalogSyncService {
             );
             
             if (!groupCacheResult.success) {
-              console.warn(`⚠️ Failed to cache bundle group ${groupName}:`, groupCacheResult.error?.message);
+              this.logger.warn('Failed to cache bundle group', { 
+                groupName, 
+                error: groupCacheResult.error?.message,
+                operationType: 'bundle-group-sync'
+              });
             }
             
             // Create indexes for this group
@@ -232,18 +282,26 @@ export class CatalogSyncService {
             bundleGroupSuccess = true;
             
             const durations = [...new Set(response.bundles.map(b => b.duration))];
-            console.log(`📦 ${groupName} complete: ${response.bundles.length} bundles, durations: ${durations.sort((a, b) => a - b)}`);
+            this.logger.info('Bundle group sync completed', {
+              groupName,
+              bundleCount: response.bundles.length,
+              durations: durations.sort((a, b) => a - b),
+              operationType: 'bundle-group-sync'
+            });
           } else {
-            console.log(`⚠️ ${groupName}: No bundles returned`);
+            this.logger.warn('No bundles returned for group', { groupName, operationType: 'bundle-group-sync' });
           }
         } catch (error) {
-          console.error(`❌ Error syncing group ${groupName}:`, error);
+          this.logger.error('Error syncing bundle group', error as Error, { 
+            groupName,
+            operationType: 'bundle-group-sync'
+          });
         }
       }
       
       // If bundle group filtering failed, fall back to multi-page approach
       if (!bundleGroupSuccess) {
-        console.log(`📦 Bundle group filtering failed, falling back to multi-page approach...`);
+        this.logger.warn('Bundle group filtering failed, falling back to multi-page approach', { operationType: 'fallback-sync' });
         
         try {
           const allBundles: ESIMGoDataPlan[] = [];
@@ -261,13 +319,18 @@ export class CatalogSyncService {
             });
             
             if (response.bundles.length === 0) {
-              console.log(`📄 Page ${page} is empty, stopping`);
+              this.logger.info('Empty page detected, stopping fallback', { page, operationType: 'fallback-sync' });
               break;
             }
             
             allBundles.push(...response.bundles);
             const durations = [...new Set(response.bundles.map(b => b.duration))];
-            console.log(`📄 Page ${page}: ${response.bundles.length} bundles, durations: ${durations.sort((a, b) => a - b)}`);
+            this.logger.debug('Fallback page fetched', {
+              page,
+              bundleCount: response.bundles.length,
+              durations: durations.sort((a, b) => a - b),
+              operationType: 'fallback-sync'
+            });
             
             hasMore = response.bundles.length === 50;
             page++;
@@ -284,7 +347,10 @@ export class CatalogSyncService {
             );
             
             if (!fallbackCacheResult.success) {
-              console.warn(`⚠️ Failed to cache fallback catalog:`, fallbackCacheResult.error?.message);
+              this.logger.warn('Failed to cache fallback catalog', { 
+                error: fallbackCacheResult.error?.message,
+                operationType: 'fallback-sync'
+              });
             }
             
             // Create indexes for fast lookups
@@ -294,10 +360,14 @@ export class CatalogSyncService {
             metadata.totalBundles += allBundles.length;
             
             const allDurations = [...new Set(allBundles.map(b => b.duration))];
-            console.log(`📦 Fallback complete: ${allBundles.length} bundles, durations: ${allDurations.sort((a, b) => a - b)}`);
+            this.logger.info('Fallback sync completed', {
+              bundleCount: allBundles.length,
+              durations: allDurations.sort((a, b) => a - b),
+              operationType: 'fallback-sync'
+            });
           }
         } catch (error) {
-          console.error(`❌ Error with fallback sync:`, error);
+          this.logger.error('Error with fallback sync', error as Error, { operationType: 'fallback-sync' });
         }
       }
       
@@ -311,20 +381,30 @@ export class CatalogSyncService {
       );
       
       if (!metadataCacheResult.success) {
-        console.warn(`⚠️ Failed to cache catalog metadata:`, metadataCacheResult.error?.message);
+        this.logger.warn('Failed to cache catalog metadata', { 
+          error: metadataCacheResult.error?.message,
+          operationType: 'full-catalog-sync'
+        });
       }
       
       const duration = Date.now() - startTime;
-      console.log(`✅ Optimized catalog sync completed in ${duration}ms`);
-      console.log(`📊 Synced ${metadata.totalBundles} bundles across ${metadata.bundleGroups.length} groups`);
-      console.log(`📊 Active groups: ${metadata.bundleGroups.join(', ')}`);
+      this.logger.info('Optimized catalog sync completed', {
+        duration,
+        totalBundles: metadata.totalBundles,
+        groupCount: metadata.bundleGroups.length,
+        activeGroups: metadata.bundleGroups,
+        operationType: 'full-catalog-sync'
+      });
       
     } catch (error) {
-      console.error('❌ Optimized catalog sync failed:', error);
+      this.logger.error('Optimized catalog sync failed', error as Error, { operationType: 'full-catalog-sync' });
     } finally {
       // Always release the lock, even if sync failed
       await this.releaseSyncLock(lockResult);
     }
+      },
+      { bundleGroups: this.BUNDLE_GROUPS.length }
+    );
   }
 
   /**
@@ -350,7 +430,11 @@ export class CatalogSyncService {
       );
       
       if (!bundleCacheResult.success) {
-        console.warn(`⚠️ Failed to cache bundle ${bundleId}:`, bundleCacheResult.error?.message);
+        this.logger.warn('Failed to cache bundle', { 
+          bundleId, 
+          error: bundleCacheResult.error?.message,
+          operationType: 'index-creation'
+        });
       }
       
       // Build country index
@@ -388,7 +472,11 @@ export class CatalogSyncService {
       );
       
       if (!countryIndexResult.success) {
-        console.warn(`⚠️ Failed to cache country index for ${country}:`, countryIndexResult.error?.message);
+        this.logger.warn('Failed to cache country index', { 
+          country, 
+          error: countryIndexResult.error?.message,
+          operationType: 'index-creation'
+        });
       }
     }
     
@@ -405,7 +493,11 @@ export class CatalogSyncService {
       );
       
       if (!durationIndexResult.success) {
-        console.warn(`⚠️ Failed to cache duration index for ${duration}:`, durationIndexResult.error?.message);
+        this.logger.warn('Failed to cache duration index', { 
+          duration, 
+          error: durationIndexResult.error?.message,
+          operationType: 'index-creation'
+        });
       }
     }
     
@@ -423,7 +515,12 @@ export class CatalogSyncService {
       );
       
       if (!combinedIndexResult.success) {
-        console.warn(`⚠️ Failed to cache combined index ${country}:${duration}:`, combinedIndexResult.error?.message);
+        this.logger.warn('Failed to cache combined index', { 
+          country, 
+          duration, 
+          error: combinedIndexResult.error?.message,
+          operationType: 'index-creation'
+        });
       }
     }
   }
@@ -460,12 +557,15 @@ export class CatalogSyncService {
       }
       
       if (!cacheResult.success) {
-        console.warn(`⚠️ Cache get failed for full catalog:`, cacheResult.error?.message);
+        this.logger.warn('Cache get failed for full catalog', { 
+          error: cacheResult.error?.message,
+          operationType: 'cache-get'
+        });
       }
       
       return null;
     } catch (error) {
-      console.error('❌ Error getting cached catalog:', error);
+      this.logger.error('Error getting cached catalog', error as Error, { operationType: 'cache-get' });
       return null;
     }
   }
@@ -474,7 +574,11 @@ export class CatalogSyncService {
    * Start periodic sync (monthly as recommended by eSIM Go)
    */
   startPeriodicSync(): void {
-    console.log('🔄 Starting periodic catalog sync (monthly as per eSIM Go recommendations)...');
+    this.logger.info('Starting periodic catalog sync', { 
+      frequency: 'monthly',
+      checkInterval: '24 hours',
+      operationType: 'periodic-sync'
+    });
     
     // Initial sync
     this.syncFullCatalog();
@@ -493,14 +597,16 @@ export class CatalogSyncService {
       const cacheResult = await this.cacheHealth.safeGet('esim-go:catalog:metadata');
       
       if (!cacheResult.success) {
-        console.warn(`⚠️ Failed to get catalog metadata:`, cacheResult.error?.message);
-        console.log('🔄 Cache metadata unavailable, performing full sync...');
+        this.logger.warn('Failed to get catalog metadata, performing full sync', { 
+          error: cacheResult.error?.message,
+          operationType: 'periodic-sync'
+        });
         await this.syncFullCatalog();
         return;
       }
       
       if (!cacheResult.data) {
-        console.log('🔄 No catalog metadata found, performing full sync...');
+        this.logger.info('No catalog metadata found, performing full sync', { operationType: 'periodic-sync' });
         await this.syncFullCatalog();
         return;
       }
@@ -510,13 +616,19 @@ export class CatalogSyncService {
       const daysSinceSync = (Date.now() - lastSynced.getTime()) / (1000 * 60 * 60 * 24);
 
       if (daysSinceSync >= 30) {
-        console.log(`🔄 Catalog is ${daysSinceSync.toFixed(1)} days old, performing refresh...`);
+        this.logger.info('Catalog is stale, performing refresh', { 
+          daysSinceSync: daysSinceSync.toFixed(1),
+          operationType: 'periodic-sync'
+        });
         await this.syncFullCatalog();
       } else {
-        console.log(`✅ Catalog is fresh (${daysSinceSync.toFixed(1)} days old), skipping sync`);
+        this.logger.debug('Catalog is fresh, skipping sync', { 
+          daysSinceSync: daysSinceSync.toFixed(1),
+          operationType: 'periodic-sync'
+        });
       }
     } catch (error) {
-      console.error('❌ Error checking catalog sync status:', error);
+      this.logger.error('Error checking catalog sync status', error as Error, { operationType: 'periodic-sync' });
     }
   }
 
@@ -527,7 +639,7 @@ export class CatalogSyncService {
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
-      console.log('🛑 Stopped periodic catalog sync');
+      this.logger.info('Stopped periodic catalog sync', { operationType: 'periodic-sync' });
     }
   }
 
@@ -538,6 +650,6 @@ export class CatalogSyncService {
     this.stopPeriodicSync();
     await this.syncLock.cleanup();
     this.cacheHealth.cleanup();
-    console.log('🧹 Catalog sync service cleanup completed');
+    this.logger.info('Catalog sync service cleanup completed', { operationType: 'cleanup' });
   }
 }
