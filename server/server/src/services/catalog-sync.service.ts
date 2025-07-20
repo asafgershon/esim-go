@@ -2,6 +2,7 @@ import { CatalogueDataSource } from '../datasources/esim-go/catalogue-datasource
 import { ESIMGoDataPlan } from '../datasources/esim-go/types';
 import { cleanEnv, str } from "envalid";
 import { createDistributedLock, LockResult } from '../lib/distributed-lock';
+import { CacheHealthService } from './cache-health.service';
 
 const env = cleanEnv(process.env, {
   ESIM_GO_API_KEY: str({ desc: "The API key for the eSIM Go API" }),
@@ -11,6 +12,7 @@ export class CatalogSyncService {
   private catalogueDataSource: CatalogueDataSource;
   private syncInterval: NodeJS.Timeout | null = null;
   private syncLock = createDistributedLock('catalog-sync');
+  private cacheHealth: CacheHealthService;
   
   // Bundle groups as recommended by Jason from eSIM Go support
   private readonly BUNDLE_GROUPS = [
@@ -23,6 +25,7 @@ export class CatalogSyncService {
 
   constructor(catalogueDataSource: CatalogueDataSource) {
     this.catalogueDataSource = catalogueDataSource;
+    this.cacheHealth = new CacheHealthService(catalogueDataSource.cache);
   }
 
   /**
@@ -81,17 +84,25 @@ export class CatalogSyncService {
       
       // Cache the country-specific catalog
       const cacheKey = `esim-go:country-catalog:${countryId}`;
-      await this.catalogueDataSource.cache?.set(
-        cacheKey, 
-        JSON.stringify({
-          bundles: allBundles,
-          totalCount: allBundles.length,
-          countryId: countryId,
-          syncedAt: new Date().toISOString(),
-          pages: page - 1
-        }), 
-        { ttl: 3600 } // 1 hour TTL
+      const cacheResult = await this.cacheHealth.retryOperation(
+        () => this.cacheHealth.safeSet(
+          cacheKey, 
+          JSON.stringify({
+            bundles: allBundles,
+            totalCount: allBundles.length,
+            countryId: countryId,
+            syncedAt: new Date().toISOString(),
+            pages: page - 1
+          }), 
+          { ttl: 3600 } // 1 hour TTL
+        ),
+        3, // max retries
+        1000 // base delay
       );
+      
+      if (!cacheResult.success) {
+        console.warn(`⚠️ Failed to cache country ${countryId} data:`, cacheResult.error?.message);
+      }
       
       const duration = Date.now() - startTime;
       const durations = [...new Set(allBundles.map(b => b.duration))];
@@ -117,10 +128,16 @@ export class CatalogSyncService {
   } | null> {
     try {
       const cacheKey = `esim-go:country-catalog:${countryId}`;
-      const cached = await this.catalogueDataSource.cache?.get(cacheKey);
-      if (cached) {
-        return JSON.parse(cached);
+      const cacheResult = await this.cacheHealth.safeGet(cacheKey);
+      
+      if (cacheResult.success && cacheResult.data) {
+        return JSON.parse(cacheResult.data);
       }
+      
+      if (!cacheResult.success) {
+        console.warn(`⚠️ Cache get failed for country ${countryId}:`, cacheResult.error?.message);
+      }
+      
       return null;
     } catch (error) {
       console.error(`❌ Error getting cached catalog for ${countryId}:`, error);
@@ -194,9 +211,17 @@ export class CatalogSyncService {
             
             // Store by group with 30-day TTL as Jason recommended
             const groupKey = this.getGroupKey(groupName);
-            await this.catalogueDataSource.cache?.set(groupKey, JSON.stringify(response.bundles), {
-              ttl: 30 * 24 * 60 * 60 // 30 days (monthly update cycle)
-            });
+            const groupCacheResult = await this.cacheHealth.retryOperation(
+              () => this.cacheHealth.safeSet(groupKey, JSON.stringify(response.bundles), {
+                ttl: 30 * 24 * 60 * 60 // 30 days (monthly update cycle)
+              }),
+              3, // max retries
+              1000 // base delay
+            );
+            
+            if (!groupCacheResult.success) {
+              console.warn(`⚠️ Failed to cache bundle group ${groupName}:`, groupCacheResult.error?.message);
+            }
             
             // Create indexes for this group
             await this.createIndexes(response.bundles, groupName);
@@ -250,9 +275,17 @@ export class CatalogSyncService {
           
           if (allBundles.length > 0) {
             // Store with 30-day TTL
-            await this.catalogueDataSource.cache?.set('esim-go:catalog:fallback', JSON.stringify(allBundles), {
-              ttl: 30 * 24 * 60 * 60 // 30 days
-            });
+            const fallbackCacheResult = await this.cacheHealth.retryOperation(
+              () => this.cacheHealth.safeSet('esim-go:catalog:fallback', JSON.stringify(allBundles), {
+                ttl: 30 * 24 * 60 * 60 // 30 days
+              }),
+              3, // max retries
+              1000 // base delay
+            );
+            
+            if (!fallbackCacheResult.success) {
+              console.warn(`⚠️ Failed to cache fallback catalog:`, fallbackCacheResult.error?.message);
+            }
             
             // Create indexes for fast lookups
             await this.createIndexes(allBundles, 'fallback');
@@ -269,9 +302,17 @@ export class CatalogSyncService {
       }
       
       // Store metadata
-      await this.catalogueDataSource.cache?.set('esim-go:catalog:metadata', JSON.stringify(metadata), {
-        ttl: 30 * 24 * 60 * 60 // 30 days
-      });
+      const metadataCacheResult = await this.cacheHealth.retryOperation(
+        () => this.cacheHealth.safeSet('esim-go:catalog:metadata', JSON.stringify(metadata), {
+          ttl: 30 * 24 * 60 * 60 // 30 days
+        }),
+        3, // max retries
+        1000 // base delay
+      );
+      
+      if (!metadataCacheResult.success) {
+        console.warn(`⚠️ Failed to cache catalog metadata:`, metadataCacheResult.error?.message);
+      }
       
       const duration = Date.now() - startTime;
       console.log(`✅ Optimized catalog sync completed in ${duration}ms`);
@@ -298,11 +339,19 @@ export class CatalogSyncService {
       const bundleId = bundle.name;
       
       // Store individual bundle for quick access
-      await this.catalogueDataSource.cache?.set(
-        `esim-go:catalog:bundle:${bundleId}`,
-        JSON.stringify(bundle),
-        { ttl: 30 * 24 * 60 * 60 }
+      const bundleCacheResult = await this.cacheHealth.retryOperation(
+        () => this.cacheHealth.safeSet(
+          `esim-go:catalog:bundle:${bundleId}`,
+          JSON.stringify(bundle),
+          { ttl: 30 * 24 * 60 * 60 }
+        ),
+        2, // max retries (fewer for individual bundles)
+        500 // base delay
       );
+      
+      if (!bundleCacheResult.success) {
+        console.warn(`⚠️ Failed to cache bundle ${bundleId}:`, bundleCacheResult.error?.message);
+      }
       
       // Build country index
       for (const country of bundle.countries || []) {
@@ -328,30 +377,54 @@ export class CatalogSyncService {
     
     // Store country indexes
     for (const [country, bundleIds] of countryIndex) {
-      await this.catalogueDataSource.cache?.set(
-        `esim-go:catalog:index:country:${country}`,
-        JSON.stringify([...bundleIds]),
-        { ttl: 30 * 24 * 60 * 60 }
+      const countryIndexResult = await this.cacheHealth.retryOperation(
+        () => this.cacheHealth.safeSet(
+          `esim-go:catalog:index:country:${country}`,
+          JSON.stringify([...bundleIds]),
+          { ttl: 30 * 24 * 60 * 60 }
+        ),
+        2, // max retries
+        500 // base delay
       );
+      
+      if (!countryIndexResult.success) {
+        console.warn(`⚠️ Failed to cache country index for ${country}:`, countryIndexResult.error?.message);
+      }
     }
     
     // Store duration indexes
     for (const [duration, bundleIds] of durationIndex) {
-      await this.catalogueDataSource.cache?.set(
-        `esim-go:catalog:index:duration:${duration}`,
-        JSON.stringify([...bundleIds]),
-        { ttl: 30 * 24 * 60 * 60 }
+      const durationIndexResult = await this.cacheHealth.retryOperation(
+        () => this.cacheHealth.safeSet(
+          `esim-go:catalog:index:duration:${duration}`,
+          JSON.stringify([...bundleIds]),
+          { ttl: 30 * 24 * 60 * 60 }
+        ),
+        2, // max retries
+        500 // base delay
       );
+      
+      if (!durationIndexResult.success) {
+        console.warn(`⚠️ Failed to cache duration index for ${duration}:`, durationIndexResult.error?.message);
+      }
     }
     
     // Store combined indexes
     for (const [key, bundleIds] of combinedIndex) {
       const [country, duration] = key.split(':');
-      await this.catalogueDataSource.cache?.set(
-        `esim-go:catalog:index:country:${country}:duration:${duration}`,
-        JSON.stringify([...bundleIds]),
-        { ttl: 30 * 24 * 60 * 60 }
+      const combinedIndexResult = await this.cacheHealth.retryOperation(
+        () => this.cacheHealth.safeSet(
+          `esim-go:catalog:index:country:${country}:duration:${duration}`,
+          JSON.stringify([...bundleIds]),
+          { ttl: 30 * 24 * 60 * 60 }
+        ),
+        2, // max retries
+        500 // base delay
       );
+      
+      if (!combinedIndexResult.success) {
+        console.warn(`⚠️ Failed to cache combined index ${country}:${duration}:`, combinedIndexResult.error?.message);
+      }
     }
   }
 
@@ -380,10 +453,16 @@ export class CatalogSyncService {
     pages: number;
   } | null> {
     try {
-      const cached = await this.catalogueDataSource.cache?.get('esim-go:full-catalog');
-      if (cached) {
-        return JSON.parse(cached);
+      const cacheResult = await this.cacheHealth.safeGet('esim-go:full-catalog');
+      
+      if (cacheResult.success && cacheResult.data) {
+        return JSON.parse(cacheResult.data);
       }
+      
+      if (!cacheResult.success) {
+        console.warn(`⚠️ Cache get failed for full catalog:`, cacheResult.error?.message);
+      }
+      
       return null;
     } catch (error) {
       console.error('❌ Error getting cached catalog:', error);
@@ -411,14 +490,22 @@ export class CatalogSyncService {
    */
   private async checkAndSync(): Promise<void> {
     try {
-      const metadata = await this.catalogueDataSource.cache?.get('esim-go:catalog:metadata');
-      if (!metadata) {
+      const cacheResult = await this.cacheHealth.safeGet('esim-go:catalog:metadata');
+      
+      if (!cacheResult.success) {
+        console.warn(`⚠️ Failed to get catalog metadata:`, cacheResult.error?.message);
+        console.log('🔄 Cache metadata unavailable, performing full sync...');
+        await this.syncFullCatalog();
+        return;
+      }
+      
+      if (!cacheResult.data) {
         console.log('🔄 No catalog metadata found, performing full sync...');
         await this.syncFullCatalog();
         return;
       }
 
-      const catalogMetadata = JSON.parse(metadata);
+      const catalogMetadata = JSON.parse(cacheResult.data);
       const lastSynced = new Date(catalogMetadata.lastSynced);
       const daysSinceSync = (Date.now() - lastSynced.getTime()) / (1000 * 60 * 60 * 24);
 
@@ -450,6 +537,7 @@ export class CatalogSyncService {
   async cleanup(): Promise<void> {
     this.stopPeriodicSync();
     await this.syncLock.cleanup();
+    this.cacheHealth.cleanup();
     console.log('🧹 Catalog sync service cleanup completed');
   }
 }

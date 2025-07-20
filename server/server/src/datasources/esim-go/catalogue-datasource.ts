@@ -1,6 +1,7 @@
 import { ESIMGoDataSource } from "./esim-go-base";
 import type { ESIMGoDataPlan } from "./types";
 import { CatalogBackupService } from "../../services/catalog-backup.service";
+import { CacheHealthService } from "../../services/cache-health.service";
 
 /**
  * DataSource for eSIM Go Catalogue API
@@ -8,10 +9,12 @@ import { CatalogBackupService } from "../../services/catalog-backup.service";
  */
 export class CatalogueDataSource extends ESIMGoDataSource {
   private backupService: CatalogBackupService;
+  private cacheHealth: CacheHealthService;
 
   constructor(config?: any) {
     super(config);
     this.backupService = new CatalogBackupService(this.cache);
+    this.cacheHealth = new CacheHealthService(this.cache);
   }
   /**
    * Get all available data plans
@@ -20,20 +23,35 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   async getAllBundels(): Promise<ESIMGoDataPlan[]> {
     const cacheKey = this.getCacheKey("catalogue:all");
 
-    // Try to get from cache first
-    const cached = await this.cache?.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached);
+    // Try to get from cache first with error handling
+    const cacheResult = await this.cacheHealth.safeGet(cacheKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+      } catch (error) {
+        this.log.warn('Failed to parse cached data for getAllBundels', { error, cacheKey });
+        // Continue to API call if cache data is corrupted
+      }
     }
 
     // Fetch all pages of data plans
     const plans = await this.getWithErrorHandling<{ bundles: ESIMGoDataPlan[] }>(
       "/v2.5/catalogue"
     );
-    // Cache for 1 hour
-    await this.cache?.set(cacheKey, JSON.stringify(plans.bundles), {
-      ttl: 3600,
-    });
+    // Cache for 1 hour with error handling
+    const cacheSetResult = await this.cacheHealth.retryOperation(
+      () => this.cacheHealth.safeSet(cacheKey, JSON.stringify(plans.bundles), { ttl: 3600 }),
+      2 // max retries
+    );
+    
+    if (!cacheSetResult.success) {
+      this.log.warn('Failed to cache getAllBundels result', { 
+        error: cacheSetResult.error?.message, 
+        cacheKey,
+        dataSize: JSON.stringify(plans.bundles).length 
+      });
+      // Continue without caching - operation should not fail
+    }
 
     return plans.bundles;
   }
@@ -44,10 +62,15 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   async getPlansByRegion(region: string): Promise<ESIMGoDataPlan[]> {
     const cacheKey = this.getCacheKey("catalogue:region", { region });
 
-    // Try to get from cache first
-    const cached = await this.cache?.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached);
+    // Try to get from cache first with error handling
+    const cacheResult = await this.cacheHealth.safeGet(cacheKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+      } catch (error) {
+        this.log.warn('Failed to parse cached data for getPlansByRegion', { error, cacheKey });
+        // Continue to fetch from source if cache data is corrupted
+      }
     }
 
     // Get all plans and filter by region
@@ -58,8 +81,21 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       )
     );
 
-    // Cache for 1 hour
-    await this.cache?.set(cacheKey, JSON.stringify(regionPlans), { ttl: 3600 });
+    // Cache for 1 hour with error handling
+    const cacheSetResult = await this.cacheHealth.retryOperation(
+      () => this.cacheHealth.safeSet(cacheKey, JSON.stringify(regionPlans), { ttl: 3600 }),
+      2 // max retries
+    );
+    
+    if (!cacheSetResult.success) {
+      this.log.warn('Failed to cache getPlansByRegion result', { 
+        error: cacheSetResult.error?.message, 
+        cacheKey,
+        region,
+        dataSize: JSON.stringify(regionPlans).length 
+      });
+      // Continue without caching - operation should not fail
+    }
 
     return regionPlans;
   }
@@ -76,10 +112,15 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       group,
     });
 
-    // Try to get from cache first
-    const cached = await this.cache?.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached);
+    // Try to get from cache first with error handling
+    const cacheResult = await this.cacheHealth.safeGet(cacheKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+      } catch (error) {
+        this.log.warn('Failed to parse cached data for getPlansByCountry', { error, cacheKey });
+        // Continue to API call if cache data is corrupted
+      }
     }
 
     // Get all plans and filter by country
@@ -92,10 +133,22 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     );
     const countryPlans = allPlans.bundles;
 
-    // Cache for 1 hour
-    await this.cache?.set(cacheKey, JSON.stringify(countryPlans), {
-      ttl: 3600,
-    });
+    // Cache for 1 hour with error handling
+    const cacheSetResult = await this.cacheHealth.retryOperation(
+      () => this.cacheHealth.safeSet(cacheKey, JSON.stringify(countryPlans), { ttl: 3600 }),
+      2 // max retries
+    );
+
+    if (!cacheSetResult.success) {
+      this.log.warn('Failed to cache getPlansByCountry result', { 
+        error: cacheSetResult.error?.message, 
+        cacheKey,
+        countryISO,
+        group,
+        dataSize: JSON.stringify(countryPlans).length 
+      });
+      // Continue without caching - operation should not fail
+    }
 
     return countryPlans;
   }
@@ -106,20 +159,36 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   async getPlansByDuration(days: number): Promise<ESIMGoDataPlan[]> {
     const cacheKey = this.getCacheKey("catalogue:duration", { days });
 
-    // Try to get from cache first
-    const cached = await this.cache?.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached);
+    // Try to get from cache first with error handling
+    const cacheResult = await this.cacheHealth.safeGet(cacheKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+      } catch (error) {
+        this.log.warn('Failed to parse cached data for getPlansByDuration', { error, cacheKey });
+        // Continue to API call if cache data is corrupted
+      }
     }
 
     // Get all plans and filter by duration
     const allPlans = await this.getAllBundels();
     const durationPlans = allPlans.filter((plan) => plan.duration === days);
 
-    // Cache for 1 hour
-    await this.cache?.set(cacheKey, JSON.stringify(durationPlans), {
-      ttl: 3600,
-    });
+    // Cache for 1 hour with error handling
+    const cacheSetResult = await this.cacheHealth.retryOperation(
+      () => this.cacheHealth.safeSet(cacheKey, JSON.stringify(durationPlans), { ttl: 3600 }),
+      2 // max retries
+    );
+
+    if (!cacheSetResult.success) {
+      this.log.warn('Failed to cache getPlansByDuration result', { 
+        error: cacheSetResult.error?.message, 
+        cacheKey,
+        days,
+        dataSize: JSON.stringify(durationPlans).length 
+      });
+      // Continue without caching - operation should not fail
+    }
 
     return durationPlans;
   }
@@ -130,19 +199,37 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   async getPlanByName(name: string): Promise<ESIMGoDataPlan | null> {
     const cacheKey = this.getCacheKey("catalogue:plan", { name });
 
-    // Try to get from cache first
-    const cached = await this.cache?.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached);
+    // Try to get from cache first with error handling
+    const cacheResult = await this.cacheHealth.safeGet(cacheKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        return JSON.parse(cacheResult.data) as ESIMGoDataPlan | null;
+      } catch (error) {
+        this.log.warn('Failed to parse cached data for getPlanByName', { error, cacheKey });
+        // Continue to API call if cache data is corrupted
+      }
     }
 
     // Get all plans and find the specific one
     const allPlans = await this.getAllBundels();
     const plan = allPlans.find((p) => p.name === name) || null;
 
-    // Cache for 1 hour
+    // Cache for 1 hour with error handling
     if (plan) {
-      await this.cache?.set(cacheKey, JSON.stringify(plan), { ttl: 3600 });
+      const cacheSetResult = await this.cacheHealth.retryOperation(
+        () => this.cacheHealth.safeSet(cacheKey, JSON.stringify(plan), { ttl: 3600 }),
+        2 // max retries
+      );
+
+      if (!cacheSetResult.success) {
+        this.log.warn('Failed to cache getPlanByName result', { 
+          error: cacheSetResult.error?.message, 
+          cacheKey,
+          name,
+          dataSize: JSON.stringify(plan).length 
+        });
+        // Continue without caching - operation should not fail
+      }
     }
 
     return plan;
@@ -163,16 +250,22 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   }): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string }> {
     console.log('🚀 searchPlans called with criteria:', criteria);
     
-    // Check if catalog is fresh
-    const metadata = await this.cache?.get('esim-go:catalog:metadata');
-    if (!metadata) {
+    // Check if catalog is fresh with error handling
+    const metadataResult = await this.cacheHealth.safeGet('esim-go:catalog:metadata');
+    if (!metadataResult.success || !metadataResult.data) {
       console.log('⚠️ No catalog metadata found, triggering sync...');
       // Note: In production, this would trigger an async sync
       // For now, fallback to API call
       return this.fallbackToApiCall(criteria);
     }
 
-    const catalogMetadata = JSON.parse(metadata);
+    let catalogMetadata;
+    try {
+      catalogMetadata = JSON.parse(metadataResult.data) as any;
+    } catch (error) {
+      this.log.warn('Failed to parse catalog metadata', { error });
+      return this.fallbackToApiCall(criteria);
+    }
     console.log(`💾 Using cached catalog (last synced: ${catalogMetadata.lastSynced})`);
     
     let bundles: ESIMGoDataPlan[] = [];
@@ -230,9 +323,14 @@ export class CatalogueDataSource extends ESIMGoDataSource {
    */
   private async getBundlesByGroup(groupName: string): Promise<ESIMGoDataPlan[]> {
     const groupKey = this.getGroupKey(groupName);
-    const groupData = await this.cache?.get(groupKey);
-    if (groupData) {
-      return JSON.parse(groupData);
+    const cacheResult = await this.cacheHealth.safeGet(groupKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+      } catch (error) {
+        this.log.warn('Failed to parse cached bundle group data', { error, groupKey });
+        // Continue without cached data
+      }
     }
     return [];
   }
@@ -242,9 +340,15 @@ export class CatalogueDataSource extends ESIMGoDataSource {
    */
   private async getBundlesByCountry(country: string): Promise<ESIMGoDataPlan[]> {
     const indexKey = `esim-go:catalog:index:country:${country}`;
-    const bundleIds = await this.cache?.get(indexKey);
-    if (bundleIds) {
-      return this.getBundlesByIds(JSON.parse(bundleIds));
+    const cacheResult = await this.cacheHealth.safeGet(indexKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        const bundleIds = JSON.parse(cacheResult.data) as string[];
+        return this.getBundlesByIds(bundleIds);
+      } catch (error) {
+        this.log.warn('Failed to parse cached country index data', { error, indexKey });
+        // Continue without cached data
+      }
     }
     return [];
   }
@@ -254,9 +358,15 @@ export class CatalogueDataSource extends ESIMGoDataSource {
    */
   private async getBundlesByDuration(duration: number): Promise<ESIMGoDataPlan[]> {
     const indexKey = `esim-go:catalog:index:duration:${duration}`;
-    const bundleIds = await this.cache?.get(indexKey);
-    if (bundleIds) {
-      return this.getBundlesByIds(JSON.parse(bundleIds));
+    const cacheResult = await this.cacheHealth.safeGet(indexKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        const bundleIds = JSON.parse(cacheResult.data) as string[];
+        return this.getBundlesByIds(bundleIds);
+      } catch (error) {
+        this.log.warn('Failed to parse cached duration index data', { error, indexKey });
+        // Continue without cached data
+      }
     }
     return [];
   }
@@ -266,9 +376,15 @@ export class CatalogueDataSource extends ESIMGoDataSource {
    */
   private async getBundlesByCountryAndDuration(country: string, duration: number): Promise<ESIMGoDataPlan[]> {
     const indexKey = `esim-go:catalog:index:country:${country}:duration:${duration}`;
-    const bundleIds = await this.cache?.get(indexKey);
-    if (bundleIds) {
-      return this.getBundlesByIds(JSON.parse(bundleIds));
+    const cacheResult = await this.cacheHealth.safeGet(indexKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        const bundleIds = JSON.parse(cacheResult.data) as string[];
+        return this.getBundlesByIds(bundleIds);
+      } catch (error) {
+        this.log.warn('Failed to parse cached country-duration index data', { error, indexKey });
+        // Continue without cached data
+      }
     }
     return [];
   }
@@ -281,9 +397,15 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     
     for (const groupName of metadata.bundleGroups || []) {
       const groupKey = this.getGroupKey(groupName);
-      const groupData = await this.cache?.get(groupKey);
-      if (groupData) {
-        allBundles.push(...JSON.parse(groupData));
+      const cacheResult = await this.cacheHealth.safeGet(groupKey);
+      if (cacheResult.success && cacheResult.data) {
+        try {
+          const groupData = JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+          allBundles.push(...groupData);
+        } catch (error) {
+          this.log.warn('Failed to parse cached group data in getAllBundles', { error, groupKey });
+          // Continue without this group's data
+        }
       }
     }
     
@@ -298,9 +420,15 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     
     // Batch get bundles
     for (const id of bundleIds) {
-      const bundleData = await this.cache?.get(`esim-go:catalog:bundle:${id}`);
-      if (bundleData) {
-        bundles.push(JSON.parse(bundleData));
+      const cacheResult = await this.cacheHealth.safeGet(`esim-go:catalog:bundle:${id}`);
+      if (cacheResult.success && cacheResult.data) {
+        try {
+          const bundleData = JSON.parse(cacheResult.data) as ESIMGoDataPlan;
+          bundles.push(bundleData);
+        } catch (error) {
+          this.log.warn('Failed to parse cached bundle data', { error, bundleId: id });
+          // Continue without this bundle's data
+        }
       }
     }
     
@@ -402,13 +530,18 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     
     const cacheKey = this.getCacheKey("catalogue:search", criteria);
 
-    // Try to get from cache first
-    const cached = await this.cache?.get(cacheKey);
-    if (cached) {
-      console.log('💾 Returning cached result for:', cacheKey);
-      const cachedResult = JSON.parse(cached);
-      console.log('💾 Cached durations:', [...new Set(cachedResult.bundles.map(b => b.duration))]);
-      return cachedResult;
+    // Try to get from cache first with error handling
+    const cacheResult = await this.cacheHealth.safeGet(cacheKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        const cachedResult = JSON.parse(cacheResult.data) as { bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string };
+        console.log('💾 Returning cached result for:', cacheKey);
+        console.log('💾 Cached durations:', [...new Set(cachedResult.bundles.map(b => b.duration))]);
+        return cachedResult;
+      } catch (error) {
+        this.log.warn('Failed to parse cached search data for performApiCall', { error, cacheKey });
+        // Continue to API call if cache data is corrupted
+      }
     }
 
     // Prepare API parameters
@@ -534,8 +667,20 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       lastFetched: new Date().toISOString()
     };
 
-    // Cache for 1 hour
-    await this.cache?.set(cacheKey, JSON.stringify(result), { ttl: 3600 });
+    // Cache for 1 hour with error handling
+    const cacheSetResult = await this.cacheHealth.retryOperation(
+      () => this.cacheHealth.safeSet(cacheKey, JSON.stringify(result), { ttl: 3600 }),
+      2 // max retries
+    );
+
+    if (!cacheSetResult.success) {
+      this.log.warn('Failed to cache performApiCall result', { 
+        error: cacheSetResult.error?.message, 
+        cacheKey,
+        dataSize: JSON.stringify(result).length 
+      });
+      // Continue without caching - operation should not fail
+    }
 
     return result;
   }
@@ -547,10 +692,15 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   async getFeaturedPlans(): Promise<ESIMGoDataPlan[]> {
     const cacheKey = this.getCacheKey("catalogue:featured");
 
-    // Try to get from cache first
-    const cached = await this.cache?.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached);
+    // Try to get from cache first with error handling
+    const cacheResult = await this.cacheHealth.safeGet(cacheKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+      } catch (error) {
+        this.log.warn('Failed to parse cached data for getFeaturedPlans', { error, cacheKey });
+        // Continue to API call if cache data is corrupted
+      }
     }
 
     // Get all plans
@@ -584,11 +734,82 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       return a.duration - b.duration;
     });
 
-    // Cache for 1 hour
-    await this.cache?.set(cacheKey, JSON.stringify(featuredPlans), {
-      ttl: 3600,
-    });
+    // Cache for 1 hour with error handling
+    const cacheSetResult = await this.cacheHealth.retryOperation(
+      () => this.cacheHealth.safeSet(cacheKey, JSON.stringify(featuredPlans), { ttl: 3600 }),
+      2 // max retries
+    );
+
+    if (!cacheSetResult.success) {
+      this.log.warn('Failed to cache getFeaturedPlans result', { 
+        error: cacheSetResult.error?.message, 
+        cacheKey,
+        dataSize: JSON.stringify(featuredPlans).length 
+      });
+      // Continue without caching - operation should not fail
+    }
 
     return featuredPlans;
+  }
+
+  /**
+   * Cleanup cache health monitoring
+   */
+  cleanup(): void {
+    this.cacheHealth.cleanup();
+    this.log.info('🧹 CatalogueDataSource cleanup completed');
+  }
+
+  /**
+   * Get cache health status
+   */
+  getCacheHealthStatus(): string {
+    return this.cacheHealth.getHealthReport();
+  }
+
+  /**
+   * Force cache health metrics reset
+   */
+  resetCacheHealth(): void {
+    this.cacheHealth.resetMetrics();
+    this.log.info('🔄 Cache health metrics reset');
+  }
+
+  /**
+   * Enhanced fallback strategy that handles all types of failures
+   */
+  private async enhancedFallbackStrategy<T>(
+    primaryOperation: () => Promise<T>,
+    cacheKey: string,
+    operationName: string
+  ): Promise<T> {
+    try {
+      // Try primary operation (usually API call)
+      return await primaryOperation();
+    } catch (primaryError) {
+      this.log.warn(`Primary operation failed for ${operationName}`, { 
+        error: primaryError instanceof Error ? primaryError.message : String(primaryError),
+        cacheKey 
+      });
+
+      // Try backup service as fallback
+      try {
+        this.log.info(`Attempting backup fallback for ${operationName}`);
+        // This would return backup data - implementation depends on backup service capabilities
+        const hasBackup = await this.backupService.hasBackupData();
+        if (hasBackup) {
+          this.log.info(`✅ Using backup data for ${operationName}`);
+          // Note: This is a simplified fallback - actual implementation would depend on data type
+          throw new Error('Backup fallback not implemented for this data type');
+        }
+      } catch (backupError) {
+        this.log.warn(`Backup fallback failed for ${operationName}`, { 
+          error: backupError instanceof Error ? backupError.message : String(backupError)
+        });
+      }
+
+      // If both primary and backup fail, re-throw the original error
+      throw primaryError;
+    }
   }
 }
