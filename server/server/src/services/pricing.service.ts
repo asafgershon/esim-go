@@ -91,6 +91,125 @@ export class PricingService {
   }
 
   /**
+   * Get fixed markup amount from database table based on bundle group and duration
+   */
+  static async getFixedMarkup(bundleGroup: string, duration: number): Promise<number> {
+    try {
+      // Import Supabase client (assuming it's available in your services)
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.SUPABASE_URL!, 
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+
+      // Try exact duration match first
+      const { data: exactMatch } = await supabase
+        .from('pricing_markup_config')
+        .select('markup_amount')
+        .eq('bundle_group', bundleGroup)
+        .eq('duration_days', duration)
+        .single();
+
+      if (exactMatch) {
+        this.logger.info('Found exact markup match', {
+          bundleGroup,
+          duration,
+          markupAmount: exactMatch.markup_amount,
+          operationType: 'markup-exact-match'
+        });
+        return exactMatch.markup_amount;
+      }
+
+      // No exact match, get all markups for this bundle group for interpolation
+      const { data: allMarkups } = await supabase
+        .from('pricing_markup_config')
+        .select('duration_days, markup_amount')
+        .eq('bundle_group', bundleGroup)
+        .order('duration_days');
+
+      if (!allMarkups || allMarkups.length === 0) {
+        this.logger.warn('No markup configuration found for bundle group, using default', {
+          bundleGroup,
+          duration,
+          defaultMarkup: 10.00,
+          operationType: 'markup-fallback'
+        });
+        return 10.00; // Default fallback
+      }
+
+      // Interpolate between closest durations
+      const sortedMarkups = allMarkups.sort((a, b) => a.duration_days - b.duration_days);
+      
+      // If requested duration is shorter than shortest, use shortest
+      if (duration <= sortedMarkups[0].duration_days) {
+        const result = sortedMarkups[0].markup_amount;
+        this.logger.info('Using shortest duration markup', {
+          bundleGroup,
+          requestedDuration: duration,
+          usedDuration: sortedMarkups[0].duration_days,
+          markupAmount: result,
+          operationType: 'markup-shortest'
+        });
+        return result;
+      }
+
+      // If requested duration is longer than longest, use longest
+      if (duration >= sortedMarkups[sortedMarkups.length - 1].duration_days) {
+        const result = sortedMarkups[sortedMarkups.length - 1].markup_amount;
+        this.logger.info('Using longest duration markup', {
+          bundleGroup,
+          requestedDuration: duration,
+          usedDuration: sortedMarkups[sortedMarkups.length - 1].duration_days,
+          markupAmount: result,
+          operationType: 'markup-longest'
+        });
+        return result;
+      }
+
+      // Linear interpolation between two closest durations
+      for (let i = 0; i < sortedMarkups.length - 1; i++) {
+        const lower = sortedMarkups[i];
+        const upper = sortedMarkups[i + 1];
+        
+        if (duration >= lower.duration_days && duration <= upper.duration_days) {
+          const ratio = (duration - lower.duration_days) / (upper.duration_days - lower.duration_days);
+          const interpolatedMarkup = lower.markup_amount + ratio * (upper.markup_amount - lower.markup_amount);
+          
+          this.logger.info('Interpolated markup calculated', {
+            bundleGroup,
+            requestedDuration: duration,
+            lowerDuration: lower.duration_days,
+            upperDuration: upper.duration_days,
+            lowerMarkup: lower.markup_amount,
+            upperMarkup: upper.markup_amount,
+            interpolatedMarkup: Number(interpolatedMarkup.toFixed(2)),
+            operationType: 'markup-interpolation'
+          });
+          
+          return Number(interpolatedMarkup.toFixed(2));
+        }
+      }
+
+      // Fallback (shouldn't reach here)
+      this.logger.warn('Fallback to default markup', {
+        bundleGroup,
+        duration,
+        defaultMarkup: 10.00,
+        operationType: 'markup-fallback-unexpected'
+      });
+      return 10.00;
+
+    } catch (error) {
+      this.logger.error('Failed to fetch markup configuration', error as Error, {
+        bundleGroup,
+        duration,
+        operationType: 'markup-fetch-error'
+      });
+      return 10.00; // Default fallback
+    }
+  }
+
+  /**
    * Get pricing configuration for a specific bundle
    * This combines eSIM Go API data with our business logic and configuration rules
    */
@@ -343,9 +462,17 @@ export class PricingService {
         }
       }
 
-      // Use configuration rule or defaults  
-      const markupPercent = configRule?.markupPercent || 40; // Default 40% markup (as percentage)
+      // Get fixed markup amount from database table based on bundle group and duration
+      // This replaces the old percentage-based markup with fixed dollar amounts
+      const fixedMarkupAmount = await this.getFixedMarkup(matchingBundle.bundleGroup, duration);
       const discountRate = configRule?.discountRate || this.DEFAULT_DISCOUNT_RATE;
+      
+      this.logger.info('Fixed markup retrieved', {
+        bundleGroup: matchingBundle.bundleGroup,
+        duration,
+        fixedMarkupAmount,
+        operationType: 'markup-lookup'
+      });
       
       // Get dynamic processing rate from processing fee configuration
       let processingRate = configRule?.processingRate || this.DEFAULT_PROCESSING_RATE;
@@ -420,8 +547,8 @@ export class PricingService {
         }
       }
 
-      // Calculate pricing based on eSIM Go data + configuration rules
-      const markup = esimGoCost * (markupPercent / 100); // Convert percentage to decimal for calculation
+      // Calculate pricing based on eSIM Go data + fixed markup configuration
+      const markup = fixedMarkupAmount; // Fixed dollar amount from database table
       const totalCostBeforeUnusedDiscount = esimGoCost + markup;
       const totalCost = totalCostBeforeUnusedDiscount * (1 - unusedDaysDiscount);
 
@@ -446,10 +573,12 @@ export class PricingService {
         countryId,
         requestedDuration: duration,
         selectedBundle: matchingBundle.name,
+        bundleGroup: matchingBundle.bundleGroup,
         bundleDuration: matchingBundle.duration,
         catalogPrice: matchingBundle.price,
         realTimePrice: realTimePricing?.basePrice,
         finalCost: result.cost,
+        fixedMarkupAmount: fixedMarkupAmount,
         markup: result.costPlus,
         totalCost: result.totalCost,
         unusedDays,
