@@ -598,110 +598,7 @@ export class PricingService {
     }
   }
 
-  /**
-   * Fallback mock pricing configuration
-   */
-  static getMockPricingConfig(countryId: string, duration: number): PricingConfig {
-    // Mock data based on your Excel example (Austria)
-    const mockConfigs: Record<string, Record<number, PricingConfig>> = {
-      'AT': { // Austria
-        3: { cost: 4.80, costPlus: 6, totalCost: 10.00, discountRate: 0.30, processingRate: 0.045 },
-        5: { cost: 7.56, costPlus: 10, totalCost: 17.00, discountRate: 0.30, processingRate: 0.045 },
-        7: { cost: 10.32, costPlus: 13, totalCost: 23.00, discountRate: 0.30, processingRate: 0.045 },
-        10: { cost: 14.08, costPlus: 16, totalCost: 30.00, discountRate: 0.30, processingRate: 0.045 }
-      }
-    };
 
-    // Default pricing configuration for unsupported countries
-    const defaultConfig: Record<number, PricingConfig> = {
-      3: { cost: 5.00, costPlus: 6, totalCost: 11.00, discountRate: 0.30, processingRate: 0.045 },
-      5: { cost: 8.00, costPlus: 10, totalCost: 18.00, discountRate: 0.30, processingRate: 0.045 },
-      7: { cost: 11.00, costPlus: 14, totalCost: 25.00, discountRate: 0.30, processingRate: 0.045 },
-      10: { cost: 15.00, costPlus: 17, totalCost: 32.00, discountRate: 0.30, processingRate: 0.045 },
-      14: { cost: 20.00, costPlus: 22, totalCost: 42.00, discountRate: 0.30, processingRate: 0.045 },
-      30: { cost: 40.00, costPlus: 45, totalCost: 85.00, discountRate: 0.30, processingRate: 0.045 }
-    };
-
-    // Use country-specific config if available, otherwise use default
-    const countryConfig = mockConfigs[countryId] || defaultConfig;
-
-    // Try to get exact duration match first
-    let config = countryConfig[duration];
-    
-    // If no exact match, calculate dynamic pricing for custom durations
-    if (!config) {
-      config = this.calculateDynamicPricing(duration, countryConfig, countryId);
-    }
-
-    return config;
-  }
-
-  /**
-   * Calculate dynamic pricing for custom durations
-   * Uses interpolation between known pricing tiers
-   */
-  private static calculateDynamicPricing(
-    duration: number, 
-    countryConfig: Record<number, PricingConfig>,
-    countryId: string
-  ): PricingConfig {
-    const sortedDurations = Object.keys(countryConfig)
-      .map(Number)
-      .sort((a, b) => a - b);
-
-    // Find the two closest durations for interpolation
-    let lowerDuration = sortedDurations[0];
-    let upperDuration = sortedDurations[sortedDurations.length - 1];
-
-    for (let i = 0; i < sortedDurations.length - 1; i++) {
-      if (duration >= sortedDurations[i] && duration <= sortedDurations[i + 1]) {
-        lowerDuration = sortedDurations[i];
-        upperDuration = sortedDurations[i + 1];
-        break;
-      }
-    }
-
-    const lowerConfig = countryConfig[lowerDuration];
-    const upperConfig = countryConfig[upperDuration];
-
-    // For durations shorter than minimum, use minimum pricing
-    if (duration <= lowerDuration) {
-      return {
-        ...lowerConfig,
-        totalCost: Math.max(lowerConfig.totalCost, duration * (lowerConfig.totalCost / lowerDuration))
-      };
-    }
-
-    // For durations longer than maximum, use daily rate from longest duration
-    if (duration >= upperDuration) {
-      const dailyRate = upperConfig.totalCost / upperDuration;
-      const totalCost = duration * dailyRate;
-      const cost = totalCost * (upperConfig.cost / upperConfig.totalCost);
-      const costPlus = totalCost * (upperConfig.costPlus / upperConfig.totalCost);
-      
-      return {
-        cost: Number(cost.toFixed(2)),
-        costPlus: Number(costPlus.toFixed(2)),
-        totalCost: Number(totalCost.toFixed(2)),
-        discountRate: upperConfig.discountRate,
-        processingRate: upperConfig.processingRate
-      };
-    }
-
-    // Linear interpolation between two known points
-    const ratio = (duration - lowerDuration) / (upperDuration - lowerDuration);
-    const totalCost = lowerConfig.totalCost + ratio * (upperConfig.totalCost - lowerConfig.totalCost);
-    const cost = lowerConfig.cost
-    const costPlus = lowerConfig.costPlus + ratio * (upperConfig.costPlus - lowerConfig.costPlus);
-
-    return {
-      cost: Number(cost.toFixed(2)),
-      costPlus: Number(costPlus.toFixed(2)),
-      totalCost: Number(totalCost.toFixed(2)),
-      discountRate: lowerConfig.discountRate, // Use consistent discount rate
-      processingRate: lowerConfig.processingRate // Use consistent processing rate
-    };
-  }
 
   /**
    * Get bundle name for display
@@ -737,8 +634,7 @@ export class PricingService {
     
     // eSIM Go integration estimates
     const estimatedEsimGoCost = cost;
-    const ourMarkup = totalCost - estimatedEsimGoCost;
-    const markupPercent = (ourMarkup / estimatedEsimGoCost) * 100;
+    const ourFixedMarkup = costPlus; // Fixed dollar amount from database
     
     // Bundle analysis
     const dailyRate = totalCost / duration;
@@ -754,8 +650,7 @@ export class PricingService {
     }
 
     return {
-      // Raw Configuration Values
-      baseCostSplitPercent: 60.0, // Default cost split percentage
+      // Raw Configuration Values  
       baseDiscountRate: discountRate,
       baseProcessingRate: processingRate,
       
@@ -771,8 +666,7 @@ export class PricingService {
       
       // eSIM Go Integration
       estimatedEsimGoCost: Number(estimatedEsimGoCost.toFixed(2)),
-      ourMarkup: Number(ourMarkup.toFixed(2)),
-      markupPercent: Number(markupPercent.toFixed(2)),
+      ourFixedMarkup: Number(ourFixedMarkup.toFixed(2)),
       
       // Bundle Analysis
       dailyRate: Number(dailyRate.toFixed(2)),
