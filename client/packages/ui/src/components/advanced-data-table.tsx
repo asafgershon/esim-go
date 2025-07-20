@@ -259,12 +259,16 @@ export function AdvancedDataTable<TData, TValue>({
     data,
     columns: enhancedColumns,
     getRowId: (row, index) => {
-      // Use stable IDs for rows to prevent scroll jumping
-      if (row.id) return String(row.id)
-      if (row.countryId && row.duration !== undefined) {
+      if (typeof row !== 'object' || row === null) {
+        return String(row);
+      }
+      if ('id' in row && row.id) {
+        return String(row.id);
+      }
+      if ('countryId' in row && 'duration' in row && row.countryId && row.duration !== undefined) {
         return row.duration === 0 ? `summary-${row.countryId}` : `bundle-${row.countryId}-${row.duration}`
       }
-      return String(index)
+      return String(index);
     },
     state: {
       sorting: enableSorting ? sorting : [],
@@ -340,7 +344,7 @@ export function AdvancedDataTable<TData, TValue>({
       // Restore saved expanded state when search is cleared
       setExpanded(savedExpandedState)
     }
-  }, [searchKey, enableFiltering, autoExpandOnSearch, table, expanded, setSavedExpandedState])
+  }, [searchKey, enableFiltering, autoExpandOnSearch, table])
 
   // Handle row selection callback
   React.useEffect(() => {
