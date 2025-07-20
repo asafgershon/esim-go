@@ -1,6 +1,7 @@
 import { CatalogueDataSource } from '../datasources/esim-go/catalogue-datasource';
 import { ESIMGoDataPlan } from '../datasources/esim-go/types';
 import { cleanEnv, str } from "envalid";
+import { createDistributedLock, LockResult } from '../lib/distributed-lock';
 
 const env = cleanEnv(process.env, {
   ESIM_GO_API_KEY: str({ desc: "The API key for the eSIM Go API" }),
@@ -9,6 +10,7 @@ const env = cleanEnv(process.env, {
 export class CatalogSyncService {
   private catalogueDataSource: CatalogueDataSource;
   private syncInterval: NodeJS.Timeout | null = null;
+  private syncLock = createDistributedLock('catalog-sync');
   
   // Bundle groups as recommended by Jason from eSIM Go support
   private readonly BUNDLE_GROUPS = [
@@ -127,10 +129,38 @@ export class CatalogSyncService {
   }
 
   /**
+   * Acquire sync lock to prevent concurrent sync operations
+   */
+  async acquireSyncLock(): Promise<LockResult> {
+    return await this.syncLock.acquire({
+      timeout: 60 * 60 * 1000, // 1 hour
+      retryAttempts: 3,
+      retryDelay: 2000 // 2 seconds
+    });
+  }
+
+  /**
+   * Release sync lock
+   */
+  async releaseSyncLock(lockResult: LockResult): Promise<void> {
+    if (lockResult.release) {
+      await lockResult.release();
+    }
+  }
+
+  /**
    * Sync the complete eSIM Go catalog by fetching bundle groups
    */
   async syncFullCatalog(): Promise<void> {
     console.log('🔄 Starting optimized catalog sync by bundle groups...');
+    
+    // Acquire distributed lock to prevent race conditions
+    const lockResult = await this.acquireSyncLock();
+    if (!lockResult.acquired) {
+      console.log(`🔒 Catalog sync already in progress: ${lockResult.error}`);
+      return;
+    }
+    
     const startTime = Date.now();
     
     try {
@@ -250,6 +280,9 @@ export class CatalogSyncService {
       
     } catch (error) {
       console.error('❌ Optimized catalog sync failed:', error);
+    } finally {
+      // Always release the lock, even if sync failed
+      await this.releaseSyncLock(lockResult);
     }
   }
 
@@ -409,5 +442,14 @@ export class CatalogSyncService {
       this.syncInterval = null;
       console.log('🛑 Stopped periodic catalog sync');
     }
+  }
+
+  /**
+   * Cleanup resources including distributed lock
+   */
+  async cleanup(): Promise<void> {
+    this.stopPeriodicSync();
+    await this.syncLock.cleanup();
+    console.log('🧹 Catalog sync service cleanup completed');
   }
 }
