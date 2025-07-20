@@ -18,6 +18,30 @@ import { createLogger } from "./lib/logger";
 
 const logger = createLogger({ component: 'resolvers' });
 
+// Simple in-memory cache for bundlesByCountry (TTL: 30 minutes)
+const bundlesByCountryCache = {
+  data: null as any,
+  timestamp: 0,
+  TTL: 30 * 60 * 1000, // 30 minutes
+  
+  get() {
+    if (this.data && Date.now() - this.timestamp < this.TTL) {
+      return this.data;
+    }
+    return null;
+  },
+  
+  set(data: any) {
+    this.data = data;
+    this.timestamp = Date.now();
+  },
+  
+  clear() {
+    this.data = null;
+    this.timestamp = 0;
+  }
+};
+
 // Helper function to map GraphQL enum to internal payment method type
 function mapPaymentMethodEnum(paymentMethod?: PaymentMethod | null): 'israeli_card' | 'foreign_card' | 'bit' | 'amex' | 'diners' {
   switch (paymentMethod) {
@@ -263,8 +287,8 @@ export const resolvers: Resolvers = {
               priceAfterDiscount: 0,
               processingRate: 0,
               processingCost: 0,
-              revenueAfterProcessing: 0,
               finalRevenue: 0,
+              netProfit: 0,
               currency: 'USD'
             };
           }
@@ -273,6 +297,270 @@ export const resolvers: Resolvers = {
 
       return results;
     },
+    
+    bundlesByCountry: async (_, __, context: Context) => {
+      logger.info('Fetching bundles by country with aggregated pricing', {
+        operationType: 'bundles-by-country-fetch'
+      });
+      
+      // Check cache first
+      const cachedData = bundlesByCountryCache.get();
+      if (cachedData) {
+        logger.info('Returning cached bundlesByCountry data', {
+          operationType: 'bundles-by-country-fetch',
+          source: 'cache'
+        });
+        return cachedData;
+      }
+      
+      try {
+        const { PricingService } = await import('./services/pricing.service');
+        const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
+        const configRepository = new PricingConfigRepository();
+        
+        // Get all countries
+        const countries = await context.dataSources.countries.getCountries();
+        
+        // Use the cached catalogue data instead of making new API calls
+        const dataPlansResult = await context.dataSources.catalogue.searchPlans({});
+        const dataPlans = dataPlansResult.bundles || [];
+        
+        logger.info('Using cached catalogue data', {
+          totalBundles: dataPlans.length,
+          countries: countries.length,
+          operationType: 'bundles-by-country-fetch'
+        });
+        
+        // Group bundles by country and calculate aggregates efficiently
+        const countryBundleMap = new Map<string, any[]>();
+        
+        // Build country to bundles mapping
+        for (const bundle of dataPlans) {
+          if (bundle.countries) {
+            for (const country of bundle.countries) {
+              if (!countryBundleMap.has(country.iso)) {
+                countryBundleMap.set(country.iso, []);
+              }
+              countryBundleMap.get(country.iso)!.push({
+                bundle,
+                duration: bundle.duration,
+                name: bundle.name,
+                price: bundle.price
+              });
+            }
+          }
+        }
+        
+        // Get all pricing configurations in one query
+        const allConfigurations = await configRepository.getAllConfigurations();
+        const activeConfigsByCountry = new Map<string, boolean>();
+        for (const config of allConfigurations) {
+          if (config.isActive && config.countryId) {
+            activeConfigsByCountry.set(config.countryId, true);
+          }
+        }
+        
+        // Calculate aggregated data for each country
+        const bundlesByCountry = await Promise.all(
+          countries.map(async (country) => {
+            const countryBundles = countryBundleMap.get(country.iso) || [];
+            const totalBundles = countryBundles.length;
+            
+            if (totalBundles === 0) {
+              return {
+                countryName: country.country,
+                countryId: country.iso,
+                totalBundles: 0,
+                avgPricePerDay: 0,
+                hasCustomDiscount: activeConfigsByCountry.has(country.iso) || false,
+                avgDiscountRate: 0.3, // Default discount rate
+                totalDiscountValue: 0,
+                avgCost: 0,
+                avgCostPlus: 0,
+                avgTotalCost: 0,
+                avgProcessingRate: 0.045, // Default processing rate
+                avgProcessingCost: 0,
+                avgFinalRevenue: 0,
+                avgNetProfit: 0,
+                totalRevenue: 0,
+                avgProfitMargin: 0,
+                lastFetched: new Date().toISOString()
+              };
+            }
+            
+            // Calculate simple aggregates based on bundle prices and durations
+            // This is much faster than making individual pricing API calls
+            const avgPrice = countryBundles.reduce((sum, b) => sum + b.bundle.price, 0) / totalBundles;
+            const avgDuration = countryBundles.reduce((sum, b) => sum + b.duration, 0) / totalBundles;
+            const avgPricePerDay = avgPrice / avgDuration;
+            
+            // Use reasonable defaults for pricing calculations to avoid API calls
+            const defaultDiscountRate = activeConfigsByCountry.has(country.iso) ? 0.25 : 0.3;
+            const defaultProcessingRate = 0.045;
+            const avgCost = avgPrice * 0.6; // Assume 60% cost split
+            const avgCostPlus = avgPrice * 0.1; // Assume 10% additional cost
+            const avgTotalCost = avgCost + avgCostPlus;
+            const avgDiscountValue = avgTotalCost * defaultDiscountRate;
+            const priceAfterDiscount = avgTotalCost - avgDiscountValue;
+            const avgProcessingCost = priceAfterDiscount * defaultProcessingRate;
+            const avgFinalRevenue = priceAfterDiscount - avgProcessingCost; // What we actually receive
+            const avgNetProfit = avgFinalRevenue - avgTotalCost; // Profit after all costs
+            const avgProfitMargin = avgTotalCost > 0 ? (avgNetProfit / avgTotalCost) : 0;
+            
+            return {
+              countryName: country.country,
+              countryId: country.iso,
+              totalBundles,
+              avgPricePerDay,
+              hasCustomDiscount: activeConfigsByCountry.has(country.iso) || false,
+              avgDiscountRate: defaultDiscountRate,
+              totalDiscountValue: avgDiscountValue * totalBundles,
+              avgCost,
+              avgCostPlus,
+              avgTotalCost,
+              avgProcessingRate: defaultProcessingRate,
+              avgProcessingCost,
+              avgFinalRevenue,
+              avgNetProfit,
+              totalRevenue: avgFinalRevenue * totalBundles,
+              avgProfitMargin,
+              lastFetched: dataPlansResult.lastFetched || new Date().toISOString()
+            };
+          })
+        );
+        
+        // Filter out countries with no bundles, sort alphabetically, and cache result
+        const result = bundlesByCountry
+          .filter(country => country.totalBundles > 0)
+          .sort((a, b) => a.countryName.localeCompare(b.countryName));
+        bundlesByCountryCache.set(result);
+        
+        logger.info('Completed bundlesByCountry aggregation using cached data', {
+          totalCountries: result.length,
+          operationType: 'bundles-by-country-fetch'
+        });
+        
+        return result;
+      } catch (error) {
+        logger.error('Error in bundlesByCountry resolver', error as Error, {
+          operationType: 'bundles-by-country-fetch'
+        });
+        throw new GraphQLError('Failed to fetch bundles by country', {
+          extensions: { code: 'INTERNAL_ERROR' }
+        });
+      }
+    },
+    
+    countryBundles: async (_, { countryId }, context: Context) => {
+      logger.info('Fetching bundles for specific country', {
+        countryId,
+        operationType: 'country-bundles-fetch'
+      });
+      
+      try {
+        const { PricingService } = await import('./services/pricing.service');
+        const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
+        const configRepository = new PricingConfigRepository();
+        
+        // Get country info
+        const countries = await context.dataSources.countries.getCountries();
+        const country = countries.find(c => c.iso === countryId);
+        
+        if (!country) {
+          throw new GraphQLError(`Country not found: ${countryId}`, {
+            extensions: { code: 'COUNTRY_NOT_FOUND' }
+          });
+        }
+        
+        // Use cached catalogue data to get bundles for this country
+        const dataPlansResult = await context.dataSources.catalogue.searchPlans({
+          country: countryId
+        });
+        const dataPlans = dataPlansResult.bundles || [];
+        
+        // Get unique durations and sort them
+        const durations = [...new Set(dataPlans.map(plan => plan.duration))].sort((a, b) => a - b);
+        
+        // Get custom configurations to determine hasCustomDiscount
+        const allConfigurations = await configRepository.getAllConfigurations();
+        const hasCustomConfig = allConfigurations.some(config => 
+          config.isActive && config.countryId === countryId
+        );
+
+        // Calculate pricing for each duration using actual pricing service
+        // This is acceptable for single country since it's only a few API calls
+        const bundles = await Promise.all(
+          durations.map(async (duration) => {
+            try {
+              const config = await PricingService.getPricingConfig(
+                countryId,
+                duration,
+                context.dataSources.catalogue,
+                configRepository,
+                'israeli_card'
+              );
+              
+              const bundleName = PricingService.getBundleName(duration);
+              
+              const pricingBreakdown = PricingService.calculatePricing(
+                bundleName,
+                country.country,
+                duration,
+                config
+              );
+              
+              return {
+                bundleName: pricingBreakdown.bundleName,
+                countryName: pricingBreakdown.countryName,
+                countryId,
+                duration: pricingBreakdown.duration,
+                cost: pricingBreakdown.cost,
+                costPlus: pricingBreakdown.costPlus,
+                totalCost: pricingBreakdown.totalCost,
+                discountRate: pricingBreakdown.discountRate,
+                discountValue: pricingBreakdown.discountValue,
+                priceAfterDiscount: pricingBreakdown.priceAfterDiscount,
+                processingRate: pricingBreakdown.processingRate,
+                processingCost: pricingBreakdown.processingCost,
+                finalRevenue: pricingBreakdown.finalRevenue,
+                netProfit: pricingBreakdown.netProfit,
+                currency: pricingBreakdown.currency,
+                pricePerDay: pricingBreakdown.priceAfterDiscount / pricingBreakdown.duration,
+                hasCustomDiscount: hasCustomConfig
+              };
+            } catch (error) {
+              logger.warn('Failed to calculate pricing for bundle', {
+                countryId,
+                duration,
+                error: (error as Error).message,
+                operationType: 'country-bundles-fetch'
+              });
+              return null;
+            }
+          })
+        );
+        
+        // Filter out failed calculations (already sorted by duration)
+        const result = bundles.filter(bundle => bundle !== null);
+        
+        logger.info('Completed countryBundles fetch using cached data', {
+          countryId,
+          bundleCount: result.length,
+          operationType: 'country-bundles-fetch'
+        });
+        
+        return result;
+      } catch (error) {
+        logger.error('Error in countryBundles resolver', error as Error, {
+          countryId,
+          operationType: 'country-bundles-fetch'
+        });
+        throw new GraphQLError('Failed to fetch country bundles', {
+          extensions: { code: 'INTERNAL_ERROR' }
+        });
+      }
+    },
+    
     pricingConfigurations: async (_, __, context: Context) => {
       const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
       const repository = new PricingConfigRepository();

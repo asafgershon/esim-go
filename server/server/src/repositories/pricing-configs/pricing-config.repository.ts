@@ -199,6 +199,24 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
   }
 
   /**
+   * Check if a country has any active custom discount configuration
+   */
+  async hasActiveConfigForCountry(countryId: string): Promise<boolean> {
+    const { data: configs, error } = await this.supabase
+      .from('pricing_configurations')
+      .select('id')
+      .eq('country_id', countryId)
+      .eq('is_active', true)
+      .limit(1);
+
+    if (error) {
+      this.handleError(error, `checking active configurations for country ${countryId}`);
+    }
+
+    return (configs || []).length > 0;
+  }
+
+  /**
    * Map database row to domain object
    */
   private mapToRule(row: PricingConfigRow): PricingConfigurationRule {

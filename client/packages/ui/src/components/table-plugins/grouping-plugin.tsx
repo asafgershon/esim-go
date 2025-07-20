@@ -245,16 +245,10 @@ export function createGroupingPlugin<TData = any>({
               />
             )}
             
-            {hasGrouping && enableGroupCollapse && (
+            {enableGroupingControls && hasGrouping && enableGroupCollapse && (
               <GroupExpandControls table={table} />
             )}
           </div>
-          
-          {hasGrouping && (
-            <div className="text-sm text-muted-foreground">
-              Grouped by: {grouping.map((id: string) => groupingLabels[id] || id).join(", ")}
-            </div>
-          )}
         </div>
       )
     },

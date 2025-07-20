@@ -31,6 +31,12 @@ type Query {
   # Batch calculate prices for multiple bundles
   calculatePrices(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
   
+  # Bundles grouped by country with aggregated pricing data
+  bundlesByCountry: [BundlesByCountry!]!
+  
+  # Get bundles for a specific country
+  countryBundles(countryId: String!): [CountryBundle!]!
+  
   # Pricing configurations
   pricingConfigurations: [PricingConfiguration!]!
   
@@ -532,15 +538,56 @@ type PricingBreakdown {
   # Processing Fees
   processingRate: Float! # percentage (e.g., 0.045 for 4.5%)
   processingCost: Float! # computed: priceAfterDiscount * processingRate
-  revenueAfterProcessing: Float! # computed: priceAfterDiscount - processingCost
   
-  # Final Revenue
-  finalRevenue: Float! # computed: revenueAfterProcessing - cost - costPlus
+  # Final Revenue & Profit
+  finalRevenue: Float! # computed: priceAfterDiscount - processingCost (what we actually receive)
+  netProfit: Float! # computed: finalRevenue - totalCost (profit after all costs)
   
   # Currency
   currency: String!
 }
 
+# Bundles by Country Types - aggregated pricing data for countries
+type BundlesByCountry {
+  countryName: String!
+  countryId: String!
+  totalBundles: Int!
+  avgPricePerDay: Float!
+  hasCustomDiscount: Boolean!
+  avgDiscountRate: Float!
+  totalDiscountValue: Float!
+  avgCost: Float!
+  avgCostPlus: Float!
+  avgTotalCost: Float!
+  avgProcessingRate: Float!
+  avgProcessingCost: Float!
+  avgFinalRevenue: Float!
+  avgNetProfit: Float!
+  totalRevenue: Float!
+  avgProfitMargin: Float!
+  lastFetched: String
+}
+
+# Individual bundles for a specific country
+type CountryBundle {
+  bundleName: String!
+  countryName: String!
+  countryId: String!
+  duration: Int!
+  cost: Float!
+  costPlus: Float!
+  totalCost: Float!
+  discountRate: Float!
+  discountValue: Float!
+  priceAfterDiscount: Float!
+  processingRate: Float!
+  processingCost: Float!
+  finalRevenue: Float!
+  netProfit: Float!
+  currency: String!
+  pricePerDay: Float!
+  hasCustomDiscount: Boolean!
+}
 
 # Batch pricing input
 input CalculatePriceInput {

@@ -64,6 +64,7 @@ const withGrouping = <TData>(config: {
   groupableColumns: string[]
   groupingLabels?: Record<string, string>
   onGroupClick?: (groupValue: string, groupData: TData[]) => void
+  enableGroupingControls?: boolean
 }): TableTransform<TData> => 
   ({ columns, plugins }) => ({
     columns: enableColumnGrouping(columns, config.groupableColumns), // Mark columns as groupable

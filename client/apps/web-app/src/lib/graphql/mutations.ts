@@ -161,7 +161,7 @@ export const CALCULATE_PRICE = gql`
       priceAfterDiscount
       processingRate
       processingCost
-      revenueAfterProcessing
+      avgRevenueAfterProcessing
       finalRevenue
       currency
     }

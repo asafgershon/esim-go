@@ -29,8 +29,8 @@ export interface PricingBreakdown {
   priceAfterDiscount: number;
   processingRate: number;
   processingCost: number;
-  revenueAfterProcessing: number;
-  finalRevenue: number;
+  finalRevenue: number;        // Revenue after processing fees (what we actually receive)
+  netProfit: number;           // Final profit after all costs and fees
   currency: string;
 }
 
@@ -69,8 +69,8 @@ export class PricingService {
     const discountValue = this.calculateDiscountValue(config.totalCost, config.discountRate);
     const priceAfterDiscount = this.calculatePriceAfterDiscount(config.totalCost, discountValue);
     const processingCost = this.calculateProcessingCost(priceAfterDiscount, config.processingRate);
-    const revenueAfterProcessing = this.calculateRevenueAfterProcessing(priceAfterDiscount, processingCost);
-    const finalRevenue = this.calculateFinalRevenue(revenueAfterProcessing, config.cost, config.costPlus);
+    const finalRevenue = this.calculateFinalRevenue(priceAfterDiscount, processingCost);
+    const netProfit = this.calculateNetProfit(finalRevenue, config.totalCost);
 
     return {
       bundleName,
@@ -84,8 +84,8 @@ export class PricingService {
       priceAfterDiscount,
       processingRate: config.processingRate,
       processingCost,
-      revenueAfterProcessing,
       finalRevenue,
+      netProfit,
       currency: this.DEFAULT_CURRENCY
     };
   }
@@ -618,14 +618,13 @@ export class PricingService {
       discountRate,
       processingRate,
       finalRevenue,
-      revenueAfterProcessing,
+      netProfit,
       duration
     } = pricingBreakdown;
 
     // Calculate margins and analysis
-    const grossProfit = revenueAfterProcessing - cost - costPlus;
-    const netProfit = finalRevenue;
-    const profitMarginPercent = (netProfit / totalCost) * 100;
+    const grossProfit = pricingBreakdown.priceAfterDiscount - cost - costPlus;
+    const profitMarginPercent = totalCost > 0 ? (netProfit / totalCost) * 100 : 0;
     
     // Cost margins
     const costMargin = cost > 0 ? ((cost - (cost * 0.6)) / cost) * 100 : 0; // Assuming 60% of cost is actual cost
@@ -703,11 +702,13 @@ export class PricingService {
     return Number((priceAfterDiscount * processingRate).toFixed(3));
   }
 
-  private static calculateRevenueAfterProcessing(priceAfterDiscount: number, processingCost: number): number {
+  private static calculateFinalRevenue(priceAfterDiscount: number, processingCost: number): number {
+    // Final revenue = what we actually receive after processing fees
     return Number((priceAfterDiscount - processingCost).toFixed(2));
   }
 
-  private static calculateFinalRevenue(revenueAfterProcessing: number, cost: number, costPlus: number): number {
-    return Number((revenueAfterProcessing - cost - costPlus).toFixed(2));
+  private static calculateNetProfit(finalRevenue: number, totalCost: number): number {
+    // Net profit = final revenue minus our total costs (eSIM Go cost + markup)
+    return Number((finalRevenue - totalCost).toFixed(2));
   }
 }
