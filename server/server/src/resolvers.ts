@@ -12,6 +12,28 @@ import { checkoutResolvers } from "./resolvers/checkout-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import { tripsResolvers } from "./resolvers/trips-resolvers";
 import { GraphQLError } from "graphql";
+import { PaymentMethod } from "./types";
+import { createLogger } from "./lib/logger";
+
+const logger = createLogger({ component: 'resolvers' });
+
+// Helper function to map GraphQL enum to internal payment method type
+function mapPaymentMethodEnum(paymentMethod?: PaymentMethod | null): 'israeli_card' | 'foreign_card' | 'bit' | 'amex' | 'diners' {
+  switch (paymentMethod) {
+    case PaymentMethod.IsraeliCard:
+      return 'israeli_card';
+    case PaymentMethod.ForeignCard:
+      return 'foreign_card';
+    case PaymentMethod.Bit:
+      return 'bit';
+    case PaymentMethod.Amex:
+      return 'amex';
+    case PaymentMethod.Diners:
+      return 'diners';
+    default:
+      return 'israeli_card'; // Default fallback
+  }
+}
 
 export const resolvers: Resolvers = {
   Query: {
@@ -47,6 +69,36 @@ export const resolvers: Resolvers = {
         updatedAt: order.updated_at,
         dataPlan: { id: order.data_plan_id } as DataPlan, // Will be resolved by field resolver
         esims: [], // Will be resolved by field resolver
+        user: { id: order.user_id } as any, // Will be resolved by field resolver
+      }));
+    },
+
+    // Admin-only resolver to get orders for a specific user
+    getUserOrders: async (_, { userId }, context: Context) => {
+      // This will be protected by @auth(role: "ADMIN") directive
+      const { data, error } = await supabaseAdmin
+        .from("esim_orders")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      
+      if (error) {
+        throw new GraphQLError("Failed to fetch user orders", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
+      }
+
+      return data.map(order => ({
+        id: order.id,
+        reference: order.reference,
+        status: order.status,
+        quantity: order.quantity,
+        totalPrice: order.total_price,
+        createdAt: order.created_at,
+        updatedAt: order.updated_at,
+        dataPlan: { id: order.data_plan_id } as DataPlan, // Will be resolved by field resolver
+        esims: [], // Will be resolved by field resolver
+        user: { id: order.user_id } as any, // Will be resolved by field resolver
       }));
     },
 
@@ -102,11 +154,16 @@ export const resolvers: Resolvers = {
         );
 
         const response = camelCaseOrder as Order;
-        console.log("response", response);
+        logger.debug('Order response processed', { 
+          orderId: response.id,
+          operationType: 'order-processing'
+        });
 
         return response;
       } catch (error) {
-        console.error("Error fetching order details:", error);
+        logger.error('Error fetching order details', error as Error, { 
+          operationType: 'order-processing'
+        });
         throw new GraphQLError("Failed to fetch order details", {
           extensions: { code: "INTERNAL_ERROR" },
         });
@@ -125,7 +182,7 @@ export const resolvers: Resolvers = {
     // trips resolver moved to tripsResolvers
     calculatePrice: async (
       _,
-      { numOfDays, regionId, countryId },
+      { numOfDays, regionId, countryId, paymentMethod },
       context: Context
     ) => {
       const { PricingService } = await import('./services/pricing.service');
@@ -133,7 +190,13 @@ export const resolvers: Resolvers = {
       // Get pricing configuration for the bundle (now uses eSIM Go API + configuration rules)
       const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
       const configRepository = new PricingConfigRepository();
-      const config = await PricingService.getPricingConfig(countryId, numOfDays, context.dataSources.catalogue, configRepository);
+      const config = await PricingService.getPricingConfig(
+        countryId, 
+        numOfDays, 
+        context.dataSources.catalogue, 
+        configRepository,
+        mapPaymentMethodEnum(paymentMethod)
+      );
       
       // Get bundle and country names
       const bundleName = PricingService.getBundleName(numOfDays);
@@ -155,10 +218,16 @@ export const resolvers: Resolvers = {
       const configRepository = new PricingConfigRepository();
       
       const results = await Promise.all(
-        inputs.map(async (input: { numOfDays: number; regionId: string; countryId: string }) => {
+        inputs.map(async (input: { numOfDays: number; regionId: string; countryId: string; paymentMethod?: string }) => {
           try {
             // Get pricing configuration for the bundle
-            const config = await PricingService.getPricingConfig(input.countryId, input.numOfDays, context.dataSources.catalogue, configRepository);
+            const config = await PricingService.getPricingConfig(
+              input.countryId, 
+              input.numOfDays, 
+              context.dataSources.catalogue, 
+              configRepository,
+              mapPaymentMethodEnum(input.paymentMethod)
+            );
             
             // Get bundle and country names
             const bundleName = PricingService.getBundleName(input.numOfDays);
@@ -221,6 +290,116 @@ export const resolvers: Resolvers = {
         updatedAt: config.updatedAt,
       }));
     },
+
+    // Processing Fee Configuration Queries
+    currentProcessingFeeConfiguration: async (_, __, context: Context) => {
+      const { ProcessingFeeRepository } = await import('./repositories/processing-fees/processing-fee.repository');
+      const repository = new ProcessingFeeRepository();
+      
+      const config = await repository.getCurrentActive();
+      if (!config) {
+        return null;
+      }
+
+      return {
+        id: config.id,
+        israeliCardsRate: config.israeli_cards_rate,
+        foreignCardsRate: config.foreign_cards_rate,
+        premiumDinersRate: config.premium_diners_rate,
+        premiumAmexRate: config.premium_amex_rate,
+        bitPaymentRate: config.bit_payment_rate,
+        fixedFeeNIS: config.fixed_fee_nis,
+        fixedFeeForeign: config.fixed_fee_foreign,
+        monthlyFixedCost: config.monthly_fixed_cost,
+        bankWithdrawalFee: config.bank_withdrawal_fee,
+        monthlyMinimumFee: config.monthly_minimum_fee,
+        setupCost: config.setup_cost,
+        threeDSecureFee: config.three_d_secure_fee,
+        chargebackFee: config.chargeback_fee,
+        cancellationFee: config.cancellation_fee,
+        invoiceServiceFee: config.invoice_service_fee,
+        appleGooglePayFee: config.apple_google_pay_fee,
+        isActive: config.is_active,
+        effectiveFrom: config.effective_from,
+        effectiveTo: config.effective_to,
+        createdAt: config.created_at,
+        updatedAt: config.updated_at,
+        createdBy: config.created_by,
+        notes: config.notes,
+      };
+    },
+
+    processingFeeConfigurations: async (_, { limit = 10, offset = 0, includeInactive = false }, context: Context) => {
+      const { ProcessingFeeRepository } = await import('./repositories/processing-fees/processing-fee.repository');
+      const repository = new ProcessingFeeRepository();
+      
+      const configurations = await repository.getAll(limit, offset, includeInactive);
+      
+      return configurations.map(config => ({
+        id: config.id,
+        israeliCardsRate: config.israeli_cards_rate,
+        foreignCardsRate: config.foreign_cards_rate,
+        premiumDinersRate: config.premium_diners_rate,
+        premiumAmexRate: config.premium_amex_rate,
+        bitPaymentRate: config.bit_payment_rate,
+        fixedFeeNIS: config.fixed_fee_nis,
+        fixedFeeForeign: config.fixed_fee_foreign,
+        monthlyFixedCost: config.monthly_fixed_cost,
+        bankWithdrawalFee: config.bank_withdrawal_fee,
+        monthlyMinimumFee: config.monthly_minimum_fee,
+        setupCost: config.setup_cost,
+        threeDSecureFee: config.three_d_secure_fee,
+        chargebackFee: config.chargeback_fee,
+        cancellationFee: config.cancellation_fee,
+        invoiceServiceFee: config.invoice_service_fee,
+        appleGooglePayFee: config.apple_google_pay_fee,
+        isActive: config.is_active,
+        effectiveFrom: config.effective_from,
+        effectiveTo: config.effective_to,
+        createdAt: config.created_at,
+        updatedAt: config.updated_at,
+        createdBy: config.created_by,
+        notes: config.notes,
+      }));
+    },
+
+    processingFeeConfiguration: async (_, { id }, context: Context) => {
+      const { ProcessingFeeRepository } = await import('./repositories/processing-fees/processing-fee.repository');
+      const repository = new ProcessingFeeRepository();
+      
+      const config = await repository.getById(id);
+      if (!config) {
+        return null;
+      }
+
+      return {
+        id: config.id,
+        israeliCardsRate: config.israeli_cards_rate,
+        foreignCardsRate: config.foreign_cards_rate,
+        premiumDinersRate: config.premium_diners_rate,
+        premiumAmexRate: config.premium_amex_rate,
+        bitPaymentRate: config.bit_payment_rate,
+        fixedFeeNIS: config.fixed_fee_nis,
+        fixedFeeForeign: config.fixed_fee_foreign,
+        monthlyFixedCost: config.monthly_fixed_cost,
+        bankWithdrawalFee: config.bank_withdrawal_fee,
+        monthlyMinimumFee: config.monthly_minimum_fee,
+        setupCost: config.setup_cost,
+        threeDSecureFee: config.three_d_secure_fee,
+        chargebackFee: config.chargeback_fee,
+        cancellationFee: config.cancellation_fee,
+        invoiceServiceFee: config.invoice_service_fee,
+        appleGooglePayFee: config.apple_google_pay_fee,
+        isActive: config.is_active,
+        effectiveFrom: config.effective_from,
+        effectiveTo: config.effective_to,
+        createdAt: config.created_at,
+        updatedAt: config.updated_at,
+        createdBy: config.created_by,
+        notes: config.notes,
+      };
+    },
+
     ...checkoutResolvers.Query!,
   },
   Order: {
@@ -240,6 +419,59 @@ export const resolvers: Resolvers = {
     },
     dataPlan: async (parent, _, context: Context) => {
       return null;
+    },
+    user: async (parent, _, context: Context) => {
+      // Get the user_id from the order and fetch user data
+      const { data: orderData, error: orderError } = await supabaseAdmin
+        .from("esim_orders")
+        .select("user_id")
+        .eq("id", parent.id)
+        .single();
+      
+      if (orderError || !orderData) {
+        throw new GraphQLError("Order not found", {
+          extensions: { code: "ORDER_NOT_FOUND" },
+        });
+      }
+      
+      const { data: userData, error: userError } = await supabaseAdmin
+        .from("auth.users")
+        .select("id, email, raw_user_meta_data")
+        .eq("id", orderData.user_id)
+        .single();
+      
+      if (userError || !userData) {
+        // Return null if user not found instead of throwing error
+        return null;
+      }
+      
+      return {
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.raw_user_meta_data?.first_name || "",
+        lastName: userData.raw_user_meta_data?.last_name || "",
+        phoneNumber: userData.raw_user_meta_data?.phone_number || null,
+        role: userData.raw_user_meta_data?.role || "USER",
+        createdAt: userData.created_at || new Date().toISOString(),
+        updatedAt: userData.updated_at || new Date().toISOString(),
+        orderCount: 0, // Will be resolved by field resolver
+      };
+    },
+  },
+  // Field resolvers for User type
+  User: {
+    orderCount: async (parent, _, context: Context) => {
+      const { data, error } = await supabaseAdmin
+        .from("esim_orders")
+        .select("id")
+        .eq("user_id", parent.id);
+      
+      if (error) {
+        console.error("Error fetching order count:", error);
+        return 0;
+      }
+      
+      return data?.length || 0;
     },
   },
   // Field resolvers for Trip type
@@ -325,6 +557,7 @@ export const resolvers: Resolvers = {
           role: "USER",
           createdAt: data.user!.created_at,
           updatedAt: data.user!.updated_at || data.user!.created_at,
+          orderCount: 0, // Will be resolved by field resolver
         };
 
         return {
@@ -371,6 +604,7 @@ export const resolvers: Resolvers = {
           role: data.user!.user_metadata?.role || "USER",
           createdAt: data.user!.created_at,
           updatedAt: data.user!.updated_at || data.user!.created_at,
+          orderCount: 0, // Will be resolved by field resolver
         };
 
         return {
@@ -422,6 +656,7 @@ export const resolvers: Resolvers = {
           role: result.user!.user_metadata?.role || "USER",
           createdAt: result.user!.created_at,
           updatedAt: result.user!.updated_at || result.user!.created_at,
+          orderCount: 0, // Will be resolved by field resolver
         };
 
         return {
@@ -472,6 +707,7 @@ export const resolvers: Resolvers = {
           role: result.user!.user_metadata?.role || "USER",
           createdAt: result.user!.created_at,
           updatedAt: result.user!.updated_at || result.user!.created_at,
+          orderCount: 0, // Will be resolved by field resolver
         };
 
         return {
@@ -542,6 +778,7 @@ export const resolvers: Resolvers = {
           role: result.user!.user_metadata?.role || "USER",
           createdAt: result.user!.created_at,
           updatedAt: result.user!.updated_at || result.user!.created_at,
+          orderCount: 0, // Will be resolved by field resolver
         };
 
         return {
@@ -629,10 +866,9 @@ export const resolvers: Resolvers = {
               region: plan.baseCountry?.region || "Unknown",
               duration: plan.duration,
               price: plan.price,
-              currency: plan.currency,
-              isUnlimited: plan.isUnlimited,
+              currency: plan.currency || 'USD',
+              isUnlimited: plan.unlimited || false,
               bundleGroup: plan.bundleGroup,
-              features: plan.features || [],
               countries: plan.countries || [],
             },
             status: "ASSIGNED",
@@ -662,8 +898,9 @@ export const resolvers: Resolvers = {
               lastName: userData.raw_user_meta_data?.last_name || "",
               phoneNumber: userData.raw_user_meta_data?.phone_number || null,
               role: userData.raw_user_meta_data?.role || "USER",
-              createdAt: userData.created_at,
-              updatedAt: userData.updated_at,
+              createdAt: userData.created_at || new Date().toISOString(),
+              updatedAt: userData.updated_at || new Date().toISOString(),
+              orderCount: 0, // Will be resolved by field resolver
             },
             dataPlan: {
               id: planId,
@@ -672,17 +909,16 @@ export const resolvers: Resolvers = {
               region: plan.baseCountry?.region || "Unknown",
               duration: plan.duration,
               price: plan.price,
-              currency: plan.currency,
-              isUnlimited: plan.isUnlimited,
+              currency: plan.currency || 'USD',
+              isUnlimited: plan.unlimited || false,
               bundleGroup: plan.bundleGroup,
-              features: plan.features || [],
               availableQuantity: plan.availableQuantity,
               countries: plan.countries?.map(c => ({
                 iso: c.iso,
-                name: c.country,
-                nameHebrew: c.hebrewName || c.country,
-                region: c.region,
-                flag: c.flag,
+                name: c.name || c.country || '',
+                nameHebrew: c.hebrewName || c.name || c.country || '',
+                region: c.region || '',
+                flag: c.flag || '',
               })) || [],
             },
             assignedAt: assignment.assigned_at,
@@ -738,6 +974,151 @@ export const resolvers: Resolvers = {
           error: (error as Error).message,
         };
       }
+    },
+
+    // Processing Fee Configuration Mutations
+    createProcessingFeeConfiguration: async (_, { input }, context: Context) => {
+      const { ProcessingFeeRepository } = await import('./repositories/processing-fees/processing-fee.repository');
+      const repository = new ProcessingFeeRepository();
+
+      const configuration = await repository.create({
+        israeli_cards_rate: input.israeliCardsRate,
+        foreign_cards_rate: input.foreignCardsRate,
+        premium_diners_rate: input.premiumDinersRate,
+        premium_amex_rate: input.premiumAmexRate,
+        bit_payment_rate: input.bitPaymentRate,
+        fixed_fee_nis: input.fixedFeeNIS,
+        fixed_fee_foreign: input.fixedFeeForeign,
+        monthly_fixed_cost: input.monthlyFixedCost,
+        bank_withdrawal_fee: input.bankWithdrawalFee,
+        monthly_minimum_fee: input.monthlyMinimumFee,
+        setup_cost: input.setupCost,
+        three_d_secure_fee: input.threeDSecureFee,
+        chargeback_fee: input.chargebackFee,
+        cancellation_fee: input.cancellationFee,
+        invoice_service_fee: input.invoiceServiceFee,
+        apple_google_pay_fee: input.appleGooglePayFee,
+        is_active: true, // New configurations are active by default
+        effective_from: input.effectiveFrom,
+        effective_to: input.effectiveTo,
+        created_by: context.auth.user!.id,
+        notes: input.notes,
+      });
+
+      return {
+        id: configuration.id,
+        israeliCardsRate: configuration.israeli_cards_rate,
+        foreignCardsRate: configuration.foreign_cards_rate,
+        premiumDinersRate: configuration.premium_diners_rate,
+        premiumAmexRate: configuration.premium_amex_rate,
+        bitPaymentRate: configuration.bit_payment_rate,
+        fixedFeeNIS: configuration.fixed_fee_nis,
+        fixedFeeForeign: configuration.fixed_fee_foreign,
+        monthlyFixedCost: configuration.monthly_fixed_cost,
+        bankWithdrawalFee: configuration.bank_withdrawal_fee,
+        monthlyMinimumFee: configuration.monthly_minimum_fee,
+        setupCost: configuration.setup_cost,
+        threeDSecureFee: configuration.three_d_secure_fee,
+        chargebackFee: configuration.chargeback_fee,
+        cancellationFee: configuration.cancellation_fee,
+        invoiceServiceFee: configuration.invoice_service_fee,
+        appleGooglePayFee: configuration.apple_google_pay_fee,
+        isActive: configuration.is_active,
+        effectiveFrom: configuration.effective_from,
+        effectiveTo: configuration.effective_to,
+        createdAt: configuration.created_at,
+        updatedAt: configuration.updated_at,
+        createdBy: configuration.created_by,
+        notes: configuration.notes,
+      };
+    },
+
+    updateProcessingFeeConfiguration: async (_, { id, input }, context: Context) => {
+      const { ProcessingFeeRepository } = await import('./repositories/processing-fees/processing-fee.repository');
+      const repository = new ProcessingFeeRepository();
+
+      const configuration = await repository.update(id, {
+        israeli_cards_rate: input.israeliCardsRate,
+        foreign_cards_rate: input.foreignCardsRate,
+        premium_diners_rate: input.premiumDinersRate,
+        premium_amex_rate: input.premiumAmexRate,
+        bit_payment_rate: input.bitPaymentRate,
+        fixed_fee_nis: input.fixedFeeNIS,
+        fixed_fee_foreign: input.fixedFeeForeign,
+        monthly_fixed_cost: input.monthlyFixedCost,
+        bank_withdrawal_fee: input.bankWithdrawalFee,
+        monthly_minimum_fee: input.monthlyMinimumFee,
+        setup_cost: input.setupCost,
+        three_d_secure_fee: input.threeDSecureFee,
+        chargeback_fee: input.chargebackFee,
+        cancellation_fee: input.cancellationFee,
+        invoice_service_fee: input.invoiceServiceFee,
+        apple_google_pay_fee: input.appleGooglePayFee,
+        effective_from: input.effectiveFrom,
+        effective_to: input.effectiveTo,
+        notes: input.notes,
+      });
+
+      return {
+        id: configuration.id,
+        israeliCardsRate: configuration.israeli_cards_rate,
+        foreignCardsRate: configuration.foreign_cards_rate,
+        premiumDinersRate: configuration.premium_diners_rate,
+        premiumAmexRate: configuration.premium_amex_rate,
+        bitPaymentRate: configuration.bit_payment_rate,
+        fixedFeeNIS: configuration.fixed_fee_nis,
+        fixedFeeForeign: configuration.fixed_fee_foreign,
+        monthlyFixedCost: configuration.monthly_fixed_cost,
+        bankWithdrawalFee: configuration.bank_withdrawal_fee,
+        monthlyMinimumFee: configuration.monthly_minimum_fee,
+        setupCost: configuration.setup_cost,
+        threeDSecureFee: configuration.three_d_secure_fee,
+        chargebackFee: configuration.chargeback_fee,
+        cancellationFee: configuration.cancellation_fee,
+        invoiceServiceFee: configuration.invoice_service_fee,
+        appleGooglePayFee: configuration.apple_google_pay_fee,
+        isActive: configuration.is_active,
+        effectiveFrom: configuration.effective_from,
+        effectiveTo: configuration.effective_to,
+        createdAt: configuration.created_at,
+        updatedAt: configuration.updated_at,
+        createdBy: configuration.created_by,
+        notes: configuration.notes,
+      };
+    },
+
+    deactivateProcessingFeeConfiguration: async (_, { id }, context: Context) => {
+      const { ProcessingFeeRepository } = await import('./repositories/processing-fees/processing-fee.repository');
+      const repository = new ProcessingFeeRepository();
+
+      const configuration = await repository.deactivate(id);
+
+      return {
+        id: configuration.id,
+        israeliCardsRate: configuration.israeli_cards_rate,
+        foreignCardsRate: configuration.foreign_cards_rate,
+        premiumDinersRate: configuration.premium_diners_rate,
+        premiumAmexRate: configuration.premium_amex_rate,
+        bitPaymentRate: configuration.bit_payment_rate,
+        fixedFeeNIS: configuration.fixed_fee_nis,
+        fixedFeeForeign: configuration.fixed_fee_foreign,
+        monthlyFixedCost: configuration.monthly_fixed_cost,
+        bankWithdrawalFee: configuration.bank_withdrawal_fee,
+        monthlyMinimumFee: configuration.monthly_minimum_fee,
+        setupCost: configuration.setup_cost,
+        threeDSecureFee: configuration.three_d_secure_fee,
+        chargebackFee: configuration.chargeback_fee,
+        cancellationFee: configuration.cancellation_fee,
+        invoiceServiceFee: configuration.invoice_service_fee,
+        appleGooglePayFee: configuration.apple_google_pay_fee,
+        isActive: configuration.is_active,
+        effectiveFrom: configuration.effective_from,
+        effectiveTo: configuration.effective_to,
+        createdAt: configuration.created_at,
+        updatedAt: configuration.updated_at,
+        createdBy: configuration.created_by,
+        notes: configuration.notes,
+      };
     },
   },
 

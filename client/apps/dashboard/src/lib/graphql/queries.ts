@@ -94,13 +94,46 @@ export const GET_USERS = gql(`
       role
       createdAt
       updatedAt
+      orderCount
     }
   }
 `)
 
+
 export const GET_ORDERS = gql(`
   query GetOrders {
     orders {
+      id
+      reference
+      status
+      quantity
+      totalPrice
+      createdAt
+      updatedAt
+      user {
+        id
+        email
+        firstName
+        lastName
+        phoneNumber
+        role
+      }
+      dataPlan {
+        id
+        name
+        description
+        region
+        duration
+        price
+        currency
+      }
+    }
+  }
+`)
+
+export const GET_USER_ORDERS = gql(`
+  query GetUserOrders($userId: ID!) {
+    getUserOrders(userId: $userId) {
       id
       reference
       status
@@ -213,8 +246,8 @@ export const ASSIGN_PACKAGE_TO_USER = gql(`
 `)
 
 export const CALCULATE_PRICING = gql(`
-  query CalculatePricing($numOfDays: Int!, $regionId: String!, $countryId: String!) {
-    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId) {
+  query CalculatePricing($numOfDays: Int!, $regionId: String!, $countryId: String!, $paymentMethod: PaymentMethod) {
+    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId, paymentMethod: $paymentMethod) {
       bundleName
       countryName
       duration
@@ -319,6 +352,161 @@ export const UPDATE_PRICING_CONFIGURATION = gql(`
         createdAt
         updatedAt
       }
+    }
+  }
+`)
+
+export const GET_CURRENT_PROCESSING_FEE_CONFIGURATION = gql(`
+  query GetCurrentProcessingFeeConfiguration {
+    currentProcessingFeeConfiguration {
+      id
+      israeliCardsRate
+      foreignCardsRate
+      premiumDinersRate
+      premiumAmexRate
+      bitPaymentRate
+      fixedFeeNIS
+      fixedFeeForeign
+      monthlyFixedCost
+      bankWithdrawalFee
+      monthlyMinimumFee
+      setupCost
+      threeDSecureFee
+      chargebackFee
+      cancellationFee
+      invoiceServiceFee
+      appleGooglePayFee
+      isActive
+      effectiveFrom
+      effectiveTo
+      createdAt
+      updatedAt
+      createdBy
+      notes
+    }
+  }
+`)
+
+export const GET_PROCESSING_FEE_CONFIGURATIONS = gql(`
+  query GetProcessingFeeConfigurations($limit: Int = 10, $offset: Int = 0, $includeInactive: Boolean = false) {
+    processingFeeConfigurations(limit: $limit, offset: $offset, includeInactive: $includeInactive) {
+      id
+      israeliCardsRate
+      foreignCardsRate
+      premiumDinersRate
+      premiumAmexRate
+      bitPaymentRate
+      fixedFeeNIS
+      fixedFeeForeign
+      monthlyFixedCost
+      bankWithdrawalFee
+      monthlyMinimumFee
+      setupCost
+      threeDSecureFee
+      chargebackFee
+      cancellationFee
+      invoiceServiceFee
+      appleGooglePayFee
+      isActive
+      effectiveFrom
+      effectiveTo
+      createdAt
+      updatedAt
+      createdBy
+      notes
+    }
+  }
+`)
+
+export const CREATE_PROCESSING_FEE_CONFIGURATION = gql(`
+  mutation CreateProcessingFeeConfiguration($input: ProcessingFeeConfigurationInput!) {
+    createProcessingFeeConfiguration(input: $input) {
+      id
+      israeliCardsRate
+      foreignCardsRate
+      premiumDinersRate
+      premiumAmexRate
+      bitPaymentRate
+      fixedFeeNIS
+      fixedFeeForeign
+      monthlyFixedCost
+      bankWithdrawalFee
+      monthlyMinimumFee
+      setupCost
+      threeDSecureFee
+      chargebackFee
+      cancellationFee
+      invoiceServiceFee
+      appleGooglePayFee
+      isActive
+      effectiveFrom
+      effectiveTo
+      createdAt
+      updatedAt
+      createdBy
+      notes
+    }
+  }
+`)
+
+export const UPDATE_PROCESSING_FEE_CONFIGURATION = gql(`
+  mutation UpdateProcessingFeeConfiguration($id: ID!, $input: ProcessingFeeConfigurationInput!) {
+    updateProcessingFeeConfiguration(id: $id, input: $input) {
+      id
+      israeliCardsRate
+      foreignCardsRate
+      premiumDinersRate
+      premiumAmexRate
+      bitPaymentRate
+      fixedFeeNIS
+      fixedFeeForeign
+      monthlyFixedCost
+      bankWithdrawalFee
+      monthlyMinimumFee
+      setupCost
+      threeDSecureFee
+      chargebackFee
+      cancellationFee
+      invoiceServiceFee
+      appleGooglePayFee
+      isActive
+      effectiveFrom
+      effectiveTo
+      createdAt
+      updatedAt
+      createdBy
+      notes
+    }
+  }
+`)
+
+export const DEACTIVATE_PROCESSING_FEE_CONFIGURATION = gql(`
+  mutation DeactivateProcessingFeeConfiguration($id: ID!) {
+    deactivateProcessingFeeConfiguration(id: $id) {
+      id
+      israeliCardsRate
+      foreignCardsRate
+      premiumDinersRate
+      premiumAmexRate
+      bitPaymentRate
+      fixedFeeNIS
+      fixedFeeForeign
+      monthlyFixedCost
+      bankWithdrawalFee
+      monthlyMinimumFee
+      setupCost
+      threeDSecureFee
+      chargebackFee
+      cancellationFee
+      invoiceServiceFee
+      appleGooglePayFee
+      isActive
+      effectiveFrom
+      effectiveTo
+      createdAt
+      updatedAt
+      createdBy
+      notes
     }
   }
 `)

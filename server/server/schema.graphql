@@ -20,18 +20,24 @@ type Query {
   # Order queries
   myOrders(filter: OrderFilter): [Order!]! @auth
   orderDetails(id: ID!): Order @auth
+  getUserOrders(userId: ID!): [Order!]! @auth(role: "ADMIN")
 
   countries: [Country!]!
   trips: [Trip!]!
 
   # Calculate price
-  calculatePrice(numOfDays: Int!, regionId: String!, countryId: String!): PricingBreakdown!
+  calculatePrice(numOfDays: Int!, regionId: String!, countryId: String!, paymentMethod: PaymentMethod): PricingBreakdown!
   
   # Batch calculate prices for multiple bundles
   calculatePrices(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
   
   # Pricing configurations
   pricingConfigurations: [PricingConfiguration!]!
+  
+  # Processing fee configurations
+  currentProcessingFeeConfiguration: ProcessingFeeConfiguration @auth(role: "ADMIN")
+  processingFeeConfigurations(limit: Int = 10, offset: Int = 0, includeInactive: Boolean = false): [ProcessingFeeConfiguration!]! @auth(role: "ADMIN")
+  processingFeeConfiguration(id: ID!): ProcessingFeeConfiguration @auth(role: "ADMIN")
 }
 
 type Mutation {
@@ -59,6 +65,11 @@ type Mutation {
   
   # Pricing configuration management
   updatePricingConfiguration(input: UpdatePricingConfigurationInput!): UpdatePricingConfigurationResponse @auth(role: "ADMIN")
+  
+  # Processing fee configuration management
+  createProcessingFeeConfiguration(input: ProcessingFeeConfigurationInput!): ProcessingFeeConfiguration @auth(role: "ADMIN")
+  updateProcessingFeeConfiguration(id: ID!, input: ProcessingFeeConfigurationInput!): ProcessingFeeConfiguration @auth(role: "ADMIN")
+  deactivateProcessingFeeConfiguration(id: ID!): ProcessingFeeConfiguration @auth(role: "ADMIN")
   
   # Package Assignment
   assignPackageToUser(userId: ID!, planId: ID!): AssignPackageResponse @auth(role: "ADMIN")
@@ -88,6 +99,7 @@ type User {
   role: String!
   createdAt: String!
   updatedAt: String!
+  orderCount: Int!
 }
 
 type Country {
@@ -293,6 +305,7 @@ type Order {
   quantity: Int!
   totalPrice: Float!
   esims: [ESIM!]!
+  user: User # User who placed the order
   createdAt: String!
   updatedAt: String!
 }
@@ -526,6 +539,7 @@ input CalculatePriceInput {
   numOfDays: Int!
   regionId: String!
   countryId: String!
+  paymentMethod: PaymentMethod
 }
 
 # Pricing Configuration Types
@@ -582,6 +596,73 @@ type UpdatePricingConfigurationResponse {
 scalar ISOCountryCode
 scalar DateTime
 scalar JSON
+
+# Payment method enum for processing fee calculation
+enum PaymentMethod {
+  ISRAELI_CARD
+  FOREIGN_CARD
+  BIT
+  AMEX
+  DINERS
+}
+
+# Processing Fee Configuration Types
+type ProcessingFeeConfiguration {
+  id: ID!
+  # Main processing fees (percentages)
+  israeliCardsRate: Float!           # עמלות סליקה עסקאות ש"ח בכרטיסים שהונפקו בישראל
+  foreignCardsRate: Float!           # עמלות סליקה כרטיסים שהונפקו בחו"ל  
+  premiumDinersRate: Float!          # תוספת דיינרס
+  premiumAmexRate: Float!            # תוספת אמקס
+  bitPaymentRate: Float!             # תוספת ביט
+  
+  # Fixed fees (amounts in ILS)
+  fixedFeeNIS: Float!                # עמלה קבועה לעסקה בש"ח
+  fixedFeeForeign: Float!            # עמלה קבועה לעסקה במט"ח
+  monthlyFixedCost: Float!           # עלות חודשית קבועה
+  bankWithdrawalFee: Float!          # עלות משיכה לחשבון הבנק
+  monthlyMinimumFee: Float!          # עמלת מינימום חודשית
+  setupCost: Float!                  # עלות הקמה
+  
+  # Additional services (amounts in ILS)
+  threeDSecureFee: Float!            # 3DSecure
+  chargebackFee: Float!              # עמלת הכחשות עסקה
+  cancellationFee: Float!            # עמלת ביטול עסקה
+  invoiceServiceFee: Float!          # שירותי חשבוניות
+  appleGooglePayFee: Float!          # Apple/Google Pay
+  
+  # Metadata
+  isActive: Boolean!                 # Whether this configuration is currently active
+  effectiveFrom: DateTime!           # When this configuration becomes effective
+  effectiveTo: DateTime              # When this configuration expires (null for current)
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: String!                 # User who created this configuration
+  notes: String                      # Optional notes about this configuration
+}
+
+# Input for creating/updating processing fee configuration
+input ProcessingFeeConfigurationInput {
+  israeliCardsRate: Float!
+  foreignCardsRate: Float!
+  premiumDinersRate: Float!
+  premiumAmexRate: Float!
+  bitPaymentRate: Float!
+  fixedFeeNIS: Float!
+  fixedFeeForeign: Float!
+  monthlyFixedCost: Float!
+  bankWithdrawalFee: Float!
+  monthlyMinimumFee: Float!
+  setupCost: Float!
+  threeDSecureFee: Float!
+  chargebackFee: Float!
+  cancellationFee: Float!
+  invoiceServiceFee: Float!
+  appleGooglePayFee: Float!
+  effectiveFrom: DateTime!
+  effectiveTo: DateTime
+  notes: String
+}
 
 # Order Validation Types
 input ValidateOrderInput {

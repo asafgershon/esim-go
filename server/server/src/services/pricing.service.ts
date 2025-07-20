@@ -88,7 +88,7 @@ export class PricingService {
    * Get pricing configuration for a specific bundle
    * This combines eSIM Go API data with our business logic and configuration rules
    */
-  static async getPricingConfig(countryId: string, duration: number, catalogueAPI: any, configRepository?: any): Promise<PricingConfig> {
+  static async getPricingConfig(countryId: string, duration: number, catalogueAPI: any, configRepository?: any, paymentMethod: 'israeli_card' | 'foreign_card' | 'bit' | 'amex' | 'diners' = 'israeli_card'): Promise<PricingConfig> {
     try {
       // Get bundles from eSIM Go API
       const bundles = await catalogueAPI.getAllBundels();
@@ -139,7 +139,18 @@ export class PricingService {
       // Use configuration rule or defaults  
       const markupPercent = configRule?.markupPercent || 40; // Default 40% markup (as percentage)
       const discountRate = configRule?.discountRate || this.DEFAULT_DISCOUNT_RATE;
-      const processingRate = configRule?.processingRate || this.DEFAULT_PROCESSING_RATE;
+      
+      // Get dynamic processing rate from processing fee configuration
+      let processingRate = configRule?.processingRate || this.DEFAULT_PROCESSING_RATE;
+      try {
+        const { ProcessingFeeRepository } = await import('../repositories/processing-fees/processing-fee.repository');
+        const processingFeeRepository = new ProcessingFeeRepository();
+        processingRate = await processingFeeRepository.getProcessingRate(paymentMethod);
+      } catch (error) {
+        console.error('Error fetching processing rate, using default:', error);
+        // Fallback to configuration rule or default
+        processingRate = configRule?.processingRate || this.DEFAULT_PROCESSING_RATE;
+      }
 
       // Calculate discount for unused days if using a longer bundle
       const unusedDays = Math.max(0, matchingBundle.duration - duration);

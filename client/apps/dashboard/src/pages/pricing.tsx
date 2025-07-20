@@ -2,10 +2,11 @@ import { Country, PricingConfiguration } from '@/__generated__/graphql';
 import { useLazyQuery, useQuery } from '@apollo/client';
 import React, { useEffect, useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
-import { Calculator } from 'lucide-react';
+import { Calculator, CreditCard } from 'lucide-react';
 import { CountryPricingTableGrouped } from '../components/country-pricing-table-grouped';
 import { PricingConfigDrawer } from '../components/pricing-config-drawer';
 import { PricingSimulatorDrawer } from '../components/pricing-simulator-drawer';
+import { ProcessingFeeDrawer } from '../components/processing-fee-drawer';
 import { CALCULATE_BATCH_PRICING, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
 
 interface PricingData {
@@ -44,6 +45,7 @@ const PricingPage: React.FC = () => {
   const [selectedRow, setSelectedRow] = useState<PricingData | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+  const [isProcessingFeeOpen, setIsProcessingFeeOpen] = useState(false);
 
   // Fetch countries, data plans, and pricing configurations
   const { data: countriesData } = useQuery(GET_COUNTRIES);
@@ -150,12 +152,13 @@ const PricingPage: React.FC = () => {
         }
 
         // Build batch input for this country
-        const batchInputs: Array<{numOfDays: number; regionId: string; countryId: string}> = [];
+        const batchInputs: Array<{numOfDays: number; regionId: string; countryId: string; paymentMethod?: string}> = [];
         for (const duration of durations) {
           batchInputs.push({
             numOfDays: duration,
             regionId: country.region,
             countryId: countryId,
+            paymentMethod: 'ISRAELI_CARD', // Default payment method for now
           });
         }
 
@@ -274,6 +277,14 @@ const PricingPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Pricing Management</h1>
         <div className="flex items-center gap-4">
           <Button
+            onClick={() => setIsProcessingFeeOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <CreditCard className="h-4 w-4" />
+            Manage Processing Fee
+          </Button>
+          <Button
             onClick={() => setIsSimulatorOpen(true)}
             variant="outline"
             className="flex items-center gap-2"
@@ -307,6 +318,12 @@ const PricingPage: React.FC = () => {
         isOpen={isSimulatorOpen}
         onClose={() => setIsSimulatorOpen(false)}
         countries={countriesData?.countries || []}
+      />
+
+      {/* Processing Fee Management Drawer */}
+      <ProcessingFeeDrawer
+        isOpen={isProcessingFeeOpen}
+        onClose={() => setIsProcessingFeeOpen(false)}
       />
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

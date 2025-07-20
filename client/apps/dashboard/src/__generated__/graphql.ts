@@ -100,6 +100,20 @@ export type CreateCheckoutSessionResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type CreateTripInput = {
+  countryIds: Array<Scalars['ISOCountryCode']['input']>;
+  description: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  regionId: Scalars['String']['input'];
+};
+
+export type CreateTripResponse = {
+  __typename?: 'CreateTripResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  trip?: Maybe<Trip>;
+};
+
 export type DataPlan = {
   __typename?: 'DataPlan';
   availableQuantity?: Maybe<Scalars['Int']['output']>;
@@ -121,6 +135,7 @@ export type DataPlanConnection = {
   hasNextPage: Scalars['Boolean']['output'];
   hasPreviousPage: Scalars['Boolean']['output'];
   items: Array<DataPlan>;
+  lastFetched?: Maybe<Scalars['String']['output']>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
 };
@@ -134,6 +149,12 @@ export type DataPlanFilter = {
   offset?: InputMaybe<Scalars['Int']['input']>;
   region?: InputMaybe<Scalars['String']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type DeleteTripResponse = {
+  __typename?: 'DeleteTripResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
 };
 
 export type DeleteUserResponse = {
@@ -229,6 +250,10 @@ export type Mutation = {
   assignPackageToUser?: Maybe<AssignPackageResponse>;
   cancelESIM?: Maybe<EsimActionResponse>;
   createCheckoutSession: CreateCheckoutSessionResponse;
+  createProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
+  createTrip?: Maybe<CreateTripResponse>;
+  deactivateProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
+  deleteTrip?: Maybe<DeleteTripResponse>;
   deleteUser?: Maybe<DeleteUserResponse>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
@@ -243,6 +268,8 @@ export type Mutation = {
   updateCheckoutStep: UpdateCheckoutStepResponse;
   updateESIMReference?: Maybe<EsimActionResponse>;
   updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
+  updateProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
+  updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
   validateOrder: ValidateOrderResponse;
   verifyPhoneOTP?: Maybe<SignInResponse>;
@@ -267,6 +294,26 @@ export type MutationCancelEsimArgs = {
 
 export type MutationCreateCheckoutSessionArgs = {
   input: CreateCheckoutSessionInput;
+};
+
+
+export type MutationCreateProcessingFeeConfigurationArgs = {
+  input: ProcessingFeeConfigurationInput;
+};
+
+
+export type MutationCreateTripArgs = {
+  input: CreateTripInput;
+};
+
+
+export type MutationDeactivateProcessingFeeConfigurationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteTripArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -342,6 +389,17 @@ export type MutationUpdatePricingConfigurationArgs = {
 };
 
 
+export type MutationUpdateProcessingFeeConfigurationArgs = {
+  id: Scalars['ID']['input'];
+  input: ProcessingFeeConfigurationInput;
+};
+
+
+export type MutationUpdateTripArgs = {
+  input: UpdateTripInput;
+};
+
+
 export type MutationUpdateUserRoleArgs = {
   role: Scalars['String']['input'];
   userId: Scalars['ID']['input'];
@@ -368,6 +426,7 @@ export type Order = {
   status: OrderStatus;
   totalPrice: Scalars['Float']['output'];
   updatedAt: Scalars['String']['output'];
+  user?: Maybe<User>;
 };
 
 export type OrderFilter = {
@@ -458,6 +517,56 @@ export type ProcessCheckoutPaymentResponse = {
   webhookProcessing?: Maybe<Scalars['Boolean']['output']>;
 };
 
+export type ProcessingFeeConfiguration = {
+  __typename?: 'ProcessingFeeConfiguration';
+  appleGooglePayFee: Scalars['Float']['output'];
+  bankWithdrawalFee: Scalars['Float']['output'];
+  bitPaymentRate: Scalars['Float']['output'];
+  cancellationFee: Scalars['Float']['output'];
+  chargebackFee: Scalars['Float']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdBy: Scalars['String']['output'];
+  effectiveFrom: Scalars['DateTime']['output'];
+  effectiveTo?: Maybe<Scalars['DateTime']['output']>;
+  fixedFeeForeign: Scalars['Float']['output'];
+  fixedFeeNIS: Scalars['Float']['output'];
+  foreignCardsRate: Scalars['Float']['output'];
+  id: Scalars['ID']['output'];
+  invoiceServiceFee: Scalars['Float']['output'];
+  isActive: Scalars['Boolean']['output'];
+  israeliCardsRate: Scalars['Float']['output'];
+  monthlyFixedCost: Scalars['Float']['output'];
+  monthlyMinimumFee: Scalars['Float']['output'];
+  notes?: Maybe<Scalars['String']['output']>;
+  premiumAmexRate: Scalars['Float']['output'];
+  premiumDinersRate: Scalars['Float']['output'];
+  setupCost: Scalars['Float']['output'];
+  threeDSecureFee: Scalars['Float']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+export type ProcessingFeeConfigurationInput = {
+  appleGooglePayFee: Scalars['Float']['input'];
+  bankWithdrawalFee: Scalars['Float']['input'];
+  bitPaymentRate: Scalars['Float']['input'];
+  cancellationFee: Scalars['Float']['input'];
+  chargebackFee: Scalars['Float']['input'];
+  effectiveFrom: Scalars['DateTime']['input'];
+  effectiveTo?: InputMaybe<Scalars['DateTime']['input']>;
+  fixedFeeForeign: Scalars['Float']['input'];
+  fixedFeeNIS: Scalars['Float']['input'];
+  foreignCardsRate: Scalars['Float']['input'];
+  invoiceServiceFee: Scalars['Float']['input'];
+  israeliCardsRate: Scalars['Float']['input'];
+  monthlyFixedCost: Scalars['Float']['input'];
+  monthlyMinimumFee: Scalars['Float']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+  premiumAmexRate: Scalars['Float']['input'];
+  premiumDinersRate: Scalars['Float']['input'];
+  setupCost: Scalars['Float']['input'];
+  threeDSecureFee: Scalars['Float']['input'];
+};
+
 export type PurchaseEsimInput = {
   autoActivate?: InputMaybe<Scalars['Boolean']['input']>;
   customerReference?: InputMaybe<Scalars['String']['input']>;
@@ -476,10 +585,12 @@ export type Query = {
   calculatePrice: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
   countries: Array<Country>;
+  currentProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
   dataPlan?: Maybe<DataPlan>;
   dataPlans: DataPlanConnection;
   esimDetails?: Maybe<Esim>;
   getCheckoutSession: GetCheckoutSessionResponse;
+  getUserOrders: Array<Order>;
   hello: Scalars['String']['output'];
   me?: Maybe<User>;
   myESIMs: Array<Esim>;
@@ -487,6 +598,8 @@ export type Query = {
   orderDetails?: Maybe<Order>;
   orders: Array<Order>;
   pricingConfigurations: Array<PricingConfiguration>;
+  processingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
+  processingFeeConfigurations: Array<ProcessingFeeConfiguration>;
   trips: Array<Trip>;
   users: Array<User>;
 };
@@ -524,6 +637,11 @@ export type QueryGetCheckoutSessionArgs = {
 };
 
 
+export type QueryGetUserOrdersArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
 export type QueryMyOrdersArgs = {
   filter?: InputMaybe<OrderFilter>;
 };
@@ -531,6 +649,18 @@ export type QueryMyOrdersArgs = {
 
 export type QueryOrderDetailsArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryProcessingFeeConfigurationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryProcessingFeeConfigurationsArgs = {
+  includeInactive?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type SendOtpResponse = {
@@ -591,9 +721,13 @@ export type Trip = {
   __typename?: 'Trip';
   countries: Array<Country>;
   countryIds: Array<Scalars['ISOCountryCode']['output']>;
+  createdAt: Scalars['String']['output'];
+  createdBy?: Maybe<Scalars['String']['output']>;
   description: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   regionId: Scalars['String']['output'];
+  updatedAt: Scalars['String']['output'];
 };
 
 export type UpdateCheckoutStepInput = {
@@ -632,6 +766,21 @@ export type UpdatePricingConfigurationResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type UpdateTripInput = {
+  countryIds: Array<Scalars['ISOCountryCode']['input']>;
+  description: Scalars['String']['input'];
+  id: Scalars['ID']['input'];
+  name: Scalars['String']['input'];
+  regionId: Scalars['String']['input'];
+};
+
+export type UpdateTripResponse = {
+  __typename?: 'UpdateTripResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  trip?: Maybe<Trip>;
+};
+
 export type User = {
   __typename?: 'User';
   createdAt: Scalars['String']['output'];
@@ -639,6 +788,7 @@ export type User = {
   firstName: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
+  orderCount: Scalars['Int']['output'];
   phoneNumber?: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
@@ -671,17 +821,45 @@ export type VerifyOtpInput = {
 export type GetTripsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetTripsQuery = { __typename?: 'Query', trips: Array<{ __typename?: 'Trip', name: string, description: string, regionId: string, countryIds: Array<any> }> };
+export type GetTripsQuery = { __typename?: 'Query', trips: Array<{ __typename?: 'Trip', id: string, name: string, description: string, regionId: string, countryIds: Array<any>, createdAt: string, updatedAt: string, createdBy?: string | null, countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region: string, flag?: string | null }> }> };
+
+export type CreateTripMutationVariables = Exact<{
+  input: CreateTripInput;
+}>;
+
+
+export type CreateTripMutation = { __typename?: 'Mutation', createTrip?: { __typename?: 'CreateTripResponse', success: boolean, error?: string | null, trip?: { __typename?: 'Trip', id: string, name: string, description: string, regionId: string, countryIds: Array<any>, createdAt: string, updatedAt: string, createdBy?: string | null, countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region: string, flag?: string | null }> } | null } | null };
+
+export type UpdateTripMutationVariables = Exact<{
+  input: UpdateTripInput;
+}>;
+
+
+export type UpdateTripMutation = { __typename?: 'Mutation', updateTrip?: { __typename?: 'UpdateTripResponse', success: boolean, error?: string | null, trip?: { __typename?: 'Trip', id: string, name: string, description: string, regionId: string, countryIds: Array<any>, createdAt: string, updatedAt: string, createdBy?: string | null, countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region: string, flag?: string | null }> } | null } | null };
+
+export type DeleteTripMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteTripMutation = { __typename?: 'Mutation', deleteTrip?: { __typename?: 'DeleteTripResponse', success: boolean, error?: string | null } | null };
 
 export type GetUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetUsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, role: string, createdAt: string, updatedAt: string }> };
+export type GetUsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, role: string, createdAt: string, updatedAt: string, orderCount: number }> };
 
 export type GetOrdersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetOrdersQuery = { __typename?: 'Query', orders: Array<{ __typename?: 'Order', id: string, reference: string, status: OrderStatus, quantity: number, totalPrice: number, createdAt: string, updatedAt: string, dataPlan?: { __typename?: 'DataPlan', id: string, name: string, description: string, region: string, duration: number, price: number, currency: string } | null }> };
+export type GetOrdersQuery = { __typename?: 'Query', orders: Array<{ __typename?: 'Order', id: string, reference: string, status: OrderStatus, quantity: number, totalPrice: number, createdAt: string, updatedAt: string, user?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, role: string } | null, dataPlan?: { __typename?: 'DataPlan', id: string, name: string, description: string, region: string, duration: number, price: number, currency: string } | null }> };
+
+export type GetUserOrdersQueryVariables = Exact<{
+  userId: Scalars['ID']['input'];
+}>;
+
+
+export type GetUserOrdersQuery = { __typename?: 'Query', getUserOrders: Array<{ __typename?: 'Order', id: string, reference: string, status: OrderStatus, quantity: number, totalPrice: number, createdAt: string, updatedAt: string, dataPlan?: { __typename?: 'DataPlan', id: string, name: string, description: string, region: string, duration: number, price: number, currency: string } | null }> };
 
 export type UpdateUserRoleMutationVariables = Exact<{
   userId: Scalars['ID']['input'];
@@ -703,7 +881,7 @@ export type GetDataPlansQueryVariables = Exact<{
 }>;
 
 
-export type GetDataPlansQuery = { __typename?: 'Query', dataPlans: { __typename?: 'DataPlanConnection', totalCount: number, hasNextPage: boolean, hasPreviousPage: boolean, items: Array<{ __typename?: 'DataPlan', id: string, name: string, description: string, region: string, duration: number, price: number, currency: string, isUnlimited: boolean, bundleGroup?: string | null, features: Array<string>, availableQuantity?: number | null, countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region: string, flag?: string | null }> }>, pageInfo: { __typename?: 'PageInfo', limit: number, offset: number, total: number, pages: number, currentPage: number } } };
+export type GetDataPlansQuery = { __typename?: 'Query', dataPlans: { __typename?: 'DataPlanConnection', totalCount: number, hasNextPage: boolean, hasPreviousPage: boolean, lastFetched?: string | null, items: Array<{ __typename?: 'DataPlan', id: string, name: string, description: string, region: string, duration: number, price: number, currency: string, isUnlimited: boolean, bundleGroup?: string | null, features: Array<string>, availableQuantity?: number | null, countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region: string, flag?: string | null }> }>, pageInfo: { __typename?: 'PageInfo', limit: number, offset: number, total: number, pages: number, currentPage: number } } };
 
 export type AssignPackageToUserMutationVariables = Exact<{
   userId: Scalars['ID']['input'];
@@ -754,12 +932,16 @@ export type UpdatePricingConfigurationMutationVariables = Exact<{
 export type UpdatePricingConfigurationMutation = { __typename?: 'Mutation', updatePricingConfiguration?: { __typename?: 'UpdatePricingConfigurationResponse', success: boolean, error?: string | null, configuration?: { __typename?: 'PricingConfiguration', id: string, name: string, description: string, countryId?: string | null, regionId?: string | null, duration?: number | null, bundleGroup?: string | null, costSplitPercent: number, discountRate: number, processingRate: number, isActive: boolean, priority: number, createdBy: string, createdAt: string, updatedAt: string } | null } | null };
 
 
-export const GetTripsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetTrips"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"trips"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"regionId"}},{"kind":"Field","name":{"kind":"Name","value":"countryIds"}}]}}]}}]} as unknown as DocumentNode<GetTripsQuery, GetTripsQueryVariables>;
-export const GetUsersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUsers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"users"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetUsersQuery, GetUsersQueryVariables>;
-export const GetOrdersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetOrders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"orders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"reference"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"totalPrice"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"dataPlan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}}]}}]}}]} as unknown as DocumentNode<GetOrdersQuery, GetOrdersQueryVariables>;
+export const GetTripsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetTrips"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"trips"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"regionId"}},{"kind":"Field","name":{"kind":"Name","value":"countryIds"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"}},{"kind":"Field","name":{"kind":"Name","value":"countries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"iso"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"nameHebrew"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"flag"}}]}}]}}]}}]} as unknown as DocumentNode<GetTripsQuery, GetTripsQueryVariables>;
+export const CreateTripDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateTrip"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateTripInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createTrip"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"trip"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"regionId"}},{"kind":"Field","name":{"kind":"Name","value":"countryIds"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"}},{"kind":"Field","name":{"kind":"Name","value":"countries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"iso"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"nameHebrew"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"flag"}}]}}]}}]}}]}}]} as unknown as DocumentNode<CreateTripMutation, CreateTripMutationVariables>;
+export const UpdateTripDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateTrip"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateTripInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateTrip"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"trip"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"regionId"}},{"kind":"Field","name":{"kind":"Name","value":"countryIds"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"}},{"kind":"Field","name":{"kind":"Name","value":"countries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"iso"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"nameHebrew"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"flag"}}]}}]}}]}}]}}]} as unknown as DocumentNode<UpdateTripMutation, UpdateTripMutationVariables>;
+export const DeleteTripDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteTrip"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteTrip"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}}]}}]}}]} as unknown as DocumentNode<DeleteTripMutation, DeleteTripMutationVariables>;
+export const GetUsersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUsers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"users"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"orderCount"}}]}}]}}]} as unknown as DocumentNode<GetUsersQuery, GetUsersQueryVariables>;
+export const GetOrdersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetOrders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"orders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"reference"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"totalPrice"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"role"}}]}},{"kind":"Field","name":{"kind":"Name","value":"dataPlan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}}]}}]}}]} as unknown as DocumentNode<GetOrdersQuery, GetOrdersQueryVariables>;
+export const GetUserOrdersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserOrders"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getUserOrders"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"reference"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"totalPrice"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"dataPlan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}}]}}]}}]} as unknown as DocumentNode<GetUserOrdersQuery, GetUserOrdersQueryVariables>;
 export const UpdateUserRoleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateUserRole"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"role"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateUserRole"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"role"},"value":{"kind":"Variable","name":{"kind":"Name","value":"role"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<UpdateUserRoleMutation, UpdateUserRoleMutationVariables>;
 export const InviteAdminUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"InviteAdminUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"InviteAdminUserInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"inviteAdminUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"invitedEmail"}}]}}]}}]} as unknown as DocumentNode<InviteAdminUserMutation, InviteAdminUserMutationVariables>;
-export const GetDataPlansDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDataPlans"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"DataPlanFilter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"dataPlans"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"filter"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}},{"kind":"Field","name":{"kind":"Name","value":"isUnlimited"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}},{"kind":"Field","name":{"kind":"Name","value":"features"}},{"kind":"Field","name":{"kind":"Name","value":"availableQuantity"}},{"kind":"Field","name":{"kind":"Name","value":"countries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"iso"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"nameHebrew"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"flag"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasPreviousPage"}},{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"limit"}},{"kind":"Field","name":{"kind":"Name","value":"offset"}},{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"pages"}},{"kind":"Field","name":{"kind":"Name","value":"currentPage"}}]}}]}}]}}]} as unknown as DocumentNode<GetDataPlansQuery, GetDataPlansQueryVariables>;
+export const GetDataPlansDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDataPlans"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"DataPlanFilter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"dataPlans"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"filter"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}},{"kind":"Field","name":{"kind":"Name","value":"isUnlimited"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}},{"kind":"Field","name":{"kind":"Name","value":"features"}},{"kind":"Field","name":{"kind":"Name","value":"availableQuantity"}},{"kind":"Field","name":{"kind":"Name","value":"countries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"iso"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"nameHebrew"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"flag"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasPreviousPage"}},{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"limit"}},{"kind":"Field","name":{"kind":"Name","value":"offset"}},{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"pages"}},{"kind":"Field","name":{"kind":"Name","value":"currentPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"lastFetched"}}]}}]}}]} as unknown as DocumentNode<GetDataPlansQuery, GetDataPlansQueryVariables>;
 export const AssignPackageToUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AssignPackageToUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"planId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"assignPackageToUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"planId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"planId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"assignment"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"dataPlan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"assignedAt"}}]}}]}}]}}]} as unknown as DocumentNode<AssignPackageToUserMutation, AssignPackageToUserMutationVariables>;
 export const CalculatePricingDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CalculatePricing"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"numOfDays"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"regionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"countryId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"calculatePrice"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"numOfDays"},"value":{"kind":"Variable","name":{"kind":"Name","value":"numOfDays"}}},{"kind":"Argument","name":{"kind":"Name","value":"regionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"regionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"countryId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"countryId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bundleName"}},{"kind":"Field","name":{"kind":"Name","value":"countryName"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"cost"}},{"kind":"Field","name":{"kind":"Name","value":"costPlus"}},{"kind":"Field","name":{"kind":"Name","value":"totalCost"}},{"kind":"Field","name":{"kind":"Name","value":"discountRate"}},{"kind":"Field","name":{"kind":"Name","value":"discountValue"}},{"kind":"Field","name":{"kind":"Name","value":"priceAfterDiscount"}},{"kind":"Field","name":{"kind":"Name","value":"processingRate"}},{"kind":"Field","name":{"kind":"Name","value":"processingCost"}},{"kind":"Field","name":{"kind":"Name","value":"revenueAfterProcessing"}},{"kind":"Field","name":{"kind":"Name","value":"finalRevenue"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}}]}}]} as unknown as DocumentNode<CalculatePricingQuery, CalculatePricingQueryVariables>;
 export const CalculateBatchPricingDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CalculateBatchPricing"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"inputs"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CalculatePriceInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"calculatePrices"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"inputs"},"value":{"kind":"Variable","name":{"kind":"Name","value":"inputs"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bundleName"}},{"kind":"Field","name":{"kind":"Name","value":"countryName"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"cost"}},{"kind":"Field","name":{"kind":"Name","value":"costPlus"}},{"kind":"Field","name":{"kind":"Name","value":"totalCost"}},{"kind":"Field","name":{"kind":"Name","value":"discountRate"}},{"kind":"Field","name":{"kind":"Name","value":"discountValue"}},{"kind":"Field","name":{"kind":"Name","value":"priceAfterDiscount"}},{"kind":"Field","name":{"kind":"Name","value":"processingRate"}},{"kind":"Field","name":{"kind":"Name","value":"processingCost"}},{"kind":"Field","name":{"kind":"Name","value":"revenueAfterProcessing"}},{"kind":"Field","name":{"kind":"Name","value":"finalRevenue"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}}]}}]} as unknown as DocumentNode<CalculateBatchPricingQuery, CalculateBatchPricingQueryVariables>;
