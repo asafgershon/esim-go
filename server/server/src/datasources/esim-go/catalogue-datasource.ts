@@ -2,6 +2,7 @@ import { ESIMGoDataSource } from "./esim-go-base";
 import type { ESIMGoDataPlan } from "./types";
 import { CatalogBackupService } from "../../services/catalog-backup.service";
 import { CacheHealthService } from "../../services/cache-health.service";
+import { BatchCacheOperations } from "../../lib/batch-cache-operations";
 
 /**
  * DataSource for eSIM Go Catalogue API
@@ -10,11 +11,13 @@ import { CacheHealthService } from "../../services/cache-health.service";
 export class CatalogueDataSource extends ESIMGoDataSource {
   private backupService: CatalogBackupService;
   private cacheHealth: CacheHealthService;
+  private batchOperations: BatchCacheOperations;
 
   constructor(config?: any) {
     super(config);
     this.backupService = new CatalogBackupService(this.cache);
     this.cacheHealth = new CacheHealthService(this.cache);
+    this.batchOperations = new BatchCacheOperations(this.cache);
   }
   /**
    * Get all available data plans
@@ -413,26 +416,175 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   }
 
   /**
-   * Get individual bundles by their IDs
+   * Get individual bundles by their IDs using optimized batch operations
    */
   private async getBundlesByIds(bundleIds: string[]): Promise<ESIMGoDataPlan[]> {
+    if (bundleIds.length === 0) {
+      return [];
+    }
+
+    this.log.info(`🚀 Starting optimized batch retrieval for ${bundleIds.length} bundles`);
+    const startTime = Date.now();
+
+    try {
+      // Prepare cache keys
+      const cacheKeys = bundleIds.map(id => `esim-go:catalog:bundle:${id}`);
+      
+      // Use different strategies based on dataset size
+      if (bundleIds.length > 1000) {
+        // For large datasets, use streaming to prevent memory issues
+        return await this.getBundlesByIdsStreaming(cacheKeys, bundleIds);
+      } else {
+        // For smaller datasets, use regular batch operations
+        return await this.getBundlesByIdsBatch(cacheKeys, bundleIds);
+      }
+      
+    } catch (error) {
+      this.log.error('❌ Batch bundle retrieval failed', { 
+        error: error instanceof Error ? error.message : String(error),
+        bundleCount: bundleIds.length 
+      });
+      
+      // Fallback to sequential processing with limited batch size
+      return await this.getBundlesByIdsFallback(bundleIds.slice(0, 100)); // Limit to prevent memory issues
+    }
+  }
+
+  /**
+   * Batch retrieval for moderate datasets (< 1000 bundles)
+   */
+  private async getBundlesByIdsBatch(cacheKeys: string[], bundleIds: string[]): Promise<ESIMGoDataPlan[]> {
+    const batchResult = await this.batchOperations.batchGet<ESIMGoDataPlan>(cacheKeys, {
+      batchSize: 100,
+      maxMemoryPerBatch: 25, // 25MB per batch
+      timeout: 15000,
+      enableMemoryMonitoring: true,
+      maxConcurrentBatches: 3
+    });
+
     const bundles: ESIMGoDataPlan[] = [];
     
-    // Batch get bundles
-    for (const id of bundleIds) {
-      const cacheResult = await this.cacheHealth.safeGet(`esim-go:catalog:bundle:${id}`);
-      if (cacheResult.success && cacheResult.data) {
-        try {
-          const bundleData = JSON.parse(cacheResult.data) as ESIMGoDataPlan;
-          bundles.push(bundleData);
-        } catch (error) {
-          this.log.warn('Failed to parse cached bundle data', { error, bundleId: id });
-          // Continue without this bundle's data
+    // Process results
+    for (let i = 0; i < bundleIds.length; i++) {
+      const bundleId = bundleIds[i];
+      const cacheKey = cacheKeys[i];
+      
+      if (batchResult.results.has(cacheKey)) {
+        bundles.push(batchResult.results.get(cacheKey)!);
+      } else if (batchResult.errors.has(cacheKey)) {
+        this.log.warn('Failed to retrieve bundle from cache', { 
+          bundleId, 
+          error: batchResult.errors.get(cacheKey)?.message 
+        });
+      }
+    }
+
+    const duration = Date.now() - Date.now();
+    this.log.info(`✅ Batch retrieval completed`, {
+      totalRequested: bundleIds.length,
+      totalRetrieved: bundles.length,
+      errorCount: batchResult.errors.size,
+      duration: `${duration}ms`,
+      successRate: `${((bundles.length / bundleIds.length) * 100).toFixed(2)}%`
+    });
+
+    return bundles;
+  }
+
+  /**
+   * Streaming retrieval for large datasets (>= 1000 bundles)
+   */
+  private async getBundlesByIdsStreaming(cacheKeys: string[], bundleIds: string[]): Promise<ESIMGoDataPlan[]> {
+    this.log.info(`🌊 Using streaming approach for ${bundleIds.length} bundles`);
+    
+    const bundles: ESIMGoDataPlan[] = [];
+    let processedCount = 0;
+
+    // Process in streaming fashion to control memory usage
+    for await (const chunkResults of this.batchOperations.streamingBatchGet<ESIMGoDataPlan>(cacheKeys, {
+      batchSize: 50, // Smaller batches for streaming
+      maxMemoryPerBatch: 15, // 15MB per batch
+      timeout: 10000,
+      enableMemoryMonitoring: true,
+      maxConcurrentBatches: 2, // Reduced concurrency for large datasets
+      onProgress: (processed, total) => {
+        if (processed % 1000 === 0) { // Log every 1000 items
+          this.log.info(`📊 Streaming progress: ${processed}/${total} (${((processed/total)*100).toFixed(1)}%)`);
         }
+      },
+      onChunk: (chunk, chunkIndex, totalChunks) => {
+        this.log.debug(`📦 Processed chunk ${chunkIndex + 1}/${totalChunks}: ${chunk.length} bundles`);
+      }
+    })) {
+      bundles.push(...chunkResults);
+      processedCount += chunkResults.length;
+      
+      // Apply backpressure if memory usage is high
+      if (processedCount % 500 === 0) {
+        const memoryUsage = process.memoryUsage();
+        const heapUsedMB = memoryUsage.heapUsed / 1024 / 1024;
+        
+        if (heapUsedMB > 200) { // 200MB threshold
+          this.log.warn('⚠️ High memory usage detected, applying backpressure', {
+            heapUsedMB: heapUsedMB.toFixed(2),
+            processedCount
+          });
+          
+          // Force garbage collection if available
+          if (global.gc) {
+            global.gc();
+          }
+          
+          // Small delay to allow memory cleanup
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    }
+
+    this.log.info(`✅ Streaming retrieval completed: ${bundles.length}/${bundleIds.length} bundles retrieved`);
+    return bundles;
+  }
+
+  /**
+   * Fallback method using cache health service (for error recovery)
+   */
+  private async getBundlesByIdsFallback(bundleIds: string[]): Promise<ESIMGoDataPlan[]> {
+    this.log.warn(`⚠️ Using fallback retrieval for ${bundleIds.length} bundles`);
+    
+    const bundles: ESIMGoDataPlan[] = [];
+    const chunks = this.chunkArray(bundleIds, 20); // Very small chunks for fallback
+    
+    for (const chunk of chunks) {
+      await Promise.all(chunk.map(async (id) => {
+        try {
+          const cacheResult = await this.cacheHealth.safeGet(`esim-go:catalog:bundle:${id}`);
+          if (cacheResult.success && cacheResult.data) {
+            const bundleData = JSON.parse(cacheResult.data) as ESIMGoDataPlan;
+            bundles.push(bundleData);
+          }
+        } catch (error) {
+          this.log.warn('Failed to retrieve bundle in fallback', { bundleId: id, error });
+        }
+      }));
+      
+      // Small delay between chunks to prevent overwhelming the cache
+      if (chunks.indexOf(chunk) < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
     }
     
     return bundles;
+  }
+
+  /**
+   * Utility method to chunk arrays
+   */
+  private chunkArray<T>(array: T[], chunkSize: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
   }
 
   /**
@@ -753,10 +905,13 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   }
 
   /**
-   * Cleanup cache health monitoring
+   * Cleanup cache health monitoring and batch operations
    */
-  cleanup(): void {
-    this.cacheHealth.cleanup();
+  async cleanup(): Promise<void> {
+    await Promise.all([
+      this.cacheHealth.cleanup(),
+      this.batchOperations.cleanup()
+    ]);
     this.log.info('🧹 CatalogueDataSource cleanup completed');
   }
 
@@ -765,6 +920,13 @@ export class CatalogueDataSource extends ESIMGoDataSource {
    */
   getCacheHealthStatus(): string {
     return this.cacheHealth.getHealthReport();
+  }
+
+  /**
+   * Get batch operations performance metrics
+   */
+  getBatchMetrics(): any {
+    return this.batchOperations.getMetrics();
   }
 
   /**
