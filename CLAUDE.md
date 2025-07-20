@@ -129,6 +129,47 @@ The application implements a comprehensive authentication system with multiple s
 ## Package Management
 - Using bun as package manager
 
+## Pricing Module Architecture
+
+### Overview
+Dashboard pricing management system with advanced table features, real-time calculations, and configuration tools.
+
+### Core Components
+- **`/src/pages/pricing.tsx`**: Main pricing page with lazy loading and batch calculations
+- **`/src/components/country-pricing-table-grouped.tsx`**: Advanced table with grouping, sorting, expand/collapse
+- **`/src/components/pricing-simulator-drawer.tsx`**: Side drawer for pricing simulation (600px, right-slide)
+
+### Key Features
+- **Native Grouping**: Countries with lazy-loaded bundles, summary rows with bundle counts
+- **Real-time Pricing**: Uses `CALCULATE_BATCH_PRICING` GraphQL query for live calculations
+- **Advanced Table**: TanStack Table with sorting (country name, bundle count), filtering, pagination
+- **Pricing Configuration**: Per-country/bundle custom pricing rules via drawer
+- **Simulator**: Test any country/duration combination with profit analysis
+
+### Data Flow
+1. Countries load with summary (bundle counts)
+2. Expand triggers lazy load of bundle details
+3. Real-time pricing via GraphQL batch calculations
+4. Configuration updates via mutations
+
+### Performance
+- Lazy loading pattern for initial load speed
+- Batch pricing calculations to reduce API calls
+- Follows eSIM Go bundle group filtering best practices
+
+## Orders Module
+
+### Components
+- **`/src/components/order-details-drawer.tsx`**: Comprehensive order details display
+- **`/src/components/details-drawer.tsx`**: Reusable drawer components (`DetailsDrawer`, `DetailsSection`, `DetailsRow`)
+- **`/src/pages/orders.tsx`**: Orders table with integrated drawer functionality
+
+### Features
+- Order details view with customer info, data plan specs, and timeline
+- User-order bidirectional relationship with nullable user field handling
+- Interactive UI with clickable references and dropdown actions
+- Consistent design patterns and error handling
+
 ## Git Commit Guidelines
 When making commits, organize changes by feature and create clean, focused commits:
 
@@ -148,3 +189,273 @@ When making commits, organize changes by feature and create clean, focused commi
    ```
 4. **Separate concerns**: Create separate commits for different features (e.g., validation flow vs URL state management)
 5. **Include context**: Reference relevant documentation or API recommendations when applicable
+
+## Structured Logging Guidelines
+
+### Overview
+The project uses **Pino** for structured logging with correlation IDs, performance metrics, and JSON formatting for production monitoring.
+
+### Core Principles
+1. **No console.log**: Always use the structured logger instead of console.log/console.error
+2. **Context over noise**: Include relevant business context, avoid verbose debug logs
+3. **Performance tracking**: Log timing for critical operations
+4. **Error enrichment**: Capture full error context with stack traces and metadata
+
+### Logger Setup
+
+#### Import and Initialize
+```typescript
+import { createLogger, withPerformanceLogging } from '../lib/logger';
+
+// Component-level logger
+const logger = createLogger({ component: 'ComponentName' });
+
+// Class-level logger  
+class MyService {
+  private logger = createLogger({ 
+    component: 'MyService',
+    operationType: 'service-operation'
+  });
+}
+```
+
+#### Correlation IDs
+Correlation IDs are automatically generated and included in all logs for request tracing:
+```typescript
+// Get correlation ID for custom tracking
+const correlationId = logger.getCorrelationId();
+
+// Create child logger with additional context
+const childLogger = logger.child({ userId: user.id, orderId: order.id });
+```
+
+### Logging Levels
+
+#### 1. **logger.info()** - Important business events
+```typescript
+// ✅ Good: Business-critical events
+logger.info('Order created successfully', {
+  orderId: order.id,
+  userId: user.id,
+  amount: order.total,
+  operationType: 'order-creation'
+});
+
+logger.info('Catalog sync completed', {
+  duration,
+  totalBundles: metadata.totalBundles,
+  bundleGroups: metadata.bundleGroups,
+  operationType: 'catalog-sync'
+});
+```
+
+#### 2. **logger.warn()** - Recoverable issues
+```typescript
+// ✅ Good: System warnings
+logger.warn('Cache miss, falling back to API', {
+  cacheKey: 'esim-go:catalog:metadata',
+  operationType: 'cache-fallback'
+});
+
+logger.warn('High memory usage detected', {
+  memoryMB: memoryMB.toFixed(2),
+  threshold: 500,
+  operationType: 'memory-warning'
+});
+```
+
+#### 3. **logger.error()** - System errors
+```typescript
+// ✅ Good: Error with context
+logger.error('Failed to sync catalog', error, {
+  bundleGroup: groupName,
+  operationType: 'catalog-sync'
+});
+
+// ✅ Good: Error without exception object
+logger.error('Request timeout', undefined, {
+  method: req.method,
+  path: req.path,
+  operationType: 'request-timeout'
+});
+```
+
+#### 4. **logger.debug()** - Development info (use sparingly)
+```typescript
+// ⚠️ Use only for critical debugging - will be filtered in production
+logger.debug('Processing payment intent', {
+  paymentIntentId: intent.id,
+  operationType: 'payment-processing'
+});
+```
+
+### Context Data Standards
+
+#### Required Fields
+- **operationType**: Business operation being performed
+- **correlationId**: Automatically included for request tracing
+
+#### Recommended Fields
+- **userId**: When user context is available
+- **duration**: For timed operations (milliseconds)
+- **[entityId]**: Relevant business entity IDs (orderId, bundleId, etc.)
+
+#### Example Context Objects
+```typescript
+// API operations
+{ operationType: 'api-request', endpoint: '/v2.5/catalogue', duration: 1250 }
+
+// Business operations  
+{ operationType: 'order-processing', orderId: '123', userId: 'abc', paymentMethod: 'card' }
+
+// System operations
+{ operationType: 'cache-refresh', cacheKey: 'esim-go:bundles', ttl: 3600 }
+
+// Performance tracking
+{ operationType: 'performance', operation: 'catalog-sync', duration: 45000 }
+```
+
+### Performance Metrics
+
+#### Using withPerformanceLogging
+```typescript
+// ✅ Wrap critical operations for automatic timing
+async syncCatalog(): Promise<void> {
+  return withPerformanceLogging(
+    this.logger,
+    'catalog-sync',
+    async () => {
+      // Your operation here
+      await this.performSync();
+    },
+    { bundleGroups: this.BUNDLE_GROUPS.length }
+  );
+}
+```
+
+#### Manual Performance Logging
+```typescript
+const start = Date.now();
+try {
+  await operation();
+  logger.logPerformance({
+    operation: 'search-plans',
+    duration: Date.now() - start,
+    context: { country: criteria.country, bundleCount: results.length }
+  });
+} catch (error) {
+  logger.error('Operation failed', error, {
+    operation: 'search-plans',
+    duration: Date.now() - start
+  });
+}
+```
+
+### Anti-Patterns
+
+#### ❌ Don't Do This
+```typescript
+// ❌ Using console.log
+console.log('User logged in:', user.id);
+
+// ❌ Verbose debug logging
+logger.debug('Setting variable x to value y');
+logger.debug('Entering function processData');
+logger.debug('Loop iteration 5 of 100');
+
+// ❌ Logging without context
+logger.info('Operation completed');
+logger.error('Something went wrong');
+
+// ❌ Logging sensitive data
+logger.info('User credentials', { password: user.password, apiKey: secret });
+```
+
+#### ✅ Do This Instead
+```typescript
+// ✅ Structured logging with context
+logger.info('User authentication successful', {
+  userId: user.id,
+  method: 'phone-otp',
+  operationType: 'authentication'
+});
+
+// ✅ Meaningful business events only
+logger.info('Data processing completed', {
+  recordsProcessed: data.length,
+  duration: processingTime,
+  operationType: 'data-processing'
+});
+
+// ✅ Error logging with full context
+logger.error('API request failed', error, {
+  endpoint: '/v2.5/catalogue',
+  statusCode: response.status,
+  operationType: 'api-request'
+});
+```
+
+### Production Considerations
+
+#### Log Level Configuration
+- **Development**: `debug` level with pretty printing
+- **Production**: `info` level with JSON formatting
+- **Environment variable**: `LOG_LEVEL=info|debug|warn|error`
+
+#### Security
+- **Never log**: Passwords, API keys, payment details, PII
+- **Hash sensitive data**: User identifiers, session tokens when needed for debugging
+- **Redact automatically**: Use structured fields to avoid accidental exposure
+
+#### Performance
+- **Avoid string concatenation**: Use structured context objects
+- **Limit debug logs**: Debug level should be minimal even in development
+- **Batch operations**: Use performance wrappers for grouped operations
+
+### Integration Examples
+
+#### GraphQL Resolvers
+```typescript
+const logger = createLogger({ component: 'checkout-resolvers' });
+
+// In resolver function
+logger.info('Checkout session created', {
+  sessionId: session.id,
+  userId: context.auth?.user?.id,
+  operationType: 'checkout-session-creation'
+});
+```
+
+#### Data Sources
+```typescript
+class CatalogueDataSource {
+  private logger = createLogger({ component: 'CatalogueDataSource' });
+
+  async searchPlans(criteria: SearchCriteria) {
+    return withPerformanceLogging(
+      this.logger,
+      'catalog-search',
+      async () => {
+        // Search implementation
+      },
+      { country: criteria.country, duration: criteria.duration }
+    );
+  }
+}
+```
+
+#### Services
+```typescript
+class CatalogSyncService {
+  private logger = createLogger({ 
+    component: 'CatalogSyncService',
+    operationType: 'catalog-sync'
+  });
+
+  async syncFullCatalog() {
+    logger.info('Starting catalog sync', { bundleGroups: this.BUNDLE_GROUPS });
+    // Implementation
+    logger.info('Catalog sync completed', { totalBundles, duration });
+  }
+}
+```
