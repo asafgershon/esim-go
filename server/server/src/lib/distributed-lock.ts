@@ -1,5 +1,4 @@
-import { createClient } from 'redis';
-import redisLock from 'redis-lock';
+import { createClient, type RedisClientType } from 'redis';
 import { cleanEnv, str } from "envalid";
 import { createLogger } from './logger';
 
@@ -33,17 +32,17 @@ export class DistributedLock {
   private static readonly DEFAULT_RETRY_ATTEMPTS = 3;
   private static readonly DEFAULT_RETRY_DELAY = 1000; // 1 second
   
-  private redisClient: any;
-  private lock: any;
+  private redisClient: RedisClientType | null = null;
   private lockName: string;
+  private lockValue: string | null = null;
   private logger = createLogger({ component: 'DistributedLock' });
 
   constructor(lockName: string) {
-    this.lockName = lockName;
+    this.lockName = `lock:${lockName}`;
   }
 
   /**
-   * Initialize Redis client and lock
+   * Initialize Redis client
    */
   private async initializeRedis(): Promise<void> {
     if (!this.redisClient) {
@@ -54,13 +53,11 @@ export class DistributedLock {
       });
 
       await this.redisClient.connect();
-      this.lock = redisLock(this.redisClient);
-      
     }
   }
 
   /**
-   * Acquire a distributed lock
+   * Acquire a distributed lock using Redis SET NX with expiration
    */
   async acquire(options: LockOptions = {}): Promise<LockResult> {
     const timeout = options.timeout ?? DistributedLock.DEFAULT_TIMEOUT;
@@ -76,35 +73,50 @@ export class DistributedLock {
       };
     }
 
+    if (!this.redisClient) {
+      return {
+        acquired: false,
+        error: 'Redis client not initialized'
+      };
+    }
+
+    // Generate unique lock value to prevent releasing other instances' locks
+    this.lockValue = `${Date.now()}-${Math.random()}`;
+
     for (let attempt = 1; attempt <= retryAttempts; attempt++) {
       try {
-        
-        // Try to acquire the lock with timeout
-        const releaseLock = await new Promise<any>((resolve, reject) => {
-          this.lock(this.lockName, timeout, (done: any) => {
-            if (done) {
-              resolve(done);
-            } else {
-              reject(new Error('Lock acquisition timeout'));
-            }
-          });
+        // Try to acquire the lock using SET NX with expiration
+        const result = await this.redisClient.set(this.lockName, this.lockValue, {
+          NX: true, // Only set if key doesn't exist
+          PX: timeout // Set expiration in milliseconds
         });
 
-        this.logger.info('Distributed lock acquired', { 
-          lockName: this.lockName,
-          operationType: 'lock-acquisition'
-        });
-        
-        return {
-          acquired: true,
-          release: async () => {
-            try {
-              await releaseLock();
-            } catch (error) {
-              console.error(`❌ Error releasing lock ${this.lockName}:`, error);
+        if (result === 'OK') {
+          this.logger.info('Distributed lock acquired', { 
+            lockName: this.lockName,
+            lockValue: this.lockValue,
+            timeout,
+            operationType: 'lock-acquisition'
+          });
+          
+          return {
+            acquired: true,
+            release: async () => {
+              await this.release();
             }
-          }
-        };
+          };
+        }
+        
+        // Lock is already held by another process
+        if (attempt < retryAttempts) {
+          this.logger.warn('Lock already held, retrying', {
+            lockName: this.lockName,
+            attempt,
+            retryAttempts,
+            operationType: 'lock-acquisition'
+          });
+          await this.sleep(retryDelay);
+        }
         
       } catch (error) {
         this.logger.warn('Failed to acquire lock', {
@@ -128,6 +140,54 @@ export class DistributedLock {
   }
 
   /**
+   * Release the distributed lock
+   */
+  private async release(): Promise<void> {
+    if (!this.redisClient || !this.lockValue) {
+      return;
+    }
+
+    try {
+      // Use Lua script to atomically check and delete the lock
+      // Only delete if the lock value matches (prevents releasing other instances' locks)
+      const luaScript = `
+        if redis.call("GET", KEYS[1]) == ARGV[1] then
+          return redis.call("DEL", KEYS[1])
+        else
+          return 0
+        end
+      `;
+
+      const result = await this.redisClient.eval(luaScript, {
+        keys: [this.lockName],
+        arguments: [this.lockValue]
+      });
+
+      if (result === 1) {
+        this.logger.info('Distributed lock released', { 
+          lockName: this.lockName,
+          lockValue: this.lockValue,
+          operationType: 'lock-release'
+        });
+      } else {
+        this.logger.warn('Lock not found or value mismatch during release', { 
+          lockName: this.lockName,
+          lockValue: this.lockValue,
+          operationType: 'lock-release'
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error releasing lock', error as Error, { 
+        lockName: this.lockName,
+        lockValue: this.lockValue,
+        operationType: 'lock-release'
+      });
+    }
+
+    this.lockValue = null;
+  }
+
+  /**
    * Sleep utility for retry delays
    */
   private sleep(ms: number): Promise<void> {
@@ -141,8 +201,12 @@ export class DistributedLock {
     if (this.redisClient) {
       try {
         await this.redisClient.quit();
+        this.redisClient = null;
       } catch (error) {
-        console.error(`❌ Error closing Redis connection for lock ${this.lockName}:`, error);
+        this.logger.error('Error closing Redis connection', error as Error, {
+          lockName: this.lockName,
+          operationType: 'cleanup'
+        });
       }
     }
   }
