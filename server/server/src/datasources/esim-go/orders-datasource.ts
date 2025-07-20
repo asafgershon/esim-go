@@ -1,12 +1,12 @@
-import { ESIMGoDataSource } from './esim-go-base';
-import type { 
-  ESIMGoOrder,
-  CreateOrderRequest,
-  OrderResponse,
-  ESIMGoAssignment,
-  AssignmentResponse
-} from './types';
 import { GraphQLError } from 'graphql';
+import { ESIMGoDataSource } from './esim-go-base';
+import type {
+  AssignmentResponse,
+  CreateOrderRequest,
+  ESIMGoAssignment,
+  ESIMGoOrder,
+  OrderResponse
+} from './types';
 
 /**
  * DataSource for eSIM Go Orders API

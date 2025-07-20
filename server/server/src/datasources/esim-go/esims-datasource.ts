@@ -1,12 +1,11 @@
-import { ESIMGoDataSource } from './esim-go-base';
-import type { 
-  ESIMGoESIM,
-  ESIMGoBundle,
-  UpdateESIMRequest,
-  ESIMListResponse,
-  BundleStatusResponse
-} from './types';
 import { GraphQLError } from 'graphql';
+import { ESIMGoDataSource } from './esim-go-base';
+import type {
+  BundleStatusResponse,
+  ESIMGoBundle,
+  ESIMGoESIM,
+  UpdateESIMRequest
+} from './types';
 
 /**
  * DataSource for eSIM Go eSIMs API
