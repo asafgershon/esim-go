@@ -22,25 +22,20 @@ export function ColumnContextMenu<TData>({
   const isPinned = column.getIsPinned()
   const canPin = column.getCanPin?.() !== false // Default to true if method doesn't exist
 
-  // Debug logging
-  console.log('Column context menu for:', column.id, {
-    isPinned,
-    canPin,
-    hasPinMethod: typeof column.pin === 'function'
-  })
 
   if (!canPin) {
     return <>{children}</>
   }
 
   const handleContextMenu = (e: React.MouseEvent) => {
+    return;
     e.preventDefault()
     setIsOpen(true)
   }
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger disabled asChild>
         <div onContextMenu={handleContextMenu} className="w-full">
           {children}
         </div>
