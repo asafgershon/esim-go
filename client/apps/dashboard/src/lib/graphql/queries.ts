@@ -597,3 +597,16 @@ export const GET_COUNTRY_BUNDLES = gql(`
     }
   }
 `)
+
+export const SYNC_CATALOG = gql(`
+  mutation SyncCatalog($force: Boolean = false) {
+    syncCatalog(force: $force) {
+      success
+      message
+      error
+      syncedBundles
+      syncDuration
+      syncedAt
+    }
+  }
+`)

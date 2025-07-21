@@ -1622,6 +1622,106 @@ export const resolvers: Resolvers = {
         notes: configuration.notes,
       };
     },
+
+    // Catalog Sync
+    syncCatalog: async (_, { force = false }, context: Context) => {
+      const startTime = Date.now();
+      
+      try {
+        logger.info('Manual catalog sync triggered', {
+          userId: context.auth.user!.id,
+          force,
+          operationType: 'catalog-sync-manual'
+        });
+
+        // Import CatalogSyncService dynamically
+        const { CatalogSyncService } = await import('./services/catalog-sync.service');
+        
+        // Get catalogueDataSource from context
+        const catalogueDataSource = context.dataSources.catalogue;
+        
+        // Create sync service instance
+        const catalogSyncService = new CatalogSyncService(catalogueDataSource, context.redis);
+        
+        // Trigger sync (returns void)
+        await catalogSyncService.syncFullCatalog();
+        
+        const duration = Date.now() - startTime;
+        
+        // Try to get metadata from cache to get bundle count
+        let totalBundles = 0;
+        try {
+          // Import CacheHealthService to use the same cache access pattern
+          const { CacheHealthService } = await import('./services/cache-health.service');
+          const cacheHealth = new CacheHealthService(context.redis);
+          
+          try {
+            // Add a small delay to ensure metadata has been written
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            const metadataResult = await cacheHealth.safeGet('esim-go:catalog:metadata');
+            if (metadataResult.success && metadataResult.data) {
+              const metadata = JSON.parse(metadataResult.data);
+              totalBundles = metadata.totalBundles || 0;
+              logger.info('Successfully retrieved sync metadata', {
+                totalBundles,
+                bundleGroups: metadata.bundleGroups?.length || 0,
+                operationType: 'catalog-sync-manual'
+              });
+            } else {
+              logger.warn('Metadata not found or invalid after sync', {
+                success: metadataResult.success,
+                hasData: !!metadataResult.data,
+                error: metadataResult.error?.message,
+                operationType: 'catalog-sync-manual'
+              });
+            }
+          } finally {
+            // Clean up cache health service to prevent resource leaks
+            cacheHealth.stopHealthMonitoring();
+          }
+        } catch (metadataError) {
+          logger.warn('Failed to get metadata after sync', metadataError as Error, {
+            operationType: 'catalog-sync-manual'
+          });
+        }
+        
+        logger.info('Manual catalog sync completed', {
+          userId: context.auth.user!.id,
+          force,
+          duration,
+          syncedBundles: totalBundles,
+          operationType: 'catalog-sync-manual'
+        });
+
+        return {
+          success: true,
+          message: `Catalog sync completed successfully${totalBundles > 0 ? `. Synced ${totalBundles} bundles` : ''}.`,
+          error: null,
+          syncedBundles: totalBundles,
+          syncDuration: duration,
+          syncedAt: new Date().toISOString(),
+        };
+      } catch (error) {
+        const duration = Date.now() - startTime;
+        
+        logger.error('Manual catalog sync failed', error as Error, {
+          userId: context.auth.user!.id,
+          force,
+          duration,
+          operationType: 'catalog-sync-manual'
+        });
+
+        return {
+          success: false,
+          message: null,
+          error: `Catalog sync failed: ${(error as Error).message}`,
+          syncedBundles: 0,
+          syncDuration: duration,
+          syncedAt: new Date().toISOString(),
+        };
+      }
+    },
   },
 
   Subscription: {

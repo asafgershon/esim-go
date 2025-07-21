@@ -88,6 +88,9 @@ type Mutation {
   # Package Assignment
   assignPackageToUser(userId: ID!, planId: ID!): AssignPackageResponse @auth(role: "ADMIN")
 
+  # Catalog sync operations
+  syncCatalog(force: Boolean = false): SyncCatalogResponse @auth(role: "ADMIN")
+  
   # eSIM operations
   purchaseESIM(planId: ID!, input: PurchaseESIMInput!): PurchaseESIMResponse
     @auth
@@ -421,6 +424,16 @@ type ESIMStatusUpdate {
   dataUsed: Float
   dataRemaining: Float
   updatedAt: String!
+}
+
+# Catalog sync response
+type SyncCatalogResponse {
+  success: Boolean!
+  message: String
+  error: String
+  syncedBundles: Int
+  syncDuration: Int
+  syncedAt: String
 }
 
 # Basic checkout session type (enhanced)

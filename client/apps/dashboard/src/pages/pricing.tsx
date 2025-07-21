@@ -1,13 +1,16 @@
 import { CountryBundle } from '@/__generated__/graphql';
 import React, { useState } from 'react';
-import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@workspace/ui';
-import { Calculator, DollarSign, Table, CreditCard } from 'lucide-react';
+import { Button, Tabs, TabsList, TabsTrigger, TabsContent, Tooltip, TooltipTrigger, TooltipContent } from '@workspace/ui';
+import { Calculator, DollarSign, Table, CreditCard, RefreshCw } from 'lucide-react';
+import { useMutation } from '@apollo/client';
+import { toast } from 'sonner';
 import { CountryPricingTableGrouped } from '../components/country-pricing-table-grouped';
 import { PricingConfigDrawer } from '../components/pricing-config-drawer';
 import { PricingSimulatorDrawer } from '../components/pricing-simulator-drawer';
 import { ProcessingFeeManagement } from '../components/processing-fee-management';
 import { MarkupTableManagement } from '../components/markup-table-management';
 import { usePricingData, CountryGroupData } from '../hooks/usePricingData';
+import { SYNC_CATALOG } from '../lib/graphql/queries';
 
 
 
@@ -20,6 +23,9 @@ const PricingPage: React.FC = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('pricing');
+
+  // Sync catalog mutation
+  const [syncCatalog, { loading: syncLoading }] = useMutation(SYNC_CATALOG);
 
 
 
@@ -39,6 +45,24 @@ const PricingPage: React.FC = () => {
   // Handle configuration saved
   const handleConfigurationSaved = () => {
     refreshConfigurations();
+  };
+
+  // Handle sync catalog
+  const handleSyncCatalog = async () => {
+    try {
+      const result = await syncCatalog({
+        variables: { force: false }
+      });
+      
+      if (result.data?.syncCatalog.success) {
+        toast.success('A sync has been triggered and can take up to few minutes...');
+      } else {
+        toast.error(result.data?.syncCatalog.error || 'Sync failed');
+      }
+    } catch (error) {
+      console.error('Error triggering sync:', error);
+      toast.error('Failed to trigger catalog sync. Please try again.');
+    }
   };
 
 
@@ -73,6 +97,22 @@ const PricingPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Pricing Management</h1>
         <div className="flex items-center gap-4">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={handleSyncCatalog}
+                disabled={syncLoading}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+                Sync
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Triggers sync with eSIM Go API
+            </TooltipContent>
+          </Tooltip>
           <Button
             onClick={() => setIsSimulatorOpen(true)}
             variant="outline"
