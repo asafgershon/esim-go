@@ -17,8 +17,18 @@ import {
   ScrollArea,
   Badge,
   Separator,
+  InputWithAdornment,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@workspace/ui";
-import { TrendingUp, MapPin, Package, Info, X, AlertCircle, DollarSign, TrendingDown, CreditCard } from "lucide-react";
+import { TrendingUp, MapPin, Package, Info, X, AlertCircle, DollarSign, TrendingDown, CreditCard, Edit3, Check, Percent, Wallet, Smartphone, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { Panel, PanelGroup } from "react-resizable-panels";
 import { AnimatePresence, motion } from "framer-motion";
@@ -54,10 +64,29 @@ const PricingPreviewPanel = ({
   bundle: CountryBundleWithDisplay;
   onClose: () => void;
 }) => {
+  // State for inline editing
+  const [isEditingMarkup, setIsEditingMarkup] = useState(false);
+  const [customMarkup, setCustomMarkup] = useState("");
+  const [isEditingDiscount, setIsEditingDiscount] = useState(false);
+  const [customDiscount, setCustomDiscount] = useState("");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("ISRAELI_CARD");
+  const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
+  
   // Get actual values from bundle
-  const discountRate = bundle.discountRate || 0; // Use actual discount rate from bundle
-  const processingRate = bundle.processingRate || 0.045; // Use actual processing rate or default
-  const discountPerDay = bundle.discountPerDay || 0.1; // 10% per day default
+  const discountRate = bundle.discountRate || 0;
+  const discountPerDay = bundle.discountPerDay || 0.1;
+  
+  // Payment method configuration
+  const paymentMethods = [
+    { value: "ISRAELI_CARD", label: "Israeli Card", rate: 0.014, icon: CreditCard },
+    { value: "FOREIGN_CARD", label: "Foreign Card", rate: 0.045, icon: CreditCard },
+    { value: "BIT", label: "Bit Payment", rate: 0.007, icon: Smartphone },
+    { value: "AMEX", label: "American Express", rate: 0.057, icon: CreditCard },
+    { value: "DINERS", label: "Diners Club", rate: 0.064, icon: CreditCard },
+  ];
+  
+  const currentPaymentMethod = paymentMethods.find(pm => pm.value === selectedPaymentMethod) || paymentMethods[0];
+  const processingRate = currentPaymentMethod.rate;
   
   // Determine configuration level
   const configLevel = bundle.configurationLevel || 'GLOBAL';
@@ -69,8 +98,24 @@ const PricingPreviewPanel = ({
   const totalCost = bundle.totalCost || (cost + costPlus);
   const discountValue = bundle.discountValue || 0;
   const priceAfterDiscount = bundle.priceAfterDiscount || 0;
-  const processingCost = bundle.processingCost || 0;
-  const finalRevenue = bundle.finalRevenue || 0;
+  
+  // Calculate processing cost based on selected payment method
+  const processingCost = priceAfterDiscount * processingRate;
+  const finalRevenue = priceAfterDiscount - processingCost - cost - costPlus;
+  
+  // Handler for saving markup changes
+  const handleSaveMarkup = () => {
+    // TODO: Call mutation to save markup override
+    console.log('Save markup:', customMarkup);
+    setIsEditingMarkup(false);
+  };
+  
+  // Handler for saving discount changes
+  const handleSaveDiscount = () => {
+    // TODO: Call mutation to save discount override
+    console.log('Save discount:', customDiscount);
+    setIsEditingDiscount(false);
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -136,24 +181,180 @@ const PricingPreviewPanel = ({
                 <span className="text-gray-600">Base cost</span>
                 <span className="font-mono">{formatCurrency(cost)}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Markup</span>
+              
+              {/* Markup with inline editing */}
+              <div className="flex justify-between items-center group">
                 <div className="flex items-center gap-1">
-                  <span className="font-mono">+ {formatCurrency(costPlus)}</span>
+                  <span className="text-gray-600">Markup</span>
+                  <ConfigurationLevelIndicator 
+                    level={configLevel} 
+                    size="xs" 
+                    showTooltip 
+                  />
                 </div>
+                {isEditingMarkup ? (
+                  <div className="flex items-center gap-1">
+                    <InputWithAdornment
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={customMarkup}
+                      onChange={(e) => setCustomMarkup(e.target.value)}
+                      placeholder={costPlus.toFixed(2)}
+                      leftAdornment="$"
+                      className="w-24 h-7 text-sm"
+                      autoFocus
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSaveMarkup}
+                      className="h-7 w-7 p-0 text-green-600"
+                    >
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingMarkup(false);
+                        setCustomMarkup("");
+                      }}
+                      className="h-7 w-7 p-0 text-gray-400"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono">+ {formatCurrency(costPlus)}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingMarkup(true);
+                        setCustomMarkup(costPlus.toString());
+                      }}
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
               <div className="flex justify-between items-center pt-2 border-t">
                 <span className="font-medium">Selling price</span>
                 <span className="font-mono font-medium">{formatCurrency(totalCost)}</span>
               </div>
               
-              {/* Discounts & Fees */}
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-gray-600">Discount ({formatPercentage(discountRate)})</span>
-                <span className="font-mono text-green-600">- {formatCurrency(discountValue)}</span>
+              {/* Discount with inline editing */}
+              <div className="flex justify-between items-center pt-2 group">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-600">Discount</span>
+                  <ConfigurationLevelIndicator 
+                    level={configLevel} 
+                    size="xs" 
+                    showTooltip 
+                  />
+                </div>
+                {isEditingDiscount ? (
+                  <div className="flex items-center gap-1">
+                    <InputWithAdornment
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={customDiscount}
+                      onChange={(e) => setCustomDiscount(e.target.value)}
+                      placeholder={(discountRate * 100).toFixed(0)}
+                      rightAdornment="%"
+                      className="w-20 h-7 text-sm"
+                      autoFocus
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSaveDiscount}
+                      className="h-7 w-7 p-0 text-green-600"
+                    >
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingDiscount(false);
+                        setCustomDiscount("");
+                      }}
+                      className="h-7 w-7 p-0 text-gray-400"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono text-green-600">
+                      - {formatCurrency(discountValue)} ({formatPercentage(discountRate)})
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingDiscount(true);
+                        setCustomDiscount((discountRate * 100).toString());
+                      }}
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Processing ({formatPercentage(processingRate)})</span>
+              <div className="flex justify-between items-center group">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-600">Processing</span>
+                  <Popover open={paymentMethodOpen} onOpenChange={setPaymentMethodOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
+                      >
+                        <currentPaymentMethod.icon className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[200px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Select payment method..." className="h-9" />
+                        <CommandEmpty>No payment method found.</CommandEmpty>
+                        <CommandList>
+                          <CommandGroup>
+                            {paymentMethods.map((method) => {
+                              const Icon = method.icon;
+                              return (
+                                <CommandItem
+                                  key={method.value}
+                                  value={method.value}
+                                  onSelect={() => {
+                                    setSelectedPaymentMethod(method.value);
+                                    setPaymentMethodOpen(false);
+                                  }}
+                                >
+                                  <Icon className="mr-2 h-4 w-4" />
+                                  <span className="flex-1">{method.label}</span>
+                                  <Badge variant="outline" className="text-xs ml-auto">
+                                    {formatPercentage(method.rate)}
+                                  </Badge>
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <span className="text-xs text-gray-500">({formatPercentage(processingRate)})</span>
+                </div>
                 <span className="font-mono text-orange-600">- {formatCurrency(processingCost)}</span>
               </div>
               
@@ -174,34 +375,55 @@ const PricingPreviewPanel = ({
             </div>
           </div>
 
-
-
-          {/* Discount Per Day Info - Only show if custom */}
-          {discountPerDay !== 0.1 && (
-            <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded-md">
-              <TrendingDown className="h-4 w-4 text-yellow-600" />
-              <span className="text-xs text-yellow-800">
-                Custom unused day discount: {formatPercentage(discountPerDay)} per day
-              </span>
+          {/* Actions & Warnings */}
+          <div className="space-y-3">
+            {/* Quick Actions */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-xs"
+                onClick={() => console.log('Open full config')}
+              >
+                Full Configuration
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-xs"
+                onClick={() => console.log('Test pricing')}
+              >
+                Test Pricing
+              </Button>
             </div>
-          )}
-
-          
-          {/* Minimum Profit Warning */}
-          {finalRevenue < 1.50 && (
-            <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <span className="text-sm font-medium text-red-900">
-                  Below Minimum Profit Margin
+            
+            {/* Custom Discount Per Day Info */}
+            {discountPerDay !== 0.1 && (
+              <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded-md">
+                <TrendingDown className="h-4 w-4 text-yellow-600" />
+                <span className="text-xs text-yellow-800">
+                  Custom unused day discount: {formatPercentage(discountPerDay)} per day
                 </span>
               </div>
-              <p className="text-xs text-red-700 mt-1">
-                This configuration results in less than $1.50 profit.
-                The system will reject this pricing.
-              </p>
-            </div>
-          )}
+            )}
+            
+            {/* Minimum Profit Warning */}
+            {finalRevenue < 1.50 && (
+              <div className="bg-red-50 p-2 rounded-md border border-red-200">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-red-900">
+                      Below Minimum Profit
+                    </p>
+                    <p className="text-xs text-red-700">
+                      Must be at least $1.50 profit
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </ScrollArea>
     </div>
@@ -557,8 +779,8 @@ export function CountryPricingSplitView({
 
           {/* Bundles Panel */}
           <Panel 
-            defaultSize={40} 
-            minSize={30}
+            defaultSize={35} 
+            minSize={25}
             id="bundles-panel"
             order={2}
           >
@@ -607,8 +829,9 @@ export function CountryPricingSplitView({
               >
                 <ResizeHandle />
                 <Panel 
-                  defaultSize={35} 
-                  minSize={25}
+                  defaultSize={40} 
+                  minSize={30}
+                  maxSize={50}
                   id="preview-panel"
                   order={3}
                 >
