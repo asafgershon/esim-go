@@ -36,6 +36,8 @@ import { BundlesByCountry, CountryBundle } from "../__generated__/graphql";
 import { useHighDemandCountries } from "../hooks/useHighDemandCountries";
 import { ResizeHandle } from "./resize-handle";
 import { ConfigurationLevelIndicator } from "./configuration-level-indicator";
+import { useMutation } from "@apollo/client";
+import { UPDATE_PRICING_CONFIGURATION, GET_COUNTRY_BUNDLES } from "../lib/graphql/queries";
 
 // Extended types for additional display fields
 export interface CountryBundleWithDisplay extends CountryBundle {
@@ -59,11 +61,15 @@ interface CountryPricingSplitViewProps {
 // Pricing Preview Panel Component
 const PricingPreviewPanel = ({ 
   bundle, 
-  onClose 
+  onClose,
+  onConfigurationSaved
 }: { 
   bundle: CountryBundleWithDisplay;
   onClose: () => void;
+  onConfigurationSaved?: () => void;
 }) => {
+  // Mutations
+  const [updatePricingConfiguration, { loading: savingConfig }] = useMutation(UPDATE_PRICING_CONFIGURATION);
   // State for inline editing
   const [isEditingMarkup, setIsEditingMarkup] = useState(false);
   const [customMarkup, setCustomMarkup] = useState("");
@@ -113,10 +119,49 @@ const PricingPreviewPanel = ({
   };
   
   // Handler for saving discount changes
-  const handleSaveDiscount = () => {
-    // TODO: Call mutation to save discount override
-    console.log('Save discount:', customDiscount);
-    setIsEditingDiscount(false);
+  const handleSaveDiscount = async () => {
+    if (!customDiscount || parseFloat(customDiscount) < 0 || parseFloat(customDiscount) > 100) {
+      toast.error("Please enter a valid discount percentage (0-100)");
+      return;
+    }
+
+    try {
+      const discountRateDecimal = parseFloat(customDiscount) / 100;
+      
+      // Create a country-specific pricing configuration with discount override
+      const result = await updatePricingConfiguration({
+        variables: {
+          input: {
+            name: `${bundle.countryName} ${bundle.duration}d Discount Override`,
+            description: `Custom discount for ${bundle.countryName} ${bundle.duration}-day bundles: ${customDiscount}%`,
+            countryId: bundle.countryId,
+            duration: bundle.duration,
+            bundleGroup: (bundle as any).bundleGroup || null,
+            discountRate: discountRateDecimal,
+            discountPerDay: discountPerDay,
+            markupAmount: null, // Not changing markup in this operation
+            isActive: true,
+          },
+        },
+        refetchQueries: [
+          {
+            query: GET_COUNTRY_BUNDLES,
+            variables: { countryId: bundle.countryId },
+          },
+        ],
+      });
+
+      if (result.data?.updatePricingConfiguration?.success) {
+        setIsEditingDiscount(false);
+        toast.success(`Discount of ${customDiscount}% applied for ${bundle.countryName}`);
+        onConfigurationSaved?.();
+      } else {
+        toast.error(result.data?.updatePricingConfiguration?.error || "Failed to save discount");
+      }
+    } catch (error: any) {
+      console.error("Error saving discount:", error);
+      toast.error("Failed to save discount configuration");
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -841,6 +886,12 @@ export function CountryPricingSplitView({
                     <PricingPreviewPanel 
                       bundle={selectedBundle} 
                       onClose={() => setSelectedBundle(null)}
+                      onConfigurationSaved={() => {
+                        // Refetch bundle data when configuration is saved
+                        if (selectedCountry) {
+                          onExpandCountry(selectedCountry);
+                        }
+                      }}
                     />
                   </div>
                 </Panel>
