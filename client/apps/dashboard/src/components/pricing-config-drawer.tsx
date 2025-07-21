@@ -16,7 +16,6 @@ import {
   InputWithAdornment,
   Label,
   Separator,
-  SliderWithValue,
   Switch,
   Textarea,
 } from "@workspace/ui";
@@ -74,16 +73,11 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   // Price range state for dynamic pricing
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
 
-  // Simulator state
-  const [simulatorDays, setSimulatorDays] = useState(7);
 
   // Markup override state
   const [isMarkupOverrideOpen, setIsMarkupOverrideOpen] = useState(false);
   const [customMarkupAmount, setCustomMarkupAmount] = useState<string>("");
   const [hasMarkupOverride, setHasMarkupOverride] = useState(false);
-
-  // Available bundle durations (common eSIM Go durations)
-  const availableBundles = [3, 5, 7, 10, 14, 21, 30];
 
   // TODO: Initialize markup override state from pricing configurations
   // useEffect(() => {
@@ -96,23 +90,6 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   //     setCustomMarkupAmount("");
   //   }
   // }, [pricingConfigs, pricingData]);
-
-  // Find the best bundle for simulator
-  const getBestBundle = (requestedDays: number) => {
-    // Try exact match first
-    if (availableBundles.includes(requestedDays)) {
-      return requestedDays;
-    }
-    // Find smallest bundle that covers the requested days
-    const suitableBundles = availableBundles.filter(
-      (bundle) => bundle >= requestedDays
-    );
-    if (suitableBundles.length > 0) {
-      return Math.min(...suitableBundles);
-    }
-    // If no bundle covers it, use the largest
-    return Math.max(...availableBundles);
-  };
 
   // Get markup source information based on bundle name and duration
   const getMarkupSource = () => {
@@ -397,7 +374,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
 
         <div className="flex h-full overflow-hidden">
           {/* Left Side: Configuration Form */}
-          <div className="w-1/3 p-6 border-r overflow-y-auto max-h-[65vh]">
+          <div className="w-1/2 p-6 border-r overflow-y-auto max-h-[65vh]">
             <h3 className="text-lg font-semibold mb-4">Configuration</h3>
             <div className="space-y-4">
               {/* Basic Configuration Section */}
@@ -790,8 +767,8 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
             </div>
           </div>
 
-          {/* Middle: Preview and Price Range */}
-          <div className="w-1/3 p-6 border-r overflow-y-auto max-h-[65vh]">
+          {/* Right Side: Preview and Price Range */}
+          <div className="w-1/2 p-6 overflow-y-auto max-h-[65vh]">
             <h3 className="text-lg font-semibold mb-4">Preview & Analysis</h3>
 
             {/* Bundle Information */}
@@ -953,138 +930,6 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                       )}
                     </p>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Side: Price Simulator */}
-          <div className="w-1/3 p-6 overflow-y-auto max-h-[65vh]">
-            <h3 className="text-lg font-semibold mb-4">Price Simulator</h3>
-
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="simulatorDays">Days: {simulatorDays}</Label>
-                <div className="mt-3">
-                  <SliderWithValue
-                    value={[simulatorDays]}
-                    onValueChange={(value) => setSimulatorDays(value[0])}
-                    min={1}
-                    max={30}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  Simulate pricing for 1-30 days (maximum eSIM Go bundle length)
-                </p>
-              </div>
-
-              {/* Simulated Pricing Breakdown */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-3">Simulated Pricing</h4>
-                <div className="space-y-2 text-sm">
-                  {(() => {
-                    const bestBundle = getBestBundle(simulatorDays);
-                    const unusedDays = Math.max(0, bestBundle - simulatorDays);
-                    const unusedDaysDiscount =
-                      unusedDays > 0 ? (unusedDays * formData.discountPerDay) : 0;
-                    const basePrice = pricingData?.totalCost || 0;
-                    const priceAfterUnusedDiscount =
-                      basePrice * (1 - unusedDaysDiscount);
-                    const finalPrice =
-                      priceAfterUnusedDiscount * (1 - formData.discountRate);
-
-                    return (
-                      <>
-                        <div className="flex justify-between">
-                          <span>Days Requested:</span>
-                          <Badge variant="outline">{simulatorDays}</Badge>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Bundle Used:</span>
-                          <span>UL essential {bestBundle} days</span>
-                        </div>
-                        {unusedDays > 0 && (
-                          <div className="flex justify-between text-orange-600">
-                            <span>Unused Days:</span>
-                            <span>{unusedDays} days</span>
-                          </div>
-                        )}
-                        <Separator className="my-2" />
-                        <div className="flex justify-between">
-                          <span>eSIM Go Cost:</span>
-                          <span>{formatCurrency(pricingData?.cost || 0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>
-                            Our Markup (
-                            {Math.round(
-                              (formData.discountRate /
-                                (1 - formData.discountRate)) *
-                                100
-                            )}
-                            %):
-                          </span>
-                          <span>
-                            {formatCurrency(pricingData?.costPlus || 0)}
-                          </span>
-                        </div>
-                        {unusedDays > 0 && (
-                          <div className="flex justify-between text-orange-600">
-                            <span>
-                              Unused Days Discount ({unusedDays} days × {formatPercentage(formData.discountPerDay)}/day = {(unusedDaysDiscount * 100).toFixed(1)}%):
-                            </span>
-                            <span>
-                              -{formatCurrency(basePrice * unusedDaysDiscount)}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span>
-                            Customer Discount (
-                            {formatPercentage(formData.discountRate)}):
-                          </span>
-                          <span className="text-green-600">
-                            -
-                            {formatCurrency(
-                              priceAfterUnusedDiscount * formData.discountRate
-                            )}
-                          </span>
-                        </div>
-                        <Separator className="my-2" />
-                        <div className="flex justify-between font-medium text-lg">
-                          <span>Final Price:</span>
-                          <span className="text-blue-600">
-                            {formatCurrency(finalPrice)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm text-gray-600">
-                          <span>Price per day:</span>
-                          <span>
-                            {formatCurrency(finalPrice / simulatorDays)}
-                          </span>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Quick Day Buttons */}
-              <div>
-                <Label>Quick Select</Label>
-                <div className="grid grid-cols-4 gap-2 mt-2">
-                  {[3, 5, 7, 10, 14, 21, 30].map((days) => (
-                    <Button
-                      key={days}
-                      variant={simulatorDays === days ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSimulatorDays(days)}
-                    >
-                      {days}d
-                    </Button>
-                  ))}
                 </div>
               </div>
             </div>
