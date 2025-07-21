@@ -36,7 +36,6 @@ export interface PricingBreakdown {
 
 export class PricingService {
   private static readonly DEFAULT_DISCOUNT_RATE = 0.0; // 0%
-  private static readonly DEFAULT_PROCESSING_RATE = 0.045; // 4.5%
   private static readonly DEFAULT_CURRENCY = 'USD';
   private static readonly logger = createLogger({ 
     component: 'PricingService',
@@ -112,7 +111,6 @@ export class PricingService {
           .eq('bundle_group', bundleGroup)
           .eq('is_active', true)
           .not('markup_amount', 'is', null)
-          .order('priority', { ascending: false })
           .limit(1)
           .single();
 
@@ -168,12 +166,12 @@ export class PricingService {
       const sortedMarkups = allMarkups.sort((a, b) => a.duration_days - b.duration_days);
       
       // If requested duration is shorter than shortest, use shortest
-      if (duration <= sortedMarkups[0].duration_days) {
-        const result = sortedMarkups[0].markup_amount;
+      if (duration <= sortedMarkups[0]?.duration_days) {
+        const result = sortedMarkups[0]?.markup_amount;
         this.logger.info('Using shortest duration markup', {
           bundleGroup,
           requestedDuration: duration,
-          usedDuration: sortedMarkups[0].duration_days,
+          usedDuration: sortedMarkups[0]?.duration_days,
           markupAmount: result,
           operationType: 'markup-shortest'
         });
@@ -181,12 +179,12 @@ export class PricingService {
       }
 
       // If requested duration is longer than longest, use longest
-      if (duration >= sortedMarkups[sortedMarkups.length - 1].duration_days) {
-        const result = sortedMarkups[sortedMarkups.length - 1].markup_amount;
+      if (duration >= sortedMarkups[sortedMarkups.length - 1]?.duration_days) {
+        const result = sortedMarkups[sortedMarkups.length - 1]?.markup_amount;
         this.logger.info('Using longest duration markup', {
           bundleGroup,
           requestedDuration: duration,
-          usedDuration: sortedMarkups[sortedMarkups.length - 1].duration_days,
+          usedDuration: sortedMarkups[sortedMarkups.length - 1]?.duration_days,
           markupAmount: result,
           operationType: 'markup-longest'
         });

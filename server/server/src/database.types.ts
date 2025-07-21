@@ -309,7 +309,6 @@ export type Database = {
       pricing_configurations: {
         Row: {
           bundle_group: string | null
-          cost_split_percent: number
           country_id: string | null
           created_at: string | null
           created_by: string
@@ -320,14 +319,11 @@ export type Database = {
           is_active: boolean
           markup_amount: number | null
           name: string
-          priority: number
-          processing_rate: number
           region_id: string | null
           updated_at: string | null
         }
         Insert: {
           bundle_group?: string | null
-          cost_split_percent: number
           country_id?: string | null
           created_at?: string | null
           created_by: string
@@ -338,14 +334,11 @@ export type Database = {
           is_active?: boolean
           markup_amount?: number | null
           name: string
-          priority?: number
-          processing_rate: number
           region_id?: string | null
           updated_at?: string | null
         }
         Update: {
           bundle_group?: string | null
-          cost_split_percent?: number
           country_id?: string | null
           created_at?: string | null
           created_by?: string
@@ -356,8 +349,6 @@ export type Database = {
           is_active?: boolean
           markup_amount?: number | null
           name?: string
-          priority?: number
-          processing_rate?: number
           region_id?: string | null
           updated_at?: string | null
         }

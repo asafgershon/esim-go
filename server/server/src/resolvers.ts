@@ -6,7 +6,7 @@ import {
   verifyPhoneOTP,
 } from "./context/supabase-auth";
 import type { Context } from "./context/types";
-import type { DataPlan, Order, Resolvers } from "./types";
+import type { CalculatePriceInput, DataPlan, Order, Resolvers } from "./types";
 import { esimResolvers } from "./resolvers/esim-resolvers";
 import { checkoutResolvers } from "./resolvers/checkout-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
@@ -344,7 +344,7 @@ export const resolvers: Resolvers = {
       const configRepository = new PricingConfigRepository();
       
       const results = await Promise.all(
-        inputs.map(async (input: { numOfDays: number; regionId: string; countryId: string; paymentMethod?: string }) => {
+        inputs.map(async (input: CalculatePriceInput) => {
           try {
             // Get pricing configuration for the bundle
             const config = await PricingService.getPricingConfig(
@@ -786,11 +786,10 @@ export const resolvers: Resolvers = {
         regionId: config.regionId,
         duration: config.duration,
         bundleGroup: config.bundleGroup,
-        costSplitPercent: config.costSplitPercent,
         discountRate: config.discountRate,
         processingRate: config.processingRate,
+        markupAmount: config.markupAmount,
         isActive: config.isActive,
-        priority: config.priority,
         createdBy: config.createdBy,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt,
@@ -1474,11 +1473,10 @@ export const resolvers: Resolvers = {
             regionId: configuration.regionId,
             duration: configuration.duration,
             bundleGroup: configuration.bundleGroup,
-            costSplitPercent: configuration.costSplitPercent,
             discountRate: configuration.discountRate,
             processingRate: configuration.processingRate,
+            markupAmount: configuration.markupAmount,
             isActive: configuration.isActive,
-            priority: configuration.priority,
             createdBy: configuration.createdBy,
             createdAt: configuration.createdAt,
             updatedAt: configuration.updatedAt,

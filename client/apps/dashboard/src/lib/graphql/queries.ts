@@ -365,11 +365,10 @@ export const GET_PRICING_CONFIGURATIONS = gql(`
       regionId
       duration
       bundleGroup
-      costSplitPercent
       discountRate
       processingRate
+      markupAmount
       isActive
-      priority
       createdBy
       createdAt
       updatedAt
@@ -390,11 +389,9 @@ export const UPDATE_PRICING_CONFIGURATION = gql(`
         regionId
         duration
         bundleGroup
-        costSplitPercent
         discountRate
         processingRate
         isActive
-        priority
         createdBy
         createdAt
         updatedAt

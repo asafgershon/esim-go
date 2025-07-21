@@ -64,11 +64,9 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    costSplitPercent: 0.6,
     discountRate: 0.3,
     processingRate: 0.045,
     isActive: true,
-    priority: 10,
   });
 
   // Price range state for dynamic pricing
@@ -151,10 +149,10 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   // TODO: Find existing country-specific pricing config for this bundle
   const getExistingPricingConfig = () => {
     // if (!pricingConfigs?.pricingConfigurations || !pricingData) return null;
-    
+
     // return pricingConfigs.pricingConfigurations.find(
-    //   (config: any) => 
-    //     config.countryId === getCountryCode() && 
+    //   (config: any) =>
+    //     config.countryId === getCountryCode() &&
     //     config.duration === pricingData.duration &&
     //     config.markupAmount !== null
     // );
@@ -176,10 +174,10 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
     try {
       const markupAmount = parseFloat(customMarkupAmount);
       const bundleGroup = getBundleGroup();
-      
+
       // Create a country-specific pricing configuration with markup override
       const countryCode = pricingData.countryName === "Austria" ? "AT" : null; // TODO: Add proper country code mapping
-      
+
       await updatePricingConfiguration({
         variables: {
           input: {
@@ -188,20 +186,20 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
             countryId: countryCode,
             duration: pricingData.duration,
             bundleGroup,
-            costSplitPercent: formData.costSplitPercent,
             discountRate: formData.discountRate,
             processingRate: getCurrentProcessingRate(),
             markupAmount, // This is the key addition - country-specific markup
             isActive: true,
-            priority: 100, // High priority to override global configs
           },
         },
       });
 
       setHasMarkupOverride(true);
       setIsMarkupOverrideOpen(false);
-      toast.success(`Custom markup of $${customMarkupAmount} applied and saved for ${pricingData.countryName} only`);
-      
+      toast.success(
+        `Custom markup of $${customMarkupAmount} applied and saved for ${pricingData.countryName} only`
+      );
+
       // Trigger refresh of data
       onConfigurationSaved?.();
     } catch (error) {
@@ -217,7 +215,9 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
     setHasMarkupOverride(false);
     setCustomMarkupAmount("");
     setIsMarkupOverrideOpen(false);
-    toast.info("Markup override removed (local only - need to implement deletion)");
+    toast.info(
+      "Markup override removed (local only - need to implement deletion)"
+    );
   };
 
   // Get effective markup amount (override or original)
@@ -243,11 +243,9 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   //     setFormData({
   //       name: `${pricingData.countryName} ${pricingData.duration}d Custom Config`,
   //       description: `Custom pricing configuration for ${pricingData.countryName} ${pricingData.duration}-day bundles`,
-  //       costSplitPercent: pricingData.cost / pricingData.totalCost,
   //       discountRate: pricingData.discountRate,
   //       processingRate: getCurrentProcessingRate(),
   //       isActive: true,
-  //       priority: 10,
   //     });
 
   //     // Calculate profit-based price boundaries using effective markup
@@ -282,11 +280,9 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
             description: formData.description,
             countryId: countryCode,
             duration: pricingData.duration,
-            costSplitPercent: formData.costSplitPercent,
             discountRate: formData.discountRate,
             processingRate: formData.processingRate,
             isActive: formData.isActive,
-            priority: formData.priority,
           },
         },
       });
@@ -340,7 +336,6 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
     previewPriceAfterDiscount - previewProcessingCost;
   const previewFinalRevenue =
     previewRevenueAfterProcessing - previewCost - previewCostPlus;
-
 
   return (
     <Drawer direction="bottom" open={isOpen} onOpenChange={handleOpenChange}>
@@ -564,7 +559,6 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                         Discount: {formatPercentage(formData.discountRate)} •
                         Processing:{" "}
                         {formatPercentage(getCurrentProcessingRate())} •
-                        Priority: {formData.priority}
                       </div>
                     </div>
                     {isPricingConfigOpen ? (
@@ -702,27 +696,6 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                     <p className="text-sm text-gray-500 mt-1">
                       Processing fee is managed centrally and updates
                       automatically
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="priority">Priority</Label>
-                    <InputWithAdornment
-                      id="priority"
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={formData.priority}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          priority: parseInt(e.target.value),
-                        }))
-                      }
-                      rightAdornment="priority"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Higher priority overrides lower priority
                     </p>
                   </div>
 
@@ -971,8 +944,8 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                           <span>
                             Our Markup (
                             {Math.round(
-                              (formData.costSplitPercent /
-                                (1 - formData.costSplitPercent)) *
+                              (formData.discountRate /
+                                (1 - formData.discountRate)) *
                                 100
                             )}
                             %):

@@ -1,12 +1,14 @@
-import { supabaseAdmin } from '../../context/supabase-auth';
-import type { Database } from '../../database.types';
-import { GraphQLError } from 'graphql';
-import { z } from 'zod';
-import { BaseSupabaseRepository } from '../base-supabase.repository';
+import { GraphQLError } from "graphql";
+import type { Database } from "../../database.types";
+import type { UpdatePricingConfigurationInput } from "../../types";
+import { BaseSupabaseRepository } from "../base-supabase.repository";
 
-type PricingConfigRow = Database['public']['Tables']['pricing_configurations']['Row'];
-type PricingConfigInsert = Database['public']['Tables']['pricing_configurations']['Insert'];
-type PricingConfigUpdate = Database['public']['Tables']['pricing_configurations']['Update'];
+type PricingConfigRow =
+  Database["public"]["Tables"]["pricing_configurations"]["Row"];
+type PricingConfigInsert =
+  Database["public"]["Tables"]["pricing_configurations"]["Insert"];
+type PricingConfigUpdate =
+  Database["public"]["Tables"]["pricing_configurations"]["Update"];
 
 export interface PricingConfigurationRule {
   id: string;
@@ -16,11 +18,8 @@ export interface PricingConfigurationRule {
   regionId?: string;
   duration?: number;
   bundleGroup?: string;
-  costSplitPercent: number;
   discountRate: number;
-  processingRate: number;
   isActive: boolean;
-  priority: number;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -32,45 +31,36 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
   PricingConfigUpdate
 > {
   constructor() {
-    super('pricing_configurations');
+    super("pricing_configurations");
   }
 
   protected async validateInsert(data: PricingConfigInsert): Promise<void> {
-    if (data.cost_split_percent < 0 || data.cost_split_percent > 1) {
-      throw new GraphQLError('Cost split percent must be between 0 and 1');
-    }
     if (data.discount_rate < 0 || data.discount_rate > 1) {
-      throw new GraphQLError('Discount rate must be between 0 and 1');
-    }
-    if (data.processing_rate < 0 || data.processing_rate > 1) {
-      throw new GraphQLError('Processing rate must be between 0 and 1');
+      throw new GraphQLError("Discount rate must be between 0 and 1");
     }
   }
 
   protected async validateUpdate(data: PricingConfigUpdate): Promise<void> {
-    if (data.cost_split_percent !== undefined && (data.cost_split_percent < 0 || data.cost_split_percent > 1)) {
-      throw new GraphQLError('Cost split percent must be between 0 and 1');
-    }
-    if (data.discount_rate !== undefined && (data.discount_rate < 0 || data.discount_rate > 1)) {
-      throw new GraphQLError('Discount rate must be between 0 and 1');
-    }
-    if (data.processing_rate !== undefined && (data.processing_rate < 0 || data.processing_rate > 1)) {
-      throw new GraphQLError('Processing rate must be between 0 and 1');
+    if (
+      data.discount_rate !== undefined &&
+      (data.discount_rate < 0 || data.discount_rate > 1)
+    ) {
+      throw new GraphQLError("Discount rate must be between 0 and 1");
     }
   }
 
   /**
-   * Get all active pricing configurations ordered by priority
+   * Get all active pricing configurations
    */
   async getActiveConfigurations(): Promise<PricingConfigurationRule[]> {
     const { data: configs, error } = await this.supabase
-      .from('pricing_configurations')
-      .select('*')
-      .eq('is_active', true)
-      .order('priority', { ascending: false }); // Higher priority first
+      .from("pricing_configurations")
+      .select("*")
+      .eq("is_active", true)
+      .order('created_at', { ascending: false }) // Most recent first
 
     if (error) {
-      this.handleError(error, 'fetching active pricing configurations');
+      this.handleError(error, "fetching active pricing configurations");
     }
 
     return (configs || []).map(this.mapToRule);
@@ -81,19 +71,22 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
    */
   async getAllConfigurations(): Promise<PricingConfigurationRule[]> {
     const { data: configs, error } = await this.supabase
-      .from('pricing_configurations')
-      .select('*')
-      .order('priority', { ascending: false });
+      .from("pricing_configurations")
+      .select("*")
+      .order('created_at', { ascending: false }) // Most recent first
 
     if (error) {
-      this.handleError(error, 'fetching all pricing configurations');
+      this.handleError(error, "fetching all pricing configurations");
     }
 
     return (configs || []).map(this.mapToRule);
   }
 
   /**
-   * Find the best matching configuration for a bundle
+   * Find the best matching configuration for a bundle using hierarchy:
+   * 1. Bundle-specific (country + duration + bundle_group)
+   * 2. Country-specific (country only)
+   * 3. Default (no filters)
    */
   async findMatchingConfiguration(
     countryId: string,
@@ -103,34 +96,43 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
   ): Promise<PricingConfigurationRule | null> {
     const activeConfigs = await this.getActiveConfigurations();
 
-    // Find the highest priority configuration that matches
-    for (const config of activeConfigs) {
-      if (this.configMatches(config, countryId, regionId, duration, bundleGroup)) {
-        return config;
-      }
+    // 1. Try bundle-specific match (most specific)
+    const bundleSpecific = activeConfigs.find(config => 
+      config.countryId === countryId &&
+      config.duration === duration &&
+      config.bundleGroup === bundleGroup
+    );
+    
+    if (bundleSpecific) {
+      return bundleSpecific;
     }
 
-    return null;
+    // 2. Try country-specific match (medium specific)
+    const countrySpecific = activeConfigs.find(config => 
+      config.countryId === countryId &&
+      !config.duration && // No duration specified (applies to all)
+      !config.bundleGroup // No bundle group specified (applies to all)
+    );
+    
+    if (countrySpecific) {
+      return countrySpecific;
+    }
+
+    // 3. Try default/global configuration (fallback)
+    const defaultConfig = activeConfigs.find(config => 
+      !config.countryId && // No country specified (global)
+      !config.duration && // No duration specified (applies to all)
+      !config.bundleGroup // No bundle group specified (applies to all)
+    );
+    
+    return defaultConfig || null;
   }
 
   /**
    * Create or update a pricing configuration
    */
   async upsertConfiguration(
-    input: {
-      id?: string;
-      name: string;
-      description: string;
-      countryId?: string;
-      regionId?: string;
-      duration?: number;
-      bundleGroup?: string;
-      costSplitPercent: number;
-      discountRate: number;
-      processingRate: number;
-      isActive: boolean;
-      priority: number;
-    },
+    input: UpdatePricingConfigurationInput,
     userId: string
   ): Promise<PricingConfigurationRule> {
     const now = new Date().toISOString();
@@ -142,11 +144,10 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
       region_id: input.regionId,
       duration: input.duration,
       bundle_group: input.bundleGroup,
-      cost_split_percent: input.costSplitPercent,
       discount_rate: input.discountRate,
       processing_rate: input.processingRate,
+      markup_amount: input.markupAmount,
       is_active: input.isActive,
-      priority: input.priority,
       updated_at: now,
     };
 
@@ -166,51 +167,21 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
   }
 
   /**
-   * Check if a configuration matches the given bundle parameters
-   */
-  private configMatches(
-    config: PricingConfigurationRule,
-    countryId: string,
-    regionId: string,
-    duration: number,
-    bundleGroup?: string
-  ): boolean {
-    // Check country match (null means applies to all countries)
-    if (config.countryId && config.countryId !== countryId) {
-      return false;
-    }
-
-    // Check region match (null means applies to all regions)
-    if (config.regionId && config.regionId !== regionId) {
-      return false;
-    }
-
-    // Check duration match (null means applies to all durations)
-    if (config.duration && config.duration !== duration) {
-      return false;
-    }
-
-    // Check bundle group match (null means applies to all bundle groups)
-    if (config.bundleGroup && config.bundleGroup !== bundleGroup) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
    * Check if a country has any active custom discount configuration
    */
   async hasActiveConfigForCountry(countryId: string): Promise<boolean> {
     const { data: configs, error } = await this.supabase
-      .from('pricing_configurations')
-      .select('id')
-      .eq('country_id', countryId)
-      .eq('is_active', true)
+      .from("pricing_configurations")
+      .select("id")
+      .eq("country_id", countryId)
+      .eq("is_active", true)
       .limit(1);
 
     if (error) {
-      this.handleError(error, `checking active configurations for country ${countryId}`);
+      this.handleError(
+        error,
+        `checking active configurations for country ${countryId}`
+      );
     }
 
     return (configs || []).length > 0;
@@ -223,19 +194,16 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
     return {
       id: row.id,
       name: row.name,
-      description: row.description,
-      countryId: row.country_id,
-      regionId: row.region_id,
-      duration: row.duration,
-      bundleGroup: row.bundle_group,
-      costSplitPercent: row.cost_split_percent,
+      description: row.description || "",
+      countryId: row.country_id || "",
+      regionId: row.region_id || "",
+      duration: row.duration || 0,
+      bundleGroup: row.bundle_group || "",
       discountRate: row.discount_rate,
-      processingRate: row.processing_rate,
       isActive: row.is_active,
-      priority: row.priority,
       createdBy: row.created_by,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
+      createdAt: row.created_at || "",
+      updatedAt: row.updated_at || "",
     };
   }
 }

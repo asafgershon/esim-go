@@ -161,7 +161,6 @@ export const CALCULATE_PRICE = gql`
       priceAfterDiscount
       processingRate
       processingCost
-      avgRevenueAfterProcessing
       finalRevenue
       currency
     }
@@ -189,7 +188,6 @@ export const GET_MY_ESIMS = gql`
           nameHebrew
         }
         duration
-        dataAllowance
         price
         currency
       }
@@ -243,7 +241,6 @@ export const GET_ACTIVE_ESIM_PLAN = gql`
           nameHebrew
         }
         duration
-        dataAllowance
         price
         currency
       }

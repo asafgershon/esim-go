@@ -48,9 +48,32 @@ export enum BundleState {
   Suspended = 'SUSPENDED'
 }
 
+export type BundlesByCountry = {
+  __typename?: 'BundlesByCountry';
+  avgCost: Scalars['Float']['output'];
+  avgCostPlus: Scalars['Float']['output'];
+  avgDiscountRate: Scalars['Float']['output'];
+  avgFinalRevenue: Scalars['Float']['output'];
+  avgNetProfit: Scalars['Float']['output'];
+  avgPricePerDay: Scalars['Float']['output'];
+  avgProcessingCost: Scalars['Float']['output'];
+  avgProcessingRate: Scalars['Float']['output'];
+  avgProfitMargin: Scalars['Float']['output'];
+  avgTotalCost: Scalars['Float']['output'];
+  calculationMethod: Scalars['String']['output'];
+  countryId: Scalars['String']['output'];
+  countryName: Scalars['String']['output'];
+  hasCustomDiscount: Scalars['Boolean']['output'];
+  lastFetched?: Maybe<Scalars['String']['output']>;
+  totalBundles: Scalars['Int']['output'];
+  totalDiscountValue: Scalars['Float']['output'];
+  totalRevenue: Scalars['Float']['output'];
+};
+
 export type CalculatePriceInput = {
   countryId: Scalars['String']['input'];
   numOfDays: Scalars['Int']['input'];
+  paymentMethod?: InputMaybe<PaymentMethod>;
   regionId: Scalars['String']['input'];
 };
 
@@ -85,6 +108,27 @@ export type Country = {
   region: Scalars['String']['output'];
 };
 
+export type CountryBundle = {
+  __typename?: 'CountryBundle';
+  bundleName: Scalars['String']['output'];
+  cost: Scalars['Float']['output'];
+  costPlus: Scalars['Float']['output'];
+  countryId: Scalars['String']['output'];
+  countryName: Scalars['String']['output'];
+  currency: Scalars['String']['output'];
+  discountRate: Scalars['Float']['output'];
+  discountValue: Scalars['Float']['output'];
+  duration: Scalars['Int']['output'];
+  finalRevenue: Scalars['Float']['output'];
+  hasCustomDiscount: Scalars['Boolean']['output'];
+  netProfit: Scalars['Float']['output'];
+  priceAfterDiscount: Scalars['Float']['output'];
+  pricePerDay: Scalars['Float']['output'];
+  processingCost: Scalars['Float']['output'];
+  processingRate: Scalars['Float']['output'];
+  totalCost: Scalars['Float']['output'];
+};
+
 export type CreateCheckoutSessionInput = {
   countryId: Scalars['String']['input'];
   numOfDays: Scalars['Int']['input'];
@@ -96,6 +140,26 @@ export type CreateCheckoutSessionResponse = {
   error?: Maybe<Scalars['String']['output']>;
   session?: Maybe<CheckoutSession>;
   success: Scalars['Boolean']['output'];
+};
+
+export type CreateMarkupConfigInput = {
+  bundleGroup: Scalars['String']['input'];
+  durationDays: Scalars['Int']['input'];
+  markupAmount: Scalars['Float']['input'];
+};
+
+export type CreateTripInput = {
+  countryIds: Array<Scalars['ISOCountryCode']['input']>;
+  description: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  regionId: Scalars['String']['input'];
+};
+
+export type CreateTripResponse = {
+  __typename?: 'CreateTripResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  trip?: Maybe<Trip>;
 };
 
 export type DataPlan = {
@@ -119,6 +183,7 @@ export type DataPlanConnection = {
   hasNextPage: Scalars['Boolean']['output'];
   hasPreviousPage: Scalars['Boolean']['output'];
   items: Array<DataPlan>;
+  lastFetched?: Maybe<Scalars['String']['output']>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
 };
@@ -132,6 +197,24 @@ export type DataPlanFilter = {
   offset?: InputMaybe<Scalars['Int']['input']>;
   region?: InputMaybe<Scalars['String']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type DeleteMarkupConfigResponse = {
+  __typename?: 'DeleteMarkupConfigResponse';
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type DeleteTripResponse = {
+  __typename?: 'DeleteTripResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type DeleteUserResponse = {
+  __typename?: 'DeleteUserResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
 };
 
 export type Esim = {
@@ -215,12 +298,29 @@ export type InviteAdminUserResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type MarkupConfig = {
+  __typename?: 'MarkupConfig';
+  bundleGroup: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  durationDays: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  markupAmount: Scalars['Float']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   activateESIM?: Maybe<ActivateEsimResponse>;
   assignPackageToUser?: Maybe<AssignPackageResponse>;
   cancelESIM?: Maybe<EsimActionResponse>;
   createCheckoutSession: CreateCheckoutSessionResponse;
+  createMarkupConfig?: Maybe<MarkupConfig>;
+  createProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
+  createTrip?: Maybe<CreateTripResponse>;
+  deactivateProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
+  deleteMarkupConfig?: Maybe<DeleteMarkupConfigResponse>;
+  deleteTrip?: Maybe<DeleteTripResponse>;
+  deleteUser?: Maybe<DeleteUserResponse>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
@@ -233,7 +333,10 @@ export type Mutation = {
   suspendESIM?: Maybe<EsimActionResponse>;
   updateCheckoutStep: UpdateCheckoutStepResponse;
   updateESIMReference?: Maybe<EsimActionResponse>;
+  updateMarkupConfig?: Maybe<MarkupConfig>;
   updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
+  updateProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
+  updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
   validateOrder: ValidateOrderResponse;
   verifyPhoneOTP?: Maybe<SignInResponse>;
@@ -258,6 +361,41 @@ export type MutationCancelEsimArgs = {
 
 export type MutationCreateCheckoutSessionArgs = {
   input: CreateCheckoutSessionInput;
+};
+
+
+export type MutationCreateMarkupConfigArgs = {
+  input: CreateMarkupConfigInput;
+};
+
+
+export type MutationCreateProcessingFeeConfigurationArgs = {
+  input: ProcessingFeeConfigurationInput;
+};
+
+
+export type MutationCreateTripArgs = {
+  input: CreateTripInput;
+};
+
+
+export type MutationDeactivateProcessingFeeConfigurationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteMarkupConfigArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteTripArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteUserArgs = {
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -323,8 +461,25 @@ export type MutationUpdateEsimReferenceArgs = {
 };
 
 
+export type MutationUpdateMarkupConfigArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateMarkupConfigInput;
+};
+
+
 export type MutationUpdatePricingConfigurationArgs = {
   input: UpdatePricingConfigurationInput;
+};
+
+
+export type MutationUpdateProcessingFeeConfigurationArgs = {
+  id: Scalars['ID']['input'];
+  input: ProcessingFeeConfigurationInput;
+};
+
+
+export type MutationUpdateTripArgs = {
+  input: UpdateTripInput;
 };
 
 
@@ -354,6 +509,7 @@ export type Order = {
   status: OrderStatus;
   totalPrice: Scalars['Float']['output'];
   updatedAt: Scalars['String']['output'];
+  user?: Maybe<User>;
 };
 
 export type OrderFilter = {
@@ -391,6 +547,14 @@ export type PageInfo = {
   total: Scalars['Int']['output'];
 };
 
+export enum PaymentMethod {
+  Amex = 'AMEX',
+  Bit = 'BIT',
+  Diners = 'DINERS',
+  ForeignCard = 'FOREIGN_CARD',
+  IsraeliCard = 'ISRAELI_CARD'
+}
+
 export type PricingBreakdown = {
   __typename?: 'PricingBreakdown';
   bundleName: Scalars['String']['output'];
@@ -402,17 +566,16 @@ export type PricingBreakdown = {
   discountValue: Scalars['Float']['output'];
   duration: Scalars['Int']['output'];
   finalRevenue: Scalars['Float']['output'];
+  netProfit: Scalars['Float']['output'];
   priceAfterDiscount: Scalars['Float']['output'];
   processingCost: Scalars['Float']['output'];
   processingRate: Scalars['Float']['output'];
-  revenueAfterProcessing: Scalars['Float']['output'];
   totalCost: Scalars['Float']['output'];
 };
 
 export type PricingConfiguration = {
   __typename?: 'PricingConfiguration';
   bundleGroup?: Maybe<Scalars['String']['output']>;
-  costSplitPercent: Scalars['Float']['output'];
   countryId?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
   createdBy: Scalars['String']['output'];
@@ -421,8 +584,8 @@ export type PricingConfiguration = {
   duration?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   isActive: Scalars['Boolean']['output'];
+  markupAmount?: Maybe<Scalars['Float']['output']>;
   name: Scalars['String']['output'];
-  priority: Scalars['Int']['output'];
   processingRate: Scalars['Float']['output'];
   regionId?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['String']['output'];
@@ -444,6 +607,56 @@ export type ProcessCheckoutPaymentResponse = {
   webhookProcessing?: Maybe<Scalars['Boolean']['output']>;
 };
 
+export type ProcessingFeeConfiguration = {
+  __typename?: 'ProcessingFeeConfiguration';
+  appleGooglePayFee: Scalars['Float']['output'];
+  bankWithdrawalFee: Scalars['Float']['output'];
+  bitPaymentRate: Scalars['Float']['output'];
+  cancellationFee: Scalars['Float']['output'];
+  chargebackFee: Scalars['Float']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdBy: Scalars['String']['output'];
+  effectiveFrom: Scalars['DateTime']['output'];
+  effectiveTo?: Maybe<Scalars['DateTime']['output']>;
+  fixedFeeForeign: Scalars['Float']['output'];
+  fixedFeeNIS: Scalars['Float']['output'];
+  foreignCardsRate: Scalars['Float']['output'];
+  id: Scalars['ID']['output'];
+  invoiceServiceFee: Scalars['Float']['output'];
+  isActive: Scalars['Boolean']['output'];
+  israeliCardsRate: Scalars['Float']['output'];
+  monthlyFixedCost: Scalars['Float']['output'];
+  monthlyMinimumFee: Scalars['Float']['output'];
+  notes?: Maybe<Scalars['String']['output']>;
+  premiumAmexRate: Scalars['Float']['output'];
+  premiumDinersRate: Scalars['Float']['output'];
+  setupCost: Scalars['Float']['output'];
+  threeDSecureFee: Scalars['Float']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+export type ProcessingFeeConfigurationInput = {
+  appleGooglePayFee: Scalars['Float']['input'];
+  bankWithdrawalFee: Scalars['Float']['input'];
+  bitPaymentRate: Scalars['Float']['input'];
+  cancellationFee: Scalars['Float']['input'];
+  chargebackFee: Scalars['Float']['input'];
+  effectiveFrom: Scalars['DateTime']['input'];
+  effectiveTo?: InputMaybe<Scalars['DateTime']['input']>;
+  fixedFeeForeign: Scalars['Float']['input'];
+  fixedFeeNIS: Scalars['Float']['input'];
+  foreignCardsRate: Scalars['Float']['input'];
+  invoiceServiceFee: Scalars['Float']['input'];
+  israeliCardsRate: Scalars['Float']['input'];
+  monthlyFixedCost: Scalars['Float']['input'];
+  monthlyMinimumFee: Scalars['Float']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+  premiumAmexRate: Scalars['Float']['input'];
+  premiumDinersRate: Scalars['Float']['input'];
+  setupCost: Scalars['Float']['input'];
+  threeDSecureFee: Scalars['Float']['input'];
+};
+
 export type PurchaseEsimInput = {
   autoActivate?: InputMaybe<Scalars['Boolean']['input']>;
   customerReference?: InputMaybe<Scalars['String']['input']>;
@@ -459,20 +672,27 @@ export type PurchaseEsimResponse = {
 
 export type Query = {
   __typename?: 'Query';
+  bundlesByCountry: Array<BundlesByCountry>;
   calculatePrice: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
   countries: Array<Country>;
+  countryBundles: Array<CountryBundle>;
+  currentProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
   dataPlan?: Maybe<DataPlan>;
   dataPlans: DataPlanConnection;
   esimDetails?: Maybe<Esim>;
   getCheckoutSession: GetCheckoutSessionResponse;
+  getUserOrders: Array<Order>;
   hello: Scalars['String']['output'];
+  markupConfig: Array<MarkupConfig>;
   me?: Maybe<User>;
   myESIMs: Array<Esim>;
   myOrders: Array<Order>;
   orderDetails?: Maybe<Order>;
   orders: Array<Order>;
   pricingConfigurations: Array<PricingConfiguration>;
+  processingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
+  processingFeeConfigurations: Array<ProcessingFeeConfiguration>;
   trips: Array<Trip>;
   users: Array<User>;
 };
@@ -481,12 +701,18 @@ export type Query = {
 export type QueryCalculatePriceArgs = {
   countryId: Scalars['String']['input'];
   numOfDays: Scalars['Int']['input'];
+  paymentMethod?: InputMaybe<PaymentMethod>;
   regionId: Scalars['String']['input'];
 };
 
 
 export type QueryCalculatePricesArgs = {
   inputs: Array<CalculatePriceInput>;
+};
+
+
+export type QueryCountryBundlesArgs = {
+  countryId: Scalars['String']['input'];
 };
 
 
@@ -510,6 +736,11 @@ export type QueryGetCheckoutSessionArgs = {
 };
 
 
+export type QueryGetUserOrdersArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
 export type QueryMyOrdersArgs = {
   filter?: InputMaybe<OrderFilter>;
 };
@@ -517,6 +748,18 @@ export type QueryMyOrdersArgs = {
 
 export type QueryOrderDetailsArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryProcessingFeeConfigurationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryProcessingFeeConfigurationsArgs = {
+  includeInactive?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type SendOtpResponse = {
@@ -577,9 +820,13 @@ export type Trip = {
   __typename?: 'Trip';
   countries: Array<Country>;
   countryIds: Array<Scalars['ISOCountryCode']['output']>;
+  createdAt: Scalars['String']['output'];
+  createdBy?: Maybe<Scalars['String']['output']>;
   description: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   regionId: Scalars['String']['output'];
+  updatedAt: Scalars['String']['output'];
 };
 
 export type UpdateCheckoutStepInput = {
@@ -596,17 +843,22 @@ export type UpdateCheckoutStepResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type UpdateMarkupConfigInput = {
+  bundleGroup?: InputMaybe<Scalars['String']['input']>;
+  durationDays?: InputMaybe<Scalars['Int']['input']>;
+  markupAmount?: InputMaybe<Scalars['Float']['input']>;
+};
+
 export type UpdatePricingConfigurationInput = {
   bundleGroup?: InputMaybe<Scalars['String']['input']>;
-  costSplitPercent: Scalars['Float']['input'];
   countryId?: InputMaybe<Scalars['String']['input']>;
   description: Scalars['String']['input'];
   discountRate: Scalars['Float']['input'];
   duration?: InputMaybe<Scalars['Int']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   isActive: Scalars['Boolean']['input'];
+  markupAmount?: InputMaybe<Scalars['Float']['input']>;
   name: Scalars['String']['input'];
-  priority: Scalars['Int']['input'];
   processingRate: Scalars['Float']['input'];
   regionId?: InputMaybe<Scalars['String']['input']>;
 };
@@ -618,6 +870,21 @@ export type UpdatePricingConfigurationResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type UpdateTripInput = {
+  countryIds: Array<Scalars['ISOCountryCode']['input']>;
+  description: Scalars['String']['input'];
+  id: Scalars['ID']['input'];
+  name: Scalars['String']['input'];
+  regionId: Scalars['String']['input'];
+};
+
+export type UpdateTripResponse = {
+  __typename?: 'UpdateTripResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  trip?: Maybe<Trip>;
+};
+
 export type User = {
   __typename?: 'User';
   createdAt: Scalars['String']['output'];
@@ -625,6 +892,7 @@ export type User = {
   firstName: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
+  orderCount: Scalars['Int']['output'];
   phoneNumber?: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
@@ -765,4 +1033,14 @@ export type CalculatePriceQueryVariables = Exact<{
 }>;
 
 
-export type CalculatePriceQuery = { __typename?: 'Query', calculatePrice: { __typename?: 'PricingBreakdown', bundleName: string, countryName: string, duration: number, cost: number, costPlus: number, totalCost: number, discountRate: number, discountValue: number, priceAfterDiscount: number, processingRate: number, processingCost: number, revenueAfterProcessing: number, finalRevenue: number, currency: string } };
+export type CalculatePriceQuery = { __typename?: 'Query', calculatePrice: { __typename?: 'PricingBreakdown', bundleName: string, countryName: string, duration: number, cost: number, costPlus: number, totalCost: number, discountRate: number, discountValue: number, priceAfterDiscount: number, processingRate: number, processingCost: number, finalRevenue: number, currency: string } };
+
+export type GetMyEsiMsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetMyEsiMsQuery = { __typename?: 'Query', myESIMs: Array<{ __typename?: 'ESIM', id: string, iccid: string, qrCode?: string | null, status: EsimStatus, assignedDate?: string | null, lastAction?: string | null, actionDate?: string | null, plan: { __typename?: 'DataPlan', id: string, name: string, description: string, region: string, duration: number, price: number, currency: string, countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null }> }, usage: { __typename?: 'ESIMUsage', totalUsed: number, totalRemaining?: number | null, activeBundles: Array<{ __typename?: 'ESIMBundle', name: string, state: BundleState, dataUsed: number, dataRemaining?: number | null, startDate?: string | null, endDate?: string | null }> }, bundles: Array<{ __typename?: 'ESIMBundle', name: string, state: BundleState, dataUsed: number, dataRemaining?: number | null, startDate?: string | null, endDate?: string | null }>, order: { __typename?: 'Order', id: string, reference: string, status: OrderStatus, totalPrice: number, createdAt: string } }> };
+
+export type GetActiveEsimPlanQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetActiveEsimPlanQuery = { __typename?: 'Query', myESIMs: Array<{ __typename?: 'ESIM', id: string, iccid: string, qrCode?: string | null, status: EsimStatus, assignedDate?: string | null, plan: { __typename?: 'DataPlan', id: string, name: string, description: string, region: string, duration: number, price: number, currency: string, countries: Array<{ __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null }> }, usage: { __typename?: 'ESIMUsage', totalUsed: number, totalRemaining?: number | null, activeBundles: Array<{ __typename?: 'ESIMBundle', name: string, state: BundleState, dataUsed: number, dataRemaining?: number | null, startDate?: string | null, endDate?: string | null }> }, bundles: Array<{ __typename?: 'ESIMBundle', name: string, state: BundleState, dataUsed: number, dataRemaining?: number | null, startDate?: string | null, endDate?: string | null }> }> };

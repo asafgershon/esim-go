@@ -611,14 +611,12 @@ type PricingConfiguration {
   bundleGroup: String
   
   # Configuration values
-  costSplitPercent: Float! # What % of bundle price is base cost (default: 60%)
   discountRate: Float! # Discount percentage (default: 0%)
   processingRate: Float! # Processing fee percentage (default: 4.5%)
   markupAmount: Float # Fixed markup amount in USD (null = use global markup)
   
   # Metadata
   isActive: Boolean!
-  priority: Int! # Higher priority overrides lower priority
   createdBy: String!
   createdAt: String!
   updatedAt: String!
@@ -636,13 +634,11 @@ input UpdatePricingConfigurationInput {
   bundleGroup: String
   
   # Configuration values
-  costSplitPercent: Float!
   discountRate: Float!
   processingRate: Float!
   markupAmount: Float # Fixed markup amount in USD (null = use global markup)
   
   isActive: Boolean!
-  priority: Int!
 }
 
 type UpdatePricingConfigurationResponse {
