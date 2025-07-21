@@ -102,7 +102,7 @@ export class CatalogSyncService {
             syncedAt: new Date().toISOString(),
             pages: page - 1
           }), 
-          { ttl: 3600 } // 1 hour TTL
+          { ttl: 86400 } // 1 day TTL
         ),
         3, // max retries
         1000 // base delay

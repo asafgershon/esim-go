@@ -110,9 +110,9 @@ export class CountriesDataSource extends ESIMGoDataSource {
 
         this.countriesLogger.info("✅ Countries processed successfully", { count: allCountries.length });
 
-        // Cache for 1 hour
-        await this.cache?.set(cacheKey, JSON.stringify(allCountries), { ttl: 3600 });
-        this.countriesLogger.debug("💾 Countries cached for 1 hour");
+        // Cache for 1 day
+        await this.cache?.set(cacheKey, JSON.stringify(allCountries), { ttl: 86400 });
+        this.countriesLogger.debug("💾 Countries cached for 1 day");
       } catch (error: any) {
         this.countriesLogger.error("Countries API error", {
           message: error.message,
