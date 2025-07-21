@@ -14,7 +14,7 @@ import {
   DialogDescription,
 } from "@workspace/ui";
 import React, { useState, useEffect } from "react";
-import { DollarSign, Save, Loader2, Plus, Trash2, Shield, X } from "lucide-react";
+import { DollarSign, Save, Loader2, Plus, Trash2, X, Check } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -97,6 +97,10 @@ export const MarkupTableManagement: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
   const [contentSaving, setContentSaving] = useState(false);
+  
+  // Inline editing state
+  const [editingItem, setEditingItem] = useState<string | null>(null); // key: bundleGroup-durationDays
+  const [editingValue, setEditingValue] = useState<string>("");
 
   // GraphQL queries and mutations
   const { data: currentConfig, loading: loadingCurrent, refetch } = useQuery(
@@ -319,6 +323,31 @@ export const MarkupTableManagement: React.FC = () => {
     setSelectedGroup(bundleGroup);
   };
 
+  // Inline editing functions
+  const startEditing = (bundleGroup: string, durationDays: number, currentValue: number) => {
+    const key = `${bundleGroup}-${durationDays}`;
+    setEditingItem(key);
+    setEditingValue(formatCurrencyForDisplay(currentValue));
+  };
+
+  const saveEdit = (bundleGroup: string, durationDays: number) => {
+    const globalIndex = markupConfig.findIndex(
+      config => config.bundleGroup === bundleGroup && config.durationDays === durationDays
+    );
+    
+    if (globalIndex !== -1) {
+      handleMarkupChange(globalIndex, "markupAmount", editingValue);
+    }
+    
+    setEditingItem(null);
+    setEditingValue("");
+  };
+
+  const discardEdit = () => {
+    setEditingItem(null);
+    setEditingValue("");
+  };
+
   // Handler for markup amount changes
   const handleMarkupChange = (index: number, field: keyof MarkupConfigItem, value: string | number) => {
     const newConfig = [...markupConfig];
@@ -355,16 +384,6 @@ export const MarkupTableManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <DollarSign className="h-5 w-5" />
-        <h2 className="text-xl font-semibold">Markup Table Management</h2>
-        <Shield className="h-4 w-4 text-amber-500" />
-      </div>
-
-      <p className="text-sm text-gray-600">
-        Update fixed markup amounts for each bundle group and duration
-      </p>
-
       {/* Two Column Layout */}
       <div className="flex gap-6 h-[calc(100vh-200px)]">
         {/* Left Column - Group List */}
@@ -418,100 +437,132 @@ export const MarkupTableManagement: React.FC = () => {
           {selectedGroup ? (
             <div className="flex flex-col h-full">
               <div className="border-b pb-4 mb-4">
-                <h3 className="text-lg font-semibold">{selectedGroup}</h3>
-                <p className="text-sm text-gray-600">Fixed markup amounts in USD for different durations</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">{selectedGroup}</h3>
+                    <p className="text-sm text-gray-600">Fixed markup amounts in USD for different durations</p>
+                  </div>
+                  
+                  {/* Save/Discard buttons for selected group */}
+                  {hasChanges && selectedGroup && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDrawerDiscard(selectedGroup)}
+                        disabled={contentSaving}
+                        className="h-8 w-8 p-0 rounded-full"
+                        title="Discard Changes"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleDrawerSave(selectedGroup)}
+                        disabled={contentSaving || !isAdmin}
+                        className="h-8 w-8 p-0 rounded-full"
+                        title={contentSaving ? "Saving..." : "Save Changes"}
+                      >
+                        {contentSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div className="flex-1 overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {groupedMarkupConfig[selectedGroup]?.map((item) => {
                     const globalIndex = markupConfig.findIndex(
                       config => config.bundleGroup === item.bundleGroup && 
                                config.durationDays === item.durationDays
                     );
+                    const editKey = `${item.bundleGroup}-${item.durationDays}`;
+                    const isEditing = editingItem === editKey;
                     
                     return (
-                      <div key={`${selectedGroup}-${item.durationDays}`} className="space-y-2 p-3 border rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs font-medium">
-                            {item.durationDays} days
-                          </Label>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveMarkup(globalIndex)}
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <Label htmlFor={`duration-${globalIndex}`} className="text-xs">
-                            Duration (days)
-                          </Label>
-                          <Input
-                            id={`duration-${globalIndex}`}
-                            type="number"
-                            min="1"
-                            value={item.durationDays}
-                            onChange={(e) =>
-                              handleMarkupChange(globalIndex, "durationDays", e.target.value)
-                            }
-                            className="text-sm"
-                          />
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <Label htmlFor={`markup-${globalIndex}`} className="text-xs">
-                            Markup ($)
-                          </Label>
-                          <InputWithAdornment
-                            id={`markup-${globalIndex}`}
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={formatCurrencyForDisplay(item.markupAmount)}
-                            onChange={(e) =>
-                              handleMarkupChange(globalIndex, "markupAmount", e.target.value)
-                            }
-                            leftAdornment="$"
-                            className="text-sm"
-                          />
+                      <div key={`${selectedGroup}-${item.durationDays}`} className="group border rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                        <div className="flex flex-col space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-600">{item.durationDays} days</span>
+                            {!isEditing && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveMarkup(globalIndex)}
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                          
+                          <div className="flex-1">
+                            {isEditing ? (
+                              <div className="space-y-2">
+                                <InputWithAdornment
+                                  type="number"
+                                  step="0.5"
+                                  min="0"
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  leftAdornment="$"
+                                  className="text-sm w-full"
+                                  placeholder="0.00"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      saveEdit(item.bundleGroup, item.durationDays);
+                                    } else if (e.key === 'Escape') {
+                                      discardEdit();
+                                    }
+                                  }}
+                                />
+                                <div className="flex gap-1 justify-end">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => saveEdit(item.bundleGroup, item.durationDays)}
+                                    className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={discardEdit}
+                                    className="h-7 w-7 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div 
+                                className="w-full p-2 cursor-pointer rounded hover:bg-gray-100 transition-colors text-center"
+                                onClick={() => startEditing(item.bundleGroup, item.durationDays, item.markupAmount)}
+                              >
+                                <span className="text-lg font-semibold">${formatCurrencyForDisplay(item.markupAmount)}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              </div>
-
-              {/* Save/Discard buttons for selected group */}
-              {hasChanges && selectedGroup && (
-                <div className="border-t pt-4 mt-4">
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      onClick={() => handleDrawerDiscard(selectedGroup)}
-                      disabled={contentSaving}
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Discard Changes
-                    </Button>
-                    <Button
-                      onClick={() => handleDrawerSave(selectedGroup)}
-                      disabled={contentSaving || !isAdmin}
-                      className="flex items-center gap-2"
-                    >
-                      {contentSaving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4" />
-                      )}
-                      {contentSaving ? "Saving..." : "Save"}
-                    </Button>
+                
+                {(!groupedMarkupConfig[selectedGroup] || groupedMarkupConfig[selectedGroup].length === 0) && (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No configurations found for this group</p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
