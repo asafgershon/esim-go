@@ -6,7 +6,7 @@ import { CountryPricingTableGrouped } from '../components/country-pricing-table-
 import { PricingConfigDrawer } from '../components/pricing-config-drawer';
 import { PricingSimulatorDrawer } from '../components/pricing-simulator-drawer';
 import { ProcessingFeeManagement } from '../components/processing-fee-management';
-import { MarkupTableDrawer } from '../components/markup-table-drawer';
+import { MarkupTableManagement } from '../components/markup-table-management';
 import { usePricingData, CountryGroupData } from '../hooks/usePricingData';
 
 
@@ -19,7 +19,6 @@ const PricingPage: React.FC = () => {
   const [selectedRow, setSelectedRow] = useState<CountryBundle | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
-  const [isMarkupTableOpen, setIsMarkupTableOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('pricing');
 
 
@@ -75,14 +74,6 @@ const PricingPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Pricing Management</h1>
         <div className="flex items-center gap-4">
           <Button
-            onClick={() => setIsMarkupTableOpen(true)}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <DollarSign className="h-4 w-4" />
-            Markup Table
-          </Button>
-          <Button
             onClick={() => setIsSimulatorOpen(true)}
             variant="outline"
             className="flex items-center gap-2"
@@ -106,6 +97,10 @@ const PricingPage: React.FC = () => {
             <CreditCard className="h-4 w-4" />
             Processing Fees
           </TabsTrigger>
+          <TabsTrigger value="markup-table" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Markup Table
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pricing">
@@ -118,6 +113,10 @@ const PricingPage: React.FC = () => {
 
         <TabsContent value="processing-fees">
           <ProcessingFeeManagement />
+        </TabsContent>
+
+        <TabsContent value="markup-table">
+          <MarkupTableManagement />
         </TabsContent>
       </Tabs>
 
@@ -137,11 +136,6 @@ const PricingPage: React.FC = () => {
       />
 
 
-      {/* Markup Table Management Drawer */}
-      <MarkupTableDrawer
-        isOpen={isMarkupTableOpen}
-        onClose={() => setIsMarkupTableOpen(false)}
-      />
     </div>
   );
 };
