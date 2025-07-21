@@ -15,7 +15,7 @@ export const usersResolvers: Resolvers = {
           firstName: user.user_metadata?.first_name || '',
           lastName: user.user_metadata?.last_name || '',
           phoneNumber: user.user_metadata?.phone_number || null,
-          role: user.user_metadata?.role || 'USER',
+          role: user.app_metadata?.role || user.user_metadata?.role || 'USER',
           createdAt: user.created_at,
           updatedAt: user.updated_at,
         }));
@@ -61,7 +61,7 @@ export const usersResolvers: Resolvers = {
           firstName: result.user.user_metadata?.first_name || '',
           lastName: result.user.user_metadata?.last_name || '',
           phoneNumber: result.user.user_metadata?.phone_number || null,
-          role: result.user.user_metadata?.role || 'USER',
+          role: result.user.app_metadata?.role || 'USER',
           createdAt: result.user.created_at,
           updatedAt: result.user.updated_at,
         };

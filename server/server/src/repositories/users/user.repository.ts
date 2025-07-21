@@ -1,15 +1,25 @@
 import { BaseSupabaseRepository } from '../base-supabase.repository';
 import { supabaseAdmin } from '../../context/supabase-auth';
 import { GraphQLError } from 'graphql';
-import { Database } from '../../database.types';
 
 
-type UserRow = Database['public']['Tables']['profiles']['Row'];
+type UserRow = {
+  id: string;
+  email: string;
+  created_at: string;
+  updated_at: string;
+  user_metadata?: Record<string, any>;
+  app_metadata?: Record<string, any>;
+};
+
 export interface UserUpdate {
   user_metadata?: {
     first_name?: string;
     last_name?: string;
     phone_number?: string;
+    role?: string;
+  };
+  app_metadata?: {
     role?: string;
   };
 }
@@ -39,10 +49,10 @@ export class UserRepository extends BaseSupabaseRepository<UserRow, never, UserU
         });
       }
 
-      // Update user metadata with new role
+      // Update app metadata with new role (app_metadata is admin-only, more secure)
       const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: {
-          ...currentUser.user.user_metadata,
+        app_metadata: {
+          ...currentUser.user.app_metadata,
           role: role
         }
       });
@@ -84,7 +94,8 @@ export class UserRepository extends BaseSupabaseRepository<UserRow, never, UserU
         email: user.email || '',
         created_at: user.created_at,
         updated_at: user.updated_at || user.created_at,
-        user_metadata: user.user_metadata || {}
+        user_metadata: user.user_metadata || {},
+        app_metadata: user.app_metadata || {}
       }));
 
     } catch (error) {
@@ -116,7 +127,8 @@ export class UserRepository extends BaseSupabaseRepository<UserRow, never, UserU
         email: data.user.email || '',
         created_at: data.user.created_at,
         updated_at: data.user.updated_at || data.user.created_at,
-        user_metadata: data.user.user_metadata || {}
+        user_metadata: data.user.user_metadata || {},
+        app_metadata: data.user.app_metadata || {}
       };
 
     } catch (error) {
@@ -133,7 +145,7 @@ export class UserRepository extends BaseSupabaseRepository<UserRow, never, UserU
   async deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
     try {
       // First check if user exists
-      const { data: userData, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+      const { error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
       
       if (getUserError) {
         if (getUserError.message.includes('not found')) {

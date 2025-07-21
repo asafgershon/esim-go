@@ -137,7 +137,7 @@ export const getSupabaseTokenFromConnectionParams = (
  * Check if user has specific role
  */
 export const hasRole = (supabaseUser: any, role: string): boolean => {
-  const userRole = supabaseUser?.user_metadata?.role || "USER";
+  const userRole = supabaseUser?.app_metadata?.role || supabaseUser?.user_metadata?.role || "USER";
   return userRole === role;
 };
 
@@ -156,12 +156,12 @@ export const isPartner = (supabaseUser: any): boolean => {
 };
 
 /**
- * Get user role from Supabase user metadata
+ * Get user role from Supabase metadata (app_metadata first, then user_metadata for backward compatibility)
  */
 export const getUserRole = (
   supabaseUser: any
 ): "USER" | "ADMIN" | "PARTNER" => {
-  return supabaseUser?.user_metadata?.role || "USER";
+  return supabaseUser?.app_metadata?.role || supabaseUser?.user_metadata?.role || "USER";
 };
 
 /**
@@ -326,11 +326,27 @@ export const inviteUserByEmail = async (
       email,
       {
         redirectTo: redirectUrl || `${process.env.DASHBOARD_URL || 'http://localhost:3000'}/auth/callback`,
-        data: {
-          role: role,
-        },
       }
     );
+
+    // Set role in app_metadata after invitation
+    if (data.user && !error) {
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        data.user.id,
+        {
+          app_metadata: { role: role }
+        }
+      );
+      
+      if (updateError) {
+        console.error('Failed to set role after invitation:', updateError);
+        return {
+          success: false,
+          error: `User invited but failed to set role: ${updateError.message}`,
+          user: null,
+        };
+      }
+    }
 
     if (error) {
       return {
