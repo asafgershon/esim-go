@@ -16,7 +16,7 @@ import {
   TooltipTrigger,
   ScrollArea,
 } from "@workspace/ui";
-import { TrendingUp, MapPin, Package } from "lucide-react";
+import { TrendingUp, MapPin, Package, Info } from "lucide-react";
 import { toast } from "sonner";
 import { BundlesByCountry, CountryBundle } from "../__generated__/graphql";
 import { useHighDemandCountries } from "../hooks/useHighDemandCountries";
@@ -36,18 +36,200 @@ export interface BundlesByCountryWithBundles extends BundlesByCountry {
 
 interface CountryPricingSplitViewProps {
   bundlesByCountry: BundlesByCountryWithBundles[];
-  onBundleClick?: (bundle: CountryBundleWithDisplay) => void;
   onExpandCountry: (countryId: string) => Promise<void>;
   loading?: boolean;
 }
 
+// Pricing Preview Panel Component
+const PricingPreviewPanel = ({ bundle }: { bundle: CountryBundleWithDisplay }) => {
+  // Default values for calculations
+  const discountRate = 0.3; // 30% discount
+  const processingRate = 0.045; // 4.5% processing fee
+  const discountPerDay = bundle.discountPerDay || 0.1; // 10% per day default
+
+  // Calculate pricing breakdown
+  const cost = bundle.cost || 0;
+  const costPlus = bundle.costPlus || 0;
+  const totalCost = cost + costPlus;
+  const discountValue = totalCost * discountRate;
+  const priceAfterDiscount = totalCost - discountValue;
+  const processingCost = priceAfterDiscount * processingRate;
+  const revenueAfterProcessing = priceAfterDiscount - processingCost;
+  const finalRevenue = revenueAfterProcessing - totalCost;
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
+
+  const formatPercentage = (rate: number) => {
+    return (rate * 100).toFixed(1) + "%";
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="sticky top-0 z-10 bg-white border-b pb-4 mb-4">
+        <h3 className="text-lg font-semibold">Preview & Analysis</h3>
+      </div>
+      
+      <ScrollArea className="flex-1" showOnHover={true}>
+        <div className="space-y-4 pb-4">
+          {/* Bundle Information */}
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <h4 className="text-sm font-medium text-blue-900 mb-2">
+              Bundle Information
+            </h4>
+            <div className="text-sm text-blue-800 space-y-1">
+              <p>
+                <strong>Bundle:</strong> {bundle.bundleName}
+              </p>
+              <p>
+                <strong>Country:</strong> {bundle.countryName}
+              </p>
+              <p>
+                <strong>Duration:</strong> {bundle.duration} days
+              </p>
+              {bundle.dataAmount && (
+                <p>
+                  <strong>Data:</strong> {bundle.dataAmount}
+                </p>
+              )}
+              <p>
+                <strong>eSIM Go Cost:</strong> {formatCurrency(cost)}
+              </p>
+              <p>
+                <strong>Our Markup:</strong> {formatCurrency(costPlus)}
+                {bundle.hasCustomDiscount && (
+                  <span className="text-orange-600 ml-1">(Custom)</span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Price Breakdown */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">Price Breakdown</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>eSIM Go Cost:</span>
+                <span>{formatCurrency(cost)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Our Markup:</span>
+                <span className={bundle.hasCustomDiscount ? "text-orange-600 font-medium" : ""}>
+                  {formatCurrency(costPlus)}
+                  {bundle.hasCustomDiscount && (
+                    <span className="text-xs ml-1">(Custom)</span>
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between font-medium border-t pt-2">
+                <span>Total Cost:</span>
+                <span>{formatCurrency(totalCost)}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span>
+                  Customer Discount ({formatPercentage(discountRate)}):
+                </span>
+                <span className="text-green-600">
+                  -{formatCurrency(discountValue)}
+                </span>
+              </div>
+              <div className="flex justify-between font-medium">
+                <span>Price After Discount:</span>
+                <span className="text-blue-600">
+                  {formatCurrency(priceAfterDiscount)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>
+                  Processing ({formatPercentage(processingRate)}):
+                </span>
+                <span className="text-yellow-600">
+                  -{formatCurrency(processingCost)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Revenue After Processing:</span>
+                <span>{formatCurrency(revenueAfterProcessing)}</span>
+              </div>
+              <div className="flex justify-between font-medium border-t pt-2">
+                <span>Final Revenue (Profit):</span>
+                <span className={finalRevenue > 0 ? "text-green-600" : "text-red-600"}>
+                  {formatCurrency(finalRevenue)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Profit Analysis */}
+          <div className="bg-gray-100 p-3 rounded-lg">
+            <h4 className="text-sm font-medium mb-2">Profit Analysis</h4>
+            <div className="text-sm text-gray-700 space-y-1">
+              <p>
+                <strong>Profit Margin:</strong>{" "}
+                {finalRevenue > 0 ? "+" : ""}
+                {((finalRevenue / totalCost) * 100).toFixed(1)}%
+              </p>
+              <p>
+                <strong>Break-even Price:</strong>{" "}
+                {formatCurrency(totalCost + processingCost + 0.01)}
+              </p>
+              <p>
+                <strong>Current Price:</strong>{" "}
+                {formatCurrency(bundle.priceAfterDiscount || 0)}
+              </p>
+            </div>
+          </div>
+
+          {/* Discount Per Day Info */}
+          {discountPerDay > 0 && (
+            <div className="bg-yellow-50 p-3 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="h-4 w-4 text-yellow-600" />
+                <h4 className="text-sm font-medium text-yellow-900">
+                  Unused Days Discount
+                </h4>
+              </div>
+              <p className="text-sm text-yellow-800">
+                {formatPercentage(discountPerDay)} discount per unused day
+              </p>
+              <p className="text-xs text-yellow-700 mt-1">
+                Example: 5 unused days = {formatPercentage(discountPerDay * 5)} discount
+              </p>
+            </div>
+          )}
+
+          {/* Configuration Status */}
+          {bundle.hasCustomDiscount && (
+            <div className="bg-orange-50 p-3 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-orange-600" />
+                <span className="text-sm font-medium text-orange-900">
+                  Custom Configuration Active
+                </span>
+              </div>
+              <p className="text-xs text-orange-700 mt-1">
+                This bundle has custom pricing rules applied
+              </p>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+};
+
 export function CountryPricingSplitView({
   bundlesByCountry = [],
-  onBundleClick,
   onExpandCountry,
   loading = false,
 }: CountryPricingSplitViewProps) {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedBundle, setSelectedBundle] = useState<CountryBundleWithDisplay | null>(null);
   const [loadingCountries, setLoadingCountries] = useState<Set<string>>(new Set());
   const [showHighDemandOnly, setShowHighDemandOnly] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
@@ -83,6 +265,7 @@ export function CountryPricingSplitView({
     if (!country) return;
 
     setSelectedCountry(countryId);
+    setSelectedBundle(null); // Clear selected bundle when changing country
     
     // If country doesn't have bundles loaded, load them
     if (!country.bundles) {
@@ -190,8 +373,10 @@ export function CountryPricingSplitView({
             {sortedBundles.map((bundle, index) => (
               <div
                 key={bundle.bundleName ? `${bundle.bundleName}-${bundle.duration}` : `bundle-${index}`}
-                className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                onClick={() => onBundleClick?.(bundle)}
+                className={`border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                  selectedBundle === bundle ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                }`}
+                onClick={() => setSelectedBundle(bundle)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -362,8 +547,10 @@ export function CountryPricingSplitView({
           </ScrollArea>
         </div>
 
-        {/* Desktop: Right Column - Bundles Table (hidden on mobile) */}
-        <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:min-h-0">
+        {/* Desktop: Middle Column - Bundles Table (hidden on mobile) */}
+        <div className={`hidden lg:flex lg:flex-col lg:min-h-0 ${
+          selectedBundle ? 'lg:w-96 lg:flex-shrink-0' : 'lg:flex-1'
+        }`}>
           {selectedCountryData ? (
             <BundlesTable country={selectedCountryData} showHeader={true} />
           ) : (
@@ -378,6 +565,13 @@ export function CountryPricingSplitView({
             </div>
           )}
         </div>
+
+        {/* Desktop: Right Column - Preview & Analysis (hidden on mobile, only shown when bundle selected) */}
+        {selectedBundle && (
+          <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:min-h-0">
+            <PricingPreviewPanel bundle={selectedBundle} />
+          </div>
+        )}
       </div>
 
       {/* Mobile: Bottom Sheet */}

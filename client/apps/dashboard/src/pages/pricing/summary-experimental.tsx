@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { CountryBundle } from '@/__generated__/graphql';
 import { CountryPricingSplitView } from '../../components/country-pricing-split-view';
-import { PricingConfigDrawer } from '../../components/pricing-config-drawer';
 import { Badge } from '@workspace/ui';
 
 interface OutletContext {
@@ -15,26 +14,6 @@ interface OutletContext {
 
 export const PricingSummaryExperimentalPage: React.FC = () => {
   const { countryGroups, expandCountry } = useOutletContext<OutletContext>();
-  
-  const [selectedRow, setSelectedRow] = useState<CountryBundle | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-
-  // Handle bundle click to open drawer
-  const handleBundleClick = (bundle: CountryBundle) => {
-    setSelectedRow(bundle);
-    setIsDrawerOpen(true);
-  };
-
-  // Handle drawer close
-  const handleDrawerClose = () => {
-    setIsDrawerOpen(false);
-    setSelectedRow(null);
-  };
-
-  // Handle configuration saved
-  const handleConfigurationSaved = () => {
-    // Refresh would be handled by parent context
-  };
 
   return (
     <div className="h-full flex flex-col">
@@ -47,25 +26,16 @@ export const PricingSummaryExperimentalPage: React.FC = () => {
           </Badge>
         </div>
         <p className="text-sm text-gray-600">
-          New simplified layout for easier country and bundle management
+          Three-panel layout with inline pricing preview
         </p>
       </div>
 
       <div className="flex-1 min-h-0">
         <CountryPricingSplitView 
           bundlesByCountry={countryGroups}
-          onBundleClick={handleBundleClick}
           onExpandCountry={expandCountry}
         />
       </div>
-      
-      {/* Drawer for pricing configuration */}
-      <PricingConfigDrawer
-        isOpen={isDrawerOpen}
-        onClose={handleDrawerClose}
-        pricingData={selectedRow}
-        onConfigurationSaved={handleConfigurationSaved}
-      />
     </div>
   );
 };
