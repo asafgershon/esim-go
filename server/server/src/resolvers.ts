@@ -318,9 +318,7 @@ export const resolvers: Resolvers = {
       }
       
       try {
-        const { PricingService } = await import('./services/pricing.service');
-        const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
-        const configRepository = new PricingConfigRepository();
+        const configRepository = context.repositories.pricingConfigs;
         
         // Get all countries
         const countries = await context.dataSources.countries.getCountries();

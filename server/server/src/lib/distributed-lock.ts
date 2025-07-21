@@ -218,3 +218,71 @@ export class DistributedLock {
 export function createDistributedLock(lockName: string): DistributedLock {
   return new DistributedLock(lockName);
 }
+
+/**
+ * Utility function to force release a stuck lock (admin/debug use only)
+ */
+export async function forceReleaseLock(lockName: string): Promise<void> {
+  const env = cleanEnv(process.env, {
+    REDIS_HOST: str({ default: "localhost" }),
+    REDIS_PORT: str({ default: "6379" }),
+    REDIS_PASSWORD: str({ default: "mypassword" }),
+    REDIS_USER: str({ default: "default" }),
+  });
+
+  const logger = createLogger({ component: 'LockAdmin' });
+  const redisUrl = `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`;
+  
+  const client = createClient({ url: redisUrl });
+  await client.connect();
+
+  try {
+    const fullLockName = `lock:${lockName}`;
+    const result = await client.del(fullLockName);
+    
+    if (result === 1) {
+      logger.info('Force released stuck lock', { 
+        lockName: fullLockName,
+        operationType: 'force-release'
+      });
+    } else {
+      logger.info('Lock not found (may already be released)', { 
+        lockName: fullLockName,
+        operationType: 'force-release'
+      });
+    }
+  } finally {
+    await client.quit();
+  }
+}
+
+/**
+ * Utility function to check if a lock exists (debug use only)
+ */
+export async function checkLockStatus(lockName: string): Promise<{ exists: boolean; value?: string; ttl?: number }> {
+  const env = cleanEnv(process.env, {
+    REDIS_HOST: str({ default: "localhost" }),
+    REDIS_PORT: str({ default: "6379" }),
+    REDIS_PASSWORD: str({ default: "mypassword" }),
+    REDIS_USER: str({ default: "default" }),
+  });
+
+  const redisUrl = `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`;
+  
+  const client = createClient({ url: redisUrl });
+  await client.connect();
+
+  try {
+    const fullLockName = `lock:${lockName}`;
+    const value = await client.get(fullLockName);
+    const ttl = value ? await client.pTtl(fullLockName) : -2;
+    
+    return {
+      exists: value !== null,
+      value: value || undefined,
+      ttl: ttl > 0 ? ttl : undefined
+    };
+  } finally {
+    await client.quit();
+  }
+}

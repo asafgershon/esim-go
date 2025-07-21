@@ -42,6 +42,7 @@ import {
 import { TripRepository } from "./repositories/trips/trip.repository";
 import { cleanEnv, port, str } from "envalid";
 import { logger } from "./lib/logger";
+import { PricingConfigRepository } from "./repositories/pricing-configs/pricing-config.repository";
 
 const typeDefs = `
 ${authDirectiveTypeDefs}
@@ -68,6 +69,7 @@ async function startServer() {
     const esimRepository = new ESIMRepository();
     const userRepository = new UserRepository();
     const tripRepository = new TripRepository();
+    const pricingConfigRepository = new PricingConfigRepository();
 
     // Create an Express app and HTTP server
     const app = express();
@@ -108,6 +110,7 @@ async function startServer() {
               esims: esimRepository,
               users: userRepository,
               trips: tripRepository,
+              pricingConfigs: pricingConfigRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSource({ cache: redis }),
@@ -165,13 +168,9 @@ async function startServer() {
         },
       ],
       // Add global query timeout
-      formatError: (formattedError, error) => {
+      formatError: (formattedError, error: any) => {
         // Log errors for debugging
-        logger.error("GraphQL Error:", {
-          message: formattedError.message,
-          code: formattedError.extensions?.code,
-          path: formattedError.path,
-        });
+        logger.error("GraphQL Error:", error as Error, { code: formattedError.extensions?.code as string, path: formattedError.path, extensions: formattedError.extensions });
         return formattedError;
       },
     });
@@ -271,6 +270,7 @@ async function startServer() {
               esims: esimRepository,
               users: userRepository,
               trips: tripRepository,
+              pricingConfigs: new PricingConfigRepository(),
             },
             dataSources: {
               catalogue: new CatalogueDataSource({ cache: redis }),
@@ -312,8 +312,8 @@ async function startServer() {
       }
 
       // Start catalog sync service
-      const catalogueDataSource = new CatalogueDataSource();
-      const catalogSyncService = new CatalogSyncService(catalogueDataSource);
+      const catalogueDataSource = new CatalogueDataSource({ cache: redis });
+      const catalogSyncService = new CatalogSyncService(catalogueDataSource, redis);
       catalogSyncService.startPeriodicSync();
     });
   } catch (error) {

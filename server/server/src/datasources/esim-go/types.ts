@@ -13,10 +13,7 @@ export interface ESIMGoDataPlan {
   description: string;
   bundleGroup?: string;
   baseCountry: ESIMGoCountry;
-  countries: {
-    name: string;
-    iso: string;
-  }[];
+  countries: ESIMGoCountry[];
   unlimited: boolean;
   dataAmount: number; // MB, -1 for unlimited
   duration: number; // days

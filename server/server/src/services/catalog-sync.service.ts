@@ -1,9 +1,10 @@
-import { CatalogueDataSource } from '../datasources/esim-go/catalogue-datasource';
-import { ESIMGoDataPlan } from '../datasources/esim-go/types';
+import { type KeyValueCache } from "@apollo/utils.keyvaluecache";
 import { cleanEnv, str } from "envalid";
-import { createDistributedLock, LockResult } from '../lib/distributed-lock';
-import { CacheHealthService } from './cache-health.service';
+import { CatalogueDataSource } from '../datasources/esim-go/catalogue-datasource';
+import { type ESIMGoDataPlan } from '../datasources/esim-go/types';
+import { createDistributedLock, type LockResult } from '../lib/distributed-lock';
 import { createLogger, withPerformanceLogging } from '../lib/logger';
+import { CacheHealthService } from './cache-health.service';
 
 const env = cleanEnv(process.env, {
   ESIM_GO_API_KEY: str({ desc: "The API key for the eSIM Go API" }),
@@ -28,9 +29,9 @@ export class CatalogSyncService {
     'Regional Bundles',
   ];
 
-  constructor(catalogueDataSource: CatalogueDataSource) {
+  constructor(catalogueDataSource: CatalogueDataSource, cache: KeyValueCache<string>) {
     this.catalogueDataSource = catalogueDataSource;
-    this.cacheHealth = new CacheHealthService(catalogueDataSource.cache);
+    this.cacheHealth = new CacheHealthService(cache);
   }
 
   /**
@@ -150,7 +151,7 @@ export class CatalogSyncService {
       const cacheResult = await this.cacheHealth.safeGet(cacheKey);
       
       if (cacheResult.success && cacheResult.data) {
-        return JSON.parse(cacheResult.data);
+        return JSON.parse(cacheResult.data as string);
       }
       
       if (!cacheResult.success) {
@@ -496,7 +497,7 @@ export class CatalogSyncService {
       if (!combinedIndexResult.success) {
         this.logger.warn('Failed to cache combined index', { 
           country, 
-          duration, 
+          duration: duration ? parseInt(duration) : undefined, 
           error: combinedIndexResult.error?.message,
           operationType: 'index-creation'
         });
@@ -532,7 +533,7 @@ export class CatalogSyncService {
       const cacheResult = await this.cacheHealth.safeGet('esim-go:full-catalog');
       
       if (cacheResult.success && cacheResult.data) {
-        return JSON.parse(cacheResult.data);
+        return JSON.parse(cacheResult.data as string);
       }
       
       if (!cacheResult.success) {
@@ -590,7 +591,7 @@ export class CatalogSyncService {
         return;
       }
 
-      const catalogMetadata = JSON.parse(cacheResult.data);
+      const catalogMetadata = JSON.parse(cacheResult.data as string);
       const lastSynced = new Date(catalogMetadata.lastSynced);
       const daysSinceSync = (Date.now() - lastSynced.getTime()) / (1000 * 60 * 60 * 24);
 

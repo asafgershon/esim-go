@@ -17,12 +17,13 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     component: 'CatalogueDataSource',
     operationType: 'catalog-operations'
   });
+  
 
   constructor(config?: any) {
     super(config);
     this.backupService = new CatalogBackupService(this.cache);
     this.cacheHealth = new CacheHealthService(this.cache!);
-    this.batchOperations = new BatchCacheOperations(this.cache);
+    this.batchOperations = new BatchCacheOperations(this.cache!);
   }
   /**
    * Get all available data plans
@@ -35,7 +36,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const cacheResult = await this.cacheHealth.safeGet(cacheKey);
     if (cacheResult.success && cacheResult.data) {
       try {
-        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+        return JSON.parse(cacheResult.data as string) as ESIMGoDataPlan[];
       } catch (error) {
         this.log.warn('Failed to parse cached data for getAllBundels', { error, cacheKey });
         // Continue to API call if cache data is corrupted
@@ -74,7 +75,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const cacheResult = await this.cacheHealth.safeGet(cacheKey);
     if (cacheResult.success && cacheResult.data) {
       try {
-        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+        return JSON.parse(cacheResult.data as string) as ESIMGoDataPlan[];
       } catch (error) {
         this.log.warn('Failed to parse cached data for getPlansByRegion', { error, cacheKey });
         // Continue to fetch from source if cache data is corrupted
@@ -124,7 +125,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const cacheResult = await this.cacheHealth.safeGet(cacheKey);
     if (cacheResult.success && cacheResult.data) {
       try {
-        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+        return JSON.parse(cacheResult.data as string) as ESIMGoDataPlan[];
       } catch (error) {
         this.log.warn('Failed to parse cached data for getPlansByCountry', { error, cacheKey });
         // Continue to API call if cache data is corrupted
@@ -171,7 +172,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const cacheResult = await this.cacheHealth.safeGet(cacheKey);
     if (cacheResult.success && cacheResult.data) {
       try {
-        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+        return JSON.parse(cacheResult.data as string) as ESIMGoDataPlan[];
       } catch (error) {
         this.log.warn('Failed to parse cached data for getPlansByDuration', { error, cacheKey });
         // Continue to API call if cache data is corrupted
@@ -211,7 +212,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const cacheResult = await this.cacheHealth.safeGet(cacheKey);
     if (cacheResult.success && cacheResult.data) {
       try {
-        return JSON.parse(cacheResult.data) as ESIMGoDataPlan | null;
+        return JSON.parse(cacheResult.data as string) as ESIMGoDataPlan | null;
       } catch (error) {
         this.log.warn('Failed to parse cached data for getPlanByName', { error, cacheKey });
         // Continue to API call if cache data is corrupted
@@ -272,7 +273,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
 
     let catalogMetadata;
     try {
-      catalogMetadata = JSON.parse(metadataResult.data) as any;
+      catalogMetadata = JSON.parse(metadataResult.data as string) as any;
     } catch (error) {
       this.log.warn('Failed to parse catalog metadata', { error });
       return this.fallbackToApiCall(criteria);
@@ -343,7 +344,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const cacheResult = await this.cacheHealth.safeGet(groupKey);
     if (cacheResult.success && cacheResult.data) {
       try {
-        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+        return JSON.parse(cacheResult.data as string) as ESIMGoDataPlan[];
       } catch (error) {
         this.log.warn('Failed to parse cached bundle group data', { error, groupKey });
         // Continue without cached data
@@ -360,7 +361,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const cacheResult = await this.cacheHealth.safeGet(indexKey);
     if (cacheResult.success && cacheResult.data) {
       try {
-        const bundleIds = JSON.parse(cacheResult.data) as string[];
+        const bundleIds = JSON.parse(cacheResult.data as string) as string[];
         return this.getBundlesByIds(bundleIds);
       } catch (error) {
         this.log.warn('Failed to parse cached country index data', { error, indexKey });
@@ -378,7 +379,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const cacheResult = await this.cacheHealth.safeGet(indexKey);
     if (cacheResult.success && cacheResult.data) {
       try {
-        const bundleIds = JSON.parse(cacheResult.data) as string[];
+        const bundleIds = JSON.parse(cacheResult.data as string) as string[];
         return this.getBundlesByIds(bundleIds);
       } catch (error) {
         this.log.warn('Failed to parse cached duration index data', { error, indexKey });
@@ -396,7 +397,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const cacheResult = await this.cacheHealth.safeGet(indexKey);
     if (cacheResult.success && cacheResult.data) {
       try {
-        const bundleIds = JSON.parse(cacheResult.data) as string[];
+        const bundleIds = JSON.parse(cacheResult.data as string) as string[];
         return this.getBundlesByIds(bundleIds);
       } catch (error) {
         this.log.warn('Failed to parse cached country-duration index data', { error, indexKey });
@@ -417,7 +418,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       const cacheResult = await this.cacheHealth.safeGet(groupKey);
       if (cacheResult.success && cacheResult.data) {
         try {
-          const groupData = JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+          const groupData = JSON.parse(cacheResult.data as string) as ESIMGoDataPlan[];
           allBundles.push(...groupData);
         } catch (error) {
           this.log.warn('Failed to parse cached group data in getAllBundles', { error, groupKey });
@@ -453,11 +454,8 @@ export class CatalogueDataSource extends ESIMGoDataSource {
         return await this.getBundlesByIdsBatch(cacheKeys, bundleIds);
       }
       
-    } catch (error) {
-      this.log.error('❌ Batch bundle retrieval failed', { 
-        error: error instanceof Error ? error.message : String(error),
-        bundleCount: bundleIds.length 
-      });
+    } catch (error :unknown) {
+      this.log.error('❌ Batch bundle retrieval failed', { ...error as Error }, { bundleCount: bundleIds.length });
       
       // Fallback to sequential processing with limited batch size
       return await this.getBundlesByIdsFallback(bundleIds.slice(0, 100)); // Limit to prevent memory issues
@@ -482,7 +480,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     for (let i = 0; i < bundleIds.length; i++) {
       const bundleId = bundleIds[i];
       const cacheKey = cacheKeys[i];
-      
+      if (!cacheKey) continue;
       if (batchResult.results.has(cacheKey)) {
         bundles.push(batchResult.results.get(cacheKey)!);
       } else if (batchResult.errors.has(cacheKey)) {
@@ -498,7 +496,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       totalRequested: bundleIds.length,
       totalRetrieved: bundles.length,
       errorCount: batchResult.errors.size,
-      duration: `${duration}ms`,
+      duration: duration,
       successRate: `${((bundles.length / bundleIds.length) * 100).toFixed(2)}%`
     });
 
@@ -573,7 +571,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
         try {
           const cacheResult = await this.cacheHealth.safeGet(`esim-go:catalog:bundle:${id}`);
           if (cacheResult.success && cacheResult.data) {
-            const bundleData = JSON.parse(cacheResult.data) as ESIMGoDataPlan;
+            const bundleData = JSON.parse(cacheResult.data as string) as ESIMGoDataPlan;
             bundles.push(bundleData);
           }
         } catch (error) {
@@ -612,18 +610,18 @@ export class CatalogueDataSource extends ESIMGoDataSource {
    * Fallback to API call if cache is not available
    */
   private async fallbackToApiCall(criteria: any): Promise<{ bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string }> {
-    this.logger.info('Falling back to API call', { operationType: 'api-fallback' });
+    this.log.info('Falling back to API call', { operationType: 'api-fallback' });
     
     try {
       // First try the API call
       return await this.performApiCall(criteria);
-    } catch (error) {
-      this.log.error('API call failed, trying backup data:', error);
+    } catch (error :unknown) {
+      this.log.error('API call failed, trying backup data:', { ...error as Error });
       
       // If API fails, try backup data
       const backupData = await this.getBackupData(criteria);
       if (backupData.bundles.length > 0) {
-        this.logger.info('Using backup data as fallback', { operationType: 'api-fallback' });
+        this.log.info('Using backup data as fallback', { operationType: 'api-fallback' });
         return backupData;
       }
       
@@ -641,7 +639,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     // Check if backup data is available
     const hasBackup = await this.backupService.hasBackupData();
     if (!hasBackup) {
-      this.logger.warn('No backup data available', { operationType: 'api-fallback' });
+      this.log.warn('No backup data available', { operationType: 'api-fallback' });
       return { bundles: [], totalCount: 0 };
     }
     
@@ -700,7 +698,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const cacheResult = await this.cacheHealth.safeGet(cacheKey);
     if (cacheResult.success && cacheResult.data) {
       try {
-        const cachedResult = JSON.parse(cacheResult.data) as { bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string };
+        const cachedResult = JSON.parse(cacheResult.data as string) as { bundles: ESIMGoDataPlan[], totalCount: number, lastFetched?: string };
         const cachedDurations = [...new Set(cachedResult.bundles.map(b => b.duration))];
         return cachedResult;
       } catch (error) {
@@ -783,7 +781,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
           additionalPages.push(...pageResponse.bundles);
           const pageDurations = [...new Set(pageResponse.bundles.map(b => b.duration))];
         } catch (error) {
-          this.logger.error('Error fetching page', error as Error, { 
+          this.log.error('Error fetching page', { ...error as Error }, { 
             page,
             operationType: 'multi-page-fetch'
           });
@@ -800,7 +798,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     } else {
     }
     
-    this.logger.info('eSIM Go API response received', {
+    this.log.info('eSIM Go API response received', {
       totalCount: response.totalCount,
       bundleCount: response.bundles.length,
       operationType: 'api-response',
@@ -808,7 +806,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       sampleBundles: response.bundles.slice(0, 3).map(b => ({
         name: b.name,
         duration: b.duration,
-        region: b.region
+        region: b.baseCountry.region
       }))
     });
 
@@ -818,7 +816,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     // Apply client-side filtering for duration (since API doesn't support it)
     if (criteria.duration !== undefined) {
       plans = plans.filter(plan => plan.duration === criteria.duration);
-      this.logger.info('Duration filter completed', { 
+      this.log.info('Duration filter completed', { 
         matchingBundles: plans.length,
         duration: criteria.duration,
         operationType: 'duration-filter'
@@ -863,7 +861,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     const cacheResult = await this.cacheHealth.safeGet(cacheKey);
     if (cacheResult.success && cacheResult.data) {
       try {
-        return JSON.parse(cacheResult.data) as ESIMGoDataPlan[];
+        return JSON.parse(cacheResult.data as string) as ESIMGoDataPlan[];
       } catch (error) {
         this.log.warn('Failed to parse cached data for getFeaturedPlans', { error, cacheKey });
         // Continue to API call if cache data is corrupted

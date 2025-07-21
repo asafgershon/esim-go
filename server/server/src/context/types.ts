@@ -18,6 +18,7 @@ import {
   UserRepository,
 } from "../repositories";
 import { TripRepository } from "../repositories/trips/trip.repository";
+import type { PricingConfigRepository } from "../repositories/pricing-configs/pricing-config.repository";
 
 export type Context = {
   auth: SupabaseAuthContext;
@@ -33,6 +34,7 @@ export type Context = {
     esims: ESIMRepository;
     users: UserRepository;
     trips: TripRepository;
+    pricingConfigs: PricingConfigRepository;
   };
   dataSources: {
     catalogue: CatalogueDataSource;

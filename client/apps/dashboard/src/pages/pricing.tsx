@@ -1,4 +1,4 @@
-import { Country, PricingConfiguration } from '@/__generated__/graphql';
+import { Country, GetCountriesQuery, GetDataPlansQuery, GetPricingConfigurationsQuery, PricingConfiguration } from '@/__generated__/graphql';
 import { useLazyQuery, useQuery } from '@apollo/client';
 import React, { useEffect, useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
@@ -50,8 +50,8 @@ const PricingPage: React.FC = () => {
   const [isMarkupTableOpen, setIsMarkupTableOpen] = useState(false);
 
   // Fetch countries, data plans, and pricing configurations
-  const { data: countriesData } = useQuery(GET_COUNTRIES);
-  const { data: dataPlansData } = useQuery(GET_DATA_PLANS, {
+  const { data: countriesData } = useQuery<GetCountriesQuery>(GET_COUNTRIES);
+  const { data: dataPlansData } = useQuery<GetDataPlansQuery>(GET_DATA_PLANS, {
     variables: {
       filter: {
         limit: 1000 // Fetch more bundles to show all durations
@@ -64,10 +64,11 @@ const PricingPage: React.FC = () => {
       console.log('Unique durations:', [...new Set(data?.dataPlans?.items?.map(plan => plan.duration))]);
     }
   });
-  const { data: pricingConfigsData, refetch: refetchPricingConfigs } = useQuery(GET_PRICING_CONFIGURATIONS);
+  const { data: pricingConfigsData, refetch: refetchPricingConfigs } = useQuery<GetPricingConfigurationsQuery>(GET_PRICING_CONFIGURATIONS);
   const [calculateBatchPricing] = useLazyQuery(CALCULATE_BATCH_PRICING);
   const [getCountryDataPlans] = useLazyQuery(GET_DATA_PLANS);
 
+  console.log('pricingConfigsData', countriesData);
   // Generate country groups from actual data
   useEffect(() => {
     const fetchCountryGroups = async () => {
@@ -118,7 +119,6 @@ const PricingPage: React.FC = () => {
           hasCustomDiscount,
           discountRate: customConfig?.discountRate,
           bundles: undefined, // Lazy loaded
-          lastFetched: dataPlansData?.dataPlans?.lastFetched, // Show global cache time initially
         });
       }
 
@@ -341,18 +341,6 @@ const PricingPage: React.FC = () => {
         isOpen={isMarkupTableOpen}
         onClose={() => setIsMarkupTableOpen(false)}
       />
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 mb-2">Enhanced Pricing Management with Native Grouping</h3>
-        <div className="text-sm text-blue-800 space-y-1">
-          <p><strong>Pricing Simulator:</strong> Use the "Pricing Simulator" button to test pricing for any country/duration combination</p>
-          <p><strong>Native Grouping:</strong> Use "Group by" button to organize data by country, duration, or other fields</p>
-          <p><strong>Advanced Filtering:</strong> Filter by country, price range, duration, or custom criteria</p>
-          <p><strong>Expand/Collapse:</strong> Expand all or collapse all grouped sections</p>
-          <p><strong>Interactive Rows:</strong> Click any row to configure pricing for that bundle</p>
-          <p><strong>Real-time Data:</strong> All pricing calculated from live eSIM Go API data</p>
-        </div>
-      </div>
     </div>
   );
 };

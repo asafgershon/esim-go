@@ -2,6 +2,7 @@ import { KeyvAdapter } from "@apollo/utils.keyvadapter";
 import { createClient } from 'redis';
 import { cleanEnv, str } from "envalid";
 import { createLogger } from "./logger";
+import { type KeyValueCache } from "@apollo/utils.keyvaluecache";
 
 const env = cleanEnv(process.env, {
   REDIS_HOST: str({ default: "localhost" }),
@@ -51,14 +52,14 @@ export interface StreamingOptions extends BatchOperationOptions {
 export class BatchCacheOperations {
   private logger = createLogger({ component: 'BatchCacheOperations' });
   private redisClient: any = null;
-  private cache: KeyvAdapter<any> | null;
+  private cache: KeyValueCache<string> | null;
   
   private readonly DEFAULT_BATCH_SIZE = 100;
   private readonly DEFAULT_MAX_MEMORY_MB = 50;
   private readonly DEFAULT_TIMEOUT = 10000;
   private readonly DEFAULT_MAX_CONCURRENT = 3;
 
-  constructor(cache: KeyvAdapter<any> | null) {
+  constructor(cache: KeyValueCache<string> | null) {
     this.cache = cache;
   }
 
@@ -121,8 +122,8 @@ export class BatchCacheOperations {
           maxConcurrentBatches
         });
       }
-    } catch (error) {
-      this.logger.error('❌ Batch get operation failed', { error, keysCount: keys.length });
+    } catch (error :unknown) {
+      this.logger.error('❌ Batch get operation failed', { ...error as Error }, { keysCount: keys.length });
       throw error;
     }
 
@@ -188,14 +189,14 @@ export class BatchCacheOperations {
         for (let i = 0; i < chunk.length; i++) {
           const key = chunk[i];
           const result = pipelineResults[i];
-          
+          if (!key) continue;
           if (result[0] === null && result[1] !== null) {
             // Success: result[0] is error (null), result[1] is value
             try {
               const parsed = JSON.parse(result[1]) as T;
               results.set(key, parsed);
             } catch (parseError) {
-              errors.set(key, new Error(`JSON parse error: ${parseError.message}`));
+              errors.set(key, new Error(`JSON parse error: ${parseError instanceof Error ? parseError.message : String(parseError)}`));
             }
           } else if (result[0] !== null) {
             // Error occurred
@@ -220,8 +221,8 @@ export class BatchCacheOperations {
           this.logger.debug(`💾 Batch ${chunkIndex + 1} memory usage: ${memoryUsedMB.toFixed(2)}MB`);
         }
         
-      } catch (error) {
-        this.logger.error(`❌ Batch ${chunkIndex + 1} failed`, { error, chunkSize: chunk.length });
+      } catch (error :unknown) {
+        this.logger.error(`❌ Batch ${chunkIndex + 1} failed`, { ...error as Error }, { chunkSize: chunk.length });
         
         // Mark all keys in this chunk as failed
         chunk.forEach(key => {
@@ -268,7 +269,7 @@ export class BatchCacheOperations {
               ]);
               
               if (value !== null && value !== undefined) {
-                const parsed = JSON.parse(value) as T;
+                const parsed = JSON.parse(value as string) as T;
                 results.set(key, parsed);
               }
             } catch (error) {
@@ -278,7 +279,7 @@ export class BatchCacheOperations {
         }
         
       } catch (error) {
-        this.logger.error(`❌ Cache batch ${chunkIndex + 1} failed`, { error, chunkSize: chunk.length });
+        this.logger.error(`❌ Cache batch ${chunkIndex + 1} failed`, { ...error as Error }, { chunkSize: chunk.length });
         
         chunk.forEach(key => {
           errors.set(key, error instanceof Error ? error : new Error(String(error)));
@@ -309,7 +310,7 @@ export class BatchCacheOperations {
     
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
-      
+      if (!chunk) continue;
       try {
         const batchResult = await this.batchGet<T>(chunk, options);
         const chunkResults = Array.from(batchResult.results.values());
@@ -333,7 +334,7 @@ export class BatchCacheOperations {
         }
         
       } catch (error) {
-        this.logger.error(`❌ Streaming chunk ${i + 1} failed`, { error, chunkSize: chunk.length });
+        this.logger.error(`❌ Streaming chunk ${i + 1} failed`, { ...error as Error }, { chunkSize: chunk.length });
         throw error;
       }
     }
@@ -389,7 +390,7 @@ export class BatchCacheOperations {
           }
           
         } catch (error) {
-          this.logger.error(`❌ Set batch ${chunkIndex + 1} failed`, { error, chunkSize: chunk.length });
+          this.logger.error(`❌ Set batch ${chunkIndex + 1} failed`, { ...error as Error }, { chunkSize: chunk.length });
           
           chunk.forEach(key => {
             failedSets.set(key, error instanceof Error ? error : new Error(String(error)));
@@ -400,7 +401,7 @@ export class BatchCacheOperations {
       }));
       
     } catch (error) {
-      this.logger.error('❌ Batch set operation failed', { error, keysCount: keys.length });
+      this.logger.error('❌ Batch set operation failed', { ...error as Error }, { keysCount: keys.length });
       throw error;
     }
 
@@ -486,7 +487,7 @@ export class BatchCacheOperations {
         await this.redisClient.quit();
         this.logger.info('📡 Redis client disconnected');
       } catch (error) {
-        this.logger.error('❌ Error disconnecting Redis client', { error });
+        this.logger.error('❌ Error disconnecting Redis client', { ...error as Error });
       }
     }
   }

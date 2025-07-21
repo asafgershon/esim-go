@@ -1,5 +1,6 @@
 import { KeyvAdapter } from "@apollo/utils.keyvadapter";
 import { createLogger } from "../lib/logger";
+import { type KeyValueCache } from "@apollo/utils.keyvaluecache";
 
 export interface CacheHealthMetrics {
   isHealthy: boolean;
@@ -20,8 +21,11 @@ export interface CacheOperationResult<T = any> {
 }
 
 export class CacheHealthService {
-  private cache: KeyvAdapter<any> | null;
-  private logger = createLogger();
+  private cache: KeyValueCache<string>
+  private logger = createLogger({
+    component: 'CacheHealthService',
+    operationType: 'cache-health'
+  });
   
   private metrics: CacheHealthMetrics = {
     isHealthy: true,
@@ -39,7 +43,7 @@ export class CacheHealthService {
   private readonly OPERATION_TIMEOUT = 5000; // 5 seconds
   private healthCheckTimer: NodeJS.Timeout | null = null;
 
-  constructor(cache: KeyvAdapter<any> | null) {
+  constructor(cache: KeyValueCache<string>) {
     this.cache = cache;
     this.startHealthMonitoring();
   }
@@ -90,7 +94,7 @@ export class CacheHealthService {
       
       this.logger.debug('✅ Cache health check passed');
     } catch (error) {
-      this.logger.warn('⚠️ Cache health check failed:', error);
+      this.logger.warn('⚠️ Cache health check failed', error as Error);
     }
   }
 
