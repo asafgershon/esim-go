@@ -527,7 +527,9 @@ export const resolvers: Resolvers = {
                 finalRevenue: pricingBreakdown.finalRevenue,
                 netProfit: pricingBreakdown.netProfit,
                 currency: pricingBreakdown.currency,
-                pricePerDay: pricingBreakdown.priceAfterDiscount / pricingBreakdown.duration,
+                pricePerDay: (pricingBreakdown.duration && pricingBreakdown.duration > 0 && isFinite(pricingBreakdown.priceAfterDiscount)) 
+                  ? pricingBreakdown.priceAfterDiscount / pricingBreakdown.duration 
+                  : 0,
                 hasCustomDiscount: hasCustomConfig
               };
             } catch (error) {
