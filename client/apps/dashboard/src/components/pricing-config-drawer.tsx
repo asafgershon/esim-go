@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import {
   GET_CURRENT_PROCESSING_FEE_CONFIGURATION,
   UPDATE_PRICING_CONFIGURATION,
+  GET_COUNTRY_BUNDLES,
 } from "../lib/graphql/queries";
 
 interface PricingConfigDrawerProps {
@@ -191,6 +192,12 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
             isActive: true,
           },
         },
+        refetchQueries: [
+          {
+            query: GET_COUNTRY_BUNDLES,
+            variables: { countryId: countryCode },
+          },
+        ],
       });
 
       setHasMarkupOverride(true);
