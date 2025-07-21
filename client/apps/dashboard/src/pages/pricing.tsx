@@ -1,11 +1,11 @@
 import { CountryBundle } from '@/__generated__/graphql';
 import React, { useState } from 'react';
-import { Button } from '@workspace/ui/components/button';
-import { Calculator, CreditCard, DollarSign } from 'lucide-react';
+import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@workspace/ui';
+import { Calculator, DollarSign, Table, CreditCard } from 'lucide-react';
 import { CountryPricingTableGrouped } from '../components/country-pricing-table-grouped';
 import { PricingConfigDrawer } from '../components/pricing-config-drawer';
 import { PricingSimulatorDrawer } from '../components/pricing-simulator-drawer';
-import { ProcessingFeeDrawer } from '../components/processing-fee-drawer';
+import { ProcessingFeeManagement } from '../components/processing-fee-management';
 import { MarkupTableDrawer } from '../components/markup-table-drawer';
 import { usePricingData, CountryGroupData } from '../hooks/usePricingData';
 
@@ -19,8 +19,8 @@ const PricingPage: React.FC = () => {
   const [selectedRow, setSelectedRow] = useState<CountryBundle | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
-  const [isProcessingFeeOpen, setIsProcessingFeeOpen] = useState(false);
   const [isMarkupTableOpen, setIsMarkupTableOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('pricing');
 
 
 
@@ -83,14 +83,6 @@ const PricingPage: React.FC = () => {
             Markup Table
           </Button>
           <Button
-            onClick={() => setIsProcessingFeeOpen(true)}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <CreditCard className="h-4 w-4" />
-            Processing Fee
-          </Button>
-          <Button
             onClick={() => setIsSimulatorOpen(true)}
             variant="outline"
             className="flex items-center gap-2"
@@ -104,11 +96,30 @@ const PricingPage: React.FC = () => {
         </div>
       </div>
 
-      <CountryPricingTableGrouped 
-        bundlesByCountry={countryGroups}
-        onBundleClick={handleBundleClick}
-        onExpandCountry={expandCountry}
-      />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="pricing" className="flex items-center gap-2">
+            <Table className="h-4 w-4" />
+            Pricing Table
+          </TabsTrigger>
+          <TabsTrigger value="processing-fees" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Processing Fees
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pricing">
+          <CountryPricingTableGrouped 
+            bundlesByCountry={countryGroups}
+            onBundleClick={handleBundleClick}
+            onExpandCountry={expandCountry}
+          />
+        </TabsContent>
+
+        <TabsContent value="processing-fees">
+          <ProcessingFeeManagement />
+        </TabsContent>
+      </Tabs>
 
       {/* Drawer for pricing configuration */}
       <PricingConfigDrawer
@@ -125,11 +136,6 @@ const PricingPage: React.FC = () => {
         countries={countriesData?.countries || []}
       />
 
-      {/* Processing Fee Management Drawer */}
-      <ProcessingFeeDrawer
-        isOpen={isProcessingFeeOpen}
-        onClose={() => setIsProcessingFeeOpen(false)}
-      />
 
       {/* Markup Table Management Drawer */}
       <MarkupTableDrawer
