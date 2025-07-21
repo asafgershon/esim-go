@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
   Button,
   Card,
@@ -77,6 +77,8 @@ const PricingPreviewPanel = ({
   const [customDiscount, setCustomDiscount] = useState("");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("ISRAELI_CARD");
   const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
+  const [showDiscountTooltip, setShowDiscountTooltip] = useState(false);
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout>();
   
   // Get actual values from bundle
   const discountRate = bundle.discountRate || 0;
@@ -92,7 +94,63 @@ const PricingPreviewPanel = ({
   ];
   
   const currentPaymentMethod = paymentMethods.find(pm => pm.value === selectedPaymentMethod) || paymentMethods[0];
+  
+  // Calculate maximum allowed discount to maintain minimum profit margin
+  const maxAllowedDiscount = useMemo(() => {
+    const catalogPrice = bundle.catalogPrice || 0;
+    const minimumAllowedPrice = catalogPrice + 1.50; // cost + $1.50 minimum profit
+    const markupAmount = 10; // Default markup amount used by pricing service
+    const totalCostWithMarkup = catalogPrice + markupAmount;
+    
+    if (totalCostWithMarkup <= minimumAllowedPrice) {
+      return 0; // No discount allowed
+    }
+    
+    const maxDiscount = ((totalCostWithMarkup - minimumAllowedPrice) / totalCostWithMarkup) * 100;
+    return Math.floor(maxDiscount * 10) / 10; // Round down to 1 decimal place
+  }, [bundle.catalogPrice]);
+  
+  // Show tooltip when invalid discount is attempted
+  const showInvalidDiscountTooltip = useCallback(() => {
+    setShowDiscountTooltip(true);
+    
+    // Clear existing timeout
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+    }
+    
+    // Hide tooltip after 3 seconds
+    tooltipTimeoutRef.current = setTimeout(() => {
+      setShowDiscountTooltip(false);
+    }, 3000);
+  }, []);
+  
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+    };
+  }, []);
   const processingRate = currentPaymentMethod.rate;
+  
+  // Custom discount input handler with validation
+  const handleDiscountChange = useCallback((value: string) => {
+    const numericValue = parseFloat(value);
+    
+    // Allow empty string and valid numeric input
+    if (value === "" || (!isNaN(numericValue) && numericValue >= 0)) {
+      // Check if the value exceeds maximum allowed discount
+      if (!isNaN(numericValue) && numericValue > maxAllowedDiscount) {
+        showInvalidDiscountTooltip();
+        // Don't update the input value, but show the tooltip
+        return;
+      }
+      
+      setCustomDiscount(value);
+    }
+  }, [maxAllowedDiscount, showInvalidDiscountTooltip]);
   
   // Determine configuration level
   const configLevel = bundle.configurationLevel || 'GLOBAL';
@@ -120,14 +178,14 @@ const PricingPreviewPanel = ({
   
   // Handler for saving discount changes
   const handleSaveDiscount = async () => {
-    if (!customDiscount || parseFloat(customDiscount) < 0 || parseFloat(customDiscount) > 100) {
-      toast.error("Please enter a valid discount percentage (0-100)");
+    if (!customDiscount || parseFloat(customDiscount) < 0) {
+      toast.error("Please enter a valid discount percentage");
       return;
     }
 
+    const discountRateDecimal = parseFloat(customDiscount) / 100;
+
     try {
-      const discountRateDecimal = parseFloat(customDiscount) / 100;
-      
       // Create a country-specific pricing configuration with discount override
       const result = await updatePricingConfiguration({
         variables: {
@@ -160,7 +218,15 @@ const PricingPreviewPanel = ({
       }
     } catch (error: any) {
       console.error("Error saving discount:", error);
-      toast.error("Failed to save discount configuration");
+      
+      // Check for server-side minimum fee validation errors
+      if (error?.graphQLErrors?.[0]?.extensions?.code === 'INSUFFICIENT_PROFIT_MARGIN') {
+        const minPrice = error.graphQLErrors[0].extensions.minimumPrice;
+        const calculatedPrice = error.graphQLErrors[0].extensions.calculatedPrice;
+        toast.error(`Discount violates minimum profit margin. Calculated price ($${calculatedPrice}) is below minimum ($${minPrice})`);
+      } else {
+        toast.error(error?.message || "Failed to save discount configuration");
+      }
     }
   };
 
@@ -282,18 +348,34 @@ const PricingPreviewPanel = ({
                 </div>
                 {isEditingDiscount ? (
                   <div className="flex items-center gap-1">
-                    <InputWithAdornment
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="1"
-                      value={customDiscount}
-                      onChange={(e) => setCustomDiscount(e.target.value)}
-                      placeholder={(discountRate * 100).toFixed(0)}
-                      rightAdornment="%"
-                      className="w-20 h-7 text-sm"
-                      autoFocus
-                    />
+                    <TooltipProvider>
+                      <Tooltip open={showDiscountTooltip}>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <InputWithAdornment
+                              type="number"
+                              min="0"
+                              max={maxAllowedDiscount}
+                              step="0.1"
+                              value={customDiscount}
+                              onChange={(e) => handleDiscountChange(e.target.value)}
+                              placeholder={(discountRate * 100).toFixed(1)}
+                              rightAdornment="%"
+                              className="w-20 h-7 text-sm"
+                              autoFocus
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="bg-gray-900 text-white border-gray-700">
+                          <div className="text-sm">
+                            <p className="font-medium">Maximum discount: {maxAllowedDiscount.toFixed(1)}%</p>
+                            <p className="text-xs text-gray-300 mt-1">
+                              Higher discounts would violate the minimum profit margin of $1.50 above cost.
+                            </p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Button
                       variant="ghost"
                       size="sm"
