@@ -2,6 +2,12 @@ import React from "react";
 import { ColumnDef, Row } from "@tanstack/react-table";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip";
 import {
   DollarSign,
   TrendingUp,
@@ -55,25 +61,15 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
 
       if (isSummaryRow) {
         return (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              handleToggleCountry?.(data.countryId);
-            }}
-            disabled={isLoading}
-            className="p-1 h-6 w-6"
-          >
+          <div className="p-1 h-6 w-6 flex items-center justify-center">
             {isLoading ? (
               <div className="animate-spin rounded-full h-3 w-3 border-b border-gray-400"></div>
             ) : isExpanded ? (
-              <ChevronDown className="h-3 w-3" />
+              <ChevronDown className="h-3 w-3 transition-all duration-200 hover:scale-110 animate-in spin-in-180" />
             ) : (
-              <ChevronRight className="h-3 w-3" />
+              <ChevronRight className="h-3 w-3 transition-all duration-200 hover:scale-110 animate-in spin-in-180" />
             )}
-          </Button>
+          </div>
         );
       }
 
@@ -98,36 +94,47 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
       
       return (
         <div className="flex items-center gap-2">
-          <span className="font-medium">{data.countryName}</span>
-          <Badge variant="outline" className="text-xs">
-            {data.countryId}
-          </Badge>
-          {isSummaryRow && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                if (!toggleLoading) {
-                  toggleCountryHighDemand?.(data.countryId);
-                }
-              }}
-              disabled={toggleLoading}
-              className={`p-1 h-6 w-6 ${
-                isHighDemandCountry 
-                  ? 'text-orange-600 hover:text-orange-700' 
-                  : 'text-gray-400 hover:text-gray-600'
-              }`}
-              title={isHighDemandCountry ? 'Remove from high demand' : 'Mark as high demand'}
-            >
-              <TrendingUp className="h-3 w-3" />
-            </Button>
-          )}
-          {isSummaryRow && data.configurationLevel && data.configurationLevel !== 'GLOBAL' && (
-            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
-              {data.configurationLevel}
+          {data.countryName ? (
+            <span className="font-medium">{data.countryName}</span>
+          ) : (
+            <Badge variant="outline" className="text-xs font-medium">
+              {data.countryId}
             </Badge>
+          )}
+          {!isSummaryRow && data.countryName && (
+            <Badge variant="outline" className="text-xs">
+              {data.countryId}
+            </Badge>
+          )}
+          {isSummaryRow && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      if (!toggleLoading) {
+                        toggleCountryHighDemand?.(data.countryId);
+                      }
+                    }}
+                    disabled={toggleLoading}
+                    className={`p-1 h-6 w-6 ${
+                      isHighDemandCountry 
+                        ? 'text-orange-600 hover:text-orange-700' 
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    <TrendingUp className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isHighDemandCountry ? 'Unmark as high demand' : 'Mark as high demand'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       );
@@ -183,11 +190,7 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
       return (
         <div className="flex items-center gap-2">
           {isSummaryRow ? (
-            <Badge variant="secondary" className="text-xs">
-              {loadedBundles > 0
-                ? `${loadedBundles}/${totalBundles} bundles`
-                : `${totalBundles} bundles`}
-            </Badge>
+            null
           ) : (
             <>
               <DollarSign className="h-4 w-4 text-green-600" />
@@ -209,6 +212,12 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
     header: () => <SimpleHeader>Final Revenue</SimpleHeader>,
     cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
       const data = row.original;
+      const isSummaryRow = data.duration === 0;
+      
+      if (isSummaryRow) {
+        return null;
+      }
+      
       const profitMargin =
         ((data.finalRevenue - data.totalCost) / data.totalCost) * 100;
       return (
@@ -236,6 +245,12 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
     header: () => <SimpleHeader>Cost</SimpleHeader>,
     cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
       const data = row.original;
+      const isSummaryRow = data.duration === 0;
+      
+      if (isSummaryRow) {
+        return null;
+      }
+      
       return (
         <div className="space-y-1 text-sm">
           <div>Base: {formatCurrency(data.cost)}</div>
@@ -253,6 +268,12 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
     header: () => <SimpleHeader>Discount</SimpleHeader>,
     cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
       const data = row.original;
+      const isSummaryRow = data.duration === 0;
+      
+      if (isSummaryRow) {
+        return null;
+      }
+      
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-1">
@@ -276,6 +297,12 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
     header: () => <SimpleHeader>Price Per Day</SimpleHeader>,
     cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
       const data = row.original;
+      const isSummaryRow = data.duration === 0;
+      
+      if (isSummaryRow) {
+        return null;
+      }
+      
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-1">
@@ -296,6 +323,12 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
     header: () => <SimpleHeader>Processing</SimpleHeader>,
     cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
       const data = row.original;
+      const isSummaryRow = data.duration === 0;
+      
+      if (isSummaryRow) {
+        return null;
+      }
+      
       return (
         <div className="space-y-1 text-sm">
           <div>Rate: {formatPercentage(data.processingRate)}</div>

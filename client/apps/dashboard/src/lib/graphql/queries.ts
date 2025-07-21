@@ -557,21 +557,6 @@ export const GET_BUNDLES_BY_COUNTRY = gql(`
     bundlesByCountry {
       countryName
       countryId
-      totalBundles
-      avgPricePerDay
-      hasCustomDiscount
-      avgDiscountRate
-      totalDiscountValue
-      avgCost
-      avgCostPlus
-      avgTotalCost
-      avgProcessingRate
-      avgProcessingCost
-      avgFinalRevenue
-      totalRevenue
-      avgNetProfit
-      avgProfitMargin
-      lastFetched
     }
   }
 `)

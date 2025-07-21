@@ -577,27 +577,10 @@ enum ConfigurationLevel {
   BUNDLE
 }
 
-# Bundles by Country Types - aggregated pricing data for countries
+# Bundles by Country Types - simplified country data
 type BundlesByCountry {
   countryName: String!
   countryId: String!
-  totalBundles: Int!
-  avgPricePerDay: Float!
-  hasCustomDiscount: Boolean!
-  avgDiscountRate: Float!
-  totalDiscountValue: Float!
-  avgCost: Float!
-  avgCostPlus: Float!
-  avgTotalCost: Float!
-  avgProcessingRate: Float!
-  avgProcessingCost: Float!
-  avgFinalRevenue: Float!
-  avgNetProfit: Float!
-  totalRevenue: Float!
-  avgProfitMargin: Float!
-  lastFetched: String
-  calculationMethod: String! # SAMPLED | ESTIMATED
-  configurationLevel: ConfigurationLevel!
 }
 
 # Individual bundles for a specific country

@@ -17,7 +17,6 @@ export interface CountryBundleWithDisplay extends CountryBundle {
 
 export interface BundlesByCountryWithBundles extends BundlesByCountry {
   bundles?: CountryBundleWithDisplay[];
-  configurationLevel?: string; // ConfigurationLevel enum: GLOBAL | REGION | COUNTRY | BUNDLE
 }
 
 interface CountryPricingTableGroupedProps {
@@ -39,26 +38,25 @@ const transformDataForTable = (
   }
 
   bundlesByCountry.forEach((country) => {
-    // Always add summary row first using aggregated data
+    // Add simple country row with just the name
     flatData.push({
-      bundleName: `${country.countryName} Summary`,
+      bundleName: country.countryName,
       countryName: country.countryName,
       countryId: country.countryId,
       duration: 0, // Special indicator for summary row
-      cost: country.avgCost,
-      costPlus: country.avgCostPlus,
-      totalCost: country.avgTotalCost,
-      discountRate: country.avgDiscountRate,
-      discountValue: country.totalDiscountValue,
-      priceAfterDiscount: country.avgFinalRevenue, // Using final revenue as the price after all adjustments
-      processingRate: country.avgProcessingRate,
-      processingCost: country.avgProcessingCost,
-      finalRevenue: country.avgFinalRevenue,
-      netProfit: country.avgNetProfit,
+      cost: 0,
+      costPlus: 0,
+      totalCost: 0,
+      discountRate: 0,
+      discountValue: 0,
+      priceAfterDiscount: 0,
+      processingRate: 0,
+      processingCost: 0,
+      finalRevenue: 0,
+      netProfit: 0,
       currency: "USD",
-      pricePerDay: country.avgPricePerDay,
-      hasCustomDiscount: country.hasCustomDiscount,
-      configurationLevel: country.configurationLevel,
+      pricePerDay: 0,
+      hasCustomDiscount: false,
     });
 
     // Only add bundles if country is expanded and has bundles
@@ -77,8 +75,6 @@ const transformDataForTable = (
         flatData.push({
           ...bundle,
           countryId: country.countryId,
-          // pricePerDay and hasCustomDiscount now come from the backend
-          hasCustomDiscount: country.hasCustomDiscount,
         });
       });
     }
@@ -190,6 +186,20 @@ export function CountryPricingTableGrouped({
     
     try {
       const data = row?.original;
+      
+      // Handle parent row clicks for expand/collapse
+      if (data && data.duration === 0) {
+        isHandlingClick.current = true;
+        handleToggleCountry(data.countryId);
+        
+        // Reset the click guard
+        setTimeout(() => {
+          isHandlingClick.current = false;
+        }, 100);
+        return;
+      }
+      
+      // Handle bundle row clicks for drawer
       if (data && data.duration !== 0) {
         isHandlingClick.current = true;
         console.log("Row clicked, opening drawer for:", data);
@@ -231,7 +241,7 @@ export function CountryPricingTableGrouped({
       console.error("Row click error:", error);
       isHandlingClick.current = false;
     }
-  }, [onBundleClick]);
+  }, [onBundleClick, handleToggleCountry]);
 
   // Create table configuration - static with inline columns to avoid dependency cycles
   const { columns: enhancedColumns, plugins } = useMemo(
@@ -243,7 +253,6 @@ export function CountryPricingTableGrouped({
           },
           enablePinningUI: false,
           pinnedColumnStyles: {
-            backgroundColor: "rgb(249 250 251)",
             borderColor: "rgb(229 231 235)",
             zIndex: 2,
           },
@@ -292,7 +301,7 @@ export function CountryPricingTableGrouped({
         pageSizeOptions={[10, 20, 50, 100, 200]}
         onRowClick={handleRowClick}
         emptyMessage="No pricing data available"
-        className="country-pricing-table-grouped"
+        className="country-pricing-table-grouped [&_tbody_tr:has(td:first-child_div)]:h-10 [&_tbody_tr:has(td:first-child_div)_td]:py-2 [&_tbody_tr:has(td:first-child_div)]:cursor-pointer"
         // Pass only dynamic data through meta - memoized to prevent recreation
         meta={useMemo(() => ({
           expandedCountries,

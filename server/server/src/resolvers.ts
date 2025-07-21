@@ -420,215 +420,37 @@ export const resolvers: Resolvers = {
       }
       
       try {
-        const configRepository = context.repositories.pricingConfigs;
-        
         // Get all countries
         const countries = await context.dataSources.countries.getCountries();
         
-        // Use the cached catalogue data instead of making new API calls
+        // Use the cached catalogue data
         const dataPlansResult = await context.dataSources.catalogue.searchPlans({});
         const dataPlans = dataPlansResult.bundles || [];
         
-        // Group bundles by country and calculate aggregates efficiently
-        const countryBundleMap = new Map<string, any[]>();
+        // Build simple country to bundle mapping
+        const countryBundleCount = new Map<string, number>();
         
-        // Build country to bundles mapping
         for (const bundle of dataPlans) {
           if (bundle.countries) {
             for (const country of bundle.countries) {
-              if (!countryBundleMap.has(country.iso)) {
-                countryBundleMap.set(country.iso, []);
-              }
-              countryBundleMap.get(country.iso)!.push({
-                bundle,
-                duration: bundle.duration,
-                name: bundle.name,
-                price: bundle.price
-              });
+              countryBundleCount.set(country.iso, (countryBundleCount.get(country.iso) || 0) + 1);
             }
           }
         }
         
-        // Get all pricing configurations in one query
-        const allConfigurations = await configRepository.getAllConfigurations();
-        const activeConfigsByCountry = new Map<string, boolean>();
-        const configLevelByCountry = new Map<string, string>();
-        
-        for (const config of allConfigurations) {
-          if (config.isActive && config.countryId) {
-            activeConfigsByCountry.set(config.countryId, true);
-            
-            // Determine the highest specificity configuration level for this country
-            const currentLevel = getConfigurationLevel(config);
-            const existingLevel = configLevelByCountry.get(config.countryId);
-            
-            // Priority order: BUNDLE > COUNTRY > REGION > GLOBAL
-            if (!existingLevel || 
-                (currentLevel === 'BUNDLE') ||
-                (currentLevel === 'COUNTRY' && existingLevel !== 'BUNDLE') ||
-                (currentLevel === 'REGION' && !['BUNDLE', 'COUNTRY'].includes(existingLevel))) {
-              configLevelByCountry.set(config.countryId, currentLevel);
-            }
-          }
-        }
-        
-        // Calculate aggregated data for each country
-        const bundlesByCountry = await Promise.all(
-          countries.map(async (country) => {
-            const countryBundles = countryBundleMap.get(country.iso) || [];
-            const totalBundles = countryBundles.length;
-            
-            if (totalBundles === 0) {
-              return {
-                countryName: country.country,
-                countryId: country.iso,
-                totalBundles: 0,
-                avgPricePerDay: 0,
-                hasCustomDiscount: activeConfigsByCountry.has(country.iso) || false,
-                avgDiscountRate: 0.3, // Default discount rate
-                totalDiscountValue: 0,
-                avgCost: 0,
-                avgCostPlus: 0,
-                avgTotalCost: 0,
-                avgProcessingRate: 0.045, // Default processing rate
-                avgProcessingCost: 0,
-                avgFinalRevenue: 0,
-                avgNetProfit: 0,
-                totalRevenue: 0,
-                avgProfitMargin: 0,
-                lastFetched: new Date().toISOString(),
-                configurationLevel: configLevelByCountry.get(country.iso) || 'GLOBAL'
-              };
-            }
-            
-            // Get representative bundles for real pricing calculations
-            const sampleBundles = getSampleBundles(countryBundles, 5);
-            let realAggregates;
-            
-            try {
-              // Calculate real pricing for sample bundles using existing pricing service
-              const { PricingService } = await import('./services/pricing.service');
-              
-              const pricingInputs = sampleBundles.map(bundleData => ({
-                numOfDays: bundleData.duration,
-                countryId: country.iso,
-                regionId: country.region || 'unknown'
-              }));
-              
-              // Use the same logic as calculatePrices resolver but for sample bundles
-              const pricingResults = await Promise.all(
-                pricingInputs.map(async (input) => {
-                  try {
-                    // Get pricing configuration for the bundle
-                    const config = await PricingService.getPricingConfig(
-                      input.countryId, 
-                      input.numOfDays, 
-                      context.dataSources.catalogue, 
-                      configRepository,
-                      'israeli_card', // Default payment method
-                      context.dataSources.pricing
-                    );
-                    
-                    // Get bundle and country names
-                    const bundleName = PricingService.getBundleName(input.numOfDays);
-                    const countryName = PricingService.getCountryName(input.countryId);
-                    
-                    // Calculate detailed pricing breakdown
-                    const pricingBreakdown = PricingService.calculatePricing(
-                      bundleName,
-                      countryName,
-                      input.numOfDays,
-                      config
-                    );
-
-                    return pricingBreakdown;
-                  } catch (error) {
-                    logger.warn(`Failed to calculate pricing for ${input.countryId} ${input.numOfDays}d, using fallback`, {
-                      countryId: input.countryId,
-                      duration: input.numOfDays,
-                      error: error instanceof Error ? error.message : String(error),
-                      operationType: 'pricing-calculation-fallback'
-                    });
-                    // Return null for failed calculations
-                    return null;
-                  }
-                })
-              );
-              
-              // Filter out failed calculations
-              const validResults = pricingResults.filter(result => result !== null);
-              
-              if (validResults.length > 0) {
-                // Use real pricing aggregations
-                realAggregates = aggregatePricingResults(validResults, totalBundles);
-              } else {
-                throw new Error('No valid pricing calculations available');
-              }
-              
-            } catch (error) {
-              
-              // Fallback to estimation logic
-              const avgPrice = countryBundles.reduce((sum, b) => sum + b.bundle.price, 0) / totalBundles;
-              const avgDuration = countryBundles.reduce((sum, b) => sum + b.duration, 0) / totalBundles;
-              const defaultDiscountRate = activeConfigsByCountry.has(country.iso) ? 0.25 : 0.3;
-              const defaultProcessingRate = 0.045;
-              const avgCost = avgPrice * 0.6; // Assume 60% cost split
-              const avgCostPlus = avgPrice * 0.1; // Assume 10% additional cost
-              const avgTotalCost = avgCost + avgCostPlus;
-              const avgDiscountValue = avgTotalCost * defaultDiscountRate;
-              const priceAfterDiscount = avgTotalCost - avgDiscountValue;
-              const avgProcessingCost = priceAfterDiscount * defaultProcessingRate;
-              const avgFinalRevenue = priceAfterDiscount - avgProcessingCost;
-              const avgNetProfit = avgFinalRevenue - avgTotalCost;
-              // Add safety check for division by zero
-              const avgPricePerDay = avgDuration > 0 ? avgPrice / avgDuration : 0;
-              
-              realAggregates = {
-                avgCost: Number(avgCost.toFixed(2)),
-                avgCostPlus: Number(avgCostPlus.toFixed(2)),
-                avgTotalCost: Number(avgTotalCost.toFixed(2)),
-                avgDiscountRate: defaultDiscountRate,
-                totalDiscountValue: Number((avgDiscountValue * totalBundles).toFixed(2)),
-                avgProcessingRate: defaultProcessingRate,
-                avgProcessingCost: Number(avgProcessingCost.toFixed(2)),
-                avgFinalRevenue: Number(avgFinalRevenue.toFixed(2)),
-                avgNetProfit: Number(avgNetProfit.toFixed(2)),
-                avgPricePerDay: Number(avgPricePerDay.toFixed(2)),
-                calculationMethod: 'ESTIMATED'
-              };
-            }
-            
-            return {
-              countryName: country.country,
-              countryId: country.iso,
-              totalBundles,
-              avgPricePerDay: realAggregates.avgPricePerDay,
-              hasCustomDiscount: activeConfigsByCountry.has(country.iso) || false,
-              avgDiscountRate: realAggregates.avgDiscountRate,
-              totalDiscountValue: realAggregates.totalDiscountValue,
-              avgCost: realAggregates.avgCost,
-              avgCostPlus: realAggregates.avgCostPlus,
-              avgTotalCost: realAggregates.avgTotalCost,
-              avgProcessingRate: realAggregates.avgProcessingRate,
-              avgProcessingCost: realAggregates.avgProcessingCost,
-              avgFinalRevenue: realAggregates.avgFinalRevenue,
-              avgNetProfit: realAggregates.avgNetProfit,
-              totalRevenue: Number((realAggregates.avgFinalRevenue * totalBundles).toFixed(2)),
-              avgProfitMargin: realAggregates.avgTotalCost > 0 ? Number(((realAggregates.avgNetProfit / realAggregates.avgTotalCost) * 100).toFixed(2)) : 0,
-              lastFetched: dataPlansResult.lastFetched || new Date().toISOString(),
-              calculationMethod: realAggregates.calculationMethod,
-              configurationLevel: configLevelByCountry.get(country.iso) || 'GLOBAL'
-            };
-          })
-        );
-        
-        // Filter out countries with no bundles, sort alphabetically, and cache result
-        const result = bundlesByCountry
-          .filter(country => country.totalBundles > 0)
+        // Create simple country list with bundle counts
+        const bundlesByCountry = countries
+          .filter(country => (countryBundleCount.get(country.iso) || 0) > 0)
+          .map(country => ({
+            countryName: country.country,
+            countryId: country.iso
+          }))
           .sort((a, b) => a.countryName.localeCompare(b.countryName));
-        bundlesByCountryCache.set(result);
         
-        return result;
+        // Cache result
+        bundlesByCountryCache.set(bundlesByCountry);
+        
+        return bundlesByCountry;
       } catch (error) {
         logger.error('Error in bundlesByCountry resolver', error as Error, {
           operationType: 'bundles-by-country-fetch'

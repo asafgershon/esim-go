@@ -247,8 +247,6 @@ export function AdvancedDataTable<TData, TValue>({
       left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
       right: isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
       position: isPinned ? ("sticky" as const) : ("relative" as const),
-      // Add solid background to prevent see-through effect using container's background
-      backgroundColor: isPinned ? containerBgColor : undefined,
       width: column.getSize(),
       zIndex: isPinned ? 1 : 0,
     }
