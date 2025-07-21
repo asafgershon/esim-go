@@ -93,8 +93,9 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
   /**
    * Find the best matching configuration for a bundle using hierarchy:
    * 1. Bundle-specific (country + duration + bundle_group)
-   * 2. Country-specific (country only)
-   * 3. Default (no filters)
+   * 2. Country + duration specific (any bundle group)
+   * 3. Country-specific (country only, any duration)
+   * 4. Default (no filters)
    */
   async findMatchingConfiguration(
     countryId: string,
@@ -115,7 +116,21 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
       return bundleSpecific;
     }
 
-    // 2. Try country-specific match (medium specific)
+    // 2. Try country + duration match (no bundle group restriction)
+    // Get all matching configs and sort by creation date (most recent first)
+    const countryDurationMatches = activeConfigs.filter(config => 
+      config.countryId === countryId &&
+      config.duration === duration &&
+      (!config.bundleGroup || config.bundleGroup === "") // No bundle group specified (applies to all bundle groups)
+    ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    const countryDurationSpecific = countryDurationMatches[0]; // Most recent match
+    
+    if (countryDurationSpecific) {
+      return countryDurationSpecific;
+    }
+
+    // 3. Try country-specific match (medium specific)
     const countrySpecific = activeConfigs.find(config => 
       config.countryId === countryId &&
       !config.duration && // No duration specified (applies to all)
@@ -126,7 +141,7 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
       return countrySpecific;
     }
 
-    // 3. Try default/global configuration (fallback)
+    // 4. Try default/global configuration (fallback)
     const defaultConfig = activeConfigs.find(config => 
       !config.countryId && // No country specified (global)
       !config.duration && // No duration specified (applies to all)

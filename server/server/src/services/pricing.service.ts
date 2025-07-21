@@ -39,6 +39,7 @@ export interface PricingBreakdown {
 export class PricingService {
   private static readonly DEFAULT_DISCOUNT_RATE = 0.0; // 0%
   private static readonly DEFAULT_DISCOUNT_PER_DAY = 0.10; // 10% per unused day
+  private static readonly DEFAULT_PROCESSING_RATE = 0.045; // 4.5% processing fee
   private static readonly MINIMUM_PROFIT_MARGIN = 1.50; // $1.50 minimum profit margin
   private static readonly DEFAULT_CURRENCY = 'USD';
   private static readonly logger = createLogger({ 
@@ -505,6 +506,23 @@ export class PricingService {
             duration,
             matchingBundle.bundleGroup
           );
+          
+          // Debug log for configuration lookup
+          this.logger.info('Pricing configuration lookup result', {
+            countryId,
+            region: matchingBundle.baseCountry?.region || 'unknown',
+            duration,
+            bundleGroup: matchingBundle.bundleGroup,
+            configRule: configRule ? {
+              id: configRule.id,
+              name: configRule.name,
+              discountRate: configRule.discountRate,
+              markupAmount: configRule.markupAmount,
+              discountPerDay: configRule.discountPerDay,
+              isActive: configRule.isActive
+            } : null,
+            operationType: 'config-lookup-debug'
+          });
         } catch (error) {
           this.logger.error('Failed to fetch pricing configuration', error as Error, {
             countryId,
@@ -606,31 +624,37 @@ export class PricingService {
 
       // Calculate pricing based on eSIM Go data + fixed markup configuration
       const markup = fixedMarkupAmount; // Fixed dollar amount from database table
-      const totalCostBeforeUnusedDiscount = esimGoCost + markup;
-      const totalCostAfterDiscount = totalCostBeforeUnusedDiscount * (1 - unusedDaysDiscount);
+      const totalCostBeforeDiscounts = esimGoCost + markup;
+      
+      // Apply general discount rate first (from pricing configuration)
+      const totalCostAfterGeneralDiscount = totalCostBeforeDiscounts * (1 - discountRate);
+      
+      // Then apply unused days discount
+      const totalCostAfterAllDiscounts = totalCostAfterGeneralDiscount * (1 - unusedDaysDiscount);
       
       // Validate minimum profit margin - ensure we don't price below cost + $1.50
       const minimumAllowedPrice = esimGoCost + this.MINIMUM_PROFIT_MARGIN;
-      if (totalCostAfterDiscount < minimumAllowedPrice) {
+      if (totalCostAfterAllDiscounts < minimumAllowedPrice) {
         this.logger.error('Pricing would result in insufficient profit margin', undefined, {
           countryId,
           bundleName: matchingBundle.name,
           duration,
           esimGoCost,
           markup,
-          totalCostBeforeDiscount: totalCostBeforeUnusedDiscount,
-          totalCostAfterDiscount,
+          totalCostBeforeDiscount: totalCostBeforeDiscounts,
+          totalCostAfterGeneralDiscount,
+          totalCostAfterAllDiscounts,
           minimumAllowedPrice,
           discountPerDayRate,
           unusedDays,
           unusedDaysDiscount,
-          profitShortfall: minimumAllowedPrice - totalCostAfterDiscount,
+          profitShortfall: minimumAllowedPrice - totalCostAfterAllDiscounts,
           operationType: 'pricing-validation-failed'
         });
         
         throw new GraphQLError(
           `Pricing configuration would result in insufficient profit margin. ` +
-          `Calculated price ($${totalCostAfterDiscount.toFixed(2)}) is below minimum required ` +
+          `Calculated price ($${totalCostAfterAllDiscounts.toFixed(2)}) is below minimum required ` +
           `($${minimumAllowedPrice.toFixed(2)}). Please adjust discount per day rate or markup amount.`,
           {
             extensions: {
@@ -638,15 +662,15 @@ export class PricingService {
               countryId,
               bundleName: matchingBundle.name,
               duration,
-              calculatedPrice: Number(totalCostAfterDiscount.toFixed(2)),
+              calculatedPrice: Number(totalCostAfterAllDiscounts.toFixed(2)),
               minimumPrice: Number(minimumAllowedPrice.toFixed(2)),
-              profitShortfall: Number((minimumAllowedPrice - totalCostAfterDiscount).toFixed(2))
+              profitShortfall: Number((minimumAllowedPrice - totalCostAfterAllDiscounts).toFixed(2))
             }
           }
         );
       }
       
-      const totalCost = totalCostAfterDiscount;
+      const totalCost = totalCostAfterAllDiscounts;
 
       const result = {
         cost: Number(esimGoCost.toFixed(2)), // eSIM Go cost (our base cost)
@@ -677,10 +701,14 @@ export class PricingService {
         finalCost: result.cost,
         fixedMarkupAmount: fixedMarkupAmount,
         markup: result.costPlus,
-        totalCost: result.totalCost,
+        totalCostBeforeDiscounts,
+        generalDiscountRate: discountRate,
+        totalCostAfterGeneralDiscount,
         unusedDays,
         discountPerDayRate,
         unusedDaysDiscount,
+        totalCostAfterAllDiscounts,
+        finalTotalCost: result.totalCost,
         minimumAllowedPrice,
         profitMargin: result.totalCost - result.cost,
         operationType: 'pricing-final-calculation'
