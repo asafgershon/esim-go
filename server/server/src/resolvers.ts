@@ -343,6 +343,13 @@ export const resolvers: Resolvers = {
       const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
       const configRepository = new PricingConfigRepository();
       
+      logger.info('Calculate prices request received', {
+        totalInputs: inputs.length,
+        uniqueCountries: [...new Set(inputs.map((i: CalculatePriceInput) => i.countryId))].length,
+        uniqueDurations: [...new Set(inputs.map((i: CalculatePriceInput) => i.numOfDays))].length,
+        operationType: 'calculate-prices-request'
+      });
+      
       const results = await Promise.all(
         inputs.map(async (input: CalculatePriceInput) => {
           try {
@@ -396,7 +403,26 @@ export const resolvers: Resolvers = {
         })
       );
 
-      return results;
+      // 🎯 Simple deduplication fix - remove nearly identical results
+      const uniqueResults = results.filter((result, index, array) => {
+        return array.findIndex(r => 
+          r.countryName === result.countryName &&
+          r.duration === result.duration &&
+          Math.abs(r.totalCost - result.totalCost) < 0.01 && // Same total cost (within 1 cent)
+          Math.abs(r.finalRevenue - result.finalRevenue) < 0.01 // Same final revenue
+        ) === index;
+      });
+
+      if (results.length !== uniqueResults.length) {
+        logger.info('Deduplication applied', {
+          originalCount: results.length,
+          uniqueCount: uniqueResults.length,
+          removedDuplicates: results.length - uniqueResults.length,
+          operationType: 'deduplication-applied'
+        });
+      }
+
+      return uniqueResults;
     },
     
     bundlesByCountry: async (_, __, context: Context) => {
