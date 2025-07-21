@@ -1,6 +1,5 @@
-import { Country, GetCountriesQuery, GetDataPlansQuery, GetPricingConfigurationsQuery, PricingConfiguration } from '@/__generated__/graphql';
-import { useLazyQuery, useQuery } from '@apollo/client';
-import React, { useEffect, useState } from 'react';
+import { CountryBundle } from '@/__generated__/graphql';
+import React, { useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
 import { Calculator, CreditCard, DollarSign } from 'lucide-react';
 import { CountryPricingTableGrouped } from '../components/country-pricing-table-grouped';
@@ -8,225 +7,25 @@ import { PricingConfigDrawer } from '../components/pricing-config-drawer';
 import { PricingSimulatorDrawer } from '../components/pricing-simulator-drawer';
 import { ProcessingFeeDrawer } from '../components/processing-fee-drawer';
 import { MarkupTableDrawer } from '../components/markup-table-drawer';
-import { CALCULATE_BATCH_PRICING, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
+import { usePricingData, CountryGroupData } from '../hooks/usePricingData';
 
-interface PricingData {
-  bundleName: string;
-  countryName: string;
-  duration: number;
-  cost: number;
-  costPlus: number;
-  totalCost: number;
-  discountRate: number;
-  discountValue: number;
-  priceAfterDiscount: number;
-  processingRate: number;
-  processingCost: number;
-  revenueAfterProcessing: number;
-  finalRevenue: number;
-  currency: string;
-}
 
-interface CountryGroupData {
-  countryName: string;
-  countryId: string;
-  totalBundles: number;
-  avgPricePerDay: number;
-  hasCustomDiscount: boolean;
-  discountRate?: number;
-  bundles?: PricingData[]; // Lazy loaded
-  lastFetched?: string; // ISO date string
-}
+
 
 
 const PricingPage: React.FC = () => {
-  const [countryGroups, setCountryGroups] = useState<CountryGroupData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedRow, setSelectedRow] = useState<PricingData | null>(null);
+  const { countryGroups, loading, error, expandCountry, refreshConfigurations, countriesData } = usePricingData();
+  
+  const [selectedRow, setSelectedRow] = useState<CountryBundle | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [isProcessingFeeOpen, setIsProcessingFeeOpen] = useState(false);
   const [isMarkupTableOpen, setIsMarkupTableOpen] = useState(false);
 
-  // Fetch countries, data plans, and pricing configurations
-  const { data: countriesData } = useQuery<GetCountriesQuery>(GET_COUNTRIES);
-  const { data: dataPlansData } = useQuery<GetDataPlansQuery>(GET_DATA_PLANS, {
-    variables: {
-      filter: {
-        limit: 1000 // Fetch more bundles to show all durations
-      }
-    },
-    onCompleted: (data) => {
-      console.log('GET_DATA_PLANS response:', data);
-      console.log('Total bundles received:', data?.dataPlans?.items?.length);
-      console.log('Bundle durations:', data?.dataPlans?.items?.map(plan => plan.duration));
-      console.log('Unique durations:', [...new Set(data?.dataPlans?.items?.map(plan => plan.duration))]);
-    }
-  });
-  const { data: pricingConfigsData, refetch: refetchPricingConfigs } = useQuery<GetPricingConfigurationsQuery>(GET_PRICING_CONFIGURATIONS);
-  const [calculateBatchPricing] = useLazyQuery(CALCULATE_BATCH_PRICING);
-  const [getCountryDataPlans] = useLazyQuery(GET_DATA_PLANS);
 
-  console.log('pricingConfigsData', countriesData);
-  // Generate country groups from actual data
-  useEffect(() => {
-    const fetchCountryGroups = async () => {
-      if (!countriesData?.countries || !dataPlansData?.dataPlans?.items) {
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      const groups: CountryGroupData[] = [];
-
-      // Group data plans by country
-      const plansByCountry = new Map<string, Set<number>>();
-      
-      for (const plan of dataPlansData.dataPlans.items) {
-        if (plan.countries) {
-          for (const country of plan.countries) {
-            if (!plansByCountry.has(country.iso)) {
-              plansByCountry.set(country.iso, new Set());
-            }
-            plansByCountry.get(country.iso)!.add(plan.duration);
-          }
-        }
-      }
-
-      // Create country groups with summary data
-      for (const [countryId, durations] of plansByCountry) {
-        const country = countriesData.countries.find((c: Country) => c.iso === countryId);
-        if (!country) continue;
-
-        // Calculate basic summary for now (will be enhanced)
-        const totalBundles = durations.size;
-        
-        // Check if country has custom discount
-        const hasCustomDiscount = pricingConfigsData?.pricingConfigurations?.some(
-          (config: PricingConfiguration) => config.countryId === countryId && config.isActive
-        ) || false;
-
-        const customConfig = pricingConfigsData?.pricingConfigurations?.find(
-          (config: PricingConfiguration) => config.countryId === countryId && config.isActive
-        );
-
-        groups.push({
-          countryName: country.name,
-          countryId: countryId,
-          totalBundles,
-          avgPricePerDay: 0, // Will be calculated when bundles are loaded
-          hasCustomDiscount,
-          discountRate: customConfig?.discountRate,
-          bundles: undefined, // Lazy loaded
-        });
-      }
-
-      setCountryGroups(groups);
-      setLoading(false);
-    };
-
-    fetchCountryGroups();
-  }, [countriesData, dataPlansData, pricingConfigsData]);
-
-  // Lazy load bundles for a country when expanded
-  const handleExpandCountry = async (countryId: string) => {
-    const country = countriesData?.countries?.find((c: Country) => c.iso === countryId);
-    if (!country) return;
-
-    try {
-      // Fetch bundles for this specific country using the country filter
-      const countryDataResult = await getCountryDataPlans({
-        variables: {
-          filter: {
-            country: countryId,
-            limit: 1000
-          }
-        }
-      });
-
-      if (countryDataResult.data?.dataPlans?.items) {
-        const countryDataPlans = countryDataResult.data;
-        // Get all durations for this country from the fetched data
-        const durations = new Set<number>();
-        for (const plan of countryDataPlans.dataPlans.items) {
-          durations.add(plan.duration);
-        }
-
-        // Build batch input for this country
-        const batchInputs: Array<{numOfDays: number; regionId: string; countryId: string; paymentMethod?: string}> = [];
-        for (const duration of durations) {
-          batchInputs.push({
-            numOfDays: duration,
-            regionId: country.region,
-            countryId: countryId,
-            paymentMethod: 'ISRAELI_CARD', // Default payment method for now
-          });
-        }
-
-        const pricingResult = await calculateBatchPricing({
-          variables: {
-            inputs: batchInputs,
-          },
-        });
-
-        if (pricingResult.data?.calculatePrices) {
-          const bundles: PricingData[] = pricingResult.data.calculatePrices;
-          
-          // Calculate average price per day
-          const avgPricePerDay = bundles.reduce((sum, bundle) => 
-            sum + (bundle.priceAfterDiscount / bundle.duration), 0
-          ) / bundles.length;
-
-          // Update the country group with loaded bundles and last fetched info
-          setCountryGroups(prev => prev.map(group => 
-            group.countryId === countryId 
-              ? { 
-                  ...group, 
-                  bundles, 
-                  avgPricePerDay,
-                  lastFetched: countryDataPlans.dataPlans.lastFetched
-                }
-              : group
-          ));
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching bundles for country:', countryId, error);
-    }
-  };
-
-  // Handle country click to open drawer
-  const handleCountryClick = (country: CountryGroupData) => {
-    // Use first bundle if available, or create a dummy one
-    const firstBundle = country.bundles?.[0];
-    if (firstBundle) {
-      setSelectedRow(firstBundle);
-    } else {
-      // Create a dummy bundle for country configuration
-      const dummyBundle: PricingData = {
-        bundleName: `${country.countryName} Configuration`,
-        countryName: country.countryName,
-        duration: 7,
-        cost: 0,
-        costPlus: 0,
-        totalCost: 0,
-        discountRate: country.discountRate || 0.3,
-        discountValue: 0,
-        priceAfterDiscount: 0,
-        processingRate: 0.045,
-        processingCost: 0,
-        revenueAfterProcessing: 0,
-        finalRevenue: 0,
-        currency: 'USD',
-      };
-      setSelectedRow(dummyBundle);
-    }
-    setIsDrawerOpen(true);
-  };
 
   // Handle bundle click to open drawer
-  const handleBundleClick = (bundle: PricingData) => {
+  const handleBundleClick = (bundle: CountryBundle) => {
     console.log('handleBundleClick called with:', bundle);
     setSelectedRow(bundle);
     setIsDrawerOpen(true);
@@ -240,10 +39,7 @@ const PricingPage: React.FC = () => {
 
   // Handle configuration saved
   const handleConfigurationSaved = () => {
-    refetchPricingConfigs();
-    // Optionally refresh pricing data to see changes
-    setCountryGroups([]); // Clear current data
-    setLoading(true);
+    refreshConfigurations();
   };
 
 
@@ -309,10 +105,9 @@ const PricingPage: React.FC = () => {
       </div>
 
       <CountryPricingTableGrouped 
-        countries={countryGroups}
-        onCountryClick={handleCountryClick}
+        bundlesByCountry={countryGroups}
         onBundleClick={handleBundleClick}
-        onExpandCountry={handleExpandCountry}
+        onExpandCountry={expandCountry}
       />
 
       {/* Drawer for pricing configuration */}
