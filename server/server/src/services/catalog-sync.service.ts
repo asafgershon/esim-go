@@ -230,21 +230,85 @@ export class CatalogSyncService {
       
       for (const groupName of this.BUNDLE_GROUPS) {
         try {
+          // Fetch all pages for this bundle group
+          const allGroupBundles: ESIMGoDataPlan[] = [];
+          let currentPage = 1;
+          let totalPages = 1;
           
-          const response = await this.catalogueDataSource.getWithErrorHandling<{
+          // Fetch first page to get pagination info
+          const firstPageResponse = await this.catalogueDataSource.getWithErrorHandling<{
             bundles: ESIMGoDataPlan[];
             totalCount: number;
+            pageCount?: number;
+            rows?: number;
+            pageSize?: number;
           }>('/v2.5/catalogue', {
             group: groupName,
-            perPage: 200 // Increase to reduce API calls
+            perPage: 50, // Must be max of 50 otherwise returns 401
+            page: currentPage
           });
           
-          if (response.bundles && response.bundles.length > 0) {
+          if (firstPageResponse.bundles && firstPageResponse.bundles.length > 0) {
+            allGroupBundles.push(...firstPageResponse.bundles);
+            totalPages = firstPageResponse.pageCount || 1;
+            
+            this.logger.info('Bundle group first page fetched', {
+              groupName,
+              page: currentPage,
+              totalPages,
+              totalRows: firstPageResponse.rows || firstPageResponse.totalCount,
+              bundlesInPage: firstPageResponse.bundles.length,
+              operationType: 'bundle-group-sync'
+            });
+            
+            // Fetch remaining pages sequentially
+            while (currentPage < totalPages) {
+              currentPage++;
+              
+              // Small delay between requests to be nice to the API
+              await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
+              
+              try {
+                const pageResponse = await this.catalogueDataSource.getWithErrorHandling<{
+                  bundles: ESIMGoDataPlan[];
+                  totalCount: number;
+                }>('/v2.5/catalogue', {
+                  group: groupName,
+                  perPage: 50,
+                  page: currentPage
+                });
+                
+                if (pageResponse.bundles && pageResponse.bundles.length > 0) {
+                  allGroupBundles.push(...pageResponse.bundles);
+                  
+                  // Log progress every 5 pages
+                  if (currentPage % 5 === 0 || currentPage === totalPages) {
+                    this.logger.info('Bundle group pagination progress', {
+                      groupName,
+                      currentPage,
+                      totalPages,
+                      totalBundlesSoFar: allGroupBundles.length,
+                      operationType: 'bundle-group-sync'
+                    });
+                  }
+                }
+              } catch (pageError) {
+                this.logger.error('Error fetching page for bundle group', pageError as Error, {
+                  groupName,
+                  page: currentPage,
+                  operationType: 'bundle-group-sync'
+                });
+                // Continue with next page instead of failing entirely
+              }
+            }
+          }
+          
+          if (allGroupBundles.length > 0) {
             
             // Store by group with 30-day TTL as Jason recommended
             const groupKey = this.getGroupKey(groupName);
             const groupCacheResult = await this.cacheHealth.retryOperation(
-              () => this.cacheHealth.safeSet(groupKey, JSON.stringify(response.bundles), {
+              () => this.cacheHealth.safeSet(groupKey, JSON.stringify(allGroupBundles), {
                 ttl: 30 * 24 * 60 * 60 // 30 days (monthly update cycle)
               }),
               3, // max retries
@@ -260,17 +324,18 @@ export class CatalogSyncService {
             }
             
             // Create indexes for this group
-            await this.createIndexes(response.bundles, groupName);
+            await this.createIndexes(allGroupBundles, groupName);
             
             metadata.bundleGroups.push(groupName);
-            metadata.totalBundles += response.bundles.length;
+            metadata.totalBundles += allGroupBundles.length;
             
             bundleGroupSuccess = true;
             
-            const durations = [...new Set(response.bundles.map(b => b.duration))];
+            const durations = [...new Set(allGroupBundles.map(b => b.duration))];
             this.logger.info('Bundle group sync completed', {
               groupName,
-              bundleCount: response.bundles.length,
+              bundleCount: allGroupBundles.length,
+              totalPages: totalPages,
               durations: durations.sort((a, b) => a - b),
               operationType: 'bundle-group-sync'
             });
