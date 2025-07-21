@@ -55,8 +55,6 @@ export class CacheHealthService {
     this.healthCheckTimer = setInterval(() => {
       this.performHealthCheck();
     }, this.HEALTH_CHECK_INTERVAL);
-    
-    this.logger.info('🏥 Cache health monitoring started');
   }
 
   /**
@@ -66,7 +64,6 @@ export class CacheHealthService {
     if (this.healthCheckTimer) {
       clearInterval(this.healthCheckTimer);
       this.healthCheckTimer = null;
-      this.logger.info('🏥 Cache health monitoring stopped');
     }
   }
 
@@ -92,9 +89,8 @@ export class CacheHealthService {
       // Clean up health check key
       await this.safeDelete(healthKey);
       
-      // this.logger.debug('✅ Cache health check passed');
     } catch (error) {
-      // this.logger.warn('⚠️ Cache health check failed', error as Error);
+      this.logger.warn('⚠️ Cache health check failed', error as Error);
     }
   }
 
@@ -120,8 +116,6 @@ export class CacheHealthService {
 
       const responseTime = Date.now() - startTime;
       this.recordSuccess(responseTime);
-      
-      this.logger.debug(`📥 Cache GET success: ${key} (${responseTime}ms)`);
       
       return {
         success: true,
@@ -170,8 +164,6 @@ export class CacheHealthService {
       const responseTime = Date.now() - startTime;
       this.recordSuccess(responseTime);
       
-      this.logger.debug(`📤 Cache SET success: ${key} (${responseTime}ms)`);
-      
       return {
         success: true,
         data: result,
@@ -219,8 +211,6 @@ export class CacheHealthService {
 
       const responseTime = Date.now() - startTime;
       this.recordSuccess(responseTime);
-      
-      this.logger.debug(`🗑️ Cache DELETE success: ${key} (${responseTime}ms)`);
       
       return {
         success: true,
@@ -344,8 +334,6 @@ export class CacheHealthService {
       averageResponseTime: 0,
       lastError: null
     };
-    
-    this.logger.info('🔄 Cache health metrics reset');
   }
 
   /**
