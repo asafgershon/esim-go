@@ -391,7 +391,8 @@ export const resolvers: Resolvers = {
               processingCost: 0,
               finalRevenue: 0,
               netProfit: 0,
-              currency: 'USD'
+              currency: 'USD',
+              discountPerDay: 0.10
             };
           }
         })
@@ -554,7 +555,8 @@ export const resolvers: Resolvers = {
                   ? pricingBreakdown.priceAfterDiscount / pricingBreakdown.duration 
                   : 0,
                 hasCustomDiscount: hasCustomConfig,
-                configurationLevel: configLevelByBundle.get(duration) || 'GLOBAL'
+                configurationLevel: configLevelByBundle.get(duration) || 'GLOBAL',
+                discountPerDay: pricingBreakdown.discountPerDay
               };
             } catch (error) {
               logger.warn('Failed to calculate pricing for bundle', {
@@ -1168,6 +1170,102 @@ export const resolvers: Resolvers = {
 
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Mutation!,
+    
+    // Diagnostic sync mutation - bypasses lock for investigation
+    testCatalogSync: async (_, __, context: Context) => {
+      try {
+        const { CatalogSyncService } = await import('./services/catalog-sync.service');
+        
+        // Create diagnostic version that bypasses distributed lock
+        const testSyncBundleGroup = async (groupName: string) => {
+          logger.info('Testing bundle group sync', { groupName });
+          
+          try {
+            const response = await context.dataSources.catalogue.getWithErrorHandling('/v2.5/catalogue', {
+              group: groupName,
+              perPage: 50,
+              page: 1
+            });
+            
+            logger.info('Bundle group test result', {
+              groupName,
+              success: !!response?.bundles,
+              bundleCount: response?.bundles?.length || 0,
+              totalCount: response?.totalCount || 0,
+              hasError: !response?.bundles
+            });
+            
+            return {
+              groupName,
+              success: !!response?.bundles,
+              bundleCount: response?.bundles?.length || 0,
+              error: response?.bundles ? null : 'No bundles returned'
+            };
+          } catch (error) {
+            logger.error('Bundle group test failed', error as Error, {
+              groupName,
+              errorMessage: error.message,
+              errorCode: error.code,
+              httpStatus: error.response?.status
+            });
+            
+            return {
+              groupName,
+              success: false,
+              bundleCount: 0,
+              error: error.message
+            };
+          }
+        };
+        
+        // Get dynamic bundle groups to prevent 401 errors
+        const organizationGroups = await context.dataSources.catalogue.getOrganizationGroups();
+        const bundleGroups = organizationGroups.map(group => group.name);
+        
+        logger.info('Testing dynamic bundle groups individually', {
+          groupCount: bundleGroups.length,
+          groups: bundleGroups
+        });
+        const results = [];
+        
+        for (const group of bundleGroups) {
+          const result = await testSyncBundleGroup(group);
+          results.push(result);
+          
+          // Small delay between tests
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        const successCount = results.filter(r => r.success).length;
+        const totalBundles = results.reduce((sum, r) => sum + r.bundleCount, 0);
+        
+        logger.info('Bundle group test summary', {
+          successful: successCount,
+          failed: results.length - successCount,
+          totalBundles,
+          results: results.map(r => ({ group: r.groupName, success: r.success, bundles: r.bundleCount, error: r.error }))
+        });
+        
+        return {
+          success: true,
+          message: `Tested ${results.length} bundle groups: ${successCount} successful, ${results.length - successCount} failed. Total bundles: ${totalBundles}`,
+          error: null,
+          syncedBundles: totalBundles,
+          syncDuration: 0,
+          syncedAt: new Date().toISOString()
+        };
+      } catch (error) {
+        logger.error('Manual sync test failed', error as Error);
+        return {
+          success: false,
+          message: 'Sync test failed - check logs for details',
+          error: error.message,
+          syncedBundles: 0,
+          syncDuration: 0,
+          syncedAt: new Date().toISOString()
+        };
+      }
+    },
     
     // Package Assignment
     assignPackageToUser: async (_, { userId, planId }, context: Context) => {

@@ -20,14 +20,37 @@ export class CatalogSyncService {
     operationType: 'catalog-sync'
   });
   
-  // Bundle groups as recommended by Jason from eSIM Go support
-  private readonly BUNDLE_GROUPS = [
-    'Standard Fixed',
-    'Standard - Unlimited Lite', 
-    'Standard - Unlimited Essential',
-    'Standard - Unlimited Plus',
-    'Regional Bundles',
-  ];
+  /**
+   * Get available bundle groups dynamically from eSIM Go organization API
+   * This replaces hard-coded groups and prevents 401 errors for unavailable groups
+   */
+  private async getBundleGroups(): Promise<string[]> {
+    try {
+      const organizationGroups = await this.catalogueDataSource.getOrganizationGroups();
+      const groupNames = organizationGroups.map(group => group.name);
+      
+      this.logger.info('✅ Retrieved dynamic bundle groups', {
+        groupCount: groupNames.length,
+        groups: groupNames,
+        operationType: 'dynamic-bundle-groups'
+      });
+      
+      return groupNames;
+    } catch (error) {
+      this.logger.error('Failed to get dynamic bundle groups', error as Error, {
+        operationType: 'dynamic-bundle-groups-error'
+      });
+      
+      // Fallback to known working group from investigation
+      const fallbackGroups = ['Standard Fixed'];
+      this.logger.warn('Using fallback bundle groups', { 
+        fallbackGroups,
+        operationType: 'bundle-groups-fallback'
+      });
+      
+      return fallbackGroups;
+    }
+  }
 
   constructor(catalogueDataSource: CatalogueDataSource, cache: KeyValueCache<string>) {
     this.catalogueDataSource = catalogueDataSource;
@@ -219,16 +242,20 @@ export class CatalogSyncService {
         syncVersion: this.getCurrentMonthVersion()
       };
       
+      // Get available bundle groups dynamically to prevent 401 errors
+      const availableBundleGroups = await this.getBundleGroups();
+      
       // Implement Jason's recommendation: fetch each bundle group separately
-      this.logger.info('Implementing bundle group filtering strategy', { 
-        bundleGroups: this.BUNDLE_GROUPS,
+      this.logger.info('Implementing dynamic bundle group filtering strategy', { 
+        bundleGroups: availableBundleGroups,
+        groupCount: availableBundleGroups.length,
         operationType: 'full-catalog-sync'
       });
       
       // First, try the optimized bundle group approach
       let bundleGroupSuccess = false;
       
-      for (const groupName of this.BUNDLE_GROUPS) {
+      for (const groupName of availableBundleGroups) {
         try {
           // Fetch all pages for this bundle group
           const allGroupBundles: ESIMGoDataPlan[] = [];
@@ -345,6 +372,9 @@ export class CatalogSyncService {
         } catch (error) {
           this.logger.error('Error syncing bundle group', error as Error, { 
             groupName,
+            errorMessage: error.message,
+            errorCode: error.code,
+            httpStatus: error.response?.status,
             operationType: 'bundle-group-sync'
           });
         }
@@ -448,7 +478,7 @@ export class CatalogSyncService {
       await this.releaseSyncLock(lockResult);
     }
       },
-      { bundleGroups: this.BUNDLE_GROUPS.length }
+      { bundleGroups: 'dynamic' }
     );
   }
 

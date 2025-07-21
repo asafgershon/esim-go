@@ -1,12 +1,30 @@
 /**
- * TypeScript interfaces for eSIM Go API responses
+ * TypeScript interfaces for eSIM Go API responses with Zod validation
  */
+
+import { z } from 'zod';
 
 export interface ESIMGoCountry {
   name: string;
   region: string;
   iso: string;
 }
+
+// Zod schema for organization groups with resilient validation
+export const ESIMGoOrganizationGroupSchema = z.object({
+  name: z.string().min(1, "Organization group name is required"),
+  description: z.string().optional().nullable().transform(val => val || undefined),
+  pricingUrl: z.string().url().optional().nullable().transform(val => val || undefined),
+  iconUrl: z.string().url().optional().nullable().transform(val => val || undefined),
+}).strict(); // Ensure no extra fields are allowed
+
+// Array schema for the API response
+export const ESIMGoOrganizationGroupsResponseSchema = z.array(ESIMGoOrganizationGroupSchema)
+  .min(1, "At least one organization group should be available");
+
+// Infer TypeScript types from Zod schemas
+export type ESIMGoOrganizationGroup = z.infer<typeof ESIMGoOrganizationGroupSchema>;
+export type ESIMGoOrganizationGroupsResponse = z.infer<typeof ESIMGoOrganizationGroupsResponseSchema>;
 
 export interface ESIMGoDataPlan {
   name: string;

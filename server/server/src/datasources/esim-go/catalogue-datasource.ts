@@ -337,6 +337,105 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   }
 
   /**
+   * Get organization groups available to this organization
+   * Uses Zod validation for API resilience and change detection
+   * Caches for 24 hours as organization groups rarely change
+   */
+  async getOrganizationGroups(): Promise<import('./types').ESIMGoOrganizationGroup[]> {
+    const { ESIMGoOrganizationGroupsResponseSchema } = await import('./types');
+    const cacheKey = 'esim-go:organization:groups';
+
+    // Try to get from cache first with error handling
+    const cacheResult = await this.cacheHealth.safeGet(cacheKey);
+    if (cacheResult.success && cacheResult.data) {
+      try {
+        const cachedData = JSON.parse(cacheResult.data as string);
+        // Validate cached data too, in case schema changed
+        const validatedGroups = ESIMGoOrganizationGroupsResponseSchema.parse(cachedData);
+        this.log.info('✅ Using cached organization groups', { 
+          groupCount: validatedGroups.length,
+          groups: validatedGroups.map(g => g.name)
+        });
+        return validatedGroups;
+      } catch (error) {
+        this.log.warn('Cached organization groups failed validation or parsing', { 
+          error: error instanceof Error ? error.message : String(error), 
+          cacheKey 
+        });
+        // Continue to API call if cache data is invalid
+      }
+    }
+
+    // Fetch from API
+    try {
+      this.log.info('Fetching organization groups from API');
+      const rawResponse = await this.getWithErrorHandling<unknown>(
+        "/v2.5/organisation/groups"
+      );
+      
+      // Temporary: Log the actual API response structure for debugging
+      this.log.info('🔍 Raw organization groups API response', {
+        responseType: typeof rawResponse,
+        responseKeys: rawResponse && typeof rawResponse === 'object' ? Object.keys(rawResponse) : [],
+        sampleResponse: JSON.stringify(rawResponse).substring(0, 500) + '...',
+        operationType: 'api-response-debug'
+      });
+      
+      // Validate API response with Zod
+      const validatedGroups = ESIMGoOrganizationGroupsResponseSchema.parse(rawResponse);
+      
+      this.log.info('✅ Organization groups fetched and validated successfully', { 
+        groupCount: validatedGroups.length,
+        groups: validatedGroups.map(g => g.name),
+        groupsWithMetadata: validatedGroups.map(g => ({
+          name: g.name,
+          hasDescription: !!g.description,
+          hasPricingUrl: !!g.pricingUrl,
+          hasIconUrl: !!g.iconUrl
+        }))
+      });
+
+      // Cache validated data for 24 hours with error handling
+      const cacheSetResult = await this.cacheHealth.retryOperation(
+        () => this.cacheHealth.safeSet(
+          cacheKey, 
+          JSON.stringify(validatedGroups), 
+          { ttl: 24 * 60 * 60 } // 24 hours
+        ),
+        2 // max retries
+      );
+
+      if (!cacheSetResult.success) {
+        this.log.warn('Failed to cache organization groups', { 
+          error: cacheSetResult.error?.message, 
+          cacheKey,
+          groupCount: validatedGroups.length 
+        });
+        // Continue without caching - operation should not fail
+      }
+
+      return validatedGroups;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ZodError') {
+        this.log.error('🚨 eSIM Go API schema validation failed - API may have changed!', error, {
+          rawResponse: JSON.stringify(error),
+          operationType: 'schema-validation-error'
+        });
+      } else {
+        this.log.error('Failed to fetch organization groups', error as Error);
+      }
+      
+      // Fallback to known working group from investigation
+      const fallbackGroups = [{ name: 'Standard Fixed' }];
+      this.log.warn('Using fallback organization groups', { 
+        fallbackGroups: fallbackGroups.map(g => g.name),
+        reason: error instanceof Error ? error.message : String(error)
+      });
+      return fallbackGroups;
+    }
+  }
+
+  /**
    * Get bundles by bundle group
    */
   private async getBundlesByGroup(groupName: string): Promise<ESIMGoDataPlan[]> {
@@ -649,12 +748,22 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     } else if (criteria.bundleGroup) {
       bundles = await this.backupService.getBackupPlansByGroup(criteria.bundleGroup);
     } else {
-      // Get all available backup data
+      // Get all available backup data using dynamic bundle groups
       const metadata = await this.backupService.getBackupMetadata();
       if (metadata) {
-        // We don't have a method to get all backup data, so we'll try common bundle groups
-        const commonGroups = ['Standard - Fixed', 'Standard - Unlimited Lite', 'Standard - Unlimited Essential'];
-        for (const group of commonGroups) {
+        // Try to get dynamic bundle groups, fall back to known groups if needed
+        let availableGroups: string[] = [];
+        try {
+          const organizationGroups = await this.getOrganizationGroups();
+          availableGroups = organizationGroups.map(g => g.name);
+          this.log.info('Using dynamic groups for backup fallback', { groups: availableGroups });
+        } catch (error) {
+          // If dynamic groups fail, use minimal fallback
+          availableGroups = ['Standard Fixed'];
+          this.log.warn('Using minimal fallback groups for backup', { groups: availableGroups, error: error.message });
+        }
+        
+        for (const group of availableGroups) {
           const groupBundles = await this.backupService.getBackupPlansByGroup(group);
           bundles.push(...groupBundles);
         }

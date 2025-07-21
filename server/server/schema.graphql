@@ -96,6 +96,7 @@ type Mutation {
 
   # Catalog sync operations
   syncCatalog(force: Boolean = false): SyncCatalogResponse @auth(role: "ADMIN")
+  testCatalogSync: SyncCatalogResponse @auth(role: "ADMIN")
   
   # High demand countries management
   toggleHighDemandCountry(countryId: String!): ToggleHighDemandResponse @auth(role: "ADMIN")
@@ -567,6 +568,7 @@ type PricingBreakdown {
   
   # Currency
   currency: String!
+  discountPerDay: Float!
 }
 
 # Configuration level enum to indicate pricing override level
@@ -603,6 +605,7 @@ type CountryBundle {
   pricePerDay: Float!
   hasCustomDiscount: Boolean!
   configurationLevel: ConfigurationLevel!
+  discountPerDay: Float!
 }
 
 # Batch pricing input
