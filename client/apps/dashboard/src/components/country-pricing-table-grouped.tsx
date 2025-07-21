@@ -13,6 +13,7 @@ export interface CountryBundleWithDisplay extends CountryBundle {
   pricePerDay: number;
   hasCustomDiscount: boolean;
   configurationLevel?: string; // ConfigurationLevel enum: GLOBAL | REGION | COUNTRY | BUNDLE
+  discountPerDay?: number; // Discount per unused day (0.1 = 10%)
 }
 
 export interface BundlesByCountryWithBundles extends BundlesByCountry {

@@ -270,6 +270,30 @@ export type Database = {
           },
         ]
       }
+      high_demand_countries: {
+        Row: {
+          country_id: string
+          created_at: string | null
+          created_by: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          country_id: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          country_id?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       package_assignments: {
         Row: {
           assigned_at: string
@@ -313,6 +337,7 @@ export type Database = {
           created_at: string | null
           created_by: string
           description: string | null
+          discount_per_day: number | null
           discount_rate: number
           duration: number | null
           id: string
@@ -328,6 +353,7 @@ export type Database = {
           created_at?: string | null
           created_by: string
           description?: string | null
+          discount_per_day?: number | null
           discount_rate: number
           duration?: number | null
           id?: string
@@ -343,6 +369,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string
           description?: string | null
+          discount_per_day?: number | null
           discount_rate?: number
           duration?: number | null
           id?: string

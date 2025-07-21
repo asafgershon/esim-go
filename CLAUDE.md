@@ -12,6 +12,9 @@
 
 ## Development Practices
 - Always use graphql-codegen
+- After creating db migration run in the `server/server` directory `bun run codgen:dbtypes`
+- Always use generated types in the `web-app` or `dashboard` for network responses
+- Use the gerated types from __generated__ folder and use it together with `useMutation` and `useQuery` from Apollo client
 
 ## eSIM Go API Integration Best Practices
 

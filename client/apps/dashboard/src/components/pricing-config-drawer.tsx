@@ -67,6 +67,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
     description: "",
     discountRate: 0.3,
     processingRate: 0.045,
+    discountPerDay: 0.1, // Default 10% per day
     isActive: true,
   });
 
@@ -188,6 +189,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
             duration: pricingData.duration,
             bundleGroup,
             discountRate: formData.discountRate,
+            discountPerDay: formData.discountPerDay,
             markupAmount, // This is the key addition - country-specific markup
             isActive: true,
           },
@@ -208,8 +210,25 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
 
       // Trigger refresh of data
       onConfigurationSaved?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving markup override:", error);
+      
+      // Handle specific insufficient profit margin error
+      if (error.graphQLErrors && error.graphQLErrors.length > 0) {
+        const gqlError = error.graphQLErrors[0];
+        if (gqlError.extensions?.code === 'INSUFFICIENT_PROFIT_MARGIN') {
+          const { calculatedPrice, minimumPrice, profitShortfall } = gqlError.extensions;
+          toast.error(
+            `Markup too high - would result in $${profitShortfall?.toFixed(2)} loss. Minimum price: $${minimumPrice?.toFixed(2)}`,
+            {
+              duration: 6000,
+              description: `Current calculated price: $${calculatedPrice?.toFixed(2)}`
+            }
+          );
+          return;
+        }
+      }
+      
       toast.error("Failed to save markup override");
     }
   };
@@ -287,6 +306,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
             countryId: countryCode,
             duration: pricingData.duration,
             discountRate: formData.discountRate,
+            discountPerDay: formData.discountPerDay,
             isActive: formData.isActive,
           },
         },
@@ -302,8 +322,25 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
             "Failed to save configuration"
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving pricing configuration:", error);
+      
+      // Handle specific insufficient profit margin error
+      if (error.graphQLErrors && error.graphQLErrors.length > 0) {
+        const gqlError = error.graphQLErrors[0];
+        if (gqlError.extensions?.code === 'INSUFFICIENT_PROFIT_MARGIN') {
+          const { calculatedPrice, minimumPrice, profitShortfall } = gqlError.extensions;
+          toast.error(
+            `Discount too high - would result in $${profitShortfall?.toFixed(2)} loss. Minimum price: $${minimumPrice?.toFixed(2)}`,
+            {
+              duration: 6000,
+              description: `Current calculated price: $${calculatedPrice?.toFixed(2)}`
+            }
+          );
+          return;
+        }
+      }
+      
       toast.error("Failed to save configuration");
     }
   };
@@ -564,6 +601,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                         Discount: {formatPercentage(formData.discountRate)} •
                         Processing:{" "}
                         {formatPercentage(getCurrentProcessingRate())} •
+                        Discount/Day: {formatPercentage(formData.discountPerDay)}
                       </div>
                     </div>
                     {isPricingConfigOpen ? (
@@ -594,6 +632,39 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                     <p className="text-sm text-gray-500 mt-1">
                       Discount percentage (e.g., 30 for 30%)
                     </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="discountPerDay">Discount Per Day</Label>
+                    <InputWithAdornment
+                      id="discountPerDay"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={Math.round(formData.discountPerDay * 100)}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          discountPerDay: parseFloat(e.target.value) / 100,
+                        }))
+                      }
+                      rightAdornment="%"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Discount rate applied per unused day (e.g., 10 for 10% per day)
+                    </p>
+                    {formData.discountPerDay > 0.2 && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 mt-2">
+                        <div className="flex items-center gap-2 text-yellow-800 text-sm">
+                          <Info className="h-4 w-4" />
+                          <span className="font-medium">High Discount Warning</span>
+                        </div>
+                        <p className="text-yellow-700 text-xs mt-1">
+                          Discount per day above 20% may result in insufficient profit margins for certain configurations.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -782,14 +853,14 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                   </span>
                 </div>
 
-                {/* Show unused days discount if applicable */}
+                {/* Show unused days discount if applicable - this is just for display/example */}
                 {pricingData && pricingData.bundleName.includes("days") && (
                   <div className="flex justify-between text-orange-600">
-                    <span>Unused Days Discount:</span>
+                    <span>Unused Days Discount (example):</span>
                     <span>
                       -
                       {formatCurrency(
-                        (pricingData.cost + getEffectiveMarkup()) * 0.1
+                        (pricingData.cost + getEffectiveMarkup()) * formData.discountPerDay
                       )}
                     </span>
                   </div>
@@ -917,7 +988,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                     const bestBundle = getBestBundle(simulatorDays);
                     const unusedDays = Math.max(0, bestBundle - simulatorDays);
                     const unusedDaysDiscount =
-                      unusedDays > 0 ? (unusedDays / bestBundle) * 0.1 : 0;
+                      unusedDays > 0 ? (unusedDays * formData.discountPerDay) : 0;
                     const basePrice = pricingData?.totalCost || 0;
                     const priceAfterUnusedDiscount =
                       basePrice * (1 - unusedDaysDiscount);
@@ -962,8 +1033,7 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
                         {unusedDays > 0 && (
                           <div className="flex justify-between text-orange-600">
                             <span>
-                              Unused Days Discount (
-                              {(unusedDaysDiscount * 100).toFixed(1)}%):
+                              Unused Days Discount ({unusedDays} days × {formatPercentage(formData.discountPerDay)}/day = {(unusedDaysDiscount * 100).toFixed(1)}%):
                             </span>
                             <span>
                               -{formatCurrency(basePrice * unusedDaysDiscount)}

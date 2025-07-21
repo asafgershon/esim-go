@@ -36,6 +36,7 @@ interface SimulationResult {
   costPlus: number;
   totalCost: number;
   discountRate: number;
+  discountPerDay?: number; // Discount per unused day
   discountValue: number;
   priceAfterDiscount: number;
   processingRate: number;
@@ -128,7 +129,8 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
         
         // Apply unused days discount if applicable
         const unusedDays = Math.max(0, bestBundle - simulatorDays);
-        const unusedDaysDiscount = unusedDays > 0 ? (unusedDays / bestBundle) * 0.1 : 0;
+        const discountPerDay = pricingData.discountPerDay || 0.1; // Default to 10% if not provided
+        const unusedDaysDiscount = unusedDays > 0 ? unusedDays * discountPerDay : 0;
         const basePrice = pricingData.totalCost;
         const priceAfterUnusedDiscount = basePrice * (1 - unusedDaysDiscount);
         const finalPrice = priceAfterUnusedDiscount * (1 - pricingData.discountRate);
@@ -138,6 +140,7 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
           bundleName: `UL essential ${bestBundle} days`,
           countryName: country.name,
           duration: bestBundle,
+          discountPerDay,
           priceAfterDiscount: finalPrice,
           discountValue: priceAfterUnusedDiscount * pricingData.discountRate,
           processingCost: finalPrice * pricingData.processingRate,
@@ -147,8 +150,22 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
       } else {
         setError('No pricing data available for this country/duration');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Simulation error:', error);
+      
+      // Handle specific insufficient profit margin error
+      if (error.graphQLErrors && error.graphQLErrors.length > 0) {
+        const gqlError = error.graphQLErrors[0];
+        if (gqlError.extensions?.code === 'INSUFFICIENT_PROFIT_MARGIN') {
+          const { calculatedPrice, minimumPrice, profitShortfall } = gqlError.extensions;
+          setError(
+            `⚠️ Configuration Error: Current discount settings would result in $${profitShortfall?.toFixed(2)} loss. ` +
+            `Minimum profitable price: $${minimumPrice?.toFixed(2)} (calculated: $${calculatedPrice?.toFixed(2)})`
+          );
+          return;
+        }
+      }
+      
       setError('Failed to calculate pricing');
     }
   };
@@ -312,9 +329,17 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
                     <p><strong>Bundle Used:</strong> {simulationResult.bundleName}</p>
                     <p><strong>Country:</strong> {simulationResult.countryName}</p>
                     {simulationResult.duration > simulatorDays && (
-                      <p className="text-orange-600">
-                        <strong>Unused Days:</strong> {simulationResult.duration - simulatorDays} days
-                      </p>
+                      <div>
+                        <p className="text-orange-600">
+                          <strong>Unused Days:</strong> {simulationResult.duration - simulatorDays} days
+                        </p>
+                        <p className="text-sm text-orange-700">
+                          <strong>Discount Rate:</strong> {formatPercentage(simulationResult.discountPerDay || 0.1)} per day
+                          {(simulationResult.discountPerDay && simulationResult.discountPerDay !== 0.1) && 
+                            <Badge variant="secondary" className="ml-2 text-xs bg-orange-100 text-orange-800">Custom</Badge>
+                          }
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -338,8 +363,8 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
                     
                     {simulationResult.duration > simulatorDays && (
                       <div className="flex justify-between text-orange-600">
-                        <span>Unused Days Discount:</span>
-                        <span>-{formatCurrency(simulationResult.totalCost * ((simulationResult.duration - simulatorDays) / simulationResult.duration) * 0.1)}</span>
+                        <span>Unused Days Discount ({simulationResult.duration - simulatorDays} days × {formatPercentage(simulationResult.discountPerDay || 0.1)}/day):</span>
+                        <span>-{formatCurrency(simulationResult.totalCost * (simulationResult.duration - simulatorDays) * (simulationResult.discountPerDay || 0.1))}</span>
                       </div>
                     )}
                     
