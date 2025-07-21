@@ -243,6 +243,7 @@ export const GET_DATA_PLANS = gql(`
         bundleGroup
         features
         availableQuantity
+        dataAmount
         countries {
           iso
           name
@@ -326,6 +327,7 @@ export const CALCULATE_BATCH_PRICING = gql(`
       discountRate
       discountValue
       priceAfterDiscount
+      processingRate
       processingCost
       finalRevenue
       currency
@@ -578,6 +580,7 @@ export const GET_COUNTRY_BUNDLES = gql(`
       discountRate
       discountValue
       priceAfterDiscount
+      processingRate
       processingCost
       finalRevenue
       currency
@@ -585,6 +588,10 @@ export const GET_COUNTRY_BUNDLES = gql(`
       hasCustomDiscount
       configurationLevel
       discountPerDay
+      planId
+      isUnlimited
+      dataAmount
+      bundleGroup
     }
   }
 `)
@@ -622,6 +629,32 @@ export const TOGGLE_HIGH_DEMAND_COUNTRY = gql(`
       countryId
       isHighDemand
       error
+    }
+  }
+`)
+
+// Pricing Configuration Mutations
+export const CREATE_PRICING_CONFIGURATION = gql(`
+  mutation CreatePricingConfiguration($input: UpdatePricingConfigurationInput!) {
+    updatePricingConfiguration(input: $input) {
+      success
+      error
+      configuration {
+        id
+        name
+        description
+        countryId
+        regionId
+        duration
+        bundleGroup
+        discountRate
+        discountPerDay
+        markupAmount
+        isActive
+        createdBy
+        createdAt
+        updatedAt
+      }
     }
   }
 `)
