@@ -143,7 +143,7 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
       }
       
       const result = await response.json();
-      return result;
+      return result as T;
       
     } catch (error: any) {
       this.log.error('Native fetch error', error, { operationType: 'api-request-fallback' });

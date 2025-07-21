@@ -1,4 +1,4 @@
-import { CountryBundle } from "@/__generated__/graphql";
+import { CountryBundle, CreateMarkupConfigMutation, CreateMarkupConfigMutationVariables, DeleteMarkupConfigMutation, DeleteMarkupConfigMutationVariables, UpdateMarkupConfigMutation, UpdateMarkupConfigMutationVariables } from "@/__generated__/graphql";
 import { useMutation, useQuery } from "@apollo/client";
 import {
   Badge,
@@ -21,10 +21,14 @@ import {
   Textarea,
 } from "@workspace/ui";
 import { Check, ChevronDown, ChevronRight, Edit3, Info, X } from "lucide-react";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
+  CREATE_MARKUP_CONFIG,
+  DELETE_MARKUP_CONFIG,
   GET_CURRENT_PROCESSING_FEE_CONFIGURATION,
+  GET_MARKUP_CONFIG,
+  UPDATE_MARKUP_CONFIG,
   UPDATE_PRICING_CONFIGURATION,
 } from "../lib/graphql/queries";
 
@@ -44,12 +48,19 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
   const [updatePricingConfiguration, { loading }] = useMutation(
     UPDATE_PRICING_CONFIGURATION
   );
+  const [createMarkupConfig] = useMutation<CreateMarkupConfigMutation, CreateMarkupConfigMutationVariables>(CREATE_MARKUP_CONFIG);
+  const [updateMarkupConfig] = useMutation<UpdateMarkupConfigMutation, UpdateMarkupConfigMutationVariables>(UPDATE_MARKUP_CONFIG);
+  const [deleteMarkupConfig] = useMutation<DeleteMarkupConfigMutation, DeleteMarkupConfigMutationVariables>(DELETE_MARKUP_CONFIG);
   const { data: processingFeeConfig } = useQuery(
     GET_CURRENT_PROCESSING_FEE_CONFIGURATION,
     {
       skip: !isOpen,
     }
   );
+  const { data: markupConfigs, refetch: refetchMarkupConfigs } = useQuery(GET_MARKUP_CONFIG, {
+    skip: !isOpen,
+    fetchPolicy: 'cache-and-network',
+  });
 
   const [isProcessingDetailsOpen, setIsProcessingDetailsOpen] = useState(false);
   const [isBasicConfigOpen, setIsBasicConfigOpen] = useState(false);
@@ -80,6 +91,18 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
 
   // Available bundle durations (common eSIM Go durations)
   const availableBundles = [3, 5, 7, 10, 14, 21, 30];
+
+  // Initialize markup override state when data loads
+  useEffect(() => {
+    const existingConfig = getExistingMarkupConfig();
+    if (existingConfig && existingConfig.markupAmount !== null) {
+      setHasMarkupOverride(true);
+      setCustomMarkupAmount(existingConfig.markupAmount.toString());
+    } else {
+      setHasMarkupOverride(false);
+      setCustomMarkupAmount("");
+    }
+  }, [markupConfigs, pricingData]);
 
   // Find the best bundle for simulator
   const getBestBundle = (requestedDays: number) => {
@@ -116,23 +139,114 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
     return `${bundleGroup}, ${pricingData.duration} days`;
   };
 
+  // Get bundle group for API calls
+  const getBundleGroup = () => {
+    if (!pricingData) return "Standard - Unlimited Essential";
+
+    let bundleGroup = "Standard - Unlimited Essential"; // Default
+    if (pricingData.bundleName.toLowerCase().includes("lite")) {
+      bundleGroup = "Standard - Unlimited Lite";
+    } else if (pricingData.bundleName.toLowerCase().includes("essential")) {
+      bundleGroup = "Standard - Unlimited Essential";
+    } else if (pricingData.bundleName.toLowerCase().includes("fixed")) {
+      bundleGroup = "Standard Fixed";
+    }
+
+    return bundleGroup;
+  };
+
+  // Find existing markup config for this bundle
+  const getExistingMarkupConfig = () => {
+    if (!markupConfigs?.markupConfig || !pricingData) return null;
+    
+    return markupConfigs.markupConfig.find(
+      (config: any) => 
+        config.bundleGroup === getBundleGroup() && 
+        config.durationDays === pricingData.duration
+    );
+  };
+
   // Handle markup override
-  const handleMarkupOverride = () => {
-    if (customMarkupAmount && parseFloat(customMarkupAmount) >= 0) {
+  const handleMarkupOverride = async () => {
+    if (!customMarkupAmount || parseFloat(customMarkupAmount) < 0) {
+      toast.error("Please enter a valid markup amount");
+      return;
+    }
+
+    if (!pricingData) {
+      toast.error("No pricing data available");
+      return;
+    }
+
+    try {
+      const markupAmount = parseFloat(customMarkupAmount);
+      const bundleGroup = getBundleGroup();
+      const existingConfig = getExistingMarkupConfig();
+
+      if (existingConfig) {
+        // Update existing markup config
+        await updateMarkupConfig({
+          variables: {
+            id: existingConfig.id,
+            input: {
+              markupAmount,
+            },
+          },
+        });
+      } else {
+        // Create new markup config
+        await createMarkupConfig({
+          variables: {
+            input: {
+              bundleGroup,
+              durationDays: pricingData.duration,
+              markupAmount,
+            },
+          },
+        });
+      }
+
       setHasMarkupOverride(true);
       setIsMarkupOverrideOpen(false);
-      toast.success(`Custom markup of $${customMarkupAmount} applied`);
-    } else {
-      toast.error("Please enter a valid markup amount");
+      toast.success(`Custom markup of $${customMarkupAmount} applied and saved`);
+      
+      // Refresh markup configs and trigger callback
+      await refetchMarkupConfigs();
+      onConfigurationSaved?.();
+    } catch (error) {
+      console.error("Error saving markup override:", error);
+      toast.error("Failed to save markup override");
     }
   };
 
   // Cancel markup override
-  const cancelMarkupOverride = () => {
+  const cancelMarkupOverride = async () => {
+    const existingConfig = getExistingMarkupConfig();
+    
+    if (existingConfig) {
+      try {
+        await deleteMarkupConfig({
+          variables: {
+            id: existingConfig.id,
+          },
+        });
+        toast.success("Markup override removed and deleted");
+        await refetchMarkupConfigs();
+        onConfigurationSaved?.();
+      } catch (error) {
+        console.error("Error deleting markup override:", error);
+        toast.error("Failed to delete markup override");
+        return;
+      }
+    }
+
     setHasMarkupOverride(false);
     setCustomMarkupAmount("");
     setIsMarkupOverrideOpen(false);
-    toast.info("Markup override removed");
+    
+    if (!existingConfig) {
+      toast.info("Markup override removed");
+    }
   };
 
   // Get effective markup amount (override or original)
