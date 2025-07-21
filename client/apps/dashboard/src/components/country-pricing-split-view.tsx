@@ -125,16 +125,6 @@ const PricingPreviewPanel = ({
       return;
     }
 
-    // DEBUG: Log the bundle object to see what fields are available
-    console.log("Bundle object debug:", {
-      bundle,
-      bundleKeys: Object.keys(bundle),
-      countryName: bundle.countryName,
-      countryId: bundle.countryId,
-      hasCountryName: 'countryName' in bundle,
-      hasCountryId: 'countryId' in bundle
-    });
-
     try {
       const discountRateDecimal = parseFloat(customDiscount) / 100;
       
@@ -186,31 +176,7 @@ const PricingPreviewPanel = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="sticky top-0 z-10 bg-white border-b pb-4 mb-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Pricing Analysis</h3>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClose}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Close preview</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
-      
-      <ScrollArea className="flex-1" showOnHover={true}>
+    <ScrollArea className="flex-1" showOnHover={true}>
         <div className="space-y-4 p-4">
           {/* Bundle Information */}
           <div className="bg-gray-50 p-3 rounded-lg">
@@ -483,7 +449,6 @@ const PricingPreviewPanel = ({
           </div>
         </div>
       </ScrollArea>
-    </div>
   );
 };
 
@@ -616,22 +581,6 @@ export function CountryPricingSplitView({
 
     return (
       <div className="flex flex-col h-full">
-        {showHeader && (
-          <div className="sticky top-0 z-10 bg-white border-b pb-4 mb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  {country.countryName || country.countryId}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {sortedBundles.length} bundles available
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        
         <ScrollArea className="flex-1" showOnHover={true}>
           <div className="space-y-1 p-2">
             {sortedBundles.map((bundle, index) => (
@@ -734,6 +683,10 @@ export function CountryPricingSplitView({
             order={1}
           >
             <div className="h-full flex flex-col">
+              {/* Countries Header */}
+              <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
+                <h3 className="text-sm font-medium text-gray-700">Countries ({filteredBundlesByCountry.length})</h3>
+              </div>
               <ScrollArea className="flex-1 pr-2" showOnHover={true}>
                 <div className="space-y-1 p-2">
               {/* Country Cards */}
@@ -841,31 +794,41 @@ export function CountryPricingSplitView({
             id="bundles-panel"
             order={2}
           >
-            <motion.div 
-              className="h-full flex flex-col"
-              layout
-              transition={{
-                layout: {
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 30
-                }
-              }}
-            >
-              {selectedCountryData ? (
-                <BundlesTable country={selectedCountryData} showHeader={true} />
-              ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center text-gray-500">
-                    <div className="mb-4">
-                      <Package className="h-12 w-12 mx-auto text-gray-300" />
-                    </div>
-                    <p className="text-lg">Select a Country</p>
-                    <p className="text-sm">Click on a country from the list to view its bundles</p>
+            <div className="h-full flex flex-col">
+              {/* Bundles Header */}
+              <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
+                <h3 className="text-sm font-medium text-gray-700">
+                  Bundles ({selectedCountryData?.bundles?.length || 0})
+                </h3>
+              </div>
+              <motion.div 
+                className="flex-1 flex flex-col min-h-0"
+                layout
+                transition={{
+                  layout: {
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 30
+                  }
+                }}
+              >
+                {selectedCountryData ? (
+                  <div className="flex-1 min-h-0">
+                    <BundlesTable country={selectedCountryData} showHeader={false} />
                   </div>
-                </div>
-              )}
-            </motion.div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center text-gray-500">
+                      <div className="mb-4">
+                        <Package className="h-12 w-12 mx-auto text-gray-300" />
+                      </div>
+                      <p className="text-lg">Select a Country</p>
+                      <p className="text-sm">Click on a country from the list to view its bundles</p>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </div>
           </Panel>
 
           {/* Preview Panel - With smooth transitions */}
@@ -893,7 +856,31 @@ export function CountryPricingSplitView({
                   order={3}
                 >
                   <div className="h-full flex flex-col">
-                    <PricingPreviewPanel 
+                    {/* Preview Header */}
+                    <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0 group">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-700">Preview</h3>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedBundle(null)}
+                                className="h-6 w-6 p-0 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Close preview</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </div>
+                    <div className="flex-1 flex flex-col">
+                      <PricingPreviewPanel 
                       bundle={selectedBundle} 
                       onClose={() => setSelectedBundle(null)}
                       onConfigurationSaved={() => {
@@ -903,6 +890,7 @@ export function CountryPricingSplitView({
                         }
                       }}
                     />
+                    </div>
                   </div>
                 </Panel>
               </motion.div>
