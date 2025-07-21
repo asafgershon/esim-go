@@ -93,17 +93,17 @@ const PricingPreviewPanel = ({
   const bundleGroup = (bundle as any).bundleGroup || 'Standard';
 
   // Use actual pricing values from bundle
-  const cost = bundle.cost || 0;
-  const costPlus = bundle.costPlus || 0;
-  const totalCost = bundle.totalCost || (cost + costPlus);
+  const cost = bundle.cost || 0;  // eSIM Go cost
+  const costPlus = bundle.costPlus || 0;  // Our markup
+  const totalCost = bundle.totalCost || (cost + costPlus);  // Our selling price before discount
   const discountValue = bundle.discountValue || 0;
-  const priceAfterDiscount = bundle.priceAfterDiscount || 0;
+  const priceAfterDiscount = bundle.priceAfterDiscount || 0;  // Customer pays this
   
   // Calculate processing cost based on selected payment method
   const processingCost = priceAfterDiscount * processingRate;
-  // Net profit = What we receive (after processing) minus our costs
+  // Net profit = What we receive (after processing) minus only the eSIM Go cost
   const revenueAfterProcessing = priceAfterDiscount - processingCost;
-  const netProfit = revenueAfterProcessing - cost - costPlus;
+  const netProfit = revenueAfterProcessing - cost;  // Don't subtract markup - that's our profit!
   
   // Handler for saving markup changes
   const handleSaveMarkup = () => {
