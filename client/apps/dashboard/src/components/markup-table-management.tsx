@@ -35,6 +35,7 @@ import {
   DELETE_MARKUP_CONFIG,
   GET_BUNDLE_GROUPS,
 } from "../lib/graphql/queries";
+import { useMobile } from "../hooks/useMobile";
 
 interface MarkupConfigItem {
   id?: string;
@@ -100,6 +101,7 @@ const getAvailableBundleGroups = (allGroups: string[], configuredGroups: string[
 export const MarkupTableManagement: React.FC = () => {
   // TODO: Add proper admin authentication when auth system is implemented
   const isAdmin = true; // Temporary - replace with actual admin check
+  const isMobile = useMobile();
   const [markupConfig, setMarkupConfig] = useState<MarkupConfigItem[]>(defaultMarkupConfig);
   const [hasChanges, setHasChanges] = useState(false);
   
@@ -588,8 +590,10 @@ export const MarkupTableManagement: React.FC = () => {
   // Handle group selection
   const handleGroupSelect = (bundleGroup: string) => {
     setSelectedGroup(bundleGroup);
-    // On mobile (small screens), open the bottom sheet
-    setShowMobileSheet(true);
+    // On mobile, open the bottom sheet
+    if (isMobile) {
+      setShowMobileSheet(true);
+    }
   };
 
   // Inline editing functions
@@ -823,7 +827,8 @@ export const MarkupTableManagement: React.FC = () => {
       </div>
 
       {/* Mobile: Bottom Sheet */}
-      <Sheet open={showMobileSheet} onOpenChange={setShowMobileSheet}>
+      {isMobile && (
+        <Sheet open={showMobileSheet} onOpenChange={setShowMobileSheet}>
         <SheetContent side="bottom" className="fixed bottom-0 left-0 right-0 max-h-[85vh] z-50 bg-background border-t rounded-t-lg">
           <SheetHeader className="px-6 pt-6 pb-4">
             <SheetTitle className="text-left">{selectedGroup}</SheetTitle>
@@ -836,7 +841,8 @@ export const MarkupTableManagement: React.FC = () => {
             {selectedGroup && <BundleContent bundleGroup={selectedGroup} showHeader={false} />}
           </ScrollArea>
         </SheetContent>
-      </Sheet>
+        </Sheet>
+      )}
 
       {/* Add Group Dialog */}
       <Dialog open={showAddGroupModal} onOpenChange={setShowAddGroupModal}>
