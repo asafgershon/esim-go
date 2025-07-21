@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Tooltip, TooltipTrigger, TooltipContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui';
-import { Calculator, DollarSign, Table, CreditCard, RefreshCw, Layers } from 'lucide-react';
+import { Calculator, DollarSign, Table, CreditCard, RefreshCw, Layers, TrendingDown } from 'lucide-react';
 import { useMutation } from '@apollo/client';
 import { toast } from 'sonner';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -88,6 +88,11 @@ const PricingPage: React.FC = () => {
       title: 'Processing Fee',
       icon: <CreditCard className="h-5 w-5" />,
       description: 'Configure processing fees and payment-related charges'
+    },
+    '/pricing/discounts': {
+      title: 'Discounts',
+      icon: <TrendingDown className="h-5 w-5" />,
+      description: 'Manage discount rates and progressive daily discounts'
     },
     '/pricing/simulator': {
       title: 'Simulator Pricing',
@@ -188,6 +193,17 @@ const PricingPage: React.FC = () => {
               Processing Fee
             </Link>
             <Link
+              to="/pricing/discounts"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                currentPath === '/pricing/discounts'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <TrendingDown className="h-4 w-4" />
+              Discounts
+            </Link>
+            <Link
               to="/pricing/simulator"
               className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 currentPath === '/pricing/simulator'
@@ -230,6 +246,12 @@ const PricingPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
                   <span>Processing Fee</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="/pricing/discounts">
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4" />
+                  <span>Discounts</span>
                 </div>
               </SelectItem>
               <SelectItem value="/pricing/simulator">

@@ -125,6 +125,16 @@ const PricingPreviewPanel = ({
       return;
     }
 
+    // DEBUG: Log the bundle object to see what fields are available
+    console.log("Bundle object debug:", {
+      bundle,
+      bundleKeys: Object.keys(bundle),
+      countryName: bundle.countryName,
+      countryId: bundle.countryId,
+      hasCountryName: 'countryName' in bundle,
+      hasCountryId: 'countryId' in bundle
+    });
+
     try {
       const discountRateDecimal = parseFloat(customDiscount) / 100;
       

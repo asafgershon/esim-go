@@ -14,6 +14,7 @@ export interface CountryBundleWithDisplay extends CountryBundle {
   hasCustomDiscount: boolean;
   configurationLevel?: string; // ConfigurationLevel enum: GLOBAL | REGION | COUNTRY | BUNDLE
   discountPerDay?: number; // Discount per unused day (0.1 = 10%)
+  dataAmount?: string; // Human-readable data amount from resolver (e.g., "1GB", "500MB", "Unlimited")
 }
 
 export interface BundlesByCountryWithBundles extends BundlesByCountry {

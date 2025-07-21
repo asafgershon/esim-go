@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 
 import { CountryBundleWithDisplay } from "./country-pricing-table-grouped";
+import { PricingBreakdownPopover } from "./pricing-breakdown-popover";
+import { ConfigurationLevelIndicator } from "./configuration-level-indicator";
 
 // Simple header component without sorting
 const SimpleHeader = ({
@@ -203,8 +205,13 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
             <>
               <DollarSign className="h-4 w-4 text-green-600" />
               <span>{data.bundleName}</span>
+              {data.dataAmount && data.dataAmount !== 'Unknown' && (
+                <Badge variant="outline" className="text-xs font-normal bg-slate-50 text-slate-600 border-slate-200 ml-2">
+                  {data.dataAmount}
+                </Badge>
+              )}
               {data.configurationLevel && data.configurationLevel !== 'GLOBAL' && (
-                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
+                <Badge variant="secondary" className="text-xs font-normal bg-slate-100 text-slate-700 border-slate-300 ml-1">
                   {data.configurationLevel}
                 </Badge>
               )}
@@ -228,21 +235,42 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
       
       const profitMargin =
         ((data.finalRevenue - data.totalCost) / data.totalCost) * 100;
+      const netProfit = data.finalRevenue - data.totalCost;
+      
       return (
-        <div className="space-y-1">
-          <div className="text-green-600 font-medium">
-            {formatCurrency(data.finalRevenue)}
+        <div className="flex items-center gap-2">
+          <div className="space-y-1">
+            <div className="text-green-600 font-medium">
+              {formatCurrency(data.finalRevenue)}
+            </div>
+            <div className="text-sm">
+              <span
+                className={
+                  profitMargin > 0 ? "text-green-600" : "text-red-600"
+                }
+              >
+                {profitMargin > 0 ? "+" : ""}
+                {profitMargin.toFixed(1)}% margin
+              </span>
+            </div>
           </div>
-          <div className="text-sm">
-            <span
-              className={
-                profitMargin > 0 ? "text-green-600" : "text-red-600"
-              }
-            >
-              {profitMargin > 0 ? "+" : ""}
-              {profitMargin.toFixed(1)}% margin
-            </span>
-          </div>
+          <PricingBreakdownPopover
+            bundleName={data.bundleName}
+            countryName={data.countryName}
+            duration={data.duration}
+            esimGoCost={data.cost}
+            fixedMarkup={data.costPlus}
+            totalCost={data.totalCost}
+            unusedDays={(data as any).unusedDays}
+            discountPerDay={(data as any).discountPerDay ?? 0.1}
+            discountValue={data.discountValue}
+            processingRate={data.processingRate}
+            processingCost={data.processingCost}
+            finalRevenue={data.finalRevenue}
+            netProfit={netProfit}
+            configLevel={data.configurationLevel as any}
+            bundleGroup={(data as any).bundleGroup}
+          />
         </div>
       );
     },
@@ -262,7 +290,14 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
       return (
         <div className="space-y-1 text-sm">
           <div>Base: {formatCurrency(data.cost)}</div>
-          <div>Plus: {formatCurrency(data.costPlus)}</div>
+          <div className="flex items-center gap-1">
+            <span>Plus: {formatCurrency(data.costPlus)}</span>
+            <ConfigurationLevelIndicator 
+              level={data.configurationLevel} 
+              size="xs" 
+              showTooltip 
+            />
+          </div>
           <div className="font-medium">
             Total: {formatCurrency(data.totalCost)}
           </div>
@@ -309,6 +344,11 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
               {formatPercentage(discountPerDay)}
             </Badge>
             <span className="text-sm text-gray-600 font-medium">per unused day</span>
+            <ConfigurationLevelIndicator 
+              level={data.configurationLevel} 
+              size="xs" 
+              showTooltip 
+            />
           </div>
 
           {/* Applied Discount - only show if discount was actually applied */}
