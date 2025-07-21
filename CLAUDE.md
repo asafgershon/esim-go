@@ -15,6 +15,7 @@
 - After creating db migration run in the `server/server` directory `bun run codgen:dbtypes`
 - Always use generated types in the `web-app` or `dashboard` for network responses
 - Use the gerated types from __generated__ folder and use it together with `useMutation` and `useQuery` from Apollo client
+- To build the dashboard application, use `bun run build` in the `client/apps/dashboard` directory
 
 ## eSIM Go API Integration Best Practices
 
