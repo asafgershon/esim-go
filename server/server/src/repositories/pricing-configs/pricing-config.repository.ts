@@ -19,6 +19,7 @@ export interface PricingConfigurationRule {
   duration?: number;
   bundleGroup?: string;
   discountRate: number;
+  markupAmount?: number;
   isActive: boolean;
   createdBy: string;
   createdAt: string;
@@ -145,7 +146,6 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
       duration: input.duration,
       bundle_group: input.bundleGroup,
       discount_rate: input.discountRate,
-      processing_rate: input.processingRate,
       markup_amount: input.markupAmount,
       is_active: input.isActive,
       updated_at: now,
@@ -200,6 +200,7 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
       duration: row.duration || 0,
       bundleGroup: row.bundle_group || "",
       discountRate: row.discount_rate,
+      markupAmount: row.markup_amount,
       isActive: row.is_active,
       createdBy: row.created_by,
       createdAt: row.created_at || "",

@@ -366,7 +366,6 @@ export const GET_PRICING_CONFIGURATIONS = gql(`
       duration
       bundleGroup
       discountRate
-      processingRate
       markupAmount
       isActive
       createdBy
