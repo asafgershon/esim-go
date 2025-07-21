@@ -547,6 +547,14 @@ type PricingBreakdown {
   currency: String!
 }
 
+# Configuration level enum to indicate pricing override level
+enum ConfigurationLevel {
+  GLOBAL
+  REGION
+  COUNTRY
+  BUNDLE
+}
+
 # Bundles by Country Types - aggregated pricing data for countries
 type BundlesByCountry {
   countryName: String!
@@ -567,6 +575,7 @@ type BundlesByCountry {
   avgProfitMargin: Float!
   lastFetched: String
   calculationMethod: String! # SAMPLED | ESTIMATED
+  configurationLevel: ConfigurationLevel!
 }
 
 # Individual bundles for a specific country
@@ -588,6 +597,7 @@ type CountryBundle {
   currency: String!
   pricePerDay: Float!
   hasCustomDiscount: Boolean!
+  configurationLevel: ConfigurationLevel!
 }
 
 # Batch pricing input

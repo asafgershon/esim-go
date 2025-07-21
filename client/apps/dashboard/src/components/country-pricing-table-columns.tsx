@@ -88,12 +88,19 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
     header: () => <SimpleHeader>Country</SimpleHeader>,
     cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
       const data = row.original;
+      const isSummaryRow = data.duration === 0;
+      
       return (
         <div className="flex items-center gap-2">
           <span className="font-medium">{data.countryName}</span>
           <Badge variant="outline" className="text-xs">
             {data.countryId}
           </Badge>
+          {isSummaryRow && data.configurationLevel && data.configurationLevel !== 'GLOBAL' && (
+            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
+              {data.configurationLevel}
+            </Badge>
+          )}
         </div>
       );
     },
@@ -157,6 +164,11 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
             <>
               <DollarSign className="h-4 w-4 text-green-600" />
               <span>{data.bundleName}</span>
+              {data.configurationLevel && data.configurationLevel !== 'GLOBAL' && (
+                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
+                  {data.configurationLevel}
+                </Badge>
+              )}
             </>
           )}
         </div>

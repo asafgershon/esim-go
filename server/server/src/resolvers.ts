@@ -42,6 +42,19 @@ const bundlesByCountryCache = {
   }
 };
 
+// Helper function to determine configuration level based on pricing config fields
+function getConfigurationLevel(config: any): string {
+  if (config.countryId && config.duration) {
+    return 'BUNDLE';
+  } else if (config.countryId) {
+    return 'COUNTRY';
+  } else if (config.regionId) {
+    return 'REGION';
+  } else {
+    return 'GLOBAL';
+  }
+}
+
 // Helper function to get representative bundles for aggregation calculations
 function getSampleBundles(countryBundles: any[], maxSamples: number = 5): any[] {
   if (countryBundles.length === 0) return [];
@@ -439,9 +452,23 @@ export const resolvers: Resolvers = {
         // Get all pricing configurations in one query
         const allConfigurations = await configRepository.getAllConfigurations();
         const activeConfigsByCountry = new Map<string, boolean>();
+        const configLevelByCountry = new Map<string, string>();
+        
         for (const config of allConfigurations) {
           if (config.isActive && config.countryId) {
             activeConfigsByCountry.set(config.countryId, true);
+            
+            // Determine the highest specificity configuration level for this country
+            const currentLevel = getConfigurationLevel(config);
+            const existingLevel = configLevelByCountry.get(config.countryId);
+            
+            // Priority order: BUNDLE > COUNTRY > REGION > GLOBAL
+            if (!existingLevel || 
+                (currentLevel === 'BUNDLE') ||
+                (currentLevel === 'COUNTRY' && existingLevel !== 'BUNDLE') ||
+                (currentLevel === 'REGION' && !['BUNDLE', 'COUNTRY'].includes(existingLevel))) {
+              configLevelByCountry.set(config.countryId, currentLevel);
+            }
           }
         }
         
@@ -469,7 +496,8 @@ export const resolvers: Resolvers = {
                 avgNetProfit: 0,
                 totalRevenue: 0,
                 avgProfitMargin: 0,
-                lastFetched: new Date().toISOString()
+                lastFetched: new Date().toISOString(),
+                configurationLevel: configLevelByCountry.get(country.iso) || 'GLOBAL'
               };
             }
             
@@ -588,7 +616,8 @@ export const resolvers: Resolvers = {
               totalRevenue: Number((realAggregates.avgFinalRevenue * totalBundles).toFixed(2)),
               avgProfitMargin: realAggregates.avgTotalCost > 0 ? Number(((realAggregates.avgNetProfit / realAggregates.avgTotalCost) * 100).toFixed(2)) : 0,
               lastFetched: dataPlansResult.lastFetched || new Date().toISOString(),
-              calculationMethod: realAggregates.calculationMethod
+              calculationMethod: realAggregates.calculationMethod,
+              configurationLevel: configLevelByCountry.get(country.iso) || 'GLOBAL'
             };
           })
         );
@@ -636,11 +665,30 @@ export const resolvers: Resolvers = {
         // Get unique durations and sort them
         const durations = [...new Set(dataPlans.map(plan => plan.duration))].sort((a, b) => a - b);
         
-        // Get custom configurations to determine hasCustomDiscount
+        // Get custom configurations to determine hasCustomDiscount and configuration level
         const allConfigurations = await configRepository.getAllConfigurations();
         const hasCustomConfig = allConfigurations.some(config => 
           config.isActive && config.countryId === countryId
         );
+        
+        // Create a map for quick lookup of configuration levels per bundle
+        const configLevelByBundle = new Map<number, string>();
+        for (const config of allConfigurations) {
+          if (config.isActive && config.countryId === countryId) {
+            const level = getConfigurationLevel(config);
+            if (config.duration) {
+              // Bundle-specific configuration
+              configLevelByBundle.set(config.duration, level);
+            } else {
+              // Country-level or higher - apply to all bundles that don't have specific config
+              durations.forEach(duration => {
+                if (!configLevelByBundle.has(duration)) {
+                  configLevelByBundle.set(duration, level);
+                }
+              });
+            }
+          }
+        }
 
         // Calculate pricing for each duration using actual pricing service
         // This is acceptable for single country since it's only a few API calls
@@ -683,7 +731,8 @@ export const resolvers: Resolvers = {
                 pricePerDay: (pricingBreakdown.duration && pricingBreakdown.duration > 0 && isFinite(pricingBreakdown.priceAfterDiscount)) 
                   ? pricingBreakdown.priceAfterDiscount / pricingBreakdown.duration 
                   : 0,
-                hasCustomDiscount: hasCustomConfig
+                hasCustomDiscount: hasCustomConfig,
+                configurationLevel: configLevelByBundle.get(duration) || 'GLOBAL'
               };
             } catch (error) {
               logger.warn('Failed to calculate pricing for bundle', {

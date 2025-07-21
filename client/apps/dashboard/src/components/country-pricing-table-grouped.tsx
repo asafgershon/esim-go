@@ -9,10 +9,12 @@ import { createCountryPricingColumns } from "./country-pricing-table-columns";
 export interface CountryBundleWithDisplay extends CountryBundle {
   pricePerDay: number;
   hasCustomDiscount: boolean;
+  configurationLevel?: string; // ConfigurationLevel enum: GLOBAL | REGION | COUNTRY | BUNDLE
 }
 
 export interface BundlesByCountryWithBundles extends BundlesByCountry {
   bundles?: CountryBundleWithDisplay[];
+  configurationLevel?: string; // ConfigurationLevel enum: GLOBAL | REGION | COUNTRY | BUNDLE
 }
 
 interface CountryPricingTableGroupedProps {
@@ -53,6 +55,7 @@ const transformDataForTable = (
       currency: "USD",
       pricePerDay: country.avgPricePerDay,
       hasCustomDiscount: country.hasCustomDiscount,
+      configurationLevel: country.configurationLevel,
     });
 
     // Only add bundles if country is expanded and has bundles
@@ -187,6 +190,7 @@ export function CountryPricingTableGrouped({
           currency: data.currency,
           pricePerDay: data.pricePerDay,
           hasCustomDiscount: data.hasCustomDiscount,
+          configurationLevel: data.configurationLevel,
         };
         
         console.log("Passing stable data to drawer:", stableData);
