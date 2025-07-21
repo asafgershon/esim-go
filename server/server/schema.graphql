@@ -612,7 +612,6 @@ type PricingConfiguration {
   
   # Configuration values
   discountRate: Float! # Discount percentage (default: 0%)
-  processingRate: Float! # Processing fee percentage (default: 4.5%)
   markupAmount: Float # Fixed markup amount in USD (null = use global markup)
   
   # Metadata
@@ -635,7 +634,6 @@ input UpdatePricingConfigurationInput {
   
   # Configuration values
   discountRate: Float!
-  processingRate: Float!
   markupAmount: Float # Fixed markup amount in USD (null = use global markup)
   
   isActive: Boolean!

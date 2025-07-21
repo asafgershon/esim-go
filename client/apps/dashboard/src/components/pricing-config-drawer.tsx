@@ -187,7 +187,6 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
             duration: pricingData.duration,
             bundleGroup,
             discountRate: formData.discountRate,
-            processingRate: getCurrentProcessingRate(),
             markupAmount, // This is the key addition - country-specific markup
             isActive: true,
           },
@@ -281,7 +280,6 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
             countryId: countryCode,
             duration: pricingData.duration,
             discountRate: formData.discountRate,
-            processingRate: formData.processingRate,
             isActive: formData.isActive,
           },
         },
