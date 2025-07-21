@@ -400,25 +400,6 @@ const PricingPreviewPanel = ({
 
           {/* Actions & Warnings */}
           <div className="space-y-3">
-            {/* Quick Actions */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 text-xs"
-                onClick={() => console.log('Open full config')}
-              >
-                Full Configuration
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 text-xs"
-                onClick={() => console.log('Test pricing')}
-              >
-                Test Pricing
-              </Button>
-            </div>
             
             {/* Custom Discount Per Day Info */}
             {discountPerDay !== 0.1 && (
