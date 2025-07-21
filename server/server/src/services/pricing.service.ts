@@ -36,6 +36,8 @@ export interface PricingBreakdown {
 
 export class PricingService {
   private static readonly DEFAULT_DISCOUNT_RATE = 0.0; // 0%
+  private static readonly DEFAULT_DISCOUNT_PER_DAY = 0.10; // 10% per unused day
+  private static readonly MINIMUM_PROFIT_MARGIN = 1.50; // $1.50 minimum profit margin
   private static readonly DEFAULT_CURRENCY = 'USD';
   private static readonly logger = createLogger({ 
     component: 'PricingService',
@@ -539,9 +541,12 @@ export class PricingService {
         processingRate = configRule?.processingRate || this.DEFAULT_PROCESSING_RATE;
       }
 
+      // Get configurable discount per day rate
+      const discountPerDayRate = configRule?.discountPerDay || this.DEFAULT_DISCOUNT_PER_DAY;
+      
       // Calculate discount for unused days if using a longer bundle
       const unusedDays = Math.max(0, matchingBundle.duration - duration);
-      const unusedDaysDiscount = unusedDays > 0 ? (unusedDays / matchingBundle.duration) * 0.1 : 0; // 10% discount per unused day ratio
+      const unusedDaysDiscount = unusedDays > 0 ? (unusedDays / matchingBundle.duration) * discountPerDayRate : 0;
 
       // IMPORTANT: Log the selected bundle to debug Austria pricing issue
       this.logger.info('Bundle selected for pricing calculation', {
@@ -599,7 +604,46 @@ export class PricingService {
       // Calculate pricing based on eSIM Go data + fixed markup configuration
       const markup = fixedMarkupAmount; // Fixed dollar amount from database table
       const totalCostBeforeUnusedDiscount = esimGoCost + markup;
-      const totalCost = totalCostBeforeUnusedDiscount * (1 - unusedDaysDiscount);
+      const totalCostAfterDiscount = totalCostBeforeUnusedDiscount * (1 - unusedDaysDiscount);
+      
+      // Validate minimum profit margin - ensure we don't price below cost + $1.50
+      const minimumAllowedPrice = esimGoCost + this.MINIMUM_PROFIT_MARGIN;
+      if (totalCostAfterDiscount < minimumAllowedPrice) {
+        this.logger.error('Pricing would result in insufficient profit margin', undefined, {
+          countryId,
+          bundleName: matchingBundle.name,
+          duration,
+          esimGoCost,
+          markup,
+          totalCostBeforeDiscount: totalCostBeforeUnusedDiscount,
+          totalCostAfterDiscount,
+          minimumAllowedPrice,
+          discountPerDayRate,
+          unusedDays,
+          unusedDaysDiscount,
+          profitShortfall: minimumAllowedPrice - totalCostAfterDiscount,
+          operationType: 'pricing-validation-failed'
+        });
+        
+        throw new GraphQLError(
+          `Pricing configuration would result in insufficient profit margin. ` +
+          `Calculated price ($${totalCostAfterDiscount.toFixed(2)}) is below minimum required ` +
+          `($${minimumAllowedPrice.toFixed(2)}). Please adjust discount per day rate or markup amount.`,
+          {
+            extensions: {
+              code: 'INSUFFICIENT_PROFIT_MARGIN',
+              countryId,
+              bundleName: matchingBundle.name,
+              duration,
+              calculatedPrice: Number(totalCostAfterDiscount.toFixed(2)),
+              minimumPrice: Number(minimumAllowedPrice.toFixed(2)),
+              profitShortfall: Number((minimumAllowedPrice - totalCostAfterDiscount).toFixed(2))
+            }
+          }
+        );
+      }
+      
+      const totalCost = totalCostAfterDiscount;
 
       const result = {
         cost: Number(esimGoCost.toFixed(2)), // eSIM Go cost (our base cost)
@@ -631,7 +675,10 @@ export class PricingService {
         markup: result.costPlus,
         totalCost: result.totalCost,
         unusedDays,
+        discountPerDayRate,
         unusedDaysDiscount,
+        minimumAllowedPrice,
+        profitMargin: result.totalCost - result.cost,
         operationType: 'pricing-final-calculation'
       });
 

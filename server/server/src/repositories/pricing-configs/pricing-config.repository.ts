@@ -20,6 +20,7 @@ export interface PricingConfigurationRule {
   bundleGroup?: string;
   discountRate: number;
   markupAmount?: number;
+  discountPerDay?: number;
   isActive: boolean;
   createdBy: string;
   createdAt: string;
@@ -39,6 +40,9 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
     if (data.discount_rate < 0 || data.discount_rate > 1) {
       throw new GraphQLError("Discount rate must be between 0 and 1");
     }
+    if (data.discount_per_day !== undefined && (data.discount_per_day < 0 || data.discount_per_day > 1)) {
+      throw new GraphQLError("Discount per day must be between 0 and 1");
+    }
   }
 
   protected async validateUpdate(data: PricingConfigUpdate): Promise<void> {
@@ -47,6 +51,9 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
       (data.discount_rate < 0 || data.discount_rate > 1)
     ) {
       throw new GraphQLError("Discount rate must be between 0 and 1");
+    }
+    if (data.discount_per_day !== undefined && (data.discount_per_day < 0 || data.discount_per_day > 1)) {
+      throw new GraphQLError("Discount per day must be between 0 and 1");
     }
   }
 
@@ -147,6 +154,7 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
       bundle_group: input.bundleGroup,
       discount_rate: input.discountRate,
       markup_amount: input.markupAmount,
+      discount_per_day: input.discountPerDay,
       is_active: input.isActive,
       updated_at: now,
     };
@@ -201,6 +209,7 @@ export class PricingConfigRepository extends BaseSupabaseRepository<
       bundleGroup: row.bundle_group || "",
       discountRate: row.discount_rate,
       markupAmount: row.markup_amount,
+      discountPerDay: row.discount_per_day,
       isActive: row.is_active,
       createdBy: row.created_by,
       createdAt: row.created_at || "",

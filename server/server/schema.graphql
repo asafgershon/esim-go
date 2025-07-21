@@ -628,6 +628,7 @@ type PricingConfiguration {
   # Configuration values
   discountRate: Float! # Discount percentage (default: 0%)
   markupAmount: Float # Fixed markup amount in USD (null = use global markup)
+  discountPerDay: Float # Discount rate per unused day (0.10 = 10% per day)
   
   # Metadata
   isActive: Boolean!
@@ -650,6 +651,7 @@ input UpdatePricingConfigurationInput {
   # Configuration values
   discountRate: Float!
   markupAmount: Float # Fixed markup amount in USD (null = use global markup)
+  discountPerDay: Float # Discount rate per unused day (0.10 = 10% per day)
   
   isActive: Boolean!
 }
