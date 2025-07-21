@@ -306,7 +306,6 @@ export const CALCULATE_PRICING = gql(`
       discountRate
       discountValue
       priceAfterDiscount
-      processingRate
       processingCost
       finalRevenue
       currency
@@ -326,7 +325,6 @@ export const CALCULATE_BATCH_PRICING = gql(`
       discountRate
       discountValue
       priceAfterDiscount
-      processingRate
       processingCost
       finalRevenue
       currency
@@ -389,7 +387,7 @@ export const UPDATE_PRICING_CONFIGURATION = gql(`
         duration
         bundleGroup
         discountRate
-        processingRate
+        markupAmount
         isActive
         createdBy
         createdAt
@@ -591,7 +589,6 @@ export const GET_COUNTRY_BUNDLES = gql(`
       discountRate
       discountValue
       priceAfterDiscount
-      processingRate
       processingCost
       finalRevenue
       currency
