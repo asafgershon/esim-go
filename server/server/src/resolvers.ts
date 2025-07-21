@@ -309,7 +309,7 @@ export const resolvers: Resolvers = {
         context.dataSources.catalogue, 
         configRepository,
         mapPaymentMethodEnum(paymentMethod),
-        context.services.pricing
+        context.dataSources.pricing
       );
       
       // Get bundle and country names
@@ -341,7 +341,7 @@ export const resolvers: Resolvers = {
               context.dataSources.catalogue, 
               configRepository,
               mapPaymentMethodEnum(input.paymentMethod),
-              context.services.pricing
+              context.dataSources.pricing
             );
             
             // Get bundle and country names
@@ -498,7 +498,7 @@ export const resolvers: Resolvers = {
                       context.dataSources.catalogue, 
                       configRepository,
                       'israeli_card', // Default payment method
-                      context.services.pricing
+                      context.dataSources.pricing
                     );
                     
                     // Get bundle and country names

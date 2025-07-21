@@ -9,6 +9,7 @@ import type {
   CountriesDataSource,
   RegionsDataSource,
   InventoryDataSource,
+  PricingDataSource,
 } from "../datasources/esim-go";
 import { PricingService } from "../services";
 import {
@@ -43,6 +44,7 @@ export type Context = {
     countries: CountriesDataSource;
     regions: RegionsDataSource;
     inventory: InventoryDataSource;
+    pricing: PricingDataSource;
   };
   // Legacy for backward compatibility during migration
   token?: string;
