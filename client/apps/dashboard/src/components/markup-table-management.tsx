@@ -12,6 +12,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
 } from "@workspace/ui";
 import React, { useState, useEffect } from "react";
 import { DollarSign, Save, Loader2, Plus, Trash2, X, Check } from "lucide-react";
@@ -97,10 +106,17 @@ export const MarkupTableManagement: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
   const [contentSaving, setContentSaving] = useState(false);
+  const [showMobileSheet, setShowMobileSheet] = useState(false);
   
   // Inline editing state
   const [editingItem, setEditingItem] = useState<string | null>(null); // key: bundleGroup-durationDays
   const [editingValue, setEditingValue] = useState<string>("");
+  
+  // New bundle creation state
+  const [creatingBundle, setCreatingBundle] = useState<string | null>(null); // bundleGroup currently creating for
+  const [newBundleDays, setNewBundleDays] = useState<string>("");
+  const [newBundlePrice, setNewBundlePrice] = useState<string>("");
+  const [validationError, setValidationError] = useState<string>("");
 
   // GraphQL queries and mutations
   const { data: currentConfig, loading: loadingCurrent, refetch } = useQuery(
@@ -318,9 +334,261 @@ export const MarkupTableManagement: React.FC = () => {
     }
   }, [groupedMarkupConfig, selectedGroup]);
 
+  // Bundle content component (reused in both desktop and mobile)
+  const BundleContent = ({ bundleGroup, showHeader = true }: { bundleGroup: string, showHeader?: boolean }) => (
+    <div className="flex flex-col h-full">
+      {showHeader && (
+        <div className="border-b pb-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">{bundleGroup}</h3>
+              <p className="text-sm text-gray-600">Fixed markup amounts in USD for different durations</p>
+            </div>
+            
+            {/* Save/Discard buttons for selected group */}
+            {hasChanges && bundleGroup && (
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDrawerDiscard(bundleGroup)}
+                  disabled={contentSaving}
+                  className="h-8 w-8 p-0 rounded-full"
+                  title="Discard Changes"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => handleDrawerSave(bundleGroup)}
+                  disabled={contentSaving || !isAdmin}
+                  className="h-8 w-8 p-0 rounded-full"
+                  title={contentSaving ? "Saving..." : "Save Changes"}
+                >
+                  {contentSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Save/Discard buttons for mobile (when header is hidden) */}
+      {!showHeader && hasChanges && bundleGroup && (
+        <div className="flex justify-end gap-2 mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDrawerDiscard(bundleGroup)}
+            disabled={contentSaving}
+            className="h-8 px-3"
+            title="Discard Changes"
+          >
+            <X className="h-4 w-4 mr-1" />
+            Discard
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => handleDrawerSave(bundleGroup)}
+            disabled={contentSaving || !isAdmin}
+            className="h-8 px-3"
+            title={contentSaving ? "Saving..." : "Save Changes"}
+          >
+            {contentSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+            ) : (
+              <Save className="h-4 w-4 mr-1" />
+            )}
+            {contentSaving ? "Saving..." : "Save"}
+          </Button>
+        </div>
+      )}
+      
+      <div className="flex-1 overflow-y-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {/* Add Bundle Card - Dashed style matching Add Group */}
+          {creatingBundle === bundleGroup ? (
+            <TooltipProvider>
+              <Tooltip open={!!validationError}>
+                <TooltipTrigger asChild>
+                  <div className={`border-2 border-dashed rounded-lg p-3 transition-all ${
+                    validationError 
+                      ? 'border-red-400 bg-red-50' 
+                      : 'border-gray-300 bg-gray-50'
+                  }`}>
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-sm font-medium ${
+                          validationError ? 'text-red-600' : 'text-gray-600'
+                        }`}>New Bundle</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={discardNewBundle}
+                          className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          max="365"
+                          value={newBundleDays}
+                          onChange={(e) => handleNewBundleDaysChange(e.target.value, bundleGroup)}
+                          placeholder="Days"
+                          className={`text-sm ${
+                            validationError ? 'border-red-300 focus:border-red-400' : ''
+                          }`}
+                          autoFocus
+                        />
+                        <InputWithAdornment
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={newBundlePrice}
+                          onChange={(e) => handleNewBundlePriceChange(e.target.value, bundleGroup)}
+                          leftAdornment="$"
+                          placeholder="0.00"
+                          className={`text-sm ${
+                            validationError ? 'border-red-300 focus:border-red-400' : ''
+                          }`}
+                        />
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => saveNewBundle(bundleGroup)}
+                          className="w-full h-8"
+                          disabled={!newBundleDays || !newBundlePrice || !!validationError}
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-red-600 text-white border-red-600">
+                  <p className="text-sm">{validationError}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <div 
+              className="border-2 border-dashed border-gray-300 hover:border-gray-400 hover:shadow-md transition-all cursor-pointer bg-gray-50 hover:bg-gray-100 rounded-lg p-3"
+              onClick={() => startCreatingBundle(bundleGroup)}
+            >
+              <div className="flex flex-col items-center justify-center h-full min-h-[100px]">
+                <div className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors mb-2">
+                  <Plus className="h-4 w-4 text-gray-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-600">Add Bundle</span>
+              </div>
+            </div>
+          )}
+
+          {groupedMarkupConfig[bundleGroup]?.map((item) => {
+            const globalIndex = markupConfig.findIndex(
+              config => config.bundleGroup === item.bundleGroup && 
+                       config.durationDays === item.durationDays
+            );
+            const editKey = `${item.bundleGroup}-${item.durationDays}`;
+            const isEditing = editingItem === editKey;
+            
+            return (
+              <div key={`${bundleGroup}-${item.durationDays}`} className="group border rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-600">{item.durationDays} days</span>
+                    {!isEditing && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveMarkup(globalIndex)}
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1">
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <InputWithAdornment
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          leftAdornment="$"
+                          className="text-sm w-full"
+                          placeholder="0.00"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              saveEdit(item.bundleGroup, item.durationDays);
+                            } else if (e.key === 'Escape') {
+                              discardEdit();
+                            }
+                          }}
+                        />
+                        <div className="flex gap-1 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => saveEdit(item.bundleGroup, item.durationDays)}
+                            className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={discardEdit}
+                            className="h-7 w-7 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        className="w-full p-2 cursor-pointer rounded hover:bg-gray-100 transition-colors text-center"
+                        onClick={() => startEditing(item.bundleGroup, item.durationDays, item.markupAmount)}
+                      >
+                        <span className="text-lg font-semibold">${formatCurrencyForDisplay(item.markupAmount)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {(!groupedMarkupConfig[bundleGroup] || groupedMarkupConfig[bundleGroup].length === 0) && (
+          <div className="text-center py-8 text-gray-500">
+            <p>No configurations found for this group</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   // Handle group selection
   const handleGroupSelect = (bundleGroup: string) => {
     setSelectedGroup(bundleGroup);
+    // On mobile (small screens), open the bottom sheet
+    setShowMobileSheet(true);
   };
 
   // Inline editing functions
@@ -346,6 +614,106 @@ export const MarkupTableManagement: React.FC = () => {
   const discardEdit = () => {
     setEditingItem(null);
     setEditingValue("");
+  };
+
+  // New bundle creation functions
+  const startCreatingBundle = (bundleGroup: string) => {
+    setCreatingBundle(bundleGroup);
+    setNewBundleDays("");
+    setNewBundlePrice("");
+    setValidationError("");
+  };
+
+  // Validate new bundle form in real-time
+  const validateNewBundle = (bundleGroup: string, days: string, price: string): string => {
+    if (!days && !price) {
+      return "";
+    }
+    
+    const daysNum = parseInt(days);
+    const priceNum = parseFloat(price);
+    
+    if (days && (!daysNum || daysNum <= 0)) {
+      return "Duration must be a positive number";
+    }
+    
+    if (days && daysNum > 365) {
+      return "Duration cannot exceed 365 days";
+    }
+    
+    if (price && (!priceNum || priceNum < 0)) {
+      return "Price must be a positive number";
+    }
+    
+    if (price && priceNum > 1000) {
+      return "Price cannot exceed $1000";
+    }
+    
+    // Check for duplicate duration
+    if (days) {
+      const existingBundle = markupConfig.find(
+        config => config.bundleGroup === bundleGroup && config.durationDays === daysNum
+      );
+      
+      if (existingBundle) {
+        return `A bundle with ${daysNum} days already exists`;
+      }
+    }
+    
+    return "";
+  };
+
+  const saveNewBundle = (bundleGroup: string) => {
+    const error = validateNewBundle(bundleGroup, newBundleDays, newBundlePrice);
+    
+    if (error) {
+      setValidationError(error);
+      return;
+    }
+
+    const days = parseInt(newBundleDays);
+    const price = parseFloat(newBundlePrice);
+    
+    if (!days || days <= 0 || !price || price < 0) {
+      setValidationError("Please enter valid days and price values");
+      return;
+    }
+
+    // Add new bundle to the configuration
+    const newBundle: MarkupConfigItem = {
+      bundleGroup,
+      durationDays: days,
+      markupAmount: price,
+      isNew: true
+    };
+
+    setMarkupConfig([...markupConfig, newBundle]);
+    setHasChanges(true);
+    setCreatingBundle(null);
+    setNewBundleDays("");
+    setNewBundlePrice("");
+    setValidationError("");
+    toast.success(`New ${days}-day bundle added to ${bundleGroup}`);
+  };
+
+  const discardNewBundle = () => {
+    setCreatingBundle(null);
+    setNewBundleDays("");
+    setNewBundlePrice("");
+    setValidationError("");
+  };
+
+  // Real-time validation on input change
+  const handleNewBundleDaysChange = (value: string, bundleGroup: string) => {
+    setNewBundleDays(value);
+    const error = validateNewBundle(bundleGroup, value, newBundlePrice);
+    setValidationError(error);
+  };
+
+  const handleNewBundlePriceChange = (value: string, bundleGroup: string) => {
+    setNewBundlePrice(value);
+    const error = validateNewBundle(bundleGroup, newBundleDays, value);
+    setValidationError(error);
   };
 
   // Handler for markup amount changes
@@ -384,11 +752,12 @@ export const MarkupTableManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Two Column Layout */}
-      <div className="flex gap-6 h-[calc(100vh-200px)]">
-        {/* Left Column - Group List */}
-        <div className="w-80 flex-shrink-0">
-          <div className="space-y-3 h-full overflow-y-auto pr-2 pl-1">{/* Add Group Card - Half Height */}
+      {/* Desktop: Two Column Layout, Mobile: Single Column */}
+      <div className="lg:flex lg:gap-6 lg:h-[calc(100vh-200px)]">
+        {/* Group List - Full width on mobile, left column on desktop */}
+        <div className="lg:w-80 lg:flex-shrink-0">
+          <div className="space-y-3 lg:h-full overflow-y-auto lg:pr-2 lg:pl-1">
+            {/* Add Group Card */}
             {!loadingBundleGroups && availableBundleGroups.length > 0 && (
               <Card 
                 className="border-2 border-dashed border-gray-300 hover:border-gray-400 hover:shadow-md transition-all cursor-pointer bg-gray-50 hover:bg-gray-100 h-16"
@@ -415,7 +784,7 @@ export const MarkupTableManagement: React.FC = () => {
                   key={bundleGroup} 
                   className={`hover:shadow-md transition-all cursor-pointer ${
                     isSelected 
-                      ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50' 
+                      ? 'lg:ring-2 lg:ring-blue-500 lg:border-blue-500 lg:bg-blue-50' 
                       : 'hover:border-gray-300'
                   }`}
                   onClick={() => handleGroupSelect(bundleGroup)}
@@ -432,138 +801,10 @@ export const MarkupTableManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column - Content Panel */}
-        <div className="flex-1 flex flex-col">
+        {/* Desktop: Right Column - Content Panel (hidden on mobile) */}
+        <div className="hidden lg:flex lg:flex-1 lg:flex-col">
           {selectedGroup ? (
-            <div className="flex flex-col h-full">
-              <div className="border-b pb-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold">{selectedGroup}</h3>
-                    <p className="text-sm text-gray-600">Fixed markup amounts in USD for different durations</p>
-                  </div>
-                  
-                  {/* Save/Discard buttons for selected group */}
-                  {hasChanges && selectedGroup && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDrawerDiscard(selectedGroup)}
-                        disabled={contentSaving}
-                        className="h-8 w-8 p-0 rounded-full"
-                        title="Discard Changes"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleDrawerSave(selectedGroup)}
-                        disabled={contentSaving || !isAdmin}
-                        className="h-8 w-8 p-0 rounded-full"
-                        title={contentSaving ? "Saving..." : "Save Changes"}
-                      >
-                        {contentSaving ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {groupedMarkupConfig[selectedGroup]?.map((item) => {
-                    const globalIndex = markupConfig.findIndex(
-                      config => config.bundleGroup === item.bundleGroup && 
-                               config.durationDays === item.durationDays
-                    );
-                    const editKey = `${item.bundleGroup}-${item.durationDays}`;
-                    const isEditing = editingItem === editKey;
-                    
-                    return (
-                      <div key={`${selectedGroup}-${item.durationDays}`} className="group border rounded-lg p-3 hover:bg-gray-50 transition-colors">
-                        <div className="flex flex-col space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-600">{item.durationDays} days</span>
-                            {!isEditing && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveMarkup(globalIndex)}
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                          
-                          <div className="flex-1">
-                            {isEditing ? (
-                              <div className="space-y-2">
-                                <InputWithAdornment
-                                  type="number"
-                                  step="0.5"
-                                  min="0"
-                                  value={editingValue}
-                                  onChange={(e) => setEditingValue(e.target.value)}
-                                  leftAdornment="$"
-                                  className="text-sm w-full"
-                                  placeholder="0.00"
-                                  autoFocus
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      saveEdit(item.bundleGroup, item.durationDays);
-                                    } else if (e.key === 'Escape') {
-                                      discardEdit();
-                                    }
-                                  }}
-                                />
-                                <div className="flex gap-1 justify-end">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => saveEdit(item.bundleGroup, item.durationDays)}
-                                    className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                  >
-                                    <Check className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={discardEdit}
-                                    className="h-7 w-7 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div 
-                                className="w-full p-2 cursor-pointer rounded hover:bg-gray-100 transition-colors text-center"
-                                onClick={() => startEditing(item.bundleGroup, item.durationDays, item.markupAmount)}
-                              >
-                                <span className="text-lg font-semibold">${formatCurrencyForDisplay(item.markupAmount)}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                {(!groupedMarkupConfig[selectedGroup] || groupedMarkupConfig[selectedGroup].length === 0) && (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No configurations found for this group</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <BundleContent bundleGroup={selectedGroup} showHeader={true} />
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center text-gray-500">
@@ -577,6 +818,22 @@ export const MarkupTableManagement: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Mobile: Bottom Sheet */}
+      <Sheet open={showMobileSheet} onOpenChange={setShowMobileSheet}>
+        <SheetContent side="bottom" className="fixed bottom-0 left-0 right-0 max-h-[85vh] z-50 bg-background border-t rounded-t-lg">
+          <SheetHeader className="px-6 pt-6 pb-4">
+            <SheetTitle className="text-left">{selectedGroup}</SheetTitle>
+            <SheetDescription className="text-left">
+              Fixed markup amounts in USD for different durations
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="px-6 pb-6 flex-1 overflow-y-auto max-h-[calc(85vh-120px)]">
+            {selectedGroup && <BundleContent bundleGroup={selectedGroup} showHeader={false} />}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Add Group Dialog */}
       <Dialog open={showAddGroupModal} onOpenChange={setShowAddGroupModal}>
