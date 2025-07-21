@@ -34,6 +34,10 @@ const SimpleHeader = ({
 
 // Utility functions
 const formatCurrency = (amount: number) => {
+  // Safety check for NaN, null, undefined values
+  if (isNaN(amount) || amount === null || amount === undefined) {
+    return "$0.00";
+  }
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -41,6 +45,10 @@ const formatCurrency = (amount: number) => {
 };
 
 const formatPercentage = (rate: number) => {
+  // Safety check for NaN, null, undefined values  
+  if (isNaN(rate) || rate === null || rate === undefined) {
+    return "0.0%";
+  }
   return (rate * 100).toFixed(1) + "%";
 };
 
@@ -265,7 +273,7 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
   {
     id: "discount",
     accessorKey: "discountRate",
-    header: () => <SimpleHeader>Discount</SimpleHeader>,
+    header: () => <SimpleHeader>Unused Days Discount</SimpleHeader>,
     cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
       const data = row.original;
       const isSummaryRow = data.duration === 0;
@@ -273,20 +281,42 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
       if (isSummaryRow) {
         return null;
       }
+
+      // Safely access discountPerDay with fallback
+      const discountPerDay = (data as any).discountPerDay ?? 0.1;
+      const isCustomDiscountPerDay = discountPerDay !== 0.1;
+      const hasRegularDiscount = data.discountRate > 0;
+      const hasUnusedDaysDiscount = data.discountValue > 0;
       
       return (
-        <div className="space-y-1">
-          <div className="flex items-center gap-1">
-            <Percent className="h-4 w-4 text-purple-600" />
+        <div className="space-y-2">
+          {/* Regular Discount - only show if > 0 */}
+          {hasRegularDiscount && (
+            <div className="flex items-center gap-2">
+              <Badge variant="default" className="bg-purple-100 text-purple-800 border-purple-300">
+                {formatPercentage(data.discountRate)}
+              </Badge>
+              <span className="text-sm text-gray-600">Config Discount</span>
+            </div>
+          )}
+          
+          {/* Unused Days Discount Rate */}
+          <div className="flex items-center gap-2">
             <Badge
-              variant={data.hasCustomDiscount ? "default" : "outline"}
+              variant={isCustomDiscountPerDay ? "default" : "outline"}
+              className={isCustomDiscountPerDay ? "bg-orange-100 text-orange-800 border-orange-300 font-semibold" : "font-semibold"}
             >
-              {formatPercentage(data.discountRate)}
+              {formatPercentage(discountPerDay)}
             </Badge>
+            <span className="text-sm text-gray-600 font-medium">per unused day</span>
           </div>
-          <div className="text-sm text-gray-500">
-            Value: {formatCurrency(data.discountValue)}
-          </div>
+
+          {/* Applied Discount - only show if discount was actually applied */}
+          {hasUnusedDaysDiscount && (
+            <div className="text-sm text-green-600 font-medium pt-1 border-t">
+              Applied: {formatCurrency(data.discountValue)}
+            </div>
+          )}
         </div>
       );
     },

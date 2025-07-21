@@ -8,6 +8,7 @@ export interface PricingConfig {
   totalCost: number;
   discountRate: number; // as decimal (0 for 0%)
   processingRate: number; // as decimal (0.045 for 4.5%)
+  discountPerDay: number; // as decimal (0.10 for 10% per day)
   bundleInfo?: {
     originalDuration: number;
     requestedDuration: number;
@@ -32,6 +33,7 @@ export interface PricingBreakdown {
   finalRevenue: number;        // Revenue after processing fees (what we actually receive)
   netProfit: number;           // Final profit after all costs and fees
   currency: string;
+  discountPerDay: number;      // Discount rate per unused day
 }
 
 export class PricingService {
@@ -87,7 +89,8 @@ export class PricingService {
       processingCost,
       finalRevenue,
       netProfit,
-      currency: this.DEFAULT_CURRENCY
+      currency: this.DEFAULT_CURRENCY,
+      discountPerDay: config.discountPerDay
     };
   }
 
@@ -651,6 +654,7 @@ export class PricingService {
         totalCost: Number(totalCost.toFixed(2)), // Total with unused days discount applied
         discountRate,
         processingRate,
+        discountPerDay: discountPerDayRate,
         // Additional info for transparency
         bundleInfo: {
           originalDuration: matchingBundle.duration,

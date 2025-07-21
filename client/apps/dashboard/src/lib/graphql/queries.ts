@@ -309,6 +309,7 @@ export const CALCULATE_PRICING = gql(`
       processingCost
       finalRevenue
       currency
+      discountPerDay
     }
   }
 `)
@@ -328,6 +329,7 @@ export const CALCULATE_BATCH_PRICING = gql(`
       processingCost
       finalRevenue
       currency
+      discountPerDay
     }
   }
 `)
@@ -364,6 +366,7 @@ export const GET_PRICING_CONFIGURATIONS = gql(`
       duration
       bundleGroup
       discountRate
+      discountPerDay
       markupAmount
       isActive
       createdBy
@@ -387,6 +390,7 @@ export const UPDATE_PRICING_CONFIGURATION = gql(`
         duration
         bundleGroup
         discountRate
+        discountPerDay
         markupAmount
         isActive
         createdBy
@@ -579,6 +583,8 @@ export const GET_COUNTRY_BUNDLES = gql(`
       currency
       pricePerDay
       hasCustomDiscount
+      configurationLevel
+      discountPerDay
     }
   }
 `)
