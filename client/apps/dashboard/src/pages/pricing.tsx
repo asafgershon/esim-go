@@ -6,9 +6,9 @@ import { useMutation } from '@apollo/client';
 import { toast } from 'sonner';
 import { CountryPricingTableGrouped } from '../components/country-pricing-table-grouped';
 import { PricingConfigDrawer } from '../components/pricing-config-drawer';
-import { PricingSimulatorDrawer } from '../components/pricing-simulator-drawer';
 import { ProcessingFeeManagement } from '../components/processing-fee-management';
 import { MarkupTableManagement } from '../components/markup-table-management';
+import { PricingSimulatorContent } from '../components/pricing-simulator-content';
 import { usePricingData, CountryGroupData } from '../hooks/usePricingData';
 import { SYNC_CATALOG } from '../lib/graphql/queries';
 
@@ -21,7 +21,6 @@ const PricingPage: React.FC = () => {
   
   const [selectedRow, setSelectedRow] = useState<CountryBundle | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('pricing');
 
   // Sync catalog mutation
@@ -113,14 +112,6 @@ const PricingPage: React.FC = () => {
               Triggers sync with eSIM Go API
             </TooltipContent>
           </Tooltip>
-          <Button
-            onClick={() => setIsSimulatorOpen(true)}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Calculator className="h-4 w-4" />
-            Pricing Simulator
-          </Button>
           <div className="text-sm text-gray-500">
             {countryGroups.length} countries
           </div>
@@ -141,6 +132,10 @@ const PricingPage: React.FC = () => {
             <DollarSign className="h-4 w-4" />
             Markup Table
           </TabsTrigger>
+          <TabsTrigger value="pricing-simulator" className="flex items-center gap-2">
+            <Calculator className="h-4 w-4" />
+            Pricing Simulator
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pricing">
@@ -158,6 +153,10 @@ const PricingPage: React.FC = () => {
         <TabsContent value="markup-table">
           <MarkupTableManagement />
         </TabsContent>
+
+        <TabsContent value="pricing-simulator">
+          <PricingSimulatorContent countries={countriesData?.countries || []} />
+        </TabsContent>
       </Tabs>
 
       {/* Drawer for pricing configuration */}
@@ -168,12 +167,6 @@ const PricingPage: React.FC = () => {
         onConfigurationSaved={handleConfigurationSaved}
       />
 
-      {/* Pricing Simulator Drawer */}
-      <PricingSimulatorDrawer
-        isOpen={isSimulatorOpen}
-        onClose={() => setIsSimulatorOpen(false)}
-        countries={countriesData?.countries || []}
-      />
 
 
     </div>
