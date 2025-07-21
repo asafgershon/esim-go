@@ -3,14 +3,15 @@ import {
   Input,
   InputWithAdornment,
   Label,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@workspace/ui";
 import React, { useState, useEffect } from "react";
-import { CreditCard, Save, RotateCcw, Loader2 } from "lucide-react";
+import { CreditCard, Save, RotateCcw, Loader2, X, Check, AlertTriangle } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import {
@@ -20,52 +21,61 @@ import {
 } from "../lib/graphql/queries";
 
 interface ProcessingFeeData {
-  // Main processing fees
-  israeliCardsRate: number; // עמלות סליקה עסקאות ש"ח בכרטיסים שהונפקו בישראל
-  foreignCardsRate: number; // עמלות סליקה כרטיסים שהונפקו בחו"ל
-  premiumDinersRate: number; // תוספת לעמלות הסליקה בגין תשלום בכרטיסי פרימיום - דיינרס
-  premiumAmexRate: number; // תוספת לעמלות הסליקה בגין תשלום בכרטיסי פרימיום - אמקס
-  bitPaymentRate: number; // תוספת לעמלות הסליקה בגין תשלום באמצעות ביט
+  // Processing fees and rates
+  israeliCardsRate: number; // Israeli cards processing rate
+  foreignCardsRate: number; // Foreign cards processing rate
+  premiumDinersRate: number; // Premium Diners surcharge
+  premiumAmexRate: number; // Premium Amex surcharge
+  bitPaymentRate: number; // Bit payment surcharge
+  threeDSecureFee: number; // 3DSecure service fee
+  appleGooglePayFee: number; // Apple/Google Pay fee
 
   // Fixed fees
-  fixedFeeNIS: number; // עמלה קבועה לעסקה ב ש"ח
-  fixedFeeForeign: number; // עמלה קבועה לעסקה ב מט"ח
-  monthlyFixedCost: number; // עלות חודשית קבועה
-  bankWithdrawalFee: number; // עלות משיכה לחשבון הבנק
-  monthlyMinimumFee: number; // עמלת מינימום חודשית
-  setupCost: number; // עלות הקמה
+  fixedFeeNIS: number; // Fixed fee per transaction (ILS)
+  fixedFeeForeign: number; // Fixed fee per transaction (Foreign currency)
+  monthlyFixedCost: number; // Monthly fixed cost
+  bankWithdrawalFee: number; // Bank withdrawal fee
+  monthlyMinimumFee: number; // Monthly minimum fee
+  setupCost: number; // Setup cost
 
   // Additional services
-  threeDSecureFee: number; // 3DSecure - שירות מניעת הכחשות עסקה
-  chargebackFee: number; // עמלת הכחשות עסקה
-  cancellationFee: number; // עמלת ביטול עסקה
-  invoiceServiceFee: number; // שירותי חשבוניות / קבלות
-  appleGooglePayFee: number; // Apple/Google Pay
+  chargebackFee: number; // Chargeback fee
+  cancellationFee: number; // Transaction cancellation fee
+  invoiceServiceFee: number; // Invoice/receipt service
 }
 
 const defaultProcessingFees: ProcessingFeeData = {
+  // Processing rates
   israeliCardsRate: 1.4,
   foreignCardsRate: 3.9,
   premiumDinersRate: 0.3,
   premiumAmexRate: 0.8,
   bitPaymentRate: 0.1,
+  threeDSecureFee: 0, // Individual pricing upon connection
+  appleGooglePayFee: 0,
+  
+  // Fixed fees
   fixedFeeNIS: 0,
   fixedFeeForeign: 0,
-  monthlyFixedCost: 0, // בהתאם לסיכום
+  monthlyFixedCost: 0, // As per agreement
   bankWithdrawalFee: 9.9,
   monthlyMinimumFee: 0,
   setupCost: 250,
-  threeDSecureFee: 0, // תמחור פרטני בעת התחברות
+  
+  // Additional services
   chargebackFee: 50,
   cancellationFee: 30,
   invoiceServiceFee: 69,
-  appleGooglePayFee: 0,
 };
 
 export const ProcessingFeeManagement: React.FC = () => {
   const [fees, setFees] = useState<ProcessingFeeData>(defaultProcessingFees);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>("");
+  const [showAlert, setShowAlert] = useState(false);
+  const [pendingChange, setPendingChange] = useState<{ field: keyof ProcessingFeeData; value: string } | null>(null);
 
   // GraphQL queries and mutations
   const { data: currentConfig, loading: loadingCurrent, refetch } = useQuery(
@@ -85,17 +95,17 @@ export const ProcessingFeeManagement: React.FC = () => {
         premiumDinersRate: config.premiumDinersRate,
         premiumAmexRate: config.premiumAmexRate,
         bitPaymentRate: config.bitPaymentRate,
+        threeDSecureFee: config.threeDSecureFee,
+        appleGooglePayFee: config.appleGooglePayFee,
         fixedFeeNIS: config.fixedFeeNIS,
         fixedFeeForeign: config.fixedFeeForeign,
         monthlyFixedCost: config.monthlyFixedCost,
         bankWithdrawalFee: config.bankWithdrawalFee,
         monthlyMinimumFee: config.monthlyMinimumFee,
         setupCost: config.setupCost,
-        threeDSecureFee: config.threeDSecureFee,
         chargebackFee: config.chargebackFee,
         cancellationFee: config.cancellationFee,
         invoiceServiceFee: config.invoiceServiceFee,
-        appleGooglePayFee: config.appleGooglePayFee,
       });
       setHasChanges(false);
     } else if (!loadingCurrent && !currentConfig?.currentProcessingFeeConfiguration) {
@@ -120,55 +130,52 @@ export const ProcessingFeeManagement: React.FC = () => {
     return amount.toFixed(2);
   };
 
-  // Handler for percentage fields
-  const handlePercentageChange = (field: keyof ProcessingFeeData, value: string) => {
-    const decimalValue = parsePercentageFromDisplay(value);
-    setFees((prev) => ({
-      ...prev,
-      [field]: decimalValue,
-    }));
-    setHasChanges(true);
+  // Inline editing functions
+  const startEditing = (field: keyof ProcessingFeeData, currentValue: number, isPercentage: boolean = false) => {
+    setEditingField(field);
+    setEditingValue(isPercentage ? formatPercentageForDisplay(currentValue) : formatCurrencyForDisplay(currentValue));
   };
 
-  // Handler for currency fields
-  const handleCurrencyChange = (field: keyof ProcessingFeeData, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    setFees((prev) => ({
-      ...prev,
-      [field]: numValue,
-    }));
-    setHasChanges(true);
-  };
+  const saveEdit = async (field: keyof ProcessingFeeData, isPercentage: boolean = false) => {
+    const numericValue = isPercentage ? parsePercentageFromDisplay(editingValue) : (parseFloat(editingValue) || 0);
+    
+    // Check if this is a percentage field that affects pricing
+    const percentageFields = ['israeliCardsRate', 'foreignCardsRate', 'premiumDinersRate', 'premiumAmexRate', 'bitPaymentRate'];
+    if (percentageFields.includes(field)) {
+      setPendingChange({ field, value: editingValue });
+      setShowAlert(true);
+      return;
+    }
 
-  const handleSave = async () => {
-    if (!hasChanges) return;
-
-    setIsSubmitting(true);
     try {
+      const updatedFees = {
+        ...fees,
+        [field]: numericValue,
+      };
+
       const input = {
-        israeliCardsRate: fees.israeliCardsRate, // Already in decimal format
-        foreignCardsRate: fees.foreignCardsRate,
-        premiumDinersRate: fees.premiumDinersRate,
-        premiumAmexRate: fees.premiumAmexRate,
-        bitPaymentRate: fees.bitPaymentRate,
-        fixedFeeNIS: fees.fixedFeeNIS,
-        fixedFeeForeign: fees.fixedFeeForeign,
-        monthlyFixedCost: fees.monthlyFixedCost,
-        bankWithdrawalFee: fees.bankWithdrawalFee,
-        monthlyMinimumFee: fees.monthlyMinimumFee,
-        setupCost: fees.setupCost,
-        threeDSecureFee: fees.threeDSecureFee,
-        chargebackFee: fees.chargebackFee,
-        cancellationFee: fees.cancellationFee,
-        invoiceServiceFee: fees.invoiceServiceFee,
-        appleGooglePayFee: fees.appleGooglePayFee,
+        israeliCardsRate: updatedFees.israeliCardsRate,
+        foreignCardsRate: updatedFees.foreignCardsRate,
+        premiumDinersRate: updatedFees.premiumDinersRate,
+        premiumAmexRate: updatedFees.premiumAmexRate,
+        bitPaymentRate: updatedFees.bitPaymentRate,
+        threeDSecureFee: updatedFees.threeDSecureFee,
+        appleGooglePayFee: updatedFees.appleGooglePayFee,
+        fixedFeeNIS: updatedFees.fixedFeeNIS,
+        fixedFeeForeign: updatedFees.fixedFeeForeign,
+        monthlyFixedCost: updatedFees.monthlyFixedCost,
+        bankWithdrawalFee: updatedFees.bankWithdrawalFee,
+        monthlyMinimumFee: updatedFees.monthlyMinimumFee,
+        setupCost: updatedFees.setupCost,
+        chargebackFee: updatedFees.chargebackFee,
+        cancellationFee: updatedFees.cancellationFee,
+        invoiceServiceFee: updatedFees.invoiceServiceFee,
         effectiveFrom: new Date().toISOString(),
         effectiveTo: null,
-        notes: `Updated on ${new Date().toLocaleDateString('he-IL')}`,
+        notes: `Updated ${field} on ${new Date().toLocaleDateString('en-US')}`,
       };
 
       if (currentConfig?.currentProcessingFeeConfiguration) {
-        // Update existing configuration by creating a new version
         await updateConfiguration({
           variables: {
             id: currentConfig.currentProcessingFeeConfiguration.id,
@@ -176,364 +183,243 @@ export const ProcessingFeeManagement: React.FC = () => {
           },
         });
       } else {
-        // Create new configuration
         await createConfiguration({
           variables: { input },
         });
       }
 
-      // Refetch current configuration to get the latest data
       await refetch();
-      
-      setHasChanges(false);
-      toast.success("הגדרות עמלות הסליקה נשמרו בהצלחה");
+      setFees(updatedFees);
+      setEditingField(null);
+      setEditingValue("");
+      toast.success("Configuration updated successfully");
     } catch (error) {
-      console.error("Error saving processing fee configuration:", error);
-      toast.error("אירעה שגיאה בשמירת הגדרות עמלות הסליקה");
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error saving configuration:", error);
+      toast.error("Error updating configuration");
     }
   };
 
-  const handleReset = () => {
-    setFees(defaultProcessingFees);
-    setHasChanges(true);
+  const confirmPercentageChange = async () => {
+    if (!pendingChange) return;
+    
+    const numericValue = parsePercentageFromDisplay(pendingChange.value);
+    
+    try {
+      const updatedFees = {
+        ...fees,
+        [pendingChange.field]: numericValue,
+      };
+
+      const input = {
+        israeliCardsRate: updatedFees.israeliCardsRate,
+        foreignCardsRate: updatedFees.foreignCardsRate,
+        premiumDinersRate: updatedFees.premiumDinersRate,
+        premiumAmexRate: updatedFees.premiumAmexRate,
+        bitPaymentRate: updatedFees.bitPaymentRate,
+        threeDSecureFee: updatedFees.threeDSecureFee,
+        appleGooglePayFee: updatedFees.appleGooglePayFee,
+        fixedFeeNIS: updatedFees.fixedFeeNIS,
+        fixedFeeForeign: updatedFees.fixedFeeForeign,
+        monthlyFixedCost: updatedFees.monthlyFixedCost,
+        bankWithdrawalFee: updatedFees.bankWithdrawalFee,
+        monthlyMinimumFee: updatedFees.monthlyMinimumFee,
+        setupCost: updatedFees.setupCost,
+        chargebackFee: updatedFees.chargebackFee,
+        cancellationFee: updatedFees.cancellationFee,
+        invoiceServiceFee: updatedFees.invoiceServiceFee,
+        effectiveFrom: new Date().toISOString(),
+        effectiveTo: null,
+        notes: `Updated ${pendingChange.field} on ${new Date().toLocaleDateString('en-US')}`,
+      };
+
+      if (currentConfig?.currentProcessingFeeConfiguration) {
+        await updateConfiguration({
+          variables: {
+            id: currentConfig.currentProcessingFeeConfiguration.id,
+            input,
+          },
+        });
+      } else {
+        await createConfiguration({
+          variables: { input },
+        });
+      }
+
+      await refetch();
+      setFees(updatedFees);
+      setEditingField(null);
+      setEditingValue("");
+      setShowAlert(false);
+      setPendingChange(null);
+      toast.success("Pricing configuration updated successfully");
+    } catch (error) {
+      console.error("Error saving configuration:", error);
+      toast.error("Error updating configuration");
+    }
+  };
+
+  const discardEdit = () => {
+    setEditingField(null);
+    setEditingValue("");
+    setShowAlert(false);
+    setPendingChange(null);
+  };
+
+
+  // Helper function to render an editable field
+  const renderEditableField = (
+    field: keyof ProcessingFeeData,
+    label: string,
+    value: number,
+    isPercentage: boolean = false,
+    adornment?: string
+  ) => {
+    const isEditing = editingField === field;
+    
+    return (
+      <div className="space-y-1">
+        <Label className="text-xs font-medium">{label}</Label>
+        {isEditing ? (
+          <div className="flex items-center gap-1">
+            <InputWithAdornment
+              type="number"
+              step={isPercentage ? "0.1" : "0.01"}
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              rightAdornment={isPercentage ? "%" : undefined}
+              leftAdornment={!isPercentage ? adornment || "₪" : undefined}
+              className="text-sm flex-1"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  saveEdit(field, isPercentage);
+                } else if (e.key === 'Escape') {
+                  discardEdit();
+                }
+              }}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => saveEdit(field, isPercentage)}
+              className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+            >
+              <Check className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={discardEdit}
+              className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : (
+          <div 
+            className="w-full p-2 cursor-pointer rounded hover:bg-gray-100 transition-colors border border-gray-200"
+            onClick={() => startEditing(field, value, isPercentage)}
+          >
+            <span className="text-sm">
+              {isPercentage 
+                ? `${formatPercentageForDisplay(value)}%` 
+                : `${adornment || "₪"}${formatCurrencyForDisplay(value)}`
+              }
+            </span>
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (loadingCurrent) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">טוען הגדרות עמלות...</span>
+        <span className="ml-2">Loading fee settings...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={handleReset}
-          className="flex items-center gap-2"
-        >
-          <RotateCcw className="h-4 w-4" />
-          איפוס לברירת מחדל
-        </Button>
-        <Button
-          onClick={handleSave}
-          disabled={!hasChanges || isSubmitting}
-          className="flex items-center gap-2"
-        >
-          {isSubmitting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          {isSubmitting ? "שומר..." : "שמירה"}
-        </Button>
+    <div className="space-y-8 pb-12">
+      {/* Processing Rates */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Processing Rates</h3>
+        <p className="text-sm text-gray-600 mb-4">Percentage-based fees applied to transactions</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          {renderEditableField('israeliCardsRate', 'Israeli Cards', fees.israeliCardsRate, true)}
+          {renderEditableField('foreignCardsRate', 'Foreign Cards', fees.foreignCardsRate, true)}
+          {renderEditableField('premiumDinersRate', 'Diners Surcharge', fees.premiumDinersRate, true)}
+          {renderEditableField('premiumAmexRate', 'Amex Surcharge', fees.premiumAmexRate, true)}
+          {renderEditableField('bitPaymentRate', 'Bit Payment', fees.bitPaymentRate, true)}
+        </div>
       </div>
 
-      {/* Main Processing Fees */}
-      <Card>
-        <CardHeader>
-          <CardTitle>תעריפי עמלות סליקה ועלויות שוטפות</CardTitle>
-          <CardDescription>
-            עמלות בסיסיות על פי סוג כרטיס ומקור הנפקה
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="israeliCards" className="text-xs font-medium">
-                כרטיסים ישראליים
-              </Label>
-              <InputWithAdornment
-                id="israeliCards"
-                type="number"
-                step="0.1"
-                value={formatPercentageForDisplay(fees.israeliCardsRate)}
-                onChange={(e) =>
-                  handlePercentageChange("israeliCardsRate", e.target.value)
-                }
-                placeholder="1.4"
-                rightAdornment="%"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="foreignCards" className="text-xs font-medium">
-                כרטיסים זרים
-              </Label>
-              <InputWithAdornment
-                id="foreignCards"
-                type="number"
-                step="0.1"
-                value={formatPercentageForDisplay(fees.foreignCardsRate)}
-                onChange={(e) =>
-                  handlePercentageChange("foreignCardsRate", e.target.value)
-                }
-                placeholder="3.9"
-                rightAdornment="%"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="premiumDiners" className="text-xs font-medium">
-                תוספת דיינרס
-              </Label>
-              <InputWithAdornment
-                id="premiumDiners"
-                type="number"
-                step="0.1"
-                value={formatPercentageForDisplay(fees.premiumDinersRate)}
-                onChange={(e) =>
-                  handlePercentageChange("premiumDinersRate", e.target.value)
-                }
-                placeholder="0.3"
-                rightAdornment="%"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="premiumAmex" className="text-xs font-medium">
-                תוספת אמקס
-              </Label>
-              <InputWithAdornment
-                id="premiumAmex"
-                type="number"
-                step="0.1"
-                value={formatPercentageForDisplay(fees.premiumAmexRate)}
-                onChange={(e) =>
-                  handlePercentageChange("premiumAmexRate", e.target.value)
-                }
-                placeholder="0.8"
-                rightAdornment="%"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="bitPayment" className="text-xs font-medium">
-                תשלום ביט
-              </Label>
-              <InputWithAdornment
-                id="bitPayment"
-                type="number"
-                step="0.1"
-                value={formatPercentageForDisplay(fees.bitPaymentRate)}
-                onChange={(e) =>
-                  handlePercentageChange("bitPaymentRate", e.target.value)
-                }
-                placeholder="0.1"
-                rightAdornment="%"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Service Fees */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Service Fees</h3>
+        <p className="text-sm text-gray-600 mb-4">Fixed fees for additional services</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {renderEditableField('threeDSecureFee', '3DSecure Service', fees.threeDSecureFee, false, '$')}
+          {renderEditableField('appleGooglePayFee', 'Apple/Google Pay', fees.appleGooglePayFee, false, '$')}
+        </div>
+      </div>
 
       {/* Fixed Fees */}
-      <Card>
-        <CardHeader>
-          <CardTitle>עמלות קבועות</CardTitle>
-          <CardDescription>עמלות קבועות ועלויות חודשיות</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="fixedFeeNIS" className="text-xs font-medium">עמלה קבועה ש"ח</Label>
-              <InputWithAdornment
-                id="fixedFeeNIS"
-                type="number"
-                step="0.01"
-                value={formatCurrencyForDisplay(fees.fixedFeeNIS)}
-                onChange={(e) =>
-                  handleCurrencyChange("fixedFeeNIS", e.target.value)
-                }
-                placeholder="0.00"
-                leftAdornment="₪"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="fixedFeeForeign" className="text-xs font-medium">
-                עמלה קבועה מט"ח
-              </Label>
-              <InputWithAdornment
-                id="fixedFeeForeign"
-                type="number"
-                step="0.01"
-                value={formatCurrencyForDisplay(fees.fixedFeeForeign)}
-                onChange={(e) =>
-                  handleCurrencyChange("fixedFeeForeign", e.target.value)
-                }
-                placeholder="0.00"
-                leftAdornment="₪"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="monthlyFixedCost" className="text-xs font-medium">
-                עלות חודשית
-              </Label>
-              <InputWithAdornment
-                id="monthlyFixedCost"
-                type="number"
-                step="0.01"
-                value={formatCurrencyForDisplay(fees.monthlyFixedCost)}
-                onChange={(e) =>
-                  handleCurrencyChange("monthlyFixedCost", e.target.value)
-                }
-                placeholder="0.00"
-                leftAdornment="₪"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="bankWithdrawalFee" className="text-xs font-medium">
-                משיכה לבנק
-              </Label>
-              <InputWithAdornment
-                id="bankWithdrawalFee"
-                type="number"
-                step="0.01"
-                value={formatCurrencyForDisplay(fees.bankWithdrawalFee)}
-                onChange={(e) =>
-                  handleCurrencyChange("bankWithdrawalFee", e.target.value)
-                }
-                placeholder="9.90"
-                leftAdornment="₪"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="monthlyMinimumFee" className="text-xs font-medium">
-                מינימום חודשי
-              </Label>
-              <InputWithAdornment
-                id="monthlyMinimumFee"
-                type="number"
-                step="0.01"
-                value={formatCurrencyForDisplay(fees.monthlyMinimumFee)}
-                onChange={(e) =>
-                  handleCurrencyChange("monthlyMinimumFee", e.target.value)
-                }
-                placeholder="0.00"
-                leftAdornment="₪"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="setupCost" className="text-xs font-medium">עלות הקמה</Label>
-              <InputWithAdornment
-                id="setupCost"
-                type="number"
-                step="0.01"
-                value={formatCurrencyForDisplay(fees.setupCost)}
-                onChange={(e) =>
-                  handleCurrencyChange("setupCost", e.target.value)
-                }
-                placeholder="250.00"
-                leftAdornment="₪"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Fixed Fees</h3>
+        <p className="text-sm text-gray-600 mb-4">Fixed fees and monthly costs</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {renderEditableField('fixedFeeNIS', 'Fixed Fee (ILS)', fees.fixedFeeNIS)}
+          {renderEditableField('fixedFeeForeign', 'Fixed Fee (Foreign)', fees.fixedFeeForeign)}
+          {renderEditableField('monthlyFixedCost', 'Monthly Cost', fees.monthlyFixedCost)}
+          {renderEditableField('bankWithdrawalFee', 'Bank Withdrawal', fees.bankWithdrawalFee)}
+          {renderEditableField('monthlyMinimumFee', 'Monthly Minimum', fees.monthlyMinimumFee)}
+          {renderEditableField('setupCost', 'Setup Cost', fees.setupCost)}
+        </div>
+      </div>
 
       {/* Additional Services */}
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>שירותי ערך מוסף</CardTitle>
-          <CardDescription>
-            עמלות נוספות עבור שירותים מתקדמים
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="threeDSecureFee" className="text-xs font-medium">
-                3DSecure
-              </Label>
-              <InputWithAdornment
-                id="threeDSecureFee"
-                type="number"
-                step="0.01"
-                value={formatCurrencyForDisplay(fees.threeDSecureFee)}
-                onChange={(e) =>
-                  handleCurrencyChange("threeDSecureFee", e.target.value)
-                }
-                placeholder="0.00"
-                leftAdornment="₪"
-              />
-            </div>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Additional Services</h3>
+        <p className="text-sm text-gray-600 mb-4">Additional fees for advanced services</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {renderEditableField('chargebackFee', 'Chargeback Fee', fees.chargebackFee)}
+          {renderEditableField('cancellationFee', 'Cancellation Fee', fees.cancellationFee)}
+          {renderEditableField('invoiceServiceFee', 'Invoice Service', fees.invoiceServiceFee)}
+        </div>
+      </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="chargebackFee" className="text-xs font-medium">הכחשות עסקה</Label>
-              <InputWithAdornment
-                id="chargebackFee"
-                type="number"
-                step="0.01"
-                value={formatCurrencyForDisplay(fees.chargebackFee)}
-                onChange={(e) =>
-                  handleCurrencyChange("chargebackFee", e.target.value)
-                }
-                placeholder="50.00"
-                leftAdornment="₪"
-              />
+      {/* Destructive Alert Dialog */}
+      <Dialog open={showAlert} onOpenChange={setShowAlert}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-red-900">Critical Pricing Change</DialogTitle>
+                <DialogDescription className="text-red-700">
+                  This will affect all existing bundles immediately and impact final pricing. Are you sure you want to continue?
+                </DialogDescription>
+              </div>
             </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="cancellationFee" className="text-xs font-medium">ביטול עסקה</Label>
-              <InputWithAdornment
-                id="cancellationFee"
-                type="number"
-                step="0.01"
-                value={formatCurrencyForDisplay(fees.cancellationFee)}
-                onChange={(e) =>
-                  handleCurrencyChange("cancellationFee", e.target.value)
-                }
-                placeholder="30.00"
-                leftAdornment="₪"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="invoiceServiceFee" className="text-xs font-medium">
-                חשבוניות/קבלות
-              </Label>
-              <InputWithAdornment
-                id="invoiceServiceFee"
-                type="number"
-                step="0.01"
-                value={formatCurrencyForDisplay(fees.invoiceServiceFee)}
-                onChange={(e) =>
-                  handleCurrencyChange("invoiceServiceFee", e.target.value)
-                }
-                placeholder="69.00"
-                leftAdornment="₪"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="appleGooglePayFee" className="text-xs font-medium">
-                Apple/Google Pay
-              </Label>
-              <InputWithAdornment
-                id="appleGooglePayFee"
-                type="number"
-                step="0.01"
-                value={formatCurrencyForDisplay(fees.appleGooglePayFee)}
-                onChange={(e) =>
-                  handleCurrencyChange("appleGooglePayFee", e.target.value)
-                }
-                placeholder="0.00"
-                leftAdornment="₪"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={discardEdit}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmPercentageChange}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Yes, Update Pricing
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

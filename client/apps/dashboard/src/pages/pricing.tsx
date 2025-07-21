@@ -78,15 +78,15 @@ const PricingPage: React.FC = () => {
       icon: <DollarSign className="h-5 w-5" />,
       description: 'Update fixed markup amounts for each bundle group and duration'
     },
-    '/pricing/simulator': {
-      title: 'Simulator Pricing',
-      icon: <Calculator className="h-5 w-5" />,
-      description: 'Simulate pricing for any country and duration combination'
-    },
     '/pricing/processing-fee': {
       title: 'Processing Fee',
       icon: <CreditCard className="h-5 w-5" />,
       description: 'Configure processing fees and payment-related charges'
+    },
+    '/pricing/simulator': {
+      title: 'Simulator Pricing',
+      icon: <Calculator className="h-5 w-5" />,
+      description: 'Simulate pricing for any country and duration combination'
     }
   };
 
@@ -156,17 +156,6 @@ const PricingPage: React.FC = () => {
             Markup Pricing
           </Link>
           <Link
-            to="/pricing/simulator"
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              currentPath === '/pricing/simulator'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Calculator className="h-4 w-4" />
-            Simulator Pricing
-          </Link>
-          <Link
             to="/pricing/processing-fee"
             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               currentPath === '/pricing/processing-fee'
@@ -176,6 +165,17 @@ const PricingPage: React.FC = () => {
           >
             <CreditCard className="h-4 w-4" />
             Processing Fee
+          </Link>
+          <Link
+            to="/pricing/simulator"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              currentPath === '/pricing/simulator'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Calculator className="h-4 w-4" />
+            Simulator Pricing
           </Link>
         </div>
       </div>
