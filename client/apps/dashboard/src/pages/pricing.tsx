@@ -1,9 +1,9 @@
 import React from 'react';
-import { Button, Tooltip, TooltipTrigger, TooltipContent } from '@workspace/ui';
+import { Button, Tooltip, TooltipTrigger, TooltipContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui';
 import { Calculator, DollarSign, Table, CreditCard, RefreshCw, Layers } from 'lucide-react';
 import { useMutation } from '@apollo/client';
 import { toast } from 'sonner';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { usePricingData } from '../hooks/usePricingData';
 import { SYNC_CATALOG } from '../lib/graphql/queries';
 
@@ -14,6 +14,7 @@ import { SYNC_CATALOG } from '../lib/graphql/queries';
 const PricingPage: React.FC = () => {
   const { countryGroups, loading, error, expandCountry } = usePricingData();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Sync catalog mutation
   const [syncCatalog, { loading: syncLoading }] = useMutation(SYNC_CATALOG);
@@ -139,10 +140,11 @@ const PricingPage: React.FC = () => {
 
         {/* Tab Navigation */}
         <div>
-          <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
+          {/* Desktop Tabs - hidden on mobile, shown on desktop */}
+          <div className="hidden md:flex space-x-1 bg-muted p-1 rounded-lg w-fit">
             <Link
               to="/pricing/summary"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 currentPath === '/pricing/summary'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -153,7 +155,7 @@ const PricingPage: React.FC = () => {
             </Link>
             <Link
               to="/pricing/summary-experimental"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 currentPath === '/pricing/summary-experimental'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -165,7 +167,7 @@ const PricingPage: React.FC = () => {
             </Link>
             <Link
               to="/pricing/markup"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 currentPath === '/pricing/markup'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -176,7 +178,7 @@ const PricingPage: React.FC = () => {
             </Link>
             <Link
               to="/pricing/processing-fee"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 currentPath === '/pricing/processing-fee'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -187,7 +189,7 @@ const PricingPage: React.FC = () => {
             </Link>
             <Link
               to="/pricing/simulator"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 currentPath === '/pricing/simulator'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -196,6 +198,48 @@ const PricingPage: React.FC = () => {
               <Calculator className="h-4 w-4" />
               Simulator Pricing
             </Link>
+          </div>
+
+          {/* Mobile Dropdown - shown on mobile and tablet, hidden on desktop */}
+          <div className="md:hidden">
+            <Select value={currentPath} onValueChange={(value) => navigate(value)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a view" />
+              </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="/pricing/summary">
+                <div className="flex items-center gap-2">
+                  <Table className="h-4 w-4" />
+                  <span>Summary</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="/pricing/summary-experimental">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4" />
+                  <span>Split-View</span>
+                  <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full ml-1">Beta</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="/pricing/markup">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  <span>Markup Pricing</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="/pricing/processing-fee">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  <span>Processing Fee</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="/pricing/simulator">
+                <div className="flex items-center gap-2">
+                  <Calculator className="h-4 w-4" />
+                  <span>Simulator Pricing</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
           </div>
         </div>
 
