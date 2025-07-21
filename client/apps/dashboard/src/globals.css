@@ -17,3 +17,19 @@
     font-family: 'Rubik', system-ui, -apple-system, sans-serif;
   }
 }
+
+/* React Resizable Panels - Remove default styles and add transitions */
+[data-panel-resize-handle-enabled] {
+  outline: none !important;
+}
+
+/* Smooth transitions for panels */
+[data-panel] {
+  transition: flex-grow 200ms cubic-bezier(0.4, 0, 0.2, 1), 
+              flex-shrink 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Disable transitions during resize drag */
+[data-panel-group][data-resize-handle-state="drag"] [data-panel] {
+  transition: none !important;
+}

@@ -15,11 +15,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
   ScrollArea,
+  Badge,
+  Separator,
 } from "@workspace/ui";
-import { TrendingUp, MapPin, Package, Info } from "lucide-react";
+import { TrendingUp, MapPin, Package, Info, X, Layers, Globe, AlertCircle, Calculator, DollarSign, TrendingDown, CreditCard } from "lucide-react";
 import { toast } from "sonner";
+import { Panel, PanelGroup } from "react-resizable-panels";
+import { AnimatePresence, motion } from "framer-motion";
 import { BundlesByCountry, CountryBundle } from "../__generated__/graphql";
 import { useHighDemandCountries } from "../hooks/useHighDemandCountries";
+import { ResizeHandle } from "./resize-handle";
 
 // Extended types for additional display fields
 export interface CountryBundleWithDisplay extends CountryBundle {
@@ -41,7 +46,13 @@ interface CountryPricingSplitViewProps {
 }
 
 // Pricing Preview Panel Component
-const PricingPreviewPanel = ({ bundle }: { bundle: CountryBundleWithDisplay }) => {
+const PricingPreviewPanel = ({ 
+  bundle, 
+  onClose 
+}: { 
+  bundle: CountryBundleWithDisplay;
+  onClose: () => void;
+}) => {
   // Default values for calculations
   const discountRate = 0.3; // 30% discount
   const processingRate = 0.045; // 4.5% processing fee
@@ -71,7 +82,26 @@ const PricingPreviewPanel = ({ bundle }: { bundle: CountryBundleWithDisplay }) =
   return (
     <div className="flex flex-col h-full">
       <div className="sticky top-0 z-10 bg-white border-b pb-4 mb-4">
-        <h3 className="text-lg font-semibold">Preview & Analysis</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Preview & Analysis</h3>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Close preview</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
       
       <ScrollArea className="flex-1" showOnHover={true}>
@@ -446,12 +476,25 @@ export function CountryPricingSplitView({
         )}
       </div>
 
-      {/* Desktop: Two Column Layout, Mobile: Single Column */}
-      <div className="flex-1 lg:flex lg:gap-6 min-h-0 overflow-hidden">
-        {/* Countries List - Full width on mobile, left column on desktop */}
-        <div className="lg:w-80 lg:flex-shrink-0 h-full flex flex-col">
-          <ScrollArea className="flex-1 lg:pr-2 lg:pl-1" showOnHover={true}>
-            <div className="space-y-3 pt-2 pb-4">
+      {/* Desktop: Resizable Panels, Mobile: Single Column */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {/* Desktop Layout with Resizable Panels */}
+        <PanelGroup 
+          direction="horizontal" 
+          className="hidden lg:flex h-full transition-all duration-300"
+          autoSaveId="country-pricing-layout"
+        >
+          {/* Countries Panel */}
+          <Panel 
+            defaultSize={25} 
+            minSize={15} 
+            maxSize={40}
+            id="countries-panel"
+            order={1}
+          >
+            <div className="h-full flex flex-col pr-2">
+              <ScrollArea className="flex-1" showOnHover={true}>
+                <div className="space-y-3 pt-2 pb-4">
               {/* Country Cards */}
               {filteredBundlesByCountry.map((country) => {
                 const summary = getCountrySummary(country);
@@ -543,35 +586,148 @@ export function CountryPricingSplitView({
                   </p>
                 </div>
               )}
+                </div>
+              </ScrollArea>
+            </div>
+          </Panel>
+
+          <ResizeHandle />
+
+          {/* Bundles Panel */}
+          <Panel 
+            defaultSize={40} 
+            minSize={30}
+            id="bundles-panel"
+            order={2}
+          >
+            <motion.div 
+              className="h-full flex flex-col px-2"
+              layout
+              transition={{
+                layout: {
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30
+                }
+              }}
+            >
+              {selectedCountryData ? (
+                <BundlesTable country={selectedCountryData} showHeader={true} />
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <div className="mb-4">
+                      <Package className="h-12 w-12 mx-auto text-gray-300" />
+                    </div>
+                    <p className="text-lg">Select a Country</p>
+                    <p className="text-sm">Click on a country from the list to view its bundles</p>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </Panel>
+
+          {/* Preview Panel - With smooth transitions */}
+          <AnimatePresence>
+            {selectedBundle && (
+              <motion.div
+                key="preview-panel-group"
+                initial={{ width: 0 }}
+                animate={{ width: "auto" }}
+                exit={{ width: 0 }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                  mass: 0.8
+                }}
+                style={{ display: "flex", overflow: "hidden" }}
+              >
+                <ResizeHandle />
+                <Panel 
+                  defaultSize={35} 
+                  minSize={25}
+                  id="preview-panel"
+                  order={3}
+                >
+                  <div className="h-full flex flex-col pl-2">
+                    <PricingPreviewPanel 
+                      bundle={selectedBundle} 
+                      onClose={() => setSelectedBundle(null)}
+                    />
+                  </div>
+                </Panel>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </PanelGroup>
+
+        {/* Mobile Layout - Countries List */}
+        <div className="lg:hidden h-full flex flex-col">
+          <ScrollArea className="flex-1" showOnHover={true}>
+            <div className="space-y-3 pt-2 pb-4 px-4">
+              {/* Country Cards for Mobile */}
+              {filteredBundlesByCountry.map((country) => {
+                const summary = getCountrySummary(country);
+                const isSelected = selectedCountry === country.countryId;
+                const isCountryLoading = loadingCountries.has(country.countryId);
+                
+                return (
+                  <Card 
+                    key={country.countryId} 
+                    className={`group hover:shadow-md transition-all cursor-pointer ${
+                      isSelected ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50' : 'hover:border-gray-300'
+                    }`}
+                    onClick={() => handleCountrySelect(country.countryId)}
+                  >
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-base flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          {country.countryName || country.countryId}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`h-6 w-6 p-0 transition-opacity ${
+                            isHighDemandCountry(country.countryId) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                          } hover:bg-orange-50`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleCountryHighDemand(country.countryId);
+                          }}
+                          disabled={toggleLoading}
+                        >
+                          <TrendingUp className="h-4 w-4 text-orange-500" />
+                        </Button>
+                      </CardTitle>
+                      <CardDescription className="text-sm">
+                        {isCountryLoading ? (
+                          <span className="flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                            Loading bundles...
+                          </span>
+                        ) : (
+                          `${summary.count} bundles • ${summary.range}`
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                );
+              })}
+
+              {filteredBundlesByCountry.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                  <p className="text-lg">No countries available</p>
+                  <p className="text-sm">
+                    {showHighDemandOnly ? "No high demand countries found" : "No pricing data available"}
+                  </p>
+                </div>
+              )}
             </div>
           </ScrollArea>
         </div>
-
-        {/* Desktop: Middle Column - Bundles Table (hidden on mobile) */}
-        <div className={`hidden lg:flex lg:flex-col lg:min-h-0 ${
-          selectedBundle ? 'lg:w-96 lg:flex-shrink-0' : 'lg:flex-1'
-        }`}>
-          {selectedCountryData ? (
-            <BundlesTable country={selectedCountryData} showHeader={true} />
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <div className="mb-4">
-                  <Package className="h-12 w-12 mx-auto text-gray-300" />
-                </div>
-                <p className="text-lg">Select a Country</p>
-                <p className="text-sm">Click on a country from the list to view its bundles</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Desktop: Right Column - Preview & Analysis (hidden on mobile, only shown when bundle selected) */}
-        {selectedBundle && (
-          <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:min-h-0">
-            <PricingPreviewPanel bundle={selectedBundle} />
-          </div>
-        )}
       </div>
 
       {/* Mobile: Bottom Sheet */}
