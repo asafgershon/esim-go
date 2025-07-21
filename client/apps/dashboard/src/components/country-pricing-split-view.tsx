@@ -134,7 +134,7 @@ const PricingPreviewPanel = ({
           input: {
             name: `${bundle.countryName} ${bundle.duration}d Discount Override`,
             description: `Custom discount for ${bundle.countryName} ${bundle.duration}-day bundles: ${customDiscount}%`,
-            countryId: bundle.countryId,
+            countryId: bundle.countryName, // Using countryName as it contains the ISO code
             duration: bundle.duration,
             bundleGroup: (bundle as any).bundleGroup || null,
             discountRate: discountRateDecimal,
@@ -146,7 +146,7 @@ const PricingPreviewPanel = ({
         refetchQueries: [
           {
             query: GET_COUNTRY_BUNDLES,
-            variables: { countryId: bundle.countryId },
+            variables: { countryId: bundle.countryName }, // Using countryName as it contains the ISO code
           },
         ],
       });
