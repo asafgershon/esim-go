@@ -173,10 +173,10 @@ export const PricingConfigDrawer: React.FC<PricingConfigDrawerProps> = ({
 
     try {
       const markupAmount = parseFloat(customMarkupAmount);
-      const bundleGroup = getBundleGroup();
+      const bundleGroup = null; // Let backend handle bundle group matching flexibly
 
       // Create a country-specific pricing configuration with markup override
-      const countryCode = pricingData.countryName === "Austria" ? "AT" : null; // TODO: Add proper country code mapping
+      const countryCode = pricingData.countryId; // Use the actual country ID from the data
 
       await updatePricingConfiguration({
         variables: {

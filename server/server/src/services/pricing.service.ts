@@ -103,7 +103,8 @@ export class PricingService {
 
       // First, check for country-specific pricing configuration with markup override
       if (countryId) {
-        const { data: countryOverride } = await supabase
+        // Try exact match first (country + duration + bundle group)
+        const { data: exactOverride } = await supabase
           .from('pricing_configurations')
           .select('markup_amount')
           .eq('country_id', countryId)
@@ -111,18 +112,41 @@ export class PricingService {
           .eq('bundle_group', bundleGroup)
           .eq('is_active', true)
           .not('markup_amount', 'is', null)
+          .order('created_at', { ascending: false })
           .limit(1)
           .single();
 
-        if (countryOverride && countryOverride.markup_amount !== null) {
-          this.logger.info('Found country-specific markup override', {
+        if (exactOverride && exactOverride.markup_amount !== null) {
+          this.logger.info('Found exact country-specific markup override', {
             countryId,
             bundleGroup,
             duration,
-            markupAmount: countryOverride.markup_amount,
-            operationType: 'markup-country-override'
+            markupAmount: exactOverride.markup_amount,
+            operationType: 'markup-country-exact-override'
           });
-          return countryOverride.markup_amount;
+          return exactOverride.markup_amount;
+        }
+
+        // Try country + duration match (bundle group flexible)
+        const { data: flexibleOverride } = await supabase
+          .from('pricing_configurations')
+          .select('markup_amount')
+          .eq('country_id', countryId)
+          .eq('duration', duration)
+          .eq('is_active', true)
+          .not('markup_amount', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (flexibleOverride && flexibleOverride.markup_amount !== null) {
+          this.logger.info('Found flexible country-specific markup override', {
+            countryId,
+            duration,
+            markupAmount: flexibleOverride.markup_amount,
+            operationType: 'markup-country-flexible-override'
+          });
+          return flexibleOverride.markup_amount;
         }
       }
 
