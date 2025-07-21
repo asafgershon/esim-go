@@ -17,6 +17,7 @@ import {
   OrderRepository,
   ESIMRepository,
   UserRepository,
+  HighDemandCountryRepository,
 } from "../repositories";
 import { TripRepository } from "../repositories/trips/trip.repository";
 import type { PricingConfigRepository } from "../repositories/pricing-configs/pricing-config.repository";
@@ -36,6 +37,7 @@ export type Context = {
     users: UserRepository;
     trips: TripRepository;
     pricingConfigs: PricingConfigRepository;
+    highDemandCountries: HighDemandCountryRepository;
   };
   dataSources: {
     catalogue: CatalogueDataSource;

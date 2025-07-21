@@ -893,6 +893,34 @@ export const resolvers: Resolvers = {
     },
 
     ...checkoutResolvers.Query!,
+    
+    // Bundle groups - hardcoded list (temporary until eSIM Go provides dynamic endpoint)
+    bundleGroups: async (_, __, context: Context) => {
+      // This will be protected by @auth(role: "ADMIN") directive
+      return [
+        "Standard Fixed",
+        "Standard - Unlimited Lite", 
+        "Standard - Unlimited Essential",
+        "Standard - Unlimited Plus",
+        "Regional Bundles"
+      ];
+    },
+
+    // High demand countries
+    highDemandCountries: async (_, __, context: Context) => {
+      // This will be protected by @auth(role: "ADMIN") directive
+      try {
+        const highDemandCountries = await context.repositories.highDemandCountries.getAllHighDemandCountries();
+        return highDemandCountries;
+      } catch (error) {
+        logger.error('Error fetching high demand countries', error as Error, {
+          operationType: 'high-demand-countries-fetch'
+        });
+        throw new GraphQLError('Failed to fetch high demand countries', {
+          extensions: { code: 'INTERNAL_ERROR' }
+        });
+      }
+    },
   },
   Order: {
     esims: async (parent, _, context: Context) => {
@@ -1621,6 +1649,54 @@ export const resolvers: Resolvers = {
         createdBy: configuration.created_by,
         notes: configuration.notes,
       };
+    },
+
+    // High demand countries management
+    toggleHighDemandCountry: async (_, { countryId }, context: Context) => {
+      // This will be protected by @auth(role: "ADMIN") directive
+      try {
+        const result = await context.repositories.highDemandCountries.toggleHighDemandCountry(
+          countryId,
+          context.auth.user!.id
+        );
+
+        if (!result.success) {
+          throw new GraphQLError(result.error || 'Failed to toggle high demand country', {
+            extensions: { code: 'TOGGLE_FAILED' }
+          });
+        }
+
+        logger.info('High demand country status toggled', {
+          countryId,
+          isHighDemand: result.isHighDemand,
+          userId: context.auth.user!.id,
+          operationType: 'high-demand-toggle'
+        });
+
+        return {
+          success: result.success,
+          countryId,
+          isHighDemand: result.isHighDemand,
+          error: null,
+        };
+      } catch (error) {
+        logger.error('Error toggling high demand country', error as Error, {
+          countryId,
+          userId: context.auth.user!.id,
+          operationType: 'high-demand-toggle'
+        });
+        
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
+        
+        return {
+          success: false,
+          countryId,
+          isHighDemand: false,
+          error: (error as Error).message,
+        };
+      }
     },
 
     // Catalog Sync

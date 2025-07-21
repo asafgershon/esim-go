@@ -38,6 +38,7 @@ import {
   OrderRepository,
   ESIMRepository,
   UserRepository,
+  HighDemandCountryRepository,
 } from "./repositories";
 import { TripRepository } from "./repositories/trips/trip.repository";
 import { cleanEnv, port, str } from "envalid";
@@ -70,6 +71,7 @@ async function startServer() {
     const userRepository = new UserRepository();
     const tripRepository = new TripRepository();
     const pricingConfigRepository = new PricingConfigRepository();
+    const highDemandCountryRepository = new HighDemandCountryRepository();
 
     // Create an Express app and HTTP server
     const app = express();
@@ -111,6 +113,7 @@ async function startServer() {
               users: userRepository,
               trips: tripRepository,
               pricingConfigs: pricingConfigRepository,
+              highDemandCountries: highDemandCountryRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSource({ cache: redis }),
@@ -271,6 +274,7 @@ async function startServer() {
               users: userRepository,
               trips: tripRepository,
               pricingConfigs: new PricingConfigRepository(),
+              highDemandCountries: highDemandCountryRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSource({ cache: redis }),

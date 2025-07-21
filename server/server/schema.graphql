@@ -47,6 +47,12 @@ type Query {
   
   # Markup configurations
   markupConfig: [MarkupConfig!]! @auth(role: "ADMIN")
+  
+  # Bundle groups
+  bundleGroups: [String!]! @auth(role: "ADMIN")
+  
+  # High demand countries
+  highDemandCountries: [String!]! @auth(role: "ADMIN")
 }
 
 type Mutation {
@@ -90,6 +96,9 @@ type Mutation {
 
   # Catalog sync operations
   syncCatalog(force: Boolean = false): SyncCatalogResponse @auth(role: "ADMIN")
+  
+  # High demand countries management
+  toggleHighDemandCountry(countryId: String!): ToggleHighDemandResponse @auth(role: "ADMIN")
   
   # eSIM operations
   purchaseESIM(planId: ID!, input: PurchaseESIMInput!): PurchaseESIMResponse
@@ -784,4 +793,12 @@ type ValidateOrderResponse {
   currency: String
   error: String
   errorCode: String
+}
+
+# High Demand Countries Types
+type ToggleHighDemandResponse {
+  success: Boolean!
+  countryId: String!
+  isHighDemand: Boolean!
+  error: String
 }

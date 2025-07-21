@@ -86,9 +86,15 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
     id: "country",
     accessorKey: "countryName",
     header: () => <SimpleHeader>Country</SimpleHeader>,
-    cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
+    cell: ({ row, table }: { row: Row<CountryBundleWithDisplay>; table: any }) => {
       const data = row.original;
       const isSummaryRow = data.duration === 0;
+      
+      // Get dynamic state from table meta
+      const meta = table.options.meta || {};
+      const isHighDemandCountry = meta.isHighDemandCountry?.(data.countryId) ?? false;
+      const toggleCountryHighDemand = meta.toggleCountryHighDemand;
+      const toggleLoading = meta.toggleLoading;
       
       return (
         <div className="flex items-center gap-2">
@@ -96,6 +102,28 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
           <Badge variant="outline" className="text-xs">
             {data.countryId}
           </Badge>
+          {isSummaryRow && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (!toggleLoading) {
+                  toggleCountryHighDemand?.(data.countryId);
+                }
+              }}
+              disabled={toggleLoading}
+              className={`p-1 h-6 w-6 ${
+                isHighDemandCountry 
+                  ? 'text-orange-600 hover:text-orange-700' 
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+              title={isHighDemandCountry ? 'Remove from high demand' : 'Mark as high demand'}
+            >
+              <TrendingUp className="h-3 w-3" />
+            </Button>
+          )}
           {isSummaryRow && data.configurationLevel && data.configurationLevel !== 'GLOBAL' && (
             <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
               {data.configurationLevel}
@@ -251,7 +279,6 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-1">
-            <TrendingUp className="h-4 w-4 text-blue-600" />
             <span className="font-medium">
               {formatCurrency(data.pricePerDay)}
             </span>

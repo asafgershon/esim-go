@@ -42,6 +42,10 @@ type Documents = {
     "\n  mutation DeactivateProcessingFeeConfiguration($id: ID!) {\n    deactivateProcessingFeeConfiguration(id: $id) {\n      id\n      israeliCardsRate\n      foreignCardsRate\n      premiumDinersRate\n      premiumAmexRate\n      bitPaymentRate\n      fixedFeeNIS\n      fixedFeeForeign\n      monthlyFixedCost\n      bankWithdrawalFee\n      monthlyMinimumFee\n      setupCost\n      threeDSecureFee\n      chargebackFee\n      cancellationFee\n      invoiceServiceFee\n      appleGooglePayFee\n      isActive\n      effectiveFrom\n      effectiveTo\n      createdAt\n      updatedAt\n      createdBy\n      notes\n    }\n  }\n": typeof types.DeactivateProcessingFeeConfigurationDocument,
     "\n  query GetBundlesByCountry {\n    bundlesByCountry {\n      countryName\n      countryId\n      totalBundles\n      avgPricePerDay\n      hasCustomDiscount\n      avgDiscountRate\n      totalDiscountValue\n      avgCost\n      avgCostPlus\n      avgTotalCost\n      avgProcessingRate\n      avgProcessingCost\n      avgFinalRevenue\n      totalRevenue\n      avgNetProfit\n      avgProfitMargin\n      lastFetched\n    }\n  }\n": typeof types.GetBundlesByCountryDocument,
     "\n  query GetCountryBundles($countryId: String!) {\n    countryBundles(countryId: $countryId) {\n      bundleName\n      countryName\n      countryId\n      duration\n      cost\n      costPlus\n      totalCost\n      discountRate\n      discountValue\n      priceAfterDiscount\n      processingCost\n      finalRevenue\n      currency\n      pricePerDay\n      hasCustomDiscount\n    }\n  }\n": typeof types.GetCountryBundlesDocument,
+    "\n  mutation SyncCatalog($force: Boolean = false) {\n    syncCatalog(force: $force) {\n      success\n      message\n      error\n      syncedBundles\n      syncDuration\n      syncedAt\n    }\n  }\n": typeof types.SyncCatalogDocument,
+    "\n  query GetBundleGroups {\n    bundleGroups\n  }\n": typeof types.GetBundleGroupsDocument,
+    "\n  query GetHighDemandCountries {\n    highDemandCountries\n  }\n": typeof types.GetHighDemandCountriesDocument,
+    "\n  mutation ToggleHighDemandCountry($countryId: String!) {\n    toggleHighDemandCountry(countryId: $countryId) {\n      success\n      countryId\n      isHighDemand\n      error\n    }\n  }\n": typeof types.ToggleHighDemandCountryDocument,
 };
 const documents: Documents = {
     "\n  query GetMarkupConfig {\n    markupConfig {\n      id\n      bundleGroup\n      durationDays\n      markupAmount\n      createdAt\n      updatedAt\n    }\n  }\n": types.GetMarkupConfigDocument,
@@ -72,6 +76,10 @@ const documents: Documents = {
     "\n  mutation DeactivateProcessingFeeConfiguration($id: ID!) {\n    deactivateProcessingFeeConfiguration(id: $id) {\n      id\n      israeliCardsRate\n      foreignCardsRate\n      premiumDinersRate\n      premiumAmexRate\n      bitPaymentRate\n      fixedFeeNIS\n      fixedFeeForeign\n      monthlyFixedCost\n      bankWithdrawalFee\n      monthlyMinimumFee\n      setupCost\n      threeDSecureFee\n      chargebackFee\n      cancellationFee\n      invoiceServiceFee\n      appleGooglePayFee\n      isActive\n      effectiveFrom\n      effectiveTo\n      createdAt\n      updatedAt\n      createdBy\n      notes\n    }\n  }\n": types.DeactivateProcessingFeeConfigurationDocument,
     "\n  query GetBundlesByCountry {\n    bundlesByCountry {\n      countryName\n      countryId\n      totalBundles\n      avgPricePerDay\n      hasCustomDiscount\n      avgDiscountRate\n      totalDiscountValue\n      avgCost\n      avgCostPlus\n      avgTotalCost\n      avgProcessingRate\n      avgProcessingCost\n      avgFinalRevenue\n      totalRevenue\n      avgNetProfit\n      avgProfitMargin\n      lastFetched\n    }\n  }\n": types.GetBundlesByCountryDocument,
     "\n  query GetCountryBundles($countryId: String!) {\n    countryBundles(countryId: $countryId) {\n      bundleName\n      countryName\n      countryId\n      duration\n      cost\n      costPlus\n      totalCost\n      discountRate\n      discountValue\n      priceAfterDiscount\n      processingCost\n      finalRevenue\n      currency\n      pricePerDay\n      hasCustomDiscount\n    }\n  }\n": types.GetCountryBundlesDocument,
+    "\n  mutation SyncCatalog($force: Boolean = false) {\n    syncCatalog(force: $force) {\n      success\n      message\n      error\n      syncedBundles\n      syncDuration\n      syncedAt\n    }\n  }\n": types.SyncCatalogDocument,
+    "\n  query GetBundleGroups {\n    bundleGroups\n  }\n": types.GetBundleGroupsDocument,
+    "\n  query GetHighDemandCountries {\n    highDemandCountries\n  }\n": types.GetHighDemandCountriesDocument,
+    "\n  mutation ToggleHighDemandCountry($countryId: String!) {\n    toggleHighDemandCountry(countryId: $countryId) {\n      success\n      countryId\n      isHighDemand\n      error\n    }\n  }\n": types.ToggleHighDemandCountryDocument,
 };
 
 /**
@@ -200,6 +208,22 @@ export function gql(source: "\n  query GetBundlesByCountry {\n    bundlesByCount
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  query GetCountryBundles($countryId: String!) {\n    countryBundles(countryId: $countryId) {\n      bundleName\n      countryName\n      countryId\n      duration\n      cost\n      costPlus\n      totalCost\n      discountRate\n      discountValue\n      priceAfterDiscount\n      processingCost\n      finalRevenue\n      currency\n      pricePerDay\n      hasCustomDiscount\n    }\n  }\n"): (typeof documents)["\n  query GetCountryBundles($countryId: String!) {\n    countryBundles(countryId: $countryId) {\n      bundleName\n      countryName\n      countryId\n      duration\n      cost\n      costPlus\n      totalCost\n      discountRate\n      discountValue\n      priceAfterDiscount\n      processingCost\n      finalRevenue\n      currency\n      pricePerDay\n      hasCustomDiscount\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation SyncCatalog($force: Boolean = false) {\n    syncCatalog(force: $force) {\n      success\n      message\n      error\n      syncedBundles\n      syncDuration\n      syncedAt\n    }\n  }\n"): (typeof documents)["\n  mutation SyncCatalog($force: Boolean = false) {\n    syncCatalog(force: $force) {\n      success\n      message\n      error\n      syncedBundles\n      syncDuration\n      syncedAt\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query GetBundleGroups {\n    bundleGroups\n  }\n"): (typeof documents)["\n  query GetBundleGroups {\n    bundleGroups\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query GetHighDemandCountries {\n    highDemandCountries\n  }\n"): (typeof documents)["\n  query GetHighDemandCountries {\n    highDemandCountries\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation ToggleHighDemandCountry($countryId: String!) {\n    toggleHighDemandCountry(countryId: $countryId) {\n      success\n      countryId\n      isHighDemand\n      error\n    }\n  }\n"): (typeof documents)["\n  mutation ToggleHighDemandCountry($countryId: String!) {\n    toggleHighDemandCountry(countryId: $countryId) {\n      success\n      countryId\n      isHighDemand\n      error\n    }\n  }\n"];
 
 export function gql(source: string) {
   return (documents as any)[source] ?? {};

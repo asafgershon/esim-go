@@ -610,3 +610,27 @@ export const SYNC_CATALOG = gql(`
     }
   }
 `)
+
+export const GET_BUNDLE_GROUPS = gql(`
+  query GetBundleGroups {
+    bundleGroups
+  }
+`)
+
+// High Demand Countries Queries
+export const GET_HIGH_DEMAND_COUNTRIES = gql(`
+  query GetHighDemandCountries {
+    highDemandCountries
+  }
+`)
+
+export const TOGGLE_HIGH_DEMAND_COUNTRY = gql(`
+  mutation ToggleHighDemandCountry($countryId: String!) {
+    toggleHighDemandCountry(countryId: $countryId) {
+      success
+      countryId
+      isHighDemand
+      error
+    }
+  }
+`)

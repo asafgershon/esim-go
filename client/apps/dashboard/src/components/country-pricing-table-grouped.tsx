@@ -1,9 +1,12 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
 import { AdvancedDataTable } from "@workspace/ui/components/advanced-data-table";
 import { createTableBuilder } from "@workspace/ui/components/table-builder";
+import { Button } from "@workspace/ui/components/button";
+import { TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { BundlesByCountry, CountryBundle } from "../__generated__/graphql";
 import { createCountryPricingColumns } from "./country-pricing-table-columns";
+import { useHighDemandCountries } from "../hooks/useHighDemandCountries";
 
 // Extended types for additional display fields
 export interface CountryBundleWithDisplay extends CountryBundle {
@@ -95,6 +98,15 @@ export function CountryPricingTableGrouped({
   const [expandedCountries, setExpandedCountries] = useState<Set<string>>(
     new Set()
   );
+  const [showHighDemandOnly, setShowHighDemandOnly] = useState(false);
+  
+  // High demand countries functionality
+  const {
+    isHighDemandCountry,
+    toggleCountryHighDemand,
+    toggleLoading,
+    loading: highDemandLoading,
+  } = useHighDemandCountries();
 
   // Handle expand/collapse country - completely synchronous to avoid setState during render
   const handleToggleCountry = useCallback(
@@ -147,10 +159,21 @@ export function CountryPricingTableGrouped({
   );
 
 
+  // Filter countries by high demand status if needed
+  const filteredBundlesByCountry = useMemo(() => {
+    if (!showHighDemandOnly) {
+      return bundlesByCountry;
+    }
+    
+    return bundlesByCountry.filter(country => 
+      isHighDemandCountry(country.countryId)
+    );
+  }, [bundlesByCountry, showHighDemandOnly, isHighDemandCountry]);
+
   // Transform data for table - stable memoization
   const tableData = useMemo(
-    () => transformDataForTable(bundlesByCountry, expandedCountries),
-    [bundlesByCountry, expandedCountries]
+    () => transformDataForTable(filteredBundlesByCountry, expandedCountries),
+    [filteredBundlesByCountry, expandedCountries]
   );
 
 
@@ -239,6 +262,26 @@ export function CountryPricingTableGrouped({
 
   return (
     <div className="space-y-4">
+      {/* High Demand Filter Controls */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant={showHighDemandOnly ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowHighDemandOnly(!showHighDemandOnly)}
+          disabled={highDemandLoading}
+          className="flex items-center gap-2"
+        >
+          <TrendingUp className="h-4 w-4" />
+          {showHighDemandOnly ? 'Show All Countries' : 'Show High Demand Only'}
+        </Button>
+        
+        {showHighDemandOnly && (
+          <span className="text-sm text-gray-500">
+            Showing {filteredBundlesByCountry.length} high demand countries
+          </span>
+        )}
+      </div>
+
       <AdvancedDataTable
         columns={enhancedColumns}
         data={tableData}
@@ -257,7 +300,10 @@ export function CountryPricingTableGrouped({
           bundlesByCountry,
           handleToggleCountry,
           onBundleClick,
-        }), [expandedCountries, loadingCountries, bundlesByCountry, handleToggleCountry, onBundleClick])}
+          isHighDemandCountry,
+          toggleCountryHighDemand,
+          toggleLoading,
+        }), [expandedCountries, loadingCountries, bundlesByCountry, handleToggleCountry, onBundleClick, isHighDemandCountry, toggleCountryHighDemand, toggleLoading])}
       />
 
       {loadingCountries.size > 0 && (
