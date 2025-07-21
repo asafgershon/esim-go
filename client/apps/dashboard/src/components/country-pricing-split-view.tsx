@@ -18,13 +18,14 @@ import {
   Badge,
   Separator,
 } from "@workspace/ui";
-import { TrendingUp, MapPin, Package, Info, X, Layers, Globe, AlertCircle, Calculator, DollarSign, TrendingDown, CreditCard } from "lucide-react";
+import { TrendingUp, MapPin, Package, Info, X, AlertCircle, DollarSign, TrendingDown, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { Panel, PanelGroup } from "react-resizable-panels";
 import { AnimatePresence, motion } from "framer-motion";
 import { BundlesByCountry, CountryBundle } from "../__generated__/graphql";
 import { useHighDemandCountries } from "../hooks/useHighDemandCountries";
 import { ResizeHandle } from "./resize-handle";
+import { ConfigurationLevelIndicator } from "./configuration-level-indicator";
 
 // Extended types for additional display fields
 export interface CountryBundleWithDisplay extends CountryBundle {
@@ -53,20 +54,23 @@ const PricingPreviewPanel = ({
   bundle: CountryBundleWithDisplay;
   onClose: () => void;
 }) => {
-  // Default values for calculations
-  const discountRate = 0.3; // 30% discount
-  const processingRate = 0.045; // 4.5% processing fee
+  // Get actual values from bundle
+  const discountRate = bundle.discountRate || 0; // Use actual discount rate from bundle
+  const processingRate = bundle.processingRate || 0.045; // Use actual processing rate or default
   const discountPerDay = bundle.discountPerDay || 0.1; // 10% per day default
+  
+  // Determine configuration level
+  const configLevel = bundle.configurationLevel || 'GLOBAL';
+  const bundleGroup = (bundle as any).bundleGroup || 'Standard';
 
-  // Calculate pricing breakdown
+  // Use actual pricing values from bundle
   const cost = bundle.cost || 0;
   const costPlus = bundle.costPlus || 0;
-  const totalCost = cost + costPlus;
-  const discountValue = totalCost * discountRate;
-  const priceAfterDiscount = totalCost - discountValue;
-  const processingCost = priceAfterDiscount * processingRate;
-  const revenueAfterProcessing = priceAfterDiscount - processingCost;
-  const finalRevenue = revenueAfterProcessing - totalCost;
+  const totalCost = bundle.totalCost || (cost + costPlus);
+  const discountValue = bundle.discountValue || 0;
+  const priceAfterDiscount = bundle.priceAfterDiscount || 0;
+  const processingCost = bundle.processingCost || 0;
+  const finalRevenue = bundle.finalRevenue || 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -83,7 +87,7 @@ const PricingPreviewPanel = ({
     <div className="flex flex-col h-full">
       <div className="sticky top-0 z-10 bg-white border-b pb-4 mb-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Preview & Analysis</h3>
+          <h3 className="text-lg font-semibold">Pricing Analysis</h3>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -105,145 +109,96 @@ const PricingPreviewPanel = ({
       </div>
       
       <ScrollArea className="flex-1" showOnHover={true}>
-        <div className="space-y-4 pb-4">
+        <div className="space-y-4 p-4">
           {/* Bundle Information */}
-          <div className="bg-blue-50 p-3 rounded-lg">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">
-              Bundle Information
-            </h4>
-            <div className="text-sm text-blue-800 space-y-1">
-              <p>
-                <strong>Bundle:</strong> {bundle.bundleName}
-              </p>
-              <p>
-                <strong>Country:</strong> {bundle.countryName}
-              </p>
-              <p>
-                <strong>Duration:</strong> {bundle.duration} days
-              </p>
-              {bundle.dataAmount && (
-                <p>
-                  <strong>Data:</strong> {bundle.dataAmount}
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="flex items-start justify-between">
+              <div>
+                <h4 className="font-medium text-sm">{bundle.bundleName}</h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  {bundle.countryName} • {bundle.duration} days
+                  {bundle.dataAmount && ` • ${bundle.dataAmount}`}
                 </p>
-              )}
-              <p>
-                <strong>eSIM Go Cost:</strong> {formatCurrency(cost)}
-              </p>
-              <p>
-                <strong>Our Markup:</strong> {formatCurrency(costPlus)}
-                {bundle.hasCustomDiscount && (
-                  <span className="text-orange-600 ml-1">(Custom)</span>
-                )}
-              </p>
+              </div>
+              <ConfigurationLevelIndicator 
+                level={configLevel} 
+                size="sm" 
+                showTooltip 
+              />
             </div>
           </div>
 
-          {/* Price Breakdown */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">Price Breakdown</h4>
+          {/* Pricing Calculation */}
+          <div className="space-y-3">
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>eSIM Go Cost:</span>
-                <span>{formatCurrency(cost)}</span>
+              {/* Cost Structure */}
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Base cost</span>
+                <span className="font-mono">{formatCurrency(cost)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Our Markup:</span>
-                <span className={bundle.hasCustomDiscount ? "text-orange-600 font-medium" : ""}>
-                  {formatCurrency(costPlus)}
-                  {bundle.hasCustomDiscount && (
-                    <span className="text-xs ml-1">(Custom)</span>
-                  )}
-                </span>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Markup</span>
+                <div className="flex items-center gap-1">
+                  <span className="font-mono">+ {formatCurrency(costPlus)}</span>
+                </div>
               </div>
-              <div className="flex justify-between font-medium border-t pt-2">
-                <span>Total Cost:</span>
-                <span>{formatCurrency(totalCost)}</span>
+              <div className="flex justify-between items-center pt-2 border-t">
+                <span className="font-medium">Selling price</span>
+                <span className="font-mono font-medium">{formatCurrency(totalCost)}</span>
               </div>
-
-              <div className="flex justify-between">
-                <span>
-                  Customer Discount ({formatPercentage(discountRate)}):
-                </span>
-                <span className="text-green-600">
-                  -{formatCurrency(discountValue)}
-                </span>
+              
+              {/* Discounts & Fees */}
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-gray-600">Discount ({formatPercentage(discountRate)})</span>
+                <span className="font-mono text-green-600">- {formatCurrency(discountValue)}</span>
               </div>
-              <div className="flex justify-between font-medium">
-                <span>Price After Discount:</span>
-                <span className="text-blue-600">
-                  {formatCurrency(priceAfterDiscount)}
-                </span>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Processing ({formatPercentage(processingRate)})</span>
+                <span className="font-mono text-orange-600">- {formatCurrency(processingCost)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>
-                  Processing ({formatPercentage(processingRate)}):
-                </span>
-                <span className="text-yellow-600">
-                  -{formatCurrency(processingCost)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Revenue After Processing:</span>
-                <span>{formatCurrency(revenueAfterProcessing)}</span>
-              </div>
-              <div className="flex justify-between font-medium border-t pt-2">
-                <span>Final Revenue (Profit):</span>
-                <span className={finalRevenue > 0 ? "text-green-600" : "text-red-600"}>
-                  {formatCurrency(finalRevenue)}
-                </span>
+              
+              {/* Final Result */}
+              <div className="flex justify-between items-center pt-2 border-t">
+                <span className="font-medium">Net profit</span>
+                <div className="text-right">
+                  <div className={`font-mono font-medium text-lg ${
+                    finalRevenue > 0 ? "text-green-600" : "text-red-600"
+                  }`}>
+                    {formatCurrency(finalRevenue)}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {((finalRevenue / totalCost) * 100).toFixed(1)}% margin
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Profit Analysis */}
-          <div className="bg-gray-100 p-3 rounded-lg">
-            <h4 className="text-sm font-medium mb-2">Profit Analysis</h4>
-            <div className="text-sm text-gray-700 space-y-1">
-              <p>
-                <strong>Profit Margin:</strong>{" "}
-                {finalRevenue > 0 ? "+" : ""}
-                {((finalRevenue / totalCost) * 100).toFixed(1)}%
-              </p>
-              <p>
-                <strong>Break-even Price:</strong>{" "}
-                {formatCurrency(totalCost + processingCost + 0.01)}
-              </p>
-              <p>
-                <strong>Current Price:</strong>{" "}
-                {formatCurrency(bundle.priceAfterDiscount || 0)}
-              </p>
-            </div>
-          </div>
 
-          {/* Discount Per Day Info */}
-          {discountPerDay > 0 && (
-            <div className="bg-yellow-50 p-3 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Info className="h-4 w-4 text-yellow-600" />
-                <h4 className="text-sm font-medium text-yellow-900">
-                  Unused Days Discount
-                </h4>
-              </div>
-              <p className="text-sm text-yellow-800">
-                {formatPercentage(discountPerDay)} discount per unused day
-              </p>
-              <p className="text-xs text-yellow-700 mt-1">
-                Example: 5 unused days = {formatPercentage(discountPerDay * 5)} discount
-              </p>
+
+          {/* Discount Per Day Info - Only show if custom */}
+          {discountPerDay !== 0.1 && (
+            <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded-md">
+              <TrendingDown className="h-4 w-4 text-yellow-600" />
+              <span className="text-xs text-yellow-800">
+                Custom unused day discount: {formatPercentage(discountPerDay)} per day
+              </span>
             </div>
           )}
 
-          {/* Configuration Status */}
-          {bundle.hasCustomDiscount && (
-            <div className="bg-orange-50 p-3 rounded-lg">
+          
+          {/* Minimum Profit Warning */}
+          {finalRevenue < 1.50 && (
+            <div className="bg-red-50 p-3 rounded-lg border border-red-200">
               <div className="flex items-center gap-2">
-                <Info className="h-4 w-4 text-orange-600" />
-                <span className="text-sm font-medium text-orange-900">
-                  Custom Configuration Active
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <span className="text-sm font-medium text-red-900">
+                  Below Minimum Profit Margin
                 </span>
               </div>
-              <p className="text-xs text-orange-700 mt-1">
-                This bundle has custom pricing rules applied
+              <p className="text-xs text-red-700 mt-1">
+                This configuration results in less than $1.50 profit.
+                The system will reject this pricing.
               </p>
             </div>
           )}
@@ -399,7 +354,7 @@ export function CountryPricingSplitView({
         )}
         
         <ScrollArea className="flex-1" showOnHover={true}>
-          <div className="space-y-2 pb-4">
+          <div className="space-y-1 p-2">
             {sortedBundles.map((bundle, index) => (
               <div
                 key={bundle.bundleName ? `${bundle.bundleName}-${bundle.duration}` : `bundle-${index}`}
@@ -416,7 +371,14 @@ export function CountryPricingSplitView({
                         <p className="text-sm text-gray-500">
                           {bundle.duration || 0} day{(bundle.duration || 0) !== 1 ? 's' : ''} • 
                           {bundle.dataAmount && ` ${bundle.dataAmount} • `}
-                          Cost: ${(bundle.cost || 0).toFixed(2)}
+                          <span className="inline-flex items-center gap-1">
+                            Cost: ${(bundle.cost || 0).toFixed(2)}
+                            <ConfigurationLevelIndicator 
+                              level={bundle.configurationLevel} 
+                              size="xs" 
+                              showTooltip 
+                            />
+                          </span>
                         </p>
                       </div>
                     </div>
@@ -492,9 +454,9 @@ export function CountryPricingSplitView({
             id="countries-panel"
             order={1}
           >
-            <div className="h-full flex flex-col pr-2">
-              <ScrollArea className="flex-1" showOnHover={true}>
-                <div className="space-y-3 pt-2 pb-4">
+            <div className="h-full flex flex-col">
+              <ScrollArea className="flex-1 pr-2" showOnHover={true}>
+                <div className="space-y-1 p-2">
               {/* Country Cards */}
               {filteredBundlesByCountry.map((country) => {
                 const summary = getCountrySummary(country);
@@ -601,7 +563,7 @@ export function CountryPricingSplitView({
             order={2}
           >
             <motion.div 
-              className="h-full flex flex-col px-2"
+              className="h-full flex flex-col"
               layout
               transition={{
                 layout: {
@@ -650,7 +612,7 @@ export function CountryPricingSplitView({
                   id="preview-panel"
                   order={3}
                 >
-                  <div className="h-full flex flex-col pl-2">
+                  <div className="h-full flex flex-col">
                     <PricingPreviewPanel 
                       bundle={selectedBundle} 
                       onClose={() => setSelectedBundle(null)}
@@ -665,7 +627,7 @@ export function CountryPricingSplitView({
         {/* Mobile Layout - Countries List */}
         <div className="lg:hidden h-full flex flex-col">
           <ScrollArea className="flex-1" showOnHover={true}>
-            <div className="space-y-3 pt-2 pb-4 px-4">
+            <div className="space-y-3 p-4">
               {/* Country Cards for Mobile */}
               {filteredBundlesByCountry.map((country) => {
                 const summary = getCountrySummary(country);
