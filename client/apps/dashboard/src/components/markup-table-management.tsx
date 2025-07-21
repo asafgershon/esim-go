@@ -4,23 +4,26 @@ import {
   InputWithAdornment,
   Label,
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@workspace/ui";
 import React, { useState, useEffect } from "react";
-import { DollarSign, Save, RotateCcw, Loader2, Plus, Trash2, Shield, ChevronDown, ChevronRight } from "lucide-react";
+import { DollarSign, Save, Loader2, Plus, Trash2, Shield, X } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
+import { z } from "zod";
 import {
   GET_MARKUP_CONFIG,
   CREATE_MARKUP_CONFIG,
   UPDATE_MARKUP_CONFIG,
   DELETE_MARKUP_CONFIG,
+  GET_BUNDLE_GROUPS,
 } from "../lib/graphql/queries";
 
 interface MarkupConfigItem {
@@ -30,6 +33,26 @@ interface MarkupConfigItem {
   markupAmount: number;
   isNew?: boolean;
 }
+
+// Zod schema for validation
+const markupConfigSchema = z.object({
+  id: z.string().optional(),
+  bundleGroup: z.string().min(1, "Bundle group is required"),
+  durationDays: z.number()
+    .min(1, "Duration must be at least 1 day")
+    .max(365, "Duration cannot exceed 365 days")
+    .int("Duration must be a whole number"),
+  markupAmount: z.number()
+    .min(0, "Markup amount cannot be negative")
+    .max(1000, "Markup amount cannot exceed $1000")
+    .multipleOf(0.01, "Markup amount must be a valid currency amount"),
+  isNew: z.boolean().optional(),
+});
+
+// Form schema ready for future react-hook-form integration
+const markupConfigFormSchema = z.object({
+  configs: z.array(markupConfigSchema),
+});
 
 // Default markup configuration based on Excel table
 const defaultMarkupConfig: MarkupConfigItem[] = [
@@ -59,21 +82,29 @@ const bundleGroupOptions = [
   "Regional Bundles",
 ];
 
+// Get available bundle groups that haven't been configured yet
+const getAvailableBundleGroups = (allGroups: string[], configuredGroups: string[]) => {
+  return allGroups.filter(group => !configuredGroups.includes(group));
+};
+
 export const MarkupTableManagement: React.FC = () => {
   // TODO: Add proper admin authentication when auth system is implemented
   const isAdmin = true; // Temporary - replace with actual admin check
   const [markupConfig, setMarkupConfig] = useState<MarkupConfigItem[]>(defaultMarkupConfig);
   const [hasChanges, setHasChanges] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Collapsible state for each bundle group
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-  const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
-  const [isNewItemsOpen, setIsNewItemsOpen] = useState(true); // Open by default for new items
+  // Group selection state for two-column layout
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [showAddGroupModal, setShowAddGroupModal] = useState(false);
+  const [contentSaving, setContentSaving] = useState(false);
 
   // GraphQL queries and mutations
   const { data: currentConfig, loading: loadingCurrent, refetch } = useQuery(
     GET_MARKUP_CONFIG
+  );
+  
+  const { data: bundleGroupsData, loading: loadingBundleGroups } = useQuery(
+    GET_BUNDLE_GROUPS
   );
 
   const [createMarkupConfig] = useMutation(CREATE_MARKUP_CONFIG);
@@ -103,12 +134,140 @@ export const MarkupTableManagement: React.FC = () => {
     return amount.toFixed(2);
   };
 
-  // Toggle collapsible state for bundle groups
-  const toggleGroup = (bundleGroup: string) => {
-    setCollapsedGroups(prev => ({
-      ...prev,
-      [bundleGroup]: !prev[bundleGroup]
-    }));
+  // Save changes for specific bundle group in drawer
+  const handleDrawerSave = async (bundleGroup: string) => {
+    setContentSaving(true);
+    try {
+      // Filter items for this specific bundle group
+      const groupItems = markupConfig.filter(item => item.bundleGroup === bundleGroup);
+      const originalConfigs = currentConfig?.markupConfig || [];
+      const errors: string[] = [];
+      
+      for (const item of groupItems) {
+        const input = {
+          bundleGroup: item.bundleGroup,
+          durationDays: item.durationDays,
+          markupAmount: item.markupAmount,
+        };
+
+        try {
+          if (item.id && !item.isNew) {
+            // Update existing configuration
+            await updateMarkupConfig({
+              variables: {
+                id: item.id,
+                input,
+              },
+            });
+          } else {
+            // Check if configuration already exists before creating
+            const existingConfig = originalConfigs.find((config: any) => 
+              config.bundleGroup === item.bundleGroup && 
+              config.durationDays === item.durationDays
+            );
+
+            if (!existingConfig) {
+              await createMarkupConfig({
+                variables: { input },
+              });
+            } else {
+              // If it exists, update it instead
+              await updateMarkupConfig({
+                variables: {
+                  id: existingConfig.id,
+                  input,
+                },
+              });
+            }
+          }
+        } catch (error: any) {
+          const errorMessage = error?.message || 'Unknown error';
+          errors.push(`${item.durationDays} days: ${errorMessage}`);
+        }
+      }
+
+      // Handle deletions for this group
+      if (currentConfig?.markupConfig) {
+        const currentGroupIds = groupItems.filter(item => item.id).map(item => item.id);
+        const originalGroupItems = currentConfig.markupConfig.filter((item: any) => item.bundleGroup === bundleGroup);
+        const idsToDelete = originalGroupItems
+          .map((item: any) => item.id)
+          .filter((id: string) => !currentGroupIds.includes(id));
+        
+        for (const id of idsToDelete) {
+          try {
+            await deleteMarkupConfig({
+              variables: { id },
+            });
+          } catch (error: any) {
+            errors.push(`Delete error: ${error?.message || 'Unknown error'}`);
+          }
+        }
+      }
+
+      // Refetch and update state
+      await refetch();
+      setHasChanges(false);
+      
+      if (errors.length > 0) {
+        toast.error(`${bundleGroup} configuration saved with errors: ${errors.join(', ')}`);
+      } else {
+        toast.success(`${bundleGroup} configuration saved successfully`);
+      }
+      // Don't close drawer in new layout - user stays in the content panel
+    } catch (error) {
+      console.error("Error saving markup configuration:", error);
+      toast.error("Error saving configuration");
+    } finally {
+      setContentSaving(false);
+    }
+  };
+
+  // Discard changes for specific bundle group
+  const handleDrawerDiscard = (bundleGroup: string) => {
+    if (currentConfig?.markupConfig) {
+      // Restore original configuration for this group
+      const originalGroupItems = currentConfig.markupConfig
+        .filter((item: any) => item.bundleGroup === bundleGroup)
+        .map((item: any) => ({
+          id: item.id,
+          bundleGroup: item.bundleGroup,
+          durationDays: item.durationDays,
+          markupAmount: item.markupAmount,
+        }));
+      
+      // Remove current group items and add back original ones
+      const otherGroupItems = markupConfig.filter(item => item.bundleGroup !== bundleGroup);
+      setMarkupConfig([...otherGroupItems, ...originalGroupItems]);
+    } else {
+      // If no original config, remove the group entirely (for newly added groups)
+      setMarkupConfig(markupConfig.filter(item => item.bundleGroup !== bundleGroup));
+    }
+    
+    setHasChanges(false);
+    // Don't close drawer in new layout - user stays in the content panel
+    toast.info(`Changes in ${bundleGroup} discarded`);
+  };
+
+  // Add new group functionality
+  const handleAddGroup = (newSelectedGroup: string) => {
+    // Add default markup configurations for the new group
+    const newConfigs: MarkupConfigItem[] = [
+      { bundleGroup: newSelectedGroup, durationDays: 1, markupAmount: 3.00, isNew: true },
+      { bundleGroup: newSelectedGroup, durationDays: 3, markupAmount: 5.00, isNew: true },
+      { bundleGroup: newSelectedGroup, durationDays: 5, markupAmount: 9.00, isNew: true },
+      { bundleGroup: newSelectedGroup, durationDays: 7, markupAmount: 12.00, isNew: true },
+      { bundleGroup: newSelectedGroup, durationDays: 10, markupAmount: 15.00, isNew: true },
+      { bundleGroup: newSelectedGroup, durationDays: 15, markupAmount: 17.00, isNew: true },
+      { bundleGroup: newSelectedGroup, durationDays: 30, markupAmount: 20.00, isNew: true },
+    ];
+    
+    setMarkupConfig([...markupConfig, ...newConfigs]);
+    setHasChanges(true);
+    setShowAddGroupModal(false);
+    
+    // Select the newly added group in the right panel
+    setSelectedGroup(newSelectedGroup);
   };
 
   // Get summary info for a bundle group
@@ -139,6 +298,27 @@ export const MarkupTableManagement: React.FC = () => {
     groupedMarkupConfig[group].sort((a, b) => a.durationDays - b.durationDays);
   });
 
+  // Get available bundle groups (must be after groupedMarkupConfig is defined)
+  const availableBundleGroups = bundleGroupsData?.bundleGroups
+    ? getAvailableBundleGroups(
+        bundleGroupsData.bundleGroups,
+        Object.keys(groupedMarkupConfig)
+      )
+    : [];
+
+  // Set default selected group (first group or null if none exist)
+  useEffect(() => {
+    const groupKeys = Object.keys(groupedMarkupConfig);
+    if (!selectedGroup && groupKeys.length > 0) {
+      setSelectedGroup(groupKeys[0]);
+    }
+  }, [groupedMarkupConfig, selectedGroup]);
+
+  // Handle group selection
+  const handleGroupSelect = (bundleGroup: string) => {
+    setSelectedGroup(bundleGroup);
+  };
+
   // Handler for markup amount changes
   const handleMarkupChange = (index: number, field: keyof MarkupConfigItem, value: string | number) => {
     const newConfig = [...markupConfig];
@@ -157,18 +337,6 @@ export const MarkupTableManagement: React.FC = () => {
     setHasChanges(true);
   };
 
-  // Add new markup configuration
-  const handleAddMarkup = () => {
-    const newMarkup: MarkupConfigItem = {
-      bundleGroup: bundleGroupOptions[0],
-      durationDays: 1,
-      markupAmount: 5.00,
-      isNew: true,
-    };
-    setMarkupConfig([...markupConfig, newMarkup]);
-    setHasChanges(true);
-  };
-
   // Remove markup configuration
   const handleRemoveMarkup = (index: number) => {
     const newConfig = markupConfig.filter((_, i) => i !== index);
@@ -176,349 +344,218 @@ export const MarkupTableManagement: React.FC = () => {
     setHasChanges(true);
   };
 
-  const handleSave = async () => {
-    if (!hasChanges) return;
-
-    setIsSubmitting(true);
-    try {
-      // Process each markup config item
-      for (const item of markupConfig) {
-        const input = {
-          bundleGroup: item.bundleGroup,
-          durationDays: item.durationDays,
-          markupAmount: item.markupAmount,
-        };
-
-        if (item.id && !item.isNew) {
-          // Update existing configuration
-          await updateMarkupConfig({
-            variables: {
-              id: item.id,
-              input,
-            },
-          });
-        } else {
-          // Create new configuration
-          await createMarkupConfig({
-            variables: { input },
-          });
-        }
-      }
-
-      // Handle deletions (items that were in original config but not in current)
-      if (currentConfig?.markupConfig) {
-        const currentIds = markupConfig.filter(item => item.id).map(item => item.id);
-        const originalIds = currentConfig.markupConfig.map((item: any) => item.id);
-        const idsToDelete = originalIds.filter((id: string) => !currentIds.includes(id));
-        
-        for (const id of idsToDelete) {
-          await deleteMarkupConfig({
-            variables: { id },
-          });
-        }
-      }
-
-      // Refetch current configuration to get the latest data
-      await refetch();
-      
-      setHasChanges(false);
-      toast.success("תצורת המארק-אפ נשמרה בהצלחה");
-    } catch (error) {
-      console.error("Error saving markup configuration:", error);
-      toast.error("אירעה שגיאה בשמירת תצורת המארק-אפ");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleReset = () => {
-    setMarkupConfig(defaultMarkupConfig);
-    setHasChanges(true);
-  };
-
   if (loadingCurrent) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">טוען תצורת מארק-אפ...</span>
+        <span className="ml-2">Loading markup configuration...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
-          <h2 className="text-xl font-semibold">ניהול טבלת מארק-אפ</h2>
-          <Shield className="h-4 w-4 text-amber-500" title="נדרשות הרשאות מנהל" />
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            className="flex items-center gap-2"
-          >
-            <RotateCcw className="h-4 w-4" />
-            איפוס לברירת מחדל
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!hasChanges || isSubmitting || !isAdmin}
-            className="flex items-center gap-2"
-          >
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            {isSubmitting ? "שומר..." : "שמירה"}
-          </Button>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <DollarSign className="h-5 w-5" />
+        <h2 className="text-xl font-semibold">Markup Table Management</h2>
+        <Shield className="h-4 w-4 text-amber-500" />
       </div>
 
       <p className="text-sm text-gray-600">
-        עדכן את סכומי המארק-אפ הקבועים לכל קבוצת חבילות ומשך זמן (נדרשות הרשאות מנהל)
+        Update fixed markup amounts for each bundle group and duration
       </p>
 
-      {/* Markup Configuration by Bundle Group */}
-      {Object.entries(groupedMarkupConfig).map(([bundleGroup, items]) => {
-        const summary = getGroupSummary(items);
-        const isCollapsed = collapsedGroups[bundleGroup];
-        
-        return (
-          <Card key={bundleGroup}>
-            <Collapsible open={!isCollapsed} onOpenChange={() => toggleGroup(bundleGroup)}>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="hover:bg-gray-50 cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {bundleGroup}
-                        {isCollapsed ? (
-                          <ChevronRight className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </CardTitle>
-                      <CardDescription>
-                        {isCollapsed ? (
-                          `${summary.count} תצורות • טווח: ${summary.range} • ממוצע: ${summary.average}`
-                        ) : (
-                          "סכומי מארק-אפ קבועים בדולרים עבור משכי זמן שונים"
-                        )}
-                      </CardDescription>
+      {/* Two Column Layout */}
+      <div className="flex gap-6 h-[calc(100vh-200px)]">
+        {/* Left Column - Group List */}
+        <div className="w-80 flex-shrink-0">
+          <div className="space-y-3 h-full overflow-y-auto pr-2 pl-1">{/* Add Group Card - Half Height */}
+            {!loadingBundleGroups && availableBundleGroups.length > 0 && (
+              <Card 
+                className="border-2 border-dashed border-gray-300 hover:border-gray-400 hover:shadow-md transition-all cursor-pointer bg-gray-50 hover:bg-gray-100 h-16"
+                onClick={() => setShowAddGroupModal(true)}
+              >
+                <CardHeader className="flex items-center justify-center h-full p-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors">
+                      <Plus className="h-4 w-4 text-gray-600" />
                     </div>
+                    <span className="text-sm font-medium text-gray-600">Add Group</span>
                   </div>
                 </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-                    {items.map((item, itemIndex) => {
-                      const globalIndex = markupConfig.findIndex(
-                        config => config.bundleGroup === item.bundleGroup && 
-                                 config.durationDays === item.durationDays
-                      );
-                      
-                      return (
-                        <div key={`${bundleGroup}-${item.durationDays}`} className="space-y-2 p-3 border rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-xs font-medium">
-                              {item.durationDays} ימים
-                            </Label>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveMarkup(globalIndex)}
-                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          
-                          <div className="space-y-1">
-                            <Label htmlFor={`duration-${globalIndex}`} className="text-xs">
-                              משך זמן (ימים)
-                            </Label>
-                            <Input
-                              id={`duration-${globalIndex}`}
-                              type="number"
-                              min="1"
-                              value={item.durationDays}
-                              onChange={(e) =>
-                                handleMarkupChange(globalIndex, "durationDays", e.target.value)
-                              }
-                              className="text-sm"
-                            />
-                          </div>
-                          
-                          <div className="space-y-1">
-                            <Label htmlFor={`markup-${globalIndex}`} className="text-xs">
-                              מארק-אפ ($)
-                            </Label>
-                            <InputWithAdornment
-                              id={`markup-${globalIndex}`}
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={formatCurrencyForDisplay(item.markupAmount)}
-                              onChange={(e) =>
-                                handleMarkupChange(globalIndex, "markupAmount", e.target.value)
-                              }
-                              leftAdornment="$"
-                              className="text-sm"
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
-        );
-      })}
+              </Card>
+            )}
 
-      {/* Add New Markup Configuration */}
-      <Card>
-        <Collapsible open={isAddSectionOpen} onOpenChange={setIsAddSectionOpen}>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="hover:bg-gray-50 cursor-pointer">
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                הוסף תצורת מארק-אפ חדשה
-                {isAddSectionOpen ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </CardTitle>
-              {!isAddSectionOpen && (
-                <CardDescription>
-                  לחץ כאן כדי להוסיף תצורות מארק-אפ חדשות
-                </CardDescription>
-              )}
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent>
-              <Button
-                variant="outline"
-                onClick={handleAddMarkup}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                הוסף מארק-אפ חדש
-              </Button>
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
+            {/* Group Cards */}
+            {Object.entries(groupedMarkupConfig).map(([bundleGroup, items]) => {
+              const summary = getGroupSummary(items);
+              const isSelected = selectedGroup === bundleGroup;
+              
+              return (
+                <Card 
+                  key={bundleGroup} 
+                  className={`hover:shadow-md transition-all cursor-pointer ${
+                    isSelected 
+                      ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50' 
+                      : 'hover:border-gray-300'
+                  }`}
+                  onClick={() => handleGroupSelect(bundleGroup)}
+                >
+                  <CardHeader className="p-4">
+                    <CardTitle className="text-base">{bundleGroup}</CardTitle>
+                    <CardDescription className="text-sm">
+                      {summary.count} configs • Range: {summary.range} • Average: {summary.average}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
 
-      {/* New/Unsaved Items */}
-      {markupConfig.filter(item => item.isNew).length > 0 && (
-        <Card>
-          <Collapsible open={isNewItemsOpen} onOpenChange={setIsNewItemsOpen}>
-            <CollapsibleTrigger asChild>
-              <CardHeader className="hover:bg-gray-50 cursor-pointer">
-                <CardTitle className="flex items-center gap-2">
-                  תצורות חדשות (לא נשמרו)
-                  {isNewItemsOpen ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </CardTitle>
-                <CardDescription>
-                  {isNewItemsOpen ? (
-                    "תצורות אלו ייווספו כאשר תשמור את השינויים"
-                  ) : (
-                    `${markupConfig.filter(item => item.isNew).length} תצורות חדשות ממתינות לשמירה`
-                  )}
-                </CardDescription>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent>
-                <div className="space-y-3">
-                  {markupConfig.map((item, index) => {
-                    if (!item.isNew) return null;
+        {/* Right Column - Content Panel */}
+        <div className="flex-1 flex flex-col">
+          {selectedGroup ? (
+            <div className="flex flex-col h-full">
+              <div className="border-b pb-4 mb-4">
+                <h3 className="text-lg font-semibold">{selectedGroup}</h3>
+                <p className="text-sm text-gray-600">Fixed markup amounts in USD for different durations</p>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {groupedMarkupConfig[selectedGroup]?.map((item) => {
+                    const globalIndex = markupConfig.findIndex(
+                      config => config.bundleGroup === item.bundleGroup && 
+                               config.durationDays === item.durationDays
+                    );
                     
                     return (
-                      <div key={index} className="flex items-end gap-3 p-3 bg-blue-50 rounded-lg">
-                        <div className="space-y-1 flex-1">
-                          <Label htmlFor={`new-group-${index}`} className="text-xs">
-                            קבוצת חבילות
+                      <div key={`${selectedGroup}-${item.durationDays}`} className="space-y-2 p-3 border rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-medium">
+                            {item.durationDays} days
                           </Label>
-                          <select
-                            id={`new-group-${index}`}
-                            value={item.bundleGroup}
-                            onChange={(e) =>
-                              handleMarkupChange(index, "bundleGroup", e.target.value)
-                            }
-                            className="w-full p-2 border rounded text-sm"
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveMarkup(globalIndex)}
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                           >
-                            {bundleGroupOptions.map(option => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </div>
                         
                         <div className="space-y-1">
-                          <Label htmlFor={`new-duration-${index}`} className="text-xs">
-                            ימים
+                          <Label htmlFor={`duration-${globalIndex}`} className="text-xs">
+                            Duration (days)
                           </Label>
                           <Input
-                            id={`new-duration-${index}`}
+                            id={`duration-${globalIndex}`}
                             type="number"
                             min="1"
                             value={item.durationDays}
                             onChange={(e) =>
-                              handleMarkupChange(index, "durationDays", e.target.value)
+                              handleMarkupChange(globalIndex, "durationDays", e.target.value)
                             }
-                            className="w-20 text-sm"
+                            className="text-sm"
                           />
                         </div>
                         
                         <div className="space-y-1">
-                          <Label htmlFor={`new-markup-${index}`} className="text-xs">
-                            מארק-אפ ($)
+                          <Label htmlFor={`markup-${globalIndex}`} className="text-xs">
+                            Markup ($)
                           </Label>
                           <InputWithAdornment
-                            id={`new-markup-${index}`}
+                            id={`markup-${globalIndex}`}
                             type="number"
                             step="0.01"
                             min="0"
                             value={formatCurrencyForDisplay(item.markupAmount)}
                             onChange={(e) =>
-                              handleMarkupChange(index, "markupAmount", e.target.value)
+                              handleMarkupChange(globalIndex, "markupAmount", e.target.value)
                             }
                             leftAdornment="$"
-                            className="w-24 text-sm"
+                            className="text-sm"
                           />
                         </div>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveMarkup(index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     );
                   })}
                 </div>
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-      )}
+              </div>
+
+              {/* Save/Discard buttons for selected group */}
+              {hasChanges && selectedGroup && (
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDrawerDiscard(selectedGroup)}
+                      disabled={contentSaving}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Discard Changes
+                    </Button>
+                    <Button
+                      onClick={() => handleDrawerSave(selectedGroup)}
+                      disabled={contentSaving || !isAdmin}
+                      className="flex items-center gap-2"
+                    >
+                      {contentSaving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      {contentSaving ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <div className="mb-4">
+                  <DollarSign className="h-12 w-12 mx-auto text-gray-300" />
+                </div>
+                <p className="text-lg">Select or Create a Group</p>
+                <p className="text-sm">Click on a group from the list or add a new group</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add Group Dialog */}
+      <Dialog open={showAddGroupModal} onOpenChange={setShowAddGroupModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Bundle Group</DialogTitle>
+            <DialogDescription>
+              Select a bundle group to add to the pricing system
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            {availableBundleGroups.map((group) => (
+              <Button
+                key={group}
+                variant="outline"
+                className="w-full justify-start text-left"
+                onClick={() => handleAddGroup(group)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {group}
+              </Button>
+            ))}
+            {availableBundleGroups.length === 0 && (
+              <p className="text-center text-gray-500 py-4">
+                All bundle groups have already been configured
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
