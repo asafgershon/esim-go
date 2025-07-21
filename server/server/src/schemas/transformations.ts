@@ -9,7 +9,9 @@ const ESIMGoDataPlanSchema = z.object({
   name: z.string(),
   description: z.string(),
   baseCountry: z.object({
-    region: z.string().optional(),
+    name: z.string(),
+    region: z.string(), 
+    iso: z.string(),
   }).optional(),
   countries: z.array(z.object({
     name: z.string(),
@@ -18,7 +20,7 @@ const ESIMGoDataPlanSchema = z.object({
   })),
   duration: z.number(),
   price: z.number(),
-  isUnlimited: z.boolean().default(false),
+  unlimited: z.boolean().default(false), // eSIM Go API uses 'unlimited' field
   bundleGroup: z.string().optional(),
   dataAmount: z.number(),
   speed: z.union([z.string(), z.array(z.union([z.literal('2G'), z.literal('3G'), z.literal('4G'), z.literal('5G')])).nullish().default([])]).transform((speed) => {
@@ -82,19 +84,23 @@ export function mapDataPlan(plan: ESIMGoDataPlan, dbPlan?: DataPlan): DataPlan {
     description: validatedPlan.description,
     region: validatedPlan.baseCountry?.region || '',
     countries: validatedPlan.countries,
+    // Add baseCountry to the mapped data so resolvers can access it
+    baseCountry: validatedPlan.baseCountry,
     duration: validatedPlan.duration,
     price: validatedPlan.price,
     currency: "USD",
-    isUnlimited: validatedPlan.isUnlimited,
+    isUnlimited: validatedPlan.unlimited,
     bundleGroup: validatedPlan.bundleGroup,
     features: [
-      validatedPlan.isUnlimited ? "Unlimited Data" : `${validatedPlan.dataAmount || 0} MB`,
+      validatedPlan.unlimited ? "Unlimited Data" : `${validatedPlan.dataAmount || 0} MB`,
       `${validatedPlan.duration} Days`,
       validatedPlan.speed || "High Speed",
       "24/7 Support",
       "Instant Activation",
     ],
     availableQuantity: validatedPlan.availableQuantity || null,
+    // Store raw dataAmount for field resolver to access
+    _rawDataAmount: validatedPlan.dataAmount || 0,
   };
 }
 

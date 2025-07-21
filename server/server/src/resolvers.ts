@@ -7,6 +7,7 @@ import {
 } from "./context/supabase-auth";
 import type { Context } from "./context/types";
 import type { CalculatePriceInput, DataPlan, Order, Resolvers } from "./types";
+import { ConfigurationLevel } from "./types";
 import { esimResolvers } from "./resolvers/esim-resolvers";
 import { checkoutResolvers } from "./resolvers/checkout-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
@@ -43,15 +44,15 @@ const bundlesByCountryCache = {
 };
 
 // Helper function to determine configuration level based on pricing config fields
-function getConfigurationLevel(config: any): string {
+function getConfigurationLevel(config: any): ConfigurationLevel {
   if (config.countryId && config.duration) {
-    return 'BUNDLE';
+    return ConfigurationLevel.Bundle;
   } else if (config.countryId) {
-    return 'COUNTRY';
+    return ConfigurationLevel.Country;
   } else if (config.regionId) {
-    return 'REGION';
+    return ConfigurationLevel.Region;
   } else {
-    return 'GLOBAL';
+    return ConfigurationLevel.Global;
   }
 }
 
@@ -485,8 +486,26 @@ export const resolvers: Resolvers = {
         });
         const dataPlans = dataPlansResult.bundles || [];
         
-        // Get unique durations and sort them
-        const durations = [...new Set(dataPlans.map(plan => plan.duration))].sort((a, b) => a - b);
+        // DEBUG: Log the raw data from the API
+        logger.info('RAW DATA FROM CATALOGUE API', {
+          countryId,
+          totalPlans: dataPlans.length,
+          unlimitedCount: dataPlans.filter(p => p.unlimited || p.dataAmount === -1).length,
+          limitedCount: dataPlans.filter(p => !p.unlimited && p.dataAmount !== -1).length,
+          unlimitedByFlag: dataPlans.filter(p => p.unlimited).length,
+          unlimitedByDataAmount: dataPlans.filter(p => p.dataAmount === -1).length,
+          samplePlans: dataPlans.slice(0, 5).map(p => ({
+            name: p.name,
+            duration: p.duration,
+            unlimited: p.unlimited,
+            dataAmount: p.dataAmount,
+            bundleGroup: p.bundleGroup
+          })),
+          operationType: 'country-bundles-debug'
+        });
+        
+        // Sort plans by duration for consistent ordering
+        const sortedPlans = dataPlans.sort((a, b) => a.duration - b.duration);
         
         // Get custom configurations to determine hasCustomDiscount and configuration level
         const allConfigurations = await configRepository.getAllConfigurations();
@@ -495,7 +514,7 @@ export const resolvers: Resolvers = {
         );
         
         // Create a map for quick lookup of configuration levels per bundle
-        const configLevelByBundle = new Map<number, string>();
+        const configLevelByBundle = new Map<number, ConfigurationLevel>();
         for (const config of allConfigurations) {
           if (config.isActive && config.countryId === countryId) {
             const level = getConfigurationLevel(config);
@@ -504,34 +523,46 @@ export const resolvers: Resolvers = {
               configLevelByBundle.set(config.duration, level);
             } else {
               // Country-level or higher - apply to all bundles that don't have specific config
-              durations.forEach(duration => {
-                if (!configLevelByBundle.has(duration)) {
-                  configLevelByBundle.set(duration, level);
+              sortedPlans.forEach(plan => {
+                if (!configLevelByBundle.has(plan.duration)) {
+                  configLevelByBundle.set(plan.duration, level);
                 }
               });
             }
           }
         }
 
-        // Calculate pricing for each duration using actual pricing service
-        // This is acceptable for single country since it's only a few API calls
+        // Calculate pricing for each individual plan using actual pricing service
+        // This ensures unlimited and limited bundles with same duration are processed separately
         const bundles = await Promise.all(
-          durations.map(async (duration) => {
+          sortedPlans.map(async (plan) => {
             try {
+              // DEBUG: Log the plan structure to see what country data we have
+              logger.info('Bundle plan structure debug', {
+                countryId,
+                planName: plan.name,
+                planDuration: plan.duration,
+                hasBaseCountry: !!plan.baseCountry,
+                baseCountry: plan.baseCountry,
+                hasCountries: !!plan.countries,
+                countriesCount: plan.countries?.length || 0,
+                operationType: 'bundle-country-debug'
+              });
+              
               const config = await PricingService.getPricingConfig(
                 countryId,
-                duration,
+                plan.duration,
                 context.dataSources.catalogue,
                 configRepository,
                 'israeli_card'
               );
               
-              const bundleName = PricingService.getBundleName(duration);
+              const bundleName = PricingService.getBundleName(plan.duration);
               
               const pricingBreakdown = PricingService.calculatePricing(
                 bundleName,
                 country.country,
-                duration,
+                plan.duration,
                 config
               );
               
@@ -555,13 +586,55 @@ export const resolvers: Resolvers = {
                   ? pricingBreakdown.priceAfterDiscount / pricingBreakdown.duration 
                   : 0,
                 hasCustomDiscount: hasCustomConfig,
-                configurationLevel: configLevelByBundle.get(duration) || 'GLOBAL',
-                discountPerDay: pricingBreakdown.discountPerDay
+                configurationLevel: configLevelByBundle.get(plan.duration) || ConfigurationLevel.Global,
+                discountPerDay: pricingBreakdown.discountPerDay,
+                // Add plan-specific metadata to distinguish between unlimited/limited bundles
+                planId: plan.name || plan.id || `${countryId}-${plan.duration}d`,
+                isUnlimited: plan.unlimited || plan.dataAmount === -1,
+                dataAmount: (() => {
+                  // Use same formatting logic as DataPlan field resolver
+                  const rawDataAmount = plan.dataAmount;
+                  
+                  // Handle unlimited plans (dataAmount === -1 is the key indicator)
+                  if (plan.unlimited || rawDataAmount === -1) {
+                    return 'Unlimited';
+                  }
+                  
+                  // Handle unknown or zero amounts
+                  if (!rawDataAmount || rawDataAmount === 0) {
+                    return 'Unknown';
+                  }
+                  
+                  // Convert MB to GB and round to nearest 0.5 step (rounded up)
+                  const dataAmountMB = typeof rawDataAmount === 'number' ? rawDataAmount : parseInt(rawDataAmount);
+                  
+                  if (dataAmountMB >= 1024) {
+                    // Convert to GB
+                    const exactGB = dataAmountMB / 1024;
+                    
+                    // Round up to nearest 0.5 step
+                    const roundedGB = Math.ceil(exactGB * 2) / 2;
+                    
+                    // Format as whole number if it's a clean integer, otherwise show .5
+                    if (roundedGB === Math.floor(roundedGB)) {
+                      return `${Math.floor(roundedGB)}GB`;
+                    } else {
+                      return `${roundedGB}GB`;
+                    }
+                  } else {
+                    // For MB values, round to nearest 50MB step (rounded up)
+                    const roundedMB = Math.ceil(dataAmountMB / 50) * 50;
+                    return `${roundedMB}MB`;
+                  }
+                })(),
+                bundleGroup: plan.bundleGroup
               };
             } catch (error) {
               logger.warn('Failed to calculate pricing for bundle', {
                 countryId,
-                duration,
+                duration: plan.duration,
+                planId: plan.name || plan.id,
+                isUnlimited: plan.unlimited || false,
                 error: (error as Error).message,
                 operationType: 'country-bundles-fetch'
               });
@@ -743,6 +816,65 @@ export const resolvers: Resolvers = {
         throw new GraphQLError('Failed to fetch high demand countries', {
           extensions: { code: 'INTERNAL_ERROR' }
         });
+      }
+    },
+
+    // DEBUG: Direct API call to bypass cache and see raw data
+    debugRawCatalogData: async (_, { countryId }, context: Context) => {
+      try {
+        logger.info('Debug: Making direct API call to eSIM Go', { countryId });
+        
+        // Force a direct API call by using the fallback mechanism
+        const dataPlansResult = await (context.dataSources.catalogue as any).fallbackToApiCall({
+          country: countryId
+        });
+        const dataPlans = dataPlansResult.bundles || [];
+        
+        logger.info('DEBUG: Raw API Response Analysis', {
+          countryId,
+          totalPlans: dataPlans.length,
+          unlimitedByFlag: dataPlans.filter(p => p.unlimited === true).length,
+          unlimitedByDataAmount: dataPlans.filter(p => p.dataAmount === -1).length,
+          bothUnlimitedFields: dataPlans.filter(p => p.unlimited === true && p.dataAmount === -1).length,
+          uniqueDurations: [...new Set(dataPlans.map(p => p.duration))].sort((a,b) => a-b),
+          sampleUnlimited: dataPlans.filter(p => p.unlimited === true || p.dataAmount === -1).slice(0, 3).map(p => ({
+            name: p.name,
+            unlimited: p.unlimited,
+            dataAmount: p.dataAmount,
+            duration: p.duration,
+            bundleGroup: p.bundleGroup
+          })),
+          sampleLimited: dataPlans.filter(p => !p.unlimited && p.dataAmount !== -1).slice(0, 3).map(p => ({
+            name: p.name,
+            unlimited: p.unlimited,
+            dataAmount: p.dataAmount,
+            duration: p.duration,
+            bundleGroup: p.bundleGroup
+          })),
+          operationType: 'debug-raw-catalog'
+        });
+
+        return {
+          success: true,
+          totalPlans: dataPlans.length,
+          unlimitedCount: dataPlans.filter(p => p.unlimited === true || p.dataAmount === -1).length,
+          samplePlans: dataPlans.slice(0, 5).map(p => ({
+            name: p.name,
+            unlimited: p.unlimited,
+            dataAmount: p.dataAmount,
+            duration: p.duration,
+            bundleGroup: p.bundleGroup
+          }))
+        };
+      } catch (error) {
+        logger.error('Debug raw catalog failed', error as Error);
+        return {
+          success: false,
+          error: (error as Error).message,
+          totalPlans: 0,
+          unlimitedCount: 0,
+          samplePlans: []
+        };
       }
     },
   },
@@ -1716,6 +1848,46 @@ export const resolvers: Resolvers = {
           syncDuration: duration,
           syncedAt: new Date().toISOString(),
         };
+      }
+    },
+  },
+
+  // Field Resolvers
+  DataPlan: {
+    dataAmount: (parent: any) => {
+      // Get raw data amount (could be from _rawDataAmount or dataAmount field)
+      const rawDataAmount = parent._rawDataAmount ?? parent.dataAmount;
+      
+      // Handle unlimited plans
+      if (parent.isUnlimited || rawDataAmount === -1) {
+        return 'Unlimited';
+      }
+      
+      // Handle unknown or zero amounts
+      if (!rawDataAmount || rawDataAmount === 0) {
+        return 'Unknown';
+      }
+      
+      // Convert MB to GB and round to nearest 0.5 step (rounded up)
+      const dataAmountMB = typeof rawDataAmount === 'number' ? rawDataAmount : parseInt(rawDataAmount);
+      
+      if (dataAmountMB >= 1024) {
+        // Convert to GB
+        const exactGB = dataAmountMB / 1024;
+        
+        // Round up to nearest 0.5 step
+        const roundedGB = Math.ceil(exactGB * 2) / 2;
+        
+        // Format as whole number if it's a clean integer, otherwise show .5
+        if (roundedGB === Math.floor(roundedGB)) {
+          return `${Math.floor(roundedGB)}GB`;
+        } else {
+          return `${roundedGB}GB`;
+        }
+      } else {
+        // For MB values, round to nearest 50MB step (rounded up)
+        const roundedMB = Math.ceil(dataAmountMB / 50) * 50;
+        return `${roundedMB}MB`;
       }
     },
   },
