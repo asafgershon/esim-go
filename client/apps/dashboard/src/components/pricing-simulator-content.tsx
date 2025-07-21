@@ -155,14 +155,6 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-2 pb-4 border-b">
-        <Calculator className="h-5 w-5" />
-        <div>
-          <h2 className="text-xl font-semibold">Pricing Simulator</h2>
-          <p className="text-sm text-gray-600">Simulate pricing for any country and duration combination</p>
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Panel: Configuration */}

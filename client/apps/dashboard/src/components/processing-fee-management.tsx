@@ -211,38 +211,28 @@ export const ProcessingFeeManagement: React.FC = () => {
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <CreditCard className="h-5 w-5" />
-          <h2 className="text-xl font-semibold">ניהול עמלות סליקה</h2>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            className="flex items-center gap-2"
-          >
-            <RotateCcw className="h-4 w-4" />
-            איפוס לברירת מחדל
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!hasChanges || isSubmitting}
-            className="flex items-center gap-2"
-          >
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            {isSubmitting ? "שומר..." : "שמירה"}
-          </Button>
-        </div>
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={handleReset}
+          className="flex items-center gap-2"
+        >
+          <RotateCcw className="h-4 w-4" />
+          איפוס לברירת מחדל
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={!hasChanges || isSubmitting}
+          className="flex items-center gap-2"
+        >
+          {isSubmitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
+          {isSubmitting ? "שומר..." : "שמירה"}
+        </Button>
       </div>
-
-      <p className="text-sm text-gray-600">
-        עדכן את פרמטרי העמלות בהתאם להצעת המחיר שקיבלת מספק הסליקה
-      </p>
 
       {/* Main Processing Fees */}
       <Card>

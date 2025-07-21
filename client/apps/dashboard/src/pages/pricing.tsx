@@ -1,15 +1,10 @@
-import { CountryBundle } from '@/__generated__/graphql';
-import React, { useState } from 'react';
-import { Button, Tabs, TabsList, TabsTrigger, TabsContent, Tooltip, TooltipTrigger, TooltipContent } from '@workspace/ui';
+import React from 'react';
+import { Button, Tooltip, TooltipTrigger, TooltipContent } from '@workspace/ui';
 import { Calculator, DollarSign, Table, CreditCard, RefreshCw } from 'lucide-react';
 import { useMutation } from '@apollo/client';
 import { toast } from 'sonner';
-import { CountryPricingTableGrouped } from '../components/country-pricing-table-grouped';
-import { PricingConfigDrawer } from '../components/pricing-config-drawer';
-import { ProcessingFeeManagement } from '../components/processing-fee-management';
-import { MarkupTableManagement } from '../components/markup-table-management';
-import { PricingSimulatorContent } from '../components/pricing-simulator-content';
-import { usePricingData, CountryGroupData } from '../hooks/usePricingData';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import { usePricingData } from '../hooks/usePricingData';
 import { SYNC_CATALOG } from '../lib/graphql/queries';
 
 
@@ -17,34 +12,14 @@ import { SYNC_CATALOG } from '../lib/graphql/queries';
 
 
 const PricingPage: React.FC = () => {
-  const { countryGroups, loading, error, expandCountry, refreshConfigurations, countriesData } = usePricingData();
-  
-  const [selectedRow, setSelectedRow] = useState<CountryBundle | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('pricing');
+  const { countryGroups, loading, error, expandCountry } = usePricingData();
+  const location = useLocation();
 
   // Sync catalog mutation
   const [syncCatalog, { loading: syncLoading }] = useMutation(SYNC_CATALOG);
 
 
 
-  // Handle bundle click to open drawer
-  const handleBundleClick = (bundle: CountryBundle) => {
-    console.log('handleBundleClick called with:', bundle);
-    setSelectedRow(bundle);
-    setIsDrawerOpen(true);
-  };
-
-  // Handle drawer close
-  const handleDrawerClose = () => {
-    setIsDrawerOpen(false);
-    setSelectedRow(null);
-  };
-
-  // Handle configuration saved
-  const handleConfigurationSaved = () => {
-    refreshConfigurations();
-  };
 
   // Handle sync catalog
   const handleSyncCatalog = async () => {
@@ -91,10 +66,47 @@ const PricingPage: React.FC = () => {
     );
   }
 
+  // Tab configuration with titles, icons, descriptions, and routes
+  const tabConfig = {
+    '/pricing/summary': {
+      title: 'Summary',
+      icon: <Table className="h-5 w-5" />,
+      description: 'View and manage pricing configurations across all countries and bundles'
+    },
+    '/pricing/markup': {
+      title: 'Markup Pricing',
+      icon: <DollarSign className="h-5 w-5" />,
+      description: 'Update fixed markup amounts for each bundle group and duration'
+    },
+    '/pricing/simulator': {
+      title: 'Simulator Pricing',
+      icon: <Calculator className="h-5 w-5" />,
+      description: 'Simulate pricing for any country and duration combination'
+    },
+    '/pricing/processing-fee': {
+      title: 'Processing Fee',
+      icon: <CreditCard className="h-5 w-5" />,
+      description: 'Configure processing fees and payment-related charges'
+    }
+  };
+
+  // Get current tab based on route, default to summary
+  const currentPath = location.pathname === '/pricing' ? '/pricing/summary' : location.pathname;
+  const currentTab = tabConfig[currentPath as keyof typeof tabConfig] || tabConfig['/pricing/summary'];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Active tab header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Pricing Management</h1>
+        <div className="flex flex-col gap-1">
+          {/* Small top title - very tight spacing */}
+          <h1 className="text-sm font-normal text-gray-500 leading-none">Pricing Management</h1>
+          <div className="flex items-center gap-3">
+            {currentTab.icon}
+            <h2 className="text-2xl font-bold text-gray-900">{currentTab.title}</h2>
+          </div>
+          <p className="text-gray-600">{currentTab.description}</p>
+        </div>
         <div className="flex items-center gap-4">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -118,57 +130,68 @@ const PricingPage: React.FC = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="pricing" className="flex items-center gap-2">
+      {/* Tab Navigation */}
+      <div className="mb-6">
+        <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
+          <Link
+            to="/pricing/summary"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              currentPath === '/pricing/summary'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
             <Table className="h-4 w-4" />
-            Pricing Table
-          </TabsTrigger>
-          <TabsTrigger value="processing-fees" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            Processing Fees
-          </TabsTrigger>
-          <TabsTrigger value="markup-table" className="flex items-center gap-2">
+            Summary
+          </Link>
+          <Link
+            to="/pricing/markup"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              currentPath === '/pricing/markup'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
             <DollarSign className="h-4 w-4" />
-            Markup Table
-          </TabsTrigger>
-          <TabsTrigger value="pricing-simulator" className="flex items-center gap-2">
+            Markup Pricing
+          </Link>
+          <Link
+            to="/pricing/simulator"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              currentPath === '/pricing/simulator'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
             <Calculator className="h-4 w-4" />
-            Pricing Simulator
-          </TabsTrigger>
-        </TabsList>
+            Simulator Pricing
+          </Link>
+          <Link
+            to="/pricing/processing-fee"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              currentPath === '/pricing/processing-fee'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <CreditCard className="h-4 w-4" />
+            Processing Fee
+          </Link>
+        </div>
+      </div>
 
-        <TabsContent value="pricing">
-          <CountryPricingTableGrouped 
-            bundlesByCountry={countryGroups}
-            onBundleClick={handleBundleClick}
-            onExpandCountry={expandCountry}
-          />
-        </TabsContent>
+      {/* Separator between tabs and content */}
+      <div className="flex justify-center mb-8">
+        <div className="w-3/4 h-px bg-gray-200"></div>
+      </div>
 
-        <TabsContent value="processing-fees">
-          <ProcessingFeeManagement />
-        </TabsContent>
-
-        <TabsContent value="markup-table">
-          <MarkupTableManagement />
-        </TabsContent>
-
-        <TabsContent value="pricing-simulator">
-          <PricingSimulatorContent countries={countriesData?.countries || []} />
-        </TabsContent>
-      </Tabs>
-
-      {/* Drawer for pricing configuration */}
-      <PricingConfigDrawer
-        isOpen={isDrawerOpen}
-        onClose={handleDrawerClose}
-        pricingData={selectedRow}
-        onConfigurationSaved={handleConfigurationSaved}
-      />
-
-
-
+      {/* Content rendered via Router outlet */}
+      <Outlet context={{ 
+        countryGroups, 
+        expandCountry, 
+        loading, 
+        error 
+      }} />
     </div>
   );
 };
