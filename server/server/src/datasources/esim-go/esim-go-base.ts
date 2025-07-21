@@ -128,7 +128,7 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
           'Content-Type': 'application/json',
           'User-Agent': 'curl/8.7.1',
         },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(15 * 1000),
       });
       
       if (!response.ok) {

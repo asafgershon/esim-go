@@ -806,7 +806,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       sampleBundles: response.bundles.slice(0, 3).map(b => ({
         name: b.name,
         duration: b.duration,
-        region: b.baseCountry.region
+        region: b.baseCountry?.region || 'unknown'
       }))
     });
 
