@@ -10,6 +10,11 @@ import {
   PricingConfiguration 
 } from '@/__generated__/graphql';
 import { CALCULATE_BATCH_PRICING, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
+import { 
+  calculateAveragePricePerDay, 
+  buildBatchPricingInput, 
+  extractDurationsFromPlans 
+} from '../utils/pricing-calculations';
 
 export interface CountryGroupData extends BundlesByCountry {
   bundles?: CountryBundle[];
@@ -103,65 +108,63 @@ export const usePricingData = () => {
     fetchCountryGroups();
   }, [countriesData, dataPlansData, pricingConfigsData]);
 
+  // Fetch country data plans
+  const fetchCountryDataPlans = async (countryId: string) => {
+    return await getCountryDataPlans({
+      variables: {
+        filter: {
+          country: countryId,
+          limit: 1000
+        }
+      }
+    });
+  };
+
+  // Calculate pricing for country bundles
+  const calculateCountryPricing = async (countryId: string, regionId: string, durations: Set<number>) => {
+    const batchInputs = buildBatchPricingInput(countryId, regionId, durations);
+    
+    return await calculateBatchPricing({
+      variables: {
+        inputs: batchInputs,
+      },
+    });
+  };
+
+  // Update country group state with loaded bundles
+  const updateCountryGroupWithBundles = (countryId: string, bundles: CountryBundle[]) => {
+    const avgPricePerDay = calculateAveragePricePerDay(bundles);
+    
+    setCountryGroups(prev => prev.map(group => 
+      group.countryId === countryId 
+        ? { 
+            ...group, 
+            bundles, 
+            avgPricePerDay,
+          }
+        : group
+    ));
+  };
+
   // Lazy load bundles for a country when expanded
   const expandCountry = async (countryId: string) => {
     const country = countriesData?.countries?.find((c: Country) => c.iso === countryId);
     if (!country) return;
 
     try {
-      // Fetch bundles for this specific country using the country filter
-      const countryDataResult = await getCountryDataPlans({
-        variables: {
-          filter: {
-            country: countryId,
-            limit: 1000
-          }
-        }
-      });
+      // Fetch country data plans
+      const countryDataResult = await fetchCountryDataPlans(countryId);
 
       if (countryDataResult.data?.dataPlans?.items) {
-        const countryDataPlans = countryDataResult.data;
-        // Get all durations for this country from the fetched data
-        const durations = new Set<number>();
-        for (const plan of countryDataPlans.dataPlans.items) {
-          durations.add(plan.duration);
-        }
+        // Extract durations from the fetched data
+        const durations = extractDurationsFromPlans(countryDataResult.data.dataPlans.items);
 
-        // Build batch input for this country
-        const batchInputs: Array<{numOfDays: number; regionId: string; countryId: string; paymentMethod?: string}> = [];
-        for (const duration of durations) {
-          batchInputs.push({
-            numOfDays: duration,
-            regionId: country.region,
-            countryId: countryId,
-            paymentMethod: 'ISRAELI_CARD',
-          });
-        }
-
-        const pricingResult = await calculateBatchPricing({
-          variables: {
-            inputs: batchInputs,
-          },
-        });
+        // Calculate pricing for this country
+        const pricingResult = await calculateCountryPricing(countryId, country.region, durations);
 
         if (pricingResult.data?.calculatePrices) {
           const bundles: CountryBundle[] = pricingResult.data.calculatePrices;
-          
-          // Calculate average price per day
-          const avgPricePerDay = bundles.reduce((sum, bundle) => 
-            sum + (bundle.priceAfterDiscount / bundle.duration), 0
-          ) / bundles.length;
-
-          // Update the country group with loaded bundles and last fetched info
-          setCountryGroups(prev => prev.map(group => 
-            group.countryId === countryId 
-              ? { 
-                  ...group, 
-                  bundles, 
-                  avgPricePerDay,
-                }
-              : group
-          ));
+          updateCountryGroupWithBundles(countryId, bundles);
         }
       }
     } catch (error) {
