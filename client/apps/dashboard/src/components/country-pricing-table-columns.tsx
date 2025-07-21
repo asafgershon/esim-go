@@ -176,40 +176,44 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
     },
   },
   {
-    id: "duration",
-    accessorKey: "duration",
-    header: () => <SimpleHeader>Duration</SimpleHeader>,
+    id: "revenue",
+    accessorKey: "finalRevenue",
+    header: () => <SimpleHeader>Final Revenue</SimpleHeader>,
     cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
       const data = row.original;
-      const isSummaryRow = data.duration === 0;
-
+      const profitMargin =
+        ((data.finalRevenue - data.totalCost) / data.totalCost) * 100;
       return (
-        <div className="flex items-center gap-2">
-          {isSummaryRow ? (
-            <Clock className="h-4 w-4 text-blue-600 mx-auto" />
-          ) : (
-            <Badge variant="outline">{data.duration} days</Badge>
-          )}
+        <div className="space-y-1">
+          <div className="text-green-600 font-medium">
+            {formatCurrency(data.finalRevenue)}
+          </div>
+          <div className="text-sm">
+            <span
+              className={
+                profitMargin > 0 ? "text-green-600" : "text-red-600"
+              }
+            >
+              {profitMargin > 0 ? "+" : ""}
+              {profitMargin.toFixed(1)}% margin
+            </span>
+          </div>
         </div>
       );
     },
   },
   {
-    id: "pricing",
-    accessorKey: "pricePerDay",
-    header: () => <SimpleHeader>Price / Day</SimpleHeader>,
+    id: "costs",
+    accessorKey: "totalCost",
+    header: () => <SimpleHeader>Cost</SimpleHeader>,
     cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
       const data = row.original;
       return (
-        <div className="space-y-1">
-          <div className="flex items-center gap-1">
-            <TrendingUp className="h-4 w-4 text-blue-600" />
-            <span className="font-medium">
-              {formatCurrency(data.pricePerDay)}
-            </span>
-          </div>
-          <div className="text-sm text-gray-500">
-            Total: {formatCurrency(data.priceAfterDiscount)}
+        <div className="space-y-1 text-sm">
+          <div>Base: {formatCurrency(data.cost)}</div>
+          <div>Plus: {formatCurrency(data.costPlus)}</div>
+          <div className="font-medium">
+            Total: {formatCurrency(data.totalCost)}
           </div>
         </div>
       );
@@ -239,17 +243,21 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
     },
   },
   {
-    id: "costs",
-    accessorKey: "totalCost",
-    header: () => <SimpleHeader>Costs</SimpleHeader>,
+    id: "pricing",
+    accessorKey: "pricePerDay",
+    header: () => <SimpleHeader>Price Per Day</SimpleHeader>,
     cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
       const data = row.original;
       return (
-        <div className="space-y-1 text-sm">
-          <div>Base: {formatCurrency(data.cost)}</div>
-          <div>Plus: {formatCurrency(data.costPlus)}</div>
-          <div className="font-medium">
-            Total: {formatCurrency(data.totalCost)}
+        <div className="space-y-1">
+          <div className="flex items-center gap-1">
+            <TrendingUp className="h-4 w-4 text-blue-600" />
+            <span className="font-medium">
+              {formatCurrency(data.pricePerDay)}
+            </span>
+          </div>
+          <div className="text-sm text-gray-500">
+            Total: {formatCurrency(data.priceAfterDiscount)}
           </div>
         </div>
       );
@@ -266,33 +274,6 @@ export const createCountryPricingColumns = (): ColumnDef<CountryBundleWithDispla
           <div>Rate: {formatPercentage(data.processingRate)}</div>
           <div className="text-red-600">
             Cost: {formatCurrency(data.processingCost)}
-          </div>
-        </div>
-      );
-    },
-  },
-  {
-    id: "revenue",
-    accessorKey: "finalRevenue",
-    header: () => <SimpleHeader>Final Revenue</SimpleHeader>,
-    cell: ({ row }: { row: Row<CountryBundleWithDisplay> }) => {
-      const data = row.original;
-      const profitMargin =
-        ((data.finalRevenue - data.totalCost) / data.totalCost) * 100;
-      return (
-        <div className="space-y-1">
-          <div className="text-green-600 font-medium">
-            {formatCurrency(data.finalRevenue)}
-          </div>
-          <div className="text-sm">
-            <span
-              className={
-                profitMargin > 0 ? "text-green-600" : "text-red-600"
-              }
-            >
-              {profitMargin > 0 ? "+" : ""}
-              {profitMargin.toFixed(1)}% margin
-            </span>
           </div>
         </div>
       );
