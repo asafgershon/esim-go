@@ -71,12 +71,7 @@ function getSampleBundles(countryBundles: any[], maxSamples: number = 5): any[] 
     samples[samples.length - 1] = sortedBundles[sortedBundles.length - 1];
   }
   
-  logger.info('Selected sample bundles for aggregation', {
-    totalBundles: countryBundles.length,
-    sampleCount: samples.length,
-    sampleDurations: samples.map(b => b.duration),
-    operationType: 'sample-selection'
-  });
+
   
   return samples;
 }
@@ -113,14 +108,7 @@ function aggregatePricingResults(pricingResults: any[], totalBundles: number): a
   const avgNetProfit = pricingResults.reduce((sum, p) => sum + p.netProfit, 0) / sampleSize;
   const avgDuration = pricingResults.reduce((sum, p) => sum + p.duration, 0) / sampleSize;
   
-  // Add safety check for division by zero and debugging
-  logger.info('Price per day calculation debug', {
-    avgTotalCost,
-    avgDuration,
-    sampleSize,
-    durationsInSample: pricingResults.map(p => p.duration),
-    operationType: 'price-per-day-debug'
-  });
+  // Add safety check for division by zero
   
   const avgPricePerDay = avgDuration > 0 ? avgTotalCost / avgDuration : 0;
   
@@ -343,13 +331,6 @@ export const resolvers: Resolvers = {
       const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
       const configRepository = new PricingConfigRepository();
       
-      logger.info('Calculate prices request received', {
-        totalInputs: inputs.length,
-        uniqueCountries: [...new Set(inputs.map((i: CalculatePriceInput) => i.countryId))].length,
-        uniqueDurations: [...new Set(inputs.map((i: CalculatePriceInput) => i.numOfDays))].length,
-        operationType: 'calculate-prices-request'
-      });
-      
       const results = await Promise.all(
         inputs.map(async (input: CalculatePriceInput) => {
           try {
@@ -413,30 +394,15 @@ export const resolvers: Resolvers = {
         ) === index;
       });
 
-      if (results.length !== uniqueResults.length) {
-        logger.info('Deduplication applied', {
-          originalCount: results.length,
-          uniqueCount: uniqueResults.length,
-          removedDuplicates: results.length - uniqueResults.length,
-          operationType: 'deduplication-applied'
-        });
-      }
+
 
       return uniqueResults;
     },
     
     bundlesByCountry: async (_, __, context: Context) => {
-      logger.info('Fetching bundles by country with aggregated pricing', {
-        operationType: 'bundles-by-country-fetch'
-      });
-      
       // Check cache first
       const cachedData = bundlesByCountryCache.get();
       if (cachedData) {
-        logger.info('Returning cached bundlesByCountry data', {
-          operationType: 'bundles-by-country-fetch',
-          source: 'cache'
-        });
         return cachedData;
       }
       
@@ -449,12 +415,6 @@ export const resolvers: Resolvers = {
         // Use the cached catalogue data instead of making new API calls
         const dataPlansResult = await context.dataSources.catalogue.searchPlans({});
         const dataPlans = dataPlansResult.bundles || [];
-        
-        logger.info('Using cached catalogue data', {
-          totalBundles: dataPlans.length,
-          countries: countries.length,
-          operationType: 'bundles-by-country-fetch'
-        });
         
         // Group bundles by country and calculate aggregates efficiently
         const countryBundleMap = new Map<string, any[]>();
@@ -573,26 +533,11 @@ export const resolvers: Resolvers = {
               if (validResults.length > 0) {
                 // Use real pricing aggregations
                 realAggregates = aggregatePricingResults(validResults, totalBundles);
-                logger.info('Using real pricing aggregation for country', {
-                  countryId: country.iso,
-                  countryName: country.country,
-                  totalBundles,
-                  sampleSize: validResults.length,
-                  calculationMethod: 'SAMPLED',
-                  operationType: 'real-pricing-aggregation'
-                });
               } else {
                 throw new Error('No valid pricing calculations available');
               }
               
             } catch (error) {
-              logger.warn('Failed to calculate real pricing, falling back to estimates', {
-                countryId: country.iso,
-                countryName: country.country,
-                totalBundles,
-                error: error instanceof Error ? error.message : String(error),
-                operationType: 'pricing-fallback'
-              });
               
               // Fallback to estimation logic
               const avgPrice = countryBundles.reduce((sum, b) => sum + b.bundle.price, 0) / totalBundles;
@@ -608,14 +553,6 @@ export const resolvers: Resolvers = {
               const avgFinalRevenue = priceAfterDiscount - avgProcessingCost;
               const avgNetProfit = avgFinalRevenue - avgTotalCost;
               // Add safety check for division by zero
-              logger.info('Fallback price per day calculation debug', {
-                countryId: country.iso,
-                avgPrice,
-                avgDuration,
-                totalBundles,
-                operationType: 'fallback-price-per-day-debug'
-              });
-              
               const avgPricePerDay = avgDuration > 0 ? avgPrice / avgDuration : 0;
               
               realAggregates = {
@@ -662,11 +599,6 @@ export const resolvers: Resolvers = {
           .sort((a, b) => a.countryName.localeCompare(b.countryName));
         bundlesByCountryCache.set(result);
         
-        logger.info('Completed bundlesByCountry aggregation using cached data', {
-          totalCountries: result.length,
-          operationType: 'bundles-by-country-fetch'
-        });
-        
         return result;
       } catch (error) {
         logger.error('Error in bundlesByCountry resolver', error as Error, {
@@ -679,10 +611,6 @@ export const resolvers: Resolvers = {
     },
     
     countryBundles: async (_, { countryId }, context: Context) => {
-      logger.info('Fetching bundles for specific country', {
-        countryId,
-        operationType: 'country-bundles-fetch'
-      });
       
       try {
         const { PricingService } = await import('./services/pricing.service');
@@ -752,18 +680,9 @@ export const resolvers: Resolvers = {
                 finalRevenue: pricingBreakdown.finalRevenue,
                 netProfit: pricingBreakdown.netProfit ?? (pricingBreakdown.finalRevenue - pricingBreakdown.totalCost),
                 currency: pricingBreakdown.currency,
-                pricePerDay: (() => {
-                  console.log('DEBUG pricePerDay calculation:', {
-                    duration: pricingBreakdown.duration,
-                    priceAfterDiscount: pricingBreakdown.priceAfterDiscount,
-                    isFinitePriceAfterDiscount: isFinite(pricingBreakdown.priceAfterDiscount),
-                    bundleName: pricingBreakdown.bundleName,
-                    countryName: pricingBreakdown.countryName
-                  });
-                  return (pricingBreakdown.duration && pricingBreakdown.duration > 0 && isFinite(pricingBreakdown.priceAfterDiscount)) 
-                    ? pricingBreakdown.priceAfterDiscount / pricingBreakdown.duration 
-                    : 0;
-                })(),
+                pricePerDay: (pricingBreakdown.duration && pricingBreakdown.duration > 0 && isFinite(pricingBreakdown.priceAfterDiscount)) 
+                  ? pricingBreakdown.priceAfterDiscount / pricingBreakdown.duration 
+                  : 0,
                 hasCustomDiscount: hasCustomConfig
               };
             } catch (error) {
@@ -780,12 +699,6 @@ export const resolvers: Resolvers = {
         
         // Filter out failed calculations (already sorted by duration)
         const result = bundles.filter(bundle => bundle !== null);
-        
-        logger.info('Completed countryBundles fetch using cached data', {
-          countryId,
-          bundleCount: result.length,
-          operationType: 'country-bundles-fetch'
-        });
         
         return result;
       } catch (error) {
