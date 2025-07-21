@@ -101,7 +101,9 @@ const PricingPreviewPanel = ({
   
   // Calculate processing cost based on selected payment method
   const processingCost = priceAfterDiscount * processingRate;
-  const finalRevenue = priceAfterDiscount - processingCost - cost - costPlus;
+  // Net profit = What we receive (after processing) minus our costs
+  const revenueAfterProcessing = priceAfterDiscount - processingCost;
+  const netProfit = revenueAfterProcessing - cost - costPlus;
   
   // Handler for saving markup changes
   const handleSaveMarkup = () => {
@@ -363,12 +365,12 @@ const PricingPreviewPanel = ({
                 <span className="font-medium">Net profit</span>
                 <div className="text-right">
                   <div className={`font-mono font-medium text-lg ${
-                    finalRevenue > 0 ? "text-green-600" : "text-red-600"
+                    netProfit > 0 ? "text-green-600" : "text-red-600"
                   }`}>
-                    {formatCurrency(finalRevenue)}
+                    {formatCurrency(netProfit)}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {((finalRevenue / totalCost) * 100).toFixed(1)}% margin
+                    {((netProfit / totalCost) * 100).toFixed(1)}% margin
                   </div>
                 </div>
               </div>
@@ -408,7 +410,7 @@ const PricingPreviewPanel = ({
             )}
             
             {/* Minimum Profit Warning */}
-            {finalRevenue < 1.50 && (
+            {netProfit < 1.50 && (
               <div className="bg-red-50 p-2 rounded-md border border-red-200">
                 <div className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
