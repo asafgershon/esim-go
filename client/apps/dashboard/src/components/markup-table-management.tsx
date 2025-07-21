@@ -758,47 +758,49 @@ export const MarkupTableManagement: React.FC = () => {
         {/* Group List - Full width on mobile, left column on desktop */}
         <div className="lg:w-80 lg:flex-shrink-0 lg:h-full lg:flex lg:flex-col">
           <ScrollArea className="lg:flex-1 lg:pr-2 lg:pl-1" showOnHover={true}>
-            {/* Add Group Card */}
-            {!loadingBundleGroups && availableBundleGroups.length > 0 && (
-              <Card 
-                className="border-2 border-dashed border-gray-300 hover:border-gray-400 hover:shadow-md transition-all cursor-pointer bg-gray-50 hover:bg-gray-100 h-16"
-                onClick={() => setShowAddGroupModal(true)}
-              >
-                <CardHeader className="flex items-center justify-center h-full p-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors">
-                      <Plus className="h-4 w-4 text-gray-600" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-600">Add Group</span>
-                  </div>
-                </CardHeader>
-              </Card>
-            )}
-
-            {/* Group Cards */}
-            {Object.entries(groupedMarkupConfig).map(([bundleGroup, items]) => {
-              const summary = getGroupSummary(items);
-              const isSelected = selectedGroup === bundleGroup;
-              
-              return (
+            <div className="space-y-3">
+              {/* Add Group Card */}
+              {!loadingBundleGroups && availableBundleGroups.length > 0 && (
                 <Card 
-                  key={bundleGroup} 
-                  className={`hover:shadow-md transition-all cursor-pointer ${
-                    isSelected 
-                      ? 'lg:ring-2 lg:ring-blue-500 lg:border-blue-500 lg:bg-blue-50' 
-                      : 'hover:border-gray-300'
-                  }`}
-                  onClick={() => handleGroupSelect(bundleGroup)}
+                  className="border-2 border-dashed border-gray-300 hover:border-gray-400 hover:shadow-md transition-all cursor-pointer bg-gray-50 hover:bg-gray-100 h-16"
+                  onClick={() => setShowAddGroupModal(true)}
                 >
-                  <CardHeader className="p-4">
-                    <CardTitle className="text-base">{bundleGroup}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {summary.count} configs • Range: {summary.range} • Average: {summary.average}
-                    </CardDescription>
+                  <CardHeader className="flex items-center justify-center h-full p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors">
+                        <Plus className="h-4 w-4 text-gray-600" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">Add Group</span>
+                    </div>
                   </CardHeader>
                 </Card>
-              );
-            })}
+              )}
+
+              {/* Group Cards */}
+              {Object.entries(groupedMarkupConfig).map(([bundleGroup, items]) => {
+                const summary = getGroupSummary(items);
+                const isSelected = selectedGroup === bundleGroup;
+                
+                return (
+                  <Card 
+                    key={bundleGroup} 
+                    className={`hover:shadow-md transition-all cursor-pointer ${
+                      isSelected 
+                        ? 'lg:ring-2 lg:ring-blue-500 lg:border-blue-500 lg:bg-blue-50' 
+                        : 'hover:border-gray-300'
+                    }`}
+                    onClick={() => handleGroupSelect(bundleGroup)}
+                  >
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-base">{bundleGroup}</CardTitle>
+                      <CardDescription className="text-sm">
+                        {summary.count} configs • Range: {summary.range} • Average: {summary.average}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                );
+              })}
+            </div>
           </ScrollArea>
         </div>
 
