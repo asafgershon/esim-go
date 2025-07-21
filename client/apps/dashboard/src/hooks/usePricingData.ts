@@ -7,9 +7,10 @@ import {
   GetCountriesQuery, 
   GetDataPlansQuery, 
   GetPricingConfigurationsQuery, 
-  PricingConfiguration 
+  PricingConfiguration,
+  GetBundlesByCountryQuery
 } from '@/__generated__/graphql';
-import { CALCULATE_BATCH_PRICING, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
+import { CALCULATE_BATCH_PRICING, GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
 import { 
   calculateAveragePricePerDay, 
   buildBatchPricingInput, 
@@ -27,6 +28,7 @@ export const usePricingData = () => {
 
   // GraphQL queries
   const { data: countriesData } = useQuery<GetCountriesQuery>(GET_COUNTRIES);
+  const { data: bundlesByCountryData, loading: bundlesLoading, error: bundlesError, refetch: refetchBundlesByCountry } = useQuery<GetBundlesByCountryQuery>(GET_BUNDLES_BY_COUNTRY);
   const { data: dataPlansData } = useQuery<GetDataPlansQuery>(GET_DATA_PLANS, {
     variables: {
       filter: {
@@ -40,73 +42,28 @@ export const usePricingData = () => {
 
   // Generate country groups from actual data
   useEffect(() => {
-    const fetchCountryGroups = async () => {
-      if (!countriesData?.countries || !dataPlansData?.dataPlans?.items) {
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      const groups: CountryGroupData[] = [];
-
-      // Group data plans by country
-      const plansByCountry = new Map<string, Set<number>>();
-      
-      for (const plan of dataPlansData.dataPlans.items) {
-        if (plan.countries) {
-          for (const country of plan.countries) {
-            if (!plansByCountry.has(country.iso)) {
-              plansByCountry.set(country.iso, new Set());
-            }
-            plansByCountry.get(country.iso)!.add(plan.duration);
-          }
-        }
-      }
-
-      // Create country groups with summary data
-      for (const [countryId, durations] of plansByCountry) {
-        const country = countriesData.countries.find((c: Country) => c.iso === countryId);
-        if (!country) continue;
-
-        // Calculate basic summary for now (will be enhanced)
-        const totalBundles = durations.size;
-        
-        // Check if country has custom discount
-        const hasCustomDiscount = pricingConfigsData?.pricingConfigurations?.some(
-          (config: PricingConfiguration) => config.countryId === countryId && config.isActive
-        ) || false;
-
-        const customConfig = pricingConfigsData?.pricingConfigurations?.find(
-          (config: PricingConfiguration) => config.countryId === countryId && config.isActive
-        );
-
-        groups.push({
-          countryName: country.name,
-          countryId: countryId,
-          totalBundles,
-          avgPricePerDay: 0,
-          hasCustomDiscount,
-          avgDiscountRate: customConfig?.discountRate || 0,
-          avgCost: 0,
-          avgCostPlus: 0,
-          avgFinalRevenue: 0,
-          avgNetProfit: 0,
-          avgProcessingRate: 0,
-          avgProcessingCost: 0,
-          avgProfitMargin: 0,
-          avgTotalCost: 0,
-          totalDiscountValue: 0,
-          totalRevenue: 0,
-          bundles: undefined,
-        });
-      }
-
-      setCountryGroups(groups);
+    // If bundlesByCountry data is available, use it
+    if (bundlesByCountryData?.bundlesByCountry) {
       setLoading(false);
-    };
+      setError(null);
+      
+      // Convert the bundlesByCountry data to CountryGroupData format
+      const groups: CountryGroupData[] = bundlesByCountryData.bundlesByCountry.map((country: BundlesByCountry) => ({
+        ...country,
+        bundles: undefined, // Bundles will be loaded on expand
+      }));
+      
+      setCountryGroups(groups);
+    } else if (bundlesError) {
+      setError('Failed to load pricing summary data');
+      setLoading(false);
+    }
+  }, [bundlesByCountryData, bundlesError]);
 
-    fetchCountryGroups();
-  }, [countriesData, dataPlansData, pricingConfigsData]);
+  // Update loading state based on query loading
+  useEffect(() => {
+    setLoading(bundlesLoading);
+  }, [bundlesLoading]);
 
   // Fetch country data plans
   const fetchCountryDataPlans = async (countryId: string) => {
@@ -173,11 +130,15 @@ export const usePricingData = () => {
     }
   };
 
-  const refreshConfigurations = () => {
-    refetchPricingConfigs();
-    // Clear current data to trigger reload
-    setCountryGroups([]);
+  const refreshConfigurations = async () => {
     setLoading(true);
+    setCountryGroups([]);
+    
+    // Refetch both pricing configs and bundles summary data
+    await Promise.all([
+      refetchPricingConfigs(),
+      refetchBundlesByCountry()
+    ]);
   };
 
   return {
