@@ -126,20 +126,20 @@ const PricingPage: React.FC = () => {
                 <Button
                   onClick={handleSyncCatalog}
                   disabled={syncLoading}
-                  variant="outline"
-                  className="flex items-center gap-2"
+                  variant="ghost"
+                  size="sm"
+                  className={`flex items-center gap-2 ${
+                    syncLoading ? 'text-primary animate-pulse' : ''
+                  }`}
                 >
                   <RefreshCw className={`h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
-                  Sync
+                  Sync catalog
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                Triggers sync with eSIM Go API
+                {syncLoading ? 'Sync in progress' : 'Triggers sync with eSIM Go API'}
               </TooltipContent>
             </Tooltip>
-            <div className="text-sm text-gray-500">
-              {countryGroups.length} countries
-            </div>
           </div>
         </div>
 
