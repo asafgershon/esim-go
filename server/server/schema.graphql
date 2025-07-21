@@ -53,6 +53,9 @@ type Query {
   
   # High demand countries
   highDemandCountries: [String!]! @auth(role: "ADMIN")
+  
+  # DEBUG: Direct API call to see raw catalog data
+  debugRawCatalogData(countryId: String!): DebugCatalogResponse
 }
 
 type Mutation {
@@ -291,6 +294,7 @@ type DataPlan {
   bundleGroup: String
   features: [String!]!
   availableQuantity: Int
+  dataAmount: String! # Human-readable data amount like "1GB", "500MB", "Unlimited"
 }
 
 # Data plan filtering
@@ -606,6 +610,11 @@ type CountryBundle {
   hasCustomDiscount: Boolean!
   configurationLevel: ConfigurationLevel!
   discountPerDay: Float!
+  # Plan-specific metadata to distinguish between unlimited/limited bundles
+  planId: String!
+  isUnlimited: Boolean!
+  dataAmount: String!
+  bundleGroup: String
 }
 
 # Batch pricing input
@@ -789,4 +798,21 @@ type ToggleHighDemandResponse {
   countryId: String!
   isHighDemand: Boolean!
   error: String
+}
+
+# Debug types
+type DebugPlan {
+  name: String!
+  unlimited: Boolean!
+  dataAmount: Int!
+  duration: Int!
+  bundleGroup: String
+}
+
+type DebugCatalogResponse {
+  success: Boolean!
+  error: String
+  totalPlans: Int!
+  unlimitedCount: Int!
+  samplePlans: [DebugPlan!]!
 }
