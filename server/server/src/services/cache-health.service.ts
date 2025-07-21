@@ -92,9 +92,9 @@ export class CacheHealthService {
       // Clean up health check key
       await this.safeDelete(healthKey);
       
-      this.logger.debug('✅ Cache health check passed');
+      // this.logger.debug('✅ Cache health check passed');
     } catch (error) {
-      this.logger.warn('⚠️ Cache health check failed', error as Error);
+      // this.logger.warn('⚠️ Cache health check failed', error as Error);
     }
   }
 

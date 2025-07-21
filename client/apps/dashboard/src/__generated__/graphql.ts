@@ -62,6 +62,7 @@ export type BundlesByCountry = {
   avgProcessingRate: Scalars['Float']['output'];
   avgProfitMargin: Scalars['Float']['output'];
   avgTotalCost: Scalars['Float']['output'];
+  calculationMethod: Scalars['String']['output'];
   countryId: Scalars['String']['output'];
   countryName: Scalars['String']['output'];
   hasCustomDiscount: Scalars['Boolean']['output'];
@@ -586,6 +587,7 @@ export type PricingConfiguration = {
   duration?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   isActive: Scalars['Boolean']['output'];
+  markupAmount?: Maybe<Scalars['Float']['output']>;
   name: Scalars['String']['output'];
   priority: Scalars['Int']['output'];
   processingRate: Scalars['Float']['output'];
@@ -860,6 +862,7 @@ export type UpdatePricingConfigurationInput = {
   duration?: InputMaybe<Scalars['Int']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   isActive: Scalars['Boolean']['input'];
+  markupAmount?: InputMaybe<Scalars['Float']['input']>;
   name: Scalars['String']['input'];
   priority: Scalars['Int']['input'];
   processingRate: Scalars['Float']['input'];

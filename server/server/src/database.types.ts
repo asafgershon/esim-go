@@ -318,6 +318,7 @@ export type Database = {
           duration: number | null
           id: string
           is_active: boolean
+          markup_amount: number | null
           name: string
           priority: number
           processing_rate: number
@@ -335,6 +336,7 @@ export type Database = {
           duration?: number | null
           id?: string
           is_active?: boolean
+          markup_amount?: number | null
           name: string
           priority?: number
           processing_rate: number
@@ -352,6 +354,7 @@ export type Database = {
           duration?: number | null
           id?: string
           is_active?: boolean
+          markup_amount?: number | null
           name?: string
           priority?: number
           processing_rate?: number

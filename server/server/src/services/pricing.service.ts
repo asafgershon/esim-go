@@ -93,7 +93,7 @@ export class PricingService {
   /**
    * Get fixed markup amount from database table based on bundle group and duration
    */
-  static async getFixedMarkup(bundleGroup: string, duration: number): Promise<number> {
+  static async getFixedMarkup(bundleGroup: string, duration: number, countryId?: string): Promise<number> {
     try {
       // Import Supabase client (assuming it's available in your services)
       const { createClient } = await import('@supabase/supabase-js');
@@ -102,6 +102,33 @@ export class PricingService {
         process.env.SUPABASE_SERVICE_ROLE_KEY!
       );
 
+      // First, check for country-specific pricing configuration with markup override
+      if (countryId) {
+        const { data: countryOverride } = await supabase
+          .from('pricing_configurations')
+          .select('markup_amount')
+          .eq('country_id', countryId)
+          .eq('duration', duration)
+          .eq('bundle_group', bundleGroup)
+          .eq('is_active', true)
+          .not('markup_amount', 'is', null)
+          .order('priority', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (countryOverride && countryOverride.markup_amount !== null) {
+          this.logger.info('Found country-specific markup override', {
+            countryId,
+            bundleGroup,
+            duration,
+            markupAmount: countryOverride.markup_amount,
+            operationType: 'markup-country-override'
+          });
+          return countryOverride.markup_amount;
+        }
+      }
+
+      // Fallback to global markup configuration
       // Try exact duration match first
       const { data: exactMatch } = await supabase
         .from('pricing_markup_config')
@@ -464,7 +491,7 @@ export class PricingService {
 
       // Get fixed markup amount from database table based on bundle group and duration
       // This replaces the old percentage-based markup with fixed dollar amounts
-      const fixedMarkupAmount = await this.getFixedMarkup(matchingBundle.bundleGroup, duration);
+      const fixedMarkupAmount = await this.getFixedMarkup(matchingBundle.bundleGroup, duration, countryId);
       const discountRate = configRule?.discountRate || this.DEFAULT_DISCOUNT_RATE;
       
       this.logger.info('Fixed markup retrieved', {
