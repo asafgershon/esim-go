@@ -54,11 +54,6 @@ const data = {
       icon: MapPin,
     },
     {
-      title: "Package Assignment",
-      url: "/package-assignment",
-      icon: Package,
-    },
-    {
       title: "Pricing",
       url: "/pricing",
       icon: DollarSign,
