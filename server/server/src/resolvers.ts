@@ -42,6 +42,103 @@ const bundlesByCountryCache = {
   }
 };
 
+// Helper function to get representative bundles for aggregation calculations
+function getSampleBundles(countryBundles: any[], maxSamples: number = 5): any[] {
+  if (countryBundles.length === 0) return [];
+  
+  // If we have few bundles, use all of them
+  if (countryBundles.length <= maxSamples) {
+    return countryBundles;
+  }
+  
+  // Sort bundles by duration to get representative spread
+  const sortedBundles = [...countryBundles].sort((a, b) => a.duration - b.duration);
+  
+  // Select bundles to cover duration range
+  const samples = [];
+  const step = Math.floor(sortedBundles.length / maxSamples);
+  
+  for (let i = 0; i < maxSamples && i * step < sortedBundles.length; i++) {
+    const index = Math.min(i * step, sortedBundles.length - 1);
+    samples.push(sortedBundles[index]);
+  }
+  
+  // Always include shortest and longest if not already included
+  if (!samples.some(b => b.duration === sortedBundles[0].duration)) {
+    samples[0] = sortedBundles[0];
+  }
+  if (!samples.some(b => b.duration === sortedBundles[sortedBundles.length - 1].duration)) {
+    samples[samples.length - 1] = sortedBundles[sortedBundles.length - 1];
+  }
+  
+  logger.info('Selected sample bundles for aggregation', {
+    totalBundles: countryBundles.length,
+    sampleCount: samples.length,
+    sampleDurations: samples.map(b => b.duration),
+    operationType: 'sample-selection'
+  });
+  
+  return samples;
+}
+
+// Helper function to aggregate pricing results with weighted averages
+function aggregatePricingResults(pricingResults: any[], totalBundles: number): any {
+  if (pricingResults.length === 0) {
+    return {
+      avgCost: 0,
+      avgCostPlus: 0,
+      avgTotalCost: 0,
+      avgDiscountRate: 0.3,
+      totalDiscountValue: 0,
+      avgProcessingRate: 0.045,
+      avgProcessingCost: 0,
+      avgFinalRevenue: 0,
+      avgNetProfit: 0,
+      avgPricePerDay: 0,
+      calculationMethod: 'ESTIMATED'
+    };
+  }
+  
+  const sampleSize = pricingResults.length;
+  
+  // Calculate weighted averages
+  const avgCost = pricingResults.reduce((sum, p) => sum + p.cost, 0) / sampleSize;
+  const avgCostPlus = pricingResults.reduce((sum, p) => sum + p.costPlus, 0) / sampleSize;
+  const avgTotalCost = pricingResults.reduce((sum, p) => sum + p.totalCost, 0) / sampleSize;
+  const avgDiscountRate = pricingResults.reduce((sum, p) => sum + p.discountRate, 0) / sampleSize;
+  const avgDiscountValue = pricingResults.reduce((sum, p) => sum + (p.totalCost * p.discountRate), 0) / sampleSize;
+  const avgProcessingRate = pricingResults.reduce((sum, p) => sum + p.processingRate, 0) / sampleSize;
+  const avgProcessingCost = pricingResults.reduce((sum, p) => sum + p.processingCost, 0) / sampleSize;
+  const avgFinalRevenue = pricingResults.reduce((sum, p) => sum + p.finalRevenue, 0) / sampleSize;
+  const avgNetProfit = pricingResults.reduce((sum, p) => sum + p.netProfit, 0) / sampleSize;
+  const avgDuration = pricingResults.reduce((sum, p) => sum + p.duration, 0) / sampleSize;
+  
+  // Add safety check for division by zero and debugging
+  logger.info('Price per day calculation debug', {
+    avgTotalCost,
+    avgDuration,
+    sampleSize,
+    durationsInSample: pricingResults.map(p => p.duration),
+    operationType: 'price-per-day-debug'
+  });
+  
+  const avgPricePerDay = avgDuration > 0 ? avgTotalCost / avgDuration : 0;
+  
+  return {
+    avgCost: Number(avgCost.toFixed(2)),
+    avgCostPlus: Number(avgCostPlus.toFixed(2)),
+    avgTotalCost: Number(avgTotalCost.toFixed(2)),
+    avgDiscountRate: Number(avgDiscountRate.toFixed(3)),
+    totalDiscountValue: Number((avgDiscountValue * totalBundles).toFixed(2)),
+    avgProcessingRate: Number(avgProcessingRate.toFixed(3)),
+    avgProcessingCost: Number(avgProcessingCost.toFixed(2)),
+    avgFinalRevenue: Number(avgFinalRevenue.toFixed(2)),
+    avgNetProfit: Number(avgNetProfit.toFixed(2)),
+    avgPricePerDay: Number(avgPricePerDay.toFixed(2)),
+    calculationMethod: 'SAMPLED'
+  };
+}
+
 // Helper function to map GraphQL enum to internal payment method type
 function mapPaymentMethodEnum(paymentMethod?: PaymentMethod | null): 'israeli_card' | 'foreign_card' | 'bit' | 'amex' | 'diners' {
   switch (paymentMethod) {
@@ -390,43 +487,145 @@ export const resolvers: Resolvers = {
               };
             }
             
-            // Calculate simple aggregates based on bundle prices and durations
-            // This is much faster than making individual pricing API calls
-            const avgPrice = countryBundles.reduce((sum, b) => sum + b.bundle.price, 0) / totalBundles;
-            const avgDuration = countryBundles.reduce((sum, b) => sum + b.duration, 0) / totalBundles;
-            const avgPricePerDay = avgPrice / avgDuration;
+            // Get representative bundles for real pricing calculations
+            const sampleBundles = getSampleBundles(countryBundles, 5);
+            let realAggregates;
             
-            // Use reasonable defaults for pricing calculations to avoid API calls
-            const defaultDiscountRate = activeConfigsByCountry.has(country.iso) ? 0.25 : 0.3;
-            const defaultProcessingRate = 0.045;
-            const avgCost = avgPrice * 0.6; // Assume 60% cost split
-            const avgCostPlus = avgPrice * 0.1; // Assume 10% additional cost
-            const avgTotalCost = avgCost + avgCostPlus;
-            const avgDiscountValue = avgTotalCost * defaultDiscountRate;
-            const priceAfterDiscount = avgTotalCost - avgDiscountValue;
-            const avgProcessingCost = priceAfterDiscount * defaultProcessingRate;
-            const avgFinalRevenue = priceAfterDiscount - avgProcessingCost; // What we actually receive
-            const avgNetProfit = avgFinalRevenue - avgTotalCost; // Profit after all costs
-            const avgProfitMargin = avgTotalCost > 0 ? (avgNetProfit / avgTotalCost) : 0;
+            try {
+              // Calculate real pricing for sample bundles using existing pricing service
+              const { PricingService } = await import('./services/pricing.service');
+              
+              const pricingInputs = sampleBundles.map(bundleData => ({
+                numOfDays: bundleData.duration,
+                countryId: country.iso,
+                regionId: country.region || 'unknown'
+              }));
+              
+              // Use the same logic as calculatePrices resolver but for sample bundles
+              const pricingResults = await Promise.all(
+                pricingInputs.map(async (input) => {
+                  try {
+                    // Get pricing configuration for the bundle
+                    const config = await PricingService.getPricingConfig(
+                      input.countryId, 
+                      input.numOfDays, 
+                      context.dataSources.catalogue, 
+                      configRepository,
+                      'israeli_card', // Default payment method
+                      context.services.pricing
+                    );
+                    
+                    // Get bundle and country names
+                    const bundleName = PricingService.getBundleName(input.numOfDays);
+                    const countryName = PricingService.getCountryName(input.countryId);
+                    
+                    // Calculate detailed pricing breakdown
+                    const pricingBreakdown = PricingService.calculatePricing(
+                      bundleName,
+                      countryName,
+                      input.numOfDays,
+                      config
+                    );
+
+                    return pricingBreakdown;
+                  } catch (error) {
+                    logger.warn(`Failed to calculate pricing for ${input.countryId} ${input.numOfDays}d, using fallback`, {
+                      countryId: input.countryId,
+                      duration: input.numOfDays,
+                      error: error instanceof Error ? error.message : String(error),
+                      operationType: 'pricing-calculation-fallback'
+                    });
+                    // Return null for failed calculations
+                    return null;
+                  }
+                })
+              );
+              
+              // Filter out failed calculations
+              const validResults = pricingResults.filter(result => result !== null);
+              
+              if (validResults.length > 0) {
+                // Use real pricing aggregations
+                realAggregates = aggregatePricingResults(validResults, totalBundles);
+                logger.info('Using real pricing aggregation for country', {
+                  countryId: country.iso,
+                  countryName: country.country,
+                  totalBundles,
+                  sampleSize: validResults.length,
+                  calculationMethod: 'SAMPLED',
+                  operationType: 'real-pricing-aggregation'
+                });
+              } else {
+                throw new Error('No valid pricing calculations available');
+              }
+              
+            } catch (error) {
+              logger.warn('Failed to calculate real pricing, falling back to estimates', {
+                countryId: country.iso,
+                countryName: country.country,
+                totalBundles,
+                error: error instanceof Error ? error.message : String(error),
+                operationType: 'pricing-fallback'
+              });
+              
+              // Fallback to estimation logic
+              const avgPrice = countryBundles.reduce((sum, b) => sum + b.bundle.price, 0) / totalBundles;
+              const avgDuration = countryBundles.reduce((sum, b) => sum + b.duration, 0) / totalBundles;
+              const defaultDiscountRate = activeConfigsByCountry.has(country.iso) ? 0.25 : 0.3;
+              const defaultProcessingRate = 0.045;
+              const avgCost = avgPrice * 0.6; // Assume 60% cost split
+              const avgCostPlus = avgPrice * 0.1; // Assume 10% additional cost
+              const avgTotalCost = avgCost + avgCostPlus;
+              const avgDiscountValue = avgTotalCost * defaultDiscountRate;
+              const priceAfterDiscount = avgTotalCost - avgDiscountValue;
+              const avgProcessingCost = priceAfterDiscount * defaultProcessingRate;
+              const avgFinalRevenue = priceAfterDiscount - avgProcessingCost;
+              const avgNetProfit = avgFinalRevenue - avgTotalCost;
+              // Add safety check for division by zero
+              logger.info('Fallback price per day calculation debug', {
+                countryId: country.iso,
+                avgPrice,
+                avgDuration,
+                totalBundles,
+                operationType: 'fallback-price-per-day-debug'
+              });
+              
+              const avgPricePerDay = avgDuration > 0 ? avgPrice / avgDuration : 0;
+              
+              realAggregates = {
+                avgCost: Number(avgCost.toFixed(2)),
+                avgCostPlus: Number(avgCostPlus.toFixed(2)),
+                avgTotalCost: Number(avgTotalCost.toFixed(2)),
+                avgDiscountRate: defaultDiscountRate,
+                totalDiscountValue: Number((avgDiscountValue * totalBundles).toFixed(2)),
+                avgProcessingRate: defaultProcessingRate,
+                avgProcessingCost: Number(avgProcessingCost.toFixed(2)),
+                avgFinalRevenue: Number(avgFinalRevenue.toFixed(2)),
+                avgNetProfit: Number(avgNetProfit.toFixed(2)),
+                avgPricePerDay: Number(avgPricePerDay.toFixed(2)),
+                calculationMethod: 'ESTIMATED'
+              };
+            }
             
             return {
               countryName: country.country,
               countryId: country.iso,
               totalBundles,
-              avgPricePerDay,
+              avgPricePerDay: realAggregates.avgPricePerDay,
               hasCustomDiscount: activeConfigsByCountry.has(country.iso) || false,
-              avgDiscountRate: defaultDiscountRate,
-              totalDiscountValue: avgDiscountValue * totalBundles,
-              avgCost,
-              avgCostPlus,
-              avgTotalCost,
-              avgProcessingRate: defaultProcessingRate,
-              avgProcessingCost,
-              avgFinalRevenue,
-              avgNetProfit,
-              totalRevenue: avgFinalRevenue * totalBundles,
-              avgProfitMargin,
-              lastFetched: dataPlansResult.lastFetched || new Date().toISOString()
+              avgDiscountRate: realAggregates.avgDiscountRate,
+              totalDiscountValue: realAggregates.totalDiscountValue,
+              avgCost: realAggregates.avgCost,
+              avgCostPlus: realAggregates.avgCostPlus,
+              avgTotalCost: realAggregates.avgTotalCost,
+              avgProcessingRate: realAggregates.avgProcessingRate,
+              avgProcessingCost: realAggregates.avgProcessingCost,
+              avgFinalRevenue: realAggregates.avgFinalRevenue,
+              avgNetProfit: realAggregates.avgNetProfit,
+              totalRevenue: Number((realAggregates.avgFinalRevenue * totalBundles).toFixed(2)),
+              avgProfitMargin: realAggregates.avgTotalCost > 0 ? Number(((realAggregates.avgNetProfit / realAggregates.avgTotalCost) * 100).toFixed(2)) : 0,
+              lastFetched: dataPlansResult.lastFetched || new Date().toISOString(),
+              calculationMethod: realAggregates.calculationMethod
             };
           })
         );
@@ -525,11 +724,20 @@ export const resolvers: Resolvers = {
                 processingRate: pricingBreakdown.processingRate,
                 processingCost: pricingBreakdown.processingCost,
                 finalRevenue: pricingBreakdown.finalRevenue,
-                netProfit: pricingBreakdown.netProfit,
+                netProfit: pricingBreakdown.netProfit ?? (pricingBreakdown.finalRevenue - pricingBreakdown.totalCost),
                 currency: pricingBreakdown.currency,
-                pricePerDay: (pricingBreakdown.duration && pricingBreakdown.duration > 0 && isFinite(pricingBreakdown.priceAfterDiscount)) 
-                  ? pricingBreakdown.priceAfterDiscount / pricingBreakdown.duration 
-                  : 0,
+                pricePerDay: (() => {
+                  console.log('DEBUG pricePerDay calculation:', {
+                    duration: pricingBreakdown.duration,
+                    priceAfterDiscount: pricingBreakdown.priceAfterDiscount,
+                    isFinitePriceAfterDiscount: isFinite(pricingBreakdown.priceAfterDiscount),
+                    bundleName: pricingBreakdown.bundleName,
+                    countryName: pricingBreakdown.countryName
+                  });
+                  return (pricingBreakdown.duration && pricingBreakdown.duration > 0 && isFinite(pricingBreakdown.priceAfterDiscount)) 
+                    ? pricingBreakdown.priceAfterDiscount / pricingBreakdown.duration 
+                    : 0;
+                })(),
                 hasCustomDiscount: hasCustomConfig
               };
             } catch (error) {

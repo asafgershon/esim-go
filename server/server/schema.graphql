@@ -566,6 +566,7 @@ type BundlesByCountry {
   totalRevenue: Float!
   avgProfitMargin: Float!
   lastFetched: String
+  calculationMethod: String! # SAMPLED | ESTIMATED
 }
 
 # Individual bundles for a specific country
