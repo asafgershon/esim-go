@@ -21,6 +21,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  ScrollArea,
 } from "@workspace/ui";
 import React, { useState, useEffect } from "react";
 import { DollarSign, Save, Loader2, Plus, Trash2, X, Check } from "lucide-react";
@@ -410,7 +411,7 @@ export const MarkupTableManagement: React.FC = () => {
         </div>
       )}
       
-      <div className="flex-1 overflow-y-auto">
+      <ScrollArea className="flex-1" showOnHover={true}>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {/* Add Bundle Card - Dashed style matching Add Group */}
           {creatingBundle === bundleGroup ? (
@@ -580,7 +581,7 @@ export const MarkupTableManagement: React.FC = () => {
             <p>No configurations found for this group</p>
           </div>
         )}
-      </div>
+      </ScrollArea>
     </div>
   );
 
@@ -751,12 +752,12 @@ export const MarkupTableManagement: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col">
       {/* Desktop: Two Column Layout, Mobile: Single Column */}
-      <div className="lg:flex lg:gap-6 lg:h-[calc(100vh-200px)]">
+      <div className="flex-1 lg:flex lg:gap-6 min-h-0">
         {/* Group List - Full width on mobile, left column on desktop */}
-        <div className="lg:w-80 lg:flex-shrink-0">
-          <div className="space-y-3 lg:h-full overflow-y-auto lg:pr-2 lg:pl-1">
+        <div className="lg:w-80 lg:flex-shrink-0 lg:h-full lg:flex lg:flex-col">
+          <ScrollArea className="lg:flex-1 lg:pr-2 lg:pl-1" showOnHover={true}>
             {/* Add Group Card */}
             {!loadingBundleGroups && availableBundleGroups.length > 0 && (
               <Card 
@@ -798,7 +799,7 @@ export const MarkupTableManagement: React.FC = () => {
                 </Card>
               );
             })}
-          </div>
+          </ScrollArea>
         </div>
 
         {/* Desktop: Right Column - Content Panel (hidden on mobile) */}
@@ -829,9 +830,9 @@ export const MarkupTableManagement: React.FC = () => {
             </SheetDescription>
           </SheetHeader>
           
-          <div className="px-6 pb-6 flex-1 overflow-y-auto max-h-[calc(85vh-120px)]">
+          <ScrollArea className="px-6 pb-6 flex-1 max-h-[calc(85vh-120px)]" showOnHover={true}>
             {selectedGroup && <BundleContent bundleGroup={selectedGroup} showHeader={false} />}
-          </div>
+          </ScrollArea>
         </SheetContent>
       </Sheet>
 

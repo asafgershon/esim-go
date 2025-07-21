@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Tooltip, TooltipTrigger, TooltipContent } from '@workspace/ui';
-import { Calculator, DollarSign, Table, CreditCard, RefreshCw } from 'lucide-react';
+import { Calculator, DollarSign, Table, CreditCard, RefreshCw, Layers } from 'lucide-react';
 import { useMutation } from '@apollo/client';
 import { toast } from 'sonner';
 import { Link, Outlet, useLocation } from 'react-router-dom';
@@ -73,6 +73,11 @@ const PricingPage: React.FC = () => {
       icon: <Table className="h-5 w-5" />,
       description: 'View and manage pricing configurations across all countries and bundles'
     },
+    '/pricing/summary-experimental': {
+      title: 'Split-View',
+      icon: <Layers className="h-5 w-5" />,
+      description: 'Experimental simplified layout with split-view design'
+    },
     '/pricing/markup': {
       title: 'Markup Pricing',
       icon: <DollarSign className="h-5 w-5" />,
@@ -95,103 +100,120 @@ const PricingPage: React.FC = () => {
   const currentTab = tabConfig[currentPath as keyof typeof tabConfig] || tabConfig['/pricing/summary'];
 
   return (
-    <div className="space-y-4">
-      {/* Active tab header */}
-      <div className="flex justify-between items-center">
-        <div className="flex flex-col gap-1">
-          {/* Small top title - very tight spacing */}
-          <h1 className="text-sm font-normal text-gray-500 leading-none">Pricing Management</h1>
-          <div className="flex items-center gap-3">
-            {currentTab.icon}
-            <h2 className="text-2xl font-bold text-gray-900">{currentTab.title}</h2>
+    <div className="h-full flex flex-col">
+      {/* Fixed Header Section */}
+      <div className="flex-shrink-0 space-y-4 pb-4">
+        {/* Active tab header */}
+        <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-1">
+            {/* Small top title - very tight spacing */}
+            <h1 className="text-sm font-normal text-gray-500 leading-none">Pricing Management</h1>
+            <div className="flex items-center gap-3">
+              {currentTab.icon}
+              <h2 className="text-2xl font-bold text-gray-900">{currentTab.title}</h2>
+            </div>
+            <p className="text-gray-600">{currentTab.description}</p>
           </div>
-          <p className="text-gray-600">{currentTab.description}</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleSyncCatalog}
-                disabled={syncLoading}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
-                Sync
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              Triggers sync with eSIM Go API
-            </TooltipContent>
-          </Tooltip>
-          <div className="text-sm text-gray-500">
-            {countryGroups.length} countries
+          <div className="flex items-center gap-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleSyncCatalog}
+                  disabled={syncLoading}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+                  Sync
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Triggers sync with eSIM Go API
+              </TooltipContent>
+            </Tooltip>
+            <div className="text-sm text-gray-500">
+              {countryGroups.length} countries
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Tab Navigation */}
-      <div className="mb-6">
-        <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
-          <Link
-            to="/pricing/summary"
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              currentPath === '/pricing/summary'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Table className="h-4 w-4" />
-            Summary
-          </Link>
-          <Link
-            to="/pricing/markup"
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              currentPath === '/pricing/markup'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <DollarSign className="h-4 w-4" />
-            Markup Pricing
-          </Link>
-          <Link
-            to="/pricing/processing-fee"
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              currentPath === '/pricing/processing-fee'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <CreditCard className="h-4 w-4" />
-            Processing Fee
-          </Link>
-          <Link
-            to="/pricing/simulator"
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              currentPath === '/pricing/simulator'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Calculator className="h-4 w-4" />
-            Simulator Pricing
-          </Link>
+        {/* Tab Navigation */}
+        <div>
+          <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
+            <Link
+              to="/pricing/summary"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                currentPath === '/pricing/summary'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Table className="h-4 w-4" />
+              Summary
+            </Link>
+            <Link
+              to="/pricing/summary-experimental"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                currentPath === '/pricing/summary-experimental'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Layers className="h-4 w-4" />
+              Split-View
+              <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">Beta</span>
+            </Link>
+            <Link
+              to="/pricing/markup"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                currentPath === '/pricing/markup'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <DollarSign className="h-4 w-4" />
+              Markup Pricing
+            </Link>
+            <Link
+              to="/pricing/processing-fee"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                currentPath === '/pricing/processing-fee'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <CreditCard className="h-4 w-4" />
+              Processing Fee
+            </Link>
+            <Link
+              to="/pricing/simulator"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                currentPath === '/pricing/simulator'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Calculator className="h-4 w-4" />
+              Simulator Pricing
+            </Link>
+          </div>
+        </div>
+
+        {/* Separator between tabs and content */}
+        <div className="flex justify-center">
+          <div className="w-3/4 h-px bg-gray-200"></div>
         </div>
       </div>
 
-      {/* Separator between tabs and content */}
-      <div className="flex justify-center mb-8">
-        <div className="w-3/4 h-px bg-gray-200"></div>
+      {/* Flexible Content Area */}
+      <div className="flex-1 min-h-0">
+        <Outlet context={{ 
+          countryGroups, 
+          expandCountry, 
+          loading, 
+          error 
+        }} />
       </div>
-
-      {/* Content rendered via Router outlet */}
-      <Outlet context={{ 
-        countryGroups, 
-        expandCountry, 
-        loading, 
-        error 
-      }} />
     </div>
   );
 };

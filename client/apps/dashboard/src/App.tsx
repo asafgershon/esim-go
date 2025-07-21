@@ -16,6 +16,7 @@ import { TripsPage } from '@/pages/trips'
 import { PackageAssignmentPage } from '@/pages/package-assignment'
 import PricingPage from '@/pages/pricing'
 import { PricingSummaryPage } from '@/pages/pricing/summary'
+import { PricingSummaryExperimentalPage } from '@/pages/pricing/summary-experimental'
 import { PricingMarkupPage } from '@/pages/pricing/markup'
 import { PricingSimulatorPage } from '@/pages/pricing/simulator'
 import { PricingProcessingFeePage } from '@/pages/pricing/processing-fee'
@@ -51,6 +52,7 @@ function App() {
                   <Route path="pricing" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><PricingPage /></ProtectedRoute></ErrorBoundary>}>
                     <Route index element={<Navigate to="summary" replace />} />
                     <Route path="summary" element={<PricingSummaryPage />} />
+                    <Route path="summary-experimental" element={<PricingSummaryExperimentalPage />} />
                     <Route path="markup" element={<PricingMarkupPage />} />
                     <Route path="simulator" element={<PricingSimulatorPage />} />
                     <Route path="processing-fee" element={<PricingProcessingFeePage />} />

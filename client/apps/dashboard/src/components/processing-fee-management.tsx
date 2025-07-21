@@ -9,6 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  ScrollArea,
 } from "@workspace/ui";
 import React, { useState, useEffect } from "react";
 import { CreditCard, Save, RotateCcw, Loader2, X, Check, AlertTriangle } from "lucide-react";
@@ -342,7 +343,8 @@ export const ProcessingFeeManagement: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 pb-12">
+    <ScrollArea className="h-full" showOnHover={true}>
+      <div className="space-y-8 pb-12 pr-4">
       {/* Processing Rates */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Processing Rates</h3>
@@ -420,6 +422,7 @@ export const ProcessingFeeManagement: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </ScrollArea>
   );
 };
