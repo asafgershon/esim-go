@@ -23,6 +23,39 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const isCountryLoading = loadingCountries.has(country.countryId);
   
+  // Configure Fuse.js for fuzzy search - must be called before conditional returns
+  const fuse = useMemo(() => {
+    if (!country.bundles) return null;
+    
+    const fuseOptions = {
+      keys: [
+        'bundleName',
+        'duration',
+        'dataAmount',
+        'countryName'
+      ],
+      threshold: 0.3, // Adjust for sensitivity (0 = exact match, 1 = match anything)
+      includeScore: true
+    };
+    
+    return new Fuse(country.bundles, fuseOptions);
+  }, [country.bundles]);
+
+  // Filter bundles based on search query - must be called before conditional returns
+  const filteredBundles = useMemo(() => {
+    if (!country.bundles) return [];
+    
+    const sorted = [...country.bundles].sort((a, b) => (a.duration || 0) - (b.duration || 0));
+    
+    if (!searchQuery.trim() || !fuse) {
+      return sorted;
+    }
+    
+    const results = fuse.search(searchQuery);
+    return results.map(result => result.item);
+  }, [country.bundles, searchQuery, fuse]);
+  
+  // Conditional returns after all hooks
   if (isCountryLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -43,38 +76,6 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
       </div>
     );
   }
-
-  // Configure Fuse.js for fuzzy search
-  const fuse = useMemo(() => {
-    if (!country.bundles) return null;
-    
-    const fuseOptions = {
-      keys: [
-        'bundleName',
-        'duration',
-        'dataAmount',
-        'countryName'
-      ],
-      threshold: 0.3, // Adjust for sensitivity (0 = exact match, 1 = match anything)
-      includeScore: true
-    };
-    
-    return new Fuse(country.bundles, fuseOptions);
-  }, [country.bundles]);
-
-  // Filter bundles based on search query
-  const filteredBundles = useMemo(() => {
-    if (!country.bundles) return [];
-    
-    const sorted = [...country.bundles].sort((a, b) => (a.duration || 0) - (b.duration || 0));
-    
-    if (!searchQuery.trim() || !fuse) {
-      return sorted;
-    }
-    
-    const results = fuse.search(searchQuery);
-    return results.map(result => result.item);
-  }, [country.bundles, searchQuery, fuse]);
 
   return (
     <div className="flex flex-col h-full">
