@@ -25,7 +25,7 @@ type Query {
   countries: [Country!]!
   trips: [Trip!]!
 
-  # Calculate price
+  # Calculate price - Public access, sensitive fields protected at field level
   calculatePrice(numOfDays: Int!, regionId: String!, countryId: String!, paymentMethod: PaymentMethod): PricingBreakdown!
   
   # Batch calculate prices for multiple bundles
@@ -37,8 +37,6 @@ type Query {
   # Get bundles for a specific country
   countryBundles(countryId: String!): [CountryBundle!]!
   
-  # Pricing configurations
-  pricingConfigurations: [PricingConfiguration!]!
   
   # Pricing Rules Engine
   pricingRules(filter: PricingRuleFilter): [PricingRule!]!
@@ -64,7 +62,7 @@ type Query {
   pricingFilters: PricingFilters!
   
   # Bundle data amount aggregation
-  bundleDataAggregation: BundleDataAggregation! @auth(role: "ADMIN")
+  bundleDataAggregation: BundleDataAggregation!
   
   # High demand countries
   highDemandCountries: [String!]! @auth(role: "ADMIN")
@@ -570,32 +568,26 @@ extend type Mutation {
 
 # Pricing Types
 type PricingBreakdown {
-  # Bundle Information
+  # Bundle Information - Public
   bundleName: String!
   countryName: String!
   duration: Int!
-  
-  # Base Costs (configured values)
-  cost: Float!
-  costPlus: Float!
-  totalCost: Float!
-  
-  # Discount Configuration
-  discountRate: Float! # percentage (e.g., 0.30 for 30%)
-  discountValue: Float! # computed: totalCost * discountRate
-  priceAfterDiscount: Float! # computed: totalCost - discountValue
-  
-  # Processing Fees
-  processingRate: Float! # percentage (e.g., 0.045 for 4.5%)
-  processingCost: Float! # computed: priceAfterDiscount * processingRate
-  
-  # Final Revenue & Profit
-  finalRevenue: Float! # computed: priceAfterDiscount - processingCost (what we actually receive)
-  netProfit: Float! # computed: finalRevenue - totalCost (profit after all costs)
-  
-  # Currency
   currency: String!
-  discountPerDay: Float!
+  
+  # Public pricing fields (what users pay)
+  totalCost: Float! # Subtotal before discounts
+  discountValue: Float! # Total discount amount
+  priceAfterDiscount: Float! # Final price users pay
+  
+  # Admin-only business sensitive fields
+  cost: Float! @auth(role: "ADMIN") # Base cost from supplier
+  costPlus: Float! @auth(role: "ADMIN") # Cost + markup
+  discountRate: Float! @auth(role: "ADMIN") # Discount percentage
+  processingRate: Float! @auth(role: "ADMIN") # Processing fee percentage  
+  processingCost: Float! @auth(role: "ADMIN") # Processing fee amount
+  finalRevenue: Float! @auth(role: "ADMIN") # Revenue after processing
+  netProfit: Float! @auth(role: "ADMIN") # Final profit
+  discountPerDay: Float! @auth(role: "ADMIN") # Per-day discount rate
 }
 
 # Configuration level enum to indicate pricing override level
