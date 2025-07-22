@@ -1,6 +1,7 @@
-import React from "react";
-import { ScrollArea } from "@workspace/ui";
-import { Package } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { ScrollArea, InputWithAdornment } from "@workspace/ui";
+import { Package, Search } from "lucide-react";
+import Fuse from "fuse.js";
 import { ConfigurationLevelIndicator } from "../configuration-level-indicator";
 import { BundlesByCountryWithBundles, CountryBundleWithDisplay } from "./types";
 
@@ -19,6 +20,7 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
   selectedBundle,
   onBundleSelect
 }) => {
+  const [searchQuery, setSearchQuery] = useState("");
   const isCountryLoading = loadingCountries.has(country.countryId);
   
   if (isCountryLoading) {
@@ -42,13 +44,61 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
     );
   }
 
-  const sortedBundles = [...country.bundles].sort((a, b) => (a.duration || 0) - (b.duration || 0));
+  // Configure Fuse.js for fuzzy search
+  const fuse = useMemo(() => {
+    if (!country.bundles) return null;
+    
+    const fuseOptions = {
+      keys: [
+        'bundleName',
+        'duration',
+        'dataAmount',
+        'countryName'
+      ],
+      threshold: 0.3, // Adjust for sensitivity (0 = exact match, 1 = match anything)
+      includeScore: true
+    };
+    
+    return new Fuse(country.bundles, fuseOptions);
+  }, [country.bundles]);
+
+  // Filter bundles based on search query
+  const filteredBundles = useMemo(() => {
+    if (!country.bundles) return [];
+    
+    const sorted = [...country.bundles].sort((a, b) => (a.duration || 0) - (b.duration || 0));
+    
+    if (!searchQuery.trim() || !fuse) {
+      return sorted;
+    }
+    
+    const results = fuse.search(searchQuery);
+    return results.map(result => result.item);
+  }, [country.bundles, searchQuery, fuse]);
 
   return (
     <div className="flex flex-col h-full">
+      {/* Search Input */}
+      <div className="p-2 border-b">
+        <InputWithAdornment
+          type="text"
+          placeholder="Search bundles..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          leftAdornment={<Search className="h-4 w-4 text-gray-400" />}
+          className="w-full"
+        />
+      </div>
+      
       <ScrollArea className="flex-1" showOnHover={true}>
         <div className="space-y-1 p-2">
-          {sortedBundles.map((bundle, index) => (
+          {filteredBundles.length === 0 && searchQuery ? (
+            <div className="text-center py-8 text-gray-500">
+              <Package className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+              <p className="text-sm">No bundles found matching "{searchQuery}"</p>
+            </div>
+          ) : (
+            filteredBundles.map((bundle, index) => (
             <div
               key={bundle.bundleName ? `${bundle.bundleName}-${bundle.duration}` : `bundle-${index}`}
               className={`border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
@@ -95,7 +145,8 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
                 </div>
               )}
             </div>
-          ))}
+          ))
+          )}
         </div>
       </ScrollArea>
     </div>

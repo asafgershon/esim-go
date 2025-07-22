@@ -15,15 +15,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
   ScrollArea,
+  InputWithAdornment,
 } from "@workspace/ui";
-import { TrendingUp, MapPin, Package, X } from "lucide-react";
+import { TrendingUp, MapPin, Package, X, Search } from "lucide-react";
 import { toast } from "sonner";
+import Fuse from "fuse.js";
 import { Panel, PanelGroup } from "react-resizable-panels";
 import { AnimatePresence, motion } from "framer-motion";
 import { useHighDemandCountries } from "../../hooks/useHighDemandCountries";
 import { ResizeHandle } from "../resize-handle";
 import { PricingPreviewPanel } from "./PricingPreviewPanel";
 import { BundlesTable } from "./BundlesTable";
+import { CountryCard } from "./CountryCard";
 import { CountryPricingSplitViewProps, BundlesByCountryWithBundles, CountryBundleWithDisplay } from "./types";
 
 export function CountryPricingSplitView({
@@ -36,6 +39,7 @@ export function CountryPricingSplitView({
   const [loadingCountries, setLoadingCountries] = useState<Set<string>>(new Set());
   const [showHighDemandOnly, setShowHighDemandOnly] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
+  const [countrySearchQuery, setCountrySearchQuery] = useState("");
 
   // High demand countries functionality
   const {
@@ -45,16 +49,40 @@ export function CountryPricingSplitView({
     loading: highDemandLoading,
   } = useHighDemandCountries();
 
-  // Filter countries by high demand status if needed
+  // Configure Fuse.js for country search
+  const countryFuse = useMemo(() => {
+    const fuseOptions = {
+      keys: [
+        'countryName',
+        'countryId'
+      ],
+      threshold: 0.3,
+      includeScore: true
+    };
+    
+    return new Fuse(bundlesByCountry, fuseOptions);
+  }, [bundlesByCountry]);
+
+  // Filter countries by high demand status and search query
   const filteredBundlesByCountry = useMemo(() => {
-    if (!showHighDemandOnly) {
-      return bundlesByCountry;
+    let filtered = bundlesByCountry;
+    
+    // Apply high demand filter
+    if (showHighDemandOnly) {
+      filtered = filtered.filter(country => 
+        isHighDemandCountry(country.countryId)
+      );
     }
     
-    return bundlesByCountry.filter(country => 
-      isHighDemandCountry(country.countryId)
-    );
-  }, [bundlesByCountry, showHighDemandOnly, isHighDemandCountry]);
+    // Apply search filter
+    if (countrySearchQuery.trim()) {
+      const searchResults = countryFuse.search(countrySearchQuery);
+      const searchedIds = new Set(searchResults.map(result => result.item.countryId));
+      filtered = filtered.filter(country => searchedIds.has(country.countryId));
+    }
+    
+    return filtered;
+  }, [bundlesByCountry, showHighDemandOnly, isHighDemandCountry, countrySearchQuery, countryFuse]);
 
   // Get selected country data
   const selectedCountryData = useMemo(() => {
@@ -176,88 +204,53 @@ export function CountryPricingSplitView({
               <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
                 <h3 className="text-sm font-medium text-gray-700">Countries ({filteredBundlesByCountry.length})</h3>
               </div>
+              
+              {/* Search Input */}
+              <div className="p-2 border-b bg-gray-50">
+                <InputWithAdornment
+                  type="text"
+                  placeholder="Search countries..."
+                  value={countrySearchQuery}
+                  onChange={(e) => setCountrySearchQuery(e.target.value)}
+                  leftAdornment={<Search className="h-4 w-4 text-gray-400" />}
+                  className="w-full"
+                />
+              </div>
+              
               <ScrollArea className="flex-1 pr-2" showOnHover={true}>
                 <div className="space-y-1 p-2">
               {/* Country Cards */}
-              {filteredBundlesByCountry.map((country) => {
-                const summary = getCountrySummary(country);
-                const isSelected = selectedCountry === country.countryId;
-                const isCountryLoading = loadingCountries.has(country.countryId);
-                
-                return (
-                  <Card 
-                    key={country.countryId} 
-                    className={`group hover:shadow-md transition-all cursor-pointer ${
-                      isSelected 
-                        ? 'lg:ring-2 lg:ring-blue-500 lg:border-blue-500 lg:bg-blue-50' 
-                        : 'hover:border-gray-300'
-                    }`}
-                    onClick={() => handleCountrySelect(country.countryId)}
-                  >
-                    <CardHeader className="p-4">
-                      <CardTitle className="text-base flex items-center justify-between">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="flex items-center gap-2 cursor-default">
-                                <MapPin className="h-4 w-4" />
-                                {country.countryName || country.countryId}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Country: {country.countryName || 'Unknown'}</p>
-                              <p>Code: {country.countryId}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        
-                        {/* High Demand Toggle Button */}
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={`h-6 w-6 p-0 transition-opacity ${
-                                  isHighDemandCountry(country.countryId) 
-                                    ? 'opacity-100' 
-                                    : 'opacity-0 group-hover:opacity-100'
-                                } hover:bg-orange-50`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleCountryHighDemand(country.countryId);
-                                }}
-                                disabled={toggleLoading}
-                              >
-                                <TrendingUp className="h-4 w-4 text-orange-500" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>
-                                {isHighDemandCountry(country.countryId) 
-                                  ? 'Remove from high demand' 
-                                  : 'Mark as high demand'}
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </CardTitle>
-                      <CardDescription className="text-sm">
-                        {isCountryLoading ? (
-                          <span className="flex items-center gap-2">
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                            Loading bundles...
-                          </span>
-                        ) : (
-                          `${summary.count} bundles • ${summary.range}`
-                        )}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                );
-              })}
+              {filteredBundlesByCountry.length === 0 && countrySearchQuery ? (
+                <div className="text-center py-8 text-gray-500">
+                  <MapPin className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                  <p className="text-sm">No countries found matching "{countrySearchQuery}"</p>
+                </div>
+              ) : (
+                filteredBundlesByCountry.map((country) => {
+                  const summary = getCountrySummary(country);
+                  const isSelected = selectedCountry === country.countryId;
+                  const isCountryLoading = loadingCountries.has(country.countryId);
+                  
+                  return (
+                    <CountryCard
+                      key={country.countryId}
+                      country={country}
+                      isSelected={isSelected}
+                      isLoading={isCountryLoading}
+                      isHighDemand={isHighDemandCountry(country.countryId)}
+                      onSelect={() => handleCountrySelect(country.countryId)}
+                      onToggleHighDemand={(e) => {
+                        e.stopPropagation();
+                        toggleCountryHighDemand(country.countryId);
+                      }}
+                      toggleLoading={toggleLoading}
+                      summary={summary}
+                    />
+                  );
+                })
+              )}
 
-              {filteredBundlesByCountry.length === 0 && (
+              {filteredBundlesByCountry.length === 0 && !countrySearchQuery && (
                 <div className="text-center py-8 text-gray-500">
                   <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-4" />
                   <p className="text-lg">No countries available</p>
@@ -395,59 +388,52 @@ export function CountryPricingSplitView({
 
         {/* Mobile Layout - Countries List */}
         <div className="lg:hidden h-full flex flex-col">
+          {/* Mobile Search Input */}
+          <div className="p-4 border-b bg-gray-50">
+            <InputWithAdornment
+              type="text"
+              placeholder="Search countries..."
+              value={countrySearchQuery}
+              onChange={(e) => setCountrySearchQuery(e.target.value)}
+              leftAdornment={<Search className="h-4 w-4 text-gray-400" />}
+              className="w-full"
+            />
+          </div>
+          
           <ScrollArea className="flex-1" showOnHover={true}>
             <div className="space-y-3 p-4">
               {/* Country Cards for Mobile */}
-              {filteredBundlesByCountry.map((country) => {
-                const summary = getCountrySummary(country);
-                const isSelected = selectedCountry === country.countryId;
-                const isCountryLoading = loadingCountries.has(country.countryId);
-                
-                return (
-                  <Card 
-                    key={country.countryId} 
-                    className={`group hover:shadow-md transition-all cursor-pointer ${
-                      isSelected ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50' : 'hover:border-gray-300'
-                    }`}
-                    onClick={() => handleCountrySelect(country.countryId)}
-                  >
-                    <CardHeader className="p-4">
-                      <CardTitle className="text-base flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          {country.countryName || country.countryId}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`h-6 w-6 p-0 transition-opacity ${
-                            isHighDemandCountry(country.countryId) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                          } hover:bg-orange-50`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleCountryHighDemand(country.countryId);
-                          }}
-                          disabled={toggleLoading}
-                        >
-                          <TrendingUp className="h-4 w-4 text-orange-500" />
-                        </Button>
-                      </CardTitle>
-                      <CardDescription className="text-sm">
-                        {isCountryLoading ? (
-                          <span className="flex items-center gap-2">
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                            Loading bundles...
-                          </span>
-                        ) : (
-                          `${summary.count} bundles • ${summary.range}`
-                        )}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                );
-              })}
+              {filteredBundlesByCountry.length === 0 && countrySearchQuery ? (
+                <div className="text-center py-8 text-gray-500">
+                  <MapPin className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                  <p className="text-sm">No countries found matching "{countrySearchQuery}"</p>
+                </div>
+              ) : (
+                filteredBundlesByCountry.map((country) => {
+                  const summary = getCountrySummary(country);
+                  const isSelected = selectedCountry === country.countryId;
+                  const isCountryLoading = loadingCountries.has(country.countryId);
+                  
+                  return (
+                    <CountryCard
+                      key={country.countryId}
+                      country={country}
+                      isSelected={isSelected}
+                      isLoading={isCountryLoading}
+                      isHighDemand={isHighDemandCountry(country.countryId)}
+                      onSelect={() => handleCountrySelect(country.countryId)}
+                      onToggleHighDemand={(e) => {
+                        e.stopPropagation();
+                        toggleCountryHighDemand(country.countryId);
+                      }}
+                      toggleLoading={toggleLoading}
+                      summary={summary}
+                    />
+                  );
+                })
+              )}
 
-              {filteredBundlesByCountry.length === 0 && (
+              {filteredBundlesByCountry.length === 0 && !countrySearchQuery && (
                 <div className="text-center py-8 text-gray-500">
                   <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-4" />
                   <p className="text-lg">No countries available</p>
