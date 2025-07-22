@@ -16,10 +16,81 @@ import { CreditCard, Save, RotateCcw, Loader2, X, Check, AlertTriangle } from "l
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import {
-  GET_CURRENT_PROCESSING_FEE_CONFIGURATION,
-  CREATE_PROCESSING_FEE_CONFIGURATION,
-  UPDATE_PROCESSING_FEE_CONFIGURATION,
+  GET_PRICING_RULES,
+  CREATE_PRICING_RULE,
+  UPDATE_PRICING_RULE,
 } from "../lib/graphql/queries";
+
+// Helper functions to convert between processing fee data and pricing rules
+const convertProcessingFeeToPricingRules = (fees: ProcessingFeeData) => [
+  {
+    type: 'SYSTEM_PROCESSING' as const,
+    name: 'Israeli Card Processing Fee',
+    description: `Processing fee of ${(fees.israeliCardsRate * 100).toFixed(1)}% for Israeli cards`,
+    conditions: [
+      {
+        field: 'paymentMethod',
+        operator: 'EQUALS',
+        value: 'ISRAELI_CARD'
+      }
+    ],
+    actions: [
+      {
+        type: 'SET_PROCESSING_RATE',
+        value: fees.israeliCardsRate * 100, // Convert to percentage
+        metadata: {}
+      }
+    ],
+    priority: 90,
+    isActive: true,
+    isEditable: false
+  },
+  {
+    type: 'SYSTEM_PROCESSING' as const,
+    name: 'Foreign Card Processing Fee',
+    description: `Processing fee of ${(fees.foreignCardsRate * 100).toFixed(1)}% for foreign cards`,
+    conditions: [
+      {
+        field: 'paymentMethod',
+        operator: 'IN',
+        value: ['FOREIGN_CARD', 'VISA', 'MASTERCARD']
+      }
+    ],
+    actions: [
+      {
+        type: 'SET_PROCESSING_RATE',
+        value: fees.foreignCardsRate * 100,
+        metadata: {}
+      }
+    ],
+    priority: 90,
+    isActive: true,
+    isEditable: false
+  }
+];
+
+const convertPricingRulesToProcessingFee = (rules: any[]): ProcessingFeeData => {
+  // Find processing rules
+  const israeliCardRule = rules.find(rule => 
+    rule.type === 'SYSTEM_PROCESSING' && 
+    rule.conditions.some((c: any) => c.field === 'paymentMethod' && c.value === 'ISRAELI_CARD')
+  );
+  
+  const foreignCardRule = rules.find(rule =>
+    rule.type === 'SYSTEM_PROCESSING' &&
+    rule.conditions.some((c: any) => c.field === 'paymentMethod' && Array.isArray(c.value) && c.value.includes('FOREIGN_CARD'))
+  );
+
+  // Extract rates from actions (convert from percentage to decimal)
+  const israeliCardsRate = israeliCardRule?.actions.find((a: any) => a.type === 'SET_PROCESSING_RATE')?.value / 100 || defaultProcessingFees.israeliCardsRate;
+  const foreignCardsRate = foreignCardRule?.actions.find((a: any) => a.type === 'SET_PROCESSING_RATE')?.value / 100 || defaultProcessingFees.foreignCardsRate;
+
+  return {
+    ...defaultProcessingFees,
+    israeliCardsRate,
+    foreignCardsRate,
+  };
+};
 
 interface ProcessingFeeData {
   // Processing fees and rates
@@ -79,42 +150,31 @@ export const ProcessingFeeManagement: React.FC = () => {
   const [pendingChange, setPendingChange] = useState<{ field: keyof ProcessingFeeData; value: string } | null>(null);
 
   // GraphQL queries and mutations
-  const { data: currentConfig, loading: loadingCurrent, refetch } = useQuery(
-    GET_CURRENT_PROCESSING_FEE_CONFIGURATION
+  const { data: pricingRulesData, loading: loadingCurrent, refetch } = useQuery(
+    GET_PRICING_RULES,
+    {
+      variables: {
+        filter: { type: 'SYSTEM_PROCESSING' }
+      }
+    }
   );
 
-  const [createConfiguration] = useMutation(CREATE_PROCESSING_FEE_CONFIGURATION);
-  const [updateConfiguration] = useMutation(UPDATE_PROCESSING_FEE_CONFIGURATION);
+  const [createPricingRule] = useMutation(CREATE_PRICING_RULE);
+  const [updatePricingRule] = useMutation(UPDATE_PRICING_RULE);
 
   // Load current configuration when data is available
   useEffect(() => {
-    if (currentConfig?.currentProcessingFeeConfiguration) {
-      const config = currentConfig.currentProcessingFeeConfiguration;
-      setFees({
-        israeliCardsRate: config.israeliCardsRate,
-        foreignCardsRate: config.foreignCardsRate,
-        premiumDinersRate: config.premiumDinersRate,
-        premiumAmexRate: config.premiumAmexRate,
-        bitPaymentRate: config.bitPaymentRate,
-        threeDSecureFee: config.threeDSecureFee,
-        appleGooglePayFee: config.appleGooglePayFee,
-        fixedFeeNIS: config.fixedFeeNIS,
-        fixedFeeForeign: config.fixedFeeForeign,
-        monthlyFixedCost: config.monthlyFixedCost,
-        bankWithdrawalFee: config.bankWithdrawalFee,
-        monthlyMinimumFee: config.monthlyMinimumFee,
-        setupCost: config.setupCost,
-        chargebackFee: config.chargebackFee,
-        cancellationFee: config.cancellationFee,
-        invoiceServiceFee: config.invoiceServiceFee,
-      });
+    if (pricingRulesData?.pricingRules) {
+      // Convert pricing rules to processing fee data
+      const config = convertPricingRulesToProcessingFee(pricingRulesData.pricingRules);
+      setFees(config);
       setHasChanges(false);
-    } else if (!loadingCurrent && !currentConfig?.currentProcessingFeeConfiguration) {
+    } else if (!loadingCurrent && (!pricingRulesData?.pricingRules || pricingRulesData.pricingRules.length === 0)) {
       // No current configuration exists, use defaults
       setFees(defaultProcessingFees);
       setHasChanges(false);
     }
-  }, [currentConfig, loadingCurrent]);
+  }, [pricingRulesData, loadingCurrent]);
 
   // Helper function to convert percentage from storage format (decimal) to display format (percentage)
   const formatPercentageForDisplay = (decimal: number) => {
@@ -140,64 +200,25 @@ export const ProcessingFeeManagement: React.FC = () => {
   const saveEdit = async (field: keyof ProcessingFeeData, isPercentage: boolean = false) => {
     const numericValue = isPercentage ? parsePercentageFromDisplay(editingValue) : (parseFloat(editingValue) || 0);
     
-    // Check if this is a percentage field that affects pricing
-    const percentageFields = ['israeliCardsRate', 'foreignCardsRate', 'premiumDinersRate', 'premiumAmexRate', 'bitPaymentRate'];
-    if (percentageFields.includes(field)) {
+    // Check if this is a percentage field that affects pricing (only Israeli and Foreign cards use the rule engine)
+    const pricingFields = ['israeliCardsRate', 'foreignCardsRate'];
+    if (pricingFields.includes(field)) {
       setPendingChange({ field, value: editingValue });
       setShowAlert(true);
       return;
     }
 
-    try {
-      const updatedFees = {
-        ...fees,
-        [field]: numericValue,
-      };
-
-      const input = {
-        israeliCardsRate: updatedFees.israeliCardsRate,
-        foreignCardsRate: updatedFees.foreignCardsRate,
-        premiumDinersRate: updatedFees.premiumDinersRate,
-        premiumAmexRate: updatedFees.premiumAmexRate,
-        bitPaymentRate: updatedFees.bitPaymentRate,
-        threeDSecureFee: updatedFees.threeDSecureFee,
-        appleGooglePayFee: updatedFees.appleGooglePayFee,
-        fixedFeeNIS: updatedFees.fixedFeeNIS,
-        fixedFeeForeign: updatedFees.fixedFeeForeign,
-        monthlyFixedCost: updatedFees.monthlyFixedCost,
-        bankWithdrawalFee: updatedFees.bankWithdrawalFee,
-        monthlyMinimumFee: updatedFees.monthlyMinimumFee,
-        setupCost: updatedFees.setupCost,
-        chargebackFee: updatedFees.chargebackFee,
-        cancellationFee: updatedFees.cancellationFee,
-        invoiceServiceFee: updatedFees.invoiceServiceFee,
-        effectiveFrom: new Date().toISOString(),
-        effectiveTo: null,
-        notes: `Updated ${field} on ${new Date().toLocaleDateString('en-US')}`,
-      };
-
-      if (currentConfig?.currentProcessingFeeConfiguration) {
-        await updateConfiguration({
-          variables: {
-            id: currentConfig.currentProcessingFeeConfiguration.id,
-            input,
-          },
-        });
-      } else {
-        await createConfiguration({
-          variables: { input },
-        });
-      }
-
-      await refetch();
-      setFees(updatedFees);
-      setEditingField(null);
-      setEditingValue("");
-      toast.success("Configuration updated successfully");
-    } catch (error) {
-      console.error("Error saving configuration:", error);
-      toast.error("Error updating configuration");
-    }
+    // For non-pricing fields, just update local state (these are informational only)
+    const updatedFees = {
+      ...fees,
+      [field]: numericValue,
+    };
+    
+    setFees(updatedFees);
+    setEditingField(null);
+    setEditingValue("");
+    setHasChanges(true);
+    toast.success("Field updated successfully");
   };
 
   const confirmPercentageChange = async () => {
@@ -211,39 +232,42 @@ export const ProcessingFeeManagement: React.FC = () => {
         [pendingChange.field]: numericValue,
       };
 
-      const input = {
-        israeliCardsRate: updatedFees.israeliCardsRate,
-        foreignCardsRate: updatedFees.foreignCardsRate,
-        premiumDinersRate: updatedFees.premiumDinersRate,
-        premiumAmexRate: updatedFees.premiumAmexRate,
-        bitPaymentRate: updatedFees.bitPaymentRate,
-        threeDSecureFee: updatedFees.threeDSecureFee,
-        appleGooglePayFee: updatedFees.appleGooglePayFee,
-        fixedFeeNIS: updatedFees.fixedFeeNIS,
-        fixedFeeForeign: updatedFees.fixedFeeForeign,
-        monthlyFixedCost: updatedFees.monthlyFixedCost,
-        bankWithdrawalFee: updatedFees.bankWithdrawalFee,
-        monthlyMinimumFee: updatedFees.monthlyMinimumFee,
-        setupCost: updatedFees.setupCost,
-        chargebackFee: updatedFees.chargebackFee,
-        cancellationFee: updatedFees.cancellationFee,
-        invoiceServiceFee: updatedFees.invoiceServiceFee,
-        effectiveFrom: new Date().toISOString(),
-        effectiveTo: null,
-        notes: `Updated ${pendingChange.field} on ${new Date().toLocaleDateString('en-US')}`,
-      };
+      // Convert to pricing rules and update them
+      const rules = convertProcessingFeeToPricingRules(updatedFees);
+      const existingRules = pricingRulesData?.pricingRules || [];
 
-      if (currentConfig?.currentProcessingFeeConfiguration) {
-        await updateConfiguration({
-          variables: {
-            id: currentConfig.currentProcessingFeeConfiguration.id,
-            input,
-          },
-        });
-      } else {
-        await createConfiguration({
-          variables: { input },
-        });
+      // Update or create rules for Israeli and Foreign cards
+      for (const rule of rules) {
+        const isIsraeliCard = rule.name.includes('Israeli');
+        const existingRule = existingRules.find((r: any) => 
+          r.type === 'SYSTEM_PROCESSING' && 
+          (isIsraeliCard 
+            ? r.conditions.some((c: any) => c.field === 'paymentMethod' && c.value === 'ISRAELI_CARD')
+            : r.conditions.some((c: any) => c.field === 'paymentMethod' && Array.isArray(c.value) && c.value.includes('FOREIGN_CARD'))
+          )
+        );
+
+        if (existingRule) {
+          // Update existing rule - only pass fields allowed in UpdatePricingRuleInput
+          await updatePricingRule({
+            variables: {
+              id: existingRule.id,
+              input: {
+                name: rule.name,
+                description: rule.description,
+                conditions: rule.conditions,
+                actions: rule.actions,
+                priority: rule.priority,
+                isActive: rule.isActive,
+              },
+            },
+          });
+        } else {
+          // Create new rule - use full CreatePricingRuleInput
+          await createPricingRule({
+            variables: { input: rule },
+          });
+        }
       }
 
       await refetch();
@@ -252,7 +276,7 @@ export const ProcessingFeeManagement: React.FC = () => {
       setEditingValue("");
       setShowAlert(false);
       setPendingChange(null);
-      toast.success("Pricing configuration updated successfully");
+      toast.success("Processing rates updated successfully");
     } catch (error) {
       console.error("Error saving configuration:", error);
       toast.error("Error updating configuration");

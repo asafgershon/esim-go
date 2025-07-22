@@ -467,6 +467,100 @@ export const CALCULATE_BATCH_PRICING = gql(`
   }
 `)
 
+// Enhanced rule-based pricing queries
+export const CALCULATE_PRICE_WITH_RULES = gql(`
+  query CalculatePriceWithRules($input: CalculatePriceInput!) {
+    calculatePriceWithRules(input: $input) {
+      baseCost
+      markup
+      subtotal
+      discounts {
+        ruleName
+        amount
+        type
+      }
+      totalDiscount
+      priceAfterDiscount
+      processingFee
+      processingRate
+      finalPrice
+      finalRevenue
+      revenueAfterProcessing
+      profit
+      maxRecommendedPrice
+      maxDiscountPercentage
+      appliedRules {
+        id
+        name
+        type
+        impact
+      }
+    }
+  }
+`)
+
+export const CALCULATE_BATCH_PRICING_WITH_RULES = gql(`
+  query CalculateBatchPricingWithRules($requests: [CalculatePriceInput!]!) {
+    calculateBatchPricing(requests: $requests) {
+      baseCost
+      markup
+      subtotal
+      discounts {
+        ruleName
+        amount
+        type
+      }
+      totalDiscount
+      priceAfterDiscount
+      processingFee
+      processingRate
+      finalPrice
+      finalRevenue
+      revenueAfterProcessing
+      profit
+      maxRecommendedPrice
+      maxDiscountPercentage
+      appliedRules {
+        id
+        name
+        type
+        impact
+      }
+    }
+  }
+`)
+
+export const SIMULATE_PRICING_RULE = gql(`
+  query SimulatePricingRule($rule: CreatePricingRuleInput!, $testContext: TestPricingContext!) {
+    simulatePricingRule(rule: $rule, testContext: $testContext) {
+      baseCost
+      markup
+      subtotal
+      discounts {
+        ruleName
+        amount
+        type
+      }
+      totalDiscount
+      priceAfterDiscount
+      processingFee
+      processingRate
+      finalPrice
+      finalRevenue
+      revenueAfterProcessing
+      profit
+      maxRecommendedPrice
+      maxDiscountPercentage
+      appliedRules {
+        id
+        name
+        type
+        impact
+      }
+    }
+  }
+`)
+
 export const DELETE_USER = gql(`
   mutation DeleteUser($userId: ID!) {
     deleteUser(userId: $userId) {
@@ -805,6 +899,34 @@ export const CREATE_PRICING_CONFIGURATION = gql(`
         createdAt
         updatedAt
       }
+    }
+  }
+`)
+
+export const GET_BUNDLE_DATA_AGGREGATION = gql(`
+  query GetBundleDataAggregation {
+    bundleDataAggregation {
+      total
+      unlimited
+      byDataAmount {
+        dataAmount
+        count
+        percentage
+      }
+      byDuration {
+        duration
+        count
+        percentage
+        category
+      }
+      byBundleGroup {
+        bundleGroup
+        total
+        unlimited
+        limited
+        averageDataAmount
+      }
+      lastUpdated
     }
   }
 `)

@@ -122,14 +122,12 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
   async update(id: string, input: UpdatePricingRuleInput): Promise<PricingRule> {
     this.logger.info('Updating pricing rule', { id, input });
     
-    // Check if rule exists and is editable
+    // Check if rule exists
     const existing = await this.findById(id);
     if (!existing) {
       throw new Error(`Pricing rule ${id} not found`);
     }
-    if (!existing.isEditable) {
-      throw new Error(`Pricing rule ${id} is not editable`);
-    }
+    // Allow admins to edit system rules - UI will show warnings
 
     const update: PricingRuleUpdate = {};
     
@@ -167,14 +165,12 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
   async delete(id: string): Promise<boolean> {
     this.logger.info('Deleting pricing rule', { id });
     
-    // Check if rule exists and is editable
+    // Check if rule exists
     const existing = await this.findById(id);
     if (!existing) {
       return false;
     }
-    if (!existing.isEditable) {
-      throw new Error(`Pricing rule ${id} is not editable and cannot be deleted`);
-    }
+    // Allow admins to delete system rules - UI will show warnings
 
     const { error } = await this.supabase
       .from('pricing_rules')

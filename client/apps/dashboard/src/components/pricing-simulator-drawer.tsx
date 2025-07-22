@@ -1,4 +1,3 @@
-import { useLazyQuery } from '@apollo/client';
 import {
   Badge,
   Button,
@@ -16,11 +15,14 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
 } from '@workspace/ui';
 import React, { useState, useEffect } from 'react';
-import { Calculator, Globe, Clock } from 'lucide-react';
-import { CALCULATE_BATCH_PRICING } from '../lib/graphql/queries';
+import { Calculator, Globe, Clock, ChevronDown, ChevronUp, AlertTriangle, CheckCircle, TrendingUp, Settings } from 'lucide-react';
 import { Country } from '@/__generated__/graphql';
+import { usePricingWithRules, PricingWithRules, AppliedRule } from '../hooks/usePricingWithRules';
 
 interface PricingSimulatorDrawerProps {
   isOpen: boolean;
@@ -28,37 +30,21 @@ interface PricingSimulatorDrawerProps {
   countries: Country[];
 }
 
-interface SimulationResult {
-  bundleName: string;
-  countryName: string;
-  duration: number;
-  cost: number;
-  costPlus: number;
-  totalCost: number;
-  discountRate: number;
-  discountPerDay?: number; // Discount per unused day
-  discountValue: number;
-  priceAfterDiscount: number;
-  processingRate: number;
-  processingCost: number;
-  revenueAfterProcessing: number;
-  finalRevenue: number;
-  currency: string;
-}
-
 export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
   isOpen,
   onClose,
   countries,
 }) => {
-  const [calculateBatchPricing, { loading }] = useLazyQuery(CALCULATE_BATCH_PRICING);
+  const { calculateSinglePrice, loading, error: hookError } = usePricingWithRules();
   
   // Simulation state
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [simulatorDays, setSimulatorDays] = useState(7);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('ISRAELI_CARD');
-  const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const [simulationResult, setSimulationResult] = useState<PricingWithRules | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showRuleDetails, setShowRuleDetails] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(true);
   
   // Available bundle durations (common eSIM Go durations)
   const availableBundles = [1, 3, 5, 7, 10, 14, 21, 30];
@@ -109,64 +95,43 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
     }
 
     setError(null);
+    setSimulationResult(null);
     
     try {
       const bestBundle = getBestBundle(simulatorDays);
       
-      const result = await calculateBatchPricing({
-        variables: {
-          inputs: [{
-            numOfDays: bestBundle,
-            regionId: country.region,
-            countryId: selectedCountry,
-            paymentMethod: selectedPaymentMethod,
-          }],
-        },
+      const result = await calculateSinglePrice({
+        numOfDays: bestBundle,
+        regionId: country.region,
+        countryId: selectedCountry,
+        paymentMethod: selectedPaymentMethod,
       });
 
-      if (result.data?.calculatePrices && result.data.calculatePrices.length > 0) {
-        const pricingData = result.data.calculatePrices[0];
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      if (result.pricing) {
+        // Add context information for display
+        const enhancedResult = {
+          ...result,
+          context: {
+            requestedDays: simulatorDays,
+            actualBundleDays: bestBundle,
+            bundleName: `Unlimited Essential ${bestBundle} days`,
+            countryName: country.name,
+            unusedDays: Math.max(0, bestBundle - simulatorDays)
+          }
+        };
         
-        // Apply unused days discount if applicable
-        const unusedDays = Math.max(0, bestBundle - simulatorDays);
-        const discountPerDay = pricingData.discountPerDay || 0.1; // Default to 10% if not provided
-        const unusedDaysDiscount = unusedDays > 0 ? unusedDays * discountPerDay : 0;
-        const basePrice = pricingData.totalCost;
-        const priceAfterUnusedDiscount = basePrice * (1 - unusedDaysDiscount);
-        const finalPrice = priceAfterUnusedDiscount * (1 - pricingData.discountRate);
-        
-        setSimulationResult({
-          ...pricingData,
-          bundleName: `UL essential ${bestBundle} days`,
-          countryName: country.name,
-          duration: bestBundle,
-          discountPerDay,
-          priceAfterDiscount: finalPrice,
-          discountValue: priceAfterUnusedDiscount * pricingData.discountRate,
-          processingCost: finalPrice * pricingData.processingRate,
-          revenueAfterProcessing: finalPrice * (1 - pricingData.processingRate),
-          finalRevenue: finalPrice * (1 - pricingData.processingRate) - pricingData.cost - pricingData.costPlus,
-        });
+        setSimulationResult(enhancedResult);
       } else {
         setError('No pricing data available for this country/duration');
       }
     } catch (error: any) {
       console.error('Simulation error:', error);
-      
-      // Handle specific insufficient profit margin error
-      if (error.graphQLErrors && error.graphQLErrors.length > 0) {
-        const gqlError = error.graphQLErrors[0];
-        if (gqlError.extensions?.code === 'INSUFFICIENT_PROFIT_MARGIN') {
-          const { calculatedPrice, minimumPrice, profitShortfall } = gqlError.extensions;
-          setError(
-            `⚠️ Configuration Error: Current discount settings would result in $${profitShortfall?.toFixed(2)} loss. ` +
-            `Minimum profitable price: $${minimumPrice?.toFixed(2)} (calculated: $${calculatedPrice?.toFixed(2)})`
-          );
-          return;
-        }
-      }
-      
-      setError('Failed to calculate pricing');
+      setError(error.message || 'Failed to calculate pricing');
     }
   };
 
@@ -319,29 +284,74 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
               </div>
             )}
 
-            {simulationResult && (
+            {simulationResult && simulationResult.pricing && (
               <div className="space-y-4">
                 {/* Bundle Information */}
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h4 className="text-sm font-medium text-blue-900 mb-2">Bundle Match</h4>
                   <div className="text-sm text-blue-800 space-y-1">
-                    <p><strong>Requested:</strong> {simulatorDays} days</p>
-                    <p><strong>Bundle Used:</strong> {simulationResult.bundleName}</p>
-                    <p><strong>Country:</strong> {simulationResult.countryName}</p>
-                    {simulationResult.duration > simulatorDays && (
-                      <div>
-                        <p className="text-orange-600">
-                          <strong>Unused Days:</strong> {simulationResult.duration - simulatorDays} days
-                        </p>
-                        <p className="text-sm text-orange-700">
-                          <strong>Discount Rate:</strong> {formatPercentage(simulationResult.discountPerDay || 0.1)} per day
-                          {(simulationResult.discountPerDay && simulationResult.discountPerDay !== 0.1) && 
-                            <Badge variant="secondary" className="ml-2 text-xs bg-orange-100 text-orange-800">Custom</Badge>
-                          }
-                        </p>
-                      </div>
+                    <p><strong>Requested:</strong> {simulationResult.context?.requestedDays} days</p>
+                    <p><strong>Bundle Used:</strong> {simulationResult.context?.bundleName}</p>
+                    <p><strong>Country:</strong> {simulationResult.context?.countryName}</p>
+                    {simulationResult.context?.unusedDays && simulationResult.context.unusedDays > 0 && (
+                      <p className="text-orange-600">
+                        <strong>Unused Days:</strong> {simulationResult.context.unusedDays} days
+                      </p>
                     )}
                   </div>
+                </div>
+
+                {/* Applied Rules Section */}
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <Collapsible open={showRuleDetails} onOpenChange={setShowRuleDetails}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="w-full justify-between p-0">
+                        <h4 className="text-sm font-medium text-purple-900 flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          Applied Rules ({simulationResult.appliedRules.length})
+                        </h4>
+                        {showRuleDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-3">
+                      <div className="space-y-2">
+                        {simulationResult.ruleBreakdown.systemRules.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-purple-800 mb-1">System Rules:</p>
+                            {simulationResult.ruleBreakdown.systemRules.map((rule: AppliedRule) => (
+                              <div key={rule.id} className="flex justify-between text-sm text-purple-700 bg-white/50 px-2 py-1 rounded">
+                                <span>{rule.name}</span>
+                                <span className={rule.impact >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {rule.impact >= 0 ? '+' : ''}{formatCurrency(rule.impact)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {simulationResult.ruleBreakdown.businessRules.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-purple-800 mb-1">Business Rules:</p>
+                            {simulationResult.ruleBreakdown.businessRules.map((rule: AppliedRule) => (
+                              <div key={rule.id} className="flex justify-between text-sm text-purple-700 bg-white/50 px-2 py-1 rounded">
+                                <span>{rule.name}</span>
+                                <span className={rule.impact >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {rule.impact >= 0 ? '+' : ''}{formatCurrency(rule.impact)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="border-t pt-2">
+                          <div className="flex justify-between text-sm font-medium text-purple-900">
+                            <span>Total Rule Impact:</span>
+                            <span className={simulationResult.ruleBreakdown.totalImpact >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {simulationResult.ruleBreakdown.totalImpact >= 0 ? '+' : ''}{formatCurrency(simulationResult.ruleBreakdown.totalImpact)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
 
                 {/* Pricing Breakdown */}
@@ -349,76 +359,124 @@ export const PricingSimulatorDrawer: React.FC<PricingSimulatorDrawerProps> = ({
                   <h4 className="font-medium mb-3">Pricing Breakdown</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span>eSIM Go Cost:</span>
-                      <span>{formatCurrency(simulationResult.cost)}</span>
+                      <span>Base Cost:</span>
+                      <span>{formatCurrency(simulationResult.pricing.baseCost)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Our Markup:</span>
-                      <span>{formatCurrency(simulationResult.costPlus)}</span>
+                      <span>Markup:</span>
+                      <span>{formatCurrency(simulationResult.pricing.markup)}</span>
                     </div>
                     <div className="flex justify-between font-medium border-t pt-2">
-                      <span>Total Cost:</span>
-                      <span>{formatCurrency(simulationResult.totalCost)}</span>
+                      <span>Subtotal:</span>
+                      <span>{formatCurrency(simulationResult.pricing.subtotal)}</span>
                     </div>
                     
-                    {simulationResult.duration > simulatorDays && (
-                      <div className="flex justify-between text-orange-600">
-                        <span>Unused Days Discount ({simulationResult.duration - simulatorDays} days × {formatPercentage(simulationResult.discountPerDay || 0.1)}/day):</span>
-                        <span>-{formatCurrency(simulationResult.totalCost * (simulationResult.duration - simulatorDays) * (simulationResult.discountPerDay || 0.1))}</span>
+                    {simulationResult.pricing.discounts.map((discount, index) => (
+                      <div key={index} className="flex justify-between text-green-600">
+                        <span>{discount.ruleName} ({discount.type}):</span>
+                        <span>-{formatCurrency(discount.amount)}</span>
                       </div>
-                    )}
-                    
-                    <div className="flex justify-between">
-                      <span>Customer Discount ({formatPercentage(simulationResult.discountRate)}):</span>
-                      <span className="text-green-600">-{formatCurrency(simulationResult.discountValue)}</span>
-                    </div>
+                    ))}
                     
                     <Separator className="my-2" />
                     
                     <div className="flex justify-between font-medium text-lg">
-                      <span>Final Price:</span>
+                      <span>Price After Discount:</span>
                       <span className="text-blue-600">
-                        {formatCurrency(simulationResult.priceAfterDiscount)}
+                        {formatCurrency(simulationResult.pricing.priceAfterDiscount)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm text-gray-600">
                       <span>Price per day:</span>
                       <span>
-                        {formatCurrency(simulationResult.priceAfterDiscount / simulatorDays)}
+                        {formatCurrency(simulationResult.pricing.priceAfterDiscount / (simulationResult.context?.requestedDays || 1))}
                       </span>
                     </div>
                     
                     <Separator className="my-2" />
                     
                     <div className="flex justify-between">
-                      <span>Processing Fee ({formatPercentage(simulationResult.processingRate)}):</span>
-                      <span className="text-yellow-600">-{formatCurrency(simulationResult.processingCost)}</span>
+                      <span>Processing Fee ({formatPercentage(simulationResult.pricing.processingRate)}):</span>
+                      <span className="text-yellow-600">-{formatCurrency(simulationResult.pricing.processingFee)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Revenue After Processing:</span>
-                      <span>{formatCurrency(simulationResult.revenueAfterProcessing)}</span>
+                      <span>{formatCurrency(simulationResult.pricing.revenueAfterProcessing)}</span>
                     </div>
                     <div className="flex justify-between font-medium border-t pt-2">
-                      <span>Final Revenue (Profit):</span>
-                      <span className={`${simulationResult.finalRevenue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(simulationResult.finalRevenue)}
+                      <span>Final Profit:</span>
+                      <span className={`${simulationResult.pricing.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(simulationResult.pricing.profit)}
                       </span>
                     </div>
                   </div>
                 </div>
 
+                {/* Recommendations Section */}
+                {simulationResult.recommendations.length > 0 && (
+                  <div className="bg-yellow-50 p-4 rounded-lg">
+                    <Collapsible open={showRecommendations} onOpenChange={setShowRecommendations}>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-between p-0">
+                          <h4 className="text-sm font-medium text-yellow-900 flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4" />
+                            Smart Recommendations ({simulationResult.recommendations.length})
+                          </h4>
+                          {showRecommendations ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-3">
+                        <div className="space-y-3">
+                          {simulationResult.recommendations.map((rec, index) => (
+                            <div key={index} className="bg-white/70 p-3 rounded border-l-4 border-yellow-400">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-2">
+                                  {rec.confidence === 'high' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                                  {rec.confidence === 'medium' && <AlertTriangle className="h-4 w-4 text-yellow-500" />}
+                                  {rec.confidence === 'low' && <AlertTriangle className="h-4 w-4 text-gray-500" />}
+                                  <span className="text-sm font-medium text-yellow-900">{rec.title}</span>
+                                </div>
+                                <Badge variant="outline" className={`text-xs ${
+                                  rec.confidence === 'high' ? 'bg-green-100 text-green-800' :
+                                  rec.confidence === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {rec.confidence}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-yellow-800 mt-1">{rec.description}</p>
+                              {rec.action && (
+                                <p className="text-xs text-yellow-700 mt-2 italic">→ {rec.action}</p>
+                              )}
+                              <p className="text-xs font-medium text-green-700 mt-1">
+                                Potential saving: {formatCurrency(rec.potentialSaving)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+                )}
+
                 {/* Profit Analysis */}
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2 text-green-900">Profit Analysis</h4>
-                  <div className="text-sm text-green-800">
+                <div className={`${simulationResult.pricing.profit >= 0 ? 'bg-green-50' : 'bg-red-50'} p-4 rounded-lg`}>
+                  <h4 className={`font-medium mb-2 ${simulationResult.pricing.profit >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                    Profit Analysis
+                  </h4>
+                  <div className={`text-sm ${simulationResult.pricing.profit >= 0 ? 'text-green-800' : 'text-red-800'}`}>
                     <p>
                       <strong>Profit Margin:</strong> {' '}
-                      {simulationResult.finalRevenue >= 0 ? '+' : ''}
-                      {((simulationResult.finalRevenue / simulationResult.totalCost) * 100).toFixed(1)}%
+                      {simulationResult.pricing.profit >= 0 ? '+' : ''}
+                      {((simulationResult.pricing.profit / simulationResult.pricing.subtotal) * 100).toFixed(1)}%
                     </p>
                     <p>
-                      <strong>Break-even Price:</strong> {' '}
-                      {formatCurrency(simulationResult.cost + simulationResult.costPlus + simulationResult.processingCost + 0.01)}
+                      <strong>Max Recommended Price:</strong> {' '}
+                      {formatCurrency(simulationResult.pricing.maxRecommendedPrice)}
+                    </p>
+                    <p>
+                      <strong>Max Discount Percentage:</strong> {' '}
+                      {(simulationResult.pricing.maxDiscountPercentage * 100).toFixed(1)}%
                     </p>
                   </div>
                 </div>

@@ -29,10 +29,10 @@ import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
-  GET_MARKUP_CONFIG,
-  CREATE_MARKUP_CONFIG,
-  UPDATE_MARKUP_CONFIG,
-  DELETE_MARKUP_CONFIG,
+  GET_PRICING_RULES,
+  CREATE_PRICING_RULE,
+  UPDATE_PRICING_RULE,
+  DELETE_PRICING_RULE,
   GET_BUNDLE_GROUPS,
 } from "../lib/graphql/queries";
 import { useMobile } from "../hooks/useMobile";
@@ -44,6 +44,58 @@ interface MarkupConfigItem {
   markupAmount: number;
   isNew?: boolean;
 }
+
+// Helper functions to convert between markup configs and pricing rules
+const convertMarkupConfigToPricingRule = (config: MarkupConfigItem) => ({
+  type: 'SYSTEM_MARKUP' as const,
+  name: `${config.bundleGroup} - ${config.durationDays} days`,
+  description: `Fixed markup of $${config.markupAmount} for ${config.bundleGroup} ${config.durationDays}-day bundles`,
+  conditions: [
+    {
+      field: 'bundleGroup',
+      operator: 'EQUALS',
+      value: config.bundleGroup
+    },
+    {
+      field: 'duration',
+      operator: 'EQUALS', 
+      value: config.durationDays
+    }
+  ],
+  actions: [
+    {
+      type: 'ADD_MARKUP',
+      value: config.markupAmount,
+      metadata: {}
+    }
+  ],
+  priority: 100, // High priority for system rules
+  isActive: true,
+  isEditable: false // System markup rules are not editable through UI
+});
+
+const convertPricingRuleToMarkupConfig = (rule: any): MarkupConfigItem | null => {
+  // Only process SYSTEM_MARKUP rules
+  if (rule.type !== 'SYSTEM_MARKUP') return null;
+  
+  // Extract bundle group and duration from conditions
+  const bundleGroupCondition = rule.conditions.find((c: any) => c.field === 'bundleGroup');
+  const durationCondition = rule.conditions.find((c: any) => c.field === 'duration');
+  
+  // Extract markup amount from actions
+  const markupAction = rule.actions.find((a: any) => a.type === 'ADD_MARKUP');
+  
+  if (!bundleGroupCondition || !durationCondition || !markupAction) {
+    return null;
+  }
+  
+  return {
+    id: rule.id,
+    bundleGroup: bundleGroupCondition.value,
+    durationDays: durationCondition.value,
+    markupAmount: markupAction.value,
+  };
+};
 
 // Zod schema for validation
 const markupConfigSchema = z.object({
@@ -122,35 +174,39 @@ export const MarkupTableManagement: React.FC = () => {
   const [validationError, setValidationError] = useState<string>("");
 
   // GraphQL queries and mutations
-  const { data: currentConfig, loading: loadingCurrent, refetch } = useQuery(
-    GET_MARKUP_CONFIG
+  const { data: pricingRulesData, loading: loadingCurrent, refetch } = useQuery(
+    GET_PRICING_RULES,
+    {
+      variables: {
+        filter: { type: 'SYSTEM_MARKUP' }
+      }
+    }
   );
   
   const { data: bundleGroupsData, loading: loadingBundleGroups } = useQuery(
     GET_BUNDLE_GROUPS
   );
 
-  const [createMarkupConfig] = useMutation(CREATE_MARKUP_CONFIG);
-  const [updateMarkupConfig] = useMutation(UPDATE_MARKUP_CONFIG);
-  const [deleteMarkupConfig] = useMutation(DELETE_MARKUP_CONFIG);
+  const [createPricingRule] = useMutation(CREATE_PRICING_RULE);
+  const [updatePricingRule] = useMutation(UPDATE_PRICING_RULE);
+  const [deletePricingRule] = useMutation(DELETE_PRICING_RULE);
 
   // Load current configuration when data is available
   useEffect(() => {
-    if (currentConfig?.markupConfig) {
-      const config = currentConfig.markupConfig.map((item: any) => ({
-        id: item.id,
-        bundleGroup: item.bundleGroup,
-        durationDays: item.durationDays,
-        markupAmount: item.markupAmount,
-      }));
+    if (pricingRulesData?.pricingRules) {
+      // Convert pricing rules to markup config items
+      const config = pricingRulesData.pricingRules
+        .map((rule: any) => convertPricingRuleToMarkupConfig(rule))
+        .filter((config: MarkupConfigItem | null): config is MarkupConfigItem => config !== null);
+      
       setMarkupConfig(config);
       setHasChanges(false);
-    } else if (!loadingCurrent && !currentConfig?.markupConfig?.length) {
+    } else if (!loadingCurrent && (!pricingRulesData?.pricingRules || pricingRulesData.pricingRules.length === 0)) {
       // No current configuration exists, use defaults
       setMarkupConfig(defaultMarkupConfig);
       setHasChanges(false);
     }
-  }, [currentConfig, loadingCurrent]);
+  }, [pricingRulesData, loadingCurrent]);
 
   // Helper function to format currency with proper decimals
   const formatCurrencyForDisplay = (amount: number) => {
@@ -163,42 +219,54 @@ export const MarkupTableManagement: React.FC = () => {
     try {
       // Filter items for this specific bundle group
       const groupItems = markupConfig.filter(item => item.bundleGroup === bundleGroup);
-      const originalConfigs = currentConfig?.markupConfig || [];
+      const originalRules = pricingRulesData?.pricingRules || [];
       const errors: string[] = [];
       
       for (const item of groupItems) {
-        const input = {
-          bundleGroup: item.bundleGroup,
-          durationDays: item.durationDays,
-          markupAmount: item.markupAmount,
-        };
+        const ruleInput = convertMarkupConfigToPricingRule(item);
 
         try {
           if (item.id && !item.isNew) {
-            // Update existing configuration
-            await updateMarkupConfig({
+            // Update existing pricing rule - only pass fields allowed in UpdatePricingRuleInput
+            await updatePricingRule({
               variables: {
                 id: item.id,
-                input,
+                input: {
+                  name: ruleInput.name,
+                  description: ruleInput.description,
+                  conditions: ruleInput.conditions,
+                  actions: ruleInput.actions,
+                  priority: ruleInput.priority,
+                  isActive: ruleInput.isActive,
+                },
               },
             });
           } else {
-            // Check if configuration already exists before creating
-            const existingConfig = originalConfigs.find((config: any) => 
-              config.bundleGroup === item.bundleGroup && 
-              config.durationDays === item.durationDays
-            );
+            // Check if rule already exists before creating
+            const existingRule = originalRules.find((rule: any) => {
+              const bundleGroupCond = rule.conditions.find((c: any) => c.field === 'bundleGroup');
+              const durationCond = rule.conditions.find((c: any) => c.field === 'duration');
+              return bundleGroupCond?.value === item.bundleGroup && 
+                     durationCond?.value === item.durationDays;
+            });
 
-            if (!existingConfig) {
-              await createMarkupConfig({
-                variables: { input },
+            if (!existingRule) {
+              await createPricingRule({
+                variables: { input: ruleInput },
               });
             } else {
-              // If it exists, update it instead
-              await updateMarkupConfig({
+              // If it exists, update it instead - only pass fields allowed in UpdatePricingRuleInput
+              await updatePricingRule({
                 variables: {
-                  id: existingConfig.id,
-                  input,
+                  id: existingRule.id,
+                  input: {
+                    name: ruleInput.name,
+                    description: ruleInput.description,
+                    conditions: ruleInput.conditions,
+                    actions: ruleInput.actions,
+                    priority: ruleInput.priority,
+                    isActive: ruleInput.isActive,
+                  },
                 },
               });
             }
@@ -210,16 +278,19 @@ export const MarkupTableManagement: React.FC = () => {
       }
 
       // Handle deletions for this group
-      if (currentConfig?.markupConfig) {
+      if (pricingRulesData?.pricingRules) {
         const currentGroupIds = groupItems.filter(item => item.id).map(item => item.id);
-        const originalGroupItems = currentConfig.markupConfig.filter((item: any) => item.bundleGroup === bundleGroup);
-        const idsToDelete = originalGroupItems
-          .map((item: any) => item.id)
+        const originalGroupRules = pricingRulesData.pricingRules.filter((rule: any) => {
+          const bundleGroupCond = rule.conditions.find((c: any) => c.field === 'bundleGroup');
+          return bundleGroupCond?.value === bundleGroup;
+        });
+        const idsToDelete = originalGroupRules
+          .map((rule: any) => rule.id)
           .filter((id: string) => !currentGroupIds.includes(id));
         
         for (const id of idsToDelete) {
           try {
-            await deleteMarkupConfig({
+            await deletePricingRule({
               variables: { id },
             });
           } catch (error: any) {
@@ -248,16 +319,13 @@ export const MarkupTableManagement: React.FC = () => {
 
   // Discard changes for specific bundle group
   const handleDrawerDiscard = (bundleGroup: string) => {
-    if (currentConfig?.markupConfig) {
-      // Restore original configuration for this group
-      const originalGroupItems = currentConfig.markupConfig
-        .filter((item: any) => item.bundleGroup === bundleGroup)
-        .map((item: any) => ({
-          id: item.id,
-          bundleGroup: item.bundleGroup,
-          durationDays: item.durationDays,
-          markupAmount: item.markupAmount,
-        }));
+    if (pricingRulesData?.pricingRules) {
+      // Restore original configuration for this group from pricing rules
+      const originalGroupItems = pricingRulesData.pricingRules
+        .map((rule: any) => convertPricingRuleToMarkupConfig(rule))
+        .filter((config: MarkupConfigItem | null): config is MarkupConfigItem => 
+          config !== null && config.bundleGroup === bundleGroup
+        );
       
       // Remove current group items and add back original ones
       const otherGroupItems = markupConfig.filter(item => item.bundleGroup !== bundleGroup);

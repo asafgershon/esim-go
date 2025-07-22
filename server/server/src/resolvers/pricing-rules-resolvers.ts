@@ -253,11 +253,7 @@ export const pricingRulesMutations: MutationResolvers = {
         });
       }
       
-      if (error instanceof Error && error.message.includes('not editable')) {
-        throw new GraphQLError('System rules cannot be edited', {
-          extensions: { code: 'FORBIDDEN' }
-        });
-      }
+      // Allow system rule editing for admins - UI will show warnings
       
       throw new GraphQLError('Failed to update pricing rule', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' }

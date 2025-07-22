@@ -10,15 +10,29 @@ import {
   PricingConfiguration,
   GetBundlesByCountryQuery
 } from '@/__generated__/graphql';
-import { CALCULATE_BATCH_PRICING, GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
+import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
 import { 
   calculateAveragePricePerDay, 
   buildBatchPricingInput, 
   extractDurationsFromPlans 
 } from '../utils/pricing-calculations';
+import { usePricingWithRules, AppliedRule } from './usePricingWithRules';
+
+export interface CountryBundleWithRules extends CountryBundle {
+  appliedRules?: AppliedRule[];
+  ruleCount?: number;
+  ruleImpact?: number;
+}
 
 export interface CountryGroupData extends BundlesByCountry {
-  bundles?: CountryBundle[];
+  bundles?: CountryBundleWithRules[];
+  rulesSummary?: {
+    totalRules: number;
+    systemRules: number;
+    businessRules: number;
+    averageImpact: number;
+    conflictCount?: number;
+  };
 }
 
 export const usePricingData = () => {
@@ -37,8 +51,8 @@ export const usePricingData = () => {
     }
   });
   const { data: pricingConfigsData, refetch: refetchPricingConfigs } = useQuery<GetPricingConfigurationsQuery>(GET_PRICING_CONFIGURATIONS);
-  const [calculateBatchPricing] = useLazyQuery(CALCULATE_BATCH_PRICING);
   const [getCountryDataPlans] = useLazyQuery(GET_DATA_PLANS);
+  const { calculateBatchPrices } = usePricingWithRules();
 
   // Generate country groups from actual data
   useEffect(() => {
@@ -83,19 +97,38 @@ export const usePricingData = () => {
     });
   };
 
-  // Calculate pricing for country bundles
+  // Calculate pricing for country bundles using rule-based engine
   const calculateCountryPricing = async (countryId: string, regionId: string, durations: Set<number>) => {
     const batchInputs = buildBatchPricingInput(countryId, regionId, durations);
     
-    return await calculateBatchPricing({
-      variables: {
-        inputs: batchInputs,
-      },
-    });
+    try {
+      // Use rule-based pricing for enhanced calculations
+      const results = await calculateBatchPrices(batchInputs);
+      return results;
+    } catch (error) {
+      console.error('Rule-based pricing failed:', error);
+      throw error;
+    }
   };
 
-  // Update country group state with loaded bundles
-  const updateCountryGroupWithBundles = (countryId: string, bundles: CountryBundle[]) => {
+  // Calculate rules summary for a set of bundles
+  const calculateRulesSummary = (bundles: CountryBundleWithRules[]) => {
+    const allRules = bundles.flatMap(b => b.appliedRules || []);
+    const systemRules = allRules.filter(r => r.type === 'SYSTEM_MARKUP' || r.type === 'SYSTEM_PROCESSING');
+    const businessRules = allRules.filter(r => r.type !== 'SYSTEM_MARKUP' && r.type !== 'SYSTEM_PROCESSING');
+    const totalImpact = bundles.reduce((sum, b) => sum + (b.ruleImpact || 0), 0);
+    
+    return {
+      totalRules: allRules.length,
+      systemRules: systemRules.length,
+      businessRules: businessRules.length,
+      averageImpact: bundles.length > 0 ? totalImpact / bundles.length : 0,
+      conflictCount: 0 // TODO: Implement conflict detection
+    };
+  };
+
+  // Update country group state with loaded bundles and rules summary
+  const updateCountryGroupWithBundles = (countryId: string, bundles: CountryBundleWithRules[], rulesSummary?: any) => {
     const avgPricePerDay = calculateAveragePricePerDay(bundles);
     
     setCountryGroups(prev => prev.map(group => 
@@ -104,6 +137,7 @@ export const usePricingData = () => {
             ...group, 
             bundles, 
             avgPricePerDay,
+            rulesSummary,
           }
         : group
     ));
@@ -163,22 +197,45 @@ export const usePricingData = () => {
           }))
         });
 
-        // Calculate pricing for this country - this will get pricing for all unique durations
-        const pricingResult = await calculateCountryPricing(countryId, country.region, durations);
+        // Calculate pricing for this country using rule-based engine
+        const pricingResults = await calculateCountryPricing(countryId, country.region, durations);
 
-        if (pricingResult.data?.calculatePrices) {
-          // The pricing calculation returns one bundle per unique duration
-          // But we want to show ALL plans, even if they have the same duration
-          const pricingData: CountryBundle[] = pricingResult.data.calculatePrices;
-          
+        if (pricingResults && pricingResults.length > 0) {
           // Create a map of duration -> pricing data for quick lookup
-          const pricingByDuration = new Map<number, CountryBundle>();
-          pricingData.forEach(bundle => {
-            pricingByDuration.set(bundle.duration, bundle);
+          const pricingByDuration = new Map<number, any>();
+          
+          // Each result contains detailed rule information
+          pricingResults.forEach(result => {
+            // Extract duration from the result or input
+            const durationArray = Array.from(durations);
+            const resultIndex = pricingResults.indexOf(result);
+            const duration = durationArray[resultIndex] || durationArray[0];
+            
+            // Transform rule-based result to bundle format
+            const transformedResult = {
+              bundleName: `Bundle ${duration}d`,
+              countryName: country.name,
+              duration: duration,
+              cost: result.pricing?.baseCost || 0,
+              costPlus: result.pricing?.markup || 0,
+              totalCost: result.pricing?.subtotal || 0,
+              discountValue: result.pricing?.totalDiscount || 0,
+              priceAfterDiscount: result.pricing?.priceAfterDiscount || 0,
+              processingRate: result.pricing?.processingRate || 0,
+              processingCost: result.pricing?.processingFee || 0,
+              finalRevenue: result.pricing?.finalRevenue || 0,
+              currency: 'USD',
+              // Rule information
+              appliedRules: result.appliedRules || [],
+              ruleCount: result.appliedRules?.length || 0,
+              ruleImpact: result.ruleBreakdown?.totalImpact || 0,
+            };
+            
+            pricingByDuration.set(duration, transformedResult);
           });
           
           // Generate bundles for ALL plans (not just unique durations)
-          const allBundles: CountryBundle[] = allPlans.map(plan => {
+          const allBundles: CountryBundleWithRules[] = allPlans.map(plan => {
             const basePricing = pricingByDuration.get(plan.duration);
             if (!basePricing) {
               console.warn(`No pricing found for plan ${plan.name} with duration ${plan.duration}`);
@@ -188,27 +245,28 @@ export const usePricingData = () => {
             // Create a bundle entry for this specific plan
             return {
               ...basePricing,
-              bundleName: plan.name, // Use the actual plan name (no tag added)
+              bundleName: plan.name, // Use the actual plan name
               duration: plan.duration,
-              // Keep the pricing from the calculation but use the specific plan info
               dataAmount: plan.dataAmount, // Store the formatted data amount for badge display
             };
-          }).filter(Boolean) as CountryBundle[];
+          }).filter(Boolean) as CountryBundleWithRules[];
+          
+          // Calculate rules summary for the country
+          const rulesSummary = calculateRulesSummary(allBundles);
           
           // DEBUG: Log the resulting bundles
-          console.log(`✅ Pricing calculation result for ${countryId}:`, {
-            originalPricingResults: pricingData.length,
+          console.log(`✅ Rule-based pricing calculation result for ${countryId}:`, {
+            originalPricingResults: pricingResults.length,
             finalBundleCount: allBundles.length,
-            bundleDurations: allBundles.map(b => b.duration).sort((a, b) => a - b),
-            uniqueBundleNames: [...new Set(allBundles.map(b => b.bundleName))],
-            sampleBundles: allBundles.slice(0, 10).map(b => ({
+            rulesSummary,
+            sampleBundles: allBundles.slice(0, 3).map(b => ({
               bundleName: b.bundleName,
               duration: b.duration,
-              totalCost: b.totalCost
+              ruleCount: b.ruleCount
             }))
           });
           
-          updateCountryGroupWithBundles(countryId, allBundles);
+          updateCountryGroupWithBundles(countryId, allBundles, rulesSummary);
         }
       }
     } catch (error) {
@@ -234,6 +292,10 @@ export const usePricingData = () => {
     error,
     expandCountry,
     refreshConfigurations,
-    countriesData
+    countriesData,
+    // Rule-based pricing features
+    calculateRulesSummary,
+    // Feature flag for debugging
+    isRuleBasedEnabled: true
   };
 };

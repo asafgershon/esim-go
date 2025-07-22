@@ -1,15 +1,15 @@
 import { PricingRuleEngine } from '../rules-engine/rule-engine';
 import { PricingRulesRepository } from '../repositories/pricing-rules/pricing-rules.repository';
 import type { PricingContext } from '../rules-engine/types';
-import type { PricingRuleCalculation, PricingStep } from '../types';
+import type { PricingRuleCalculation, type PricingStep } from '../types';
 import { createLogger, withPerformanceLogging } from '../lib/logger';
-import { RedisCache } from '../lib/redis-cache';
+import type { KeyValueCache } from '@apollo/utils.keyvadapter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export class PricingEngineService {
   private engine: PricingRuleEngine;
   private repository: PricingRulesRepository;
-  private cache: RedisCache;
+  private cache?: KeyValueCache<string>;
   private logger = createLogger({ 
     component: 'PricingEngineService',
     operationType: 'pricing-calculation'
@@ -19,10 +19,10 @@ export class PricingEngineService {
   private static readonly RULES_CACHE_KEY = 'pricing:rules:active';
   private static readonly RULES_CACHE_TTL = 300; // 5 minutes
 
-  constructor(supabase: SupabaseClient) {
+  constructor(supabase: SupabaseClient, cache?: KeyValueCache<string>) {
     this.engine = new PricingRuleEngine();
     this.repository = new PricingRulesRepository(supabase);
-    this.cache = new RedisCache();
+    this.cache = cache;
   }
 
   /**
@@ -79,8 +79,10 @@ export class PricingEngineService {
   async reloadRules(): Promise<void> {
     this.logger.info('Reloading pricing rules');
     
-    // Clear cache
-    await this.cache.delete(PricingEngineService.RULES_CACHE_KEY);
+    // Clear cache if available
+    if (this.cache) {
+      await this.cache.delete(PricingEngineService.RULES_CACHE_KEY);
+    }
     
     // Clear engine rules
     this.engine.clearRules();
@@ -143,27 +145,29 @@ export class PricingEngineService {
   }
 
   private async loadRules(): Promise<void> {
-    // Try to load from cache first
-    const cachedRules = await this.cache.get(PricingEngineService.RULES_CACHE_KEY);
-    
-    if (cachedRules) {
-      this.logger.info('Loading rules from cache');
-      const rules = JSON.parse(cachedRules);
+    // Try to load from cache first if available
+    if (this.cache) {
+      const cachedRules = await this.cache.get(PricingEngineService.RULES_CACHE_KEY);
       
-      // Separate system and business rules
-      const systemRules = rules.filter((r: any) => !r.isEditable);
-      const businessRules = rules.filter((r: any) => r.isEditable);
-      
-      // Add to engine
-      this.engine.addSystemRules(systemRules);
-      this.engine.addRules(businessRules);
-      
-      this.logger.info('Rules loaded from cache', {
-        systemCount: systemRules.length,
-        businessCount: businessRules.length
-      });
-      
-      return;
+      if (cachedRules) {
+        this.logger.info('Loading rules from cache');
+        const rules = JSON.parse(cachedRules);
+        
+        // Separate system and business rules
+        const systemRules = rules.filter((r: any) => !r.isEditable);
+        const businessRules = rules.filter((r: any) => r.isEditable);
+        
+        // Add to engine
+        this.engine.addSystemRules(systemRules);
+        this.engine.addRules(businessRules);
+        
+        this.logger.info('Rules loaded from cache', {
+          systemCount: systemRules.length,
+          businessCount: businessRules.length
+        });
+        
+        return;
+      }
     }
     
     // Load from database
@@ -179,12 +183,14 @@ export class PricingEngineService {
     this.engine.addSystemRules(systemRules);
     this.engine.addRules(businessRules);
     
-    // Cache the rules
-    await this.cache.set(
-      PricingEngineService.RULES_CACHE_KEY,
-      JSON.stringify(activeRules),
-      PricingEngineService.RULES_CACHE_TTL
-    );
+    // Cache the rules if cache is available
+    if (this.cache) {
+      await this.cache.set(
+        PricingEngineService.RULES_CACHE_KEY,
+        JSON.stringify(activeRules),
+        { ttl: PricingEngineService.RULES_CACHE_TTL }
+      );
+    }
     
     this.logger.info('Rules loaded from database', {
       systemCount: systemRules.length,

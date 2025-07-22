@@ -27,7 +27,7 @@ import { ResizeHandle } from "../resize-handle";
 import { PricingPreviewPanel } from "./PricingPreviewPanel";
 import { BundlesTable } from "./BundlesTable";
 import { CountryCard } from "./CountryCard";
-import { BundleFilters } from "./filters";
+import { CommandFilterPalette } from "./filters/CommandFilterPalette";
 import { FilterState } from "./filters";
 import { CountryPricingSplitViewProps, BundlesByCountryWithBundles, CountryBundleWithDisplay } from "./types";
 
@@ -230,21 +230,19 @@ export function CountryPricingSplitView({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Unified Filter Controls */}
-      {selectedCountryData?.bundles && (
-        <div className="flex-shrink-0 mb-4">
-          <BundleFilters
-            selectedFilters={bundleFilters}
-            onFiltersChange={setBundleFilters}
-            totalBundles={selectedCountryData.originalBundles?.length || selectedCountryData.bundles.length}
-            filteredBundles={selectedCountryData.bundles.length}
-            showHighDemandOnly={showHighDemandOnly}
-            onHighDemandToggle={() => setShowHighDemandOnly(!showHighDemandOnly)}
-            highDemandLoading={highDemandLoading}
-            totalCountries={filteredBundlesByCountry.length}
-          />
-        </div>
-      )}
+      {/* Command Palette Filter Controls - Always show */}
+      <div className="flex-shrink-0 mb-4">
+        <CommandFilterPalette
+          selectedFilters={bundleFilters}
+          onFiltersChange={setBundleFilters}
+          totalBundles={selectedCountryData?.originalBundles?.length || selectedCountryData?.bundles?.length || 0}
+          filteredBundles={selectedCountryData?.bundles?.length || 0}
+          showHighDemandOnly={showHighDemandOnly}
+          onHighDemandToggle={() => setShowHighDemandOnly(!showHighDemandOnly)}
+          totalCountries={filteredBundlesByCountry.length}
+          hasBundlesSelected={!!selectedCountryData?.bundles}
+        />
+      </div>
 
       {/* Desktop: Resizable Panels, Mobile: Single Column */}
       <div className="flex-1 min-h-0 overflow-hidden">

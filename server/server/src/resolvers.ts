@@ -915,21 +915,36 @@ export const resolvers: Resolvers = {
     bundleGroups: async (_, __, context: Context) => {
       // This will be protected by @auth(role: "ADMIN") directive
       try {
+        logger.info('Fetching bundle groups from eSIM Go API', {
+          operationType: 'bundle-groups-fetch'
+        });
         // Fetch organization groups from eSIM Go API
         const organizationGroups = await context.dataSources.catalogue.getOrganizationGroups();
-        return organizationGroups.map(group => group.name);
+        const bundleGroups = organizationGroups.map(group => group.name);
+        logger.info('Successfully fetched bundle groups', {
+          count: bundleGroups.length,
+          groups: bundleGroups,
+          operationType: 'bundle-groups-fetch'
+        });
+        return bundleGroups;
       } catch (error) {
-        logger.error('Error fetching bundle groups', error as Error, {
+        logger.error('Error fetching bundle groups, using fallback', error as Error, {
           operationType: 'bundle-groups-fetch'
         });
         // Return fallback list if API fails
-        return [
+        const fallbackGroups = [
           "Standard Fixed",
           "Standard - Unlimited Lite", 
           "Standard - Unlimited Essential",
           "Standard - Unlimited Plus",
           "Regional Bundles"
         ];
+        logger.info('Using fallback bundle groups', {
+          count: fallbackGroups.length,
+          groups: fallbackGroups,
+          operationType: 'bundle-groups-fetch'
+        });
+        return fallbackGroups;
       }
     },
 
@@ -963,6 +978,39 @@ export const resolvers: Resolvers = {
           operationType: 'pricing-filters-fetch'
         });
         throw new GraphQLError('Failed to fetch pricing filters', {
+          extensions: { code: 'INTERNAL_ERROR' }
+        });
+      }
+    },
+
+    // Bundle data amount aggregation - returns cached aggregated data
+    bundleDataAggregation: async (_, __, context: Context) => {
+      // This will be protected by @auth(role: "ADMIN") directive
+      try {
+        const cacheKey = 'bundle-data-aggregation';
+        const cachedData = await context.cache?.get(cacheKey);
+        
+        if (cachedData) {
+          return JSON.parse(cachedData);
+        }
+        
+        // If no cached data exists, return empty aggregation with a note to sync
+        logger.warn('Bundle data aggregation not found in cache - catalog sync may be needed', {
+          operationType: 'bundle-data-aggregation-fetch'
+        });
+        
+        return {
+          total: 0,
+          unlimited: 0,
+          byDataAmount: [],
+          byBundleGroup: [],
+          lastUpdated: new Date().toISOString()
+        };
+      } catch (error) {
+        logger.error('Error fetching bundle data aggregation', error as Error, {
+          operationType: 'bundle-data-aggregation-fetch'
+        });
+        throw new GraphQLError('Failed to fetch bundle data aggregation', {
           extensions: { code: 'INTERNAL_ERROR' }
         });
       }

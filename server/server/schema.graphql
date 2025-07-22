@@ -61,7 +61,10 @@ type Query {
   bundleGroups: [String!]! @auth(role: "ADMIN")
   
   # Pricing filters
-  pricingFilters: PricingFilters! @auth(role: "ADMIN")
+  pricingFilters: PricingFilters!
+  
+  # Bundle data amount aggregation
+  bundleDataAggregation: BundleDataAggregation! @auth(role: "ADMIN")
   
   # High demand countries
   highDemandCountries: [String!]! @auth(role: "ADMIN")
@@ -1023,4 +1026,35 @@ input TestPricingContext {
   isNewUser: Boolean
   paymentMethod: PaymentMethod!
   requestedDuration: Int
+}
+
+# Bundle Data Amount Aggregation Types
+type BundleDataAggregation {
+  total: Int!
+  unlimited: Int!
+  byDataAmount: [DataAmountGroup!]!
+  byDuration: [DurationGroup!]!
+  byBundleGroup: [BundleGroupDataStats!]!
+  lastUpdated: String!
+}
+
+type DataAmountGroup {
+  dataAmount: Int!
+  count: Int!
+  percentage: Float!
+}
+
+type DurationGroup {
+  duration: Int!
+  count: Int!
+  percentage: Float!
+  category: String!
+}
+
+type BundleGroupDataStats {
+  bundleGroup: String!
+  total: Int!
+  unlimited: Int!
+  limited: Int!
+  averageDataAmount: Float!
 }
