@@ -40,6 +40,12 @@ type Query {
   # Pricing configurations
   pricingConfigurations: [PricingConfiguration!]!
   
+  # Pricing Rules Engine
+  pricingRules(filter: PricingRuleFilter): [PricingRule!]! @auth(role: "ADMIN")
+  pricingRule(id: ID!): PricingRule @auth(role: "ADMIN")
+  calculatePriceWithRules(input: CalculatePriceInput!): PricingRuleCalculation! @auth(role: "ADMIN")
+  simulatePricingRule(rule: CreatePricingRuleInput!, testContext: TestPricingContext!): PricingRuleCalculation! @auth(role: "ADMIN")
+  
   # Processing fee configurations
   currentProcessingFeeConfiguration: ProcessingFeeConfiguration @auth(role: "ADMIN")
   processingFeeConfigurations(limit: Int = 10, offset: Int = 0, includeInactive: Boolean = false): [ProcessingFeeConfiguration!]! @auth(role: "ADMIN")
@@ -83,6 +89,12 @@ type Mutation {
   
   # Pricing configuration management
   updatePricingConfiguration(input: UpdatePricingConfigurationInput!): UpdatePricingConfigurationResponse @auth(role: "ADMIN")
+  
+  # Pricing Rules Engine
+  createPricingRule(input: CreatePricingRuleInput!): PricingRule! @auth(role: "ADMIN")
+  updatePricingRule(id: ID!, input: UpdatePricingRuleInput!): PricingRule! @auth(role: "ADMIN")
+  deletePricingRule(id: ID!): Boolean! @auth(role: "ADMIN")
+  togglePricingRule(id: ID!, isActive: Boolean!): PricingRule! @auth(role: "ADMIN")
   
   # Processing fee configuration management
   createProcessingFeeConfiguration(input: ProcessingFeeConfigurationInput!): ProcessingFeeConfiguration @auth(role: "ADMIN")
@@ -625,7 +637,113 @@ input CalculatePriceInput {
   paymentMethod: PaymentMethod
 }
 
-# Pricing Configuration Types
+# Pricing Rules Engine Types
+enum RuleType {
+  SYSTEM_MARKUP
+  SYSTEM_PROCESSING
+  BUSINESS_DISCOUNT
+  PROMOTION
+  SEGMENT
+}
+
+enum ConditionOperator {
+  EQUALS
+  NOT_EQUALS
+  IN
+  NOT_IN
+  GREATER_THAN
+  LESS_THAN
+  BETWEEN
+  EXISTS
+  NOT_EXISTS
+}
+
+enum ActionType {
+  APPLY_DISCOUNT_PERCENTAGE
+  APPLY_FIXED_DISCOUNT
+  ADD_MARKUP
+  SET_PROCESSING_RATE
+  SET_DISCOUNT_PER_UNUSED_DAY
+}
+
+type RuleCondition {
+  field: String!
+  operator: ConditionOperator!
+  value: JSON!
+  type: String
+}
+
+type RuleAction {
+  type: ActionType!
+  value: Float!
+  metadata: JSON
+}
+
+type PricingRule {
+  id: ID!
+  type: RuleType!
+  name: String!
+  description: String
+  
+  # Rule definition
+  conditions: [RuleCondition!]!
+  actions: [RuleAction!]!
+  
+  # Metadata
+  priority: Int!
+  isActive: Boolean!
+  isEditable: Boolean!
+  validFrom: String
+  validUntil: String
+  
+  # Audit
+  createdBy: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type AppliedRule {
+  id: ID!
+  name: String!
+  type: RuleType!
+  impact: Float!
+}
+
+type PricingRuleCalculation {
+  baseCost: Float!
+  markup: Float!
+  subtotal: Float!
+  
+  # Discounts breakdown
+  discounts: [DiscountApplication!]!
+  totalDiscount: Float!
+  priceAfterDiscount: Float!
+  
+  # Processing fees
+  processingFee: Float!
+  processingRate: Float!
+  
+  # Final results
+  finalPrice: Float!
+  finalRevenue: Float! # What you get after payment (finalPrice - processingFee - baseCost)
+  revenueAfterProcessing: Float! # Bottom line (finalPrice - processingFee)
+  profit: Float!
+  
+  # Recommendations
+  maxRecommendedPrice: Float! # baseCost + $1.50
+  maxDiscountPercentage: Float! # Maximum discount % while maintaining minimum profit
+  
+  # Applied rules
+  appliedRules: [AppliedRule!]!
+}
+
+type DiscountApplication {
+  ruleName: String!
+  amount: Float!
+  type: String! # 'percentage' or 'fixed'
+}
+
+# Pricing Configuration Types (Legacy - to be migrated to rules)
 type PricingConfiguration {
   id: ID!
   name: String!
@@ -815,4 +933,61 @@ type DebugCatalogResponse {
   totalPlans: Int!
   unlimitedCount: Int!
   samplePlans: [DebugPlan!]!
+}
+
+# Pricing Rules Engine Input Types
+input PricingRuleFilter {
+  type: RuleType
+  isActive: Boolean
+  isEditable: Boolean
+}
+
+input RuleConditionInput {
+  field: String!
+  operator: ConditionOperator!
+  value: JSON!
+  type: String
+}
+
+input RuleActionInput {
+  type: ActionType!
+  value: Float!
+  metadata: JSON
+}
+
+input CreatePricingRuleInput {
+  type: RuleType!
+  name: String!
+  description: String
+  conditions: [RuleConditionInput!]!
+  actions: [RuleActionInput!]!
+  priority: Int!
+  isActive: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input UpdatePricingRuleInput {
+  name: String
+  description: String
+  conditions: [RuleConditionInput!]
+  actions: [RuleActionInput!]
+  priority: Int
+  isActive: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input TestPricingContext {
+  bundleId: String!
+  bundleName: String!
+  bundleGroup: String!
+  duration: Int!
+  cost: Float!
+  countryId: String!
+  regionId: String!
+  userId: String
+  isNewUser: Boolean
+  paymentMethod: PaymentMethod!
+  requestedDuration: Int
 }
