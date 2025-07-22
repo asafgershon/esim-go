@@ -18,7 +18,6 @@ import { PricingSummaryPage } from '@/pages/pricing/summary'
 import { PricingMarkupPage } from '@/pages/pricing/markup'
 import { PricingSimulatorPage } from '@/pages/pricing/simulator'
 import { PricingProcessingFeePage } from '@/pages/pricing/processing-fee'
-import { PricingDiscountsPage } from '@/pages/pricing/discounts'
 import { apolloClient } from '@/lib/apollo-client'
 
 
@@ -53,7 +52,6 @@ function App() {
                     <Route path="markup" element={<PricingMarkupPage />} />
                     <Route path="simulator" element={<PricingSimulatorPage />} />
                     <Route path="processing-fee" element={<PricingProcessingFeePage />} />
-                    <Route path="discounts" element={<PricingDiscountsPage />} />
                   </Route>
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
