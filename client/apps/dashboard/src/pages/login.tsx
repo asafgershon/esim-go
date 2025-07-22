@@ -240,10 +240,10 @@ export function LoginPage() {
             <p>
               Need help? Contact{' '}
               <a 
-                href="mailto:support@esim-go.com" 
+                href="mailto:support@hiilo.com" 
                 className="font-medium text-primary hover:underline"
               >
-                support@esim-go.com
+                support@hiilo.com
               </a>
             </p>
           </div>

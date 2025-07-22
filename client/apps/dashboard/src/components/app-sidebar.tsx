@@ -24,8 +24,8 @@ import {
 
 const data = {
   user: {
-    name: "eSIM Admin",
-    email: "admin@esim-go.com",
+    name: "Hiilo Admin",
+    email: "admin@hiilo.com",
     avatar: "/avatars/admin.jpg",
   },
   navMain: [
@@ -72,7 +72,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <div className="flex items-center gap-2">
                 <Zap className="h-5 w-5 text-primary" />
                 <span className="text-base font-semibold">
-                  eSIM Dashboard
+                  Hiilo Dashboard
                 </span>
               </div>
             </SidebarMenuButton>

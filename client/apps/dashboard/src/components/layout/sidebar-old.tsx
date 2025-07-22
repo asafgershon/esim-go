@@ -26,7 +26,7 @@ export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col bg-card">
       <div className="flex h-14 items-center border-b px-4">
-        <h2 className="text-lg font-semibold">eSIM Dashboard</h2>
+        <h2 className="text-lg font-semibold">Hiilo Dashboard</h2>
       </div>
       <nav className="flex-1 space-y-1 px-2 py-4">
         {navigation.map((item) => (
