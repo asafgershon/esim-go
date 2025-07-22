@@ -18,7 +18,7 @@ import {
   InputWithAdornment,
   List,
 } from "@workspace/ui";
-import { TrendingUp, MapPin, Package, X } from "lucide-react";
+import { TrendingUp, MapPin, Package, X, Plane } from "lucide-react";
 import { toast } from "sonner";
 import Fuse from "fuse.js";
 import { Panel, PanelGroup } from "react-resizable-panels";
@@ -28,21 +28,26 @@ import { ResizeHandle } from "../resize-handle";
 import { PricingPreviewPanel } from "./PricingPreviewPanel";
 import { BundlesTable } from "./BundlesTable";
 import { CountryCard } from "./CountryCard";
+import { TripCard } from "./TripCard";
 import { CommandFilterPalette } from "./filters/CommandFilterPalette";
 import { FilterState } from "./filters";
 import { CountryPricingSplitViewProps, BundlesByCountryWithBundles, CountryBundleWithDisplay } from "./types";
 
 export function CountryPricingSplitView({
   bundlesByCountry = [],
+  tripsData = [],
   onExpandCountry,
   loading = false,
+  showTrips = false,
+  onToggleTrips,
 }: CountryPricingSplitViewProps) {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedTrip, setSelectedTrip] = useState<string | null>(null);
   const [selectedBundle, setSelectedBundle] = useState<CountryBundleWithDisplay | null>(null);
   const [loadingCountries, setLoadingCountries] = useState<Set<string>>(new Set());
   const [showHighDemandOnly, setShowHighDemandOnly] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
-  const [countrySearchQuery, setCountrySearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [bundleFilters, setBundleFilters] = useState<FilterState>({
     bundleGroups: new Set(),
     durations: new Set(),
@@ -71,6 +76,21 @@ export function CountryPricingSplitView({
     return new Fuse(bundlesByCountry, fuseOptions);
   }, [bundlesByCountry]);
 
+  // Configure Fuse.js for trip search
+  const tripFuse = useMemo(() => {
+    const fuseOptions = {
+      keys: [
+        'name',
+        'description',
+        'regionId'
+      ],
+      threshold: 0.3,
+      includeScore: true
+    };
+    
+    return new Fuse(tripsData, fuseOptions);
+  }, [tripsData]);
+
   // Filter countries by high demand status and search query
   const filteredBundlesByCountry = useMemo(() => {
     let filtered = bundlesByCountry;
@@ -83,14 +103,28 @@ export function CountryPricingSplitView({
     }
     
     // Apply search filter
-    if (countrySearchQuery.trim()) {
-      const searchResults = countryFuse.search(countrySearchQuery);
+    if (searchQuery.trim()) {
+      const searchResults = countryFuse.search(searchQuery);
       const searchedIds = new Set(searchResults.map(result => result.item.countryId));
       filtered = filtered.filter(country => searchedIds.has(country.countryId));
     }
     
     return filtered;
-  }, [bundlesByCountry, showHighDemandOnly, isHighDemandCountry, countrySearchQuery, countryFuse]);
+  }, [bundlesByCountry, showHighDemandOnly, isHighDemandCountry, searchQuery, countryFuse]);
+
+  // Filter trips by search query
+  const filteredTrips = useMemo(() => {
+    let filtered = tripsData;
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const searchResults = tripFuse.search(searchQuery);
+      const searchedIds = new Set(searchResults.map(result => result.item.id));
+      filtered = filtered.filter(trip => searchedIds.has(trip.id));
+    }
+    
+    return filtered;
+  }, [tripsData, searchQuery, tripFuse]);
 
   // Helper function to filter bundles based on selected filters
   const filterBundles = useCallback((bundles: CountryBundleWithDisplay[]) => {
@@ -222,12 +256,28 @@ export function CountryPricingSplitView({
     };
   };
 
-  // Set default selected country (first country or null if none exist)
+  // Set default selection based on current view
   React.useEffect(() => {
-    if (!selectedCountry && filteredBundlesByCountry.length > 0) {
-      setSelectedCountry(filteredBundlesByCountry[0].countryId);
+    if (showTrips) {
+      // Clear country selection when switching to trips
+      setSelectedCountry(null);
+      if (!selectedTrip && filteredTrips.length > 0) {
+        setSelectedTrip(filteredTrips[0].id);
+      }
+    } else {
+      // Clear trip selection when switching to countries
+      setSelectedTrip(null);
+      if (!selectedCountry && filteredBundlesByCountry.length > 0) {
+        setSelectedCountry(filteredBundlesByCountry[0].countryId);
+      }
     }
-  }, [filteredBundlesByCountry, selectedCountry]);
+  }, [showTrips, filteredBundlesByCountry, filteredTrips, selectedCountry, selectedTrip]);
+
+  // Handle trip selection
+  const handleTripSelect = useCallback((tripId: string) => {
+    setSelectedTrip(tripId);
+    setSelectedBundle(null); // Clear selected bundle when changing trip
+  }, []);
 
   return (
     <div className="h-full flex flex-col">
@@ -240,7 +290,7 @@ export function CountryPricingSplitView({
           filteredBundles={selectedCountryData?.bundles?.length || 0}
           showHighDemandOnly={showHighDemandOnly}
           onHighDemandToggle={() => setShowHighDemandOnly(!showHighDemandOnly)}
-          totalCountries={filteredBundlesByCountry.length}
+          totalCountries={showTrips ? filteredTrips.length : filteredBundlesByCountry.length}
           hasBundlesSelected={!!selectedCountryData?.bundles}
         />
       </div>
@@ -261,54 +311,111 @@ export function CountryPricingSplitView({
             id="countries-panel"
             order={1}
           >
-            <List.Container className="h-full" itemCount={filteredBundlesByCountry.length}>
-              <List.Header title="Countries" />
+            <List.Container className="h-full" itemCount={showTrips ? filteredTrips.length : filteredBundlesByCountry.length}>
+              <List.Header>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-700">
+                    {showTrips ? "Trips" : "Countries"} ({showTrips ? filteredTrips.length : filteredBundlesByCountry.length})
+                  </h3>
+                  {onToggleTrips && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => onToggleTrips(!showTrips)}
+                          variant="ghost"
+                          size="sm"
+                          className={`flex items-center gap-2 ${
+                            showTrips ? 'text-blue-600 bg-blue-50' : ''
+                          }`}
+                        >
+                          <Plane className="h-4 w-4" />
+                          {showTrips ? 'Countries' : 'Trips'}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {showTrips ? 'Switch to countries view' : 'Switch to trips view'}
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              </List.Header>
               <List.Search
-                value={countrySearchQuery}
-                onChange={setCountrySearchQuery}
-                placeholder="Search countries..."
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder={showTrips ? "Search trips..." : "Search countries..."}
               />
               <List.Content spacing="normal" padding={true}>
                 <div className="space-y-2">
-                  {filteredBundlesByCountry.length === 0 && countrySearchQuery ? (
-                    <List.Empty
-                      icon={<MapPin className="h-8 w-8 mx-auto text-gray-300" />}
-                      message={`No countries found matching "${countrySearchQuery}"`}
-                    />
-                  ) : filteredBundlesByCountry.length === 0 && !countrySearchQuery ? (
-                    <List.Empty
-                      icon={<MapPin className="h-12 w-12 mx-auto text-gray-300" />}
-                      title="No countries available"
-                      message={
-                        showHighDemandOnly 
-                          ? "No high demand countries found" 
-                          : "No pricing data available"
-                      }
-                    />
+                  {showTrips ? (
+                    // Trips view
+                    filteredTrips.length === 0 && searchQuery ? (
+                      <List.Empty
+                        icon={<Plane className="h-8 w-8 mx-auto text-gray-300" />}
+                        message={`No trips found matching "${searchQuery}"`}
+                      />
+                    ) : filteredTrips.length === 0 && !searchQuery ? (
+                      <List.Empty
+                        icon={<Plane className="h-12 w-12 mx-auto text-gray-300" />}
+                        title="No trips available"
+                        message="No trips have been created yet"
+                      />
+                    ) : (
+                      filteredTrips.map((trip) => {
+                        const isSelected = selectedTrip === trip.id;
+                        
+                        return (
+                          <List.Item key={trip.id} asChild>
+                            <TripCard
+                              trip={trip}
+                              isSelected={isSelected}
+                              onSelect={() => handleTripSelect(trip.id)}
+                            />
+                          </List.Item>
+                        );
+                      })
+                    )
                   ) : (
-                    filteredBundlesByCountry.map((country) => {
-                      const summary = getCountrySummary(country);
-                      const isSelected = selectedCountry === country.countryId;
-                      const isCountryLoading = loadingCountries.has(country.countryId);
-                      
-                      return (
-                        <List.Item key={country.countryId} asChild>
-                          <CountryCard
-                            country={country}
-                            isSelected={isSelected}
-                            isLoading={isCountryLoading}
-                            isHighDemand={isHighDemandCountry(country.countryId)}
-                            onSelect={() => handleCountrySelect(country.countryId)}
-                            onToggleHighDemand={(e) => {
-                              e.stopPropagation();
-                              toggleCountryHighDemand(country.countryId);
-                            }}
-                            toggleLoading={toggleLoading}
-                            summary={summary}
-                          />
-                        </List.Item>
-                      );
-                    })
+                    // Countries view
+                    filteredBundlesByCountry.length === 0 && searchQuery ? (
+                      <List.Empty
+                        icon={<MapPin className="h-8 w-8 mx-auto text-gray-300" />}
+                        message={`No countries found matching "${searchQuery}"`}
+                      />
+                    ) : filteredBundlesByCountry.length === 0 && !searchQuery ? (
+                      <List.Empty
+                        icon={<MapPin className="h-12 w-12 mx-auto text-gray-300" />}
+                        title="No countries available"
+                        message={
+                          showHighDemandOnly 
+                            ? "No high demand countries found" 
+                            : "No pricing data available"
+                        }
+                      />
+                    ) : (
+                      filteredBundlesByCountry.map((country) => {
+                        const summary = getCountrySummary(country);
+                        const isSelected = selectedCountry === country.countryId;
+                        const isCountryLoading = loadingCountries.has(country.countryId);
+                        
+                        return (
+                          <List.Item key={country.countryId} asChild>
+                            <CountryCard
+                              country={country}
+                              isSelected={isSelected}
+                              isLoading={isCountryLoading}
+                              isHighDemand={isHighDemandCountry(country.countryId)}
+                              onSelect={() => handleCountrySelect(country.countryId)}
+                              onToggleHighDemand={(e) => {
+                                e.stopPropagation();
+                                toggleCountryHighDemand(country.countryId);
+                              }}
+                              toggleLoading={toggleLoading}
+                              summary={summary}
+                            />
+                          </List.Item>
+                        );
+                      })
+                    )
                   )}
                 </div>
               </List.Content>
@@ -438,50 +545,106 @@ export function CountryPricingSplitView({
         {/* Mobile Layout - Countries List */}
         <div className="lg:hidden h-full">
           <List.Container className="h-full">
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">{showTrips ? "Trips" : "Countries"}</h3>
+                {onToggleTrips && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => onToggleTrips(!showTrips)}
+                        variant="ghost"
+                        size="sm"
+                        className={`flex items-center gap-2 ${
+                          showTrips ? 'text-blue-600 bg-blue-50' : ''
+                        }`}
+                      >
+                        <Plane className="h-4 w-4" />
+                        {showTrips ? 'Countries' : 'Trips'}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {showTrips ? 'Switch to countries view' : 'Switch to trips view'}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </div>
             <List.Search
-              value={countrySearchQuery}
-              onChange={setCountrySearchQuery}
-              placeholder="Search countries..."
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder={showTrips ? "Search trips..." : "Search countries..."}
               className="p-4"
             />
             <List.Content spacing="normal">
-              {filteredBundlesByCountry.length === 0 && countrySearchQuery ? (
-                <List.Empty
-                  icon={<MapPin className="h-8 w-8 mx-auto text-gray-300" />}
-                  message={`No countries found matching "${countrySearchQuery}"`}
-                />
-              ) : filteredBundlesByCountry.length === 0 && !countrySearchQuery ? (
-                <List.Empty
-                  icon={<MapPin className="h-12 w-12 mx-auto text-gray-300" />}
-                  title="No countries available"
-                  message={
-                    showHighDemandOnly ? "No high demand countries found" : "No pricing data available"
-                  }
-                />
+              {showTrips ? (
+                // Mobile Trips view
+                filteredTrips.length === 0 && searchQuery ? (
+                  <List.Empty
+                    icon={<Plane className="h-8 w-8 mx-auto text-gray-300" />}
+                    message={`No trips found matching "${searchQuery}"`}
+                  />
+                ) : filteredTrips.length === 0 && !searchQuery ? (
+                  <List.Empty
+                    icon={<Plane className="h-12 w-12 mx-auto text-gray-300" />}
+                    title="No trips available"
+                    message="No trips have been created yet"
+                  />
+                ) : (
+                  filteredTrips.map((trip) => {
+                    const isSelected = selectedTrip === trip.id;
+                    
+                    return (
+                      <List.Item key={trip.id} asChild>
+                        <TripCard
+                          trip={trip}
+                          isSelected={isSelected}
+                          onSelect={() => handleTripSelect(trip.id)}
+                        />
+                      </List.Item>
+                    );
+                  })
+                )
               ) : (
-                filteredBundlesByCountry.map((country) => {
-                  const summary = getCountrySummary(country);
-                  const isSelected = selectedCountry === country.countryId;
-                  const isCountryLoading = loadingCountries.has(country.countryId);
-                  
-                  return (
-                    <List.Item key={country.countryId} asChild>
-                      <CountryCard
-                        country={country}
-                        isSelected={isSelected}
-                        isLoading={isCountryLoading}
-                        isHighDemand={isHighDemandCountry(country.countryId)}
-                        onSelect={() => handleCountrySelect(country.countryId)}
-                        onToggleHighDemand={(e) => {
-                          e.stopPropagation();
-                          toggleCountryHighDemand(country.countryId);
-                        }}
-                        toggleLoading={toggleLoading}
-                        summary={summary}
-                      />
-                    </List.Item>
-                  );
-                })
+                // Mobile Countries view
+                filteredBundlesByCountry.length === 0 && searchQuery ? (
+                  <List.Empty
+                    icon={<MapPin className="h-8 w-8 mx-auto text-gray-300" />}
+                    message={`No countries found matching "${searchQuery}"`}
+                  />
+                ) : filteredBundlesByCountry.length === 0 && !searchQuery ? (
+                  <List.Empty
+                    icon={<MapPin className="h-12 w-12 mx-auto text-gray-300" />}
+                    title="No countries available"
+                    message={
+                      showHighDemandOnly ? "No high demand countries found" : "No pricing data available"
+                    }
+                  />
+                ) : (
+                  filteredBundlesByCountry.map((country) => {
+                    const summary = getCountrySummary(country);
+                    const isSelected = selectedCountry === country.countryId;
+                    const isCountryLoading = loadingCountries.has(country.countryId);
+                    
+                    return (
+                      <List.Item key={country.countryId} asChild>
+                        <CountryCard
+                          country={country}
+                          isSelected={isSelected}
+                          isLoading={isCountryLoading}
+                          isHighDemand={isHighDemandCountry(country.countryId)}
+                          onSelect={() => handleCountrySelect(country.countryId)}
+                          onToggleHighDemand={(e) => {
+                            e.stopPropagation();
+                            toggleCountryHighDemand(country.countryId);
+                          }}
+                          toggleLoading={toggleLoading}
+                          summary={summary}
+                        />
+                      </List.Item>
+                    );
+                  })
+                )
               )}
             </List.Content>
           </List.Container>

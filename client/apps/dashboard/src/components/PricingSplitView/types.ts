@@ -1,4 +1,4 @@
-import { BundlesByCountry, CountryBundle } from "../../__generated__/graphql";
+import { BundlesByCountry, CountryBundle, Trip } from "../../__generated__/graphql";
 
 // Extended types for additional display fields
 export interface CountryBundleWithDisplay extends CountryBundle {
@@ -16,6 +16,9 @@ export interface BundlesByCountryWithBundles extends BundlesByCountry {
 
 export interface CountryPricingSplitViewProps {
   bundlesByCountry: BundlesByCountryWithBundles[];
+  tripsData?: Trip[];
   onExpandCountry: (countryId: string) => Promise<void>;
   loading?: boolean;
+  showTrips?: boolean;
+  onToggleTrips?: (show: boolean) => void;
 }

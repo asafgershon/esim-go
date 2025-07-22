@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, Tooltip, TooltipTrigger, TooltipContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui';
-import { Calculator, DollarSign, Table, CreditCard, RefreshCw, Layers } from 'lucide-react';
+import { Calculator, DollarSign, Table, CreditCard, RefreshCw, Layers, Plane } from 'lucide-react';
 import { useMutation } from '@apollo/client';
 import { toast } from 'sonner';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -12,9 +12,10 @@ import { SYNC_CATALOG } from '../lib/graphql/queries';
 
 
 const PricingPage: React.FC = () => {
-  const { countryGroups, loading, error, expandCountry } = usePricingData();
+  const { countryGroups, tripsData, loading, error, expandCountry } = usePricingData();
   const location = useLocation();
   const navigate = useNavigate();
+  const [showTrips, setShowTrips] = useState(false);
 
   // Sync catalog mutation
   const [syncCatalog, { loading: syncLoading }] = useMutation(SYNC_CATALOG);
@@ -229,9 +230,12 @@ const PricingPage: React.FC = () => {
       <div className="flex-1 min-h-0">
         <Outlet context={{ 
           countryGroups, 
+          tripsData,
           expandCountry, 
           loading, 
-          error 
+          error,
+          showTrips,
+          setShowTrips 
         }} />
       </div>
     </div>

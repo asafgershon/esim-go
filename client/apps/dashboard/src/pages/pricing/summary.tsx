@@ -1,18 +1,21 @@
-import { CountryBundle } from '@/__generated__/graphql';
+import { CountryBundle, Trip } from '@/__generated__/graphql';
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { CountryPricingSplitView } from '../../components/country-pricing-split-view';
 
 interface OutletContext {
   countryGroups: any[];
+  tripsData: Trip[];
   expandCountry: (iso: string) => void;
   handleBundleClick?: (bundle: CountryBundle) => void;
   loading: boolean;
   error: string | null;
+  showTrips: boolean;
+  setShowTrips: (show: boolean) => void;
 }
 
 export const PricingSummaryPage: React.FC = () => {
-  const { countryGroups, expandCountry } = useOutletContext<OutletContext>();
+  const { countryGroups, tripsData, expandCountry, showTrips, setShowTrips } = useOutletContext<OutletContext>();
 
   return (
     <div className="h-full flex flex-col">
@@ -20,7 +23,10 @@ export const PricingSummaryPage: React.FC = () => {
       <div className="flex-1 min-h-0">
         <CountryPricingSplitView 
           bundlesByCountry={countryGroups}
+          tripsData={tripsData}
           onExpandCountry={expandCountry}
+          showTrips={showTrips}
+          onToggleTrips={setShowTrips}
         />
       </div>
     </div>

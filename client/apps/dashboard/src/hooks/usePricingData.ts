@@ -6,9 +6,11 @@ import {
   CountryBundle, 
   GetCountriesQuery, 
   GetDataPlansQuery, 
-  GetBundlesByCountryQuery
+  GetBundlesByCountryQuery,
+  GetTripsQuery,
+  Trip
 } from '@/__generated__/graphql';
-import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_DATA_PLANS } from '../lib/graphql/queries';
+import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_DATA_PLANS, GET_TRIPS } from '../lib/graphql/queries';
 import { 
   calculateAveragePricePerDay, 
   buildBatchPricingInput, 
@@ -35,12 +37,14 @@ export interface CountryGroupData extends BundlesByCountry {
 
 export const usePricingData = () => {
   const [countryGroups, setCountryGroups] = useState<CountryGroupData[]>([]);
+  const [tripsData, setTripsData] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // GraphQL queries
   const { data: countriesData } = useQuery<GetCountriesQuery>(GET_COUNTRIES);
   const { data: bundlesByCountryData, loading: bundlesLoading, error: bundlesError, refetch: refetchBundlesByCountry } = useQuery<GetBundlesByCountryQuery>(GET_BUNDLES_BY_COUNTRY);
+  const { data: tripsQueryData, loading: tripsLoading, error: tripsError } = useQuery<GetTripsQuery>(GET_TRIPS);
   const { data: dataPlansData } = useQuery<GetDataPlansQuery>(GET_DATA_PLANS, {
     variables: {
       filter: {
@@ -71,10 +75,19 @@ export const usePricingData = () => {
     }
   }, [bundlesByCountryData, bundlesError]);
 
+  // Handle trips data
+  useEffect(() => {
+    if (tripsQueryData?.trips) {
+      setTripsData(tripsQueryData.trips);
+    } else if (tripsError) {
+      console.warn('Failed to load trips data:', tripsError);
+    }
+  }, [tripsQueryData, tripsError]);
+
   // Update loading state based on query loading
   useEffect(() => {
-    setLoading(bundlesLoading);
-  }, [bundlesLoading]);
+    setLoading(bundlesLoading || tripsLoading);
+  }, [bundlesLoading, tripsLoading]);
 
   // Fetch country data plans
   const fetchCountryDataPlans = async (countryId: string, bundleGroup?: string) => {
@@ -282,6 +295,7 @@ export const usePricingData = () => {
 
   return {
     countryGroups,
+    tripsData,
     loading,
     error,
     expandCountry,
