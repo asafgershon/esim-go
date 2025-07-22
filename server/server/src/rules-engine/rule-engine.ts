@@ -287,9 +287,13 @@ export class PricingRuleEngine {
     const priceAfterDiscount = Math.max(0.01, state.subtotal - totalDiscount);
     const processingFee = priceAfterDiscount * state.processingRate;
     const finalPrice = priceAfterDiscount + processingFee;
-    const revenueAfterProcessing = priceAfterDiscount; // This is what we receive after payment processing
-    const finalRevenue = revenueAfterProcessing - state.baseCost; // Net revenue after costs
-    const profit = revenueAfterProcessing - state.baseCost; // Same as finalRevenue
+    
+    // Revenue calculations as per requirements:
+    // - Final revenue should be what we get (final payment - cost)
+    // - Revenue after processing is the bottom line (what we actually receive)
+    const revenueAfterProcessing = finalPrice - processingFee - state.baseCost; // Bottom line: what we get after payment processing and costs
+    const finalRevenue = finalPrice - state.baseCost; // What we get from final payment minus cost
+    const profit = revenueAfterProcessing; // Net profit after all deductions
 
     // Yield final calculation step
     yield {
@@ -310,8 +314,13 @@ export class PricingRuleEngine {
     const maxRecommendedPrice = state.baseCost + MINIMUM_PROFIT_MARGIN;
     
     // Calculate max discount percentage while maintaining minimum profit
-    const maxAllowableAfterProcessing = (state.baseCost + MINIMUM_PROFIT_MARGIN) / (1 + state.processingRate);
-    const maxDiscountAmount = Math.max(0, state.subtotal - maxAllowableAfterProcessing);
+    // To maintain $1.50 minimum profit after processing fees:
+    // Required revenue after processing = baseCost + $1.50
+    // Required price after discount = (baseCost + $1.50) / (1 - processingRate) 
+    // Note: We use (1 - processingRate) because processing fee is deducted from price after discount
+    const requiredRevenueAfterProcessing = state.baseCost + MINIMUM_PROFIT_MARGIN;
+    const requiredPriceAfterDiscount = requiredRevenueAfterProcessing / (1 - state.processingRate);
+    const maxDiscountAmount = Math.max(0, state.subtotal - requiredPriceAfterDiscount);
     const maxDiscountPercentage = state.subtotal > 0 ? (maxDiscountAmount / state.subtotal) * 100 : 0;
 
     // Validate minimum profit margin
