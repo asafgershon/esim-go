@@ -20,6 +20,7 @@ import { FilterDropdown } from '@/components/PricingSplitView/filters/FilterDrop
 import { ResizeHandle } from '@/components/resize-handle';
 import { PageLayout } from '@/components/common/PageLayout';
 import { toast } from 'sonner';
+import { cn } from '@workspace/ui/lib/utils';
 
 interface CountryBundle {
   bundleName: string;
@@ -180,22 +181,12 @@ function CatalogPageContent() {
         description="Browse and sync the eSIM bundle catalog from eSIM Go"
         icon={<Database className="h-5 w-5" />}
         actions={
-          <div className="flex items-center gap-2">
-            <Button
-              variant={showSyncPanel ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setShowSyncPanel(!showSyncPanel)}
-            >
-              <RefreshCw className="h-4 w-4" />
-              {showSyncPanel ? 'Hide' : 'Show'} History
+          !showSyncPanel && (
+            <Button onClick={handleSyncClick} disabled={syncLoading} size="sm">
+              <RefreshCw className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+              Sync Catalog
             </Button>
-            {!showSyncPanel && (
-              <Button onClick={handleSyncClick} disabled={syncLoading} size="sm">
-                <RefreshCw className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
-                Sync Catalog
-              </Button>
-            )}
-          </div>
+          )
         }
       />
       
@@ -234,10 +225,23 @@ function CatalogPageContent() {
             id="countries-panel"
           >
             <List.Container className="h-full" itemCount={enhancedCountryData.length}>
-              <List.Header 
-                title="Countries"
-                description="Browse catalog bundles by country"
-              />
+              <List.Header className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700">Countries ({enhancedCountryData.length})</h3>
+                  <p className="text-xs text-muted-foreground">Browse catalog bundles by country</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-8 w-8 p-0",
+                    showSyncPanel && "bg-accent text-accent-foreground"
+                  )}
+                  onClick={() => setShowSyncPanel(!showSyncPanel)}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </List.Header>
               <List.Content>
                 {catalogLoading ? (
                   <List.Loading />
