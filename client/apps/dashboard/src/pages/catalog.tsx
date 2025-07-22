@@ -219,9 +219,9 @@ function CatalogPageContent() {
         >
           {/* Countries Panel */}
           <Panel
-            defaultSize={showSyncPanel ? 60 : 100}
-            minSize={showSyncPanel ? 40 : 100}
-            maxSize={showSyncPanel ? 80 : 100}
+            defaultSize={showSyncPanel ? 70 : 100}
+            minSize={showSyncPanel ? 60 : 100}
+            maxSize={showSyncPanel ? 85 : 100}
             id="countries-panel"
           >
             <List.Container className="h-full" itemCount={enhancedCountryData.length}>
@@ -285,16 +285,16 @@ function CatalogPageContent() {
                   exit={{ width: 0, opacity: 0 }}
                   transition={{ 
                     type: "spring",
-                    stiffness: 300,
-                    damping: 30,
-                    mass: 0.8
+                    stiffness: 200,
+                    damping: 35,
+                    mass: 1.2
                   }}
                   style={{ display: "flex", overflow: "hidden" }}
                 >
                   <Panel
-                    defaultSize={40}
-                    minSize={20}
-                    maxSize={60}
+                    defaultSize={30}
+                    minSize={15}
+                    maxSize={40}
                     id="sync-panel"
                   >
                     <div className="h-full">
