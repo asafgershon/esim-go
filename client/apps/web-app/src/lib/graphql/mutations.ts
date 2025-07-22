@@ -153,16 +153,10 @@ export const CALCULATE_PRICE = gql`
       bundleName
       countryName
       duration
-      cost
-      costPlus
+      currency
       totalCost
-      discountRate
       discountValue
       priceAfterDiscount
-      processingRate
-      processingCost
-      finalRevenue
-      currency
     }
   }
 `;
