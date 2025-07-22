@@ -7,7 +7,6 @@ import {
   TRIGGER_CATALOG_SYNC,
   GET_AVAILABLE_BUNDLE_GROUPS
 } from '@/lib/graphql/queries';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
 import { ScrollArea } from '@workspace/ui/components/scroll-area';
@@ -20,6 +19,7 @@ import { CatalogCountryCard } from '@/components/catalog/CatalogCountryCard';
 import { CatalogSyncPanel } from '@/components/catalog/CatalogSyncPanel';
 import { FilterDropdown } from '@/components/PricingSplitView/filters/FilterDropdown';
 import { ResizeHandle } from '@/components/resize-handle';
+import { PageLayout } from '@/components/common/PageLayout';
 import { toast } from 'sonner';
 
 interface CountryBundle {
@@ -174,34 +174,35 @@ function CatalogPageContent() {
   ];
   
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Catalog Management</h1>
-          <p className="text-muted-foreground">
-            Browse and manage the eSIM bundle catalog synced from eSIM Go
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={showSyncPanel ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowSyncPanel(!showSyncPanel)}
-          >
-            <RefreshCw className={`h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
-          </Button>
-          {!showSyncPanel && (
-            <Button onClick={handleSyncClick} disabled={syncLoading}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
-              Sync Catalog
+    <PageLayout.Container>
+      <PageLayout.Header
+        title="Catalog Management"
+        subtitle="Catalog Browser"
+        description="Browse and sync the eSIM bundle catalog from eSIM Go"
+        icon={<Database className="h-5 w-5" />}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant={showSyncPanel ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setShowSyncPanel(!showSyncPanel)}
+            >
+              <RefreshCw className="h-4 w-4" />
+              {showSyncPanel ? 'Hide' : 'Show'} History
             </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Filter Bar */}
-      <Card>
-        <CardContent className="p-3">
+            {!showSyncPanel && (
+              <Button onClick={handleSyncClick} disabled={syncLoading} size="sm">
+                <RefreshCw className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+                Sync Catalog
+              </Button>
+            )}
+          </div>
+        }
+      />
+      
+      <PageLayout.Content>
+        <div className="space-y-4">
+          {/* Filter Bar - No card wrapper, just the filter controls */}
           <div className="flex items-center gap-4">
             <FilterDropdown
               title="Bundle Group"
@@ -218,11 +219,9 @@ function CatalogPageContent() {
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Main Content Area with Resizable Panels */}
-      <div className="h-[700px] flex flex-col" key={showSyncPanel ? 'with-sync' : 'without-sync'}>
+          {/* Main Content Area with Resizable Panels */}
+          <div className="h-[calc(100vh-300px)] flex flex-col" key={showSyncPanel ? 'with-sync' : 'without-sync'}>
         <PanelGroup
           direction="horizontal"
           className="flex h-full"
@@ -235,48 +234,44 @@ function CatalogPageContent() {
             maxSize={showSyncPanel ? 80 : 100}
             id="countries-panel"
           >
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle>Countries</CardTitle>
-                <CardDescription>
-                  Browse catalog bundles by country
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[calc(100vh-400px)]">
-                  {catalogLoading ? (
-                    <div className="space-y-3">
-                      {[...Array(5)].map((_, i) => (
-                        <Skeleton key={i} className="h-20 w-full" />
-                      ))}
-                    </div>
-                  ) : enhancedCountryData.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-sm text-muted-foreground">
-                        {selectedBundleGroup === 'all' 
-                          ? 'No catalog data available. Try syncing the catalog.'
-                          : `No bundles found for group: ${selectedBundleGroup}`}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {enhancedCountryData.map((countryData) => (
-                        <CatalogCountryCard
-                          key={countryData.countryId}
-                          country={countryData.countryId}
-                          countryName={countryData.countryName}
-                          bundleCount={countryData.bundleCount}
-                          bundles={countryData.bundles}
-                          isExpanded={expandedCountries.has(countryData.countryId)}
-                          isLoading={loadingCountries.has(countryData.countryId)}
-                          onToggle={() => handleCountryToggle(countryData.countryId)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            <div className="h-full flex flex-col">
+              <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
+                <h3 className="text-sm font-medium text-gray-700">Countries</h3>
+                <p className="text-xs text-muted-foreground">Browse catalog bundles by country</p>
+              </div>
+              <ScrollArea className="flex-1">
+                {catalogLoading ? (
+                  <div className="space-y-3 p-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-20 w-full" />
+                    ))}
+                  </div>
+                ) : enhancedCountryData.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-muted-foreground">
+                      {selectedBundleGroup === 'all' 
+                        ? 'No catalog data available. Try syncing the catalog.'
+                        : `No bundles found for group: ${selectedBundleGroup}`}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 p-3">
+                    {enhancedCountryData.map((countryData) => (
+                      <CatalogCountryCard
+                        key={countryData.countryId}
+                        country={countryData.countryId}
+                        countryName={countryData.countryName}
+                        bundleCount={countryData.bundleCount}
+                        bundles={countryData.bundles}
+                        isExpanded={expandedCountries.has(countryData.countryId)}
+                        isLoading={loadingCountries.has(countryData.countryId)}
+                        onToggle={() => handleCountryToggle(countryData.countryId)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
           </Panel>
           
           {/* Sync Panel - With smooth transitions */}
@@ -318,8 +313,10 @@ function CatalogPageContent() {
             )}
           </AnimatePresence>
         </PanelGroup>
-      </div>
-    </div>
+          </div>
+        </div>
+      </PageLayout.Content>
+    </PageLayout.Container>
   );
 }
 
