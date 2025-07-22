@@ -108,24 +108,6 @@ function CatalogPageContent() {
     });
   }, [catalogData, countryBundles, selectedBundleGroup]);
   
-  // Calculate stats
-  const stats = useMemo(() => {
-    if (!catalogData?.bundlesByCountry) {
-      return { totalCountries: 0, totalBundles: 0, avgBundlesPerCountry: 0 };
-    }
-    
-    const totalCountries = enhancedCountryData.length;
-    const totalBundles = enhancedCountryData.reduce((sum, country) => {
-      // Only count bundles that are loaded
-      if (country.bundles) {
-        return sum + country.bundles.length;
-      }
-      return sum;
-    }, 0);
-    const avgBundlesPerCountry = totalCountries > 0 ? Math.round(totalBundles / totalCountries) : 0;
-    
-    return { totalCountries, totalBundles, avgBundlesPerCountry };
-  }, [enhancedCountryData]);
   
   // Lazy load country bundles  
   const [getCountryBundles] = useLazyQuery(GET_COUNTRY_BUNDLES);
@@ -215,55 +197,6 @@ function CatalogPageContent() {
             </Button>
           )}
         </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Countries</CardTitle>
-            <Globe className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCountries}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Bundles</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalBundles}</div>
-            <p className="text-xs text-muted-foreground">
-              Avg {stats.avgBundlesPerCountry} per country
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Last Sync</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm">
-              {syncHistoryData?.catalogSyncHistory?.jobs?.[0] ? (
-                <>
-                  <div className="font-medium">
-                    {new Date(syncHistoryData.catalogSyncHistory.jobs[0].completedAt || syncHistoryData.catalogSyncHistory.jobs[0].createdAt).toLocaleDateString()}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {syncHistoryData.catalogSyncHistory.jobs[0].status}
-                  </div>
-                </>
-              ) : (
-                <span className="text-muted-foreground">No sync history</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Filter Bar */}
