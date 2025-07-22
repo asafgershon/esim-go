@@ -215,7 +215,6 @@ function CatalogPageContent() {
         <PanelGroup
           direction="horizontal"
           className="flex h-full"
-          autoSaveId={showSyncPanel ? "catalog-layout-with-sync" : "catalog-layout-without-sync"}
         >
           {/* Countries Panel */}
           <Panel
@@ -273,44 +272,37 @@ function CatalogPageContent() {
             </List.Container>
           </Panel>
           
-          {/* Sync Panel - With smooth transitions */}
-          <AnimatePresence>
-            {showSyncPanel && (
-              <React.Fragment>
-                <ResizeHandle />
-                <motion.div
-                  key="sync-panel-group"
-                  initial={{ width: 0, opacity: 0 }}
-                  animate={{ width: "auto", opacity: 1 }}
-                  exit={{ width: 0, opacity: 0 }}
-                  transition={{ 
-                    type: "spring",
-                    stiffness: 200,
-                    damping: 35,
-                    mass: 1.2
-                  }}
-                  style={{ display: "flex", overflow: "hidden" }}
-                >
-                  <Panel
-                    defaultSize={20}
-                    minSize={10}
-                    maxSize={30}
-                    id="sync-panel"
+          {/* Sync Panel */}
+          {showSyncPanel && (
+            <>
+              <ResizeHandle />
+              <Panel
+                defaultSize={20}
+                minSize={15}
+                maxSize={25}
+                id="sync-panel"
+              >
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key="sync-content"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="h-full"
                   >
-                    <div className="h-full">
-                      <CatalogSyncPanel
-                        syncHistory={syncHistoryData?.catalogSyncHistory?.jobs || []}
-                        loading={syncHistoryLoading}
-                        onClose={() => setShowSyncPanel(false)}
-                        onSync={handleSyncClick}
-                        syncLoading={syncLoading}
-                      />
-                    </div>
-                  </Panel>
-                </motion.div>
-              </React.Fragment>
-            )}
-          </AnimatePresence>
+                    <CatalogSyncPanel
+                      syncHistory={syncHistoryData?.catalogSyncHistory?.jobs || []}
+                      loading={syncHistoryLoading}
+                      onClose={() => setShowSyncPanel(false)}
+                      onSync={handleSyncClick}
+                      syncLoading={syncLoading}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </Panel>
+            </>
+          )}
         </PanelGroup>
           </div>
         </div>
