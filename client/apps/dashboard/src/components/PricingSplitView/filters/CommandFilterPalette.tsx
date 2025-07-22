@@ -470,7 +470,15 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
 
           {/* Global AI-like Filter button - Hidden until AI features are implemented */}
           {false && (
-            <Popover open={globalSearchOpen} onOpenChange={setGlobalSearchOpen}>
+            <Popover 
+              open={globalSearchOpen} 
+              onOpenChange={(isOpen) => {
+                setGlobalSearchOpen(isOpen);
+                if (!isOpen) {
+                  setGlobalSearchQuery('');
+                }
+              }}
+            >
               <PopoverTrigger asChild>
                 <Button 
                   variant="outline" 
