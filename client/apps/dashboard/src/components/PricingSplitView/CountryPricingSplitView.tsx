@@ -268,7 +268,7 @@ export function CountryPricingSplitView({
                 onChange={setCountrySearchQuery}
                 placeholder="Search countries..."
               />
-              <List.Content spacing="tight" padding={false}>
+              <List.Content spacing="normal" padding={false}>
                 <div className="p-2">
                   {filteredBundlesByCountry.length === 0 && countrySearchQuery ? (
                     <List.Empty
@@ -444,7 +444,7 @@ export function CountryPricingSplitView({
               placeholder="Search countries..."
               className="p-4"
             />
-            <List.Content spacing="loose">
+            <List.Content spacing="normal">
               {filteredBundlesByCountry.length === 0 && countrySearchQuery ? (
                 <List.Empty
                   icon={<MapPin className="h-8 w-8 mx-auto text-gray-300" />}
