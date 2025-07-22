@@ -4,6 +4,7 @@ import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
 import { ScrollArea } from '@workspace/ui/components/scroll-area';
 import { Skeleton } from '@workspace/ui/components/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@workspace/ui/components/tooltip';
 import { 
   X, 
   RefreshCw, 
@@ -131,15 +132,22 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
           <CardDescription>Recent catalog synchronization jobs</CardDescription>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onSync}
-            disabled={syncLoading || hasRunningJob}
-          >
-            <RefreshCw className={`h-4 w-4 ${syncLoading ? 'animate-spin' : ''} mr-1`} />
-            Trigger Sync
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onSync}
+                disabled={syncLoading || hasRunningJob}
+                className="h-8 w-8 p-0"
+              >
+                <RefreshCw className={`h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Trigger Sync</p>
+            </TooltipContent>
+          </Tooltip>
           <Button
             variant="ghost"
             size="sm"
