@@ -7,13 +7,14 @@ import type { Database } from '../../../server/src/database.types.js';
 
 const logger = createLogger({ component: 'SupabaseService' });
 
-// Create Supabase client
+// Create Supabase client with service role key for admin operations
 export const supabase = createClient<Database>(
   config.supabase.url,
-  config.supabase.anonKey,
+  config.supabase.serviceRoleKey,
   {
     auth: {
       persistSession: false,
+      autoRefreshToken: false,
     },
   }
 );

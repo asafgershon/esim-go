@@ -140,7 +140,41 @@ export class CatalogMetadataRepository extends BaseSupabaseRepository {
         lastSyncResults: {
           completedAt: new Date().toISOString(),
           bundleGroups: results.bundleGroups,
-          totalBundles: results.totalBundles
+          totalBundles: results.totalBundles,
+          syncStatus: 'complete'
+        }
+      }
+    });
+  }
+
+  /**
+   * Record partial sync (incomplete due to errors or interruption)
+   */
+  async recordPartialSync(results: {
+    totalBundles: number;
+    bundleGroups: string[];
+    metadata?: Record<string, any>;
+  }): Promise<CatalogMetadata> {
+    // Don't update lastFullSync or schedule next sync for partial syncs
+    // This ensures the scheduler knows a full sync is still needed
+    
+    return this.updateMetadata({
+      syncVersion: this.getCurrentSyncVersion(),
+      bundleGroups: results.bundleGroups,
+      totalBundles: results.totalBundles,
+      metadata: {
+        ...results.metadata,
+        lastSyncResults: {
+          completedAt: new Date().toISOString(),
+          bundleGroups: results.bundleGroups,
+          totalBundles: results.totalBundles,
+          syncStatus: 'partial'
+        },
+        partialSyncInfo: {
+          lastPartialSync: new Date().toISOString(),
+          completedGroups: results.bundleGroups,
+          totalBundles: results.totalBundles,
+          note: 'Partial sync - full sync still needed'
         }
       }
     });

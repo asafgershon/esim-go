@@ -15,6 +15,7 @@ const env = cleanEnv(process.env, {
   // Supabase configuration
   SUPABASE_URL: url(),
   SUPABASE_ANON_KEY: str(),
+  SUPABASE_SERVICE_ROLE_KEY: str(),
 
   // eSIM Go API configuration
   ESIM_GO_API_KEY: str(),
@@ -52,6 +53,7 @@ export const config = {
   supabase: {
     url: env.SUPABASE_URL,
     anonKey: env.SUPABASE_ANON_KEY,
+    serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
   },
   
   esimGo: {
