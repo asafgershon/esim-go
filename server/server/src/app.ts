@@ -30,7 +30,7 @@ import {
   PricingDataSource,
 } from "./datasources/esim-go";
 import { resolvers } from "./resolvers";
-import { getRedis, handleESIMGoWebhook, PricingService } from "./services";
+import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncService } from "./services/catalog-sync.service";
 import { CatalogBackupService } from "./services/catalog-backup.service";
 import {
@@ -43,7 +43,6 @@ import {
 import { TripRepository } from "./repositories/trips/trip.repository";
 import { cleanEnv, port, str } from "envalid";
 import { logger } from "./lib/logger";
-import { PricingConfigRepository } from "./repositories/pricing-configs/pricing-config.repository";
 
 const typeDefs = `
 ${authDirectiveTypeDefs}
@@ -70,7 +69,6 @@ async function startServer() {
     const esimRepository = new ESIMRepository();
     const userRepository = new UserRepository();
     const tripRepository = new TripRepository();
-    const pricingConfigRepository = new PricingConfigRepository();
     const highDemandCountryRepository = new HighDemandCountryRepository();
 
     // Create an Express app and HTTP server
@@ -104,7 +102,6 @@ async function startServer() {
             services: {
               redis,
               // pubsub: getPubSub(redis), // Add when needed
-              pricing: PricingService,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -112,7 +109,6 @@ async function startServer() {
               esims: esimRepository,
               users: userRepository,
               trips: tripRepository,
-              pricingConfigs: pricingConfigRepository,
               highDemandCountries: highDemandCountryRepository,
             },
             dataSources: {
@@ -265,7 +261,6 @@ async function startServer() {
             services: {
               redis,
               // pubsub: getPubSub(redis), // Add when needed
-              pricing: PricingService,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -273,7 +268,6 @@ async function startServer() {
               esims: esimRepository,
               users: userRepository,
               trips: tripRepository,
-              pricingConfigs: new PricingConfigRepository(),
               highDemandCountries: highDemandCountryRepository,
             },
             dataSources: {

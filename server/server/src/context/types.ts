@@ -11,7 +11,6 @@ import type {
   InventoryDataSource,
   PricingDataSource,
 } from "../datasources/esim-go";
-import { PricingService } from "../services";
 import {
   CheckoutSessionRepository,
   OrderRepository,
@@ -20,7 +19,6 @@ import {
   HighDemandCountryRepository,
 } from "../repositories";
 import { TripRepository } from "../repositories/trips/trip.repository";
-import type { PricingConfigRepository } from "../repositories/pricing-configs/pricing-config.repository";
 
 export type Context = {
   auth: SupabaseAuthContext;
@@ -28,7 +26,6 @@ export type Context = {
     // db: typeof db; // TODO: Add database service
     redis: Redis;
     pubsub?: RedisPubSub;
-    pricing: typeof PricingService;
   };
   repositories: {
     checkoutSessions: CheckoutSessionRepository;
@@ -36,7 +33,6 @@ export type Context = {
     esims: ESIMRepository;
     users: UserRepository;
     trips: TripRepository;
-    pricingConfigs: PricingConfigRepository;
     highDemandCountries: HighDemandCountryRepository;
   };
   dataSources: {
