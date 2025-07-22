@@ -182,22 +182,29 @@ SELECT
         ELSE
             '[]'::JSONB
     END as conditions,
-    jsonb_build_array(
-        jsonb_build_object(
-            'type', 'APPLY_DISCOUNT_PERCENTAGE',
-            'value', (discount_rate * 100)::float,
-            'metadata', jsonb_build_object()
-        ),
-        CASE 
-            WHEN discount_per_day IS NOT NULL AND discount_per_day > 0 THEN
+    CASE 
+        WHEN discount_per_day IS NOT NULL AND discount_per_day > 0 THEN
+            jsonb_build_array(
+                jsonb_build_object(
+                    'type', 'APPLY_DISCOUNT_PERCENTAGE',
+                    'value', (discount_rate * 100)::float,
+                    'metadata', jsonb_build_object()
+                ),
                 jsonb_build_object(
                     'type', 'SET_DISCOUNT_PER_UNUSED_DAY',
                     'value', (discount_per_day * 100)::float,
                     'metadata', jsonb_build_object()
                 )
-            ELSE NULL
-        END
-    ) - NULL as actions, -- Remove NULL elements
+            )
+        ELSE
+            jsonb_build_array(
+                jsonb_build_object(
+                    'type', 'APPLY_DISCOUNT_PERCENTAGE',
+                    'value', (discount_rate * 100)::float,
+                    'metadata', jsonb_build_object()
+                )
+            )
+    END as actions,
     CASE 
         WHEN country_id IS NOT NULL AND duration IS NOT NULL AND bundle_group IS NOT NULL THEN 100
         WHEN country_id IS NOT NULL AND duration IS NOT NULL THEN 75
@@ -209,7 +216,7 @@ SELECT
     true as is_editable,
     COALESCE(created_by, '00000000-0000-0000-0000-000000000000'::UUID) as created_by
 FROM public.pricing_configurations
-WHERE discount_rate > 0; -- Only migrate rules that actually apply discounts
+WHERE discount_rate > 0;
 
 -- Add default unused days discount rule
 INSERT INTO public.pricing_rules (type, name, description, conditions, actions, priority, is_active, is_editable, created_by)
