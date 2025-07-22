@@ -4,7 +4,7 @@ import {
   GET_BUNDLES_BY_COUNTRY,
   GET_COUNTRY_BUNDLES,
   GET_CATALOG_SYNC_HISTORY,
-  TRIGGER_CATALOG_SYNC,
+  SYNC_CATALOG,
   GET_AVAILABLE_BUNDLE_GROUPS
 } from '@/lib/graphql/queries';
 import { Button } from '@workspace/ui/components/button';
@@ -67,13 +67,13 @@ function CatalogPageContent() {
   });
   
   // Mutations
-  const [triggerSync, { loading: syncLoading }] = useMutation(TRIGGER_CATALOG_SYNC, {
+  const [syncCatalog, { loading: syncLoading }] = useMutation(SYNC_CATALOG, {
     onCompleted: (data) => {
-      if (data.triggerCatalogSync.success) {
-        toast.success(data.triggerCatalogSync.message || 'Catalog sync triggered successfully');
+      if (data.syncCatalog.success) {
+        toast.success('Catalog sync triggered successfully');
         refetchSyncHistory();
       } else {
-        toast.error(data.triggerCatalogSync.error || 'Failed to trigger sync');
+        toast.error(data.syncCatalog.error || 'Failed to trigger sync');
       }
     },
     onError: (error) => {
@@ -154,12 +154,9 @@ function CatalogPageContent() {
   
   const handleSyncClick = async () => {
     try {
-      await triggerSync({
+      await syncCatalog({
         variables: {
-          params: {
-            jobType: 'full-sync',
-            priority: 'normal'
-          }
+          force: false
         }
       });
     } catch (error) {
