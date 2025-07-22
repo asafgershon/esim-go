@@ -123,8 +123,8 @@ interface ListContentProps {
 
 const spacingClasses = {
   tight: 'space-y-1',
-  normal: 'space-y-2',
-  loose: 'space-y-3'
+  normal: 'space-y-3',
+  loose: 'space-y-4'
 };
 
 const Content = forwardRef<HTMLDivElement, ListContentProps>((
