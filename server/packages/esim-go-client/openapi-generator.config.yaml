@@ -1,0 +1,21 @@
+generatorName: typescript-axios
+inputSpec: https://docs.esim-go.com/esim_go_schema_v2_4.yaml
+outputDir: ./src/generated
+skipValidateSpec: true
+additionalProperties:
+  npmName: "@esim-go/client"
+  npmVersion: "1.0.0"
+  supportsES6: true
+  withInterfaces: true
+  modelPropertyNaming: camelCase
+  enumPropertyNaming: UPPERCASE
+  stringEnums: true
+  useSingleRequestParameter: true
+  withSeparateModelsAndApi: true
+  apiPackage: api
+  modelPackage: models
+  fileHeader: "/* tslint:disable */\n/* eslint-disable */\n// @ts-nocheck"
+globalProperties:
+  models: ""
+  apis: ""
+  supportingFiles: "ApiException.ts,base.ts,common.ts,configuration.ts,git_push.sh,index.ts"

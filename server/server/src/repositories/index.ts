@@ -5,6 +5,13 @@ export { UserRepository } from "./users/user.repository";
 export { HighDemandCountryRepository } from "./high-demand-countries/high-demand-country.repository";
 export { PricingRulesRepository } from "./pricing-rules/pricing-rules.repository";
 
+// Catalog repositories
+export { 
+  BundleRepository,
+  SyncJobRepository,
+  CatalogMetadataRepository 
+} from "./catalog";
+
 export type {
   CheckoutSessionPlanSnapshot,
   CheckoutSessionPricing,
@@ -22,3 +29,16 @@ export type {
   HighDemandCountryInsert,
   HighDemandCountryUpdate,
 } from "./high-demand-countries/high-demand-country.repository";
+
+// Catalog types
+export type { 
+  SearchCatalogCriteria,
+  JobType, 
+  JobStatus, 
+  JobPriority,
+  CreateSyncJobParams,
+  UpdateSyncJobParams,
+  SyncStrategy, 
+  ApiHealthStatus,
+  UpdateMetadataParams 
+} from "./catalog";

@@ -6,3 +6,13 @@ client/.turbo
 client/apps/web-app/.turbo
 client/packages/ui/.turbo
 
+node_modules
+
+# Build outputs
+dist/
+*.d.ts.map
+*.js.map
+
+# Generated files
+server/packages/esim-go-client/dist/
+server/packages/utils/dist/
