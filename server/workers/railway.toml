@@ -1,0 +1,21 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cd server/workers && bun install --frozen-lockfile && bun run build"
+
+[deploy]
+startCommand = "cd server/workers && bun run start"
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+restartPolicyType = "on-failure"
+restartPolicyMaxRetries = 3
+
+[service]
+internalPort = 3000
+
+# Environment variable requirements (set in Railway dashboard)
+# NODE_ENV=production
+# LOG_LEVEL=info
+# REDIS_URL=${{Redis.REDIS_URL}}
+# SUPABASE_URL=your-supabase-url
+# SUPABASE_ANON_KEY=your-supabase-anon-key
+# ESIM_GO_API_KEY=your-api-key
