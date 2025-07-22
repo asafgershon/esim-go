@@ -219,26 +219,67 @@ export class PricingRuleEngine {
       }
     }
 
-    // Apply unused days discount if applicable
-    if (state.unusedDays > 0 && state.discountPerUnusedDay > 0) {
-      const unusedDaysDiscount = state.subtotal * (state.unusedDays * state.discountPerUnusedDay);
-      
-      yield {
-        type: PricingStepType.UNUSED_DAYS_CALCULATION,
-        timestamp: new Date(),
-        message: `Calculating unused days discount (${state.unusedDays} days)`,
-        data: {
-          unusedDays: state.unusedDays,
-          discountPerDay: state.discountPerUnusedDay,
-          totalDiscount: unusedDaysDiscount
+    // Apply unused days discount if applicable using markup-based formula
+    if (state.unusedDays > 0) {
+      try {
+        // Calculate dynamic discount per day based on markup differences
+        const discountPerDay = await this.calculateUnusedDayDiscount(
+          state.markup,
+          context.bundle.duration,
+          context.requestedDuration || context.bundle.duration,
+          context.bundle.bundleGroup || context.bundleGroup || 'Standard Fixed'
+        );
+        
+        if (discountPerDay > 0) {
+          const unusedDaysDiscount = discountPerDay * state.unusedDays;
+          
+          yield {
+            type: PricingStepType.UNUSED_DAYS_CALCULATION,
+            timestamp: new Date(),
+            message: `Calculating unused days discount using markup formula (${state.unusedDays} days @ $${discountPerDay.toFixed(2)}/day)`,
+            data: {
+              unusedDays: state.unusedDays,
+              discountPerDay: discountPerDay,
+              totalDiscount: unusedDaysDiscount,
+              calculationMethod: 'markup-based'
+            }
+          } as UnusedDaysCalculationStep;
+          
+          state.discounts.push({
+            ruleName: 'Unused Days Discount (Markup-Based)',
+            amount: unusedDaysDiscount,
+            type: 'fixed'
+          });
         }
-      } as UnusedDaysCalculationStep;
-      
-      state.discounts.push({
-        ruleName: 'Unused Days Discount',
-        amount: unusedDaysDiscount,
-        type: 'percentage'
-      });
+      } catch (error) {
+        // Fallback to simple percentage if markup calculation fails
+        this.logger.warn('Markup-based discount calculation failed, using fallback', {
+          error: (error as Error).message,
+          unusedDays: state.unusedDays,
+          operationType: 'unused-days-discount'
+        });
+        
+        const fallbackDiscountRate = 0.10; // 10% per day fallback
+        const unusedDaysDiscount = state.subtotal * (state.unusedDays * fallbackDiscountRate);
+        
+        yield {
+          type: PricingStepType.UNUSED_DAYS_CALCULATION,
+          timestamp: new Date(),
+          message: `Calculating unused days discount using fallback rate (${state.unusedDays} days @ ${(fallbackDiscountRate * 100).toFixed(1)}%)`,
+          data: {
+            unusedDays: state.unusedDays,
+            discountPerDay: fallbackDiscountRate,
+            totalDiscount: unusedDaysDiscount,
+            calculationMethod: 'percentage-fallback'
+          }
+        } as UnusedDaysCalculationStep;
+        
+        state.discounts.push({
+          ruleName: 'Unused Days Discount (Fallback)',
+          amount: unusedDaysDiscount,
+          type: 'percentage'
+        });
+      }
     }
 
     // Calculate final pricing

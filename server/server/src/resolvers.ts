@@ -12,7 +12,6 @@ import { esimResolvers } from "./resolvers/esim-resolvers";
 import { checkoutResolvers } from "./resolvers/checkout-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import { tripsResolvers } from "./resolvers/trips-resolvers";
-import { markupConfigResolvers } from "./resolvers/markup-config-resolvers";
 import { pricingRulesResolvers } from "./resolvers/pricing-rules-resolvers";
 import { GraphQLError } from "graphql";
 import { PaymentMethod } from "./types";
@@ -250,8 +249,6 @@ export const resolvers: Resolvers = {
     // Trips resolvers are merged from trips-resolvers.ts
     ...tripsResolvers.Query!,
     
-    // Markup config resolvers are merged from markup-config-resolvers.ts
-    ...markupConfigResolvers.Query!,
     
     // Pricing rules resolvers are merged from pricing-rules-resolvers.ts
     ...pricingRulesResolvers.Query!,
@@ -950,23 +947,45 @@ export const resolvers: Resolvers = {
 
     // Pricing filters - returns all available filter options dynamically
     pricingFilters: async (_, __, context: Context) => {
-      // This will be protected by @auth(role: "ADMIN") directive
       try {
-        // Reuse the existing bundleGroups query
+        // Get dynamic bundle groups
         const bundleGroups = await resolvers.Query!.bundleGroups!(_, __, context);
         
-        // Define duration ranges (static for now, could be dynamic later)
-        const durations = [
-          { label: '1-7 days', value: 'short', minDays: 1, maxDays: 7 },
-          { label: '8-30 days', value: 'medium', minDays: 8, maxDays: 30 },
-          { label: '31+ days', value: 'long', minDays: 31, maxDays: 999 }
-        ];
+        // Get bundle data aggregation for dynamic durations and data types
+        const bundleAggregation = await resolvers.Query!.bundleDataAggregation!(_, __, context);
         
-        // Define data types
-        const dataTypes = [
-          { label: 'Unlimited', value: 'unlimited', isUnlimited: true },
-          { label: 'Limited', value: 'limited', isUnlimited: false }
-        ];
+        let durations: { label: string; value: string }[] = [];
+        let dataTypes: { label: string; value: string }[] = [];
+        
+        if (bundleAggregation && bundleAggregation.total > 0 && bundleAggregation.byDuration?.length > 0) {
+          // Extract unique durations from aggregation data
+          durations = bundleAggregation.byDuration.map((durationGroup: any) => ({
+            label: `${durationGroup.duration} days`,
+            value: durationGroup.duration.toString(),
+            minDays: durationGroup.duration,
+            maxDays: durationGroup.duration
+          }));
+          
+          // Dynamic data types based on actual bundle data
+          dataTypes = [];
+          if (bundleAggregation.unlimited > 0) {
+            dataTypes.push({ label: 'Unlimited', value: 'unlimited', isUnlimited: true });
+          }
+          if (bundleAggregation.total - bundleAggregation.unlimited > 0) {
+            dataTypes.push({ label: 'Limited', value: 'limited', isUnlimited: false });
+          }
+        } else {
+          // Fallback to static values if aggregation data is not available
+          durations = [
+            { label: '1-7 days', value: 'short', minDays: 1, maxDays: 7 },
+            { label: '8-30 days', value: 'medium', minDays: 8, maxDays: 30 },
+            { label: '31+ days', value: 'long', minDays: 31, maxDays: 999 }
+          ];
+          dataTypes = [
+            { label: 'Unlimited', value: 'unlimited', isUnlimited: true },
+            { label: 'Limited', value: 'limited', isUnlimited: false }
+          ];
+        }
         
         return {
           bundleGroups,
@@ -1197,7 +1216,6 @@ export const resolvers: Resolvers = {
     ...checkoutResolvers.Mutation!,
     ...usersResolvers.Mutation!,
     ...tripsResolvers.Mutation!,
-    ...markupConfigResolvers.Mutation!,
     ...pricingRulesResolvers.Mutation!,
     signUp: async (_, { input }) => {
       try {

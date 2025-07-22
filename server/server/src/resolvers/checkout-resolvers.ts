@@ -669,23 +669,33 @@ async function simulateWebhookProcessing(
         throw new Error("Cannot create order without a user ID");
       }
 
-      // Calculate detailed pricing breakdown for the order
-      const { PricingService } = await import('../services/pricing.service');
-      const pricingConfig = await PricingService.getPricingConfig(
-        planSnapshot.countries[0] || '', // Use first country for pricing
-        planSnapshot.duration,
-        context.dataSources.catalogue
-      );
+      // Calculate detailed pricing breakdown for the order using the pricing engine
+      const { PricingEngineService } = await import('../services/pricing-engine.service');
+      const pricingEngine = new PricingEngineService(context.supabase);
       
-      const bundleName = PricingService.getBundleName(planSnapshot.duration);
-      const countryName = PricingService.getCountryName(planSnapshot.countries[0] || '');
+      const firstCountry = planSnapshot.countries[0] || '';
+      const pricingContext = {
+        bundle: {
+          id: planSnapshot.name,
+          name: planSnapshot.name,
+          duration: planSnapshot.duration,
+          bundleGroup: planSnapshot.bundleGroup || 'Standard Fixed',
+          basePrice: planSnapshot.price,
+          dataAmount: 0,
+          isUnlimited: planSnapshot.isUnlimited || false
+        },
+        customer: {
+          paymentMethod: input.paymentMethodType || 'ISRAELI_CARD', 
+          segmentTier: 'STANDARD' as const
+        },
+        location: {
+          country: firstCountry,
+          region: planSnapshot.region || 'Unknown'
+        },
+        metadata: {}
+      };
       
-      const detailedPricing = PricingService.calculatePricing(
-        bundleName,
-        countryName,
-        planSnapshot.duration,
-        pricingConfig
-      );
+      const detailedPricing = await pricingEngine.calculatePrice(pricingContext);
 
       // Step 1: Create Order record using repository with detailed pricing
       const orderRecord = await context.repositories.orders.createOrderWithPricing({
