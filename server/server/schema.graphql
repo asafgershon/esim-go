@@ -43,7 +43,7 @@ type Query {
   pricingRule(id: ID!): PricingRule
   activePricingRules: [PricingRule!]!
   conflictingPricingRules(ruleId: ID!): [PricingRule!]!
-  calculateBatchPricing(requests: [CalculatePriceInput!]!): [PricingRuleCalculation!]!
+  calculateBatchPricing(requests: [CalculatePriceInput!]!): [PricingRuleCalculation!]! @auth(role: "ADMIN")
   calculatePriceWithRules(input: CalculatePriceInput!): PricingRuleCalculation!
   simulatePricingRule(rule: CreatePricingRuleInput!, testContext: TestPricingContext!): PricingRuleCalculation!
   
@@ -69,6 +69,14 @@ type Query {
   
   # DEBUG: Direct API call to see raw catalog data
   debugRawCatalogData(countryId: String!): DebugCatalogResponse
+  
+  # Catalog sync history
+  catalogSyncHistory(params: SyncHistoryParams): CatalogSyncHistoryConnection! @auth(role: "ADMIN")
+  
+  # Catalog bundles queries (from new catalog system)
+  catalogBundles(criteria: SearchCatalogCriteria): CatalogBundleConnection! @auth(role: "ADMIN")
+  catalogBundlesByCountry: [CatalogCountryBundles!]! @auth(role: "ADMIN")
+  availableBundleGroups: [String!]! @auth(role: "ADMIN")
 }
 
 type Mutation {
@@ -124,6 +132,9 @@ type Mutation {
   
   # High demand countries management
   toggleHighDemandCountry(countryId: String!): ToggleHighDemandResponse @auth(role: "ADMIN")
+  
+  # Catalog sync operations (enhanced)
+  triggerCatalogSync(params: TriggerSyncParams!): TriggerSyncResponse @auth(role: "ADMIN")
   
   # eSIM operations
   purchaseESIM(planId: ID!, input: PurchaseESIMInput!): PurchaseESIMResponse
@@ -1049,4 +1060,111 @@ type BundleGroupDataStats {
   unlimited: Int!
   limited: Int!
   averageDataAmount: Float!
+}
+
+# Catalog Sync History Types
+input SyncHistoryParams {
+  limit: Int = 50
+  offset: Int = 0
+  status: SyncJobStatus
+  type: SyncJobType
+  fromDate: String
+  toDate: String
+}
+
+type CatalogSyncJob {
+  id: ID!
+  jobType: String! # For compatibility with frontend
+  type: SyncJobType!
+  status: String! # For compatibility with frontend
+  priority: String! # For compatibility with frontend
+  bundleGroup: String
+  countryId: String
+  bundlesProcessed: Int
+  bundlesAdded: Int
+  bundlesUpdated: Int
+  startedAt: String!
+  completedAt: String
+  duration: Int # Duration in milliseconds
+  errorMessage: String
+  metadata: JSON
+  createdAt: String!
+  updatedAt: String!
+}
+
+type CatalogSyncHistoryConnection {
+  jobs: [CatalogSyncJob!]!
+  totalCount: Int!
+}
+
+enum SyncJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum SyncJobType {
+  FULL_SYNC
+  GROUP_SYNC
+  COUNTRY_SYNC
+  METADATA_SYNC
+}
+
+# Catalog Bundle System Types (for new catalog system)
+input SearchCatalogCriteria {
+  bundleGroups: [String!]
+  countries: [String!]
+  regions: [String!]
+  minDuration: Int
+  maxDuration: Int
+  unlimited: Boolean
+  search: String
+  limit: Int = 50
+  offset: Int = 0
+}
+
+type CatalogBundle {
+  id: ID!
+  esimGoName: String!
+  bundleGroup: String!
+  description: String!
+  duration: Int!
+  dataAmount: Int! # -1 for unlimited
+  unlimited: Boolean!
+  priceCents: Int!
+  currency: String!
+  countries: [String!]!
+  regions: [String!]!
+  syncedAt: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type CatalogBundleConnection {
+  bundles: [CatalogBundle!]!
+  totalCount: Int!
+}
+
+type CatalogCountryBundles {
+  country: String!
+  bundleCount: Int!
+  bundles: [CatalogBundle!]!
+}
+
+# Trigger Sync Types
+input TriggerSyncParams {
+  type: SyncJobType!
+  bundleGroup: String
+  countryId: String
+  priority: String = "normal"
+  force: Boolean = false
+}
+
+type TriggerSyncResponse {
+  success: Boolean!
+  jobId: String
+  message: String
+  error: String
 }

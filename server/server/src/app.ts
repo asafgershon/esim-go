@@ -31,7 +31,8 @@ import {
 } from "./datasources/esim-go";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
-import { CatalogSyncService } from "./services/catalog-sync.service";
+// import { CatalogSyncService } from "./services/catalog-sync.service";
+import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
 import { CatalogBackupService } from "./services/catalog-backup.service";
 import {
   CheckoutSessionRepository,
@@ -52,6 +53,7 @@ ${readFileSync(join(__dirname, "../schema.graphql"), "utf-8")}
 const env = cleanEnv(process.env, {
   PORT: port({ default: 4000 }),
   CORS_ORIGINS: str({ default: "http://localhost:3000" }),
+  ESIM_GO_API_KEY: str({ desc: "eSIM Go API key for V2 sync service" }),
 });
 
 async function startServer() {
@@ -309,10 +311,20 @@ async function startServer() {
         // Don't fail server startup if backup loading fails
       }
 
-      // Start catalog sync service
+      // Start catalog sync service V2
+      // Note: The actual sync will be performed by the worker system
+      // This just creates jobs in the database for workers to process
       const catalogueDataSource = new CatalogueDataSource({ cache: redis });
-      const catalogSyncService = new CatalogSyncService(catalogueDataSource, redis);
-      catalogSyncService.startPeriodicSync();
+      // Commenting out old sync service to prevent conflicts
+      // const catalogSyncService = new CatalogSyncService(catalogueDataSource, redis);
+      // catalogSyncService.startPeriodicSync();
+      
+      // Initialize V2 sync service (for creating jobs)
+      const catalogSyncServiceV2 = new CatalogSyncServiceV2(env.ESIM_GO_API_KEY);
+      logger.info("Catalog Sync Service V2 initialized", {
+        component: "CatalogSyncServiceV2",
+        operationType: "startup"
+      });
     });
   } catch (error) {
     logger.error("Failed to start eSIM Go server", error as Error, {

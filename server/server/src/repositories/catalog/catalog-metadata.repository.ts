@@ -84,7 +84,14 @@ export class CatalogMetadataRepository extends BaseSupabaseRepository {
     const metadata = await this.getMetadata();
     
     const updateData: CatalogMetadataUpdate = {
-      ...params,
+      sync_version: params.syncVersion,
+      last_full_sync: params.lastFullSync,
+      next_scheduled_sync: params.nextScheduledSync,
+      bundle_groups: params.bundleGroups,
+      total_bundles: params.totalBundles,
+      sync_strategy: params.syncStrategy,
+      api_health_status: params.apiHealthStatus,
+      metadata: params.metadata,
       last_health_check: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

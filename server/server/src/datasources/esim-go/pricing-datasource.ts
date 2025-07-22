@@ -61,7 +61,7 @@ export class PricingDataSource extends ESIMGoDataSource {
         try {
           const url = new URL('/v2.5/catalogue', this.baseURL);
           url.searchParams.set('countries', countryCode);
-          url.searchParams.set('perPage', '200'); // Get all bundles for this country
+          url.searchParams.set('perPage', '50'); // Max per page to avoid 401 errors
           
           this.logger.info('Fetching bundle pricing from catalog', { 
             bundleName,

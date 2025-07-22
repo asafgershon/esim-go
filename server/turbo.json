@@ -1,0 +1,48 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "build/**"],
+      "inputs": ["src/**", "*.ts", "*.js", "*.json", "!dist/**", "!node_modules/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "inputs": ["src/**", "*.ts", "*.js", "*.json", "!dist/**", "!node_modules/**"]
+    },
+    "dev:server": {
+      "cache": false,
+      "persistent": true,
+      "inputs": ["server/src/**", "server/*.ts", "server/*.js", "server/*.json"]
+    },
+    "dev:workers": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["build:packages"],
+      "inputs": ["workers/src/**", "workers/*.ts", "workers/*.js", "workers/*.json"]
+    },
+    "dev:all": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["build:packages"]
+    },
+    "build:packages": {
+      "dependsOn": [],
+      "outputs": ["packages/*/dist/**"],
+      "inputs": ["packages/*/src/**", "packages/*/*.ts", "packages/*/*.js", "packages/*/*.json"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "*.ts", "!dist/**", "!node_modules/**"]
+    },
+    "lint": {
+      "inputs": ["src/**", "*.ts", "*.js", ".eslintrc*", "!dist/**", "!node_modules/**"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "test/**", "*.test.*", "*.spec.*", "!dist/**", "!node_modules/**"]
+    }
+  }
+}

@@ -860,3 +860,92 @@ export const GET_BUNDLE_DATA_AGGREGATION = gql(`
     }
   }
 `)
+
+// Catalog Queries
+export const GET_CATALOG_BUNDLES = gql(`
+  query GetCatalogBundles($criteria: SearchCatalogCriteria) {
+    catalogBundles(criteria: $criteria) {
+      bundles {
+        id
+        esimGoName
+        bundleGroup
+        description
+        duration
+        dataAmount
+        unlimited
+        priceCents
+        currency
+        countries
+        regions
+        syncedAt
+        createdAt
+        updatedAt
+      }
+      totalCount
+    }
+  }
+`)
+
+export const GET_CATALOG_BUNDLES_BY_COUNTRY = gql(`
+  query GetCatalogBundlesByCountry {
+    catalogBundlesByCountry {
+      country
+      bundleCount
+      bundles {
+        id
+        esimGoName
+        bundleGroup
+        description
+        duration
+        dataAmount
+        unlimited
+        priceCents
+        currency
+        regions
+        syncedAt
+      }
+    }
+  }
+`)
+
+export const GET_CATALOG_SYNC_HISTORY = gql(`
+  query GetCatalogSyncHistory($params: SyncHistoryParams) {
+    catalogSyncHistory(params: $params) {
+      jobs {
+        id
+        jobType
+        status
+        priority
+        bundleGroup
+        countryId
+        bundlesProcessed
+        bundlesAdded
+        bundlesUpdated
+        errorMessage
+        metadata
+        createdAt
+        startedAt
+        completedAt
+        updatedAt
+      }
+      totalCount
+    }
+  }
+`)
+
+export const TRIGGER_CATALOG_SYNC = gql(`
+  mutation TriggerCatalogSync($params: TriggerSyncParams!) {
+    triggerCatalogSync(params: $params) {
+      success
+      jobId
+      message
+      error
+    }
+  }
+`)
+
+export const GET_AVAILABLE_BUNDLE_GROUPS = gql(`
+  query GetAvailableBundleGroups {
+    availableBundleGroups
+  }
+`)

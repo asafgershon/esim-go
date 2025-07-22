@@ -24,30 +24,30 @@ export class BundleRepository extends BaseSupabaseRepository {
   });
 
   /**
-   * Get bundle by eSIM Go name
+   * Get bundle by bundle ID
    */
-  async getByEsimGoName(esimGoName: string): Promise<CatalogBundle | null> {
+  async getByBundleId(bundleId: string): Promise<CatalogBundle | null> {
     return withPerformanceLogging(
       this.logger,
-      'get-bundle-by-name',
+      'get-bundle-by-id',
       async () => {
         const { data, error } = await this.supabase
           .from('catalog_bundles')
           .select('*')
-          .eq('esim_go_name', esimGoName)
+          .eq('bundle_id', bundleId)
           .single();
 
         if (error) {
           if (error.code === 'PGRST116') {
             return null; // Not found
           }
-          this.logger.error('Failed to get bundle by name', error, { esimGoName });
+          this.logger.error('Failed to get bundle by id', error, { bundleId });
           throw error;
         }
 
         return data;
       },
-      { esimGoName }
+      { bundleId }
     );
   }
 
@@ -77,27 +77,25 @@ export class BundleRepository extends BaseSupabaseRepository {
           try {
             // Transform eSIM Go bundles to our database format
             const bundlesToUpsert: CatalogBundleInsert[] = batch.map(bundle => ({
-              esim_go_name: bundle.name!,
+              bundle_id: bundle.name!,  // Using name as bundle_id
+              name: bundle.name!,
               bundle_group: bundle.bundleGroup || null,
               description: bundle.description || null,
-              duration: bundle.duration || null,
+              duration: bundle.duration || 0,
               data_amount: this.normalizeDataAmount(bundle.dataAmount),
               unlimited: bundle.unlimited || false,
-              price_cents: Math.round((bundle.price || 0) * 100), // Convert to cents
-              currency: bundle.currency || 'USD',
+              price: bundle.price || 0,
               countries: bundle.countries || [],
-              regions: bundle.regions || [],
               metadata: {
                 originalBundle: bundle,
                 lastSyncedAt: new Date().toISOString()
-              },
-              synced_at: new Date().toISOString()
+              }
             }));
 
             const { data, error } = await this.supabase
               .from('catalog_bundles')
               .upsert(bundlesToUpsert, {
-                onConflict: 'esim_go_name',
+                onConflict: 'bundle_id',
                 ignoreDuplicates: false
               })
               .select();
@@ -244,21 +242,56 @@ export class BundleRepository extends BaseSupabaseRepository {
   }
 
   /**
+   * Get all unique countries from bundles
+   */
+  async getUniqueCountries(): Promise<string[]> {
+    const { data, error } = await this.supabase
+      .from('catalog_bundles')
+      .select('countries');
+
+    if (error) {
+      this.logger.error('Failed to get unique countries', error);
+      throw error;
+    }
+
+    const allCountries = new Set<string>();
+    
+    for (const bundle of data || []) {
+      if (bundle.countries && Array.isArray(bundle.countries)) {
+        for (const country of bundle.countries) {
+          if (typeof country === 'string') {
+            allCountries.add(country);
+          }
+        }
+      }
+    }
+
+    const uniqueCountries = Array.from(allCountries).sort();
+    
+    this.logger.info('Retrieved unique countries', {
+      countryCount: uniqueCountries.length,
+      operationType: 'get-unique-countries'
+    });
+
+    return uniqueCountries;
+  }
+
+  /**
    * Update bundle pricing
    */
-  async updatePricing(esimGoName: string, priceCents: number): Promise<CatalogBundle | null> {
+  async updatePricing(bundleId: string, price: number): Promise<CatalogBundle | null> {
     const { data, error } = await this.supabase
       .from('catalog_bundles')
       .update({ 
-        price_cents: priceCents,
+        price: price,
         updated_at: new Date().toISOString()
       })
-      .eq('esim_go_name', esimGoName)
+      .eq('bundle_id', bundleId)
       .select()
       .single();
 
     if (error) {
-      this.logger.error('Failed to update bundle pricing', error, { esimGoName, priceCents });
+      this.logger.error('Failed to update bundle pricing', error, { bundleId, price });
       throw error;
     }
 
@@ -275,8 +308,8 @@ export class BundleRepository extends BaseSupabaseRepository {
     const { data, error } = await this.supabase
       .from('catalog_bundles')
       .select('*')
-      .lt('synced_at', staleDate.toISOString())
-      .order('synced_at', { ascending: true })
+      .lt('updated_at', staleDate.toISOString())
+      .order('updated_at', { ascending: true })
       .limit(100);
 
     if (error) {
@@ -297,7 +330,7 @@ export class BundleRepository extends BaseSupabaseRepository {
     const { data, error } = await this.supabase
       .from('catalog_bundles')
       .delete()
-      .lt('synced_at', orphanDate.toISOString())
+      .lt('updated_at', orphanDate.toISOString())
       .select('id');
 
     if (error) {
@@ -319,13 +352,13 @@ export class BundleRepository extends BaseSupabaseRepository {
   }
 
   /**
-   * Normalize data amount to bytes (-1 for unlimited)
+   * Normalize data amount to MB (-1 for unlimited)
    */
   private normalizeDataAmount(dataAmount?: number | null): number {
     if (!dataAmount || dataAmount === 0) {
       return -1; // Unlimited
     }
-    // Assuming the API returns data in MB, convert to bytes
-    return dataAmount * 1024 * 1024;
+    // Return data in MB as provided by API
+    return dataAmount;
   }
 }

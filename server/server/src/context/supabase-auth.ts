@@ -11,7 +11,7 @@ const env = cleanEnv(process.env, {
 });
 
 // Create Supabase clients
-export const supabaseAdmin = createClient(
+export const supabaseAdmin = createClient<Database>(
   env.SUPABASE_URL,
   env.SUPABASE_SERVICE_ROLE_KEY,
   {

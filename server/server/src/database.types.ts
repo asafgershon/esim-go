@@ -14,6 +14,153 @@ export type Database = {
   }
   public: {
     Tables: {
+      catalog_bundles: {
+        Row: {
+          bundle_group: string | null
+          bundle_id: string
+          countries: Json | null
+          created_at: string | null
+          data_amount: number | null
+          description: string | null
+          duration: number
+          id: string
+          metadata: Json | null
+          name: string
+          price: number
+          unlimited: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          bundle_group?: string | null
+          bundle_id: string
+          countries?: Json | null
+          created_at?: string | null
+          data_amount?: number | null
+          description?: string | null
+          duration: number
+          id?: string
+          metadata?: Json | null
+          name: string
+          price: number
+          unlimited?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          bundle_group?: string | null
+          bundle_id?: string
+          countries?: Json | null
+          created_at?: string | null
+          data_amount?: number | null
+          description?: string | null
+          duration?: number
+          id?: string
+          metadata?: Json | null
+          name?: string
+          price?: number
+          unlimited?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      catalog_metadata: {
+        Row: {
+          api_health_status: string | null
+          bundle_groups: string[] | null
+          created_at: string | null
+          id: string
+          last_full_sync: string | null
+          last_health_check: string | null
+          metadata: Json | null
+          next_scheduled_sync: string | null
+          sync_strategy: string | null
+          sync_version: string | null
+          total_bundles: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_health_status?: string | null
+          bundle_groups?: string[] | null
+          created_at?: string | null
+          id?: string
+          last_full_sync?: string | null
+          last_health_check?: string | null
+          metadata?: Json | null
+          next_scheduled_sync?: string | null
+          sync_strategy?: string | null
+          sync_version?: string | null
+          total_bundles?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_health_status?: string | null
+          bundle_groups?: string[] | null
+          created_at?: string | null
+          id?: string
+          last_full_sync?: string | null
+          last_health_check?: string | null
+          metadata?: Json | null
+          next_scheduled_sync?: string | null
+          sync_strategy?: string | null
+          sync_version?: string | null
+          total_bundles?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      catalog_sync_jobs: {
+        Row: {
+          bundle_group: string | null
+          bundles_added: number | null
+          bundles_processed: number | null
+          bundles_updated: number | null
+          completed_at: string | null
+          country_id: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          job_type: string
+          metadata: Json | null
+          priority: string
+          started_at: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          bundle_group?: string | null
+          bundles_added?: number | null
+          bundles_processed?: number | null
+          bundles_updated?: number | null
+          completed_at?: string | null
+          country_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          job_type: string
+          metadata?: Json | null
+          priority?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          bundle_group?: string | null
+          bundles_added?: number | null
+          bundles_processed?: number | null
+          bundles_updated?: number | null
+          completed_at?: string | null
+          country_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          job_type?: string
+          metadata?: Json | null
+          priority?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       checkout_sessions: {
         Row: {
           created_at: string | null

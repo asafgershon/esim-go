@@ -830,7 +830,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     
     // Add pagination parameters - eSIM-Go uses 'perPage' and 'page'
     if (criteria.limit !== undefined) {
-      params.perPage = Math.min(criteria.limit, 50); // Max 200 items per page
+      params.perPage = Math.min(criteria.limit, 50); // Max 50 items per page to avoid 401 errors
     } else {
       params.perPage = 50; // Default limit
     }

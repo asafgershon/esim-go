@@ -1,6 +1,7 @@
 import { BaseSupabaseRepository } from '../base-supabase.repository';
 import { type Database } from '../../database.types';
 import { createLogger, withPerformanceLogging } from '../../lib/logger';
+import { z } from 'zod';
 
 type CatalogSyncJob = Database['public']['Tables']['catalog_sync_jobs']['Row'];
 type CatalogSyncJobInsert = Database['public']['Tables']['catalog_sync_jobs']['Insert'];
@@ -9,6 +10,28 @@ type CatalogSyncJobUpdate = Database['public']['Tables']['catalog_sync_jobs']['U
 export type JobType = 'full-sync' | 'country-sync' | 'group-sync' | 'bundle-sync';
 export type JobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 export type JobPriority = 'high' | 'normal' | 'low';
+
+// Zod schemas for validation and type safety
+const JobTypeSchema = z.enum(['full-sync', 'country-sync', 'group-sync', 'bundle-sync']);
+const JobStatusSchema = z.enum(['pending', 'running', 'completed', 'failed', 'cancelled']);
+const JobPrioritySchema = z.enum(['high', 'normal', 'low']);
+
+const CreateSyncJobParamsSchema = z.object({
+  jobType: JobTypeSchema,
+  priority: JobPrioritySchema.optional(),
+  bundleGroup: z.string().optional(),
+  countryId: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+const UpdateSyncJobParamsSchema = z.object({
+  status: JobStatusSchema.optional(),
+  errorMessage: z.string().optional(),
+  bundlesProcessed: z.number().int().min(0).optional(),
+  bundlesAdded: z.number().int().min(0).optional(),
+  bundlesUpdated: z.number().int().min(0).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
 
 export interface CreateSyncJobParams {
   jobType: JobType;
@@ -27,6 +50,38 @@ export interface UpdateSyncJobParams {
   metadata?: Record<string, any>;
 }
 
+// Helper function to map camelCase params to snake_case database fields
+function mapUpdateParamsToDbFields(params: UpdateSyncJobParams): CatalogSyncJobUpdate {
+  const updateData: CatalogSyncJobUpdate = {
+    updated_at: new Date().toISOString()
+  };
+
+  // Validate input
+  const validatedParams = UpdateSyncJobParamsSchema.parse(params);
+
+  // Map camelCase to snake_case with validation
+  if (validatedParams.status !== undefined) {
+    updateData.status = validatedParams.status;
+  }
+  if (validatedParams.errorMessage !== undefined) {
+    updateData.error_message = validatedParams.errorMessage;
+  }
+  if (validatedParams.bundlesProcessed !== undefined) {
+    updateData.bundles_processed = validatedParams.bundlesProcessed;
+  }
+  if (validatedParams.bundlesAdded !== undefined) {
+    updateData.bundles_added = validatedParams.bundlesAdded;
+  }
+  if (validatedParams.bundlesUpdated !== undefined) {
+    updateData.bundles_updated = validatedParams.bundlesUpdated;
+  }
+  if (validatedParams.metadata !== undefined) {
+    updateData.metadata = validatedParams.metadata;
+  }
+
+  return updateData;
+}
+
 export class SyncJobRepository extends BaseSupabaseRepository {
   private logger = createLogger({ 
     component: 'SyncJobRepository',
@@ -41,13 +96,16 @@ export class SyncJobRepository extends BaseSupabaseRepository {
       this.logger,
       'create-sync-job',
       async () => {
+        // Validate input with Zod
+        const validatedParams = CreateSyncJobParamsSchema.parse(params);
+
         const jobData: CatalogSyncJobInsert = {
-          job_type: params.jobType,
+          job_type: validatedParams.jobType,
           status: 'pending',
-          priority: params.priority || 'normal',
-          bundle_group: params.bundleGroup || null,
-          country_id: params.countryId || null,
-          metadata: params.metadata || {},
+          priority: validatedParams.priority || 'normal',
+          bundle_group: validatedParams.bundleGroup || null,
+          country_id: validatedParams.countryId || null,
+          metadata: validatedParams.metadata || {},
           created_at: new Date().toISOString()
         };
 
@@ -147,29 +205,53 @@ export class SyncJobRepository extends BaseSupabaseRepository {
     jobId: string, 
     params: UpdateSyncJobParams
   ): Promise<CatalogSyncJob> {
-    const updateData: CatalogSyncJobUpdate = {
-      ...params,
-      updated_at: new Date().toISOString()
-    };
+    try {
+      // Use Zod validation and field mapping
+      const updateData = mapUpdateParamsToDbFields(params);
 
-    // If completing or failing, set completed_at
-    if (params.status === 'completed' || params.status === 'failed') {
-      updateData.completed_at = new Date().toISOString();
-    }
+      // If completing or failing, set completed_at
+      if (params.status === 'completed' || params.status === 'failed') {
+        updateData.completed_at = new Date().toISOString();
+      }
 
-    const { data, error } = await this.supabase
-      .from('catalog_sync_jobs')
-      .update(updateData)
-      .eq('id', jobId)
-      .select()
-      .single();
+      this.logger.debug('Updating job progress with validated data', {
+        jobId,
+        updateData,
+        operationType: 'job-progress-update'
+      });
 
-    if (error) {
-      this.logger.error('Failed to update job progress', error, { jobId, params });
+      const { data, error } = await this.supabase
+        .from('catalog_sync_jobs')
+        .update(updateData)
+        .eq('id', jobId)
+        .select()
+        .single();
+
+      if (error) {
+        this.logger.error('Failed to update job progress', error, { jobId, params, updateData });
+        throw error;
+      }
+
+      this.logger.info('Job progress updated successfully', {
+        jobId: data.id,
+        status: data.status,
+        bundlesProcessed: data.bundles_processed,
+        operationType: 'job-progress-updated'
+      });
+
+      return data;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        this.logger.error('Validation error in updateJobProgress', undefined, {
+          jobId,
+          params,
+          validationErrors: error.errors,
+          operationType: 'job-progress-validation-error'
+        });
+        throw new Error(`Invalid job progress parameters: ${error.errors.map(e => e.message).join(', ')}`);
+      }
       throw error;
     }
-
-    return data;
   }
 
   /**

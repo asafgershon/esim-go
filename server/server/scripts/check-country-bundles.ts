@@ -22,7 +22,7 @@ async function checkCountryBundles(countryCode: string = 'AX') { // AX is Aland 
     try {
       console.log(`📦 Fetching ${group}...`);
       
-      const response = await fetch(`https://api.esim-go.com/v2.5/catalogue?country=${countryCode}&group=${encodeURIComponent(group)}&perPage=200`, {
+      const response = await fetch(`https://api.esim-go.com/v2.5/catalogue?country=${countryCode}&group=${encodeURIComponent(group)}&perPage=50`, {
         headers: {
           'accept': 'application/json',
           'x-api-key': env.ESIM_GO_API_KEY

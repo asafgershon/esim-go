@@ -93,8 +93,10 @@ export class ESimGoClient {
     this.logger = logger;
 
     // Create axios instance with custom configuration
+    const baseUrl = config.baseUrl || 'https://api.esim-go.com/v2.5';
+    
     this.axiosInstance = axios.create({
-      baseURL: config.baseUrl || 'https://api.esim-go.com',
+      baseURL: baseUrl,
       timeout: config.timeout || 30000,
       headers: {
         'X-API-KEY': config.apiKey,
@@ -102,12 +104,44 @@ export class ESimGoClient {
       },
     });
 
+    // Add request interceptor for debugging
+    this.axiosInstance.interceptors.request.use(
+      (config) => {
+        // Log the full request details
+        this.logger?.info('API Request', {
+          method: config.method,
+          url: config.url,
+          fullURL: `${config.baseURL}${config.url}`,
+          headers: {
+            'X-API-KEY': config.headers['X-API-KEY'] ? '[REDACTED]' : undefined,
+            'Content-Type': config.headers['Content-Type'],
+          },
+          params: config.params,
+          baseURL: config.baseURL,
+        });
+        return config;
+      },
+      (error) => {
+        this.logger?.error('Request error', error);
+        return Promise.reject(error);
+      }
+    );
+
     // Add response interceptor for error handling
     this.axiosInstance.interceptors.response.use(
       (response) => response,
       (error: any) => {
         const status = error.response?.status;
         const message = error.response?.data?.message || error.message;
+
+        // Log error response details
+        this.logger?.error('API Error Response', error, {
+          status,
+          url: error.config?.url,
+          fullURL: error.config?.baseURL + error.config?.url,
+          method: error.config?.method,
+          responseData: error.response?.data,
+        });
 
         if (status === 401) {
           throw new ESimGoAuthError(message, error.response?.data);
@@ -124,7 +158,7 @@ export class ESimGoClient {
 
     // Initialize API clients
     const configuration = new Configuration({
-      basePath: config.baseUrl || 'https://api.esim-go.com',
+      basePath: baseUrl,
       apiKey: config.apiKey,
     });
 
@@ -146,14 +180,30 @@ export class ESimGoClient {
 
         const response = await this.catalogueApi.catalogueGet(params);
 
+        // Log the raw response to understand its structure
+        this.logger?.debug('Raw API response', {
+          hasData: !!response.data,
+          dataType: typeof response.data,
+          dataKeys: response.data ? Object.keys(response.data) : [],
+          sampleData: JSON.stringify(response.data).slice(0, 200),
+        });
+
+        // Handle both array response and object with bundles property
+        let bundles: CatalogueResponseInner[] = [];
+        if (Array.isArray(response.data)) {
+          bundles = response.data;
+        } else if (response.data && typeof response.data === 'object' && 'bundles' in response.data) {
+          bundles = (response.data as any).bundles || [];
+        }
+
         this.logger?.info('Catalogue fetched', {
-          bundleCount: response.data?.length || 0,
+          bundleCount: bundles.length,
           group: params.group,
           operationType: 'catalogue-fetch',
         });
 
         return {
-          data: response.data || [],
+          data: bundles,
           metadata: {
             requestId: this.generateRequestId(),
             timestamp: new Date().toISOString(),
@@ -299,7 +349,7 @@ export class ESimGoClient {
       for (const group of criteria.bundleGroups) {
         const groupResult = await this.getCatalogueWithRetry({
           group,
-          perPage: 200, // Use max per page for efficiency
+          perPage: 50, // Max per page to avoid 401 errors
         });
         allBundles.push(...groupResult.data);
       }

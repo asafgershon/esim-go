@@ -244,9 +244,20 @@ export const pricingRulesQueries: QueryResolvers = {
         if (errors.length > 0) {
           logger.warn('Invalid pricing context', { 
             bundleId: request.bundleId,
-            errors 
+            errors,
+            request,
+            pricingContext: {
+              ...pricingContext,
+              bundle: {
+                ...pricingContext.bundle,
+                // Log key fields for debugging
+                cost: pricingContext.bundle.cost,
+                duration: pricingContext.bundle.duration,
+                id: pricingContext.bundle.id
+              }
+            }
           });
-          throw new GraphQLError('Invalid pricing request', {
+          throw new GraphQLError(`Invalid pricing request: ${errors.join(', ')}`, {
             extensions: { 
               code: 'BAD_USER_INPUT',
               errors 
@@ -265,9 +276,18 @@ export const pricingRulesQueries: QueryResolvers = {
       
       return results;
     } catch (error) {
-      logger.error('Failed to calculate batch pricing', error);
-      throw new GraphQLError('Failed to calculate pricing', {
-        extensions: { code: 'INTERNAL_SERVER_ERROR' }
+      logger.error('Failed to calculate batch pricing', error, {
+        requestCount: requests.length,
+        operationType: 'batch-pricing-calculation'
+      });
+      
+      // Include the actual error message for debugging
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new GraphQLError(`Failed to calculate pricing: ${errorMessage}`, {
+        extensions: { 
+          code: 'INTERNAL_SERVER_ERROR',
+          originalError: errorMessage
+        }
       });
     }
   },

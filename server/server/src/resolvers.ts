@@ -397,7 +397,7 @@ export const resolvers: Resolvers = {
           }, 0),
           processingRate: calculation.processingRate,
           processingCost: calculation.processingFee,
-          finalRevenue: calculation.finalPrice,
+          finalRevenue: calculation.finalRevenue,
           netProfit: calculation.profit,
           discountPerDay: calculation.metadata?.discountPerUnusedDay || 0.10
         };
@@ -465,16 +465,16 @@ export const resolvers: Resolvers = {
               bundleName: bundle.name || `${input.numOfDays} Day Bundle`,
               countryName: countryMap.get(input.countryId) || input.countryId,
               duration: input.numOfDays,
-              cost: calculation.basePrice,
-              costPlus: calculation.markupPrice,
-              totalCost: calculation.totalCost,
-              discountRate: calculation.discountRate,
-              discountValue: calculation.discountAmount,
-              priceAfterDiscount: calculation.discountedPrice,
+              cost: calculation.baseCost,
+              costPlus: calculation.baseCost + calculation.markup,
+              totalCost: calculation.subtotal,
+              discountRate: calculation.totalDiscount > 0 ? (calculation.totalDiscount / calculation.subtotal) : 0,
+              discountValue: calculation.totalDiscount,
+              priceAfterDiscount: calculation.priceAfterDiscount,
               processingRate: calculation.processingRate,
               processingCost: calculation.processingFee,
-              finalRevenue: calculation.finalPrice,
-              netProfit: calculation.netProfit,
+              finalRevenue: calculation.finalRevenue,
+              netProfit: calculation.profit,
               currency: 'USD',
               discountPerDay: calculation.metadata?.discountPerUnusedDay || 0.10
             };
@@ -692,19 +692,19 @@ export const resolvers: Resolvers = {
                 countryName: country.country,
                 countryId,
                 duration: plan.duration,
-                cost: calculation.basePrice,
-                costPlus: calculation.markupPrice,
-                totalCost: calculation.totalCost,
-                discountRate: calculation.discountRate,
-                discountValue: calculation.discountAmount,
-                priceAfterDiscount: calculation.discountedPrice,
+                cost: calculation.baseCost,
+                costPlus: calculation.baseCost + calculation.markup,
+                totalCost: calculation.subtotal,
+                discountRate: calculation.totalDiscount > 0 ? (calculation.totalDiscount / calculation.subtotal) : 0,
+                discountValue: calculation.totalDiscount,
+                priceAfterDiscount: calculation.priceAfterDiscount,
                 processingRate: calculation.processingRate,
                 processingCost: calculation.processingFee,
-                finalRevenue: calculation.finalPrice,
-                netProfit: calculation.netProfit,
+                finalRevenue: calculation.finalRevenue,
+                netProfit: calculation.profit,
                 currency: 'USD',
-                pricePerDay: (plan.duration && plan.duration > 0 && isFinite(calculation.discountedPrice)) 
-                  ? calculation.discountedPrice / plan.duration 
+                pricePerDay: (plan.duration && plan.duration > 0 && isFinite(calculation.priceAfterDiscount)) 
+                  ? calculation.priceAfterDiscount / plan.duration 
                   : 0,
                 hasCustomDiscount: hasCustomConfig,
                 configurationLevel: configLevelByBundle.get(plan.duration) || ConfigurationLevel.Global,
@@ -982,6 +982,275 @@ export const resolvers: Resolvers = {
           unlimitedCount: 0,
           samplePlans: []
         };
+      }
+    },
+
+    // Catalog sync history resolver
+    catalogSyncHistory: async (_, { params = {} }, context: Context) => {
+      try {
+        const { limit = 50, offset = 0, status, type, fromDate, toDate } = params;
+        
+        logger.info('Fetching catalog sync history', {
+          limit,
+          offset,
+          status,
+          type,
+          operationType: 'catalog-sync-history'
+        });
+
+        // Build query
+        let query = supabaseAdmin
+          .from('catalog_sync_jobs')
+          .select('*', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        // Apply filters
+        if (status) {
+          query = query.eq('status', status);
+        }
+        if (type) {
+          query = query.eq('job_type', type); // Use correct column name job_type
+        }
+        if (fromDate) {
+          query = query.gte('created_at', fromDate);
+        }
+        if (toDate) {
+          query = query.lte('created_at', toDate);
+        }
+
+        const { data, error, count } = await query;
+
+        if (error) {
+          logger.error('Failed to fetch catalog sync history', error, {
+            operationType: 'catalog-sync-history'
+          });
+          throw new GraphQLError('Failed to fetch sync history', {
+            extensions: { code: 'INTERNAL_ERROR' },
+          });
+        }
+
+        // Transform data to match frontend expectations
+        const jobs = (data || []).map(job => ({
+          id: job.id,
+          jobType: job.job_type || 'FULL_SYNC', // Use correct column name job_type
+          type: job.job_type || 'FULL_SYNC',     // Use correct column name job_type
+          status: (job.status || 'pending').toLowerCase(), // Frontend expects lowercase status
+          priority: job.priority || 'normal',    // Use actual priority from DB
+          bundleGroup: job.bundle_group,
+          countryId: job.country_id,
+          bundlesProcessed: job.bundles_processed || 0, // Use correct column name
+          bundlesAdded: job.bundles_added || 0,         // Use correct column name
+          bundlesUpdated: job.bundles_updated || 0,     // Use correct column name
+          startedAt: job.started_at || job.created_at, // Use created_at as fallback if started_at is null
+          completedAt: job.completed_at,
+          duration: job.duration,
+          errorMessage: job.error_message,
+          metadata: job.metadata,
+          createdAt: job.created_at,
+          updatedAt: job.updated_at
+        }));
+
+        logger.info('Catalog sync history fetched successfully', {
+          jobCount: jobs.length,
+          totalCount: count,
+          operationType: 'catalog-sync-history'
+        });
+
+        return {
+          jobs,
+          totalCount: count || 0
+        };
+      } catch (error) {
+        logger.error('Failed to fetch catalog sync history', error as Error, {
+          operationType: 'catalog-sync-history'
+        });
+        throw error;
+      }
+    },
+
+    // Catalog bundles queries (from new catalog system)
+    catalogBundles: async (_, { criteria = {} }, context: Context) => {
+      try {
+        const { limit = 50, offset = 0, bundleGroups, countries, regions, minDuration, maxDuration, unlimited, search } = criteria;
+        
+        logger.info('Fetching catalog bundles', {
+          limit,
+          offset,
+          bundleGroups,
+          countries,
+          operationType: 'catalog-bundles-fetch'
+        });
+
+        // Build query
+        let query = supabaseAdmin
+          .from('catalog_bundles')
+          .select('*', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        // Apply filters
+        if (bundleGroups?.length) {
+          query = query.in('bundle_group', bundleGroups);
+        }
+        if (countries?.length) {
+          query = query.overlaps('countries', countries);
+        }
+        if (regions?.length) {
+          query = query.overlaps('regions', regions);
+        }
+        if (minDuration) {
+          query = query.gte('duration', minDuration);
+        }
+        if (maxDuration) {
+          query = query.lte('duration', maxDuration);
+        }
+        if (unlimited !== undefined) {
+          query = query.eq('unlimited', unlimited);
+        }
+        if (search) {
+          query = query.or(`esim_go_name.ilike.%${search}%,description.ilike.%${search}%`);
+        }
+
+        const { data, error, count } = await query;
+
+        if (error) {
+          logger.error('Failed to fetch catalog bundles', error, {
+            operationType: 'catalog-bundles-fetch'
+          });
+          throw new GraphQLError('Failed to fetch catalog bundles', {
+            extensions: { code: 'INTERNAL_ERROR' },
+          });
+        }
+
+        // Transform data
+        const bundles = (data || []).map(bundle => ({
+          id: bundle.id,
+          esimGoName: bundle.esim_go_name,
+          bundleGroup: bundle.bundle_group,
+          description: bundle.description || '',
+          duration: bundle.duration,
+          dataAmount: bundle.data_amount,
+          unlimited: bundle.unlimited,
+          priceCents: bundle.price_cents,
+          currency: bundle.currency,
+          countries: bundle.countries || [],
+          regions: bundle.regions || [],
+          syncedAt: bundle.synced_at,
+          createdAt: bundle.created_at,
+          updatedAt: bundle.updated_at
+        }));
+
+        return {
+          bundles,
+          totalCount: count || 0
+        };
+      } catch (error) {
+        logger.error('Failed to fetch catalog bundles', error as Error, {
+          operationType: 'catalog-bundles-fetch'
+        });
+        throw error;
+      }
+    },
+
+    catalogBundlesByCountry: async (_, __, context: Context) => {
+      try {
+        logger.info('Fetching catalog bundles by country', {
+          operationType: 'catalog-bundles-by-country'
+        });
+
+        // Get bundles grouped by country
+        const { data, error } = await supabaseAdmin
+          .from('catalog_bundles')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          throw new GraphQLError('Failed to fetch catalog bundles by country', {
+            extensions: { code: 'INTERNAL_ERROR' },
+          });
+        }
+
+        // Group by country
+        const countryMap = new Map<string, any[]>();
+        
+        (data || []).forEach(bundle => {
+          if (bundle.countries && Array.isArray(bundle.countries)) {
+            bundle.countries.forEach(country => {
+              if (!countryMap.has(country)) {
+                countryMap.set(country, []);
+              }
+              countryMap.get(country)!.push({
+                id: bundle.id,
+                esimGoName: bundle.esim_go_name,
+                bundleGroup: bundle.bundle_group,
+                description: bundle.description || '',
+                duration: bundle.duration,
+                dataAmount: bundle.data_amount,
+                unlimited: bundle.unlimited,
+                priceCents: bundle.price_cents,
+                currency: bundle.currency,
+                countries: bundle.countries || [],
+                regions: bundle.regions || [],
+                syncedAt: bundle.synced_at,
+                createdAt: bundle.created_at,
+                updatedAt: bundle.updated_at
+              });
+            });
+          }
+        });
+
+        const result = Array.from(countryMap.entries()).map(([country, bundles]) => ({
+          country,
+          bundleCount: bundles.length,
+          bundles
+        }));
+
+        logger.info('Catalog bundles by country fetched successfully', {
+          countryCount: result.length,
+          operationType: 'catalog-bundles-by-country'
+        });
+
+        return result;
+      } catch (error) {
+        logger.error('Failed to fetch catalog bundles by country', error as Error, {
+          operationType: 'catalog-bundles-by-country'
+        });
+        throw error;
+      }
+    },
+
+    availableBundleGroups: async (_, __, context: Context) => {
+      try {
+        logger.info('Fetching available bundle groups', {
+          operationType: 'available-bundle-groups'
+        });
+
+        const { data, error } = await supabaseAdmin
+          .from('catalog_bundles')
+          .select('bundle_group')
+          .not('bundle_group', 'is', null);
+
+        if (error) {
+          throw new GraphQLError('Failed to fetch available bundle groups', {
+            extensions: { code: 'INTERNAL_ERROR' },
+          });
+        }
+
+        // Get unique bundle groups
+        const bundleGroups = [...new Set((data || []).map(item => item.bundle_group))];
+
+        logger.info('Available bundle groups fetched successfully', {
+          groupCount: bundleGroups.length,
+          operationType: 'available-bundle-groups'
+        });
+
+        return bundleGroups;
+      } catch (error) {
+        logger.error('Failed to fetch available bundle groups', error as Error, {
+          operationType: 'available-bundle-groups'
+        });
+        throw error;
       }
     },
   },
@@ -1409,6 +1678,146 @@ export const resolvers: Resolvers = {
 
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Mutation!,
+    
+    // Trigger catalog sync via workers
+    triggerCatalogSync: async (_, { params }, context: Context) => {
+      const { type, bundleGroup, countryId, priority = 'normal', force = false } = params;
+      
+      try {
+        
+        logger.info('Triggering catalog sync via workers', {
+          type,
+          bundleGroup,
+          countryId,
+          priority,
+          force,
+          userId: context.auth.user!.id,
+          operationType: 'trigger-catalog-sync'
+        });
+
+        // Import the BullMQ queue to actually queue jobs
+        const { Queue } = await import('bullmq');
+        const { default: IORedis } = await import('ioredis');
+        
+        // Create Redis connection (same config as workers)
+        const redis = new IORedis({
+          host: 'localhost',
+          port: 6379,
+          password: 'mypassword',
+          maxRetriesPerRequest: null,
+        });
+        
+        // Create the same queue as workers use
+        const catalogQueue = new Queue('catalog-sync', { connection: redis });
+        
+        const jobId = `sync-${type}-${Date.now()}`;
+        
+        // Create a sync job record in the database
+        const { data: syncJob, error } = await supabaseAdmin
+          .from('catalog_sync_jobs')
+          .insert({
+            id: jobId,
+            job_type: type,  // Use correct column name job_type
+            status: 'PENDING',
+            priority: priority, // Add priority field
+            bundle_group: bundleGroup || null,
+            country_id: countryId || null,
+            started_at: new Date().toISOString(),
+            metadata: {
+              force,
+              triggeredBy: context.auth.user!.id
+            }
+          })
+          .select()
+          .single();
+
+        if (error) {
+          logger.error('Failed to create sync job record', error, {
+            type,
+            bundleGroup,
+            countryId,
+            operationType: 'trigger-catalog-sync'
+          });
+          throw new GraphQLError('Failed to trigger catalog sync', {
+            extensions: { code: 'INTERNAL_ERROR' },
+          });
+        }
+
+        // Now queue the actual BullMQ job for the workers to process
+        const bullmqJob = await catalogQueue.add(
+          `catalog-sync-${type}`,
+          {
+            type: type,
+            bundleGroup: bundleGroup,
+            countryId: countryId,
+            priority: priority,
+            metadata: {
+              dbJobId: syncJob.id,
+              force,
+              triggeredBy: context.auth.user!.id
+            }
+          },
+          {
+            priority: priority === 'high' ? 1 : priority === 'normal' ? 5 : 10,
+            attempts: 3,
+            backoff: {
+              type: 'exponential',
+              delay: 2000,
+            },
+            removeOnComplete: 100,
+            removeOnFail: 50,
+          }
+        );
+
+        // Update the database job with the BullMQ job ID
+        await supabaseAdmin
+          .from('catalog_sync_jobs')
+          .update({
+            metadata: {
+              ...(syncJob.metadata || {}),
+              bullmqJobId: bullmqJob.id
+            }
+          })
+          .eq('id', syncJob.id);
+
+        // Clean up Redis connection
+        await redis.quit();
+
+        logger.info('Catalog sync job queued successfully', {
+          dbJobId: syncJob.id,
+          bullmqJobId: bullmqJob.id,
+          type,
+          bundleGroup,
+          countryId,
+          operationType: 'trigger-catalog-sync'
+        });
+
+        return {
+          success: true,
+          jobId: syncJob.id,
+          message: `Catalog sync job has been queued successfully (BullMQ: ${bullmqJob.id})`,
+          error: null
+        };
+
+      } catch (error) {
+        logger.error('Failed to trigger catalog sync', error as Error, {
+          operationType: 'trigger-catalog-sync',
+          errorMessage: (error as Error).message,
+          errorStack: (error as Error).stack,
+          type,
+          bundleGroup,
+          countryId,
+          priority
+        });
+        
+        return {
+          success: false,
+          jobId: null,
+          message: null,
+          error: `Failed to trigger catalog sync: ${(error as Error).message}`
+        };
+      }
+    },
     
     // Diagnostic sync mutation - bypasses lock for investigation
     testCatalogSync: async (_, __, context: Context) => {

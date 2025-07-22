@@ -392,25 +392,18 @@ export class PricingRuleEngine {
   
   // Convenience method that collects all steps and returns final result
   async calculatePrice(context: PricingContext): Promise<PricingRuleCalculation> {
-    let result: PricingRuleCalculation | undefined;
-    
-    // Iterate through all steps
-    for await (const step of this.calculatePriceSteps(context)) {
-      // The generator will yield steps, and return the final result
-      // We just need to consume all the steps
-    }
-    
-    // The last value from the generator is the result
-    // We need to run it again to get the return value
+    // Use the generator to consume all steps and get the final result
     const generator = this.calculatePriceSteps(context);
     let iterResult = await generator.next();
     
+    // Consume all steps until the generator is done
     while (!iterResult.done) {
       iterResult = await generator.next();
     }
     
+    // The final return value contains the pricing calculation result
     if (!iterResult.value) {
-      throw new Error('Failed to calculate price');
+      throw new Error('Failed to calculate price - no result returned from pricing engine');
     }
     
     return iterResult.value;
