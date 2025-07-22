@@ -71,13 +71,8 @@ const PricingPage: React.FC = () => {
   const tabConfig = {
     '/pricing/summary': {
       title: 'Summary',
-      icon: <Table className="h-5 w-5" />,
-      description: 'View and manage pricing configurations across all countries and bundles'
-    },
-    '/pricing/summary-experimental': {
-      title: 'Split-View',
       icon: <Layers className="h-5 w-5" />,
-      description: 'Experimental simplified layout with split-view design'
+      description: 'View and manage pricing configurations across all countries and bundles'
     },
     '/pricing/markup': {
       title: 'Markup Pricing',
@@ -155,20 +150,8 @@ const PricingPage: React.FC = () => {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Table className="h-4 w-4" />
-              Summary
-            </Link>
-            <Link
-              to="/pricing/summary-experimental"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                currentPath === '/pricing/summary-experimental'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
               <Layers className="h-4 w-4" />
-              Split-View
-              <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">Beta</span>
+              Summary
             </Link>
             <Link
               to="/pricing/markup"
@@ -225,15 +208,8 @@ const PricingPage: React.FC = () => {
             <SelectContent>
               <SelectItem value="/pricing/summary">
                 <div className="flex items-center gap-2">
-                  <Table className="h-4 w-4" />
-                  <span>Summary</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="/pricing/summary-experimental">
-                <div className="flex items-center gap-2">
                   <Layers className="h-4 w-4" />
-                  <span>Split-View</span>
-                  <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full ml-1">Beta</span>
+                  <span>Summary</span>
                 </div>
               </SelectItem>
               <SelectItem value="/pricing/markup">

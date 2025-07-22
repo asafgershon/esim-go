@@ -140,7 +140,7 @@ Dashboard pricing management system with advanced table features, real-time calc
 
 ### Core Components
 - **`/src/pages/pricing.tsx`**: Main pricing page with lazy loading and batch calculations
-- **`/src/components/country-pricing-table-grouped.tsx`**: Advanced table with grouping, sorting, expand/collapse
+- **`/src/components/CountryPricingSplitView/CountryPricingSplitView.tsx`**: Split view with country cards and bundles table
 - **`/src/components/pricing-simulator-drawer.tsx`**: Side drawer for pricing simulation (600px, right-slide)
 
 ### Key Features
