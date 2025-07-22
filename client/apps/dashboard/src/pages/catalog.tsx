@@ -182,9 +182,9 @@ function CatalogPageContent() {
         icon={<Database className="h-5 w-5" />}
         actions={
           !showSyncPanel && (
-            <Button onClick={handleSyncClick} disabled={syncLoading} size="sm">
+            <Button onClick={handleSyncClick} disabled={syncLoading} size="sm" variant="ghost">
               <RefreshCw className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
-              Sync Catalog
+              Trigger Sync
             </Button>
           )
         }
