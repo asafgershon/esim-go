@@ -9,8 +9,7 @@ import {
 } from '@/lib/graphql/queries';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
-import { ScrollArea } from '@workspace/ui/components/scroll-area';
-import { Skeleton } from '@workspace/ui/components/skeleton';
+import { List } from '@workspace/ui';
 import { RefreshCw, Package, Globe, Database, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Panel, PanelGroup } from 'react-resizable-panels';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -234,31 +233,27 @@ function CatalogPageContent() {
             maxSize={showSyncPanel ? 80 : 100}
             id="countries-panel"
           >
-            <div className="h-full flex flex-col">
-              <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
-                <h3 className="text-sm font-medium text-gray-700">Countries</h3>
-                <p className="text-xs text-muted-foreground">Browse catalog bundles by country</p>
-              </div>
-              <ScrollArea className="flex-1">
+            <List.Container className="h-full" itemCount={enhancedCountryData.length}>
+              <List.Header 
+                title="Countries"
+                description="Browse catalog bundles by country"
+              />
+              <List.Content>
                 {catalogLoading ? (
-                  <div className="space-y-3 p-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-20 w-full" />
-                    ))}
-                  </div>
+                  <List.Loading />
                 ) : enhancedCountryData.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-sm text-muted-foreground">
-                      {selectedBundleGroup === 'all' 
+                  <List.Empty
+                    icon={<Database className="h-12 w-12 mx-auto text-gray-300" />}
+                    message={
+                      selectedBundleGroup === 'all' 
                         ? 'No catalog data available. Try syncing the catalog.'
-                        : `No bundles found for group: ${selectedBundleGroup}`}
-                    </p>
-                  </div>
+                        : `No bundles found for group: ${selectedBundleGroup}`
+                    }
+                  />
                 ) : (
-                  <div className="space-y-2 p-3">
-                    {enhancedCountryData.map((countryData) => (
+                  enhancedCountryData.map((countryData) => (
+                    <List.Item key={countryData.countryId} asChild>
                       <CatalogCountryCard
-                        key={countryData.countryId}
                         country={countryData.countryId}
                         countryName={countryData.countryName}
                         bundleCount={countryData.bundleCount}
@@ -267,11 +262,11 @@ function CatalogPageContent() {
                         isLoading={loadingCountries.has(countryData.countryId)}
                         onToggle={() => handleCountryToggle(countryData.countryId)}
                       />
-                    ))}
-                  </div>
+                    </List.Item>
+                  ))
                 )}
-              </ScrollArea>
-            </div>
+              </List.Content>
+            </List.Container>
           </Panel>
           
           {/* Sync Panel - With smooth transitions */}

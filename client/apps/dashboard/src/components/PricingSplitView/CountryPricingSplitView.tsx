@@ -16,8 +16,9 @@ import {
   TooltipTrigger,
   ScrollArea,
   InputWithAdornment,
+  List,
 } from "@workspace/ui";
-import { TrendingUp, MapPin, Package, X, Search } from "lucide-react";
+import { TrendingUp, MapPin, Package, X } from "lucide-react";
 import { toast } from "sonner";
 import Fuse from "fuse.js";
 import { Panel, PanelGroup } from "react-resizable-panels";
@@ -260,72 +261,58 @@ export function CountryPricingSplitView({
             id="countries-panel"
             order={1}
           >
-            <div className="h-full flex flex-col">
-              {/* Countries Header */}
-              <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
-                <h3 className="text-sm font-medium text-gray-700">Countries ({filteredBundlesByCountry.length})</h3>
-              </div>
-              
-              {/* Search Input */}
-              <div className="p-2 border-b bg-gray-50">
-                <InputWithAdornment
-                  type="text"
-                  placeholder="Search countries..."
-                  value={countrySearchQuery}
-                  onChange={(e) => setCountrySearchQuery(e.target.value)}
-                  leftAdornment={<Search className="h-4 w-4 text-gray-400" />}
-                  className="w-full"
-                />
-              </div>
-              
-              <ScrollArea className="flex-1 pr-2" showOnHover={true}>
-                <div className="space-y-1 p-2">
-              {/* Country Cards */}
-              {filteredBundlesByCountry.length === 0 && countrySearchQuery ? (
-                <div className="text-center py-8 text-gray-500">
-                  <MapPin className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-                  <p className="text-sm">No countries found matching "{countrySearchQuery}"</p>
-                </div>
-              ) : (
-                filteredBundlesByCountry.map((country) => {
-                  const summary = getCountrySummary(country);
-                  const isSelected = selectedCountry === country.countryId;
-                  const isCountryLoading = loadingCountries.has(country.countryId);
-                  
-                  return (
-                    <CountryCard
-                      key={country.countryId}
-                      country={country}
-                      isSelected={isSelected}
-                      isLoading={isCountryLoading}
-                      isHighDemand={isHighDemandCountry(country.countryId)}
-                      onSelect={() => handleCountrySelect(country.countryId)}
-                      onToggleHighDemand={(e) => {
-                        e.stopPropagation();
-                        toggleCountryHighDemand(country.countryId);
-                      }}
-                      toggleLoading={toggleLoading}
-                      summary={summary}
+            <List.Container className="h-full" itemCount={filteredBundlesByCountry.length}>
+              <List.Header title="Countries" />
+              <List.Search
+                value={countrySearchQuery}
+                onChange={setCountrySearchQuery}
+                placeholder="Search countries..."
+              />
+              <List.Content spacing="tight" padding={false}>
+                <div className="p-2">
+                  {filteredBundlesByCountry.length === 0 && countrySearchQuery ? (
+                    <List.Empty
+                      icon={<MapPin className="h-8 w-8 mx-auto text-gray-300" />}
+                      message={`No countries found matching "${countrySearchQuery}"`}
                     />
-                  );
-                })
-              )}
-
-              {filteredBundlesByCountry.length === 0 && !countrySearchQuery && (
-                <div className="text-center py-8 text-gray-500">
-                  <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                  <p className="text-lg">No countries available</p>
-                  <p className="text-sm">
-                    {showHighDemandOnly 
-                      ? "No high demand countries found" 
-                      : "No pricing data available"
-                    }
-                  </p>
+                  ) : filteredBundlesByCountry.length === 0 && !countrySearchQuery ? (
+                    <List.Empty
+                      icon={<MapPin className="h-12 w-12 mx-auto text-gray-300" />}
+                      title="No countries available"
+                      message={
+                        showHighDemandOnly 
+                          ? "No high demand countries found" 
+                          : "No pricing data available"
+                      }
+                    />
+                  ) : (
+                    filteredBundlesByCountry.map((country) => {
+                      const summary = getCountrySummary(country);
+                      const isSelected = selectedCountry === country.countryId;
+                      const isCountryLoading = loadingCountries.has(country.countryId);
+                      
+                      return (
+                        <List.Item key={country.countryId} asChild>
+                          <CountryCard
+                            country={country}
+                            isSelected={isSelected}
+                            isLoading={isCountryLoading}
+                            isHighDemand={isHighDemandCountry(country.countryId)}
+                            onSelect={() => handleCountrySelect(country.countryId)}
+                            onToggleHighDemand={(e) => {
+                              e.stopPropagation();
+                              toggleCountryHighDemand(country.countryId);
+                            }}
+                            toggleLoading={toggleLoading}
+                            summary={summary}
+                          />
+                        </List.Item>
+                      );
+                    })
+                  )}
                 </div>
-              )}
-                </div>
-              </ScrollArea>
-            </div>
+              </List.Content>
+            </List.Container>
           </Panel>
 
           <ResizeHandle />
@@ -449,27 +436,28 @@ export function CountryPricingSplitView({
         </PanelGroup>
 
         {/* Mobile Layout - Countries List */}
-        <div className="lg:hidden h-full flex flex-col">
-          {/* Mobile Search Input */}
-          <div className="p-4 border-b bg-gray-50">
-            <InputWithAdornment
-              type="text"
-              placeholder="Search countries..."
+        <div className="lg:hidden h-full">
+          <List.Container className="h-full">
+            <List.Search
               value={countrySearchQuery}
-              onChange={(e) => setCountrySearchQuery(e.target.value)}
-              leftAdornment={<Search className="h-4 w-4 text-gray-400" />}
-              className="w-full"
+              onChange={setCountrySearchQuery}
+              placeholder="Search countries..."
+              className="p-4"
             />
-          </div>
-          
-          <ScrollArea className="flex-1" showOnHover={true}>
-            <div className="space-y-3 p-4">
-              {/* Country Cards for Mobile */}
+            <List.Content spacing="loose">
               {filteredBundlesByCountry.length === 0 && countrySearchQuery ? (
-                <div className="text-center py-8 text-gray-500">
-                  <MapPin className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-                  <p className="text-sm">No countries found matching "{countrySearchQuery}"</p>
-                </div>
+                <List.Empty
+                  icon={<MapPin className="h-8 w-8 mx-auto text-gray-300" />}
+                  message={`No countries found matching "${countrySearchQuery}"`}
+                />
+              ) : filteredBundlesByCountry.length === 0 && !countrySearchQuery ? (
+                <List.Empty
+                  icon={<MapPin className="h-12 w-12 mx-auto text-gray-300" />}
+                  title="No countries available"
+                  message={
+                    showHighDemandOnly ? "No high demand countries found" : "No pricing data available"
+                  }
+                />
               ) : (
                 filteredBundlesByCountry.map((country) => {
                   const summary = getCountrySummary(country);
@@ -477,35 +465,26 @@ export function CountryPricingSplitView({
                   const isCountryLoading = loadingCountries.has(country.countryId);
                   
                   return (
-                    <CountryCard
-                      key={country.countryId}
-                      country={country}
-                      isSelected={isSelected}
-                      isLoading={isCountryLoading}
-                      isHighDemand={isHighDemandCountry(country.countryId)}
-                      onSelect={() => handleCountrySelect(country.countryId)}
-                      onToggleHighDemand={(e) => {
-                        e.stopPropagation();
-                        toggleCountryHighDemand(country.countryId);
-                      }}
-                      toggleLoading={toggleLoading}
-                      summary={summary}
-                    />
+                    <List.Item key={country.countryId} asChild>
+                      <CountryCard
+                        country={country}
+                        isSelected={isSelected}
+                        isLoading={isCountryLoading}
+                        isHighDemand={isHighDemandCountry(country.countryId)}
+                        onSelect={() => handleCountrySelect(country.countryId)}
+                        onToggleHighDemand={(e) => {
+                          e.stopPropagation();
+                          toggleCountryHighDemand(country.countryId);
+                        }}
+                        toggleLoading={toggleLoading}
+                        summary={summary}
+                      />
+                    </List.Item>
                   );
                 })
               )}
-
-              {filteredBundlesByCountry.length === 0 && !countrySearchQuery && (
-                <div className="text-center py-8 text-gray-500">
-                  <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                  <p className="text-lg">No countries available</p>
-                  <p className="text-sm">
-                    {showHighDemandOnly ? "No high demand countries found" : "No pricing data available"}
-                  </p>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+            </List.Content>
+          </List.Container>
         </div>
       </div>
 
