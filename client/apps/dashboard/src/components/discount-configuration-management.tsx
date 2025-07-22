@@ -32,9 +32,9 @@ import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
-  GET_PRICING_CONFIGURATIONS,
-  CREATE_PRICING_CONFIGURATION,
-  UPDATE_PRICING_CONFIGURATION,
+  // GET_PRICING_CONFIGURATIONS,
+  // CREATE_PRICING_CONFIGURATION,
+  // UPDATE_PRICING_CONFIGURATION,
   GET_COUNTRIES,
 } from "../lib/graphql/queries";
 
@@ -100,14 +100,19 @@ export const DiscountConfigurationManagement: React.FC = () => {
   });
 
   // GraphQL queries and mutations
-  const { data: configurationsData, loading: loadingConfigs, refetch } = useQuery(
-    GET_PRICING_CONFIGURATIONS
-  );
+  // const { data: configurationsData, loading: loadingConfigs, refetch } = useQuery(
+  //   GET_PRICING_CONFIGURATIONS
+  // );
   
   const { data: countriesData } = useQuery(GET_COUNTRIES);
 
-  const [createConfiguration] = useMutation(CREATE_PRICING_CONFIGURATION);
-  const [updateConfiguration] = useMutation(UPDATE_PRICING_CONFIGURATION);
+  // const [createConfiguration] = useMutation(CREATE_PRICING_CONFIGURATION);
+  // const [updateConfiguration] = useMutation(UPDATE_PRICING_CONFIGURATION);
+  
+  // Temporary mock data since pricing configurations feature was removed
+  const configurationsData = null;
+  const loadingConfigs = false;
+  const refetch = () => {};
 
   // Group configurations by type
   const groupedConfigs = useMemo(() => {

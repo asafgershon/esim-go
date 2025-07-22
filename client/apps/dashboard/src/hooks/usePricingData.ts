@@ -6,11 +6,9 @@ import {
   CountryBundle, 
   GetCountriesQuery, 
   GetDataPlansQuery, 
-  GetPricingConfigurationsQuery, 
-  PricingConfiguration,
   GetBundlesByCountryQuery
 } from '@/__generated__/graphql';
-import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_DATA_PLANS, GET_PRICING_CONFIGURATIONS } from '../lib/graphql/queries';
+import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_DATA_PLANS } from '../lib/graphql/queries';
 import { 
   calculateAveragePricePerDay, 
   buildBatchPricingInput, 
@@ -50,7 +48,6 @@ export const usePricingData = () => {
       }
     }
   });
-  const { data: pricingConfigsData, refetch: refetchPricingConfigs } = useQuery<GetPricingConfigurationsQuery>(GET_PRICING_CONFIGURATIONS);
   const [getCountryDataPlans] = useLazyQuery(GET_DATA_PLANS);
   const { calculateBatchPrices } = usePricingWithRules();
 
@@ -279,11 +276,8 @@ export const usePricingData = () => {
     setLoading(true);
     setCountryGroups([]);
     
-    // Refetch both pricing configs and bundles summary data
-    await Promise.all([
-      refetchPricingConfigs(),
-      refetchBundlesByCountry()
-    ]);
+    // Refetch bundles summary data
+    await refetchBundlesByCountry();
   };
 
   return {

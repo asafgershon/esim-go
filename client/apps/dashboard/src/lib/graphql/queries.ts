@@ -582,51 +582,7 @@ export const GET_COUNTRIES = gql(`
   }
 `)
 
-export const GET_PRICING_CONFIGURATIONS = gql(`
-  query GetPricingConfigurations {
-    pricingConfigurations {
-      id
-      name
-      description
-      countryId
-      regionId
-      duration
-      bundleGroup
-      discountRate
-      discountPerDay
-      markupAmount
-      isActive
-      createdBy
-      createdAt
-      updatedAt
-    }
-  }
-`)
 
-export const UPDATE_PRICING_CONFIGURATION = gql(`
-  mutation UpdatePricingConfiguration($input: UpdatePricingConfigurationInput!) {
-    updatePricingConfiguration(input: $input) {
-      success
-      error
-      configuration {
-        id
-        name
-        description
-        countryId
-        regionId
-        duration
-        bundleGroup
-        discountRate
-        discountPerDay
-        markupAmount
-        isActive
-        createdBy
-        createdAt
-        updatedAt
-      }
-    }
-  }
-`)
 
 export const GET_CURRENT_PROCESSING_FEE_CONFIGURATION = gql(`
   query GetCurrentProcessingFeeConfiguration {
@@ -873,32 +829,6 @@ export const TOGGLE_HIGH_DEMAND_COUNTRY = gql(`
       countryId
       isHighDemand
       error
-    }
-  }
-`)
-
-// Pricing Configuration Mutations
-export const CREATE_PRICING_CONFIGURATION = gql(`
-  mutation CreatePricingConfiguration($input: UpdatePricingConfigurationInput!) {
-    updatePricingConfiguration(input: $input) {
-      success
-      error
-      configuration {
-        id
-        name
-        description
-        countryId
-        regionId
-        duration
-        bundleGroup
-        discountRate
-        discountPerDay
-        markupAmount
-        isActive
-        createdBy
-        createdAt
-        updatedAt
-      }
     }
   }
 `)

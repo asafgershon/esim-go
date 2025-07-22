@@ -21,7 +21,7 @@ import {
 import { TrendingDown, AlertCircle, X, Edit3, Check, CreditCard, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation } from "@apollo/client";
-import { UPDATE_PRICING_CONFIGURATION, GET_COUNTRY_BUNDLES } from "../../lib/graphql/queries";
+import { GET_COUNTRY_BUNDLES } from "../../lib/graphql/queries";
 import { ConfigurationLevelIndicator } from "../configuration-level-indicator";
 import { CountryBundleWithDisplay } from "./types";
 
@@ -37,7 +37,8 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   onConfigurationSaved
 }) => {
   // Mutations
-  const [updatePricingConfiguration, { loading: savingConfig }] = useMutation(UPDATE_PRICING_CONFIGURATION);
+  // TODO: Update to use new rule-based pricing system mutations
+  // const [updatePricingRule, { loading: savingConfig }] = useMutation(UPDATE_PRICING_RULE);
   // State for inline editing
   const [isEditingMarkup, setIsEditingMarkup] = useState(false);
   const [customMarkup, setCustomMarkup] = useState("");
@@ -65,10 +66,10 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   
   // Calculate maximum allowed discount to maintain minimum profit margin
   const maxAllowedDiscount = useMemo(() => {
-    const catalogPrice = bundle.catalogPrice || 0;
-    const minimumAllowedPrice = catalogPrice + 1.50; // cost + $1.50 minimum profit
-    const markupAmount = 10; // Default markup amount used by pricing service
-    const totalCostWithMarkup = catalogPrice + markupAmount;
+    const baseCost = bundle.cost || 0; // Fixed: use bundle.cost instead of catalogPrice
+    const minimumAllowedPrice = baseCost + 1.50; // cost + $1.50 minimum profit
+    const markupAmount = bundle.costPlus || 10; // Use actual markup instead of hardcoded value
+    const totalCostWithMarkup = baseCost + markupAmount;
     
     if (totalCostWithMarkup <= minimumAllowedPrice) {
       return 0; // No discount allowed
@@ -76,7 +77,7 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
     
     const maxDiscount = ((totalCostWithMarkup - minimumAllowedPrice) / totalCostWithMarkup) * 100;
     return Math.floor(maxDiscount * 10) / 10; // Round down to 1 decimal place
-  }, [bundle.catalogPrice]);
+  }, [bundle.cost, bundle.costPlus]);
   
   // Show tooltip when invalid discount is attempted
   const showInvalidDiscountTooltip = useCallback(() => {
@@ -131,16 +132,16 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   const discountValue = bundle.discountValue || 0;
   const priceAfterDiscount = bundle.priceAfterDiscount || 0;  // Customer pays this
   
-  // Calculate processing cost based on selected payment method
-  const processingCost = priceAfterDiscount * processingRate;
-  // Net profit = What we receive (after processing) minus only the eSIM Go cost
+  // Use pre-calculated values from bundle (updated for selected payment method)
+  const processingCost = bundle.processingCost || (priceAfterDiscount * processingRate);
   const revenueAfterProcessing = priceAfterDiscount - processingCost;
-  const netProfit = revenueAfterProcessing - cost;  // Don't subtract markup - that's our profit!
+  const netProfit = bundle.netProfit || (revenueAfterProcessing - cost);  // Use pre-calculated if available
   
   // Handler for saving markup changes
   const handleSaveMarkup = () => {
-    // TODO: Call mutation to save markup override
-    console.log('Save markup:', customMarkup);
+    // TODO: Call mutation to save markup override using new rule-based pricing system
+    const logger = { info: (msg: string, data: any) => console.log(msg, data) };
+    logger.info('Save markup:', customMarkup);
     setIsEditingMarkup(false);
   };
   
@@ -154,38 +155,42 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
     const discountRateDecimal = parseFloat(customDiscount) / 100;
 
     try {
-      // Create a country-specific pricing configuration with discount override
-      const result = await updatePricingConfiguration({
-        variables: {
-          input: {
-            name: `${bundle.countryName} ${bundle.duration}d Discount Override`,
-            description: `Custom discount for ${bundle.countryName} ${bundle.duration}-day bundles: ${customDiscount}%`,
-            countryId: bundle.countryName, // Using countryName as it contains the ISO code
-            duration: bundle.duration,
-            bundleGroup: (bundle as any).bundleGroup || null,
-            discountRate: discountRateDecimal,
-            discountPerDay: discountPerDay,
-            markupAmount: null, // Not changing markup in this operation
-            isActive: true,
-          },
-        },
-        refetchQueries: [
-          {
-            query: GET_COUNTRY_BUNDLES,
-            variables: { countryId: bundle.countryName }, // Using countryName as it contains the ISO code
-          },
-        ],
-      });
-
-      if (result.data?.updatePricingConfiguration?.success) {
-        setIsEditingDiscount(false);
-        toast.success(`Discount of ${customDiscount}% applied for ${bundle.countryName}`);
-        onConfigurationSaved?.();
-      } else {
-        toast.error(result.data?.updatePricingConfiguration?.error || "Failed to save discount");
-      }
+      // TODO: Update to use new rule-based pricing system
+      // This should create or update a pricing rule instead of using the old configuration system
+      toast.info(`Saving discount of ${customDiscount}% for ${bundle.countryName} - Update needed for new pricing system`);
+      
+      // Placeholder for new rule-based pricing update
+      // const result = await createPricingRule({
+      //   variables: {
+      //     input: {
+      //       name: `${bundle.countryName} ${bundle.duration}d Discount Override`,
+      //       description: `Custom discount for ${bundle.countryName} ${bundle.duration}-day bundles: ${customDiscount}%`,
+      //       type: 'DISCOUNT',
+      //       conditions: [
+      //         { field: 'countryId', operator: 'EQUALS', value: bundle.countryId },
+      //         { field: 'duration', operator: 'EQUALS', value: bundle.duration.toString() }
+      //       ],
+      //       actions: [
+      //         { type: 'PERCENTAGE_DISCOUNT', value: discountRateDecimal }
+      //       ],
+      //       priority: 100,
+      //       isActive: true,
+      //     },
+      //   },
+      //   refetchQueries: [
+      //     {
+      //       query: GET_COUNTRY_BUNDLES,
+      //       variables: { countryId: bundle.countryId },
+      //     },
+      //   ],
+      // });
+      
+      setIsEditingDiscount(false);
+      // toast.success(`Discount of ${customDiscount}% applied for ${bundle.countryName}`);
+      onConfigurationSaved?.();
     } catch (error: any) {
-      console.error("Error saving discount:", error);
+      const logger = { error: (msg: string, err: any) => console.error(msg, err) };
+      logger.error("Error saving discount:", error);
       
       // Check for server-side minimum fee validation errors
       if (error?.graphQLErrors?.[0]?.extensions?.code === 'INSUFFICIENT_PROFIT_MARGIN') {

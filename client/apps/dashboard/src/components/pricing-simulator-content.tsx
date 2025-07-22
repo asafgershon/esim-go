@@ -13,7 +13,7 @@ import {
 } from '@workspace/ui';
 import React, { useState, useEffect } from 'react';
 import { Calculator, Globe, Clock } from 'lucide-react';
-import { CALCULATE_BATCH_PRICING } from '../lib/graphql/queries';
+import { CALCULATE_BATCH_PRICING_WITH_RULES, GET_COUNTRY_BUNDLES } from '../lib/graphql/queries';
 import { Country } from '@/__generated__/graphql';
 
 interface PricingSimulatorContentProps {
@@ -24,23 +24,38 @@ interface SimulationResult {
   bundleName: string;
   countryName: string;
   duration: number;
-  cost: number;
-  costPlus: number;
-  totalCost: number;
-  discountRate: number;
-  discountValue: number;
+  baseCost: number;
+  markup: number;
+  subtotal: number;
+  discounts: Array<{
+    ruleName: string;
+    amount: number;
+    type: string;
+  }>;
+  totalDiscount: number;
   priceAfterDiscount: number;
+  processingFee: number;
   processingRate: number;
-  processingCost: number;
-  revenueAfterProcessing: number;
+  finalPrice: number;
   finalRevenue: number;
+  revenueAfterProcessing: number;
+  profit: number;
+  appliedRules: Array<{
+    id: string;
+    name: string;
+    type: string;
+    impact: string;
+  }>;
   currency: string;
 }
 
 export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = ({
   countries,
 }) => {
-  const [calculateBatchPricing, { loading }] = useLazyQuery(CALCULATE_BATCH_PRICING);
+  const [calculateBatchPricing, { loading: pricingLoading }] = useLazyQuery(CALCULATE_BATCH_PRICING_WITH_RULES);
+  const [getCountryBundles, { loading: bundlesLoading }] = useLazyQuery(GET_COUNTRY_BUNDLES);
+  
+  const loading = pricingLoading || bundlesLoading;
   
   // Simulation state
   const [selectedCountry, setSelectedCountry] = useState<string>('');
@@ -102,43 +117,72 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
     try {
       const bestBundle = getBestBundle(simulatorDays);
       
+      // First, search for bundles in this country
+      const bundlesResult = await getCountryBundles({
+        variables: {
+          countryId: selectedCountry,
+        },
+      });
+      
+      if (!bundlesResult.data?.countryBundles || bundlesResult.data.countryBundles.length === 0) {
+        setError('No bundles found for this country');
+        return;
+      }
+      
+      // Find a bundle that matches our duration (or closest match)
+      const bundles = bundlesResult.data.countryBundles;
+      const suitableBundle = bundles.find(bundle => bundle.duration === bestBundle) ||
+                             bundles.find(bundle => bundle.duration >= bestBundle) ||
+                             bundles[0]; // fallback to first bundle
+      
+      if (!suitableBundle) {
+        setError('No suitable bundle found for this duration');
+        return;
+      }
+      
+      // Ensure all required fields have valid values
+      const bundleRequest = {
+        bundleId: suitableBundle.planId || `bundle-${selectedCountry}-${suitableBundle.duration}`,
+        bundleName: suitableBundle.bundleName || `Bundle ${suitableBundle.duration} days`,
+        cost: suitableBundle.cost || 0,
+        duration: suitableBundle.duration || bestBundle,
+        countryId: selectedCountry,
+        countryName: suitableBundle.countryName || country.name,
+        regionId: country.region,
+        regionName: country.region,
+        bundleGroup: suitableBundle.bundleGroup || 'Standard',
+        isUnlimited: suitableBundle.isUnlimited || false,
+        dataAmount: suitableBundle.dataAmount || 'Unknown',
+        paymentMethod: selectedPaymentMethod,
+        requestedDuration: simulatorDays,
+      };
+      
+      // Debug log to see what we're sending
+      console.log('Bundle request:', bundleRequest);
+      
+      // Now use the bundle details for rule-based pricing
       const result = await calculateBatchPricing({
         variables: {
-          inputs: [{
-            numOfDays: bestBundle,
-            regionId: country.region,
-            countryId: selectedCountry,
-            paymentMethod: selectedPaymentMethod,
-          }],
+          requests: [bundleRequest],
         },
       });
 
-      if (result.data?.calculatePrices && result.data.calculatePrices.length > 0) {
-        const pricingData = result.data.calculatePrices[0];
-        
-        // Apply unused days discount if applicable
-        const unusedDays = Math.max(0, bestBundle - simulatorDays);
-        const unusedDaysDiscount = unusedDays > 0 ? (unusedDays / bestBundle) * 0.1 : 0;
-        const basePrice = pricingData.totalCost;
-        const priceAfterUnusedDiscount = basePrice * (1 - unusedDaysDiscount);
-        const finalPrice = priceAfterUnusedDiscount * (1 - pricingData.discountRate);
+      if (result.data?.calculateBatchPricing && result.data.calculateBatchPricing.length > 0) {
+        const pricingData = result.data.calculateBatchPricing[0];
         
         setSimulationResult({
           ...pricingData,
-          bundleName: `UL essential ${bestBundle} days`,
-          countryName: country.name,
-          duration: bestBundle,
-          priceAfterDiscount: finalPrice,
-          discountValue: priceAfterUnusedDiscount * pricingData.discountRate,
-          processingCost: finalPrice * pricingData.processingRate,
-          revenueAfterProcessing: finalPrice * (1 - pricingData.processingRate),
-          finalRevenue: finalPrice * (1 - pricingData.processingRate) - pricingData.cost - pricingData.costPlus,
+          bundleName: suitableBundle.bundleName,
+          countryName: suitableBundle.countryName,
+          duration: suitableBundle.duration,
+          currency: 'USD', // Default currency
         });
       } else {
-        setError('No pricing data available for this country/duration');
+        setError('Failed to calculate pricing with new engine');
       }
     } catch (error) {
-      console.error('Simulation error:', error);
+      const logger = { error: (msg: string, err: any) => console.error(msg, err) };
+      logger.error('Simulation error:', error);
       setError('Failed to calculate pricing');
     }
   };
@@ -291,6 +335,11 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                       <strong>Unused Days:</strong> {simulationResult.duration - simulatorDays} days
                     </p>
                   )}
+                  {simulationResult.appliedRules && simulationResult.appliedRules.length > 0 && (
+                    <p className="text-green-600">
+                      <strong>Applied Rules:</strong> {simulationResult.appliedRules.length} rules active
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -299,42 +348,49 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                 <h4 className="font-medium mb-3">Pricing Breakdown</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span>eSIM Go Cost:</span>
-                    <span>{formatCurrency(simulationResult.cost)}</span>
+                    <span>Base Cost:</span>
+                    <span>{formatCurrency(simulationResult.baseCost)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Our Markup:</span>
-                    <span>{formatCurrency(simulationResult.costPlus)}</span>
+                    <span>{formatCurrency(simulationResult.markup)}</span>
                   </div>
                   <div className="flex justify-between font-medium border-t pt-2">
-                    <span>Total Cost:</span>
-                    <span>{formatCurrency(simulationResult.totalCost)}</span>
+                    <span>Subtotal:</span>
+                    <span>{formatCurrency(simulationResult.subtotal)}</span>
                   </div>
                   
-                  {simulationResult.duration > simulatorDays && (
-                    <div className="flex justify-between text-orange-600">
-                      <span>Unused Days Discount:</span>
-                      <span>-{formatCurrency(simulationResult.totalCost * ((simulationResult.duration - simulatorDays) / simulationResult.duration) * 0.1)}</span>
+                  {/* Applied Discounts */}
+                  {simulationResult.discounts && simulationResult.discounts.length > 0 && (
+                    <div className="space-y-1">
+                      {simulationResult.discounts.map((discount, index) => (
+                        <div key={index} className="flex justify-between text-green-600">
+                          <span>{discount.ruleName}:</span>
+                          <span>-{formatCurrency(discount.amount)}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                   
-                  <div className="flex justify-between">
-                    <span>Customer Discount ({formatPercentage(simulationResult.discountRate)}):</span>
-                    <span className="text-green-600">-{formatCurrency(simulationResult.discountValue)}</span>
-                  </div>
+                  {simulationResult.totalDiscount > 0 && (
+                    <div className="flex justify-between font-medium">
+                      <span>Total Discount:</span>
+                      <span className="text-green-600">-{formatCurrency(simulationResult.totalDiscount)}</span>
+                    </div>
+                  )}
                   
                   <Separator className="my-2" />
                   
                   <div className="flex justify-between font-medium text-lg">
                     <span>Final Price:</span>
                     <span className="text-blue-600">
-                      {formatCurrency(simulationResult.priceAfterDiscount)}
+                      {formatCurrency(simulationResult.finalPrice)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Price per day:</span>
                     <span>
-                      {formatCurrency(simulationResult.priceAfterDiscount / simulatorDays)}
+                      {formatCurrency(simulationResult.finalPrice / simulatorDays)}
                     </span>
                   </div>
                   
@@ -342,7 +398,7 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                   
                   <div className="flex justify-between">
                     <span>Processing Fee ({formatPercentage(simulationResult.processingRate)}):</span>
-                    <span className="text-yellow-600">-{formatCurrency(simulationResult.processingCost)}</span>
+                    <span className="text-yellow-600">-{formatCurrency(simulationResult.processingFee)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Revenue After Processing:</span>
@@ -350,8 +406,8 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                   </div>
                   <div className="flex justify-between font-medium border-t pt-2">
                     <span>Final Revenue (Profit):</span>
-                    <span className={`${simulationResult.finalRevenue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(simulationResult.finalRevenue)}
+                    <span className={`${simulationResult.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(simulationResult.profit)}
                     </span>
                   </div>
                 </div>
@@ -363,13 +419,19 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                 <div className="text-sm text-green-800 space-y-1">
                   <p>
                     <strong>Profit Margin:</strong> {' '}
-                    {simulationResult.finalRevenue >= 0 ? '+' : ''}
-                    {((simulationResult.finalRevenue / simulationResult.totalCost) * 100).toFixed(1)}%
+                    {simulationResult.profit >= 0 ? '+' : ''}
+                    {((simulationResult.profit / simulationResult.subtotal) * 100).toFixed(1)}%
                   </p>
                   <p>
                     <strong>Break-even Price:</strong> {' '}
-                    {formatCurrency(simulationResult.cost + simulationResult.costPlus + simulationResult.processingCost + 0.01)}
+                    {formatCurrency(simulationResult.baseCost + simulationResult.markup + simulationResult.processingFee + 0.01)}
                   </p>
+                  {simulationResult.appliedRules && simulationResult.appliedRules.length > 0 && (
+                    <p>
+                      <strong>Rules Applied:</strong> {' '}
+                      {simulationResult.appliedRules.map(rule => rule.name).join(', ')}
+                    </p>
+                  )}
                 </div>
               </div>
 
