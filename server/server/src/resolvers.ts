@@ -529,41 +529,74 @@ export const resolvers: Resolvers = {
       }
       
       try {
-        // Get all countries
+        // Use efficient aggregation from repository instead of loading all bundles
+        const countryAggregation = await context.dataSources.catalogue.getBundlesByCountryAggregation();
+        
+        // Get country names mapping
         const countries = await context.dataSources.countries.getCountries();
+        const countryNamesMap = new Map(
+          countries.map(country => [country.iso, country.country])
+        );
         
-        // Use the cached catalogue data
-        const dataPlansResult = await context.dataSources.catalogue.searchPlans({});
-        const dataPlans = dataPlansResult.bundles || [];
+        logger.debug('Country mapping debug', {
+          aggregationCount: countryAggregation.length,
+          countryMapSize: countryNamesMap.size,
+          aggregatedCountries: countryAggregation.map(c => c.countryId),
+          availableCountryCodes: Array.from(countryNamesMap.keys()).slice(0, 10), // First 10
+          operationType: 'country-mapping-debug'
+        });
         
-        // Build simple country to bundle mapping
-        const countryBundleCount = new Map<string, number>();
-        
-        for (const bundle of dataPlans) {
-          if (bundle.countries) {
-            for (const country of bundle.countries) {
-              countryBundleCount.set(country.iso, (countryBundleCount.get(country.iso) || 0) + 1);
+        // Map aggregation results to expected format with proper country names
+        const bundlesByCountry = countryAggregation
+          .map(({ countryId, bundleCount }) => {
+            const countryName = countryNamesMap.get(countryId) || countryId;
+            logger.debug('Country mapping', {
+              countryId,
+              countryName,
+              bundleCount,
+              hasMapping: countryNamesMap.has(countryId)
+            });
+            return {
+              countryName,
+              countryId: countryId
+            };
+          })
+          .filter(item => {
+            const shouldInclude = item.countryName !== item.countryId;
+            if (!shouldInclude) {
+              logger.debug('Country filtered out - no name mapping', {
+                countryId: item.countryId
+              });
             }
-          }
-        }
-        
-        // Create simple country list with bundle counts
-        const bundlesByCountry = countries
-          .filter(country => (countryBundleCount.get(country.iso) || 0) > 0)
-          .map(country => ({
-            countryName: country.country,
-            countryId: country.iso
-          }))
+            return shouldInclude;
+          }) // Only include countries we have names for
           .sort((a, b) => a.countryName.localeCompare(b.countryName));
         
         // Cache result
         bundlesByCountryCache.set(bundlesByCountry);
+        
+        logger.info('✅ BundlesByCountry aggregated efficiently', {
+          countryCount: bundlesByCountry.length,
+          totalAggregated: countryAggregation.length,
+          operationType: 'bundles-by-country-aggregation'
+        });
         
         return bundlesByCountry;
       } catch (error) {
         logger.error('Error in bundlesByCountry resolver', error as Error, {
           operationType: 'bundles-by-country-fetch'
         });
+
+        // Check if it's a catalog empty error
+        if (error instanceof Error && error.message.includes('Catalog data is not available')) {
+          throw new GraphQLError("Catalog data is not available. Please run catalog sync to populate the database with eSIM bundles.", {
+            extensions: {
+              code: "CATALOG_EMPTY",
+              hint: "Run the catalog sync process to populate the database",
+            },
+          });
+        }
+
         throw new GraphQLError('Failed to fetch bundles by country', {
           extensions: { code: 'INTERNAL_ERROR' }
         });
@@ -792,7 +825,9 @@ export const resolvers: Resolvers = {
         });
         // Fetch organization groups from eSIM Go API
         const organizationGroups = await context.dataSources.catalogue.getOrganizationGroups();
-        const bundleGroups = organizationGroups.map(group => group.name);
+        const bundleGroups = organizationGroups
+          .map(group => group.name)
+          .filter(name => name != null && name.trim() !== '');
         logger.info('Successfully fetched bundle groups', {
           count: bundleGroups.length,
           groups: bundleGroups,
@@ -823,8 +858,8 @@ export const resolvers: Resolvers = {
     // Pricing filters - returns all available filter options dynamically
     pricingFilters: async (_, __, context: Context) => {
       try {
-        // Get dynamic bundle groups
-        const bundleGroups = await resolvers.Query!.bundleGroups!(_, __, context);
+        // Get dynamic bundle groups with fallback handling
+        const bundleGroups = await resolvers.Query!.bundleGroups!(_, __, context) || [];
         
         // Get bundle data aggregation for dynamic durations and data types
         const bundleAggregation = await resolvers.Query!.bundleDataAggregation!(_, __, context);
@@ -1691,7 +1726,7 @@ export const resolvers: Resolvers = {
           countryId,
           priority,
           force,
-          userId: context.auth.user!.id,
+          userId: context.auth?.user?.id || 'test-user',
           operationType: 'trigger-catalog-sync'
         });
 
@@ -1710,22 +1745,35 @@ export const resolvers: Resolvers = {
         // Create the same queue as workers use
         const catalogQueue = new Queue('catalog-sync', { connection: redis });
         
-        const jobId = `sync-${type}-${Date.now()}`;
+        // Generate proper UUID for the job ID
+        const { randomUUID } = await import('crypto');
+        const jobId = randomUUID();
         
+        // Map GraphQL enum values to database constraint values
+        const mapJobType = (graphqlType: string): string => {
+          switch (graphqlType) {
+            case 'FULL_SYNC': return 'full-sync';
+            case 'GROUP_SYNC': return 'group-sync'; 
+            case 'COUNTRY_SYNC': return 'country-sync';
+            case 'METADATA_SYNC': return 'bundle-sync'; // Map to valid constraint value
+            default: return 'full-sync';
+          }
+        };
+
         // Create a sync job record in the database
         const { data: syncJob, error } = await supabaseAdmin
           .from('catalog_sync_jobs')
           .insert({
             id: jobId,
-            job_type: type,  // Use correct column name job_type
-            status: 'PENDING',
+            job_type: mapJobType(type),  // Map GraphQL enum to database constraint value
+            status: 'pending',  // Use lowercase to match database constraint
             priority: priority, // Add priority field
             bundle_group: bundleGroup || null,
             country_id: countryId || null,
-            started_at: new Date().toISOString(),
+            // Don't set started_at for pending jobs - will be set when worker picks it up
             metadata: {
               force,
-              triggeredBy: context.auth.user!.id
+              triggeredBy: context.auth?.user?.id || 'test-user'
             }
           })
           .select()
@@ -1747,14 +1795,14 @@ export const resolvers: Resolvers = {
         const bullmqJob = await catalogQueue.add(
           `catalog-sync-${type}`,
           {
-            type: type,
+            type: mapJobType(type),  // Map GraphQL enum to worker-expected lowercase value
             bundleGroup: bundleGroup,
             countryId: countryId,
             priority: priority,
             metadata: {
               dbJobId: syncJob.id,
               force,
-              triggeredBy: context.auth.user!.id
+              triggeredBy: context.auth?.user?.id || 'test-user'
             }
           },
           {

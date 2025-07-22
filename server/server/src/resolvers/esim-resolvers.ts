@@ -29,10 +29,10 @@ export const esimResolvers: Partial<Resolvers> = {
         });
 
         // Map plans directly from API (filtering now handled in datasource)
-        const filteredPlans = response.bundles.map((plan) => mapDataPlan(plan));
+        const filteredPlans = (response.bundles || []).map((plan) => mapDataPlan(plan));
         
         // Calculate pagination metadata
-        const totalCount = response.totalCount;
+        const totalCount = response.totalCount || 0;
         const hasNextPage = offset + limit < totalCount;
         const hasPreviousPage = offset > 0;
         const pages = Math.ceil(totalCount / limit);
@@ -54,9 +54,23 @@ export const esimResolvers: Partial<Resolvers> = {
         };
       } catch (error) {
         console.error("Error fetching data plans:", error);
-        throw new GraphQLError("Failed to fetch data plans", {
+        console.error("Filter parameters:", filter);
+        
+        // Check if it's a catalog empty error
+        if (error instanceof Error && error.message.includes('Catalog data is not available')) {
+          throw new GraphQLError("Catalog data is not available. Please run catalog sync to populate the database with eSIM bundles.", {
+            extensions: {
+              code: "CATALOG_EMPTY",
+              hint: "Run the catalog sync process to populate the database",
+            },
+          });
+        }
+        
+        // Pass through the actual error details for debugging
+        throw new GraphQLError(`Failed to fetch data plans: ${error instanceof Error ? error.message : String(error)}`, {
           extensions: {
             code: "DATA_PLANS_FETCH_ERROR",
+            originalError: error instanceof Error ? error.message : String(error),
           },
         });
       }

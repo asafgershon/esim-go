@@ -17,46 +17,52 @@ export type Database = {
       catalog_bundles: {
         Row: {
           bundle_group: string | null
-          bundle_id: string
           countries: Json | null
           created_at: string | null
+          currency: string | null
           data_amount: number | null
           description: string | null
-          duration: number
+          duration: number | null
+          esim_go_name: string
           id: string
           metadata: Json | null
-          name: string
-          price: number
+          price_cents: number | null
+          regions: Json | null
+          synced_at: string | null
           unlimited: boolean | null
           updated_at: string | null
         }
         Insert: {
           bundle_group?: string | null
-          bundle_id: string
           countries?: Json | null
           created_at?: string | null
+          currency?: string | null
           data_amount?: number | null
           description?: string | null
-          duration: number
+          duration?: number | null
+          esim_go_name: string
           id?: string
           metadata?: Json | null
-          name: string
-          price: number
+          price_cents?: number | null
+          regions?: Json | null
+          synced_at?: string | null
           unlimited?: boolean | null
           updated_at?: string | null
         }
         Update: {
           bundle_group?: string | null
-          bundle_id?: string
           countries?: Json | null
           created_at?: string | null
+          currency?: string | null
           data_amount?: number | null
           description?: string | null
-          duration?: number
+          duration?: number | null
+          esim_go_name?: string
           id?: string
           metadata?: Json | null
-          name?: string
-          price?: number
+          price_cents?: number | null
+          regions?: Json | null
+          synced_at?: string | null
           unlimited?: boolean | null
           updated_at?: string | null
         }
@@ -849,6 +855,30 @@ export type Database = {
       is_checkout_session_complete: {
         Args: { session_id: string }
         Returns: boolean
+      }
+      search_catalog_bundles: {
+        Args: {
+          p_countries?: string[]
+          p_bundle_groups?: string[]
+          p_min_duration?: number
+          p_max_duration?: number
+          p_unlimited?: boolean
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: {
+          id: string
+          esim_go_name: string
+          bundle_group: string
+          description: string
+          duration: number
+          data_amount: number
+          unlimited: boolean
+          price_cents: number
+          currency: string
+          countries: Json
+          regions: Json
+        }[]
       }
       validate_checkout_session_token: {
         Args: { session_token: string }
