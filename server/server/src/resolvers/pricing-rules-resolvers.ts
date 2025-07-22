@@ -116,6 +116,91 @@ export const pricingRulesQueries: QueryResolvers = {
     }
   },
 
+  calculatePriceWithRules: async (
+    _parent,
+    { input },
+    context,
+    _info
+  ): Promise<PricingRuleCalculation> => {
+    logger.info('Calculating single price with rules', { 
+      countryId: input.countryId,
+      numOfDays: input.numOfDays,
+      regionId: input.regionId,
+      paymentMethod: input.paymentMethod
+    });
+    
+    try {
+      const engine = getPricingEngineService(context);
+      
+      // Get bundle information from catalog
+      const bundles = await context.dataSources.catalogue.searchPlans({
+        country: input.countryId,
+        duration: input.numOfDays
+      });
+      
+      if (!bundles.bundles || bundles.bundles.length === 0) {
+        throw new GraphQLError('No bundles found for the specified criteria', {
+          extensions: { code: 'NO_BUNDLES_FOUND' }
+        });
+      }
+      
+      // Use the first matching bundle
+      const bundle = bundles.bundles[0];
+      
+      // Create pricing context for the rule engine
+      const pricingContext = PricingEngineService.createContext({
+        bundle: {
+          id: bundle.name || `${input.countryId}-${input.numOfDays}d`,
+          name: bundle.name || 'Bundle',
+          cost: bundle.price || 0,
+          duration: input.numOfDays,
+          countryId: input.countryId,
+          countryName: input.countryId, // Will be resolved later
+          regionId: input.regionId || bundle.baseCountry?.region || 'UNKNOWN',
+          regionName: input.regionId || bundle.baseCountry?.region || 'Unknown',
+          group: bundle.bundleGroup || 'Standard Fixed',
+          isUnlimited: bundle.unlimited || bundle.dataAmount === -1,
+          dataAmount: bundle.dataAmount || 0
+        },
+        paymentMethod: input.paymentMethod || 'ISRAELI_CARD'
+      });
+      
+      // Validate context
+      const errors = engine.validateContext(pricingContext);
+      if (errors.length > 0) {
+        logger.warn('Invalid pricing context', { 
+          countryId: input.countryId,
+          errors 
+        });
+        throw new GraphQLError('Invalid pricing request', {
+          extensions: { 
+            code: 'BAD_USER_INPUT',
+            errors 
+          }
+        });
+      }
+      
+      // Calculate price
+      const result = await engine.calculatePrice(pricingContext);
+      
+      logger.info('Single price calculated with rules', { 
+        countryId: input.countryId,
+        finalPrice: result.finalPrice,
+        appliedRulesCount: result.appliedRules?.length || 0
+      });
+      
+      return result;
+    } catch (error) {
+      logger.error('Failed to calculate single price with rules', error, {
+        countryId: input.countryId,
+        numOfDays: input.numOfDays
+      });
+      throw new GraphQLError('Failed to calculate pricing', {
+        extensions: { code: 'INTERNAL_SERVER_ERROR' }
+      });
+    }
+  },
+
   calculateBatchPricing: async (
     _parent,
     { requests },
@@ -182,6 +267,62 @@ export const pricingRulesQueries: QueryResolvers = {
     } catch (error) {
       logger.error('Failed to calculate batch pricing', error);
       throw new GraphQLError('Failed to calculate pricing', {
+        extensions: { code: 'INTERNAL_SERVER_ERROR' }
+      });
+    }
+  },
+
+  simulatePricingRule: async (
+    _parent,
+    { rule, testContext },
+    context,
+    _info
+  ): Promise<PricingRuleCalculation> => {
+    logger.info('Simulating pricing rule', { 
+      ruleName: rule.name,
+      ruleType: rule.type
+    });
+    
+    try {
+      const engine = getPricingEngineService(context);
+      
+      // Create a temporary pricing context for simulation
+      const pricingContext = PricingEngineService.createContext({
+        bundle: {
+          id: testContext.bundleId || 'test-bundle',
+          name: testContext.bundleName || 'Test Bundle',
+          cost: testContext.baseCost || 10.0,
+          duration: testContext.duration || 7,
+          countryId: testContext.countryId || 'US',
+          countryName: testContext.countryName || 'United States',
+          regionId: testContext.regionId || 'AMERICA',
+          regionName: testContext.regionName || 'America',
+          group: testContext.bundleGroup || 'Standard Fixed',
+          isUnlimited: testContext.isUnlimited || false,
+          dataAmount: testContext.dataAmount || 1024
+        },
+        paymentMethod: testContext.paymentMethod || 'ISRAELI_CARD',
+        user: testContext.userId ? {
+          id: testContext.userId,
+          segment: testContext.userSegment || 'STANDARD'
+        } : undefined
+      });
+      
+      // Simulate the rule by temporarily adding it to the engine
+      const result = await engine.simulateRule(rule, pricingContext);
+      
+      logger.info('Pricing rule simulated', { 
+        ruleName: rule.name,
+        simulatedPrice: result.finalPrice
+      });
+      
+      return result;
+    } catch (error) {
+      logger.error('Failed to simulate pricing rule', error, {
+        ruleName: rule.name,
+        ruleType: rule.type
+      });
+      throw new GraphQLError('Failed to simulate pricing rule', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' }
       });
     }

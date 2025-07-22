@@ -379,22 +379,26 @@ export const resolvers: Resolvers = {
         const country = countries.find(c => c.iso === countryId);
         const countryName = country?.country || countryId;
         
-        // Map rule engine result to existing GraphQL schema
+        // Map rule engine result to GraphQL schema
         return {
           bundleName: bundle.name || `${numOfDays} Day Bundle`,
           countryName,
           duration: numOfDays,
-          cost: calculation.basePrice,
-          costPlus: calculation.markupPrice,
-          totalCost: calculation.totalCost,
-          discountRate: calculation.discountRate,
-          discountValue: calculation.discountAmount,
-          priceAfterDiscount: calculation.discountedPrice,
+          currency: 'USD',
+          // Public fields
+          totalCost: calculation.subtotal,
+          discountValue: calculation.totalDiscount,
+          priceAfterDiscount: calculation.priceAfterDiscount,
+          // Admin-only fields (protected by @auth directives)
+          cost: calculation.baseCost,
+          costPlus: calculation.baseCost + calculation.markup,
+          discountRate: calculation.discounts.reduce((sum, d) => {
+            return sum + (d.type === 'percentage' ? d.amount : 0);
+          }, 0),
           processingRate: calculation.processingRate,
           processingCost: calculation.processingFee,
           finalRevenue: calculation.finalPrice,
-          netProfit: calculation.netProfit,
-          currency: 'USD',
+          netProfit: calculation.profit,
           discountPerDay: calculation.metadata?.discountPerUnusedDay || 0.10
         };
       } catch (error) {

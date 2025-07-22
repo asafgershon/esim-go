@@ -242,6 +242,9 @@ export class CatalogSyncService {
         syncVersion: this.getCurrentMonthVersion()
       };
       
+      // Track all bundles for data aggregation calculation
+      const allSyncedBundles: ESIMGoDataPlan[] = [];
+      
       // Get available bundle groups dynamically to prevent 401 errors
       const availableBundleGroups = await this.getBundleGroups();
       
@@ -356,6 +359,9 @@ export class CatalogSyncService {
             metadata.bundleGroups.push(groupName);
             metadata.totalBundles += allGroupBundles.length;
             
+            // Add bundles to aggregation collection
+            allSyncedBundles.push(...allGroupBundles);
+            
             bundleGroupSuccess = true;
             
             const durations = [...new Set(allGroupBundles.map(b => b.duration))];
@@ -434,6 +440,9 @@ export class CatalogSyncService {
             metadata.bundleGroups.push('fallback');
             metadata.totalBundles += allBundles.length;
             
+            // Add fallback bundles to aggregation collection
+            allSyncedBundles.push(...allBundles);
+            
             const allDurations = [...new Set(allBundles.map(b => b.duration))];
             this.logger.info('Fallback sync completed', {
               bundleCount: allBundles.length,
@@ -470,6 +479,15 @@ export class CatalogSyncService {
         activeGroups: metadata.bundleGroups,
         operationType: 'full-catalog-sync'
       });
+      
+      // Calculate and cache bundle data aggregation
+      if (allSyncedBundles.length > 0) {
+        await this.calculateBundleDataAggregation(allSyncedBundles);
+      } else {
+        this.logger.warn('No bundles collected for data aggregation', {
+          operationType: 'bundle-data-aggregation'
+        });
+      }
       
     } catch (error) {
       this.logger.error('Optimized catalog sync failed', error as Error, { operationType: 'full-catalog-sync' });
@@ -700,6 +718,159 @@ export class CatalogSyncService {
       }
     } catch (error) {
       this.logger.error('Error checking catalog sync status', error as Error, { operationType: 'periodic-sync' });
+    }
+  }
+
+  /**
+   * Calculate and cache bundle data amount aggregation
+   */
+  private async calculateBundleDataAggregation(allBundles: ESIMGoDataPlan[]): Promise<void> {
+    return withPerformanceLogging(
+      this.logger,
+      'bundle-data-aggregation',
+      async () => {
+        try {
+          const startTime = Date.now();
+          
+          // Initialize counters
+          const total = allBundles.length;
+          let unlimited = 0;
+          const dataAmountMap = new Map<number, number>();
+          const durationMap = new Map<number, number>();
+          const bundleGroupStatsMap = new Map<string, {
+            total: number;
+            unlimited: number;
+            limited: number;
+            totalDataAmount: number;
+            limitedCount: number;
+          }>();
+
+          // Process each bundle
+          for (const bundle of allBundles) {
+            const isUnlimited = bundle.unlimited || bundle.dataAmount === -1 || bundle.dataAmount === 0;
+            const bundleGroup = bundle.bundleGroup || 'Unknown';
+            const dataAmount = bundle.dataAmount || 0;
+            const duration = bundle.duration || 0;
+
+            // Count unlimited bundles
+            if (isUnlimited) {
+              unlimited++;
+            } else {
+              // Count data amounts for limited bundles
+              dataAmountMap.set(dataAmount, (dataAmountMap.get(dataAmount) || 0) + 1);
+            }
+
+            // Count durations for all bundles
+            durationMap.set(duration, (durationMap.get(duration) || 0) + 1);
+
+            // Update bundle group stats
+            if (!bundleGroupStatsMap.has(bundleGroup)) {
+              bundleGroupStatsMap.set(bundleGroup, {
+                total: 0,
+                unlimited: 0,
+                limited: 0,
+                totalDataAmount: 0,
+                limitedCount: 0
+              });
+            }
+
+            const stats = bundleGroupStatsMap.get(bundleGroup)!;
+            stats.total++;
+            if (isUnlimited) {
+              stats.unlimited++;
+            } else {
+              stats.limited++;
+              stats.totalDataAmount += dataAmount;
+              stats.limitedCount++;
+            }
+          }
+
+          // Create data amount groups (sorted by data amount)
+          const byDataAmount = Array.from(dataAmountMap.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([dataAmount, count]) => ({
+              dataAmount,
+              count,
+              percentage: (count / total) * 100
+            }));
+
+          // Create duration groups with categories (sorted by duration)
+          const byDuration = Array.from(durationMap.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([duration, count]) => ({
+              duration,
+              count,
+              percentage: (count / total) * 100,
+              category: this.categorizeDuration(duration)
+            }));
+
+          // Create bundle group stats
+          const byBundleGroup = Array.from(bundleGroupStatsMap.entries())
+            .map(([bundleGroup, stats]) => ({
+              bundleGroup,
+              total: stats.total,
+              unlimited: stats.unlimited,
+              limited: stats.limited,
+              averageDataAmount: stats.limitedCount > 0 ? stats.totalDataAmount / stats.limitedCount : 0
+            }))
+            .sort((a, b) => b.total - a.total); // Sort by total count descending
+
+          // Create final aggregation object
+          const aggregation = {
+            total,
+            unlimited,
+            byDataAmount,
+            byDuration,
+            byBundleGroup,
+            lastUpdated: new Date().toISOString()
+          };
+
+          // Cache the aggregation data
+          const cacheKey = 'bundle-data-aggregation';
+          const cacheResult = await this.cacheHealth.safeSet(
+            cacheKey,
+            JSON.stringify(aggregation),
+            30 * 24 * 60 * 60 // 30 days TTL (aligned with catalog cache)
+          );
+
+          if (cacheResult.success) {
+            const duration = Date.now() - startTime;
+            this.logger.info('Bundle data aggregation calculated and cached', {
+              total,
+              unlimited,
+              limited: total - unlimited,
+              uniqueDataAmounts: byDataAmount.length,
+              uniqueDurations: byDuration.length,
+              bundleGroups: byBundleGroup.length,
+              duration,
+              operationType: 'bundle-data-aggregation'
+            });
+          } else {
+            this.logger.error('Failed to cache bundle data aggregation', cacheResult.error, {
+              operationType: 'bundle-data-aggregation'
+            });
+          }
+
+        } catch (error) {
+          this.logger.error('Error calculating bundle data aggregation', error as Error, {
+            operationType: 'bundle-data-aggregation'
+          });
+          // Don't throw error to avoid failing the entire sync
+        }
+      }
+    );
+  }
+
+  /**
+   * Categorize duration into meaningful ranges for aggregation
+   */
+  private categorizeDuration(duration: number): string {
+    if (duration <= 7) {
+      return 'short';
+    } else if (duration <= 30) {
+      return 'medium';
+    } else {
+      return 'long';
     }
   }
 
