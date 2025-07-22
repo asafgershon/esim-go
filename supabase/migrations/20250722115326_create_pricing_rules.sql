@@ -218,13 +218,19 @@ SELECT
 FROM public.pricing_configurations
 WHERE discount_rate > 0;
 
--- Add default unused days discount rule
+-- Add default unused days discount rule with a condition that always matches
 INSERT INTO public.pricing_rules (type, name, description, conditions, actions, priority, is_active, is_editable, created_by)
 VALUES (
     'BUSINESS_DISCOUNT',
     'Default Unused Days Discount',
     'Apply 10% discount per unused day for all bundles',
-    '[]'::JSONB, -- No conditions means applies to all
+    jsonb_build_array(
+        jsonb_build_object(
+            'field', 'bundle.duration',
+            'operator', 'GREATER_THAN',
+            'value', 0
+        )
+    ), -- Condition that always matches (all bundles have duration > 0)
     jsonb_build_array(
         jsonb_build_object(
             'type', 'SET_DISCOUNT_PER_UNUSED_DAY',
