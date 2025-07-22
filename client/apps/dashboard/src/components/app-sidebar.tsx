@@ -7,6 +7,7 @@ import {
   Package,
   Zap,
   DollarSign,
+  Database,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -44,9 +45,9 @@ const data = {
       icon: ShoppingCart,
     },
     {
-      title: "Bundles",
-      url: "/bundles",
-      icon: Zap,
+      title: "Catalog",
+      url: "/catalog",
+      icon: Database,
     },
     {
       title: "Trips",
