@@ -121,7 +121,7 @@ SELECT
     90 as priority,
     is_active,
     false as is_editable,
-    created_by
+    '00000000-0000-0000-0000-000000000000'::UUID as created_by
 FROM public.processing_fee_configurations
 WHERE is_active = true
 LIMIT 1;
@@ -148,7 +148,7 @@ SELECT
     90 as priority,
     is_active,
     false as is_editable,
-    created_by
+    '00000000-0000-0000-0000-000000000000'::UUID as created_by
 FROM public.processing_fee_configurations
 WHERE is_active = true
 LIMIT 1;
@@ -207,7 +207,7 @@ SELECT
     END as priority,
     is_active,
     true as is_editable,
-    created_by
+    COALESCE(created_by, '00000000-0000-0000-0000-000000000000'::UUID) as created_by
 FROM public.pricing_configurations
 WHERE discount_rate > 0; -- Only migrate rules that actually apply discounts
 

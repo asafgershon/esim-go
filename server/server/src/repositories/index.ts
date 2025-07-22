@@ -4,6 +4,7 @@ export { OrderRepository } from "./orders/order.repository";
 export { UserRepository } from "./users/user.repository";
 export { ProcessingFeeRepository } from "./processing-fees/processing-fee.repository";
 export { HighDemandCountryRepository } from "./high-demand-countries/high-demand-country.repository";
+export { PricingRulesRepository } from "./pricing-rules/pricing-rules.repository";
 
 export type {
   CheckoutSessionPlanSnapshot,
