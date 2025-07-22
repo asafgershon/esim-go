@@ -13,14 +13,16 @@ export interface ESIMGoCountry {
 // Zod schema for organization groups with resilient validation
 export const ESIMGoOrganizationGroupSchema = z.object({
   name: z.string().min(1, "Organization group name is required"),
-  description: z.string().optional().nullable().transform(val => val || undefined),
-  pricingUrl: z.string().url().optional().nullable().transform(val => val || undefined),
-  iconUrl: z.string().url().optional().nullable().transform(val => val || undefined),
-}).strict(); // Ensure no extra fields are allowed
+  desc: z.string().optional().nullable().transform(val => val || undefined),
+  priceListUrl: z.string().url().optional().nullable().transform(val => val || undefined),
+  icon: z.string().url().optional().nullable().transform(val => val || undefined),
+})
 
-// Array schema for the API response
-export const ESIMGoOrganizationGroupsResponseSchema = z.array(ESIMGoOrganizationGroupSchema)
-  .min(1, "At least one organization group should be available");
+// API response schema - the API now returns an object with a groups array
+export const ESIMGoOrganizationGroupsResponseSchema = z.object({
+  groups: z.array(ESIMGoOrganizationGroupSchema)
+    .min(1, "At least one organization group should be available")
+});
 
 // Infer TypeScript types from Zod schemas
 export type ESIMGoOrganizationGroup = z.infer<typeof ESIMGoOrganizationGroupSchema>;

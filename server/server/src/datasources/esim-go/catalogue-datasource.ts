@@ -350,13 +350,21 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     if (cacheResult.success && cacheResult.data) {
       try {
         const cachedData = JSON.parse(cacheResult.data as string);
-        // Validate cached data too, in case schema changed
-        const validatedGroups = ESIMGoOrganizationGroupsResponseSchema.parse(cachedData);
+        // Check if cached data is in old format (array) or new format (object with groups)
+        let groups;
+        if (Array.isArray(cachedData)) {
+          // Old format - just return the array
+          groups = cachedData;
+        } else {
+          // New format - validate and extract groups
+          const validatedResponse = ESIMGoOrganizationGroupsResponseSchema.parse(cachedData);
+          groups = validatedResponse.groups;
+        }
         this.log.info('✅ Using cached organization groups', { 
-          groupCount: validatedGroups.length,
-          groups: validatedGroups.map(g => g.name)
+          groupCount: groups.length,
+          groups: groups.map(g => g.name)
         });
-        return validatedGroups;
+        return groups;
       } catch (error) {
         this.log.warn('Cached organization groups failed validation or parsing', { 
           error: error instanceof Error ? error.message : String(error), 
@@ -382,20 +390,21 @@ export class CatalogueDataSource extends ESIMGoDataSource {
       });
       
       // Validate API response with Zod
-      const validatedGroups = ESIMGoOrganizationGroupsResponseSchema.parse(rawResponse);
+      const validatedResponse = ESIMGoOrganizationGroupsResponseSchema.parse(rawResponse);
+      const validatedGroups = validatedResponse.groups;
       
       this.log.info('✅ Organization groups fetched and validated successfully', { 
         groupCount: validatedGroups.length,
         groups: validatedGroups.map(g => g.name),
         groupsWithMetadata: validatedGroups.map(g => ({
           name: g.name,
-          hasDescription: !!g.description,
-          hasPricingUrl: !!g.pricingUrl,
-          hasIconUrl: !!g.iconUrl
+          hasDescription: !!g.desc,
+          hasPriceListUrl: !!g.priceListUrl,
+          hasIcon: !!g.icon
         }))
       });
 
-      // Cache validated data for 24 hours with error handling
+      // Cache only the groups array for 24 hours with error handling
       const cacheSetResult = await this.cacheHealth.retryOperation(
         () => this.cacheHealth.safeSet(
           cacheKey, 

@@ -64,6 +64,13 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
                       <p className="text-sm text-gray-500">
                         {bundle.duration || 0} day{(bundle.duration || 0) !== 1 ? 's' : ''} • 
                         {bundle.dataAmount && ` ${bundle.dataAmount} • `}
+                        {bundle.bundleGroup && (
+                          <span className="inline-flex items-center">
+                            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full mr-2">
+                              {bundle.bundleGroup}
+                            </span>
+                          </span>
+                        )}
                         <span className="inline-flex items-center gap-1">
                           Cost: ${(bundle.cost || 0).toFixed(2)}
                           <ConfigurationLevelIndicator 

@@ -66,13 +66,19 @@ export const usePricingData = () => {
   }, [bundlesLoading]);
 
   // Fetch country data plans
-  const fetchCountryDataPlans = async (countryId: string) => {
+  const fetchCountryDataPlans = async (countryId: string, bundleGroup?: string) => {
+    const filter: any = {
+      country: countryId,
+      limit: 1000
+    };
+    
+    if (bundleGroup) {
+      filter.bundleGroup = bundleGroup;
+    }
+    
     return await getCountryDataPlans({
       variables: {
-        filter: {
-          country: countryId,
-          limit: 1000
-        }
+        filter
       }
     });
   };
@@ -109,21 +115,46 @@ export const usePricingData = () => {
     if (!country) return;
 
     try {
-      // Fetch country data plans
-      const countryDataResult = await fetchCountryDataPlans(countryId);
+      // Fetch all bundles for the country and filter for unlimited ones
+      console.log(`🔍 Fetching all bundles for country: ${countryId}`);
+      const allBundlesResult = await fetchCountryDataPlans(countryId);
+      
+      const allPlans: any[] = [];
+      
+      if (allBundlesResult.data?.dataPlans?.items) {
+        // Filter for unlimited bundles (dataAmount === -1 or isUnlimited === true)
+        const unlimitedBundles = allBundlesResult.data.dataPlans.items.filter(
+          (plan: any) => plan.dataAmount === -1 || plan.isUnlimited === true
+        );
+        
+        console.log(`✅ Found ${unlimitedBundles.length} unlimited bundles out of ${allBundlesResult.data.dataPlans.items.length} total`);
+        
+        // Group by bundle group for logging
+        const bundleGroups = unlimitedBundles.reduce((groups: any, bundle: any) => {
+          const group = bundle.bundleGroup || 'Unknown';
+          groups[group] = (groups[group] || 0) + 1;
+          return groups;
+        }, {});
+        
+        console.log('📊 Unlimited bundles by group:', bundleGroups);
+        
+        allPlans.push(...unlimitedBundles);
+      } else {
+        console.log('⚠️ No bundles found for country');
+      }
 
-      if (countryDataResult.data?.dataPlans?.items) {
+      if (allPlans.length > 0) {
         // FIXED: Instead of extracting only unique durations, get all durations from all plans
-        const plans = countryDataResult.data.dataPlans.items;
-        const allDurations = plans.map(plan => plan.duration);
+        const allDurations = allPlans.map(plan => plan.duration);
         const durations = new Set(allDurations); // Still need to deduplicate for batch API call
 
-        // DEBUG: Log the expansion details to help diagnose the 3-bundle issue
+        // DEBUG: Log the expansion details to help diagnose unlimited bundles
         console.log(`🔍 Country expansion debug for ${countryId}:`, {
-          fetchedPlans: plans.length,
+          fetchedPlans: allPlans.length,
           allDurations: allDurations.sort((a, b) => a - b),
           uniqueDurations: Array.from(durations).sort((a, b) => a - b),
-          samplePlans: plans.slice(0, 10).map(p => ({
+          bundleGroups: [...new Set(allPlans.map(p => p.bundleGroup))],
+          samplePlans: allPlans.slice(0, 10).map(p => ({
             name: p.name,
             duration: p.duration,
             bundleGroup: p.bundleGroup,
@@ -147,7 +178,7 @@ export const usePricingData = () => {
           });
           
           // Generate bundles for ALL plans (not just unique durations)
-          const allBundles: CountryBundle[] = plans.map(plan => {
+          const allBundles: CountryBundle[] = allPlans.map(plan => {
             const basePricing = pricingByDuration.get(plan.duration);
             if (!basePricing) {
               console.warn(`No pricing found for plan ${plan.name} with duration ${plan.duration}`);
