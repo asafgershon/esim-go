@@ -105,6 +105,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
     if (showHighDemandOnly) {
       onHighDemandToggle?.();
     }
+    setDropdownSearchQuery('');
     setOpen(false);
   };
 
@@ -619,6 +620,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                             } else if (item.value) {
                               handleFilterChange(item.category, item.value);
                             }
+                            setDropdownSearchQuery('');
                             setOpen(false);
                           }}
                           className="flex items-center gap-2"
@@ -648,6 +650,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                           key={category.key}
                           onClick={() => {
                             onHighDemandToggle?.();
+                            setDropdownSearchQuery('');
                             setOpen(false);
                           }}
                           className="flex items-center justify-between cursor-pointer"
@@ -684,6 +687,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                               key={option.value}
                               onClick={() => {
                                 handleFilterChange(category.key, option.value);
+                                setDropdownSearchQuery('');
                                 setOpen(false);
                               }}
                               className="flex items-center gap-2"
