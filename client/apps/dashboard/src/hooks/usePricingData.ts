@@ -91,14 +91,18 @@ export const usePricingData = () => {
 
   // Fetch country data plans
   const fetchCountryDataPlans = async (countryId: string, bundleGroup?: string) => {
+    // TODO: Re-enable country filtering when backend JSONB queries are fixed
+    // For now, fetch all bundles and filter on frontend
     const filter: any = {
-      country: countryId,
+      // country: countryId,  // Temporarily disabled due to backend JSONB query issues
       limit: 1000
     };
     
     if (bundleGroup) {
       filter.bundleGroup = bundleGroup;
     }
+    
+    console.log(`⚠️ Country filtering temporarily disabled. Fetching all bundles and filtering for ${countryId} on frontend.`);
     
     return await getCountryDataPlans({
       variables: {
@@ -166,12 +170,28 @@ export const usePricingData = () => {
       const allPlans: any[] = [];
       
       if (allBundlesResult.data?.dataPlans?.items) {
-        // Filter for unlimited bundles (dataAmount === -1 or isUnlimited === true)
-        const unlimitedBundles = allBundlesResult.data.dataPlans.items.filter(
+        // First filter by country (since backend filtering is disabled)
+        const countryBundles = allBundlesResult.data.dataPlans.items.filter((plan: any) => {
+          // Check if bundle's countries array includes the requested country
+          if (!plan.countries || !Array.isArray(plan.countries)) {
+            return false;
+          }
+          // Match by country name or ISO code
+          return plan.countries.some((countryName: string) => 
+            countryName === countryId || 
+            countryName.toLowerCase() === countryId.toLowerCase() ||
+            countryName === country.name // Match by full country name if available
+          );
+        });
+        
+        console.log(`🔍 Filtered ${countryBundles.length} bundles for country ${countryId} out of ${allBundlesResult.data.dataPlans.items.length} total`);
+        
+        // Then filter for unlimited bundles (dataAmount === -1 or isUnlimited === true)
+        const unlimitedBundles = countryBundles.filter(
           (plan: any) => plan.dataAmount === -1 || plan.isUnlimited === true
         );
         
-        console.log(`✅ Found ${unlimitedBundles.length} unlimited bundles out of ${allBundlesResult.data.dataPlans.items.length} total`);
+        console.log(`✅ Found ${unlimitedBundles.length} unlimited bundles out of ${countryBundles.length} country bundles`);
         
         // Group by bundle group for logging
         const bundleGroups = unlimitedBundles.reduce((groups: any, bundle: any) => {
