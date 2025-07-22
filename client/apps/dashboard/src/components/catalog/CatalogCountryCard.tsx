@@ -38,9 +38,11 @@ interface CatalogCountryCardProps {
 
 export const CatalogCountryCard: React.FC<CatalogCountryCardProps> = ({
   country,
+  countryName,
   bundleCount,
   bundles,
   isExpanded,
+  isLoading = false,
   onToggle
 }) => {
   const formatPrice = (priceCents: number, currency: string) => {
