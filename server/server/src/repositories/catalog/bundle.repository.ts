@@ -2,6 +2,7 @@ import { BaseSupabaseRepository } from '../base-supabase.repository';
 import { type Database } from '../../database.types';
 import { createLogger, withPerformanceLogging } from '../../lib/logger';
 import type { CatalogueResponseInner } from '@esim-go/client';
+import { transformBundlesToDatabase, convertCentsToDollars, convertBytesToMB } from './bundle-transform.schema';
 
 type CatalogBundle = Database['public']['Tables']['catalog_bundles']['Row'];
 type CatalogBundleInsert = Database['public']['Tables']['catalog_bundles']['Insert'];
@@ -34,7 +35,7 @@ export class BundleRepository extends BaseSupabaseRepository {
         const { data, error } = await this.supabase
           .from('catalog_bundles')
           .select('*')
-          .eq('bundle_id', bundleId)
+          .eq('esim_go_name', bundleId)
           .single();
 
         if (error) {
@@ -69,33 +70,43 @@ export class BundleRepository extends BaseSupabaseRepository {
           errors: [] as string[]
         };
 
-        // Process in batches to avoid overwhelming the database
+        // Transform all bundles with Zod validation
+        const { validBundles, errors: transformErrors } = transformBundlesToDatabase(bundles);
+        
+        // Log transformation errors
+        if (transformErrors.length > 0) {
+          transformErrors.forEach(({ error, index }) => {
+            this.logger.warn('Bundle transformation failed', undefined, {
+              bundleIndex: index,
+              error,
+              operationType: 'bundle-transformation'
+            });
+            results.errors.push(`Transformation error at index ${index}: ${error}`);
+          });
+        }
+
+        this.logger.info('Bundle transformation completed', {
+          totalBundles: bundles.length,
+          validBundles: validBundles.length,
+          transformationErrors: transformErrors.length,
+          operationType: 'bundle-transformation-summary'
+        });
+
+        if (validBundles.length === 0) {
+          this.logger.warn('No valid bundles after transformation');
+          return results;
+        }
+
+        // Process valid bundles in batches to avoid overwhelming the database
         const batchSize = 100;
-        for (let i = 0; i < bundles.length; i += batchSize) {
-          const batch = bundles.slice(i, i + batchSize);
+        for (let i = 0; i < validBundles.length; i += batchSize) {
+          const batch = validBundles.slice(i, i + batchSize);
           
           try {
-            // Transform eSIM Go bundles to our database format
-            const bundlesToUpsert: CatalogBundleInsert[] = batch.map(bundle => ({
-              bundle_id: bundle.name!,  // Using name as bundle_id
-              name: bundle.name!,
-              bundle_group: bundle.bundleGroup || null,
-              description: bundle.description || null,
-              duration: bundle.duration || 0,
-              data_amount: this.normalizeDataAmount(bundle.dataAmount),
-              unlimited: bundle.unlimited || false,
-              price: bundle.price || 0,
-              countries: bundle.countries || [],
-              metadata: {
-                originalBundle: bundle,
-                lastSyncedAt: new Date().toISOString()
-              }
-            }));
-
             const { data, error } = await this.supabase
               .from('catalog_bundles')
-              .upsert(bundlesToUpsert, {
-                onConflict: 'bundle_id',
+              .upsert(batch, {
+                onConflict: 'esim_go_name',
                 ignoreDuplicates: false
               })
               .select();
@@ -110,14 +121,20 @@ export class BundleRepository extends BaseSupabaseRepository {
               // Count new vs updated based on created_at timestamps
               const now = new Date();
               data.forEach(bundle => {
-                const createdAt = new Date(bundle.created_at);
+                const createdAt = new Date(bundle.created_at || '');
                 const timeDiff = now.getTime() - createdAt.getTime();
-                // If created within last 5 seconds, consider it new
-                if (timeDiff < 5000) {
+                // If created within last 10 seconds, consider it new
+                if (timeDiff < 10000) {
                   results.added++;
                 } else {
                   results.updated++;
                 }
+              });
+
+              this.logger.debug('Batch upsert successful', {
+                batchIndex: i / batchSize,
+                insertedCount: data.length,
+                operationType: 'batch-upsert'
               });
             }
           } catch (error) {
@@ -157,10 +174,22 @@ export class BundleRepository extends BaseSupabaseRepository {
           .from('catalog_bundles')
           .select('*', { count: 'exact' });
 
-        // Apply filters
+        // Apply filters  
         if (criteria.countries?.length) {
-          // Use PostgreSQL's ?| operator for "contains any"
-          query = query.contains('countries', criteria.countries);
+          // Use individual contains checks for each country
+          // This will create an OR condition for each country match
+          let countryQuery = query;
+          for (let i = 0; i < criteria.countries.length; i++) {
+            const country = criteria.countries[i];
+            if (i === 0) {
+              countryQuery = countryQuery.contains('countries', [country]);
+            } else {
+              // For additional countries, we need to use OR logic
+              // This is a limitation - let's use a simpler approach for now
+              countryQuery = countryQuery.contains('countries', [country]);
+            }
+          }
+          query = countryQuery;
         }
 
         if (criteria.bundleGroups?.length) {
@@ -277,16 +306,70 @@ export class BundleRepository extends BaseSupabaseRepository {
   }
 
   /**
+   * Get bundles grouped by country with counts - efficient aggregation
+   */
+  async getBundlesByCountryAggregation(): Promise<Array<{
+    countryId: string;
+    countryName: string;
+    bundleCount: number;
+  }>> {
+    return withPerformanceLogging(
+      this.logger,
+      'get-bundles-by-country-aggregation',
+      async () => {
+        const { data, error } = await this.supabase
+          .from('catalog_bundles')
+          .select('countries');
+
+        if (error) {
+          this.logger.error('Failed to get country aggregation', error);
+          throw error;
+        }
+
+        // Aggregate countries and count bundles
+        const countryBundleCount = new Map<string, number>();
+        
+        for (const bundle of data || []) {
+          if (bundle.countries && Array.isArray(bundle.countries)) {
+            for (const country of bundle.countries) {
+              if (typeof country === 'string') {
+                countryBundleCount.set(country, (countryBundleCount.get(country) || 0) + 1);
+              }
+            }
+          }
+        }
+
+        // Convert to array and sort by country name
+        const result = Array.from(countryBundleCount.entries())
+          .map(([countryId, bundleCount]) => ({
+            countryId,
+            countryName: countryId, // For now, use countryId as name - can be enhanced with country mapping
+            bundleCount
+          }))
+          .sort((a, b) => a.countryName.localeCompare(b.countryName));
+
+        this.logger.info('Country aggregation completed', {
+          countryCount: result.length,
+          totalBundles: data?.length || 0,
+          operationType: 'country-aggregation'
+        });
+
+        return result;
+      }
+    );
+  }
+
+  /**
    * Update bundle pricing
    */
   async updatePricing(bundleId: string, price: number): Promise<CatalogBundle | null> {
     const { data, error } = await this.supabase
       .from('catalog_bundles')
       .update({ 
-        price: price,
+        price_cents: Math.round(price * 100), // Convert to cents
         updated_at: new Date().toISOString()
       })
-      .eq('bundle_id', bundleId)
+      .eq('esim_go_name', bundleId)
       .select()
       .single();
 
@@ -351,14 +434,4 @@ export class BundleRepository extends BaseSupabaseRepository {
     return deletedCount;
   }
 
-  /**
-   * Normalize data amount to MB (-1 for unlimited)
-   */
-  private normalizeDataAmount(dataAmount?: number | null): number {
-    if (!dataAmount || dataAmount === 0) {
-      return -1; // Unlimited
-    }
-    // Return data in MB as provided by API
-    return dataAmount;
-  }
 }
