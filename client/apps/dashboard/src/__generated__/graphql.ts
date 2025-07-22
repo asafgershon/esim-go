@@ -19,11 +19,27 @@ export type Scalars = {
   JSON: { input: any; output: any; }
 };
 
+export enum ActionType {
+  AddMarkup = 'ADD_MARKUP',
+  ApplyDiscountPercentage = 'APPLY_DISCOUNT_PERCENTAGE',
+  ApplyFixedDiscount = 'APPLY_FIXED_DISCOUNT',
+  SetDiscountPerUnusedDay = 'SET_DISCOUNT_PER_UNUSED_DAY',
+  SetProcessingRate = 'SET_PROCESSING_RATE'
+}
+
 export type ActivateEsimResponse = {
   __typename?: 'ActivateESIMResponse';
   error?: Maybe<Scalars['String']['output']>;
   esim?: Maybe<Esim>;
   success: Scalars['Boolean']['output'];
+};
+
+export type AppliedRule = {
+  __typename?: 'AppliedRule';
+  id: Scalars['ID']['output'];
+  impact: Scalars['Float']['output'];
+  name: Scalars['String']['output'];
+  type: RuleType;
 };
 
 export type AssignPackageResponse = {
@@ -83,6 +99,18 @@ export enum CheckoutStepType {
   Authentication = 'AUTHENTICATION',
   Delivery = 'DELIVERY',
   Payment = 'PAYMENT'
+}
+
+export enum ConditionOperator {
+  Between = 'BETWEEN',
+  Equals = 'EQUALS',
+  Exists = 'EXISTS',
+  GreaterThan = 'GREATER_THAN',
+  In = 'IN',
+  LessThan = 'LESS_THAN',
+  NotEquals = 'NOT_EQUALS',
+  NotExists = 'NOT_EXISTS',
+  NotIn = 'NOT_IN'
 }
 
 export enum ConfigurationLevel {
@@ -147,6 +175,18 @@ export type CreateMarkupConfigInput = {
   markupAmount: Scalars['Float']['input'];
 };
 
+export type CreatePricingRuleInput = {
+  actions: Array<RuleActionInput>;
+  conditions: Array<RuleConditionInput>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name: Scalars['String']['input'];
+  priority: Scalars['Int']['input'];
+  type: RuleType;
+  validFrom?: InputMaybe<Scalars['String']['input']>;
+  validUntil?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type CreateTripInput = {
   countryIds: Array<Scalars['ISOCountryCode']['input']>;
   description: Scalars['String']['input'];
@@ -199,6 +239,13 @@ export type DataPlanFilter = {
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type DataType = {
+  __typename?: 'DataType';
+  isUnlimited: Scalars['Boolean']['output'];
+  label: Scalars['String']['output'];
+  value: Scalars['String']['output'];
+};
+
 export type DebugCatalogResponse = {
   __typename?: 'DebugCatalogResponse';
   error?: Maybe<Scalars['String']['output']>;
@@ -233,6 +280,21 @@ export type DeleteUserResponse = {
   __typename?: 'DeleteUserResponse';
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type DiscountApplication = {
+  __typename?: 'DiscountApplication';
+  amount: Scalars['Float']['output'];
+  ruleName: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type DurationRange = {
+  __typename?: 'DurationRange';
+  label: Scalars['String']['output'];
+  maxDays: Scalars['Int']['output'];
+  minDays: Scalars['Int']['output'];
+  value: Scalars['String']['output'];
 };
 
 export type Esim = {
@@ -331,17 +393,21 @@ export type Mutation = {
   activateESIM?: Maybe<ActivateEsimResponse>;
   assignPackageToUser?: Maybe<AssignPackageResponse>;
   cancelESIM?: Maybe<EsimActionResponse>;
+  clonePricingRule: PricingRule;
   createCheckoutSession: CreateCheckoutSessionResponse;
   createMarkupConfig?: Maybe<MarkupConfig>;
+  createPricingRule: PricingRule;
   createProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
   createTrip?: Maybe<CreateTripResponse>;
   deactivateProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
   deleteMarkupConfig?: Maybe<DeleteMarkupConfigResponse>;
+  deletePricingRule: Scalars['Boolean']['output'];
   deleteTrip?: Maybe<DeleteTripResponse>;
   deleteUser?: Maybe<DeleteUserResponse>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
+  reorderPricingRules: Array<PricingRule>;
   restoreESIM?: Maybe<EsimActionResponse>;
   sendPhoneOTP?: Maybe<SendOtpResponse>;
   signIn?: Maybe<SignInResponse>;
@@ -352,10 +418,12 @@ export type Mutation = {
   syncCatalog?: Maybe<SyncCatalogResponse>;
   testCatalogSync?: Maybe<SyncCatalogResponse>;
   toggleHighDemandCountry?: Maybe<ToggleHighDemandResponse>;
+  togglePricingRule: PricingRule;
   updateCheckoutStep: UpdateCheckoutStepResponse;
   updateESIMReference?: Maybe<EsimActionResponse>;
   updateMarkupConfig?: Maybe<MarkupConfig>;
   updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
+  updatePricingRule: PricingRule;
   updateProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
   updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
@@ -380,6 +448,12 @@ export type MutationCancelEsimArgs = {
 };
 
 
+export type MutationClonePricingRuleArgs = {
+  id: Scalars['ID']['input'];
+  newName: Scalars['String']['input'];
+};
+
+
 export type MutationCreateCheckoutSessionArgs = {
   input: CreateCheckoutSessionInput;
 };
@@ -387,6 +461,11 @@ export type MutationCreateCheckoutSessionArgs = {
 
 export type MutationCreateMarkupConfigArgs = {
   input: CreateMarkupConfigInput;
+};
+
+
+export type MutationCreatePricingRuleArgs = {
+  input: CreatePricingRuleInput;
 };
 
 
@@ -406,6 +485,11 @@ export type MutationDeactivateProcessingFeeConfigurationArgs = {
 
 
 export type MutationDeleteMarkupConfigArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeletePricingRuleArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -433,6 +517,11 @@ export type MutationProcessCheckoutPaymentArgs = {
 export type MutationPurchaseEsimArgs = {
   input: PurchaseEsimInput;
   planId: Scalars['ID']['input'];
+};
+
+
+export type MutationReorderPricingRulesArgs = {
+  updates: Array<PricingRulePriorityUpdate>;
 };
 
 
@@ -481,6 +570,11 @@ export type MutationToggleHighDemandCountryArgs = {
 };
 
 
+export type MutationTogglePricingRuleArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationUpdateCheckoutStepArgs = {
   input: UpdateCheckoutStepInput;
 };
@@ -500,6 +594,12 @@ export type MutationUpdateMarkupConfigArgs = {
 
 export type MutationUpdatePricingConfigurationArgs = {
   input: UpdatePricingConfigurationInput;
+};
+
+
+export type MutationUpdatePricingRuleArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdatePricingRuleInput;
 };
 
 
@@ -623,6 +723,61 @@ export type PricingConfiguration = {
   updatedAt: Scalars['String']['output'];
 };
 
+export type PricingFilters = {
+  __typename?: 'PricingFilters';
+  bundleGroups: Array<Scalars['String']['output']>;
+  dataTypes: Array<DataType>;
+  durations: Array<DurationRange>;
+};
+
+export type PricingRule = {
+  __typename?: 'PricingRule';
+  actions: Array<RuleAction>;
+  conditions: Array<RuleCondition>;
+  createdAt: Scalars['String']['output'];
+  createdBy: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  isEditable: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  type: RuleType;
+  updatedAt: Scalars['String']['output'];
+  validFrom?: Maybe<Scalars['String']['output']>;
+  validUntil?: Maybe<Scalars['String']['output']>;
+};
+
+export type PricingRuleCalculation = {
+  __typename?: 'PricingRuleCalculation';
+  appliedRules: Array<AppliedRule>;
+  baseCost: Scalars['Float']['output'];
+  discounts: Array<DiscountApplication>;
+  finalPrice: Scalars['Float']['output'];
+  finalRevenue: Scalars['Float']['output'];
+  markup: Scalars['Float']['output'];
+  maxDiscountPercentage: Scalars['Float']['output'];
+  maxRecommendedPrice: Scalars['Float']['output'];
+  priceAfterDiscount: Scalars['Float']['output'];
+  processingFee: Scalars['Float']['output'];
+  processingRate: Scalars['Float']['output'];
+  profit: Scalars['Float']['output'];
+  revenueAfterProcessing: Scalars['Float']['output'];
+  subtotal: Scalars['Float']['output'];
+  totalDiscount: Scalars['Float']['output'];
+};
+
+export type PricingRuleFilter = {
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  isEditable?: InputMaybe<Scalars['Boolean']['input']>;
+  type?: InputMaybe<RuleType>;
+};
+
+export type PricingRulePriorityUpdate = {
+  id: Scalars['ID']['input'];
+  priority: Scalars['Int']['input'];
+};
+
 export type ProcessCheckoutPaymentInput = {
   paymentMethodId: Scalars['String']['input'];
   savePaymentMethod?: InputMaybe<Scalars['Boolean']['input']>;
@@ -704,10 +859,14 @@ export type PurchaseEsimResponse = {
 
 export type Query = {
   __typename?: 'Query';
+  activePricingRules: Array<PricingRule>;
   bundleGroups: Array<Scalars['String']['output']>;
   bundlesByCountry: Array<BundlesByCountry>;
+  calculateBatchPricing: Array<PricingRuleCalculation>;
   calculatePrice: PricingBreakdown;
+  calculatePriceWithRules: PricingRuleCalculation;
   calculatePrices: Array<PricingBreakdown>;
+  conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   countryBundles: Array<CountryBundle>;
   currentProcessingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
@@ -726,10 +885,19 @@ export type Query = {
   orderDetails?: Maybe<Order>;
   orders: Array<Order>;
   pricingConfigurations: Array<PricingConfiguration>;
+  pricingFilters: PricingFilters;
+  pricingRule?: Maybe<PricingRule>;
+  pricingRules: Array<PricingRule>;
   processingFeeConfiguration?: Maybe<ProcessingFeeConfiguration>;
   processingFeeConfigurations: Array<ProcessingFeeConfiguration>;
+  simulatePricingRule: PricingRuleCalculation;
   trips: Array<Trip>;
   users: Array<User>;
+};
+
+
+export type QueryCalculateBatchPricingArgs = {
+  requests: Array<CalculatePriceInput>;
 };
 
 
@@ -741,8 +909,18 @@ export type QueryCalculatePriceArgs = {
 };
 
 
+export type QueryCalculatePriceWithRulesArgs = {
+  input: CalculatePriceInput;
+};
+
+
 export type QueryCalculatePricesArgs = {
   inputs: Array<CalculatePriceInput>;
+};
+
+
+export type QueryConflictingPricingRulesArgs = {
+  ruleId: Scalars['ID']['input'];
 };
 
 
@@ -791,6 +969,16 @@ export type QueryOrderDetailsArgs = {
 };
 
 
+export type QueryPricingRuleArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPricingRulesArgs = {
+  filter?: InputMaybe<PricingRuleFilter>;
+};
+
+
 export type QueryProcessingFeeConfigurationArgs = {
   id: Scalars['ID']['input'];
 };
@@ -801,6 +989,48 @@ export type QueryProcessingFeeConfigurationsArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
 };
+
+
+export type QuerySimulatePricingRuleArgs = {
+  rule: CreatePricingRuleInput;
+  testContext: TestPricingContext;
+};
+
+export type RuleAction = {
+  __typename?: 'RuleAction';
+  metadata?: Maybe<Scalars['JSON']['output']>;
+  type: ActionType;
+  value: Scalars['Float']['output'];
+};
+
+export type RuleActionInput = {
+  metadata?: InputMaybe<Scalars['JSON']['input']>;
+  type: ActionType;
+  value: Scalars['Float']['input'];
+};
+
+export type RuleCondition = {
+  __typename?: 'RuleCondition';
+  field: Scalars['String']['output'];
+  operator: ConditionOperator;
+  type?: Maybe<Scalars['String']['output']>;
+  value: Scalars['JSON']['output'];
+};
+
+export type RuleConditionInput = {
+  field: Scalars['String']['input'];
+  operator: ConditionOperator;
+  type?: InputMaybe<Scalars['String']['input']>;
+  value: Scalars['JSON']['input'];
+};
+
+export enum RuleType {
+  BusinessDiscount = 'BUSINESS_DISCOUNT',
+  Promotion = 'PROMOTION',
+  Segment = 'SEGMENT',
+  SystemMarkup = 'SYSTEM_MARKUP',
+  SystemProcessing = 'SYSTEM_PROCESSING'
+}
 
 export type SendOtpResponse = {
   __typename?: 'SendOTPResponse';
@@ -866,6 +1096,20 @@ export type SyncCatalogResponse = {
   syncedBundles?: Maybe<Scalars['Int']['output']>;
 };
 
+export type TestPricingContext = {
+  bundleGroup: Scalars['String']['input'];
+  bundleId: Scalars['String']['input'];
+  bundleName: Scalars['String']['input'];
+  cost: Scalars['Float']['input'];
+  countryId: Scalars['String']['input'];
+  duration: Scalars['Int']['input'];
+  isNewUser?: InputMaybe<Scalars['Boolean']['input']>;
+  paymentMethod: PaymentMethod;
+  regionId: Scalars['String']['input'];
+  requestedDuration?: InputMaybe<Scalars['Int']['input']>;
+  userId?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type ToggleHighDemandResponse = {
   __typename?: 'ToggleHighDemandResponse';
   countryId: Scalars['String']['output'];
@@ -928,6 +1172,17 @@ export type UpdatePricingConfigurationResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type UpdatePricingRuleInput = {
+  actions?: InputMaybe<Array<RuleActionInput>>;
+  conditions?: InputMaybe<Array<RuleConditionInput>>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  priority?: InputMaybe<Scalars['Int']['input']>;
+  validFrom?: InputMaybe<Scalars['String']['input']>;
+  validUntil?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateTripInput = {
   countryIds: Array<Scalars['ISOCountryCode']['input']>;
   description: Scalars['String']['input'];
@@ -979,6 +1234,50 @@ export type VerifyOtpInput = {
   otp: Scalars['String']['input'];
   phoneNumber: Scalars['String']['input'];
 };
+
+export type GetPricingRulesQueryVariables = Exact<{
+  filter?: InputMaybe<PricingRuleFilter>;
+}>;
+
+
+export type GetPricingRulesQuery = { __typename?: 'Query', pricingRules: Array<{ __typename?: 'PricingRule', id: string, type: RuleType, name: string, description?: string | null, priority: number, isActive: boolean, isEditable: boolean, validFrom?: string | null, validUntil?: string | null, createdBy: string, createdAt: string, updatedAt: string, conditions: Array<{ __typename?: 'RuleCondition', field: string, operator: ConditionOperator, value: any, type?: string | null }>, actions: Array<{ __typename?: 'RuleAction', type: ActionType, value: number, metadata?: any | null }> }> };
+
+export type CreatePricingRuleMutationVariables = Exact<{
+  input: CreatePricingRuleInput;
+}>;
+
+
+export type CreatePricingRuleMutation = { __typename?: 'Mutation', createPricingRule: { __typename?: 'PricingRule', id: string, type: RuleType, name: string, description?: string | null, priority: number, isActive: boolean, isEditable: boolean, validFrom?: string | null, validUntil?: string | null, createdBy: string, createdAt: string, updatedAt: string, conditions: Array<{ __typename?: 'RuleCondition', field: string, operator: ConditionOperator, value: any, type?: string | null }>, actions: Array<{ __typename?: 'RuleAction', type: ActionType, value: number, metadata?: any | null }> } };
+
+export type UpdatePricingRuleMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdatePricingRuleInput;
+}>;
+
+
+export type UpdatePricingRuleMutation = { __typename?: 'Mutation', updatePricingRule: { __typename?: 'PricingRule', id: string, type: RuleType, name: string, description?: string | null, priority: number, isActive: boolean, isEditable: boolean, validFrom?: string | null, validUntil?: string | null, createdBy: string, createdAt: string, updatedAt: string, conditions: Array<{ __typename?: 'RuleCondition', field: string, operator: ConditionOperator, value: any, type?: string | null }>, actions: Array<{ __typename?: 'RuleAction', type: ActionType, value: number, metadata?: any | null }> } };
+
+export type DeletePricingRuleMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeletePricingRuleMutation = { __typename?: 'Mutation', deletePricingRule: boolean };
+
+export type TogglePricingRuleMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TogglePricingRuleMutation = { __typename?: 'Mutation', togglePricingRule: { __typename?: 'PricingRule', id: string, isActive: boolean } };
+
+export type ClonePricingRuleMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  newName: Scalars['String']['input'];
+}>;
+
+
+export type ClonePricingRuleMutation = { __typename?: 'Mutation', clonePricingRule: { __typename?: 'PricingRule', id: string, name: string, type: RuleType, description?: string | null, priority: number, isActive: boolean, isEditable: boolean, conditions: Array<{ __typename?: 'RuleCondition', field: string, operator: ConditionOperator, value: any, type?: string | null }>, actions: Array<{ __typename?: 'RuleAction', type: ActionType, value: number, metadata?: any | null }> } };
 
 export type GetMarkupConfigQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1181,6 +1480,11 @@ export type GetBundleGroupsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetBundleGroupsQuery = { __typename?: 'Query', bundleGroups: Array<string> };
 
+export type GetPricingFiltersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetPricingFiltersQuery = { __typename?: 'Query', pricingFilters: { __typename?: 'PricingFilters', bundleGroups: Array<string>, durations: Array<{ __typename?: 'DurationRange', label: string, value: string, minDays: number, maxDays: number }>, dataTypes: Array<{ __typename?: 'DataType', label: string, value: string, isUnlimited: boolean }> } };
+
 export type GetHighDemandCountriesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1201,6 +1505,12 @@ export type CreatePricingConfigurationMutationVariables = Exact<{
 export type CreatePricingConfigurationMutation = { __typename?: 'Mutation', updatePricingConfiguration?: { __typename?: 'UpdatePricingConfigurationResponse', success: boolean, error?: string | null, configuration?: { __typename?: 'PricingConfiguration', id: string, name: string, description: string, countryId?: string | null, regionId?: string | null, duration?: number | null, bundleGroup?: string | null, discountRate: number, discountPerDay?: number | null, markupAmount?: number | null, isActive: boolean, createdBy: string, createdAt: string, updatedAt: string } | null } | null };
 
 
+export const GetPricingRulesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPricingRules"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"PricingRuleFilter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pricingRules"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"filter"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"operator"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"actions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}}]}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"isEditable"}},{"kind":"Field","name":{"kind":"Name","value":"validFrom"}},{"kind":"Field","name":{"kind":"Name","value":"validUntil"}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetPricingRulesQuery, GetPricingRulesQueryVariables>;
+export const CreatePricingRuleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreatePricingRule"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreatePricingRuleInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createPricingRule"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"operator"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"actions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}}]}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"isEditable"}},{"kind":"Field","name":{"kind":"Name","value":"validFrom"}},{"kind":"Field","name":{"kind":"Name","value":"validUntil"}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<CreatePricingRuleMutation, CreatePricingRuleMutationVariables>;
+export const UpdatePricingRuleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdatePricingRule"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdatePricingRuleInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updatePricingRule"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"operator"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"actions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}}]}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"isEditable"}},{"kind":"Field","name":{"kind":"Name","value":"validFrom"}},{"kind":"Field","name":{"kind":"Name","value":"validUntil"}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<UpdatePricingRuleMutation, UpdatePricingRuleMutationVariables>;
+export const DeletePricingRuleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeletePricingRule"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deletePricingRule"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeletePricingRuleMutation, DeletePricingRuleMutationVariables>;
+export const TogglePricingRuleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"TogglePricingRule"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"togglePricingRule"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}}]}}]}}]} as unknown as DocumentNode<TogglePricingRuleMutation, TogglePricingRuleMutationVariables>;
+export const ClonePricingRuleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ClonePricingRule"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"newName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"clonePricingRule"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"newName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"newName"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"operator"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"actions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}}]}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"isEditable"}}]}}]}}]} as unknown as DocumentNode<ClonePricingRuleMutation, ClonePricingRuleMutationVariables>;
 export const GetMarkupConfigDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetMarkupConfig"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"markupConfig"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}},{"kind":"Field","name":{"kind":"Name","value":"durationDays"}},{"kind":"Field","name":{"kind":"Name","value":"markupAmount"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetMarkupConfigQuery, GetMarkupConfigQueryVariables>;
 export const CreateMarkupConfigDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateMarkupConfig"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateMarkupConfigInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createMarkupConfig"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}},{"kind":"Field","name":{"kind":"Name","value":"durationDays"}},{"kind":"Field","name":{"kind":"Name","value":"markupAmount"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<CreateMarkupConfigMutation, CreateMarkupConfigMutationVariables>;
 export const UpdateMarkupConfigDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateMarkupConfig"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateMarkupConfigInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateMarkupConfig"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}},{"kind":"Field","name":{"kind":"Name","value":"durationDays"}},{"kind":"Field","name":{"kind":"Name","value":"markupAmount"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<UpdateMarkupConfigMutation, UpdateMarkupConfigMutationVariables>;
@@ -1231,6 +1541,7 @@ export const GetBundlesByCountryDocument = {"kind":"Document","definitions":[{"k
 export const GetCountryBundlesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCountryBundles"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"countryId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"countryBundles"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"countryId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"countryId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bundleName"}},{"kind":"Field","name":{"kind":"Name","value":"countryName"}},{"kind":"Field","name":{"kind":"Name","value":"countryId"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"cost"}},{"kind":"Field","name":{"kind":"Name","value":"costPlus"}},{"kind":"Field","name":{"kind":"Name","value":"totalCost"}},{"kind":"Field","name":{"kind":"Name","value":"discountRate"}},{"kind":"Field","name":{"kind":"Name","value":"discountValue"}},{"kind":"Field","name":{"kind":"Name","value":"priceAfterDiscount"}},{"kind":"Field","name":{"kind":"Name","value":"processingRate"}},{"kind":"Field","name":{"kind":"Name","value":"processingCost"}},{"kind":"Field","name":{"kind":"Name","value":"finalRevenue"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}},{"kind":"Field","name":{"kind":"Name","value":"pricePerDay"}},{"kind":"Field","name":{"kind":"Name","value":"hasCustomDiscount"}},{"kind":"Field","name":{"kind":"Name","value":"configurationLevel"}},{"kind":"Field","name":{"kind":"Name","value":"discountPerDay"}},{"kind":"Field","name":{"kind":"Name","value":"planId"}},{"kind":"Field","name":{"kind":"Name","value":"isUnlimited"}},{"kind":"Field","name":{"kind":"Name","value":"dataAmount"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}}]}}]}}]} as unknown as DocumentNode<GetCountryBundlesQuery, GetCountryBundlesQueryVariables>;
 export const SyncCatalogDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SyncCatalog"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"force"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}},"defaultValue":{"kind":"BooleanValue","value":false}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"syncCatalog"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"force"},"value":{"kind":"Variable","name":{"kind":"Name","value":"force"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"syncedBundles"}},{"kind":"Field","name":{"kind":"Name","value":"syncDuration"}},{"kind":"Field","name":{"kind":"Name","value":"syncedAt"}}]}}]}}]} as unknown as DocumentNode<SyncCatalogMutation, SyncCatalogMutationVariables>;
 export const GetBundleGroupsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetBundleGroups"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bundleGroups"}}]}}]} as unknown as DocumentNode<GetBundleGroupsQuery, GetBundleGroupsQueryVariables>;
+export const GetPricingFiltersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPricingFilters"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pricingFilters"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bundleGroups"}},{"kind":"Field","name":{"kind":"Name","value":"durations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"minDays"}},{"kind":"Field","name":{"kind":"Name","value":"maxDays"}}]}},{"kind":"Field","name":{"kind":"Name","value":"dataTypes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"isUnlimited"}}]}}]}}]}}]} as unknown as DocumentNode<GetPricingFiltersQuery, GetPricingFiltersQueryVariables>;
 export const GetHighDemandCountriesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetHighDemandCountries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"highDemandCountries"}}]}}]} as unknown as DocumentNode<GetHighDemandCountriesQuery, GetHighDemandCountriesQueryVariables>;
 export const ToggleHighDemandCountryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ToggleHighDemandCountry"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"countryId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"toggleHighDemandCountry"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"countryId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"countryId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"countryId"}},{"kind":"Field","name":{"kind":"Name","value":"isHighDemand"}},{"kind":"Field","name":{"kind":"Name","value":"error"}}]}}]}}]} as unknown as DocumentNode<ToggleHighDemandCountryMutation, ToggleHighDemandCountryMutationVariables>;
 export const CreatePricingConfigurationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreatePricingConfiguration"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdatePricingConfigurationInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updatePricingConfiguration"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"countryId"}},{"kind":"Field","name":{"kind":"Name","value":"regionId"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}},{"kind":"Field","name":{"kind":"Name","value":"discountRate"}},{"kind":"Field","name":{"kind":"Name","value":"discountPerDay"}},{"kind":"Field","name":{"kind":"Name","value":"markupAmount"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]}}]} as unknown as DocumentNode<CreatePricingConfigurationMutation, CreatePricingConfigurationMutationVariables>;

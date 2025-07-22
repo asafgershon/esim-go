@@ -1,5 +1,136 @@
 import { gql } from '@apollo/client'
 
+// Pricing Rules Queries
+export const GET_PRICING_RULES = gql(`
+  query GetPricingRules($filter: PricingRuleFilter) {
+    pricingRules(filter: $filter) {
+      id
+      type
+      name
+      description
+      conditions {
+        field
+        operator
+        value
+        type
+      }
+      actions {
+        type
+        value
+        metadata
+      }
+      priority
+      isActive
+      isEditable
+      validFrom
+      validUntil
+      createdBy
+      createdAt
+      updatedAt
+    }
+  }
+`)
+
+export const CREATE_PRICING_RULE = gql(`
+  mutation CreatePricingRule($input: CreatePricingRuleInput!) {
+    createPricingRule(input: $input) {
+      id
+      type
+      name
+      description
+      conditions {
+        field
+        operator
+        value
+        type
+      }
+      actions {
+        type
+        value
+        metadata
+      }
+      priority
+      isActive
+      isEditable
+      validFrom
+      validUntil
+      createdBy
+      createdAt
+      updatedAt
+    }
+  }
+`)
+
+export const UPDATE_PRICING_RULE = gql(`
+  mutation UpdatePricingRule($id: ID!, $input: UpdatePricingRuleInput!) {
+    updatePricingRule(id: $id, input: $input) {
+      id
+      type
+      name
+      description
+      conditions {
+        field
+        operator
+        value
+        type
+      }
+      actions {
+        type
+        value
+        metadata
+      }
+      priority
+      isActive
+      isEditable
+      validFrom
+      validUntil
+      createdBy
+      createdAt
+      updatedAt
+    }
+  }
+`)
+
+export const DELETE_PRICING_RULE = gql(`
+  mutation DeletePricingRule($id: ID!) {
+    deletePricingRule(id: $id)
+  }
+`)
+
+export const TOGGLE_PRICING_RULE = gql(`
+  mutation TogglePricingRule($id: ID!) {
+    togglePricingRule(id: $id) {
+      id
+      isActive
+    }
+  }
+`)
+
+export const CLONE_PRICING_RULE = gql(`
+  mutation ClonePricingRule($id: ID!, $newName: String!) {
+    clonePricingRule(id: $id, newName: $newName) {
+      id
+      name
+      type
+      description
+      conditions {
+        field
+        operator
+        value
+        type
+      }
+      actions {
+        type
+        value
+        metadata
+      }
+      priority
+      isActive
+      isEditable
+    }
+  }
+`)
+
 // Markup Configuration Queries
 export const GET_MARKUP_CONFIG = gql(`
   query GetMarkupConfig {
@@ -612,6 +743,25 @@ export const SYNC_CATALOG = gql(`
 export const GET_BUNDLE_GROUPS = gql(`
   query GetBundleGroups {
     bundleGroups
+  }
+`)
+
+export const GET_PRICING_FILTERS = gql(`
+  query GetPricingFilters {
+    pricingFilters {
+      bundleGroups
+      durations {
+        label
+        value
+        minDays
+        maxDays
+      }
+      dataTypes {
+        label
+        value
+        isUnlimited
+      }
+    }
   }
 `)
 

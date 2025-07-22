@@ -27,6 +27,8 @@ import { ResizeHandle } from "../resize-handle";
 import { PricingPreviewPanel } from "./PricingPreviewPanel";
 import { BundlesTable } from "./BundlesTable";
 import { CountryCard } from "./CountryCard";
+import { BundleFilters } from "./filters";
+import { FilterState } from "./filters";
 import { CountryPricingSplitViewProps, BundlesByCountryWithBundles, CountryBundleWithDisplay } from "./types";
 
 export function CountryPricingSplitView({
@@ -40,6 +42,11 @@ export function CountryPricingSplitView({
   const [showHighDemandOnly, setShowHighDemandOnly] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [countrySearchQuery, setCountrySearchQuery] = useState("");
+  const [bundleFilters, setBundleFilters] = useState<FilterState>({
+    bundleGroups: new Set(),
+    durations: new Set(),
+    dataTypes: new Set(),
+  });
 
   // High demand countries functionality
   const {
@@ -84,11 +91,71 @@ export function CountryPricingSplitView({
     return filtered;
   }, [bundlesByCountry, showHighDemandOnly, isHighDemandCountry, countrySearchQuery, countryFuse]);
 
-  // Get selected country data
+  // Helper function to filter bundles based on selected filters
+  const filterBundles = useCallback((bundles: CountryBundleWithDisplay[]) => {
+    let filtered = bundles;
+
+    // Filter by bundle groups
+    if (bundleFilters.bundleGroups.size > 0) {
+      filtered = filtered.filter(bundle => 
+        bundle.bundleGroup && bundleFilters.bundleGroups.has(bundle.bundleGroup)
+      );
+    }
+
+    // Filter by durations
+    if (bundleFilters.durations.size > 0) {
+      filtered = filtered.filter(bundle => {
+        const duration = bundle.duration;
+        return Array.from(bundleFilters.durations).some(filterValue => {
+          switch (filterValue) {
+            case 'short':
+              return duration >= 1 && duration <= 7;
+            case 'medium':
+              return duration >= 8 && duration <= 30;
+            case 'long':
+              return duration >= 31;
+            default:
+              return false;
+          }
+        });
+      });
+    }
+
+    // Filter by data types
+    if (bundleFilters.dataTypes.size > 0) {
+      filtered = filtered.filter(bundle => {
+        const isUnlimited = bundle.isUnlimited;
+        return Array.from(bundleFilters.dataTypes).some(filterValue => {
+          switch (filterValue) {
+            case 'unlimited':
+              return isUnlimited;
+            case 'limited':
+              return !isUnlimited;
+            default:
+              return false;
+          }
+        });
+      });
+    }
+
+    return filtered;
+  }, [bundleFilters]);
+
+  // Get selected country data with filtered bundles
   const selectedCountryData = useMemo(() => {
     if (!selectedCountry) return null;
-    return filteredBundlesByCountry.find(country => country.countryId === selectedCountry);
-  }, [selectedCountry, filteredBundlesByCountry]);
+    const country = filteredBundlesByCountry.find(country => country.countryId === selectedCountry);
+    if (!country || !country.bundles) return country;
+
+    // Apply bundle filters
+    const filteredBundles = filterBundles(country.bundles);
+    
+    return {
+      ...country,
+      bundles: filteredBundles,
+      originalBundles: country.bundles, // Keep original bundles for count
+    };
+  }, [selectedCountry, filteredBundlesByCountry, filterBundles]);
 
   // Handle country selection
   const handleCountrySelect = useCallback(async (countryId: string) => {
@@ -163,25 +230,21 @@ export function CountryPricingSplitView({
 
   return (
     <div className="h-full flex flex-col">
-      {/* High Demand Filter Controls */}
-      <div className="flex-shrink-0 flex items-center gap-4 mb-4">
-        <Button
-          variant={showHighDemandOnly ? "default" : "outline"}
-          size="sm"
-          onClick={() => setShowHighDemandOnly(!showHighDemandOnly)}
-          disabled={highDemandLoading}
-          className="flex items-center gap-2"
-        >
-          <TrendingUp className="h-4 w-4" />
-          {showHighDemandOnly ? 'Show All Countries' : 'Show High Demand Only'}
-        </Button>
-        
-        {showHighDemandOnly && (
-          <span className="text-sm text-gray-500">
-            Showing {filteredBundlesByCountry.length} high demand countries
-          </span>
-        )}
-      </div>
+      {/* Unified Filter Controls */}
+      {selectedCountryData?.bundles && (
+        <div className="flex-shrink-0 mb-4">
+          <BundleFilters
+            selectedFilters={bundleFilters}
+            onFiltersChange={setBundleFilters}
+            totalBundles={selectedCountryData.originalBundles?.length || selectedCountryData.bundles.length}
+            filteredBundles={selectedCountryData.bundles.length}
+            showHighDemandOnly={showHighDemandOnly}
+            onHighDemandToggle={() => setShowHighDemandOnly(!showHighDemandOnly)}
+            highDemandLoading={highDemandLoading}
+            totalCountries={filteredBundlesByCountry.length}
+          />
+        </div>
+      )}
 
       {/* Desktop: Resizable Panels, Mobile: Single Column */}
       <div className="flex-1 min-h-0 overflow-hidden">
@@ -283,6 +346,7 @@ export function CountryPricingSplitView({
                   Bundles ({selectedCountryData?.bundles?.length || 0})
                 </h3>
               </div>
+              
               <motion.div 
                 className="flex-1 flex flex-col min-h-0"
                 layout

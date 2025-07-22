@@ -41,10 +41,13 @@ type Query {
   pricingConfigurations: [PricingConfiguration!]!
   
   # Pricing Rules Engine
-  pricingRules(filter: PricingRuleFilter): [PricingRule!]! @auth(role: "ADMIN")
-  pricingRule(id: ID!): PricingRule @auth(role: "ADMIN")
-  calculatePriceWithRules(input: CalculatePriceInput!): PricingRuleCalculation! @auth(role: "ADMIN")
-  simulatePricingRule(rule: CreatePricingRuleInput!, testContext: TestPricingContext!): PricingRuleCalculation! @auth(role: "ADMIN")
+  pricingRules(filter: PricingRuleFilter): [PricingRule!]!
+  pricingRule(id: ID!): PricingRule
+  activePricingRules: [PricingRule!]!
+  conflictingPricingRules(ruleId: ID!): [PricingRule!]!
+  calculateBatchPricing(requests: [CalculatePriceInput!]!): [PricingRuleCalculation!]!
+  calculatePriceWithRules(input: CalculatePriceInput!): PricingRuleCalculation!
+  simulatePricingRule(rule: CreatePricingRuleInput!, testContext: TestPricingContext!): PricingRuleCalculation!
   
   # Processing fee configurations
   currentProcessingFeeConfiguration: ProcessingFeeConfiguration @auth(role: "ADMIN")
@@ -56,6 +59,9 @@ type Query {
   
   # Bundle groups
   bundleGroups: [String!]! @auth(role: "ADMIN")
+  
+  # Pricing filters
+  pricingFilters: PricingFilters! @auth(role: "ADMIN")
   
   # High demand countries
   highDemandCountries: [String!]! @auth(role: "ADMIN")
@@ -91,10 +97,12 @@ type Mutation {
   updatePricingConfiguration(input: UpdatePricingConfigurationInput!): UpdatePricingConfigurationResponse @auth(role: "ADMIN")
   
   # Pricing Rules Engine
-  createPricingRule(input: CreatePricingRuleInput!): PricingRule! @auth(role: "ADMIN")
-  updatePricingRule(id: ID!, input: UpdatePricingRuleInput!): PricingRule! @auth(role: "ADMIN")
-  deletePricingRule(id: ID!): Boolean! @auth(role: "ADMIN")
-  togglePricingRule(id: ID!, isActive: Boolean!): PricingRule! @auth(role: "ADMIN")
+  createPricingRule(input: CreatePricingRuleInput!): PricingRule!
+  updatePricingRule(id: ID!, input: UpdatePricingRuleInput!): PricingRule!
+  deletePricingRule(id: ID!): Boolean!
+  togglePricingRule(id: ID!): PricingRule!
+  clonePricingRule(id: ID!, newName: String!): PricingRule!
+  reorderPricingRules(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
   
   # Processing fee configuration management
   createProcessingFeeConfiguration(input: ProcessingFeeConfigurationInput!): ProcessingFeeConfiguration @auth(role: "ADMIN")
@@ -935,6 +943,26 @@ type DebugCatalogResponse {
   samplePlans: [DebugPlan!]!
 }
 
+# Pricing Filters Types
+type PricingFilters {
+  bundleGroups: [String!]!
+  durations: [DurationRange!]!
+  dataTypes: [DataType!]!
+}
+
+type DurationRange {
+  label: String!
+  value: String!
+  minDays: Int!
+  maxDays: Int!
+}
+
+type DataType {
+  label: String!
+  value: String!
+  isUnlimited: Boolean!
+}
+
 # Pricing Rules Engine Input Types
 input PricingRuleFilter {
   type: RuleType
@@ -976,6 +1004,11 @@ input UpdatePricingRuleInput {
   isActive: Boolean
   validFrom: String
   validUntil: String
+}
+
+input PricingRulePriorityUpdate {
+  id: ID!
+  priority: Int!
 }
 
 input TestPricingContext {

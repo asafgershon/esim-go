@@ -13,11 +13,29 @@ import { checkoutResolvers } from "./resolvers/checkout-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import { tripsResolvers } from "./resolvers/trips-resolvers";
 import { markupConfigResolvers } from "./resolvers/markup-config-resolvers";
+import { pricingRulesResolvers } from "./resolvers/pricing-rules-resolvers";
 import { GraphQLError } from "graphql";
 import { PaymentMethod } from "./types";
 import { createLogger } from "./lib/logger";
+import { PricingEngineService } from "./services/pricing-engine.service";
 
 const logger = createLogger({ component: 'resolvers' });
+
+// Singleton instance of pricing engine service
+let pricingEngineService: PricingEngineService | null = null;
+
+const getPricingEngineService = (context: Context): PricingEngineService => {
+  if (!pricingEngineService) {
+    pricingEngineService = new PricingEngineService(context.supabase);
+    // Initialize in background
+    pricingEngineService.initialize().catch(error => {
+      logger.error('Failed to initialize pricing engine', error as Error, {
+        operationType: 'pricing-engine-init'
+      });
+    });
+  }
+  return pricingEngineService;
+};
 
 // Simple in-memory cache for bundlesByCountry (TTL: 30 minutes)
 const bundlesByCountryCache = {
@@ -235,6 +253,9 @@ export const resolvers: Resolvers = {
     // Markup config resolvers are merged from markup-config-resolvers.ts
     ...markupConfigResolvers.Query!,
     
+    // Pricing rules resolvers are merged from pricing-rules-resolvers.ts
+    ...pricingRulesResolvers.Query!,
+    
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Query!,
     myESIMs: async (_, __, context: Context) => {
@@ -312,65 +333,150 @@ export const resolvers: Resolvers = {
       { numOfDays, regionId, countryId, paymentMethod },
       context: Context
     ) => {
-      const { PricingService } = await import('./services/pricing.service');
-      
-      // Get pricing configuration for the bundle (now uses eSIM Go API + configuration rules)
-      const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
-      const configRepository = new PricingConfigRepository();
-      const config = await PricingService.getPricingConfig(
-        countryId, 
-        numOfDays, 
-        context.dataSources.catalogue, 
-        configRepository,
-        mapPaymentMethodEnum(paymentMethod),
-        context.dataSources.pricing
-      );
-      
-      // Get bundle and country names
-      const bundleName = PricingService.getBundleName(numOfDays);
-      const countryName = PricingService.getCountryName(countryId);
-      
-      // Calculate detailed pricing breakdown
-      const pricingBreakdown = PricingService.calculatePricing(
-        bundleName,
-        countryName,
-        numOfDays,
-        config
-      );
-
-      return pricingBreakdown;
+      try {
+        // Use the pricing engine service instead of old pricing service
+        const engineService = getPricingEngineService(context);
+        
+        // Get bundle information from catalog
+        const bundles = await context.dataSources.catalogue.searchPlans({
+          country: countryId,
+          duration: numOfDays
+        });
+        
+        if (!bundles.bundles || bundles.bundles.length === 0) {
+          throw new GraphQLError('No bundles found for the specified criteria', {
+            extensions: { code: 'NO_BUNDLES_FOUND' }
+          });
+        }
+        
+        // Use the first matching bundle
+        const bundle = bundles.bundles[0];
+        
+        // Create pricing context for the rule engine
+        const pricingContext = {
+          bundle: {
+            id: bundle.name || `${countryId}-${numOfDays}d`,
+            name: bundle.name,
+            duration: numOfDays,
+            bundleGroup: bundle.bundleGroup || 'Standard Fixed',
+            basePrice: bundle.price || 0,
+            dataAmount: bundle.dataAmount || 0,
+            isUnlimited: bundle.unlimited || bundle.dataAmount === -1
+          },
+          customer: {
+            paymentMethod: mapPaymentMethodEnum(paymentMethod),
+            segmentTier: 'STANDARD' as const
+          },
+          location: {
+            country: countryId,
+            region: regionId || bundle.baseCountry?.region || 'Unknown'
+          },
+          metadata: {}
+        };
+        
+        // Calculate price using rule engine
+        const calculation = await engineService.calculatePrice(pricingContext);
+        
+        // Get country name for response
+        const countries = await context.dataSources.countries.getCountries();
+        const country = countries.find(c => c.iso === countryId);
+        const countryName = country?.country || countryId;
+        
+        // Map rule engine result to existing GraphQL schema
+        return {
+          bundleName: bundle.name || `${numOfDays} Day Bundle`,
+          countryName,
+          duration: numOfDays,
+          cost: calculation.basePrice,
+          costPlus: calculation.markupPrice,
+          totalCost: calculation.totalCost,
+          discountRate: calculation.discountRate,
+          discountValue: calculation.discountAmount,
+          priceAfterDiscount: calculation.discountedPrice,
+          processingRate: calculation.processingRate,
+          processingCost: calculation.processingFee,
+          finalRevenue: calculation.finalPrice,
+          netProfit: calculation.netProfit,
+          currency: 'USD',
+          discountPerDay: calculation.metadata?.discountPerUnusedDay || 0.10
+        };
+      } catch (error) {
+        logger.error('Error calculating price with rule engine', error as Error, {
+          countryId,
+          duration: numOfDays,
+          operationType: 'pricing-calculation'
+        });
+        throw error;
+      }
     },
     calculatePrices: async (_, { inputs }, context: Context) => {
-      const { PricingService } = await import('./services/pricing.service');
-      const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
-      const configRepository = new PricingConfigRepository();
+      const engineService = getPricingEngineService(context);
+      
+      // Get countries map for name lookup
+      const countries = await context.dataSources.countries.getCountries();
+      const countryMap = new Map(countries.map(c => [c.iso, c.country]));
       
       const results = await Promise.all(
         inputs.map(async (input: CalculatePriceInput) => {
           try {
-            // Get pricing configuration for the bundle
-            const config = await PricingService.getPricingConfig(
-              input.countryId, 
-              input.numOfDays, 
-              context.dataSources.catalogue, 
-              configRepository,
-              mapPaymentMethodEnum(input.paymentMethod),
-              context.dataSources.pricing
-            );
+            // Get bundle information from catalog
+            const bundles = await context.dataSources.catalogue.searchPlans({
+              country: input.countryId,
+              duration: input.numOfDays
+            });
             
-            // Get bundle and country names
-            const bundleName = PricingService.getBundleName(input.numOfDays);
-            const countryName = PricingService.getCountryName(input.countryId);
+            if (!bundles.bundles || bundles.bundles.length === 0) {
+              throw new GraphQLError('No bundles found for the specified criteria', {
+                extensions: { code: 'NO_BUNDLES_FOUND' }
+              });
+            }
             
-            // Calculate detailed pricing breakdown
-            const pricingBreakdown = PricingService.calculatePricing(
-              bundleName,
-              countryName,
-              input.numOfDays,
-              config
-            );
-
-            return pricingBreakdown;
+            // Use the first matching bundle
+            const bundle = bundles.bundles[0];
+            
+            // Create pricing context for the rule engine
+            const pricingContext = {
+              bundle: {
+                id: bundle.name || `${input.countryId}-${input.numOfDays}d`,
+                name: bundle.name,
+                duration: input.numOfDays,
+                bundleGroup: bundle.bundleGroup || 'Standard Fixed',
+                basePrice: bundle.price || 0,
+                dataAmount: bundle.dataAmount || 0,
+                isUnlimited: bundle.unlimited || bundle.dataAmount === -1
+              },
+              customer: {
+                paymentMethod: mapPaymentMethodEnum(input.paymentMethod),
+                segmentTier: 'STANDARD' as const
+              },
+              location: {
+                country: input.countryId,
+                region: bundle.baseCountry?.region || 'Unknown'
+              },
+              metadata: {}
+            };
+            
+            // Calculate price using rule engine
+            const calculation = await engineService.calculatePrice(pricingContext);
+            
+            // Map rule engine result to existing GraphQL schema
+            return {
+              bundleName: bundle.name || `${input.numOfDays} Day Bundle`,
+              countryName: countryMap.get(input.countryId) || input.countryId,
+              duration: input.numOfDays,
+              cost: calculation.basePrice,
+              costPlus: calculation.markupPrice,
+              totalCost: calculation.totalCost,
+              discountRate: calculation.discountRate,
+              discountValue: calculation.discountAmount,
+              priceAfterDiscount: calculation.discountedPrice,
+              processingRate: calculation.processingRate,
+              processingCost: calculation.processingFee,
+              finalRevenue: calculation.finalPrice,
+              netProfit: calculation.netProfit,
+              currency: 'USD',
+              discountPerDay: calculation.metadata?.discountPerUnusedDay || 0.10
+            };
           } catch (error) {
             logger.error(`Error calculating pricing for ${input.countryId} ${input.numOfDays}d`, error as Error, {
               countryId: input.countryId,
@@ -379,8 +485,8 @@ export const resolvers: Resolvers = {
             });
             // Return a fallback pricing breakdown
             return {
-              bundleName: PricingService.getBundleName(input.numOfDays),
-              countryName: PricingService.getCountryName(input.countryId),
+              bundleName: `${input.numOfDays} Day Bundle`,
+              countryName: countryMap.get(input.countryId) || input.countryId,
               duration: input.numOfDays,
               cost: 0,
               costPlus: 0,
@@ -466,9 +572,7 @@ export const resolvers: Resolvers = {
     countryBundles: async (_, { countryId }, context: Context) => {
       
       try {
-        const { PricingService } = await import('./services/pricing.service');
-        const { PricingConfigRepository } = await import('./repositories/pricing-configs/pricing-config.repository');
-        const configRepository = new PricingConfigRepository();
+        const engineService = getPricingEngineService(context);
         
         // Get country info
         const countries = await context.dataSources.countries.getCountries();
@@ -507,30 +611,38 @@ export const resolvers: Resolvers = {
         // Sort plans by duration for consistent ordering
         const sortedPlans = dataPlans.sort((a, b) => a.duration - b.duration);
         
-        // Get custom configurations to determine hasCustomDiscount and configuration level
-        const allConfigurations = await configRepository.getAllConfigurations();
-        const hasCustomConfig = allConfigurations.some(config => 
-          config.isActive && config.countryId === countryId
-        );
+        // Check if there are custom rules for this country
+        const { PricingRulesRepository } = await import('./repositories/pricing-rules/pricing-rules.repository');
+        const rulesRepository = new PricingRulesRepository(context.supabase);
+        const allRules = await rulesRepository.findAll({ isActive: true });
         
-        // Create a map for quick lookup of configuration levels per bundle
+        // Check if any rule applies to this country specifically
+        const hasCustomConfig = allRules.some(rule => {
+          return rule.conditions.some((condition: any) => 
+            (condition.field === 'location.country' && condition.value === countryId) ||
+            (condition.field === 'country' && condition.value === countryId)
+          );
+        });
+        
+        // Map rules to configuration levels for display purposes
         const configLevelByBundle = new Map<number, ConfigurationLevel>();
-        for (const config of allConfigurations) {
-          if (config.isActive && config.countryId === countryId) {
-            const level = getConfigurationLevel(config);
-            if (config.duration) {
-              // Bundle-specific configuration
-              configLevelByBundle.set(config.duration, level);
-            } else {
-              // Country-level or higher - apply to all bundles that don't have specific config
-              sortedPlans.forEach(plan => {
-                if (!configLevelByBundle.has(plan.duration)) {
-                  configLevelByBundle.set(plan.duration, level);
-                }
-              });
-            }
+        sortedPlans.forEach(plan => {
+          // Check if there's a specific rule for this bundle
+          const hasBundleRule = allRules.some(rule => {
+            return rule.conditions.some((condition: any) => 
+              (condition.field === 'bundle.duration' && condition.value === plan.duration) ||
+              (condition.field === 'duration' && condition.value === plan.duration)
+            );
+          });
+          
+          if (hasBundleRule) {
+            configLevelByBundle.set(plan.duration, ConfigurationLevel.Bundle);
+          } else if (hasCustomConfig) {
+            configLevelByBundle.set(plan.duration, ConfigurationLevel.Country);
+          } else {
+            configLevelByBundle.set(plan.duration, ConfigurationLevel.Global);
           }
-        }
+        });
 
         // Calculate pricing for each individual plan using actual pricing service
         // This ensures unlimited and limited bundles with same duration are processed separately
@@ -549,45 +661,53 @@ export const resolvers: Resolvers = {
                 operationType: 'bundle-country-debug'
               });
               
-              const config = await PricingService.getPricingConfig(
-                countryId,
-                plan.duration,
-                context.dataSources.catalogue,
-                configRepository,
-                'israeli_card'
-              );
+              // Create pricing context for the rule engine
+              const pricingContext = {
+                bundle: {
+                  id: plan.name || `${countryId}-${plan.duration}d`,
+                  name: plan.name,
+                  duration: plan.duration,
+                  bundleGroup: plan.bundleGroup || 'Standard Fixed',
+                  basePrice: plan.price || 0,
+                  dataAmount: plan.dataAmount || 0,
+                  isUnlimited: plan.unlimited || plan.dataAmount === -1
+                },
+                customer: {
+                  paymentMethod: 'israeli_card' as const,
+                  segmentTier: 'STANDARD' as const
+                },
+                location: {
+                  country: countryId,
+                  region: plan.baseCountry?.region || country.region || 'Unknown'
+                },
+                metadata: {}
+              };
               
-              const bundleName = PricingService.getBundleName(plan.duration);
-              
-              const pricingBreakdown = PricingService.calculatePricing(
-                bundleName,
-                country.country,
-                plan.duration,
-                config
-              );
+              // Calculate price using rule engine
+              const calculation = await engineService.calculatePrice(pricingContext);
               
               return {
-                bundleName: pricingBreakdown.bundleName,
-                countryName: pricingBreakdown.countryName,
+                bundleName: plan.name || `${plan.duration} Day Bundle`,
+                countryName: country.country,
                 countryId,
-                duration: pricingBreakdown.duration,
-                cost: pricingBreakdown.cost,
-                costPlus: pricingBreakdown.costPlus,
-                totalCost: pricingBreakdown.totalCost,
-                discountRate: pricingBreakdown.discountRate,
-                discountValue: pricingBreakdown.discountValue,
-                priceAfterDiscount: pricingBreakdown.priceAfterDiscount,
-                processingRate: pricingBreakdown.processingRate,
-                processingCost: pricingBreakdown.processingCost,
-                finalRevenue: pricingBreakdown.finalRevenue,
-                netProfit: pricingBreakdown.netProfit ?? (pricingBreakdown.finalRevenue - pricingBreakdown.totalCost),
-                currency: pricingBreakdown.currency,
-                pricePerDay: (pricingBreakdown.duration && pricingBreakdown.duration > 0 && isFinite(pricingBreakdown.priceAfterDiscount)) 
-                  ? pricingBreakdown.priceAfterDiscount / pricingBreakdown.duration 
+                duration: plan.duration,
+                cost: calculation.basePrice,
+                costPlus: calculation.markupPrice,
+                totalCost: calculation.totalCost,
+                discountRate: calculation.discountRate,
+                discountValue: calculation.discountAmount,
+                priceAfterDiscount: calculation.discountedPrice,
+                processingRate: calculation.processingRate,
+                processingCost: calculation.processingFee,
+                finalRevenue: calculation.finalPrice,
+                netProfit: calculation.netProfit,
+                currency: 'USD',
+                pricePerDay: (plan.duration && plan.duration > 0 && isFinite(calculation.discountedPrice)) 
+                  ? calculation.discountedPrice / plan.duration 
                   : 0,
                 hasCustomDiscount: hasCustomConfig,
                 configurationLevel: configLevelByBundle.get(plan.duration) || ConfigurationLevel.Global,
-                discountPerDay: pricingBreakdown.discountPerDay,
+                discountPerDay: calculation.metadata?.discountPerUnusedDay || 0.10,
                 // Add plan-specific metadata to distinguish between unlimited/limited bundles
                 planId: plan.name || plan.id || `${countryId}-${plan.duration}d`,
                 isUnlimited: plan.unlimited || plan.dataAmount === -1,
@@ -791,16 +911,61 @@ export const resolvers: Resolvers = {
 
     ...checkoutResolvers.Query!,
     
-    // Bundle groups - hardcoded list (temporary until eSIM Go provides dynamic endpoint)
+    // Bundle groups - fetched dynamically from eSIM Go organization groups API
     bundleGroups: async (_, __, context: Context) => {
       // This will be protected by @auth(role: "ADMIN") directive
-      return [
-        "Standard Fixed",
-        "Standard - Unlimited Lite", 
-        "Standard - Unlimited Essential",
-        "Standard - Unlimited Plus",
-        "Regional Bundles"
-      ];
+      try {
+        // Fetch organization groups from eSIM Go API
+        const organizationGroups = await context.dataSources.catalogue.getOrganizationGroups();
+        return organizationGroups.map(group => group.name);
+      } catch (error) {
+        logger.error('Error fetching bundle groups', error as Error, {
+          operationType: 'bundle-groups-fetch'
+        });
+        // Return fallback list if API fails
+        return [
+          "Standard Fixed",
+          "Standard - Unlimited Lite", 
+          "Standard - Unlimited Essential",
+          "Standard - Unlimited Plus",
+          "Regional Bundles"
+        ];
+      }
+    },
+
+    // Pricing filters - returns all available filter options dynamically
+    pricingFilters: async (_, __, context: Context) => {
+      // This will be protected by @auth(role: "ADMIN") directive
+      try {
+        // Reuse the existing bundleGroups query
+        const bundleGroups = await resolvers.Query!.bundleGroups!(_, __, context);
+        
+        // Define duration ranges (static for now, could be dynamic later)
+        const durations = [
+          { label: '1-7 days', value: 'short', minDays: 1, maxDays: 7 },
+          { label: '8-30 days', value: 'medium', minDays: 8, maxDays: 30 },
+          { label: '31+ days', value: 'long', minDays: 31, maxDays: 999 }
+        ];
+        
+        // Define data types
+        const dataTypes = [
+          { label: 'Unlimited', value: 'unlimited', isUnlimited: true },
+          { label: 'Limited', value: 'limited', isUnlimited: false }
+        ];
+        
+        return {
+          bundleGroups,
+          durations,
+          dataTypes
+        };
+      } catch (error) {
+        logger.error('Error fetching pricing filters', error as Error, {
+          operationType: 'pricing-filters-fetch'
+        });
+        throw new GraphQLError('Failed to fetch pricing filters', {
+          extensions: { code: 'INTERNAL_ERROR' }
+        });
+      }
     },
 
     // High demand countries
@@ -985,6 +1150,7 @@ export const resolvers: Resolvers = {
     ...usersResolvers.Mutation!,
     ...tripsResolvers.Mutation!,
     ...markupConfigResolvers.Mutation!,
+    ...pricingRulesResolvers.Mutation!,
     signUp: async (_, { input }) => {
       try {
         const { data, error } = await supabaseAdmin.auth.admin.createUser({

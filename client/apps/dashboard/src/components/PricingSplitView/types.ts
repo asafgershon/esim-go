@@ -11,6 +11,7 @@ export interface CountryBundleWithDisplay extends CountryBundle {
 
 export interface BundlesByCountryWithBundles extends BundlesByCountry {
   bundles?: CountryBundleWithDisplay[];
+  originalBundles?: CountryBundleWithDisplay[]; // For tracking unfiltered bundles
 }
 
 export interface CountryPricingSplitViewProps {
