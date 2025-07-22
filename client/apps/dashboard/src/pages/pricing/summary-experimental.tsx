@@ -1,8 +1,7 @@
+import { CountryBundle } from '@/__generated__/graphql';
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { CountryBundle } from '@/__generated__/graphql';
 import { CountryPricingSplitView } from '../../components/country-pricing-split-view';
-import { Badge } from '@workspace/ui';
 
 interface OutletContext {
   countryGroups: any[];
