@@ -1,4 +1,5 @@
-import type { CreatePricingRuleInput, RuleType, ConditionOperator, ActionType } from '../types';
+import type { CreatePricingRuleInput } from '../types';
+import { RuleType, ConditionOperator, ActionType } from '../types';
 import { createLogger } from '../lib/logger';
 
 const logger = createLogger({ 
@@ -26,7 +27,7 @@ export class DefaultRulesService {
           {
             field: 'customer.paymentMethod',
             operator: ConditionOperator.Equals,
-            value: 'israeli_card'
+            value: 'ISRAELI_CARD'
           }
         ],
         actions: [
@@ -48,7 +49,7 @@ export class DefaultRulesService {
           {
             field: 'customer.paymentMethod',
             operator: ConditionOperator.Equals,
-            value: 'foreign_card'
+            value: 'FOREIGN_CARD'
           }
         ],
         actions: [
@@ -70,7 +71,7 @@ export class DefaultRulesService {
           {
             field: 'customer.paymentMethod',
             operator: ConditionOperator.Equals,
-            value: 'bit'
+            value: 'BIT'
           }
         ],
         actions: [
@@ -92,7 +93,7 @@ export class DefaultRulesService {
           {
             field: 'customer.paymentMethod',
             operator: ConditionOperator.Equals,
-            value: 'amex'
+            value: 'AMEX'
           }
         ],
         actions: [
@@ -114,7 +115,7 @@ export class DefaultRulesService {
           {
             field: 'customer.paymentMethod',
             operator: ConditionOperator.Equals,
-            value: 'diners'
+            value: 'DINERS'
           }
         ],
         actions: [
@@ -127,9 +128,9 @@ export class DefaultRulesService {
         isActive: true
       },
       
-      // Default minimum price rule
+      // Default minimum price rule - using business discount type
       {
-        type: RuleType.SystemMinimumPrice,
+        type: RuleType.BusinessDiscount,
         name: 'Minimum Price Floor',
         description: 'Ensures prices never go below $0.01',
         conditions: [
@@ -141,17 +142,17 @@ export class DefaultRulesService {
         ],
         actions: [
           {
-            type: ActionType.SetMinimumPrice,
-            value: 0.01
+            type: ActionType.ApplyFixedDiscount,
+            value: -0.01 // Negative discount to ensure minimum price
           }
         ],
         priority: 1000, // Highest priority
         isActive: true
       },
       
-      // Default minimum profit rule
+      // Default minimum profit rule - using business discount type
       {
-        type: RuleType.BusinessMinimumProfit,
+        type: RuleType.BusinessDiscount,
         name: 'Minimum Profit Margin',
         description: 'Ensures minimum profit of $1.50 per bundle',
         conditions: [
@@ -163,7 +164,7 @@ export class DefaultRulesService {
         ],
         actions: [
           {
-            type: ActionType.SetMinimumProfit,
+            type: ActionType.AddMarkup,
             value: 1.50
           }
         ],

@@ -1,18 +1,11 @@
-import { BaseSupabaseRepository } from '../base-supabase.repository';
-import { supabaseAdmin } from '../../context/supabase-auth';
+import { BaseSupabaseRepository } from './base-supabase.repository';
+import { supabaseAdmin } from '../context/supabase-auth';
 import { GraphQLError } from 'graphql';
-import { Database } from '../../database.types';
+import type { Database } from '../database.types';
 
-type TripRow = {
-  id: string;
-  name: string;
-  description: string;
-  region_id: string;
-  country_ids: string[];
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
-};
+type TripRow = Database['public']['Tables']['trips']['Row'];
+type TripInsert = Database['public']['Tables']['trips']['Insert'];
+type TripUpdate = Database['public']['Tables']['trips']['Update'];
 
 export interface CreateTripInput {
   name: string;
@@ -29,7 +22,7 @@ export interface UpdateTripInput {
   countryIds: string[];
 }
 
-export class TripRepository extends BaseSupabaseRepository<TripRow, CreateTripInput, UpdateTripInput> {
+export class TripRepository extends BaseSupabaseRepository<TripRow, TripInsert, TripUpdate> {
   constructor() {
     super('trips');
   }
@@ -67,7 +60,7 @@ export class TripRepository extends BaseSupabaseRepository<TripRow, CreateTripIn
           name: input.name,
           description: input.description,
           region_id: input.regionId,
-          country_ids: JSON.stringify(input.countryIds),
+          country_ids: input.countryIds,
           created_by: userId,
         })
         .select()
@@ -79,16 +72,7 @@ export class TripRepository extends BaseSupabaseRepository<TripRow, CreateTripIn
         });
       }
 
-      return {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        region_id: data.region_id,
-        country_ids: typeof data.country_ids === 'string' ? JSON.parse(data.country_ids) : data.country_ids,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        created_by: data.created_by,
-      };
+      return data;
     } catch (error) {
       console.error('Error creating trip:', error);
       if (error instanceof GraphQLError) {
@@ -108,7 +92,7 @@ export class TripRepository extends BaseSupabaseRepository<TripRow, CreateTripIn
           name: input.name,
           description: input.description,
           region_id: input.regionId,
-          country_ids: JSON.stringify(input.countryIds),
+          country_ids: input.countryIds,
           updated_at: new Date().toISOString(),
         })
         .eq('id', input.id)
@@ -127,16 +111,7 @@ export class TripRepository extends BaseSupabaseRepository<TripRow, CreateTripIn
         });
       }
 
-      return {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        region_id: data.region_id,
-        country_ids: typeof data.country_ids === 'string' ? JSON.parse(data.country_ids) : data.country_ids,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        created_by: data.created_by,
-      };
+      return data;
     } catch (error) {
       console.error('Error updating trip:', error);
       if (error instanceof GraphQLError) {
@@ -191,16 +166,7 @@ export class TripRepository extends BaseSupabaseRepository<TripRow, CreateTripIn
         });
       }
 
-      return {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        region_id: data.region_id,
-        country_ids: typeof data.country_ids === 'string' ? JSON.parse(data.country_ids) : data.country_ids,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        created_by: data.created_by,
-      };
+      return data;
     } catch (error) {
       console.error('Error getting trip by ID:', error);
       if (error instanceof GraphQLError) {

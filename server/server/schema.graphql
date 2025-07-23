@@ -642,7 +642,9 @@ input CalculatePriceInput {
 enum RuleType {
   SYSTEM_MARKUP
   SYSTEM_PROCESSING
+  SYSTEM_MINIMUM_PRICE
   BUSINESS_DISCOUNT
+  BUSINESS_MINIMUM_PROFIT
   PROMOTION
   SEGMENT
 }
@@ -665,6 +667,8 @@ enum ActionType {
   ADD_MARKUP
   SET_PROCESSING_RATE
   SET_DISCOUNT_PER_UNUSED_DAY
+  SET_MINIMUM_PRICE
+  SET_MINIMUM_PROFIT
 }
 
 type RuleCondition {
@@ -945,6 +949,8 @@ input PricingRuleFilter {
   type: RuleType
   isActive: Boolean
   isEditable: Boolean
+  validFrom: String
+  validUntil: String
 }
 
 input RuleConditionInput {

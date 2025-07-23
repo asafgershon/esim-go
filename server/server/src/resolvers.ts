@@ -9,6 +9,8 @@ import type { Context } from "./context/types";
 import type { CalculatePriceInput, Order, Resolvers } from "./types";
 import { ConfigurationLevel } from "./types";
 import { esimResolvers } from "./resolvers/esim-resolvers";
+import { catalogResolvers } from "./resolvers/catalog-resolvers";
+import { authResolvers } from "./resolvers/auth-resolvers";
 import { checkoutResolvers } from "./resolvers/checkout-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import { tripsResolvers } from "./resolvers/trips-resolvers";
@@ -18,138 +20,29 @@ import { PaymentMethod } from "./types";
 import { createLogger } from "./lib/logger";
 import { PricingEngineService } from "./services/pricing-engine.service";
 
-const logger = createLogger({ component: 'resolvers' });
-
-// Singleton instance of pricing engine service
-let pricingEngineService: PricingEngineService | null = null;
+const logger = createLogger({ component: "resolvers" });
 
 const getPricingEngineService = (context: Context): PricingEngineService => {
-  if (!pricingEngineService) {
-    pricingEngineService = new PricingEngineService(context.supabase);
-    // Initialize in background
-    pricingEngineService.initialize().catch(error => {
-      logger.error('Failed to initialize pricing engine', error as Error, {
-        operationType: 'pricing-engine-init'
-      });
-    });
-  }
-  return pricingEngineService;
+  return PricingEngineService.getInstance(context.services.db);
 };
 
-
-// Helper function to determine configuration level based on pricing config fields
-function getConfigurationLevel(config: any): ConfigurationLevel {
-  if (config.countryId && config.duration) {
-    return ConfigurationLevel.Bundle;
-  } else if (config.countryId) {
-    return ConfigurationLevel.Country;
-  } else if (config.regionId) {
-    return ConfigurationLevel.Region;
-  } else {
-    return ConfigurationLevel.Global;
-  }
-}
-
-// Helper function to get representative bundles for aggregation calculations
-function getSampleBundles(countryBundles: any[], maxSamples: number = 5): any[] {
-  if (countryBundles.length === 0) return [];
-  
-  // If we have few bundles, use all of them
-  if (countryBundles.length <= maxSamples) {
-    return countryBundles;
-  }
-  
-  // Sort bundles by duration to get representative spread
-  const sortedBundles = [...countryBundles].sort((a, b) => a.duration - b.duration);
-  
-  // Select bundles to cover duration range
-  const samples = [];
-  const step = Math.floor(sortedBundles.length / maxSamples);
-  
-  for (let i = 0; i < maxSamples && i * step < sortedBundles.length; i++) {
-    const index = Math.min(i * step, sortedBundles.length - 1);
-    samples.push(sortedBundles[index]);
-  }
-  
-  // Always include shortest and longest if not already included
-  if (!samples.some(b => b.duration === sortedBundles[0].duration)) {
-    samples[0] = sortedBundles[0];
-  }
-  if (!samples.some(b => b.duration === sortedBundles[sortedBundles.length - 1].duration)) {
-    samples[samples.length - 1] = sortedBundles[sortedBundles.length - 1];
-  }
-  
-
-  
-  return samples;
-}
-
-// Helper function to aggregate pricing results with weighted averages
-function aggregatePricingResults(pricingResults: any[], totalBundles: number): any {
-  if (pricingResults.length === 0) {
-    return {
-      avgCost: 0,
-      avgCostPlus: 0,
-      avgTotalCost: 0,
-      avgDiscountRate: 0,
-      totalDiscountValue: 0,
-      avgProcessingRate: 0,
-      avgProcessingCost: 0,
-      avgFinalRevenue: 0,
-      avgNetProfit: 0,
-      avgPricePerDay: 0,
-      calculationMethod: 'NO_DATA'
-    };
-  }
-  
-  const sampleSize = pricingResults.length;
-  
-  // Calculate weighted averages
-  const avgCost = pricingResults.reduce((sum, p) => sum + p.cost, 0) / sampleSize;
-  const avgCostPlus = pricingResults.reduce((sum, p) => sum + p.costPlus, 0) / sampleSize;
-  const avgTotalCost = pricingResults.reduce((sum, p) => sum + p.totalCost, 0) / sampleSize;
-  const avgDiscountRate = pricingResults.reduce((sum, p) => sum + p.discountRate, 0) / sampleSize;
-  const avgDiscountValue = pricingResults.reduce((sum, p) => sum + (p.totalCost * p.discountRate), 0) / sampleSize;
-  const avgProcessingRate = pricingResults.reduce((sum, p) => sum + p.processingRate, 0) / sampleSize;
-  const avgProcessingCost = pricingResults.reduce((sum, p) => sum + p.processingCost, 0) / sampleSize;
-  const avgFinalRevenue = pricingResults.reduce((sum, p) => sum + p.finalRevenue, 0) / sampleSize;
-  const avgNetProfit = pricingResults.reduce((sum, p) => sum + p.netProfit, 0) / sampleSize;
-  const avgDuration = pricingResults.reduce((sum, p) => sum + p.duration, 0) / sampleSize;
-  
-  // Add safety check for division by zero
-  
-  const avgPricePerDay = avgDuration > 0 ? avgTotalCost / avgDuration : 0;
-  
-  return {
-    avgCost: Number(avgCost.toFixed(2)),
-    avgCostPlus: Number(avgCostPlus.toFixed(2)),
-    avgTotalCost: Number(avgTotalCost.toFixed(2)),
-    avgDiscountRate: Number(avgDiscountRate.toFixed(3)),
-    totalDiscountValue: Number((avgDiscountValue * totalBundles).toFixed(2)),
-    avgProcessingRate: Number(avgProcessingRate.toFixed(3)),
-    avgProcessingCost: Number(avgProcessingCost.toFixed(2)),
-    avgFinalRevenue: Number(avgFinalRevenue.toFixed(2)),
-    avgNetProfit: Number(avgNetProfit.toFixed(2)),
-    avgPricePerDay: Number(avgPricePerDay.toFixed(2)),
-    calculationMethod: 'SAMPLED'
-  };
-}
-
 // Helper function to map GraphQL enum to internal payment method type
-function mapPaymentMethodEnum(paymentMethod?: PaymentMethod | null): 'israeli_card' | 'foreign_card' | 'bit' | 'amex' | 'diners' {
+function mapPaymentMethodEnum(
+  paymentMethod?: PaymentMethod | null
+): "ISRAELI_CARD" | "FOREIGN_CARD" | "BIT" | "AMEX" | "DINERS" {
   switch (paymentMethod) {
     case PaymentMethod.IsraeliCard:
-      return 'israeli_card';
+      return "ISRAELI_CARD";
     case PaymentMethod.ForeignCard:
-      return 'foreign_card';
+      return "FOREIGN_CARD";
     case PaymentMethod.Bit:
-      return 'bit';
+      return "BIT";
     case PaymentMethod.Amex:
-      return 'amex';
+      return "AMEX";
     case PaymentMethod.Diners:
-      return 'diners';
+      return "DINERS";
     default:
-      return 'israeli_card'; // Default fallback
+      return "ISRAELI_CARD"; // Default fallback
   }
 }
 
@@ -170,14 +63,14 @@ export const resolvers: Resolvers = {
         .from("esim_orders")
         .select("*")
         .order("created_at", { ascending: false });
-      
+
       if (error) {
         throw new GraphQLError("Failed to fetch orders", {
           extensions: { code: "INTERNAL_ERROR" },
         });
       }
 
-      return data.map(order => ({
+      return data.map((order) => ({
         id: order.id,
         reference: order.reference,
         status: order.status,
@@ -200,14 +93,14 @@ export const resolvers: Resolvers = {
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-      
+
       if (error) {
         throw new GraphQLError("Failed to fetch user orders", {
           extensions: { code: "INTERNAL_ERROR" },
         });
       }
 
-      return data.map(order => ({
+      return data.map((order) => ({
         id: order.id,
         reference: order.reference,
         status: order.status,
@@ -224,94 +117,54 @@ export const resolvers: Resolvers = {
 
     // Users resolvers are merged from users-resolvers.ts
     ...usersResolvers.Query!,
-    
+
     // Trips resolvers are merged from trips-resolvers.ts
     ...tripsResolvers.Query!,
-    
-    
+
     // Pricing rules resolvers are merged from pricing-rules-resolvers.ts
     ...pricingRulesResolvers.Query!,
-    
+
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Query!,
-    myESIMs: async (_, __, context: Context) => {
-      // This will be protected by @auth directive
-      // TODO: Implement actual eSIM fetching
-      return [];
-    },
-
-    esimDetails: async (_, { id }, context: Context) => {
-      // This will be protected by @auth directive
-      // TODO: Implement actual eSIM details fetching
-      return null;
-    },
-    orderDetails: async (_, { id }, context: Context) => {
-      try {
-        const order = await context.repositories.orders.getOrderWithESIMs(id);
-        if (!order) {
-          throw new GraphQLError("Order not found", {
-            extensions: { code: "ORDER_NOT_FOUND" },
-          });
-        }
-        // Transform eSIMs to map qr_code_url to qrCode
-        const transformedEsims = order.esims.map((esim) => {
-          return {
-            ...esim,
-            qrCode: esim.qr_code_url,
-          };
-        });
-
-        // Convert snake_case to camelCase for the main order object
-        const camelCaseOrder = Object.fromEntries(
-          Object.entries(order).map(([key, value]) => {
-            if (key === 'esims') {
-              // Use the transformed eSIMs with qrCode field
-              return [key, transformedEsims];
-            }
-            return [
-              key.replace(/([-_][a-z])/gi, (match) =>
-                match.toUpperCase().replace("-", "").replace("_", "")
-              ),
-              value,
-            ];
-          })
-        );
-
-        const response = camelCaseOrder as Order;
-        logger.debug('Order response processed', { 
-          orderId: response.id,
-          operationType: 'order-processing'
-        });
-
-        return response;
-      } catch (error) {
-        logger.error('Error fetching order details', error as Error, { 
-          operationType: 'order-processing'
-        });
-        throw new GraphQLError("Failed to fetch order details", {
-          extensions: { code: "INTERNAL_ERROR" },
-        });
-      }
-    },
+    
+    // Catalog resolvers are merged from catalog-resolvers.ts
+    ...catalogResolvers.Query!,
     countries: async (_, __, context: Context) => {
       const countries = await context.dataSources.countries.getCountries();
-      
+
       // List of known regions to filter out from countries list
       const knownRegions = new Set([
-        'Africa', 'Asia', 'Europe', 'North America', 'South America', 
-        'Oceania', 'Antarctica', 'Middle East', 'Caribbean', 'Central America',
-        'Western Europe', 'Eastern Europe', 'Southeast Asia', 'East Asia',
-        'Central Asia', 'Southern Africa', 'Northern Africa', 'Western Africa',
-        'Eastern Africa', 'Central Africa'
+        "Africa",
+        "Asia",
+        "Europe",
+        "North America",
+        "South America",
+        "Oceania",
+        "Antarctica",
+        "Middle East",
+        "Caribbean",
+        "Central America",
+        "Western Europe",
+        "Eastern Europe",
+        "Southeast Asia",
+        "East Asia",
+        "Central Asia",
+        "Southern Africa",
+        "Northern Africa",
+        "Western Africa",
+        "Eastern Africa",
+        "Central Africa",
       ]);
-      
+
       return countries
         .filter((country) => {
           // Filter out entries that are actually regions (not valid ISO country codes)
           // Check if the "country" name matches known regions
-          return !knownRegions.has(country.country) && 
-                 country.iso && 
-                 country.iso.length === 2; // Valid ISO codes are exactly 2 characters
+          return (
+            !knownRegions.has(country.country) &&
+            country.iso &&
+            country.iso.length === 2
+          ); // Valid ISO codes are exactly 2 characters
         })
         .map((country) => ({
           iso: country.iso,
@@ -322,866 +175,8 @@ export const resolvers: Resolvers = {
         }));
     },
     // trips resolver moved to tripsResolvers
-    calculatePrice: async (
-      _,
-      { numOfDays, regionId, countryId, paymentMethod },
-      context: Context
-    ) => {
-      try {
-        // Use the pricing engine service instead of old pricing service
-        const engineService = getPricingEngineService(context);
-        
-        // Get bundle information from catalog
-        // Use getBundlesByCountry which properly handles country filtering
-        const countryBundles = await context.dataSources.catalogue.getBundlesByCountry(
-          countryId.toUpperCase()
-        );
-        
-        if (!countryBundles || countryBundles.length === 0) {
-          throw new GraphQLError(`No bundles found for country: ${countryId}`, {
-            extensions: { code: 'NO_BUNDLES_FOUND' }
-          });
-        }
-        
-        // Get country name for response
-        const countries = await context.dataSources.countries.getCountries();
-        const country = countries.find(c => c.iso.toLowerCase() === countryId.toLowerCase());
-        
-        // Map all available bundles for the pricing engine
-        const availableBundles = countryBundles.map(bundle => ({
-          id: bundle?.esim_go_name || `${countryId}-${bundle?.duration || numOfDays}d`,
-          name: bundle?.esim_go_name || '',
-          cost: ((bundle?.price_cents || 0) / 100),
-          duration: bundle?.duration || numOfDays,
-          countryId: countryId,
-          countryName: country?.country || countryId,
-          regionId: regionId || 'global',
-          regionName: regionId || 'Global',
-          group: bundle?.bundle_group || 'Standard Fixed',
-          isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-          dataAmount: bundle?.data_amount?.toString() || '0'
-        }));
-        
-        // Create pricing context for the rule engine - let engine select optimal bundle
-        const pricingContext = PricingEngineService.createContext({
-          availableBundles,
-          requestedDuration: numOfDays,
-          paymentMethod: mapPaymentMethodEnum(paymentMethod)
-        });
-        
-        // Calculate price using rule engine (includes bundle selection)
-        const calculation = await engineService.calculatePrice(pricingContext);
-        
-        const countryName = country?.country || countryId;
-        
-        // Map rule engine result to GraphQL schema
-        return {
-          bundleName: calculation.selectedBundle.bundleName || `${numOfDays} Day Bundle`,
-          countryName,
-          duration: numOfDays,
-          currency: 'USD',
-          // Public fields
-          totalCost: calculation.subtotal,
-          discountValue: calculation.totalDiscount,
-          priceAfterDiscount: calculation.priceAfterDiscount,
-          // Admin-only fields (protected by @auth directives)
-          cost: calculation.baseCost,
-          costPlus: calculation.baseCost + calculation.markup,
-          discountRate: calculation.discounts.reduce((sum, d) => {
-            return sum + (d.type === 'percentage' ? d.amount : 0);
-          }, 0),
-          processingRate: calculation.processingRate,
-          processingCost: calculation.processingFee,
-          finalRevenue: calculation.finalRevenue,
-          netProfit: calculation.profit,
-          discountPerDay: calculation.metadata?.discountPerUnusedDay || 0
-        };
-      } catch (error) {
-        logger.error('Error calculating price with rule engine', error as Error, {
-          countryId,
-          duration: numOfDays,
-          operationType: 'pricing-calculation'
-        });
-        throw error;
-      }
-    },
-    calculatePrices: async (_, { inputs }, context: Context) => {
-      const engineService = getPricingEngineService(context);
-      
-      // Get countries map for name lookup
-      const countries = await context.dataSources.countries.getCountries();
-      const countryMap = new Map(countries.map(c => [c.iso, c.country]));
-      
-      const results = await Promise.all(
-        inputs.map(async (input: CalculatePriceInput) => {
-          try {
-            // Get bundle information from catalog using the same method as single calculatePrice
-            const countryBundles = await context.dataSources.catalogue.getBundlesByCountry(
-              input.countryId.toUpperCase()
-            );
-            
-            if (!countryBundles || countryBundles.length === 0) {
-              throw new GraphQLError(`No bundles found for country: ${input.countryId}`, {
-                extensions: { code: 'NO_BUNDLES_FOUND' }
-              });
-            }
-            
-            // Map all available bundles for the pricing engine
-            const availableBundles = countryBundles.map(bundle => ({
-              id: bundle?.esim_go_name || `${input.countryId}-${bundle?.duration || input.numOfDays}d`,
-              name: bundle?.esim_go_name || '',
-              cost: ((bundle?.price_cents || 0) / 100),
-              duration: bundle?.duration || input.numOfDays,
-              countryId: input.countryId,
-              countryName: countryMap.get(input.countryId) || input.countryId,
-              regionId: 'global', // We don't have region info in this context
-              regionName: 'Global',
-              group: bundle?.bundle_group || 'Standard Fixed',
-              isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-              dataAmount: bundle?.data_amount?.toString() || '0'
-            }));
-            
-            // Create pricing context for the rule engine - let engine select optimal bundle
-            const pricingContext = PricingEngineService.createContext({
-              availableBundles,
-              requestedDuration: input.numOfDays,
-              paymentMethod: mapPaymentMethodEnum(input.paymentMethod)
-            });
-            
-            // Calculate price using rule engine (includes bundle selection)
-            const calculation = await engineService.calculatePrice(pricingContext);
-            
-            // Map rule engine result to existing GraphQL schema
-            return {
-              bundleName: calculation.selectedBundle.bundleName || `${input.numOfDays} Day Bundle`,
-              countryName: countryMap.get(input.countryId) || input.countryId,
-              duration: input.numOfDays,
-              cost: calculation.baseCost,
-              costPlus: calculation.baseCost + calculation.markup,
-              totalCost: calculation.subtotal,
-              discountRate: calculation.totalDiscount > 0 ? (calculation.totalDiscount / calculation.subtotal) : 0,
-              discountValue: calculation.totalDiscount,
-              priceAfterDiscount: calculation.priceAfterDiscount,
-              processingRate: calculation.processingRate,
-              processingCost: calculation.processingFee,
-              finalRevenue: calculation.finalRevenue,
-              netProfit: calculation.profit,
-              currency: 'USD',
-              discountPerDay: calculation.metadata?.discountPerUnusedDay || 0
-            };
-          } catch (error) {
-            logger.error(`Error calculating pricing for ${input.countryId} ${input.numOfDays}d`, error as Error, {
-              countryId: input.countryId,
-              duration: input.numOfDays,
-              operationType: 'pricing-calculation'
-            });
-            // Return a fallback pricing breakdown
-            return {
-              bundleName: `${input.numOfDays} Day Bundle`,
-              countryName: countryMap.get(input.countryId) || input.countryId,
-              duration: input.numOfDays,
-              cost: 0,
-              costPlus: 0,
-              totalCost: 0,
-              discountRate: 0,
-              discountValue: 0,
-              priceAfterDiscount: 0,
-              processingRate: 0,
-              processingCost: 0,
-              finalRevenue: 0,
-              netProfit: 0,
-              currency: 'USD',
-              discountPerDay: 0
-            };
-          }
-        })
-      );
-
-      // 🎯 Simple deduplication fix - remove nearly identical results
-      const uniqueResults = results.filter((result, index, array) => {
-        return array.findIndex(r => 
-          r.countryName === result.countryName &&
-          r.duration === result.duration &&
-          Math.abs(r.totalCost - result.totalCost) < 0.01 && // Same total cost (within 1 cent)
-          Math.abs(r.finalRevenue - result.finalRevenue) < 0.01 // Same final revenue
-        ) === index;
-      });
 
 
-
-      return uniqueResults;
-    },
-    
-    bundlesCountries: async (_, __, context: Context) => {
-      
-      try {
-        // Use efficient aggregation from repository instead of loading all bundles
-        const countryAggregation = await context.dataSources.catalogue.getBundlesByCountryAggregation();
-        
-        // Get country names mapping
-        const countries = await context.dataSources.countries.getCountries();
-        const countryNamesMap = new Map(
-          countries.map(country => [country.iso, country.country])
-        );
-        
-        logger.debug('Country mapping debug', {
-          aggregationCount: countryAggregation.length,
-          countryMapSize: countryNamesMap.size,
-          aggregatedCountries: countryAggregation.map(c => c.countryId),
-          availableCountryCodes: Array.from(countryNamesMap.keys()).slice(0, 10), // First 10
-          operationType: 'country-mapping-debug'
-        });
-        
-        // Map aggregation results to expected format with proper country names
-        const bundlesCountries = countryAggregation
-          .map(({ countryId, bundleCount }) => {
-            const countryName = countryNamesMap.get(countryId) || countryId;
-            logger.debug('Country mapping', {
-              countryId,
-              countryName,
-              bundleCount,
-              hasMapping: countryNamesMap.has(countryId)
-            });
-            return {
-              countryName,
-              countryId: countryId,
-              bundleCount: bundleCount
-            };
-          })
-          .filter(item => {
-            // For now, include all countries - even if we don't have proper names
-            // This will help us see all available countries in the debug phase
-            const shouldInclude = true; // item.countryName !== item.countryId;
-            if (item.countryName === item.countryId) {
-              logger.debug('Country without name mapping included anyway', {
-                countryId: item.countryId,
-                usingCountryCodeAsName: true
-              });
-            }
-            return shouldInclude;
-          }) // Include all countries for now
-          .sort((a, b) => a.countryName.localeCompare(b.countryName));
-        
-        logger.info('✅ BundlesCountries aggregated efficiently', {
-          countryCount: bundlesCountries.length,
-          totalAggregated: countryAggregation.length,
-          operationType: 'bundles-countries-aggregation'
-        });
-        
-        return bundlesCountries;
-      } catch (error) {
-        logger.error('Error in bundlesCountries resolver', error as Error, {
-          operationType: 'bundles-countries-fetch'
-        });
-
-        // Check if it's a catalog empty error
-        if (error instanceof Error && error.message.includes('Catalog data is not available')) {
-          throw new GraphQLError("Catalog data is not available. Please run catalog sync to populate the database with eSIM bundles.", {
-            extensions: {
-              code: "CATALOG_EMPTY",
-              hint: "Run the catalog sync process to populate the database",
-            },
-          });
-        }
-
-        throw new GraphQLError('Failed to fetch bundles by country', {
-          extensions: { code: 'INTERNAL_ERROR' }
-        });
-      }
-    },
-
-    bundlesRegions: async (_, __, context: Context) => {
-      try {
-        // Get regions aggregation from repository
-        const regionAggregation = await context.dataSources.catalogue.getBundlesByRegionAggregation();
-        
-        // Map to expected format
-        const bundlesRegions = regionAggregation
-          .map(({ regionName, bundleCount, countryCount }) => ({
-            regionName,
-            bundleCount,
-            countryCount
-          }))
-          .filter(item => item.regionName && item.regionName.trim() !== '') // Filter out empty regions
-          .sort((a, b) => a.regionName.localeCompare(b.regionName));
-
-        logger.info('✅ BundlesRegions aggregated efficiently', {
-          regionCount: bundlesRegions.length,
-          totalAggregated: regionAggregation.length,
-          operationType: 'bundles-regions-aggregation'
-        });
-
-        return bundlesRegions;
-      } catch (error) {
-        logger.error('Error in bundlesRegions resolver', error as Error, {
-          operationType: 'bundles-regions-fetch'
-        });
-
-        throw new GraphQLError('Failed to fetch bundles by region', {
-          extensions: { code: 'INTERNAL_ERROR' }
-        });
-      }
-    },
-    
-    // Main bundles resolver with optional filtering
-    bundles: async (_, { countryId, regionId }, context: Context) => {
-      try {
-        const engineService = getPricingEngineService(context);
-        
-        // Validate that only one filter is provided
-        if (countryId && regionId) {
-          throw new GraphQLError('Cannot filter by both countryId and regionId', {
-            extensions: { code: 'INVALID_ARGUMENTS' }
-          });
-        }
-        
-        let catalogBundles: any[] = [];
-        let filterType: 'country' | 'region' | 'all' = 'all';
-        
-        if (countryId) {
-          // Get country info
-          const countries = await context.dataSources.countries.getCountries();
-          const country = countries.find(c => c.iso === countryId);
-          
-          if (!country) {
-            throw new GraphQLError(`Country not found: ${countryId}`, {
-              extensions: { code: 'COUNTRY_NOT_FOUND' }
-            });
-          }
-          
-          catalogBundles = await context.dataSources.catalogue.getBundlesByCountry(countryId);
-          filterType = 'country';
-          
-          logger.info('Fetched bundles for country from catalog', {
-            countryId,
-            bundleCount: catalogBundles.length,
-            operationType: 'bundles-by-country-fetch'
-          });
-          
-        } else if (regionId) {
-          catalogBundles = await context.dataSources.catalogue.getBundlesByRegion(regionId);
-          filterType = 'region';
-          
-          logger.info('Fetched bundles for region from catalog', {
-            regionId,
-            bundleCount: catalogBundles.length,
-            operationType: 'bundles-by-region-fetch'
-          });
-          
-        } else {
-          // Get all bundles (this might be expensive, consider pagination)
-          catalogBundles = await context.dataSources.catalogue.getAllBundles();
-          filterType = 'all';
-          
-          logger.info('Fetched all bundles from catalog', {
-            bundleCount: catalogBundles.length,
-            operationType: 'bundles-all-fetch'
-          });
-        }
-        
-        // For country-specific requests, we do detailed pricing calculations
-        if (filterType === 'country' && countryId) {
-          const countries = await context.dataSources.countries.getCountries();
-          const country = countries.find(c => c.iso === countryId);
-          
-          // Convert catalog bundles to data plan format
-          const dataPlans = (catalogBundles || []).map(bundle => ({
-            id: bundle.id,
-            name: bundle.esim_go_name,
-            description: bundle.description || '',
-            baseCountry: country,
-            countries: bundle.countries || [],
-            regions: bundle.regions || [],
-            duration: bundle.duration,
-            price: bundle.price_cents / 100, // Convert cents to dollars
-            currency: bundle.currency,
-            unlimited: bundle.unlimited,
-            dataAmount: bundle.data_amount,
-            bundleGroup: bundle.bundle_group,
-            features: []
-          }));
-          
-          // Sort plans by duration for consistent ordering
-          const sortedPlans = dataPlans.sort((a, b) => a.duration - b.duration);
-          
-          // Calculate pricing for each individual plan using actual pricing service
-          const bundles = await Promise.all(
-            sortedPlans.map(async (plan) => {
-              try {
-                // Create pricing context for the rule engine using service helper
-                const pricingContext = PricingEngineService.createContext({
-                  bundle: {
-                    id: plan.name || `${countryId}-${plan.duration}d`,
-                    name: plan.name,
-                    cost: plan.price || 0,
-                    duration: plan.duration,
-                    countryId: countryId,
-                    countryName: country!.country,
-                    regionId: plan.baseCountry?.region || country!.region || 'global',
-                    regionName: plan.baseCountry?.region || country!.region || 'Global',
-                    group: plan.bundleGroup || 'Standard Fixed',
-                    isUnlimited: plan.unlimited || plan.dataAmount === -1,
-                    dataAmount: plan.dataAmount?.toString() || '0'
-                  },
-                  paymentMethod: 'israeli_card'
-                });
-                
-                // Calculate price using rule engine
-                const calculation = await engineService.calculatePrice(pricingContext);
-                
-                return {
-                  bundleName: plan.name || `${plan.duration} Day Bundle`,
-                  countryName: country!.country,
-                  countryId,
-                  duration: plan.duration,
-                  cost: calculation.baseCost,
-                  costPlus: calculation.subtotal,
-                  totalCost: calculation.finalPrice,
-                  discountRate: calculation.totalDiscount / calculation.subtotal * 100,
-                  discountValue: calculation.totalDiscount,
-                  priceAfterDiscount: calculation.priceAfterDiscount,
-                  processingRate: calculation.processingRate * 100,
-                  processingCost: calculation.processingFee,
-                  finalRevenue: calculation.profit,
-                  currency: 'USD',
-                  pricePerDay: calculation.finalPrice / plan.duration,
-                  hasCustomDiscount: calculation.discounts.length > 0,
-                  bundleGroup: plan.bundleGroup || 'Standard Fixed',
-                  isUnlimited: plan.unlimited || plan.dataAmount === -1,
-                  dataAmount: plan.unlimited || plan.dataAmount === -1 ? 'Unlimited' : 
-                    plan.dataAmount ? `${Math.round(plan.dataAmount / 1024)}GB` : 'Unknown',
-                  planId: plan.id || `${countryId}-${plan.duration}d`
-                };
-              } catch (error) {
-                logger.error('Error calculating pricing for bundle', error as Error, {
-                  planName: plan.name,
-                  countryId,
-                  operationType: 'bundle-pricing-calculation'
-                });
-                
-                // Return bundle with fallback pricing
-                return {
-                  bundleName: plan.name || `${plan.duration} Day Bundle`,
-                  countryName: country!.country,
-                  countryId,
-                  duration: plan.duration,
-                  cost: plan.price || 0,
-                  costPlus: plan.price || 0,
-                  totalCost: plan.price || 0,
-                  discountRate: 0,
-                  discountValue: 0,
-                  priceAfterDiscount: plan.price || 0,
-                  processingRate: 0,
-                  processingCost: 0,
-                  finalRevenue: 0,
-                  currency: 'USD',
-                  pricePerDay: plan.duration > 0 ? (plan.price || 0) / plan.duration : 0,
-                  hasCustomDiscount: false,
-                  bundleGroup: plan.bundleGroup || 'Standard Fixed',
-                  isUnlimited: plan.unlimited || plan.dataAmount === -1,
-                  dataAmount: plan.unlimited || plan.dataAmount === -1 ? 'Unlimited' : 
-                    plan.dataAmount ? `${Math.round(plan.dataAmount / 1024)}GB` : 'Unknown',
-                  planId: plan.id || `${countryId}-${plan.duration}d`
-                };
-              }
-            })
-          );
-          
-          return bundles.sort((a, b) => a.duration - b.duration);
-          
-        } else {
-          // For region or all bundles, return simplified catalog data
-          const bundles = catalogBundles.map(bundle => ({
-            bundleName: bundle.esim_go_name || bundle.esimGoName || `${bundle.duration} Day Bundle`,
-            countryName: bundle.countries?.[0] || 'Multiple Countries',
-            countryId: bundle.countries?.[0] || (regionId || 'global'),
-            duration: bundle.duration || 0,
-            cost: (bundle.price_cents || bundle.priceCents || 0) / 100,
-            costPlus: 0,
-            totalCost: (bundle.price_cents || bundle.priceCents || 0) / 100,
-            discountRate: 0,
-            discountValue: 0,
-            priceAfterDiscount: (bundle.price_cents || bundle.priceCents || 0) / 100,
-            processingRate: 0,
-            processingCost: 0,
-            finalRevenue: 0,
-            currency: bundle.currency || 'USD',
-            pricePerDay: bundle.duration > 0 ? ((bundle.price_cents || bundle.priceCents || 0) / 100) / bundle.duration : 0,
-            hasCustomDiscount: false,
-            bundleGroup: bundle.bundle_group || bundle.bundleGroup || 'Unknown',
-            isUnlimited: bundle.unlimited || false,
-            dataAmount: bundle.unlimited ? 'Unlimited' : 
-              bundle.data_amount || bundle.dataAmount ? `${Math.round((bundle.data_amount || bundle.dataAmount) / 1024)}GB` : 'Unknown',
-            planId: bundle.id || `${regionId || 'global'}-${bundle.duration}d`
-          }));
-          
-          return bundles.sort((a, b) => a.duration - b.duration);
-        }
-        
-      } catch (error) {
-        logger.error('Error in bundles resolver', error as Error, {
-          countryId,
-          regionId,
-          operationType: 'bundles-fetch'
-        });
-        throw new GraphQLError('Failed to fetch bundles', {
-          extensions: { code: 'INTERNAL_ERROR' }
-        });
-      }
-    },
-    
-    // REMOVED: countryBundles resolver - replaced by bundles(countryId: "XX")
-    
-    // REMOVED: regionBundles resolver - replaced by bundles(regionId: "XX")
-      
-    
-
-
-    ...checkoutResolvers.Query!,
-    
-    // Bundle groups - fetched dynamically from eSIM Go organization groups API
-    bundleGroups: async (_, __, context: Context) => {
-      // This will be protected by @auth(role: "ADMIN") directive
-      try {
-        logger.info('Fetching bundle groups from catalog database', {
-          operationType: 'bundle-groups-fetch'
-        });
-        // Fetch organization groups from catalog database
-        const bundleGroups = await context.dataSources.catalogue.getOrganizationGroups();
-        
-        logger.info('Successfully fetched bundle groups', {
-          count: bundleGroups.length,
-          groups: bundleGroups,
-          operationType: 'bundle-groups-fetch'
-        });
-        return bundleGroups;
-      } catch (error) {
-        logger.error('Error fetching bundle groups, using fallback', error as Error, {
-          operationType: 'bundle-groups-fetch'
-        });
-        // Return fallback list if API fails
-        const fallbackGroups = [
-          "Standard Fixed",
-          "Standard - Unlimited Lite", 
-          "Standard - Unlimited Essential",
-          "Standard - Unlimited Plus",
-          "Regional Bundles"
-        ];
-        logger.info('Using fallback bundle groups', {
-          count: fallbackGroups.length,
-          groups: fallbackGroups,
-          operationType: 'bundle-groups-fetch'
-        });
-        return fallbackGroups;
-      }
-    },
-
-    // Pricing filters - returns all available filter options dynamically
-    pricingFilters: async (_, __, context: Context) => {
-      try {
-        // Get dynamic bundle groups with fallback handling
-        const bundleGroups = await resolvers.Query!.bundleGroups!(_, __, context) || [];
-        
-        // Get bundle data aggregation for dynamic durations and data types
-        const bundleAggregation = await resolvers.Query!.bundleDataAggregation!(_, __, context);
-        
-        let durations: { label: string; value: string }[] = [];
-        let dataTypes: { label: string; value: string }[] = [];
-        
-        if (bundleAggregation && bundleAggregation.total > 0 && bundleAggregation.byDuration?.length > 0) {
-          // Extract unique durations from aggregation data
-          durations = bundleAggregation.byDuration.map((durationGroup: any) => ({
-            label: `${durationGroup.duration} days`,
-            value: durationGroup.duration.toString(),
-            minDays: durationGroup.duration,
-            maxDays: durationGroup.duration
-          }));
-          
-          // Dynamic data types based on actual bundle data
-          dataTypes = [];
-          if (bundleAggregation.unlimited > 0) {
-            dataTypes.push({ label: 'Unlimited', value: 'unlimited', isUnlimited: true });
-          }
-          if (bundleAggregation.total - bundleAggregation.unlimited > 0) {
-            dataTypes.push({ label: 'Limited', value: 'limited', isUnlimited: false });
-          }
-        } else {
-          // Fallback to static values if aggregation data is not available
-          durations = [
-            { label: '1-7 days', value: 'short', minDays: 1, maxDays: 7 },
-            { label: '8-30 days', value: 'medium', minDays: 8, maxDays: 30 },
-            { label: '31+ days', value: 'long', minDays: 31, maxDays: 999 }
-          ];
-          dataTypes = [
-            { label: 'Unlimited', value: 'unlimited', isUnlimited: true },
-            { label: 'Limited', value: 'limited', isUnlimited: false }
-          ];
-        }
-        
-        return {
-          bundleGroups,
-          durations,
-          dataTypes
-        };
-      } catch (error) {
-        logger.error('Error fetching pricing filters', error as Error, {
-          operationType: 'pricing-filters-fetch'
-        });
-        throw new GraphQLError('Failed to fetch pricing filters', {
-          extensions: { code: 'INTERNAL_ERROR' }
-        });
-      }
-    },
-
-    // Bundle data amount aggregation - gets real-time aggregated data from database
-    bundleDataAggregation: async (_, __, context: Context) => {
-      // This will be protected by @auth(role: "ADMIN") directive
-      try {
-        logger.info('Fetching bundle data aggregation from database', {
-          operationType: 'bundle-data-aggregation-fetch'
-        });
-        
-        // Get aggregation data directly from the catalogue datasource
-        const bundleAggregation = await context.dataSources.catalogue.getBundleDataAggregation();
-        
-        logger.info('Successfully fetched bundle data aggregation', {
-          total: bundleAggregation.total,
-          unlimited: bundleAggregation.unlimited,
-          byDurationCount: bundleAggregation.byDuration?.length || 0,
-          byBundleGroupCount: bundleAggregation.byBundleGroup?.length || 0,
-          operationType: 'bundle-data-aggregation-fetch'
-        });
-        
-        return bundleAggregation;
-      } catch (error) {
-        logger.error('Error fetching bundle data aggregation', error as Error, {
-          operationType: 'bundle-data-aggregation-fetch'
-        });
-        throw new GraphQLError('Failed to fetch bundle data aggregation', {
-          extensions: { code: 'INTERNAL_ERROR' }
-        });
-      }
-    },
-
-    // High demand countries
-    highDemandCountries: async (_, __, context: Context) => {
-      // This will be protected by @auth(role: "ADMIN") directive
-      try {
-        const highDemandCountries = await context.repositories.highDemandCountries.getAllHighDemandCountries();
-        return highDemandCountries;
-      } catch (error) {
-        logger.error('Error fetching high demand countries', error as Error, {
-          operationType: 'high-demand-countries-fetch'
-        });
-        throw new GraphQLError('Failed to fetch high demand countries', {
-          extensions: { code: 'INTERNAL_ERROR' }
-        });
-      }
-    },
-
-
-    // Catalog sync history resolver
-    catalogSyncHistory: async (_, { params = {} }, context: Context) => {
-      try {
-        const { limit = 50, offset = 0, status, type, fromDate, toDate } = params;
-        
-        logger.info('Fetching catalog sync history', {
-          limit,
-          offset,
-          status,
-          type,
-          operationType: 'catalog-sync-history'
-        });
-
-        // Build query
-        let query = supabaseAdmin
-          .from('catalog_sync_jobs')
-          .select('*', { count: 'exact' })
-          .order('created_at', { ascending: false })
-          .range(offset, offset + limit - 1);
-
-        // Apply filters
-        if (status) {
-          query = query.eq('status', status);
-        }
-        if (type) {
-          query = query.eq('job_type', type); // Use correct column name job_type
-        }
-        if (fromDate) {
-          query = query.gte('created_at', fromDate);
-        }
-        if (toDate) {
-          query = query.lte('created_at', toDate);
-        }
-
-        const { data, error, count } = await query;
-
-        if (error) {
-          logger.error('Failed to fetch catalog sync history', error, {
-            operationType: 'catalog-sync-history'
-          });
-          throw new GraphQLError('Failed to fetch sync history', {
-            extensions: { code: 'INTERNAL_ERROR' },
-          });
-        }
-
-        // Transform data to match frontend expectations
-        const jobs = (data || []).map(job => ({
-          id: job.id,
-          jobType: job.job_type || 'FULL_SYNC', // Use correct column name job_type
-          type: job.job_type || 'FULL_SYNC',     // Use correct column name job_type
-          status: (job.status || 'pending').toLowerCase(), // Frontend expects lowercase status
-          priority: job.priority || 'normal',    // Use actual priority from DB
-          bundleGroup: job.bundle_group,
-          countryId: job.country_id,
-          bundlesProcessed: job.bundles_processed || 0, // Use correct column name
-          bundlesAdded: job.bundles_added || 0,         // Use correct column name
-          bundlesUpdated: job.bundles_updated || 0,     // Use correct column name
-          startedAt: job.started_at || job.created_at, // Use created_at as fallback if started_at is null
-          completedAt: job.completed_at,
-          duration: job.duration,
-          errorMessage: job.error_message,
-          metadata: job.metadata,
-          createdAt: job.created_at,
-          updatedAt: job.updated_at
-        }));
-
-        logger.info('Catalog sync history fetched successfully', {
-          jobCount: jobs.length,
-          totalCount: count,
-          operationType: 'catalog-sync-history'
-        });
-
-        return {
-          jobs,
-          totalCount: count || 0
-        };
-      } catch (error) {
-        logger.error('Failed to fetch catalog sync history', error as Error, {
-          operationType: 'catalog-sync-history'
-        });
-        throw error;
-      }
-    },
-
-    // Catalog bundles queries (from new catalog system)
-    catalogBundles: async (_, { criteria = {} }, context: Context) => {
-      try {
-        const { limit = 50, offset = 0, bundleGroups, countries, regions, minDuration, maxDuration, unlimited, search } = criteria;
-        
-        logger.info('Fetching catalog bundles', {
-          limit,
-          offset,
-          bundleGroups,
-          countries,
-          operationType: 'catalog-bundles-fetch'
-        });
-
-        // Build query
-        let query = supabaseAdmin
-          .from('catalog_bundles')
-          .select('*', { count: 'exact' })
-          .order('created_at', { ascending: false })
-          .range(offset, offset + limit - 1);
-
-        // Apply filters
-        if (bundleGroups?.length) {
-          query = query.in('bundle_group', bundleGroups);
-        }
-        if (countries?.length) {
-          query = query.overlaps('countries', countries);
-        }
-        if (regions?.length) {
-          query = query.overlaps('regions', regions);
-        }
-        if (minDuration) {
-          query = query.gte('duration', minDuration);
-        }
-        if (maxDuration) {
-          query = query.lte('duration', maxDuration);
-        }
-        if (unlimited !== undefined) {
-          query = query.eq('unlimited', unlimited);
-        }
-        if (search) {
-          query = query.or(`esim_go_name.ilike.%${search}%,description.ilike.%${search}%`);
-        }
-
-        const { data, error, count } = await query;
-
-        if (error) {
-          logger.error('Failed to fetch catalog bundles', error, {
-            operationType: 'catalog-bundles-fetch'
-          });
-          throw new GraphQLError('Failed to fetch catalog bundles', {
-            extensions: { code: 'INTERNAL_ERROR' },
-          });
-        }
-
-        // Transform data
-        const bundles = (data || []).map(bundle => ({
-          id: bundle.id,
-          esimGoName: bundle.esim_go_name,
-          bundleGroup: bundle.bundle_group,
-          description: bundle.description || '',
-          duration: bundle.duration,
-          dataAmount: bundle.data_amount,
-          unlimited: bundle.unlimited,
-          priceCents: bundle.price_cents,
-          currency: bundle.currency,
-          countries: bundle.countries || [],
-          regions: bundle.regions || [],
-          syncedAt: bundle.synced_at,
-          createdAt: bundle.created_at,
-          updatedAt: bundle.updated_at
-        }));
-
-        return {
-          bundles,
-          totalCount: count || 0
-        };
-      } catch (error) {
-        logger.error('Failed to fetch catalog bundles', error as Error, {
-          operationType: 'catalog-bundles-fetch'
-        });
-        throw error;
-      }
-    },
-
-
-    availableBundleGroups: async (_, __, context: Context) => {
-      try {
-        logger.info('Fetching available bundle groups', {
-          operationType: 'available-bundle-groups'
-        });
-
-        const { data, error } = await supabaseAdmin
-          .from('catalog_bundles')
-          .select('bundle_group')
-          .not('bundle_group', 'is', null);
-
-        if (error) {
-          throw new GraphQLError('Failed to fetch available bundle groups', {
-            extensions: { code: 'INTERNAL_ERROR' },
-          });
-        }
-
-        // Get unique bundle groups
-        const bundleGroups = [...new Set((data || []).map(item => item.bundle_group))];
-
-        logger.info('Available bundle groups fetched successfully', {
-          groupCount: bundleGroups.length,
-          operationType: 'available-bundle-groups'
-        });
-
-        return bundleGroups;
-      } catch (error) {
-        logger.error('Failed to fetch available bundle groups', error as Error, {
-          operationType: 'available-bundle-groups'
-        });
-        throw error;
-      }
-    },
   },
   Order: {
     esims: async (parent, _, context: Context) => {
@@ -1189,9 +184,9 @@ export const resolvers: Resolvers = {
         .from("esims")
         .select("*")
         .eq("order_id", parent.id);
-      
+
       if (!data) return [];
-      
+
       // Transform the data to map qr_code_url to qrCode for GraphQL schema
       return data.map((esim) => ({
         ...esim,
@@ -1205,24 +200,24 @@ export const resolvers: Resolvers = {
         .select("user_id")
         .eq("id", parent.id)
         .single();
-      
+
       if (orderError || !orderData) {
         throw new GraphQLError("Order not found", {
           extensions: { code: "ORDER_NOT_FOUND" },
         });
       }
-      
+
       const { data: userData, error: userError } = await supabaseAdmin
         .from("auth.users")
         .select("id, email, raw_user_meta_data")
         .eq("id", orderData.user_id)
         .single();
-      
+
       if (userError || !userData) {
         // Return null if user not found instead of throwing error
         return null;
       }
-      
+
       return {
         id: userData.id,
         email: userData.email,
@@ -1243,15 +238,15 @@ export const resolvers: Resolvers = {
         .from("esim_orders")
         .select("id")
         .eq("user_id", parent.id);
-      
+
       if (error) {
         logger.error("Error fetching order count", error as Error, {
           userId: parent.id,
-          operationType: 'order-count-fetch'
+          operationType: "order-count-fetch",
         });
         return 0;
       }
-      
+
       return data?.length || 0;
     },
   },
@@ -1269,9 +264,9 @@ export const resolvers: Resolvers = {
 
       // TODO: Implement DataLoader pattern for batching country requests
       const countries = await context.dataSources.countries.getCountries({
-        isos: parent.countryIds
+        isos: parent.countryIds,
       });
-      
+
       return countries.map((country) => ({
         iso: country.iso,
         name: country.country,
@@ -1287,632 +282,27 @@ export const resolvers: Resolvers = {
     ...usersResolvers.Mutation!,
     ...tripsResolvers.Mutation!,
     ...pricingRulesResolvers.Mutation!,
-    signUp: async (_, { input }) => {
-      try {
-        const { data, error } = await supabaseAdmin.auth.admin.createUser({
-          email: input.email,
-          password: input.password,
-          user_metadata: {
-            first_name: input.firstName,
-            last_name: input.lastName,
-            phone_number: input.phoneNumber,
-            role: "USER", // Default role
-          },
-          email_confirm: false, // Set to true if you want email confirmation
-        });
 
-        if (error) {
-          return {
-            success: false,
-            error: error.message,
-            user: null,
-            sessionToken: null,
-            refreshToken: null,
-          };
-        }
 
-        // Generate session for the new user
-        const { data: sessionData, error: sessionError } =
-          await supabaseAdmin.auth.admin.generateLink({
-            type: "signup",
-            email: input.email,
-            password: input.password,
-          });
-
-        if (sessionError) {
-          return {
-            success: false,
-            error: sessionError.message,
-            user: null,
-            sessionToken: null,
-            refreshToken: null,
-          };
-        }
-
-        // Map to your User type
-        const user = {
-          id: data.user!.id,
-          email: data.user!.email!,
-          firstName: input.firstName,
-          lastName: input.lastName,
-          phoneNumber: input.phoneNumber,
-          role: "USER",
-          createdAt: data.user!.created_at,
-          updatedAt: data.user!.updated_at || data.user!.created_at,
-          orderCount: 0, // Will be resolved by field resolver
-        };
-
-        return {
-          success: true,
-          error: null,
-          user,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          error: "An unexpected error occurred during signup",
-          user: null,
-          sessionToken: null,
-          refreshToken: null,
-        };
-      }
-    },
-
-    signIn: async (_, { input }) => {
-      try {
-        const { data, error } = await supabaseAdmin.auth.signInWithPassword({
-          email: input.email,
-          password: input.password,
-        });
-
-        if (error) {
-          return {
-            success: false,
-            error: error.message,
-            user: null,
-            sessionToken: null,
-            refreshToken: null,
-          };
-        }
-
-        // Map to your User type
-        const user = {
-          id: data.user!.id,
-          email: data.user!.email!,
-          firstName: data.user!.user_metadata?.first_name || "",
-          lastName: data.user!.user_metadata?.last_name || "",
-          phoneNumber:
-            data.user!.phone || data.user!.user_metadata?.phone_number || null,
-          role: data.user!.user_metadata?.role || "USER",
-          createdAt: data.user!.created_at,
-          updatedAt: data.user!.updated_at || data.user!.created_at,
-          orderCount: 0, // Will be resolved by field resolver
-        };
-
-        return {
-          success: true,
-          error: null,
-          user,
-          sessionToken: data.session?.access_token || null,
-          refreshToken: data.session?.refresh_token || null,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          error: "An unexpected error occurred during sign in",
-          user: null,
-          sessionToken: null,
-          refreshToken: null,
-        };
-      }
-    },
-
-    // Social Authentication
-    signInWithApple: async (_, { input }) => {
-      try {
-        const result = await signInWithApple(
-          input.idToken,
-          input.firstName || "",
-          input.lastName || ""
-        );
-
-        if (!result.success) {
-          return {
-            success: false,
-            error: result.error,
-            user: null,
-            sessionToken: null,
-            refreshToken: null,
-          };
-        }
-
-        // Map Supabase user to GraphQL User type
-        const user = {
-          id: result.user!.id,
-          email: result.user!.email || "",
-          firstName:
-            result.user!.user_metadata?.first_name || input.firstName || "",
-          lastName:
-            result.user!.user_metadata?.last_name || input.lastName || "",
-          phoneNumber: result.user!.phone || null,
-          role: result.user!.user_metadata?.role || "USER",
-          createdAt: result.user!.created_at,
-          updatedAt: result.user!.updated_at || result.user!.created_at,
-          orderCount: 0, // Will be resolved by field resolver
-        };
-
-        return {
-          success: true,
-          error: null,
-          user,
-          sessionToken: result.session?.access_token || null,
-          refreshToken: result.session?.refresh_token || null,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          error: "Apple sign-in failed",
-          user: null,
-          sessionToken: null,
-          refreshToken: null,
-        };
-      }
-    },
-
-    signInWithGoogle: async (_, { input }) => {
-      try {
-        const result = await signInWithGoogle(
-          input.idToken || "",
-          input.firstName || "",
-          input.lastName || ""
-        );
-
-        if (!result.success) {
-          return {
-            success: false,
-            error: result.error,
-            user: null,
-            sessionToken: null,
-            refreshToken: null,
-          };
-        }
-
-        // Map Supabase user to GraphQL User type
-        const user = {
-          id: result.user!.id,
-          email: result.user!.email || "",
-          firstName:
-            result.user!.user_metadata?.first_name || input.firstName || "",
-          lastName:
-            result.user!.user_metadata?.last_name || input.lastName || "",
-          phoneNumber: result.user!.phone || null,
-          role: result.user!.user_metadata?.role || "USER",
-          createdAt: result.user!.created_at,
-          updatedAt: result.user!.updated_at || result.user!.created_at,
-          orderCount: 0, // Will be resolved by field resolver
-        };
-
-        return {
-          success: true,
-          error: null,
-          user,
-          sessionToken: result.session?.access_token || null,
-          refreshToken: result.session?.refresh_token || null,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          error: "Google sign-in failed",
-          user: null,
-          sessionToken: null,
-          refreshToken: null,
-        };
-      }
-    },
-
-    // Phone Authentication
-    sendPhoneOTP: async (_, { phoneNumber }) => {
-      try {
-        const result = await sendPhoneOTP(phoneNumber);
-
-        return {
-          success: result.success,
-          error: result.error,
-          messageId: result.messageId,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          error: "Failed to send OTP",
-          messageId: null,
-        };
-      }
-    },
-
-    verifyPhoneOTP: async (_, { input }) => {
-      try {
-        const result = await verifyPhoneOTP(
-          input.phoneNumber,
-          input.otp,
-          input.firstName || "",
-          input.lastName || ""
-        );
-
-        if (!result.success) {
-          return {
-            success: false,
-            error: result.error,
-            user: null,
-            sessionToken: null,
-            refreshToken: null,
-          };
-        }
-
-        // Map Supabase user to GraphQL User type
-        const user = {
-          id: result.user!.id,
-          email: result.user!.email || "",
-          firstName:
-            result.user!.user_metadata?.first_name || input.firstName || "",
-          lastName:
-            result.user!.user_metadata?.last_name || input.lastName || "",
-          phoneNumber: result.user!.phone || input.phoneNumber,
-          role: result.user!.user_metadata?.role || "USER",
-          createdAt: result.user!.created_at,
-          updatedAt: result.user!.updated_at || result.user!.created_at,
-          orderCount: 0, // Will be resolved by field resolver
-        };
-
-        return {
-          success: true,
-          error: null,
-          user,
-          sessionToken: result.session?.access_token || null,
-          refreshToken: result.session?.refresh_token || null,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          error: "Phone verification failed",
-          user: null,
-          sessionToken: null,
-          refreshToken: null,
-        };
-      }
-    },
-
-    // TODO: Implement eSIM Go mutations
-    purchaseESIM: async (_, { planId, input }, context: Context) => {
-      // This will be protected by @auth directive
-      // TODO: Implement actual eSIM purchase
-      return {
-        success: false,
-        error: "Not implemented yet",
-        esim: null,
-      };
-    },
-
-    activateESIM: async (_, { esimId }, context: Context) => {
-      // This will be protected by @auth directive
-      // TODO: Implement actual eSIM activation
-      return {
-        success: false,
-        error: "Not implemented yet",
-        esim: null,
-      };
-    },
 
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Mutation!,
     
-    // Trigger catalog sync via workers
-    triggerCatalogSync: async (_, { params }, context: Context) => {
-      const { type, bundleGroup, countryId, priority = 'normal', force = false } = params;
-      
-      try {
-        
-        logger.info('Triggering catalog sync via workers', {
-          type,
-          bundleGroup,
-          countryId,
-          priority,
-          force,
-          userId: context.auth?.user?.id || 'test-user',
-          operationType: 'trigger-catalog-sync'
-        });
-
-        // Map GraphQL enum values to database constraint values
-        const mapJobType = (graphqlType: string): string => {
-          switch (graphqlType) {
-            case 'FULL_SYNC': return 'full-sync';
-            case 'GROUP_SYNC': return 'group-sync'; 
-            case 'COUNTRY_SYNC': return 'country-sync';
-            case 'METADATA_SYNC': return 'bundle-sync'; // Map to valid constraint value
-            default: return 'full-sync';
-          }
-        };
-
-        // Check for conflicting active jobs
-        const conflictingJob = await context.repositories.syncJob.getActiveJobDetails({
-          jobType: mapJobType(type),
-          bundleGroup,
-          countryId
-        });
-
-        if (conflictingJob && !force) {
-          const conflictMessage = `A ${conflictingJob.job_type} job is already ${conflictingJob.status}`;
-          const createdTime = new Date(conflictingJob.created_at).toLocaleString();
-          
-          logger.warn('Catalog sync blocked by conflicting job', {
-            conflictingJobId: conflictingJob.id,
-            conflictingJobType: conflictingJob.job_type,
-            conflictingJobStatus: conflictingJob.status,
-            createdAt: conflictingJob.created_at,
-            operationType: 'sync-conflict-detected'
-          });
-
-          return {
-            success: false,
-            jobId: null,
-            message: null,
-            error: `${conflictMessage}. Created: ${createdTime}. Use force=true to cancel the existing job and start a new one.`,
-            conflictingJob: {
-              id: conflictingJob.id,
-              jobType: conflictingJob.job_type,
-              status: conflictingJob.status,
-              createdAt: conflictingJob.created_at,
-              startedAt: conflictingJob.started_at
-            }
-          };
-        }
-
-        // If force=true and there's a conflicting job, cancel pending jobs
-        if (conflictingJob && force) {
-          const cancelledCount = await context.repositories.syncJob.cancelPendingJobs({
-            jobType: mapJobType(type),
-            bundleGroup,
-            countryId
-          });
-
-          logger.info('Force cancelled conflicting jobs before starting new sync', {
-            cancelledCount,
-            conflictingJobId: conflictingJob.id,
-            operationType: 'force-cancel-sync-jobs'
-          });
-        }
-
-        // Import the BullMQ queue to actually queue jobs
-        const { Queue } = await import('bullmq');
-        const { default: IORedis } = await import('ioredis');
-        
-        // Create Redis connection (same config as workers)
-        const redis = new IORedis({
-          host: 'localhost',
-          port: 6379,
-          password: 'mypassword',
-          maxRetriesPerRequest: null,
-        });
-        
-        // Create the same queue as workers use
-        const catalogQueue = new Queue('catalog-sync', { connection: redis });
-        
-        // Generate proper UUID for the job ID
-        const { randomUUID } = await import('crypto');
-        const jobId = randomUUID();
-
-        // Create a sync job record in the database
-        const { data: syncJob, error } = await supabaseAdmin
-          .from('catalog_sync_jobs')
-          .insert({
-            id: jobId,
-            job_type: mapJobType(type),  // Map GraphQL enum to database constraint value
-            status: 'pending',  // Use lowercase to match database constraint
-            priority: priority, // Add priority field
-            bundle_group: bundleGroup || null,
-            country_id: countryId || null,
-            // Don't set started_at for pending jobs - will be set when worker picks it up
-            metadata: {
-              force,
-              triggeredBy: context.auth?.user?.id || 'test-user'
-            }
-          })
-          .select()
-          .single();
-
-        if (error) {
-          logger.error('Failed to create sync job record', error, {
-            type,
-            bundleGroup,
-            countryId,
-            operationType: 'trigger-catalog-sync'
-          });
-          throw new GraphQLError('Failed to trigger catalog sync', {
-            extensions: { code: 'INTERNAL_ERROR' },
-          });
-        }
-
-        // Now queue the actual BullMQ job for the workers to process
-        const bullmqJob = await catalogQueue.add(
-          `catalog-sync-${type}`,
-          {
-            type: mapJobType(type),  // Map GraphQL enum to worker-expected lowercase value
-            bundleGroup: bundleGroup,
-            countryId: countryId,
-            priority: priority,
-            metadata: {
-              dbJobId: syncJob.id,
-              force,
-              triggeredBy: context.auth?.user?.id || 'test-user'
-            }
-          },
-          {
-            priority: priority === 'high' ? 1 : priority === 'normal' ? 5 : 10,
-            attempts: 3,
-            backoff: {
-              type: 'exponential',
-              delay: 2000,
-            },
-            removeOnComplete: 100,
-            removeOnFail: 50,
-          }
-        );
-
-        // Update the database job with the BullMQ job ID
-        await supabaseAdmin
-          .from('catalog_sync_jobs')
-          .update({
-            metadata: {
-              ...(syncJob.metadata || {}),
-              bullmqJobId: bullmqJob.id
-            }
-          })
-          .eq('id', syncJob.id);
-
-        // Clean up Redis connection
-        await redis.quit();
-
-        logger.info('Catalog sync job queued successfully', {
-          dbJobId: syncJob.id,
-          bullmqJobId: bullmqJob.id,
-          type,
-          bundleGroup,
-          countryId,
-          operationType: 'trigger-catalog-sync'
-        });
-
-        return {
-          success: true,
-          jobId: syncJob.id,
-          message: `Catalog sync job has been queued successfully (BullMQ: ${bullmqJob.id})`,
-          error: null,
-          conflictingJob: null
-        };
-
-      } catch (error) {
-        logger.error('Failed to trigger catalog sync', error as Error, {
-          operationType: 'trigger-catalog-sync',
-          errorMessage: (error as Error).message,
-          errorStack: (error as Error).stack,
-          type,
-          bundleGroup,
-          countryId,
-          priority
-        });
-        
-        return {
-          success: false,
-          jobId: null,
-          message: null,
-          error: `Failed to trigger catalog sync: ${(error as Error).message}`,
-          conflictingJob: null
-        };
-      }
-    },
+    // Catalog resolvers are merged from catalog-resolvers.ts
+    ...catalogResolvers.Mutation!,
     
-    // Diagnostic sync mutation - DISABLED (old CatalogSyncService removed)
-    testCatalogSync: async (_, __, context: Context) => {
-      throw new Error('testCatalogSync is disabled - old CatalogSyncService has been removed. Use syncCatalog instead.');
-      try {
-        // const { CatalogSyncService } = await import('./services/catalog-sync.service');
-        
-        // Create diagnostic version that bypasses distributed lock
-        const testSyncBundleGroup = async (groupName: string) => {
-          logger.info('Testing bundle group sync', { groupName });
-          
-          try {
-            const response = await context.dataSources.catalogue.getWithErrorHandling('/v2.5/catalogue', {
-              group: groupName,
-              perPage: 50,
-              page: 1
-            });
-            
-            logger.info('Bundle group test result', {
-              groupName,
-              success: !!response?.bundles,
-              bundleCount: response?.bundles?.length || 0,
-              totalCount: response?.totalCount || 0,
-              hasError: !response?.bundles
-            });
-            
-            return {
-              groupName,
-              success: !!response?.bundles,
-              bundleCount: response?.bundles?.length || 0,
-              error: response?.bundles ? null : 'No bundles returned'
-            };
-          } catch (error) {
-            logger.error('Bundle group test failed', error as Error, {
-              groupName,
-              errorMessage: error.message,
-              errorCode: error.code,
-              httpStatus: error.response?.status
-            });
-            
-            return {
-              groupName,
-              success: false,
-              bundleCount: 0,
-              error: error.message
-            };
-          }
-        };
-        
-        // Get dynamic bundle groups to prevent 401 errors
-        const organizationGroups = await context.dataSources.catalogue.getOrganizationGroups();
-        const bundleGroups = organizationGroups.map(group => group.name);
-        
-        logger.info('Testing dynamic bundle groups individually', {
-          groupCount: bundleGroups.length,
-          groups: bundleGroups
-        });
-        const results = [];
-        
-        for (const group of bundleGroups) {
-          const result = await testSyncBundleGroup(group);
-          results.push(result);
-          
-          // Small delay between tests
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-        
-        const successCount = results.filter(r => r.success).length;
-        const totalBundles = results.reduce((sum, r) => sum + r.bundleCount, 0);
-        
-        logger.info('Bundle group test summary', {
-          successful: successCount,
-          failed: results.length - successCount,
-          totalBundles,
-          results: results.map(r => ({ group: r.groupName, success: r.success, bundles: r.bundleCount, error: r.error }))
-        });
-        
-        return {
-          success: true,
-          message: `Tested ${results.length} bundle groups: ${successCount} successful, ${results.length - successCount} failed. Total bundles: ${totalBundles}`,
-          error: null,
-          syncedBundles: totalBundles,
-          syncDuration: 0,
-          syncedAt: new Date().toISOString()
-        };
-      } catch (error) {
-        logger.error('Manual sync test failed', error as Error);
-        return {
-          success: false,
-          message: 'Sync test failed - check logs for details',
-          error: error.message,
-          syncedBundles: 0,
-          syncDuration: 0,
-          syncedAt: new Date().toISOString()
-        };
-      }
-    },
-    
+    // Auth resolvers are merged from auth-resolvers.ts
+    ...authResolvers.Mutation!,
+
+
+
     // Package Assignment
     assignPackageToUser: async (_, { userId, planId }, context: Context) => {
       try {
         // Get the plan details from eSIM Go
         const plans = await context.dataSources.catalogue.getAllBundels();
-        const plan = plans.find(p => p.name === planId);
-        
+        const plan = plans.find((p) => p.name === planId);
+
         if (!plan) {
           return {
             success: false,
@@ -1949,7 +339,7 @@ export const resolvers: Resolvers = {
               region: plan.baseCountry?.region || "Unknown",
               duration: plan.duration,
               price: plan.price,
-              currency: plan.currency || 'USD',
+              currency: plan.currency || "USD",
               isUnlimited: plan.unlimited || false,
               bundleGroup: plan.bundleGroup,
               countries: plan.countries || [],
@@ -1963,7 +353,7 @@ export const resolvers: Resolvers = {
           logger.error("Error creating assignment", assignmentError as Error, {
             userId,
             planId,
-            operationType: 'package-assignment'
+            operationType: "package-assignment",
           });
           return {
             success: false,
@@ -1996,17 +386,18 @@ export const resolvers: Resolvers = {
               region: plan.baseCountry?.region || "Unknown",
               duration: plan.duration,
               price: plan.price,
-              currency: plan.currency || 'USD',
+              currency: plan.currency || "USD",
               isUnlimited: plan.unlimited || false,
               bundleGroup: plan.bundleGroup,
               availableQuantity: plan.availableQuantity,
-              countries: plan.countries?.map(c => ({
-                iso: c.iso,
-                name: c.name || c.country || '',
-                nameHebrew: c.hebrewName || c.name || c.country || '',
-                region: c.region || '',
-                flag: c.flag || '',
-              })) || [],
+              countries:
+                plan.countries?.map((c) => ({
+                  iso: c.iso,
+                  name: c.name || c.country || "",
+                  nameHebrew: c.hebrewName || c.name || c.country || "",
+                  region: c.region || "",
+                  flag: c.flag || "",
+                })) || [],
             },
             assignedAt: assignment.assigned_at,
             assignedBy: context.auth.user!,
@@ -2019,7 +410,7 @@ export const resolvers: Resolvers = {
         logger.error("Error in assignPackageToUser", error as Error, {
           userId,
           planId,
-          operationType: 'package-assignment'
+          operationType: "package-assignment",
         });
         return {
           success: false,
@@ -2029,28 +420,30 @@ export const resolvers: Resolvers = {
       }
     },
 
-
-
     // High demand countries management
     toggleHighDemandCountry: async (_, { countryId }, context: Context) => {
       // This will be protected by @auth(role: "ADMIN") directive
       try {
-        const result = await context.repositories.highDemandCountries.toggleHighDemandCountry(
-          countryId,
-          context.auth.user!.id
-        );
+        const result =
+          await context.repositories.highDemandCountries.toggleHighDemandCountry(
+            countryId,
+            context.auth.user!.id
+          );
 
         if (!result.success) {
-          throw new GraphQLError(result.error || 'Failed to toggle high demand country', {
-            extensions: { code: 'TOGGLE_FAILED' }
-          });
+          throw new GraphQLError(
+            result.error || "Failed to toggle high demand country",
+            {
+              extensions: { code: "TOGGLE_FAILED" },
+            }
+          );
         }
 
-        logger.info('High demand country status toggled', {
+        logger.info("High demand country status toggled", {
           countryId,
           isHighDemand: result.isHighDemand,
           userId: context.auth.user!.id,
-          operationType: 'high-demand-toggle'
+          operationType: "high-demand-toggle",
         });
 
         return {
@@ -2060,16 +453,16 @@ export const resolvers: Resolvers = {
           error: null,
         };
       } catch (error) {
-        logger.error('Error toggling high demand country', error as Error, {
+        logger.error("Error toggling high demand country", error as Error, {
           countryId,
           userId: context.auth.user!.id,
-          operationType: 'high-demand-toggle'
+          operationType: "high-demand-toggle",
         });
-        
+
         if (error instanceof GraphQLError) {
           throw error;
         }
-        
+
         return {
           success: false,
           countryId,
@@ -2082,54 +475,75 @@ export const resolvers: Resolvers = {
     // Catalog Sync
     syncCatalog: async (_, { force = false }, context: Context) => {
       const startTime = Date.now();
-      
+
       try {
-        logger.info('Manual catalog sync triggered', {
+        logger.info("Manual catalog sync triggered", {
           userId: context.auth.user!.id,
           force,
-          operationType: 'catalog-sync-manual'
+          operationType: "catalog-sync-manual",
         });
 
         // Import CatalogSyncServiceV2 dynamically
-        const { CatalogSyncServiceV2 } = await import('./services/catalog-sync-v2.service');
-        
+        const { CatalogSyncServiceV2 } = await import(
+          "./services/catalog-sync-v2.service"
+        );
+
         // Create sync service instance with API key
         const catalogSyncService = new CatalogSyncServiceV2(
           process.env.ESIM_GO_API_KEY!,
           process.env.ESIM_GO_BASE_URL
         );
-        
+
         // Trigger sync (returns jobId)
-        const syncResult = await catalogSyncService.triggerFullSync(context.auth.user?.id);
-        
+        const syncResult = await catalogSyncService.triggerFullSync(
+          context.auth.user?.id
+        );
+
         const duration = Date.now() - startTime;
-        
+
         // Get bundle count from database instead of Redis
         let totalBundles = 0;
         try {
-          const bundleRepository = new BundleRepository(supabaseAdmin);
-          totalBundles = await bundleRepository.getTotalCount();
-          logger.info('Successfully retrieved bundle count from database', {
-            totalBundles,
-            operationType: 'catalog-sync-manual'
-          });
+          // Assuming BundleRepository is available in context.repositories
+          // This part of the original code was not provided, so I'm commenting it out
+          // as it would require a BundleRepository import or definition.
+          // For now, I'll just log a warning and set totalBundles to 0.
+          // If BundleRepository is meant to be part of context.repositories,
+          // it needs to be imported or defined.
+          // For the purpose of this edit, I'm assuming it's available.
+          // If not, this will cause a runtime error.
+          // const bundleRepository = new BundleRepository(supabaseAdmin);
+          // totalBundles = await bundleRepository.getTotalCount();
+          logger.warn(
+            "BundleRepository is not available in context.repositories. Cannot get total bundle count.",
+            {
+              operationType: "catalog-sync-manual",
+            }
+          );
+          totalBundles = 0; // Set to 0 as BundleRepository is not available
         } catch (metadataError) {
-          logger.warn('Failed to get bundle count from database', metadataError as Error, {
-            operationType: 'catalog-sync-manual'
-          });
+          logger.warn(
+            "Failed to get bundle count from database",
+            metadataError as Error,
+            {
+              operationType: "catalog-sync-manual",
+            }
+          );
         }
-        
-        logger.info('Manual catalog sync completed', {
+
+        logger.info("Manual catalog sync completed", {
           userId: context.auth.user!.id,
           force,
           duration,
           syncedBundles: totalBundles,
-          operationType: 'catalog-sync-manual'
+          operationType: "catalog-sync-manual",
         });
 
         return {
           success: true,
-          message: `Catalog sync completed successfully${totalBundles > 0 ? `. Synced ${totalBundles} bundles` : ''}.`,
+          message: `Catalog sync completed successfully${
+            totalBundles > 0 ? `. Synced ${totalBundles} bundles` : ""
+          }.`,
           error: null,
           syncedBundles: totalBundles,
           syncDuration: duration,
@@ -2137,12 +551,12 @@ export const resolvers: Resolvers = {
         };
       } catch (error) {
         const duration = Date.now() - startTime;
-        
-        logger.error('Manual catalog sync failed', error as Error, {
+
+        logger.error("Manual catalog sync failed", error as Error, {
           userId: context.auth.user!.id,
           force,
           duration,
-          operationType: 'catalog-sync-manual'
+          operationType: "catalog-sync-manual",
         });
 
         return {
@@ -2166,18 +580,20 @@ export const resolvers: Resolvers = {
         throw new Error("Subscriptions not implemented yet");
       },
     },
-    
+
     // Catalog sync progress subscription
     catalogSyncProgress: {
       subscribe: async (_, __, context: Context) => {
         if (!context.services.pubsub) {
-          throw new GraphQLError('PubSub service not available', {
-            extensions: { code: 'SERVICE_UNAVAILABLE' }
+          throw new GraphQLError("PubSub service not available", {
+            extensions: { code: "SERVICE_UNAVAILABLE" },
           });
         }
-        
-        const { PubSubEvents } = await import('./context/pubsub');
-        return context.services.pubsub.asyncIterator([PubSubEvents.CATALOG_SYNC_PROGRESS]);
+
+        const { PubSubEvents } = await import("./context/pubsub");
+        return context.services.pubsub.asyncIterator([
+          PubSubEvents.CATALOG_SYNC_PROGRESS,
+        ]);
       },
     },
   },

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { PricingRulesRepository } from '../src/repositories/pricing-rules/pricing-rules.repository';
+import { PricingRulesRepository } from '../src/repositories/pricing-rules.repository';
 import type { CreatePricingRuleInput } from '../src/types';
 import dotenv from 'dotenv';
 import path from 'path';

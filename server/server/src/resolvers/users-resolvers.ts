@@ -18,6 +18,7 @@ export const usersResolvers: Resolvers = {
           role: user.app_metadata?.role || user.user_metadata?.role || 'USER',
           createdAt: user.created_at,
           updatedAt: user.updated_at,
+          orderCount: 0,
         }));
       } catch (error) {
         console.error('Error fetching users in resolver:', error);
@@ -64,6 +65,7 @@ export const usersResolvers: Resolvers = {
           role: result.user.app_metadata?.role || 'USER',
           createdAt: result.user.created_at,
           updatedAt: result.user.updated_at,
+          orderCount: 0,
         };
       } catch (error) {
         console.error('Error updating user role:', error);

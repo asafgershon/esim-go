@@ -1,10 +1,10 @@
-import { supabaseAdmin } from '../../context/supabase-auth';
-import type { Database } from '../../database.types';
+import { supabaseAdmin } from '../context/supabase-auth';
+import type { Database } from '../database.types';
 import { GraphQLError } from 'graphql';
 import { z } from 'zod';
-import { BaseSupabaseRepository } from '../base-supabase.repository';
-import type { ESIMGoOrder } from '../../datasources/esim-go';
-import type { PricingRuleCalculation } from '../../types';
+import { BaseSupabaseRepository } from './base-supabase.repository';
+import type { ESIMGoOrder } from '../datasources/esim-go';
+import type { PricingRuleCalculation } from '../types';
 
 type OrderRow = Database['public']['Tables']['esim_orders']['Row'];
 type OrderInsert = Database['public']['Tables']['esim_orders']['Insert'];
@@ -203,7 +203,7 @@ export class OrderRepository extends BaseSupabaseRepository<
   }
 
   async getOrderWithPricing(id: string): Promise<(OrderRow & { pricingBreakdown: PricingRuleCalculation }) | null> {
-    const order = await this.findById(id);
+    const order = await this.getById(id);
     if (!order) return null;
 
     return {

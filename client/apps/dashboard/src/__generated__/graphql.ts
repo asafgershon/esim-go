@@ -24,6 +24,8 @@ export enum ActionType {
   ApplyDiscountPercentage = 'APPLY_DISCOUNT_PERCENTAGE',
   ApplyFixedDiscount = 'APPLY_FIXED_DISCOUNT',
   SetDiscountPerUnusedDay = 'SET_DISCOUNT_PER_UNUSED_DAY',
+  SetMinimumPrice = 'SET_MINIMUM_PRICE',
+  SetMinimumProfit = 'SET_MINIMUM_PROFIT',
   SetProcessingRate = 'SET_PROCESSING_RATE'
 }
 
@@ -1084,9 +1086,11 @@ export type RuleConditionInput = {
 
 export enum RuleType {
   BusinessDiscount = 'BUSINESS_DISCOUNT',
+  BusinessMinimumProfit = 'BUSINESS_MINIMUM_PROFIT',
   Promotion = 'PROMOTION',
   Segment = 'SEGMENT',
   SystemMarkup = 'SYSTEM_MARKUP',
+  SystemMinimumPrice = 'SYSTEM_MINIMUM_PRICE',
   SystemProcessing = 'SYSTEM_PROCESSING'
 }
 

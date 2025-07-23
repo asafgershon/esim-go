@@ -18,11 +18,15 @@ export interface SearchCatalogCriteria {
   offset?: number;
 }
 
-export class BundleRepository extends BaseSupabaseRepository {
+export class BundleRepository extends BaseSupabaseRepository<CatalogBundle, CatalogBundleInsert, CatalogBundleUpdate> {
   private logger = createLogger({ 
     component: 'BundleRepository',
     operationType: 'catalog-persistence'
   });
+
+  constructor() {
+    super('catalog_bundles');
+  }
 
   /**
    * Get bundle by bundle ID
@@ -76,7 +80,7 @@ export class BundleRepository extends BaseSupabaseRepository {
         // Log transformation errors
         if (transformErrors.length > 0) {
           transformErrors.forEach(({ error, index }) => {
-            this.logger.warn('Bundle transformation failed', undefined, {
+            this.logger.warn('Bundle transformation failed', {
               bundleIndex: index,
               error,
               operationType: 'bundle-transformation'
@@ -373,7 +377,6 @@ export class BundleRepository extends BaseSupabaseRepository {
         this.logger.debug('Raw bundle data sample', {
           totalBundles: data?.length || 0,
           sampleBundles: (data || []).slice(0, 3).map(bundle => ({
-            id: bundle.id,
             countries: bundle.countries,
             countryType: typeof bundle.countries,
             isArray: Array.isArray(bundle.countries)
@@ -390,13 +393,11 @@ export class BundleRepository extends BaseSupabaseRepository {
                 this.logger.debug('Non-string country found', {
                   country,
                   type: typeof country,
-                  bundleId: bundle.id
                 });
               }
             }
           } else {
             this.logger.debug('Bundle without valid countries array', {
-              bundleId: bundle.id,
               countries: bundle.countries,
               type: typeof bundle.countries
             });
@@ -453,7 +454,6 @@ export class BundleRepository extends BaseSupabaseRepository {
         this.logger.debug('Raw bundle data for regions', {
           totalBundles: data?.length || 0,
           sampleBundles: (data || []).slice(0, 3).map(bundle => ({
-            id: bundle.id,
             regions: bundle.regions,
             countries: bundle.countries,
             regionType: typeof bundle.regions,

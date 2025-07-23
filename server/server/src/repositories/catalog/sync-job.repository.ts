@@ -1,5 +1,5 @@
 import { BaseSupabaseRepository } from '../base-supabase.repository';
-import { type Database } from '../../database.types';
+import { type Database, type Json } from '../../database.types';
 import { createLogger, withPerformanceLogging } from '../../lib/logger';
 import { z } from 'zod';
 
@@ -7,12 +7,14 @@ type CatalogSyncJob = Database['public']['Tables']['catalog_sync_jobs']['Row'];
 type CatalogSyncJobInsert = Database['public']['Tables']['catalog_sync_jobs']['Insert'];
 type CatalogSyncJobUpdate = Database['public']['Tables']['catalog_sync_jobs']['Update'];
 
-export type JobType = 'full-sync' | 'country-sync' | 'group-sync' | 'bundle-sync';
+import { SyncJobType } from '../../types';
+
+export type JobType = SyncJobType;
 export type JobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 export type JobPriority = 'high' | 'normal' | 'low';
 
 // Zod schemas for validation and type safety
-const JobTypeSchema = z.enum(['full-sync', 'country-sync', 'group-sync', 'bundle-sync']);
+const JobTypeSchema = z.nativeEnum(SyncJobType);
 const JobStatusSchema = z.enum(['pending', 'running', 'completed', 'failed', 'cancelled']);
 const JobPrioritySchema = z.enum(['high', 'normal', 'low']);
 
@@ -76,17 +78,21 @@ function mapUpdateParamsToDbFields(params: UpdateSyncJobParams): CatalogSyncJobU
     updateData.bundles_updated = validatedParams.bundlesUpdated;
   }
   if (validatedParams.metadata !== undefined) {
-    updateData.metadata = validatedParams.metadata;
+    updateData.metadata = JSON.stringify(validatedParams.metadata);
   }
 
   return updateData;
 }
 
-export class SyncJobRepository extends BaseSupabaseRepository {
+export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, CatalogSyncJobInsert, CatalogSyncJobUpdate> {
   private logger = createLogger({ 
     component: 'SyncJobRepository',
     operationType: 'sync-job-management'
   });
+
+  constructor() {
+    super('catalog_sync_jobs');
+  }
 
   /**
    * Create a new sync job
@@ -105,7 +111,7 @@ export class SyncJobRepository extends BaseSupabaseRepository {
           priority: validatedParams.priority || 'normal',
           bundle_group: validatedParams.bundleGroup || null,
           country_id: validatedParams.countryId || null,
-          metadata: validatedParams.metadata || {},
+          metadata: validatedParams.metadata ? JSON.stringify(validatedParams.metadata) : undefined,
           created_at: new Date().toISOString()
         };
 

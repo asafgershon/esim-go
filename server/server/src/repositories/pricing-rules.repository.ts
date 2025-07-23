@@ -1,5 +1,5 @@
-import { BaseSupabaseRepository } from '../base-supabase.repository';
-import type { Database } from '../../database.types';
+import { BaseSupabaseRepository } from './base-supabase.repository';
+import type { Database } from '../database.types';
 import type { 
   PricingRule, 
   CreatePricingRuleInput, 
@@ -8,8 +8,9 @@ import type {
   RuleType,
   RuleCondition,
   RuleAction
-} from '../../types';
-import { createLogger } from '../../lib/logger';
+} from '../types';
+import { createLogger } from '../lib/logger';
+import { supabaseAdmin } from '../context/supabase-auth';
 
 type PricingRuleRow = Database['public']['Tables']['pricing_rules']['Row'];
 type PricingRuleInsert = Database['public']['Tables']['pricing_rules']['Insert'];
@@ -20,6 +21,10 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
     component: 'PricingRulesRepository',
     operationType: 'database-operation'
   });
+
+  constructor() {
+    super('pricing_rules');
+  }
 
   async findAll(filter?: PricingRuleFilter): Promise<PricingRule[]> {
     this.logger.info('Finding pricing rules', { filter });
@@ -33,16 +38,16 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
     // Apply filters
     if (filter) {
       if (filter.isActive !== undefined) {
-        query = query.eq('is_active', filter.isActive);
+        query = query.eq('is_active', Boolean(filter.isActive));
       }
       if (filter.type) {
         query = query.eq('type', filter.type);
       }
       if (filter.isEditable !== undefined) {
-        query = query.eq('is_editable', filter.isEditable);
+        query = query.eq('is_editable', Boolean(filter.isEditable));
       }
-      if (filter.validOn) {
-        const validDate = filter.validOn.toISOString();
+      if (filter.validFrom || filter.validUntil) {
+        const validDate = filter.validFrom || filter.validUntil;
         query = query.or(`valid_from.is.null,valid_from.lte.${validDate}`)
                     .or(`valid_until.is.null,valid_until.gte.${validDate}`);
       }
@@ -78,7 +83,7 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
     return data ? this.mapRowToRule(data) : null;
   }
 
-  async create(input: CreatePricingRuleInput): Promise<PricingRule> {
+  async createRule(input: CreatePricingRuleInput): Promise<PricingRule> {
     this.logger.info('Creating pricing rule', { 
       name: input.name,
       type: input.type 
@@ -88,8 +93,8 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
       type: input.type,
       name: input.name,
       description: input.description || null,
-      conditions: input.conditions as any,
-      actions: input.actions as any,
+      conditions: JSON.stringify(input.conditions),
+      actions: JSON.stringify(input.actions),
       priority: input.priority,
       is_active: input.isActive ?? true,
       is_editable: true, // New rules are always editable
@@ -119,7 +124,7 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
     return rule;
   }
 
-  async update(id: string, input: UpdatePricingRuleInput): Promise<PricingRule> {
+  async updateRule(id: string, input: UpdatePricingRuleInput): Promise<PricingRule> {
     this.logger.info('Updating pricing rule', { id, input });
     
     // Check if rule exists
@@ -131,12 +136,12 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
 
     const update: PricingRuleUpdate = {};
     
-    if (input.name !== undefined) update.name = input.name;
+    if (input.name !== undefined) update.name = input.name || '';
     if (input.description !== undefined) update.description = input.description;
     if (input.conditions !== undefined) update.conditions = input.conditions as any;
     if (input.actions !== undefined) update.actions = input.actions as any;
-    if (input.priority !== undefined) update.priority = input.priority;
-    if (input.isActive !== undefined) update.is_active = input.isActive;
+    if (input.priority !== undefined) update.priority = input.priority || 0;
+    if (input.isActive !== undefined) update.is_active = input.isActive || false;
     if (input.validFrom !== undefined) update.valid_from = input.validFrom;
     if (input.validUntil !== undefined) update.valid_until = input.validUntil;
 
@@ -162,13 +167,13 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
     return rule;
   }
 
-  async delete(id: string): Promise<boolean> {
+  async delete(id: string): Promise<{ success: boolean; count: number | null }> {
     this.logger.info('Deleting pricing rule', { id });
     
     // Check if rule exists
     const existing = await this.findById(id);
     if (!existing) {
-      return false;
+      return { success: false, count: null };
     }
     // Allow admins to delete system rules - UI will show warnings
 
@@ -183,7 +188,7 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
     }
 
     this.logger.info('Pricing rule deleted', { id });
-    return true;
+    return { success: true, count: 1 };
   }
 
   async toggleActive(id: string): Promise<PricingRule> {
@@ -194,7 +199,8 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
       throw new Error(`Pricing rule ${id} not found`);
     }
 
-    return this.update(id, { isActive: !existing.isActive });
+    const updatedRow = await this.update(id, { is_active: !existing.isActive });
+    return this.mapRowToRule(updatedRow);
   }
 
   async findByType(type: RuleType): Promise<PricingRule[]> {
@@ -204,7 +210,8 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
   async findActiveRules(): Promise<PricingRule[]> {
     return this.findAll({ 
       isActive: true, 
-      validOn: new Date() 
+      validFrom: new Date().toISOString(),
+      validUntil: new Date().toISOString()
     });
   }
 
@@ -236,7 +243,8 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
       validUntil: existing.validUntil
     };
 
-    return this.create(input);
+    const createdRow = await this.create(input as any);
+    return this.mapRowToRule(createdRow);
   }
 
   async bulkUpdatePriorities(updates: Array<{ id: string; priority: number }>): Promise<PricingRule[]> {
@@ -248,8 +256,8 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
     
     // Use transaction to ensure consistency
     for (const { id, priority } of updates) {
-      const rule = await this.update(id, { priority });
-      results.push(rule);
+      const updatedRow = await this.update(id, { priority });
+      results.push(this.mapRowToRule(updatedRow));
     }
     
     return results;

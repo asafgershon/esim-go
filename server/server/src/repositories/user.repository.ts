@@ -1,5 +1,5 @@
-import { BaseSupabaseRepository } from '../base-supabase.repository';
-import { supabaseAdmin } from '../../context/supabase-auth';
+import { BaseSupabaseRepository } from './base-supabase.repository';
+import { supabaseAdmin } from '../context/supabase-auth';
 import { GraphQLError } from 'graphql';
 
 
@@ -27,7 +27,7 @@ export interface UserUpdate {
 export class UserRepository extends BaseSupabaseRepository<UserRow, never, UserUpdate> {
   constructor() {
     // Users are managed through auth.users table, not a regular table
-    super('users');
+    super('users' as any);
   }
 
   async updateUserRole(userId: string, role: string): Promise<{ success: boolean; user?: any }> {

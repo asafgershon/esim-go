@@ -1,16 +1,26 @@
 import { PricingRuleEngine } from '../rules-engine/rule-engine';
-import { PricingRulesRepository } from '../repositories/pricing-rules/pricing-rules.repository';
+import { PricingRulesRepository } from '../repositories/pricing-rules.repository';
 import { DefaultRulesService } from './default-rules.service';
 import type { PricingContext } from '../rules-engine/types';
-import type { PricingRuleCalculation, type PricingStep } from '../types';
+import type { PricingRuleCalculation } from '../types';
 import { createLogger, withPerformanceLogging } from '../lib/logger';
-import type { KeyValueCache } from '@apollo/utils.keyvadapter';
 import type { SupabaseClient } from '@supabase/supabase-js';
+
+export interface ExtendedPricingCalculation extends PricingRuleCalculation {
+  selectedBundle?: {
+    bundleId: string;
+    bundleName: string;
+    duration: number;
+    reason: string;
+  };
+  metadata?: {
+    discountPerUnusedDay?: number;
+  };
+}
 
 export class PricingEngineService {
   private engine: PricingRuleEngine;
   private repository: PricingRulesRepository;
-  private cache?: KeyValueCache<string>;
   private logger = createLogger({ 
     component: 'PricingEngineService',
     operationType: 'pricing-calculation'
@@ -19,11 +29,37 @@ export class PricingEngineService {
   // Cache rules for 5 minutes
   private static readonly RULES_CACHE_KEY = 'pricing:rules:active';
   private static readonly RULES_CACHE_TTL = 300; // 5 minutes
+  
+  // Singleton instance
+  private static instance: PricingEngineService | null = null;
 
-  constructor(supabase: SupabaseClient, cache?: KeyValueCache<string>) {
+  constructor(supabase: SupabaseClient) {
     this.engine = new PricingRuleEngine();
     this.repository = new PricingRulesRepository(supabase);
-    this.cache = cache;
+  }
+
+  /**
+   * Get singleton instance of the pricing engine service
+   */
+  static getInstance(supabase: SupabaseClient): PricingEngineService {
+    if (!PricingEngineService.instance) {
+      PricingEngineService.instance = new PricingEngineService(supabase);
+      // Initialize in background
+      PricingEngineService.instance.initialize().catch(error => {
+        const logger = createLogger({ component: 'PricingEngineService' });
+        logger.error('Failed to initialize pricing engine', error as Error, {
+          operationType: 'pricing-engine-init'
+        });
+      });
+    }
+    return PricingEngineService.instance;
+  }
+
+  /**
+   * Reset singleton instance (useful for testing)
+   */
+  static resetInstance(): void {
+    PricingEngineService.instance = null;
   }
 
   /**
@@ -44,7 +80,7 @@ export class PricingEngineService {
    * Calculate price for a given context
    * This is the main entry point for pricing calculations
    */
-  async calculatePrice(context: PricingContext): Promise<PricingRuleCalculation> {
+  async calculatePrice(context: PricingContext): Promise<ExtendedPricingCalculation> {
     // Ensure rules are loaded
     await this.ensureRulesLoaded();
     
@@ -52,7 +88,8 @@ export class PricingEngineService {
       this.logger,
       'calculate-price',
       async () => {
-        return this.engine.calculatePrice(context);
+        const result = await this.engine.calculatePrice(context);
+        return result as ExtendedPricingCalculation;
       },
       {
         availableBundlesCount: context.availableBundles?.length || 0,
@@ -65,11 +102,22 @@ export class PricingEngineService {
    * Stream pricing calculation steps for real-time updates
    * Useful for showing calculation progress in UI
    */
-  async *streamPricingSteps(context: PricingContext): AsyncGenerator<PricingStep, PricingRuleCalculation, undefined> {
+  async *streamPricingSteps(context: PricingContext): AsyncGenerator<any, ExtendedPricingCalculation, undefined> {
     // Ensure rules are loaded
     await this.ensureRulesLoaded();
     
-    yield* this.engine.calculatePriceSteps(context);
+    const generator = this.engine.calculatePriceSteps(context);
+    let result: ExtendedPricingCalculation;
+    
+    for await (const step of generator) {
+      if (step && typeof step === 'object' && 'finalPrice' in step) {
+        result = step as unknown as ExtendedPricingCalculation;
+      } else {
+        yield step;
+      }
+    }
+    
+    return result!;
   }
 
   /**
@@ -80,9 +128,9 @@ export class PricingEngineService {
     this.logger.info('Reloading pricing rules');
     
     // Clear cache if available
-    if (this.cache) {
-      await this.cache.delete(PricingEngineService.RULES_CACHE_KEY);
-    }
+    // if (this.cache) { // This line was removed as per the new_code, as the cache property is removed.
+    //   await this.cache.delete(PricingEngineService.RULES_CACHE_KEY);
+    // }
     
     // Clear engine rules
     this.engine.clearRules();
@@ -151,29 +199,29 @@ export class PricingEngineService {
 
   private async loadRules(): Promise<void> {
     // Try to load from cache first if available
-    if (this.cache) {
-      const cachedRules = await this.cache.get(PricingEngineService.RULES_CACHE_KEY);
+    // if (this.cache) { // This line was removed as per the new_code, as the cache property is removed.
+    //   const cachedRules = await this.cache.get(PricingEngineService.RULES_CACHE_KEY);
       
-      if (cachedRules) {
-        this.logger.info('Loading rules from cache');
-        const rules = JSON.parse(cachedRules);
+    //   if (cachedRules) {
+    //     this.logger.info('Loading rules from cache');
+    //     const rules = JSON.parse(cachedRules);
         
-        // Separate system and business rules
-        const systemRules = rules.filter((r: any) => !r.isEditable);
-        const businessRules = rules.filter((r: any) => r.isEditable);
+    //     // Separate system and business rules
+    //     const systemRules = rules.filter((r: any) => !r.isEditable);
+    //     const businessRules = rules.filter((r: any) => r.isEditable);
         
-        // Add to engine
-        this.engine.addSystemRules(systemRules);
-        this.engine.addRules(businessRules);
+    //     // Add to engine
+    //     this.engine.addSystemRules(systemRules);
+    //     this.engine.addRules(businessRules);
         
-        this.logger.info('Rules loaded from cache', {
-          systemCount: systemRules.length,
-          businessCount: businessRules.length
-        });
+    //     this.logger.info('Rules loaded from cache', {
+    //       systemCount: systemRules.length,
+    //       businessCount: businessRules.length
+    //     });
         
-        return;
-      }
-    }
+    //     return;
+    //   }
+    // }
     
     // Load from database
     this.logger.info('Loading rules from database');
@@ -217,13 +265,13 @@ export class PricingEngineService {
     this.engine.addRules(businessRules);
     
     // Cache the rules if cache is available
-    if (this.cache) {
-      await this.cache.set(
-        PricingEngineService.RULES_CACHE_KEY,
-        JSON.stringify(activeRules),
-        { ttl: PricingEngineService.RULES_CACHE_TTL }
-      );
-    }
+    // if (this.cache) { // This line was removed as per the new_code, as the cache property is removed.
+    //   await this.cache.set(
+    //     PricingEngineService.RULES_CACHE_KEY,
+    //     JSON.stringify(activeRules),
+    //     { ttl: PricingEngineService.RULES_CACHE_TTL }
+    //   );
+    // }
     
     this.logger.info('Rules loaded from database', {
       systemCount: systemRules.length,
@@ -270,7 +318,7 @@ export class PricingEngineService {
       availableBundles: params.availableBundles,
       requestedDuration: params.requestedDuration,
       user: params.user,
-      paymentMethod: params.paymentMethod || 'israeli_card',
+      paymentMethod: params.paymentMethod || 'ISRAELI_CARD',
       currentDate: new Date()
     };
   }

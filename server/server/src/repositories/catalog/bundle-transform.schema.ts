@@ -39,7 +39,7 @@ export const DatabaseBundleInsertSchema = z.object({
   currency: z.string().length(3).optional().nullable(),
   countries: z.array(z.string()).optional().nullable(),
   regions: z.array(z.string()).optional().nullable(),
-  metadata: z.record(z.unknown()).optional().nullable(),
+  metadata: z.any().optional().nullable(),
   synced_at: z.string().optional().nullable(),
 });
 

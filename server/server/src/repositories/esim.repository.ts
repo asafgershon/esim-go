@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { z } from 'zod';
-import type { Database } from '../../database.types';
-import { BaseSupabaseRepository } from '../base-supabase.repository';
+import type { Database } from '../database.types';
+import { BaseSupabaseRepository } from './base-supabase.repository';
 
 // Zod enum for eSIM status
 export const EsimStatusEnum = z.enum([

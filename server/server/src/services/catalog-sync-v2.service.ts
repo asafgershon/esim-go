@@ -30,13 +30,12 @@ export class CatalogSyncServiceV2 {
       apiKey,
       baseUrl: baseUrl || 'https://api.esim-go.com/v2.5',
       retryAttempts: 3,
-      logger: this.logger,
     });
     
     // Initialize repositories
-    this.bundleRepository = new BundleRepository(supabaseAdmin);
-    this.syncJobRepository = new SyncJobRepository(supabaseAdmin);
-    this.catalogMetadataRepository = new CatalogMetadataRepository(supabaseAdmin);
+    this.bundleRepository = new BundleRepository();
+    this.syncJobRepository = new SyncJobRepository();
+    this.catalogMetadataRepository = new CatalogMetadataRepository();
   }
 
   /**
@@ -119,7 +118,7 @@ export class CatalogSyncServiceV2 {
             throw new Error(`A sync for bundle group ${bundleGroup} is already in progress`);
           }
 
-          const job = await syncJobRepository.createJob({
+          const job = await this.syncJobRepository.createJob({
             jobType: 'group-sync',
             priority: 'normal',
             bundleGroup,
@@ -177,7 +176,7 @@ export class CatalogSyncServiceV2 {
             throw new Error(`A sync for country ${countryId} is already in progress`);
           }
 
-          const job = await syncJobRepository.createJob({
+          const job = await this.syncJobRepository.createJob({
             jobType: 'country-sync',
             priority: 'normal',
             countryId,
@@ -260,9 +259,10 @@ export class CatalogSyncServiceV2 {
       'search-bundles',
       async () => {
         this.logger.info('Searching bundles from persistent storage', {
-          country: criteria.country,
-          duration: criteria.duration,
-          bundleGroup: criteria.bundleGroup,
+          countries: criteria.countries,
+          minDuration: criteria.minDuration,
+          maxDuration: criteria.maxDuration,
+          bundleGroups: criteria.bundleGroups,
           limit: criteria.limit,
         });
         
@@ -272,8 +272,10 @@ export class CatalogSyncServiceV2 {
           this.logger.info('Bundle search completed', {
             resultCount: result.bundles.length,
             totalCount: result.totalCount,
-            country: criteria.country,
-            duration: criteria.duration,
+            countries: criteria.countries,
+            minDuration: criteria.minDuration,
+            maxDuration: criteria.maxDuration,
+            bundleGroups: criteria.bundleGroups,
           });
           
           return result;
@@ -305,9 +307,9 @@ export class CatalogSyncServiceV2 {
           if (bundle) {
             this.logger.info('Bundle found', {
               bundleId,
-              bundleName: bundle.name,
-              dataAmount: bundle.dataAmount,
-              price: bundle.price,
+              bundleName: bundle.esim_go_name,
+              dataAmount: bundle.data_amount,
+              price: bundle.price_cents,
             });
           } else {
             this.logger.info('Bundle not found', { bundleId });
@@ -440,8 +442,8 @@ export class CatalogSyncServiceV2 {
       'get-organization-groups',
       async () => {
         try {
-          const response = await this.client.getOrganisationWithRetry();
-          const groups = response.data.bundleGroups || [];
+          const response = await this.client.getOrganizationGroups();
+          const groups = response.data || [];
           
           this.logger.info('Retrieved organization bundle groups', {
             groupCount: groups.length,

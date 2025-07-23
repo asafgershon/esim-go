@@ -20,11 +20,15 @@ export interface UpdateMetadataParams {
   metadata?: Record<string, any>;
 }
 
-export class CatalogMetadataRepository extends BaseSupabaseRepository {
+export class CatalogMetadataRepository extends BaseSupabaseRepository<CatalogMetadata, CatalogMetadataInsert, CatalogMetadataUpdate> {
   private logger = createLogger({ 
     component: 'CatalogMetadataRepository',
     operationType: 'catalog-metadata'
   });
+
+  constructor() {
+    super('catalog_metadata');
+  }
 
   /**
    * Get or create the singleton metadata record
@@ -263,7 +267,7 @@ export class CatalogMetadataRepository extends BaseSupabaseRepository {
       nextSyncAt,
       daysSinceSync,
       daysUntilSync,
-      totalBundles: metadata.total_bundles,
+      totalBundles: metadata.total_bundles || 0,
       bundleGroups: metadata.bundle_groups || [],
       apiHealthStatus: metadata.api_health_status as ApiHealthStatus
     };

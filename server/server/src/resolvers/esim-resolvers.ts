@@ -107,7 +107,7 @@ export const esimResolvers: Partial<Resolvers> = {
             const { data: dbPlan } = await supabaseAdmin
               .from("data_plans")
               .select("*")
-              .eq("id", dbESIM.esim_orders.data_plan_id)
+              .eq("id", dbESIM.esim_orders.data_plan_id || "")
               .single();
 
             const plan = await context.dataSources.catalogue.getPlanByName(
@@ -215,6 +215,55 @@ export const esimResolvers: Partial<Resolvers> = {
       } catch (error) {
         console.error("Error fetching eSIM details:", error);
         return null;
+      }
+    },
+
+    orderDetails: async (_, { id }, context: Context) => {
+      try {
+        const order = await context.repositories.orders.getOrderWithESIMs(id);
+        if (!order) {
+          throw new GraphQLError("Order not found", {
+            extensions: { code: "ORDER_NOT_FOUND" },
+          });
+        }
+        // Transform eSIMs to map qr_code_url to qrCode
+        const transformedEsims = order.esims.map((esim) => {
+          return {
+            ...esim,
+            qrCode: esim.qr_code_url,
+          };
+        });
+
+        // Convert snake_case to camelCase for the main order object
+        const camelCaseOrder = Object.fromEntries(
+          Object.entries(order).map(([key, value]) => {
+            if (key === "esims") {
+              // Use the transformed eSIMs with qrCode field
+              return [key, transformedEsims];
+            }
+            return [
+              key.replace(/([-_][a-z])/gi, (match) =>
+                match.toUpperCase().replace("-", "").replace("_", "")
+              ),
+              value,
+            ];
+          })
+        );
+
+        const response = camelCaseOrder as Order;
+        logger.debug("Order response processed", {
+          orderId: response.id,
+          operationType: "order-processing",
+        });
+
+        return response;
+      } catch (error) {
+        logger.error("Error fetching order details", error as Error, {
+          operationType: "order-processing",
+        });
+        throw new GraphQLError("Failed to fetch order details", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
       }
     },
   },
@@ -401,6 +450,16 @@ export const esimResolvers: Partial<Resolvers> = {
     updateESIMReference: async (_, { esimId, reference }, context: Context) => {
       // Similar implementation to suspendESIM but updating customer reference
       // ... implementation similar to above
+      return {
+        success: false,
+        error: "Not implemented yet",
+        esim: null,
+      };
+    },
+
+    activateESIM: async (_, { esimId }, context: Context) => {
+      // This will be protected by @auth directive
+      // TODO: Implement actual eSIM activation
       return {
         success: false,
         error: "Not implemented yet",

@@ -1,5 +1,5 @@
-import { BaseSupabaseRepository } from '../base-supabase.repository';
-import { createLogger } from '../../lib/logger';
+import { BaseSupabaseRepository } from './base-supabase.repository';
+import { createLogger } from '../lib/logger';
 
 const logger = createLogger({ component: 'HighDemandCountryRepository' });
 
@@ -53,7 +53,7 @@ export class HighDemandCountryRepository extends BaseSupabaseRepository<
         this.handleError(error, 'fetching all high demand countries');
       }
 
-      return (data || []).map(row => row.country_id);
+      return (data || []).map((row: any) => row.country_id);
     } catch (error) {
       logger.error('Error fetching high demand countries', error as Error, {
         operationType: 'high-demand-countries-fetch'

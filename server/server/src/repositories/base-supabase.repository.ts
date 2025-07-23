@@ -1,16 +1,19 @@
 import { supabaseAdmin } from '../context/supabase-auth';
 import { GraphQLError } from 'graphql';
 import type { PostgrestError } from '@supabase/supabase-js';
+import type { Database } from '../database.types';
 
+
+type TableName = keyof Database['public']['Tables'];
 export class BaseSupabaseRepository<
   Row extends { id: string },
   Insert extends object,
   Update extends object,
 > {
   protected readonly supabase = supabaseAdmin;
-  protected readonly tableName: string;
+  protected readonly tableName: TableName;
 
-  constructor(tableName: string) {
+  constructor(tableName: TableName) {
     this.tableName = tableName;
   }
 
@@ -40,7 +43,7 @@ export class BaseSupabaseRepository<
       this.handleError(error, `creating a record in ${this.tableName}`);
     }
 
-    return data as Row;
+    return data as unknown as Row;
   }
 
   async getById(id: string): Promise<Row | null> {
@@ -57,7 +60,7 @@ export class BaseSupabaseRepository<
       this.handleError(error, `fetching a record from ${this.tableName} by id`);
     }
 
-    return data as Row;
+    return data as unknown as Row;
   }
 
   async update(id: string, updates: Update): Promise<Row> {
@@ -73,7 +76,7 @@ export class BaseSupabaseRepository<
       this.handleError(error, `updating a record in ${this.tableName}`);
     }
 
-    return data as Row;
+    return data as unknown as Row;
   }
 
   async delete(id: string): Promise<{ success: boolean; count: number | null }> {

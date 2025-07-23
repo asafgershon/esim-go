@@ -1,9 +1,9 @@
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
-import { ApolloServerPluginLandingPageLocalDefault } from "@apollo/server/plugin/landingPage/default";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import cors from "cors";
+import { cleanEnv, port, str } from "envalid";
 import express from "express";
 import type { Context as WSContext } from "graphql-ws";
 import { useServer } from "graphql-ws/use/ws";
@@ -15,36 +15,36 @@ import {
   authDirectiveTransformer,
   authDirectiveTypeDefs,
 } from "./auth.directive";
+import { getPubSub } from "./context/pubsub";
 import {
   createSupabaseAuthContext,
   getSupabaseToken,
   getSupabaseTokenFromConnectionParams,
+  supabaseAdmin,
 } from "./context/supabase-auth";
 import {
   CatalogueDataSource,
   CountriesDataSource,
   ESIMsDataSource,
-  OrdersDataSource,
-  RegionsDataSource,
   InventoryDataSource,
+  OrdersDataSource,
   PricingDataSource,
+  RegionsDataSource,
 } from "./datasources/esim-go";
-import { resolvers } from "./resolvers";
-import { getRedis, handleESIMGoWebhook } from "./services";
-import { getPubSub } from "./context/pubsub";
-// import { CatalogSyncService } from "./services/catalog-sync.service";
-import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
+import { logger } from "./lib/logger";
 import {
   CheckoutSessionRepository,
-  OrderRepository,
   ESIMRepository,
-  UserRepository,
   HighDemandCountryRepository,
+  OrderRepository,
   SyncJobRepository,
+  UserRepository,
 } from "./repositories";
-import { TripRepository } from "./repositories/trips/trip.repository";
-import { cleanEnv, port, str } from "envalid";
-import { logger } from "./lib/logger";
+import { TripRepository } from "./repositories/trip.repository";
+import { PricingRulesRepository } from "./repositories/pricing-rules.repository";
+import { resolvers } from "./resolvers";
+import { getRedis, handleESIMGoWebhook } from "./services";
+import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
 
 const typeDefs = `
 ${authDirectiveTypeDefs}
@@ -65,7 +65,7 @@ async function startServer() {
 
     // Redis is now configured at Apollo Server level for caching
     const redis = await getRedis();
-    
+
     // Initialize PubSub for WebSocket subscriptions
     const pubsub = await getPubSub(redis);
 
@@ -77,6 +77,7 @@ async function startServer() {
     const tripRepository = new TripRepository();
     const highDemandCountryRepository = new HighDemandCountryRepository();
     const syncJobRepository = new SyncJobRepository();
+    const pricingRulesRepository = new PricingRulesRepository();
 
     // Create an Express app and HTTP server
     const app = express();
@@ -109,6 +110,7 @@ async function startServer() {
             services: {
               redis,
               pubsub,
+              db: supabaseAdmin,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -118,6 +120,7 @@ async function startServer() {
               trips: tripRepository,
               highDemandCountries: highDemandCountryRepository,
               syncJob: syncJobRepository,
+              pricingRules: pricingRulesRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSource({ cache: redis }),
@@ -177,7 +180,11 @@ async function startServer() {
       // Add global query timeout
       formatError: (formattedError, error: any) => {
         // Log errors for debugging
-        logger.error("GraphQL Error:", error as Error, { code: formattedError.extensions?.code as string, path: formattedError.path, extensions: formattedError.extensions });
+        logger.error("GraphQL Error:", error as Error, {
+          code: formattedError.extensions?.code as string,
+          path: formattedError.path,
+          extensions: formattedError.extensions,
+        });
         return formattedError;
       },
     });
@@ -314,12 +321,14 @@ async function startServer() {
       // Commenting out old sync service to prevent conflicts
       // const catalogSyncService = new CatalogSyncService(catalogueDataSource, redis);
       // catalogSyncService.startPeriodicSync();
-      
+
       // Initialize V2 sync service (for creating jobs)
-      const catalogSyncServiceV2 = new CatalogSyncServiceV2(env.ESIM_GO_API_KEY);
+      const catalogSyncServiceV2 = new CatalogSyncServiceV2(
+        env.ESIM_GO_API_KEY
+      );
       logger.info("Catalog Sync Service V2 initialized", {
         component: "CatalogSyncServiceV2",
-        operationType: "startup"
+        operationType: "startup",
       });
     });
   } catch (error) {

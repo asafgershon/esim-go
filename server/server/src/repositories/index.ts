@@ -1,9 +1,9 @@
-export { CheckoutSessionRepository } from "./checkout/checkout-session.repository";
-export { ESIMRepository } from "./esims/esim.repository";
-export { OrderRepository } from "./orders/order.repository";
-export { UserRepository } from "./users/user.repository";
-export { HighDemandCountryRepository } from "./high-demand-countries/high-demand-country.repository";
-export { PricingRulesRepository } from "./pricing-rules/pricing-rules.repository";
+export { CheckoutSessionRepository } from "./checkout-session.repository";
+export { ESIMRepository } from "./esim.repository";
+export { OrderRepository } from "./order.repository";
+export { UserRepository } from "./user.repository";
+export { HighDemandCountryRepository } from "./high-demand-country.repository";
+export { PricingRulesRepository } from "./pricing-rules.repository";
 
 // Catalog repositories
 export { 
@@ -16,19 +16,19 @@ export type {
   CheckoutSessionPlanSnapshot,
   CheckoutSessionPricing,
   CheckoutSessionSteps,
-} from "./checkout/checkout-session.repository";
+} from "./checkout-session.repository";
 
-export type { OrderStatus } from "./orders/order.repository";
+export type { OrderStatus } from "./order.repository";
 
-export type { EsimStatus } from "./esims/esim.repository";
+export type { EsimStatus } from "./esim.repository";
 
-export type { UserUpdate } from "./users/user.repository";
+export type { UserUpdate } from "./user.repository";
 
 export type {
   HighDemandCountryRow,
   HighDemandCountryInsert,
   HighDemandCountryUpdate,
-} from "./high-demand-countries/high-demand-country.repository";
+} from "./high-demand-country.repository";
 
 // Catalog types
 export type { 
@@ -42,3 +42,4 @@ export type {
   ApiHealthStatus,
   UpdateMetadataParams 
 } from "./catalog";
+

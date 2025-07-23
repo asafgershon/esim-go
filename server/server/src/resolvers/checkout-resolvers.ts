@@ -1,24 +1,21 @@
 import crypto from "crypto";
 import { GraphQLError } from "graphql";
 import jwt from "jsonwebtoken";
+import QRCode from "qrcode";
 import { z } from "zod";
 import type { Context } from "../context/types";
 import type { Database } from "../database.types";
-import { CheckoutSessionStepsSchema } from "../repositories/checkout/checkout-session.repository";
-import {
-  createDeliveryService,
-  type DeliveryMethod,
-} from "../services/delivery";
+import { createLogger } from "../lib/logger";
+import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.repository";
+import { createDeliveryService } from "../services/delivery";
 import { createPaymentService } from "../services/payment";
 import type { EsimStatus, OrderStatus, Resolvers } from "../types";
-import QRCode from 'qrcode';
-import { createLogger } from "../lib/logger";
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS
 // ===============================================
 
-const logger = createLogger({ component: 'checkout-resolvers' });
+const logger = createLogger({ component: "checkout-resolvers" });
 
 type CheckoutSessionRow =
   Database["public"]["Tables"]["checkout_sessions"]["Row"];
@@ -32,12 +29,14 @@ const PlanSnapshotSchema = z.object({
   countries: z.array(z.string()),
 });
 
-interface CheckoutSessionToken {
-  userId: string;
-  sessionId: string;
-  exp: number;
-  iss: string;
-}
+const CheckoutSessionTokenSchema = z.object({
+  userId: z.string(),
+  sessionId: z.string(),
+  exp: z.number(),
+  iss: z.string(),
+});
+
+type CheckoutSessionToken = z.infer<typeof CheckoutSessionTokenSchema>;
 
 // Generate secure JWT token for checkout session
 function generateCheckoutToken(userId: string, sessionId: string): string {
@@ -57,13 +56,16 @@ function validateCheckoutToken(token: string): CheckoutSessionToken {
     const decoded = jwt.verify(
       token,
       process.env.CHECKOUT_JWT_SECRET!
-    ) as CheckoutSessionToken;
+    ) as unknown;
 
-    if (decoded.iss !== "esim-go-checkout") {
+    // Validate the decoded token with Zod schema
+    const validatedToken = CheckoutSessionTokenSchema.parse(decoded);
+
+    if (validatedToken.iss !== "esim-go-checkout") {
       throw new Error("Invalid token issuer");
     }
 
-    return decoded;
+    return validatedToken;
   } catch (error) {
     console.error("Error in validateCheckoutToken:", error);
     throw new GraphQLError("Invalid or expired checkout token", {
@@ -86,7 +88,6 @@ export const checkoutResolvers: Partial<Resolvers> = {
     // Get checkout session by token
     getCheckoutSession: async (_, { token }, context: Context) => {
       try {
-
         // Validate token and extract session info
         const decoded = validateCheckoutToken(token);
 
@@ -181,38 +182,76 @@ export const checkoutResolvers: Partial<Resolvers> = {
           throw new Error(`Invalid requested duration: ${numOfDays}`);
         }
         if (!countryId) {
-          throw new Error('Country ID is required for checkout');
+          throw new Error("Country ID is required for checkout");
         }
 
-        // Fetch available bundles with strict validation
+        // Fetch ALL available bundles for the country/region to allow optimal selection
+        // Don't filter by duration - let the pricing engine select the best bundle
         const bundleResults = await context.dataSources.catalogue.searchPlans({
           country: countryId,
-          region: regionId
+          region: regionId,
+          // No duration filter - engine needs all options to select optimal bundle
         });
 
         // STRICT VALIDATION - fail if no bundles available
         if (!bundleResults?.bundles || bundleResults.bundles.length === 0) {
-          throw new Error(`No bundles available for country: ${countryId}${regionId ? `, region: ${regionId}` : ''}`);
+          throw new Error(
+            `No bundles available for country: ${countryId}${
+              regionId ? `, region: ${regionId}` : ""
+            }`
+          );
         }
+
+        // Debug: Log bundle durations to understand what's available
+        const bundleDurations = bundleResults.bundles
+          .map((b) => b.duration)
+          .sort((a, b) => (a || 0) - (b || 0));
+        console.log(
+          `Found ${bundleResults.bundles.length} bundles for ${countryId} with durations:`,
+          bundleDurations
+        );
+        console.log(`Requested duration: ${numOfDays} days`);
 
         // Validate and transform bundle data - fail if any required data missing
         const validatedBundles = bundleResults.bundles.map((bundle, index) => {
-          // Check for price_cents first, then fallback to price field
-          const bundlePrice = bundle.price_cents ? bundle.price_cents / 100 : (bundle.price || 0);
+          // Get price from price_cents field (stored in cents)
+          const bundlePrice = bundle.price_cents ? bundle.price_cents / 100 : 0;
           if (!bundlePrice || bundlePrice <= 0) {
-            throw new Error(`Bundle ${index} (${bundle.esim_go_name || 'unknown'}): Invalid or missing price: ${bundlePrice}`);
+            throw new Error(
+              `Bundle ${index} (${
+                bundle.esim_go_name || "unknown"
+              }): Invalid or missing price: ${bundlePrice}`
+            );
           }
           if (!bundle.duration || bundle.duration <= 0) {
-            throw new Error(`Bundle ${index} (${bundle.esim_go_name || 'unknown'}): Invalid or missing duration: ${bundle.duration}`);
+            throw new Error(
+              `Bundle ${index} (${
+                bundle.esim_go_name || "unknown"
+              }): Invalid or missing duration: ${bundle.duration}`
+            );
           }
           if (!bundle.esim_go_name) {
-            throw new Error(`Bundle ${index}: Missing bundle name (esim_go_name)`);
+            throw new Error(
+              `Bundle ${index}: Missing bundle name (esim_go_name)`
+            );
           }
-          
+
           // Extract countries - this is stored as JSON array
-          const countries = Array.isArray(bundle.countries) ? bundle.countries : [];
-          const primaryCountry = countries[0] || countryId;
-          
+          let primaryCountry = countryId;
+          try {
+            if (bundle.countries) {
+              const countries = Array.isArray(bundle.countries)
+                ? bundle.countries
+                : [];
+              if (countries.length > 0 && typeof countries[0] === "string") {
+                primaryCountry = countries[0];
+              }
+            }
+          } catch (error) {
+            // Use fallback if countries parsing fails
+            primaryCountry = countryId;
+          }
+
           return {
             id: bundle.id || bundle.esim_go_name,
             name: bundle.esim_go_name,
@@ -220,62 +259,104 @@ export const checkoutResolvers: Partial<Resolvers> = {
             duration: bundle.duration,
             countryId: primaryCountry,
             countryName: primaryCountry, // We don't have country names in bundle data
-            regionId: regionId || '',
-            regionName: 'Unknown',
-            group: bundle.bundle_group || 'Standard Fixed',
+            regionId: regionId || "",
+            regionName: "Unknown",
+            group: bundle.bundle_group || "Standard Fixed",
             isUnlimited: bundle.unlimited || false,
-            dataAmount: bundle.data_amount ? `${bundle.data_amount}GB` : '0GB'
+            dataAmount: bundle.data_amount ? `${bundle.data_amount}GB` : "0GB",
           };
         });
 
         // Use new pricing engine with strict validation
-        const { PricingEngineService } = await import('../services/pricing-engine.service');
-        const pricingEngine = new PricingEngineService(context.supabase);
+        const { PricingEngineService } = await import(
+          "../services/pricing-engine.service"
+        );
+        const { supabaseAdmin } = await import("../context/supabase-auth");
+        const pricingEngine = new PricingEngineService(supabaseAdmin);
         await pricingEngine.initialize();
+
+        // Debug: Log what we're passing to the pricing engine
+        console.log(
+          `Passing ${validatedBundles.length} validated bundles to pricing engine:`
+        );
+        console.log(
+          "Bundle durations:",
+          validatedBundles.map((b) => `${b.name}: ${b.duration}d`)
+        );
 
         // Create pricing context with validated data
         const pricingContext = PricingEngineService.createContext({
           availableBundles: validatedBundles,
           requestedDuration: numOfDays,
-          user: context.auth?.user ? {
-            id: context.auth.user.id,
-            isNew: false,
-            isFirstPurchase: false
-          } : undefined,
-          paymentMethod: 'israeli_card'
+          user: context.auth?.user
+            ? {
+                id: context.auth.user.id,
+                isNew: false,
+                isFirstPurchase: false,
+              }
+            : undefined,
+          paymentMethod: "ISRAELI_CARD",
         });
 
         // Calculate pricing with the engine
-        const pricingResult = await pricingEngine.calculatePrice(pricingContext);
+        let pricingResult;
+        try {
+          pricingResult = await pricingEngine.calculatePrice(pricingContext);
+        } catch (error) {
+          // If no bundles are available for the requested duration, provide helpful info
+          if (
+            error instanceof Error &&
+            error.message.includes("No bundles available for")
+          ) {
+            const availableDurations = validatedBundles
+              .map((b) => b.duration)
+              .filter((d) => d > 0)
+              .sort((a, b) => a - b);
+
+            throw new Error(
+              `No bundles available for ${numOfDays} days or longer for ${countryId}. ` +
+                `Available durations: ${availableDurations.join(", ")} days. ` +
+                `Please select a different duration or choose the longest available option.`
+            );
+          }
+          throw error;
+        }
 
         // STRICT VALIDATION of pricing result - this affects payment
         if (!pricingResult) {
-          throw new Error('Pricing calculation failed - no result returned');
+          throw new Error("Pricing calculation failed - no result returned");
         }
         if (!pricingResult.finalPrice || pricingResult.finalPrice <= 0) {
-          throw new Error(`Invalid final price calculated: ${pricingResult.finalPrice}`);
+          throw new Error(
+            `Invalid final price calculated: ${pricingResult.finalPrice}`
+          );
         }
         if (!pricingResult.baseCost || pricingResult.baseCost <= 0) {
-          throw new Error(`Invalid base cost calculated: ${pricingResult.baseCost}`);
+          throw new Error(
+            `Invalid base cost calculated: ${pricingResult.baseCost}`
+          );
         }
 
         // The pricing engine should have selected a bundle - we need to determine which one
         // For now, we'll find the bundle that matches the duration or find the optimal one
-        let selectedBundle = validatedBundles.find(b => b.duration === numOfDays);
+        let selectedBundle = validatedBundles.find(
+          (b) => b.duration === numOfDays
+        );
         if (!selectedBundle) {
           // Find the bundle with the smallest duration that's >= requested duration
           selectedBundle = validatedBundles
-            .filter(b => b.duration >= numOfDays)
+            .filter((b) => b.duration >= numOfDays)
             .sort((a, b) => a.duration - b.duration)[0];
         }
         if (!selectedBundle) {
           // Fallback to the bundle with the longest duration
-          selectedBundle = validatedBundles
-            .sort((a, b) => b.duration - a.duration)[0];
+          selectedBundle = validatedBundles.sort(
+            (a, b) => b.duration - a.duration
+          )[0];
         }
 
         if (!selectedBundle) {
-          throw new Error('No suitable bundle could be selected');
+          throw new Error("No suitable bundle could be selected");
         }
 
         // Construct plan data from selected bundle and pricing result
@@ -288,16 +369,17 @@ export const checkoutResolvers: Partial<Resolvers> = {
           countries: [countryId],
           bundleGroup: selectedBundle.group,
           dataAmount: selectedBundle.dataAmount,
-          isUnlimited: selectedBundle.isUnlimited
+          isUnlimited: selectedBundle.isUnlimited,
         };
 
         // Final validation of plan data before creating checkout session
         if (!plan.id || !plan.name || !plan.duration || !plan.price) {
-          throw new Error('Invalid plan data constructed - missing required fields');
+          throw new Error(
+            "Invalid plan data constructed - missing required fields"
+          );
         }
 
         const pricing = pricingResult;
-
 
         // Create session in database using repository
         const session = await context.repositories.checkoutSessions.create({
@@ -311,7 +393,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             currency: "USD",
             countries: plan.countries,
           },
-          pricing,
+          pricing: pricing as any,
           steps: {
             authentication: {
               completed: context.auth?.isAuthenticated || false,
@@ -326,7 +408,10 @@ export const checkoutResolvers: Partial<Resolvers> = {
           expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
         });
 
-        logger.info('Created session', { sessionId: session.id, operationType: 'session-creation' });
+        logger.info("Created session", {
+          sessionId: session.id,
+          operationType: "session-creation",
+        });
 
         // Generate JWT token (include session ID even if user not authenticated)
         const token = generateCheckoutToken(
@@ -690,13 +775,17 @@ export const checkoutResolvers: Partial<Resolvers> = {
     validateOrder: async (_, { input }, context: Context) => {
       try {
         const { bundleName, quantity, customerReference } = input;
-        console.log("Validating order:", { bundleName, quantity, customerReference });
+        console.log("Validating order:", {
+          bundleName,
+          quantity,
+          customerReference,
+        });
 
         // Use the eSIM Go API to validate the order
         const validationResult = await context.dataSources.orders.validateOrder(
           bundleName,
           quantity,
-          customerReference
+          customerReference || undefined
         );
 
         if (!validationResult.isValid) {
@@ -783,42 +872,55 @@ async function simulateWebhookProcessing(
       }
 
       // Calculate detailed pricing breakdown for the order using the pricing engine
-      const { PricingEngineService } = await import('../services/pricing-engine.service');
-      const pricingEngine = new PricingEngineService(context.supabase);
-      
-      const firstCountry = planSnapshot.countries[0] || '';
-      const pricingContext = {
-        bundle: {
-          id: planSnapshot.name,
-          name: planSnapshot.name,
-          duration: planSnapshot.duration,
-          bundleGroup: planSnapshot.bundleGroup || 'Standard Fixed',
-          basePrice: planSnapshot.price,
-          dataAmount: 0,
-          isUnlimited: planSnapshot.isUnlimited || false
+      const { PricingEngineService } = await import(
+        "../services/pricing-engine.service"
+      );
+      const pricingEngine = new PricingEngineService(context.services.db);
+
+      const firstCountry = planSnapshot.countries[0] || "";
+      const pricingContext = PricingEngineService.createContext({
+        availableBundles: [
+          {
+            id: planSnapshot.name,
+            name: planSnapshot.name,
+            duration: planSnapshot.duration,
+            cost: planSnapshot.price,
+            countryId: firstCountry,
+            countryName: firstCountry,
+            regionId: "",
+            regionName: "Unknown",
+            group: "Standard Fixed",
+            isUnlimited: false,
+            dataAmount: "0GB",
+          },
+        ],
+        requestedDuration: planSnapshot.duration,
+        user: {
+          id: steps.authentication.userId,
+          isNew: false,
+          isFirstPurchase: false,
         },
-        customer: {
-          paymentMethod: input.paymentMethodType || 'ISRAELI_CARD', 
-          segmentTier: 'STANDARD' as const
-        },
-        location: {
-          country: firstCountry,
-          region: planSnapshot.region || 'Unknown'
-        },
-        metadata: {}
-      };
-      
-      const detailedPricing = await pricingEngine.calculatePrice(pricingContext);
+        paymentMethod: "ISRAELI_CARD",
+      });
+
+      const detailedPricing = await pricingEngine.calculatePrice(
+        pricingContext
+      );
 
       // Step 1: Create Order record using repository with detailed pricing
-      const orderRecord = await context.repositories.orders.createOrderWithPricing({
-        user_id: steps.authentication.userId,
-        reference: orderId, // This becomes the order reference
-        status: "COMPLETED" as OrderStatus,
-        plan_data: planSnapshot, // Store plan info in JSONB field
-        quantity: 1,
-        esim_go_order_ref: esimData.esimGoOrderRef, // Real eSIM Go order reference
-      }, detailedPricing);
+      const orderRecord =
+        await context.repositories.orders.createOrderWithPricing(
+          {
+            user_id: steps.authentication.userId,
+            total_price: detailedPricing.finalPrice,
+            reference: orderId, // This becomes the order reference
+            status: "COMPLETED" as OrderStatus,
+            plan_data: planSnapshot, // Store plan info in JSONB field
+            quantity: 1,
+            esim_go_order_ref: esimData.esimGoOrderRef, // Real eSIM Go order reference
+          },
+          detailedPricing
+        );
 
       console.log("Order record created:", orderRecord.id);
 
@@ -932,8 +1034,8 @@ async function provisionESIM(
 
   const esimGoOrder = {
     iccid: `89000000000000000${Math.random().toString().substr(2, 6)}`, // Mock ICCID
-    matchingId: 'mock-matching-id',
-    smdpAddress: 'rsp-3104.idemia.io',
+    matchingId: "mock-matching-id",
+    smdpAddress: "rsp-3104.idemia.io",
     activationCode: `ACT-${customerReference}`, // Mock activation code
     activationUrl: `https://esim-activate.com/activate/${customerReference}`, // Mock activation URL
     instructions: `To activate your eSIM for ${planSnapshot.name}:\n1. Scan the QR code\n2. Follow setup instructions\n3. Enjoy your data!`,
@@ -941,11 +1043,13 @@ async function provisionESIM(
     esimGoOrderRef: `ESG-${Date.now()}-${Math.random()
       .toString(36)
       .substr(2, 6)}`, // Mock eSIM Go order reference
-  }
+  };
   // Return mock for now
   return {
     ...esimGoOrder,
-    qrCode: await QRCode.toDataURL(`LPA:1$${esimGoOrder.smdpAddress}$${esimGoOrder.activationCode}`),
+    qrCode: await QRCode.toDataURL(
+      `LPA:1$${esimGoOrder.smdpAddress}$${esimGoOrder.activationCode}`
+    ),
   };
   try {
     // Step 1: Create order in eSIM Go API

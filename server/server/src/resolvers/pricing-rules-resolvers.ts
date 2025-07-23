@@ -1,18 +1,15 @@
-import type { GraphQLResolveInfo } from 'graphql';
-import type { Context } from '../apollo-context';
-import type { 
-  QueryResolvers,
+import { GraphQLError } from 'graphql';
+import type { Context } from '../context/types';
+import { createLogger } from '../lib/logger';
+import { PricingRuleEngine } from '../rules-engine/rule-engine';
+import { PricingEngineService } from '../services/pricing-engine.service';
+import type {
   MutationResolvers,
   PricingRule,
-  CreatePricingRuleInput,
-  UpdatePricingRuleInput,
+  PricingRuleCalculation,
   PricingRuleFilter,
-  PricingRuleCalculation
+  QueryResolvers
 } from '../types';
-import { PricingRulesRepository } from '../repositories/pricing-rules/pricing-rules.repository';
-import { PricingEngineService } from '../services/pricing-engine.service';
-import { createLogger } from '../lib/logger';
-import { GraphQLError } from 'graphql';
 
 const logger = createLogger({ 
   component: 'PricingRulesResolvers',
@@ -23,14 +20,7 @@ const logger = createLogger({
 let pricingEngineService: PricingEngineService | null = null;
 
 const getPricingEngineService = (context: Context): PricingEngineService => {
-  if (!pricingEngineService) {
-    pricingEngineService = new PricingEngineService(context.supabase);
-    // Initialize in background
-    pricingEngineService.initialize().catch(error => {
-      logger.error('Failed to initialize pricing engine', error);
-    });
-  }
-  return pricingEngineService;
+  return PricingEngineService.getInstance(context.services.db);
 };
 
 export const pricingRulesQueries: QueryResolvers = {
@@ -43,10 +33,9 @@ export const pricingRulesQueries: QueryResolvers = {
     logger.info('Fetching pricing rules', { filter });
     
     try {
-      const repository = new PricingRulesRepository(context.supabase);
-      return await repository.findAll(filter as PricingRuleFilter | undefined);
+      return await context.repositories.pricingRules.findAll(filter as PricingRuleFilter | undefined);
     } catch (error) {
-      logger.error('Failed to fetch pricing rules', error, { filter });
+      logger.error('Failed to fetch pricing rules', error as Error, { filter });
       throw new GraphQLError('Failed to fetch pricing rules', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' }
       });
@@ -62,8 +51,7 @@ export const pricingRulesQueries: QueryResolvers = {
     logger.info('Fetching pricing rule', { id });
     
     try {
-      const repository = new PricingRulesRepository(context.supabase);
-      const rule = await repository.findById(id);
+      const rule = await context.repositories.pricingRules.findById(id);
       
       if (!rule) {
         logger.warn('Pricing rule not found', { id });
@@ -71,7 +59,7 @@ export const pricingRulesQueries: QueryResolvers = {
       
       return rule;
     } catch (error) {
-      logger.error('Failed to fetch pricing rule', error, { id });
+      logger.error('Failed to fetch pricing rule', error as Error, { id });
       throw new GraphQLError('Failed to fetch pricing rule', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' }
       });
@@ -87,10 +75,9 @@ export const pricingRulesQueries: QueryResolvers = {
     logger.info('Fetching active pricing rules');
     
     try {
-      const repository = new PricingRulesRepository(context.supabase);
-      return await repository.findActiveRules();
+      return await context.repositories.pricingRules.findActiveRules();
     } catch (error) {
-      logger.error('Failed to fetch active pricing rules', error);
+      logger.error('Failed to fetch active pricing rules', error as Error);
       throw new GraphQLError('Failed to fetch active pricing rules', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' }
       });
@@ -106,10 +93,9 @@ export const pricingRulesQueries: QueryResolvers = {
     logger.info('Finding conflicting pricing rules', { ruleId });
     
     try {
-      const repository = new PricingRulesRepository(context.supabase);
-      return await repository.getConflictingRules(ruleId);
+      return await context.repositories.pricingRules.getConflictingRules(ruleId);
     } catch (error) {
-      logger.error('Failed to find conflicting rules', error, { ruleId });
+      logger.error('Failed to find conflicting rules', error as Error, { ruleId });
       throw new GraphQLError('Failed to find conflicting rules', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' }
       });
@@ -149,19 +135,20 @@ export const pricingRulesQueries: QueryResolvers = {
       
       // Create pricing context for the rule engine
       const pricingContext = PricingEngineService.createContext({
-        bundle: {
-          id: bundle.name || `${input.countryId}-${input.numOfDays}d`,
-          name: bundle.name || 'Bundle',
-          cost: bundle.price || 0,
+        availableBundles: [{
+          id: bundle?.id || '',
+          name: bundle?.esim_go_name || 'Bundle',
+          cost: bundle?.price_cents || 0,
           duration: input.numOfDays,
           countryId: input.countryId,
           countryName: input.countryId, // Will be resolved later
-          regionId: input.regionId || bundle.baseCountry?.region || 'UNKNOWN',
-          regionName: input.regionId || bundle.baseCountry?.region || 'Unknown',
-          group: bundle.bundleGroup || 'Standard Fixed',
-          isUnlimited: bundle.unlimited || bundle.dataAmount === -1,
-          dataAmount: bundle.dataAmount || 0
-        },
+          regionId: input.regionId || 'UNKNOWN',
+          regionName: 'Unknown',
+          group: bundle?.bundle_group || 'Standard Fixed',
+          isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+          dataAmount: (bundle?.data_amount || 0).toString()
+        }],
+        requestedDuration: input.numOfDays,
         paymentMethod: input.paymentMethod || 'ISRAELI_CARD'
       });
       
@@ -191,7 +178,7 @@ export const pricingRulesQueries: QueryResolvers = {
       
       return result;
     } catch (error) {
-      logger.error('Failed to calculate single price with rules', error, {
+      logger.error('Failed to calculate single price with rules', error as Error, {
         countryId: input.countryId,
         numOfDays: input.numOfDays
       });
@@ -218,43 +205,34 @@ export const pricingRulesQueries: QueryResolvers = {
       for (const request of requests) {
         // Create pricing context from request
         const pricingContext = PricingEngineService.createContext({
-          bundle: {
-            id: request.bundleId,
-            name: request.bundleName || 'Bundle',
-            cost: request.cost,
-            duration: request.duration,
+          availableBundles: [{
+            id: request.countryId, // Use countryId as bundle ID
+            name: `${request.numOfDays} Day Bundle`,
+            cost: 0, // Will be calculated by pricing engine
+            duration: request.numOfDays,
             countryId: request.countryId,
-            countryName: request.countryName || request.countryId,
-            regionId: request.regionId || 'UNKNOWN',
-            regionName: request.regionName || 'Unknown',
-            group: request.bundleGroup || 'Standard',
-            isUnlimited: request.isUnlimited || false,
-            dataAmount: request.dataAmount || 'Unknown'
-          },
-          user: request.userId ? {
-            id: request.userId,
-            segment: request.userSegment
-          } : undefined,
-          paymentMethod: request.paymentMethod,
-          requestedDuration: request.requestedDuration
+            countryName: request.countryId,
+            regionId: 'UNKNOWN',
+            regionName: 'Unknown',
+            group: 'Standard',
+            isUnlimited: false,
+            dataAmount: '0'
+          }],
+          requestedDuration: request.numOfDays,
+          user: undefined, // CalculatePriceInput doesn't have userId
+          paymentMethod: request.paymentMethod || 'ISRAELI_CARD'
         });
         
         // Validate context
         const errors = engine.validateContext(pricingContext);
         if (errors.length > 0) {
           logger.warn('Invalid pricing context', { 
-            bundleId: request.bundleId,
+            countryId: request.countryId,
             errors,
             request,
             pricingContext: {
-              ...pricingContext,
-              bundle: {
-                ...pricingContext.bundle,
-                // Log key fields for debugging
-                cost: pricingContext.bundle.cost,
-                duration: pricingContext.bundle.duration,
-                id: pricingContext.bundle.id
-              }
+              availableBundles: pricingContext.availableBundles?.length || 0,
+              requestedDuration: pricingContext.requestedDuration
             }
           });
           throw new GraphQLError(`Invalid pricing request: ${errors.join(', ')}`, {
@@ -276,7 +254,7 @@ export const pricingRulesQueries: QueryResolvers = {
       
       return results;
     } catch (error) {
-      logger.error('Failed to calculate batch pricing', error, {
+      logger.error('Failed to calculate batch pricing', error as Error, {
         requestCount: requests.length,
         operationType: 'batch-pricing-calculation'
       });
@@ -308,28 +286,42 @@ export const pricingRulesQueries: QueryResolvers = {
       
       // Create a temporary pricing context for simulation
       const pricingContext = PricingEngineService.createContext({
-        bundle: {
+        availableBundles: [{
           id: testContext.bundleId || 'test-bundle',
           name: testContext.bundleName || 'Test Bundle',
-          cost: testContext.baseCost || 0,
+          cost: testContext.cost || 0,
           duration: testContext.duration || 7,
           countryId: testContext.countryId || 'US',
-          countryName: testContext.countryName || 'United States',
+          countryName: testContext.countryId,
           regionId: testContext.regionId || 'AMERICA',
-          regionName: testContext.regionName || 'America',
+          regionName: testContext.regionId || 'America',
           group: testContext.bundleGroup || 'Standard Fixed',
-          isUnlimited: testContext.isUnlimited || false,
-          dataAmount: testContext.dataAmount || 1024
-        },
+          isUnlimited: false, // Will be determined from bundle data
+          dataAmount: 'Unknown' // Will be determined from bundle data
+        }],
+        requestedDuration: testContext.requestedDuration || testContext.duration || 7,
         paymentMethod: testContext.paymentMethod || 'ISRAELI_CARD',
         user: testContext.userId ? {
           id: testContext.userId,
-          segment: testContext.userSegment || 'STANDARD'
+          isNew: testContext.isNewUser || false,
+          segment: 'STANDARD'
         } : undefined
       });
       
-      // Simulate the rule by temporarily adding it to the engine
-      const result = await engine.simulateRule(rule, pricingContext);
+      // Create a new temporary engine instance with the test rule
+      const tempEngine = new PricingRuleEngine();
+      
+      // Add the test rule to the temporary engine
+      tempEngine.addRules([{
+        ...rule,
+        id: 'temp-test-rule',
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }]);
+      
+      // Calculate price with the test rule
+      const result = await tempEngine.calculatePrice(pricingContext);
       
       logger.info('Pricing rule simulated', { 
         ruleName: rule.name,
@@ -338,7 +330,7 @@ export const pricingRulesQueries: QueryResolvers = {
       
       return result;
     } catch (error) {
-      logger.error('Failed to simulate pricing rule', error, {
+      logger.error('Failed to simulate pricing rule', error as Error, {
         ruleName: rule.name,
         ruleType: rule.type
       });
@@ -362,8 +354,7 @@ export const pricingRulesMutations: MutationResolvers = {
     });
     
     try {
-      const repository = new PricingRulesRepository(context.supabase);
-      const rule = await repository.create(input);
+      const rule = await context.repositories.pricingRules.createRule(input);
       
       // Reload rules in the engine
       const engine = getPricingEngineService(context);
@@ -376,7 +367,7 @@ export const pricingRulesMutations: MutationResolvers = {
       
       return rule;
     } catch (error) {
-      logger.error('Failed to create pricing rule', error, { input });
+      logger.error('Failed to create pricing rule', error as Error, { input });
       throw new GraphQLError('Failed to create pricing rule', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' }
       });
@@ -392,8 +383,7 @@ export const pricingRulesMutations: MutationResolvers = {
     logger.info('Updating pricing rule', { id, input });
     
     try {
-      const repository = new PricingRulesRepository(context.supabase);
-      const rule = await repository.update(id, input);
+      const rule = await context.repositories.pricingRules.updateRule(id, input);
       
       // Reload rules in the engine
       const engine = getPricingEngineService(context);
@@ -406,7 +396,7 @@ export const pricingRulesMutations: MutationResolvers = {
       
       return rule;
     } catch (error) {
-      logger.error('Failed to update pricing rule', error, { id, input });
+      logger.error('Failed to update pricing rule', error as Error, { id, input });
       
       if (error instanceof Error && error.message.includes('not found')) {
         throw new GraphQLError('Pricing rule not found', {
@@ -431,10 +421,9 @@ export const pricingRulesMutations: MutationResolvers = {
     logger.info('Deleting pricing rule', { id });
     
     try {
-      const repository = new PricingRulesRepository(context.supabase);
-      const deleted = await repository.delete(id);
+      const result = await context.repositories.pricingRules.delete(id);
       
-      if (deleted) {
+      if (result.success) {
         // Reload rules in the engine
         const engine = getPricingEngineService(context);
         await engine.reloadRules();
@@ -444,9 +433,9 @@ export const pricingRulesMutations: MutationResolvers = {
         logger.warn('Pricing rule not found for deletion', { id });
       }
       
-      return deleted;
+      return result.success;
     } catch (error) {
-      logger.error('Failed to delete pricing rule', error, { id });
+      logger.error('Failed to delete pricing rule', error as Error, { id });
       
       if (error instanceof Error && error.message.includes('not editable')) {
         throw new GraphQLError('System rules cannot be deleted', {
@@ -469,8 +458,7 @@ export const pricingRulesMutations: MutationResolvers = {
     logger.info('Toggling pricing rule', { id });
     
     try {
-      const repository = new PricingRulesRepository(context.supabase);
-      const rule = await repository.toggleActive(id);
+      const rule = await context.repositories.pricingRules.toggleActive(id);
       
       // Reload rules in the engine
       const engine = getPricingEngineService(context);
@@ -483,7 +471,7 @@ export const pricingRulesMutations: MutationResolvers = {
       
       return rule;
     } catch (error) {
-      logger.error('Failed to toggle pricing rule', error, { id });
+      logger.error('Failed to toggle pricing rule', error as Error, { id });
       
       if (error instanceof Error && error.message.includes('not found')) {
         throw new GraphQLError('Pricing rule not found', {
@@ -506,8 +494,7 @@ export const pricingRulesMutations: MutationResolvers = {
     logger.info('Cloning pricing rule', { id, newName });
     
     try {
-      const repository = new PricingRulesRepository(context.supabase);
-      const rule = await repository.cloneRule(id, newName);
+      const rule = await context.repositories.pricingRules.cloneRule(id, newName);
       
       // Reload rules in the engine
       const engine = getPricingEngineService(context);
@@ -521,7 +508,7 @@ export const pricingRulesMutations: MutationResolvers = {
       
       return rule;
     } catch (error) {
-      logger.error('Failed to clone pricing rule', error, { id, newName });
+      logger.error('Failed to clone pricing rule', error as Error, { id, newName });
       
       if (error instanceof Error && error.message.includes('not found')) {
         throw new GraphQLError('Original pricing rule not found', {
@@ -546,8 +533,7 @@ export const pricingRulesMutations: MutationResolvers = {
     });
     
     try {
-      const repository = new PricingRulesRepository(context.supabase);
-      const rules = await repository.bulkUpdatePriorities(updates);
+      const rules = await context.repositories.pricingRules.bulkUpdatePriorities(updates);
       
       // Reload rules in the engine
       const engine = getPricingEngineService(context);
@@ -559,7 +545,7 @@ export const pricingRulesMutations: MutationResolvers = {
       
       return rules;
     } catch (error) {
-      logger.error('Failed to reorder pricing rules', error);
+      logger.error('Failed to reorder pricing rules', error as Error);
       throw new GraphQLError('Failed to reorder pricing rules', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' }
       });

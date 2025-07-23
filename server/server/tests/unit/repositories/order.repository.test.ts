@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { OrderRepository } from '../../../src/repositories/orders/order.repository';
+import { OrderRepository } from '../../../src/repositories/order.repository';
 
 describe('OrderRepository', () => {
   // TODO: Add test infrastructure setup

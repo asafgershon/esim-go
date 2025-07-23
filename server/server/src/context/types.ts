@@ -17,14 +17,16 @@ import {
   ESIMRepository,
   UserRepository,
   HighDemandCountryRepository,
+  PricingRulesRepository,
 } from "../repositories";
-import { TripRepository } from "../repositories/trips/trip.repository";
+import { TripRepository } from "../repositories/trip.repository";
 import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type Context = {
   auth: SupabaseAuthContext;
   services: {
-    // db: typeof db; // TODO: Add database service
+    db: SupabaseClient;
     redis: Redis;
     pubsub?: RedisPubSub;
   };
@@ -36,6 +38,7 @@ export type Context = {
     trips: TripRepository;
     highDemandCountries: HighDemandCountryRepository;
     syncJob: SyncJobRepository;
+    pricingRules: PricingRulesRepository;
   };
   dataSources: {
     catalogue: CatalogueDataSource;

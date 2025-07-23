@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Button,
   ScrollArea,
@@ -29,10 +29,11 @@ import {
   Users,
   Copy,
   Download,
+  Loader2,
 } from 'lucide-react';
-import { useLazyQuery } from '@apollo/client';
+import { useLazyQuery, useQuery } from '@apollo/client';
 import { toast } from 'sonner';
-import { SIMULATE_PRICING_RULE, CALCULATE_PRICE_WITH_RULES } from '../../lib/graphql/queries';
+import { SIMULATE_PRICING_RULE, GET_COUNTRY_BUNDLES, GET_COUNTRIES } from '../../lib/graphql/queries';
 
 interface PricingRule {
   id: string;
@@ -50,6 +51,37 @@ interface PricingRule {
 
 interface SingleRuleTestPanelProps {
   rule: PricingRule;
+}
+
+interface Bundle {
+  bundleName: string;
+  countryName: string;
+  countryId: string;
+  duration: number;
+  cost: number;
+  costPlus: number;
+  totalCost: number;
+  discountRate: number;
+  discountValue: number;
+  priceAfterDiscount: number;
+  processingRate: number;
+  processingCost: number;
+  finalRevenue: number;
+  currency: string;
+  pricePerDay: number;
+  hasCustomDiscount: boolean;
+  planId: string;
+  isUnlimited: boolean;
+  dataAmount: string;
+  bundleGroup: string;
+}
+
+interface Country {
+  iso: string;
+  name: string;
+  nameHebrew: string;
+  region: string;
+  flag: string;
 }
 
 interface TestContext {
@@ -89,31 +121,20 @@ interface TestResult {
 }
 
 export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }) => {
-  // Helper functions to generate dynamic values
-  const generateBundleId = (group: string, duration: number, countryId: string) => {
-    const groupKey = group.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    return `${countryId.toLowerCase()}-${groupKey}-${duration}d`;
-  };
-
-  const generateBundleName = (group: string, duration: number) => {
-    return `${group} ${duration}d`;
-  };
+  const [selectedCountryId, setSelectedCountryId] = useState<string>('US');
+  const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null);
   const [testContext, setTestContext] = useState<TestContext>(() => {
-    const initialGroup = 'Standard Fixed';
-    const initialDuration = 7;
-    const initialCountryId = 'US';
-    
     return {
-      bundleId: generateBundleId(initialGroup, initialDuration, initialCountryId),
-      bundleName: generateBundleName(initialGroup, initialDuration),
-      bundleGroup: initialGroup,
-      duration: initialDuration,
-      cost: 5.50,
-      countryId: initialCountryId,
+      bundleId: '',
+      bundleName: '',
+      bundleGroup: '',
+      duration: 7,
+      cost: 0,
+      countryId: 'US',
       regionId: 'AMERICA',
       isNewUser: false,
       paymentMethod: 'FOREIGN_CARD',
-      requestedDuration: initialDuration,
+      requestedDuration: 7,
     };
   });
   const [testResult, setTestResult] = useState<TestResult | null>(null);
@@ -121,7 +142,18 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
   const [showResults, setShowResults] = useState(false);
 
   const [simulateRule] = useLazyQuery(SIMULATE_PRICING_RULE);
-  const [calculatePrice] = useLazyQuery(CALCULATE_PRICE_WITH_RULES);
+  
+  // Query for countries
+  const { data: countriesData, loading: countriesLoading } = useQuery(GET_COUNTRIES);
+  
+  // Query for bundles when country is selected
+  const { data: bundlesData, loading: bundlesLoading, refetch: refetchBundles } = useQuery(
+    GET_COUNTRY_BUNDLES,
+    {
+      variables: { countryId: selectedCountryId },
+      skip: !selectedCountryId,
+    }
+  );
 
   // Rule type configurations
   const ruleTypes = [
@@ -144,23 +176,32 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
     { value: 'DINERS', label: 'Diners Club' },
   ];
 
-  const bundleGroups = [
-    'Standard Fixed',
-    'Standard - Unlimited Lite',
-    'Standard - Unlimited Essential',
-    'Standard - Unlimited Plus',
-    'Regional Bundles',
-  ];
 
-  const countries = [
-    { code: 'US', name: 'United States', region: 'AMERICA' },
-    { code: 'GB', name: 'United Kingdom', region: 'EUROPE' },
-    { code: 'IL', name: 'Israel', region: 'ASIA' },
-    { code: 'JP', name: 'Japan', region: 'ASIA' },
-    { code: 'DE', name: 'Germany', region: 'EUROPE' },
-    { code: 'FR', name: 'France', region: 'EUROPE' },
-    { code: 'AU', name: 'Australia', region: 'OCEANIA' },
-  ];
+  const countries: Country[] = countriesData?.countries || [];
+  const bundles: Bundle[] = bundlesData?.countryBundles || [];
+  
+  // Update test context when bundle selection changes
+  useEffect(() => {
+    if (selectedBundle) {
+      setTestContext(prev => ({
+        ...prev,
+        bundleId: selectedBundle.planId,
+        bundleName: selectedBundle.bundleName,
+        bundleGroup: selectedBundle.bundleGroup,
+        duration: selectedBundle.duration,
+        cost: selectedBundle.cost,
+        countryId: selectedBundle.countryId,
+        regionId: getRegionForCountry(selectedBundle.countryId),
+        requestedDuration: selectedBundle.duration,
+      }));
+    }
+  }, [selectedBundle]);
+  
+  // Helper function to get region for country
+  const getRegionForCountry = (countryId: string): string => {
+    const country = countries.find(c => c.iso === countryId);
+    return country?.region || 'AMERICA';
+  };
 
   const handleRuleTest = async () => {
     setLoading(true);
@@ -322,69 +363,21 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
           </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>Bundle Group</Label>
-                    <Select 
-                      value={testContext.bundleGroup} 
-                      onValueChange={(value) => setTestContext(prev => ({
-                        ...prev,
-                        bundleGroup: value,
-                        bundleId: generateBundleId(value, prev.duration, prev.countryId),
-                        bundleName: generateBundleName(value, prev.duration)
-                      }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {bundleGroups.map((group) => (
-                          <SelectItem key={group} value={group}>
-                            {group}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Duration (days)</Label>
-                    <Input
-                      type="number"
-                      value={testContext.duration}
-                      onChange={(e) => {
-                        const duration = parseInt(e.target.value) || 1;
-                        setTestContext(prev => ({ 
-                          ...prev, 
-                          duration,
-                          requestedDuration: duration,
-                          bundleId: generateBundleId(prev.bundleGroup, duration, prev.countryId),
-                          bundleName: generateBundleName(prev.bundleGroup, duration)
-                        }));
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
                     <Label>Country</Label>
                     <Select 
-                      value={testContext.countryId} 
+                      value={selectedCountryId} 
                       onValueChange={(value) => {
-                        const country = countries.find(c => c.code === value);
-                        setTestContext(prev => ({ 
-                          ...prev, 
-                          countryId: value,
-                          regionId: country?.region || 'AMERICA',
-                          bundleId: generateBundleId(prev.bundleGroup, prev.duration, value)
-                        }));
+                        setSelectedCountryId(value);
+                        setSelectedBundle(null); // Reset bundle when country changes
                       }}
+                      disabled={countriesLoading}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder={countriesLoading ? "Loading countries..." : "Select country"} />
                       </SelectTrigger>
                       <SelectContent>
                         {countries.map((country) => (
-                          <SelectItem key={country.code} value={country.code}>
+                          <SelectItem key={country.iso} value={country.iso}>
                             {country.name}
                           </SelectItem>
                         ))}
@@ -392,6 +385,50 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                     </Select>
                   </div>
 
+                  <div className="space-y-2">
+                    <Label>Bundle</Label>
+                    <Select 
+                      value={selectedBundle?.planId || ''} 
+                      onValueChange={(value) => {
+                        const bundle = bundles.find(b => b.planId === value);
+                        setSelectedBundle(bundle || null);
+                      }}
+                      disabled={bundlesLoading || !selectedCountryId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={
+                          bundlesLoading 
+                            ? "Loading bundles..." 
+                            : !selectedCountryId 
+                              ? "Select country first" 
+                              : "Select bundle"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bundles.map((bundle) => (
+                          <SelectItem key={bundle.planId} value={bundle.planId}>
+                            {bundle.bundleName} - {bundle.duration}d - ${bundle.cost.toFixed(2)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Bundle Details (Read-only) */}
+                {selectedBundle && (
+                  <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+                    <div className="text-sm font-medium text-blue-900">Selected Bundle Details</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div><span className="text-blue-700">Group:</span> {selectedBundle.bundleGroup}</div>
+                      <div><span className="text-blue-700">Duration:</span> {selectedBundle.duration} days</div>
+                      <div><span className="text-blue-700">Base Cost:</span> ${selectedBundle.cost.toFixed(2)}</div>
+                      <div><span className="text-blue-700">Data:</span> {selectedBundle.isUnlimited ? 'Unlimited' : selectedBundle.dataAmount}</div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Payment Method</Label>
                     <Select 
@@ -410,21 +447,6 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Base Cost ($)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={testContext.cost}
-                      onChange={(e) => setTestContext(prev => ({ 
-                        ...prev, 
-                        cost: parseFloat(e.target.value) || 0 
-                      }))}
-                    />
-                  </div>
 
                   <div className="flex items-center justify-between">
                     <Label>New User</Label>
@@ -438,22 +460,35 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                   </div>
                 </div>
 
+
+          {!selectedBundle && selectedCountryId && bundles.length === 0 && !bundlesLoading && (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                No bundles available for the selected country. Try selecting a different country.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex gap-2 pt-2">
             <Button 
               onClick={handleRuleTest} 
-              disabled={loading}
+              disabled={loading || !selectedBundle || bundlesLoading}
               className="flex-1 flex items-center gap-2"
             >
               {loading ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : bundlesLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Play className="h-4 w-4" />
               )}
-              Test Rule
+              {bundlesLoading ? 'Loading...' : 'Test Rule'}
             </Button>
             <Button
               variant="outline"
               onClick={copyTestContext}
+              disabled={!selectedBundle}
               className="flex items-center gap-2"
             >
               <Copy className="h-4 w-4" />
