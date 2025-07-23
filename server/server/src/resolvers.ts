@@ -575,6 +575,39 @@ export const resolvers: Resolvers = {
         });
       }
     },
+
+    bundlesByRegion: async (_, __, context: Context) => {
+      try {
+        // Get regions aggregation from repository
+        const regionAggregation = await context.dataSources.catalogue.getBundlesByRegionAggregation();
+        
+        // Map to expected format
+        const bundlesByRegion = regionAggregation
+          .map(({ regionName, bundleCount, countryCount }) => ({
+            regionName,
+            bundleCount,
+            countryCount
+          }))
+          .filter(item => item.regionName && item.regionName.trim() !== '') // Filter out empty regions
+          .sort((a, b) => a.regionName.localeCompare(b.regionName));
+
+        logger.info('✅ BundlesByRegion aggregated efficiently', {
+          regionCount: bundlesByRegion.length,
+          totalAggregated: regionAggregation.length,
+          operationType: 'bundles-by-region-aggregation'
+        });
+
+        return bundlesByRegion;
+      } catch (error) {
+        logger.error('Error in bundlesByRegion resolver', error as Error, {
+          operationType: 'bundles-by-region-fetch'
+        });
+
+        throw new GraphQLError('Failed to fetch bundles by region', {
+          extensions: { code: 'INTERNAL_ERROR' }
+        });
+      }
+    },
     
     countryBundles: async (_, { countryId }, context: Context) => {
       
@@ -833,6 +866,56 @@ export const resolvers: Resolvers = {
           operationType: 'country-bundles-fetch'
         });
         throw new GraphQLError('Failed to fetch country bundles', {
+          extensions: { code: 'INTERNAL_ERROR' }
+        });
+      }
+    },
+
+    regionBundles: async (_, { regionName }, context: Context) => {
+      try {
+        // Get all bundles for the region
+        const catalogBundles = await context.dataSources.catalogue.getBundlesByRegion(regionName);
+        
+        logger.info('Fetched bundles for region from catalog', {
+          regionName,
+          bundleCount: catalogBundles.length,
+          operationType: 'region-bundles-fetch'
+        });
+
+        // For catalog view, we just return the raw bundle data with base cost
+        // No pricing calculations needed since this is pure catalog data
+        const bundles = catalogBundles.map(bundle => ({
+          bundleName: bundle.esimGoName || `${bundle.duration} Day Bundle`,
+          countryName: bundle.countries?.[0] || 'Multiple Countries', // Show first country or indicate multiple
+          countryId: bundle.countries?.[0] || regionName,
+          duration: bundle.duration || 0,
+          cost: (bundle.priceCents || 0) / 100, // Convert cents to dollars
+          costPlus: 0, // Not needed for catalog
+          totalCost: (bundle.priceCents || 0) / 100,
+          discountRate: 0,
+          discountValue: 0,
+          priceAfterDiscount: (bundle.priceCents || 0) / 100,
+          processingRate: 0,
+          processingCost: 0,
+          finalRevenue: 0,
+          currency: bundle.currency || 'USD',
+          pricePerDay: bundle.duration > 0 ? ((bundle.priceCents || 0) / 100) / bundle.duration : 0,
+          hasCustomDiscount: false,
+          bundleGroup: bundle.bundleGroup || 'Unknown',
+          isUnlimited: bundle.unlimited || false,
+          dataAmount: bundle.unlimited ? 'Unlimited' : 
+            bundle.dataAmount ? `${Math.round(bundle.dataAmount / 1024)}GB` : 'Unknown',
+          planId: bundle.id || `${regionName}-${bundle.duration}d`
+        }));
+
+        // Sort by duration for consistent ordering
+        return bundles.sort((a, b) => a.duration - b.duration);
+      } catch (error) {
+        logger.error('Error in regionBundles resolver', error as Error, {
+          regionName,
+          operationType: 'region-bundles-fetch'
+        });
+        throw new GraphQLError('Failed to fetch region bundles', {
           extensions: { code: 'INTERNAL_ERROR' }
         });
       }

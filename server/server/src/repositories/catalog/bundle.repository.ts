@@ -427,6 +427,120 @@ export class BundleRepository extends BaseSupabaseRepository {
   }
 
   /**
+   * Get bundles grouped by region with counts - efficient aggregation
+   */
+  async getBundlesByRegionAggregation(): Promise<Array<{
+    regionName: string;
+    bundleCount: number;
+    countryCount: number;
+  }>> {
+    return withPerformanceLogging(
+      this.logger,
+      'get-bundles-by-region-aggregation',
+      async () => {
+        const { data, error } = await this.supabase
+          .from('catalog_bundles')
+          .select('regions, countries');
+
+        if (error) {
+          this.logger.error('Failed to get region aggregation', error);
+          throw error;
+        }
+
+        // Aggregate regions and count bundles + countries
+        const regionStats = new Map<string, { bundleCount: number; countries: Set<string> }>();
+        
+        this.logger.debug('Raw bundle data for regions', {
+          totalBundles: data?.length || 0,
+          sampleBundles: (data || []).slice(0, 3).map(bundle => ({
+            id: bundle.id,
+            regions: bundle.regions,
+            countries: bundle.countries,
+            regionType: typeof bundle.regions,
+            isRegionArray: Array.isArray(bundle.regions)
+          })),
+          operationType: 'region-aggregation-debug'
+        });
+        
+        for (const bundle of data || []) {
+          if (bundle.regions && Array.isArray(bundle.regions)) {
+            for (const region of bundle.regions) {
+              if (typeof region === 'string' && region.trim()) {
+                if (!regionStats.has(region)) {
+                  regionStats.set(region, { bundleCount: 0, countries: new Set() });
+                }
+                
+                const stats = regionStats.get(region)!;
+                stats.bundleCount += 1;
+                
+                // Add countries from this bundle to the region's country set
+                if (bundle.countries && Array.isArray(bundle.countries)) {
+                  for (const country of bundle.countries) {
+                    if (typeof country === 'string') {
+                      stats.countries.add(country);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Convert to array and sort by region name
+        const result = Array.from(regionStats.entries())
+          .map(([regionName, stats]) => ({
+            regionName,
+            bundleCount: stats.bundleCount,
+            countryCount: stats.countries.size
+          }))
+          .sort((a, b) => a.regionName.localeCompare(b.regionName));
+
+        this.logger.info('Region aggregation completed', {
+          regionCount: result.length,
+          totalBundles: data?.length || 0,
+          regions: result.map(r => ({ name: r.regionName, bundles: r.bundleCount, countries: r.countryCount })),
+          operationType: 'region-aggregation'
+        });
+
+        return result;
+      }
+    );
+  }
+
+  /**
+   * Get bundles for a specific region
+   */
+  async getBundlesByRegion(regionName: string): Promise<CatalogBundle[]> {
+    return withPerformanceLogging(
+      this.logger,
+      'get-bundles-by-region',
+      async () => {
+        // Query bundles that have this region in their regions array
+        const { data, error } = await this.supabase
+          .from('catalog_bundles')
+          .select('*')
+          .contains('regions', [regionName]);
+
+        if (error) {
+          this.logger.error('Failed to get bundles by region', error, {
+            regionName,
+            operationType: 'get-bundles-by-region'
+          });
+          throw error;
+        }
+
+        this.logger.info('Retrieved bundles for region', {
+          regionName,
+          bundleCount: data?.length || 0,
+          operationType: 'get-bundles-by-region'
+        });
+
+        return data || [];
+      }
+    );
+  }
+
+  /**
    * Update bundle pricing
    */
   async updatePricing(bundleId: string, price: number): Promise<CatalogBundle | null> {

@@ -15,25 +15,42 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CatalogBundle {
-  id: string;
-  esimGoName: string;
-  bundleGroup?: string;
-  description?: string;
-  duration?: number;
-  dataAmount: number;
-  unlimited: boolean;
-  priceCents: number;
+  bundleName: string;
+  countryName: string;
+  countryId: string;
+  duration: number;
+  cost: number;
+  costPlus: number;
+  totalCost: number;
+  discountRate: number;
+  discountValue: number;
+  priceAfterDiscount: number;
+  processingRate: number;
+  processingCost: number;
+  finalRevenue: number;
   currency: string;
-  regions: string[];
-  syncedAt: string;
+  pricePerDay: number;
+  hasCustomDiscount: boolean;
+  bundleGroup?: string;
+  isUnlimited?: boolean;
+  dataAmount?: string;
+  planId?: string;
 }
 
 interface CatalogCountryCardProps {
   country: string;
-  bundleCount: number;
+  countryName: string;
+  bundleCount?: number;
   bundles?: CatalogBundle[];
   isExpanded: boolean;
+  isLoading?: boolean;
+  isSelected?: boolean;
   onToggle: () => void;
+  summary?: {
+    count: number;
+    range: string;
+    status: "pending" | "loaded";
+  };
 }
 
 export const CatalogCountryCard: React.FC<CatalogCountryCardProps> = ({
@@ -43,25 +60,20 @@ export const CatalogCountryCard: React.FC<CatalogCountryCardProps> = ({
   bundles,
   isExpanded,
   isLoading = false,
-  onToggle
+  isSelected = false,
+  onToggle,
+  summary
 }) => {
-  const formatPrice = (priceCents: number, currency: string) => {
+  const formatPrice = (price: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency
-    }).format(priceCents / 100);
+    }).format(price);
   };
   
-  const formatDataAmount = (bytes: number): string => {
-    if (bytes === -1) return 'Unlimited';
-    
-    const gb = bytes / (1024 * 1024 * 1024);
-    if (gb >= 1) {
-      return `${gb.toFixed(1)} GB`;
-    }
-    
-    const mb = bytes / (1024 * 1024);
-    return `${Math.round(mb)} MB`;
+  const formatDataAmount = (bundle: CatalogBundle): string => {
+    if (bundle.isUnlimited) return 'Unlimited';
+    return bundle.dataAmount || 'Unknown';
   };
   
   const getCountryFlag = (countryCode: string): string => {
@@ -85,100 +97,30 @@ export const CatalogCountryCard: React.FC<CatalogCountryCardProps> = ({
   };
   
   return (
-    <Card className="overflow-hidden">
-      <Button
-        variant="ghost"
-        className="w-full p-0 h-auto justify-start"
-        onClick={onToggle}
-      >
-        <div className="flex items-center justify-between w-full p-4">
+    <Card 
+      className={`group hover:shadow-md transition-all cursor-pointer ${
+        isSelected 
+          ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50' 
+          : 'hover:border-gray-300'
+      }`}
+      onClick={onToggle}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">{getCountryFlag(country)}</span>
-            <div className="text-left">
+            <div>
               <h3 className="font-medium">{countryName || getCountryName(country)}</h3>
               <p className="text-sm text-muted-foreground">
-                {bundleCount !== undefined ? `${bundleCount} bundle${bundleCount !== 1 ? 's' : ''}` : 'Click to load bundles'}
+                {summary ? `${summary.count} bundles • ${summary.range}` : 'Loading...'}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
-              <Package className="h-3 w-3 mr-1" />
-              {bundleCount}
-            </Badge>
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
-          </div>
+          {isLoading && (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          )}
         </div>
-      </Button>
-      
-      <AnimatePresence>
-        {isExpanded && bundles && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <CardContent className="pt-0 pb-4">
-              <div className="space-y-2">
-                {bundles.map((bundle) => (
-                  <div
-                    key={bundle.id}
-                    className="bg-muted/50 rounded-lg p-3 space-y-2"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-medium text-sm">{bundle.bundleName}</h4>
-                        {bundle.hasCustomDiscount && (
-                          <p className="text-xs text-green-600">
-                            Custom pricing applied
-                          </p>
-                        )}
-                      </div>
-                      {bundle.bundleGroup && (
-                        <Badge variant="outline" className="text-xs">
-                          {bundle.bundleGroup}
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-xs">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3 text-muted-foreground" />
-                        <span>{bundle.duration || 0} days</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1">
-                        {bundle.isUnlimited ? (
-                          <Wifi className="h-3 w-3 text-muted-foreground" />
-                        ) : (
-                          <WifiOff className="h-3 w-3 text-muted-foreground" />
-                        )}
-                        <span>{formatDataAmount(bundle)}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3 text-muted-foreground" />
-                        <span>{formatPrice(bundle.priceAfterDiscount, bundle.currency)}</span>
-                      </div>
-                      
-                      {bundle.discountValue > 0 && (
-                        <Badge variant="secondary" className="text-xs">
-                          -{bundle.discountRate}%
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </CardContent>
     </Card>
   );
 };

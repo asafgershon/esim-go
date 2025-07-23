@@ -749,6 +749,43 @@ export const GET_BUNDLES_BY_COUNTRY = gql(`
   }
 `)
 
+export const GET_BUNDLES_BY_REGION = gql(`
+  query GetBundlesByRegion {
+    bundlesByRegion {
+      regionName
+      bundleCount
+      countryCount
+    }
+  }
+`)
+
+export const GET_REGION_BUNDLES = gql(`
+  query GetRegionBundles($regionName: String!) {
+    regionBundles(regionName: $regionName) {
+      bundleName
+      countryName
+      countryId
+      duration
+      cost
+      costPlus
+      totalCost
+      discountRate
+      discountValue
+      priceAfterDiscount
+      processingRate
+      processingCost
+      finalRevenue
+      currency
+      pricePerDay
+      hasCustomDiscount
+      bundleGroup
+      isUnlimited
+      dataAmount
+      planId
+    }
+  }
+`)
+
 export const GET_COUNTRY_BUNDLES = gql(`
   query GetCountryBundles($countryId: String!) {
     countryBundles(countryId: $countryId) {

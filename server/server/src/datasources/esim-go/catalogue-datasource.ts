@@ -216,6 +216,63 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   }
 
   /**
+   * Get bundles grouped by region with counts - efficient aggregation
+   */
+  async getBundlesByRegionAggregation(): Promise<Array<{
+    regionName: string;
+    bundleCount: number;
+    countryCount: number;
+  }>> {
+    return withPerformanceLogging(
+      this.log,
+      'get-bundles-by-region-aggregation',
+      async () => {
+        // Check if catalog is empty first
+        const isEmpty = await this.isCatalogEmpty();
+        
+        if (isEmpty) {
+          this.log.error('📊 Cannot get region aggregation - catalog is empty', { 
+            operationType: 'catalog-empty'
+          });
+          
+          throw new Error(
+            'Catalog data is not available. Please run catalog sync to populate the database with eSIM bundles.'
+          );
+        }
+        
+        return await this.bundleRepository.getBundlesByRegionAggregation();
+      }
+    );
+  }
+
+  /**
+   * Get bundles for a specific region
+   */
+  async getBundlesByRegion(regionName: string): Promise<CatalogBundle[]> {
+    return withPerformanceLogging(
+      this.log,
+      'get-bundles-by-region',
+      async () => {
+        // Check if catalog is empty first
+        const isEmpty = await this.isCatalogEmpty();
+        
+        if (isEmpty) {
+          this.log.error('📊 Cannot get region bundles - catalog is empty', { 
+            regionName,
+            operationType: 'catalog-empty'
+          });
+          
+          throw new Error(
+            'Catalog data is not available. Please run catalog sync to populate the database with eSIM bundles.'
+          );
+        }
+        
+        return await this.bundleRepository.getBundlesByRegion(regionName);
+      }
+    );
+  }
+
+  /**
    * Get all available bundle groups from database
    */
   async getOrganizationGroups(): Promise<string[]> {

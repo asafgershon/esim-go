@@ -34,8 +34,14 @@ type Query {
   # Bundles grouped by country with aggregated pricing data
   bundlesByCountry: [BundlesByCountry!]!
   
+  # Bundles grouped by region with aggregated data
+  bundlesByRegion: [BundlesByRegion!]!
+  
   # Get bundles for a specific country
   countryBundles(countryId: String!): [CountryBundle!]!
+  
+  # Get bundles for a specific region
+  regionBundles(regionName: String!): [CountryBundle!]!
   
   
   # Pricing Rules Engine
@@ -614,6 +620,13 @@ type BundlesByCountry {
   countryName: String!
   countryId: String!
   bundleCount: Int!
+}
+
+# Bundles by Region Types - aggregated region data
+type BundlesByRegion {
+  regionName: String!
+  bundleCount: Int!
+  countryCount: Int!
 }
 
 # Individual bundles for a specific country
