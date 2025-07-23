@@ -111,7 +111,6 @@ export const pricingRulesQueries: QueryResolvers = {
     logger.info('Calculating single price with rules', { 
       countryId: input.countryId,
       numOfDays: input.numOfDays,
-      regionId: input.regionId,
       paymentMethod: input.paymentMethod
     });
     
@@ -133,6 +132,11 @@ export const pricingRulesQueries: QueryResolvers = {
       // Use the first matching bundle
       const bundle = bundles.bundles[0];
       
+      // Extract region information from bundle
+      const regions = bundle?.regions || [];
+      const regionId = regions.length > 0 ? regions[0] : 'global';
+      const regionName = regions.length > 0 ? regions[0] : 'Global';
+      
       // Create pricing context for the rule engine
       const pricingContext = PricingEngineService.createContext({
         availableBundles: [{
@@ -142,8 +146,8 @@ export const pricingRulesQueries: QueryResolvers = {
           duration: input.numOfDays,
           countryId: input.countryId,
           countryName: input.countryId, // Will be resolved later
-          regionId: input.regionId || 'UNKNOWN',
-          regionName: 'Unknown',
+          regionId: regionId,
+          regionName: regionName,
           group: bundle?.bundle_group || 'Standard Fixed',
           isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
           dataAmount: (bundle?.data_amount || 0).toString()
@@ -203,20 +207,43 @@ export const pricingRulesQueries: QueryResolvers = {
       const results: PricingRuleCalculation[] = [];
       
       for (const request of requests) {
+        // Get bundle information from catalog
+        const bundles = await context.dataSources.catalogue.searchPlans({
+          country: request.countryId,
+          duration: request.numOfDays
+        });
+        
+        if (!bundles.bundles || bundles.bundles.length === 0) {
+          // Skip this request if no bundles found
+          logger.warn('No bundles found for batch request', {
+            countryId: request.countryId,
+            numOfDays: request.numOfDays
+          });
+          continue;
+        }
+        
+        // Use the first matching bundle
+        const bundle = bundles.bundles[0];
+        
+        // Extract region information from bundle
+        const regions = bundle?.regions || [];
+        const regionId = regions.length > 0 ? regions[0] : 'global';
+        const regionName = regions.length > 0 ? regions[0] : 'Global';
+        
         // Create pricing context from request
         const pricingContext = PricingEngineService.createContext({
           availableBundles: [{
-            id: request.countryId, // Use countryId as bundle ID
-            name: `${request.numOfDays} Day Bundle`,
-            cost: 0, // Will be calculated by pricing engine
+            id: bundle?.id || request.countryId,
+            name: bundle?.esim_go_name || `${request.numOfDays} Day Bundle`,
+            cost: bundle?.price_cents || 0,
             duration: request.numOfDays,
             countryId: request.countryId,
             countryName: request.countryId,
-            regionId: 'UNKNOWN',
-            regionName: 'Unknown',
-            group: 'Standard',
-            isUnlimited: false,
-            dataAmount: '0'
+            regionId: regionId,
+            regionName: regionName,
+            group: bundle?.bundle_group || 'Standard',
+            isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+            dataAmount: (bundle?.data_amount || 0).toString()
           }],
           requestedDuration: request.numOfDays,
           user: undefined, // CalculatePriceInput doesn't have userId
@@ -293,8 +320,8 @@ export const pricingRulesQueries: QueryResolvers = {
           duration: testContext.duration || 7,
           countryId: testContext.countryId || 'US',
           countryName: testContext.countryId,
-          regionId: testContext.regionId || 'AMERICA',
-          regionName: testContext.regionId || 'America',
+          regionId: 'AMERICA',
+          regionName: 'America',
           group: testContext.bundleGroup || 'Standard Fixed',
           isUnlimited: false, // Will be determined from bundle data
           dataAmount: 'Unknown' // Will be determined from bundle data

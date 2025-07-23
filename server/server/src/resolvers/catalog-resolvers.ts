@@ -23,6 +23,12 @@ const mapPaymentMethodEnum = (paymentMethod: any) => {
 const calculateBundlePricing = async (bundle: any, context: Context, paymentMethod = 'ISRAELI_CARD') => {
   const engineService = getPricingEngineService(context);
   
+  // Extract region information from bundle
+  // Use the first region if available, otherwise fall back to 'global'
+  const regions = bundle?.regions || [];
+  const regionId = regions.length > 0 ? regions[0] : 'global';
+  const regionName = regions.length > 0 ? regions[0] : 'Global';
+  
   // Map bundle for pricing engine
   const availableBundles = [{
     id: bundle?.esim_go_name || `${bundle.countryId}-${bundle?.duration}d`,
@@ -31,8 +37,8 @@ const calculateBundlePricing = async (bundle: any, context: Context, paymentMeth
     duration: bundle?.duration || 1,
     countryId: bundle.countryId,
     countryName: bundle.countryName,
-    regionId: 'global',
-    regionName: 'Global',
+    regionId: regionId,
+    regionName: regionName,
     group: bundle?.bundle_group || 'Standard Fixed',
     isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
     dataAmount: bundle?.data_amount?.toString() || '0'
@@ -497,14 +503,13 @@ export const catalogResolvers: Partial<Resolvers> = {
     // Calculate price for a single request
     calculatePrice: async (
       _,
-      { numOfDays, regionId, countryId, paymentMethod },
+      { numOfDays, countryId, paymentMethod },
       context: Context
     ) => {
       try {
         logger.info("Calculating single price", {
           countryId,
           numOfDays,
-          regionId,
           operationType: "calculate-price",
         });
 
@@ -535,19 +540,26 @@ export const catalogResolvers: Partial<Resolvers> = {
         }
 
         // Map all available bundles for the pricing engine
-        const availableBundles = countryBundles.map(bundle => ({
-          id: bundle?.esim_go_name || `${countryId}-${bundle?.duration || numOfDays}d`,
-          name: bundle?.esim_go_name || '',
-          cost: ((bundle?.price_cents || 0) / 100),
-          duration: bundle?.duration || numOfDays,
-          countryId: countryId,
-          countryName: country?.country || countryId,
-          regionId: regionId || 'global',
-          regionName: regionId || 'Global',
-          group: bundle?.bundle_group || 'Standard Fixed',
-          isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-          dataAmount: bundle?.data_amount?.toString() || '0'
-        }));
+        const availableBundles = countryBundles.map(bundle => {
+          // Extract region information from bundle
+          const regions = bundle?.regions || [];
+          const regionId = regions.length > 0 ? regions[0] : 'global';
+          const regionName = regions.length > 0 ? regions[0] : 'Global';
+          
+          return {
+            id: bundle?.esim_go_name || `${countryId}-${bundle?.duration || numOfDays}d`,
+            name: bundle?.esim_go_name || '',
+            cost: ((bundle?.price_cents || 0) / 100),
+            duration: bundle?.duration || numOfDays,
+            countryId: countryId,
+            countryName: country?.country || countryId,
+            regionId: regionId,
+            regionName: regionName,
+            group: bundle?.bundle_group || 'Standard Fixed',
+            isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+            dataAmount: bundle?.data_amount?.toString() || '0'
+          };
+        });
         
         // Create pricing context for the rule engine - let engine select optimal bundle
         const pricingContext = PricingEngineService.createContext({
@@ -631,19 +643,26 @@ export const catalogResolvers: Partial<Resolvers> = {
               }
               
               // Map all available bundles for the pricing engine
-              const availableBundles = countryBundles.map(bundle => ({
-                id: bundle?.esim_go_name || `${input.countryId}-${bundle?.duration || input.numOfDays}d`,
-                name: bundle?.esim_go_name || '',
-                cost: ((bundle?.price_cents || 0) / 100),
-                duration: bundle?.duration || input.numOfDays,
-                countryId: input.countryId,
-                countryName: countryMap.get(input.countryId) || input.countryId,
-                regionId: 'global', // We don't have region info in this context
-                regionName: 'Global',
-                group: bundle?.bundle_group || 'Standard Fixed',
-                isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-                dataAmount: bundle?.data_amount?.toString() || '0'
-              }));
+              const availableBundles = countryBundles.map(bundle => {
+                // Extract region information from bundle
+                const regions = bundle?.regions || [];
+                const regionId = regions.length > 0 ? regions[0] : 'global';
+                const regionName = regions.length > 0 ? regions[0] : 'Global';
+                
+                return {
+                  id: bundle?.esim_go_name || `${input.countryId}-${bundle?.duration || input.numOfDays}d`,
+                  name: bundle?.esim_go_name || '',
+                  cost: ((bundle?.price_cents || 0) / 100),
+                  duration: bundle?.duration || input.numOfDays,
+                  countryId: input.countryId,
+                  countryName: countryMap.get(input.countryId) || input.countryId,
+                  regionId: regionId,
+                  regionName: regionName,
+                  group: bundle?.bundle_group || 'Standard Fixed',
+                  isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+                  dataAmount: bundle?.data_amount?.toString() || '0'
+                };
+              });
               
               // Create pricing context for the rule engine - let engine select optimal bundle
               const pricingContext = PricingEngineService.createContext({
