@@ -643,7 +643,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
           ]}
         />
       </div>
-      
+    </div>
+  );
+
       {/* Create/Edit Rule Dialog */}
       <Dialog open={showCreateDialog || !!editingRule} onOpenChange={(open) => {
         if (!open) {

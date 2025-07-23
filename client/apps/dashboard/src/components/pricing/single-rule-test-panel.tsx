@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import {
   Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  ScrollArea,
   Input,
   Label,
   Select,
@@ -13,13 +9,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Separator,
   Badge,
   Switch,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   Alert,
   AlertDescription,
 } from '@workspace/ui';
@@ -113,7 +104,7 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
   });
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedTab, setSelectedTab] = useState('configure');
+  const [showResults, setShowResults] = useState(false);
 
   const [simulateRule] = useLazyQuery(SIMULATE_PRICING_RULE);
   const [calculatePrice] = useLazyQuery(CALCULATE_PRICE_WITH_RULES);
@@ -194,7 +185,7 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
         };
 
         setTestResult(testResult);
-        setSelectedTab('results');
+        setShowResults(true);
         toast.success('Rule test completed successfully');
       }
     } catch (error) {
@@ -244,80 +235,73 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
   const typeConfig = getRuleTypeConfig(rule.type);
   const Icon = typeConfig.icon;
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
+
   return (
-    <div className="h-full flex flex-col">
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="configure">Configure Test</TabsTrigger>
-          <TabsTrigger value="results" disabled={!testResult}>
-            Results {testResult && <CheckCircle className="ml-2 h-3 w-3" />}
-          </TabsTrigger>
-        </TabsList>
-
-        <div className="flex-1 overflow-y-auto">
-          <TabsContent value="configure" className="space-y-4 p-4">
-            {/* Rule Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icon className="h-5 w-5 text-gray-600" />
-                  {rule.name}
-                </CardTitle>
-                <CardDescription>
-                  {typeConfig.label} • Priority: {rule.priority}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {rule.description && (
-                    <p className="text-sm text-gray-600">{rule.description}</p>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Conditions ({rule.conditions.length})</h4>
-                      <div className="space-y-1">
-                        {rule.conditions.slice(0, 3).map((condition, index) => (
-                          <div key={index} className="text-xs bg-gray-50 rounded px-2 py-1">
-                            {condition.field} {condition.operator} {JSON.stringify(condition.value)}
-                          </div>
-                        ))}
-                        {rule.conditions.length > 3 && (
-                          <div className="text-xs text-gray-500">+{rule.conditions.length - 3} more</div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Actions ({rule.actions.length})</h4>
-                      <div className="space-y-1">
-                        {rule.actions.slice(0, 3).map((action, index) => (
-                          <div key={index} className="text-xs bg-blue-50 rounded px-2 py-1">
-                            {action.type}: {action.value}
-                          </div>
-                        ))}
-                        {rule.actions.length > 3 && (
-                          <div className="text-xs text-gray-500">+{rule.actions.length - 3} more</div>
-                        )}
-                      </div>
-                    </div>
+    <ScrollArea className="flex-1" showOnHover={true}>
+      <div className="space-y-4 p-4">
+        {/* Rule Information */}
+        <div className="bg-gray-50 p-3 rounded-lg">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Icon className="h-4 w-4 text-gray-600" />
+                <h4 className="font-medium text-sm">{rule.name}</h4>
+              </div>
+              <p className="text-xs text-gray-600">
+                {typeConfig.label} • Priority: {rule.priority} • {rule.isActive ? 'Active' : 'Inactive'}
+              </p>
+              {rule.description && (
+                <p className="text-xs text-gray-500 mt-1">{rule.description}</p>
+              )}
+            </div>
+            <Badge variant={rule.isActive ? 'default' : 'secondary'} className="text-xs">
+              {rule.isActive ? 'Active' : 'Inactive'}
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <div className="text-xs font-medium text-gray-700 mb-1">Conditions ({rule.conditions.length})</div>
+              <div className="space-y-1">
+                {rule.conditions.slice(0, 2).map((condition, index) => (
+                  <div key={index} className="text-xs bg-white rounded px-2 py-1 border">
+                    {condition.field} {condition.operator} {JSON.stringify(condition.value)}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                ))}
+                {rule.conditions.length > 2 && (
+                  <div className="text-xs text-gray-500">+{rule.conditions.length - 2} more</div>
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <div className="text-xs font-medium text-gray-700 mb-1">Actions ({rule.actions.length})</div>
+              <div className="space-y-1">
+                {rule.actions.slice(0, 2).map((action, index) => (
+                  <div key={index} className="text-xs bg-blue-50 rounded px-2 py-1 border border-blue-200">
+                    {action.type}: {action.value}
+                  </div>
+                ))}
+                {rule.actions.length > 2 && (
+                  <div className="text-xs text-gray-500">+{rule.actions.length - 2} more</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
 
-            {/* Test Configuration */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TestTube className="h-5 w-5" />
-                  Test Configuration
-                </CardTitle>
-                <CardDescription>
-                  Configure test parameters to see how this rule behaves
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+        {/* Test Configuration */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 mb-3">
+            <TestTube className="h-4 w-4 text-gray-600" />
+            <h3 className="font-medium text-sm">Test Configuration</h3>
+          </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Bundle Group</Label>
@@ -424,138 +408,134 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleRuleTest} 
-                    disabled={loading}
-                    className="flex-1 flex items-center gap-2"
-                  >
-                    {loading ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Play className="h-4 w-4" />
-                    )}
-                    Test Rule
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={copyTestContext}
-                    className="flex items-center gap-2"
-                  >
-                    <Copy className="h-4 w-4" />
-                    Copy Context
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="results" className="space-y-4 p-4">
-            {testResult && (
-              <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        Test Results
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={exportResult}
-                        className="flex items-center gap-2"
-                      >
-                        <Download className="h-4 w-4" />
-                        Export
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Badge 
-                            variant={testResult.matched ? 'default' : 'secondary'}
-                            className="text-base py-1"
-                          >
-                            {testResult.matched ? 'Rule Matched' : 'Rule Not Matched'}
-                          </Badge>
-                          {testResult.matched && (
-                            <span className={`text-sm font-medium ${
-                              testResult.impact < 0 ? 'text-green-600' : testResult.impact > 0 ? 'text-red-600' : 'text-gray-600'
-                            }`}>
-                              {testResult.impact < 0 ? '' : '+'}${testResult.impact.toFixed(2)} impact
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-2xl font-bold">${testResult.finalPrice.toFixed(2)}</span>
-                      </div>
-
-                      {testResult.breakdown && (
-                        <div className="grid grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg">
-                          <div className="text-center">
-                            <div className="text-sm text-gray-500">Base Cost</div>
-                            <div className="font-medium">${testResult.breakdown.baseCost.toFixed(2)}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-gray-500">Markup</div>
-                            <div className="font-medium">${testResult.breakdown.markup.toFixed(2)}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-gray-500">Discounts</div>
-                            <div className="font-medium text-green-600">-${testResult.breakdown.discounts.toFixed(2)}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-gray-500">Processing</div>
-                            <div className="font-medium">${testResult.breakdown.processingFee.toFixed(2)}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-gray-500">Revenue</div>
-                            <div className="font-medium">${testResult.breakdown.finalRevenue.toFixed(2)}</div>
-                          </div>
-                        </div>
-                      )}
-
-                      {testResult.appliedRules.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">Applied Rules</h4>
-                          <div className="space-y-2">
-                            {testResult.appliedRules.map((appliedRule, index) => (
-                              <div key={index} className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
-                                <div>
-                                  <span className="font-medium text-sm">{appliedRule.name}</span>
-                                  <Badge variant="outline" className="ml-2 text-xs">
-                                    {appliedRule.type}
-                                  </Badge>
-                                </div>
-                                <span className={`text-sm font-medium ${
-                                  appliedRule.impact < 0 ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                  {appliedRule.impact < 0 ? '' : '+'}${appliedRule.impact.toFixed(2)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {!testResult.matched && (
-                        <Alert>
-                          <AlertTriangle className="h-4 w-4" />
-                          <AlertDescription>
-                            This rule did not match the test context. Review the rule conditions to understand why it didn't apply.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </TabsContent>
+          <div className="flex gap-2 pt-2">
+            <Button 
+              onClick={handleRuleTest} 
+              disabled={loading}
+              className="flex-1 flex items-center gap-2"
+            >
+              {loading ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Play className="h-4 w-4" />
+              )}
+              Test Rule
+            </Button>
+            <Button
+              variant="outline"
+              onClick={copyTestContext}
+              className="flex items-center gap-2"
+            >
+              <Copy className="h-4 w-4" />
+              Copy Context
+            </Button>
+          </div>
         </div>
-      </Tabs>
-    </div>
+
+        {/* Test Results */}
+        {showResults && testResult && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <h3 className="font-medium text-sm">Test Results</h3>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportResult}
+                className="flex items-center gap-2 h-7"
+              >
+                <Download className="h-3 w-3" />
+                Export
+              </Button>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <Badge 
+                  variant={testResult.matched ? 'default' : 'secondary'}
+                  className="text-sm"
+                >
+                  {testResult.matched ? 'Rule Matched' : 'Rule Not Matched'}
+                </Badge>
+                <div className="text-right">
+                  <div className="font-mono font-medium text-lg">
+                    {formatCurrency(testResult.finalPrice)}
+                  </div>
+                  {testResult.matched && (
+                    <div className={`text-xs font-medium ${
+                      testResult.impact < 0 ? 'text-green-600' : testResult.impact > 0 ? 'text-red-600' : 'text-gray-600'
+                    }`}>
+                      {testResult.impact < 0 ? '' : '+'}${testResult.impact.toFixed(2)} impact
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {testResult.breakdown && (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Base cost</span>
+                  <span className="font-mono">{formatCurrency(testResult.breakdown.baseCost)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Markup</span>
+                  <span className="font-mono">+ {formatCurrency(testResult.breakdown.markup)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Discounts</span>
+                  <span className="font-mono text-green-600">- {formatCurrency(testResult.breakdown.discounts)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Processing fee</span>
+                  <span className="font-mono text-orange-600">- {formatCurrency(testResult.breakdown.processingFee)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="font-medium">Final price</span>
+                  <span className="font-mono font-medium">{formatCurrency(testResult.finalPrice)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Net revenue</span>
+                  <span className="font-mono font-medium text-green-600">{formatCurrency(testResult.breakdown.finalRevenue)}</span>
+                </div>
+              </div>
+            )}
+
+            {testResult.appliedRules.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-700">Applied Rules</h4>
+                <div className="space-y-1">
+                  {testResult.appliedRules.map((appliedRule, index) => (
+                    <div key={index} className="flex items-center justify-between bg-blue-50 rounded px-2 py-1.5 border border-blue-200">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{appliedRule.name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {appliedRule.type}
+                        </Badge>
+                      </div>
+                      <span className={`text-sm font-medium ${
+                        appliedRule.impact < 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {appliedRule.impact < 0 ? '' : '+'}${appliedRule.impact.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!testResult.matched && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  This rule did not match the test context. Review the rule conditions to understand why it didn't apply.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
+      </div>
+    </ScrollArea>
   );
 };

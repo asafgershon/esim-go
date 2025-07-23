@@ -14,6 +14,7 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n  subscription CatalogSyncProgress {\n    catalogSyncProgress {\n      jobId\n      jobType\n      status\n      bundleGroup\n      countryId\n      bundlesProcessed\n      bundlesAdded\n      bundlesUpdated\n      totalBundles\n      progress\n      message\n      errorMessage\n      startedAt\n      updatedAt\n    }\n  }\n": typeof types.CatalogSyncProgressDocument,
     "\n  query GetPricingRules($filter: PricingRuleFilter) {\n    pricingRules(filter: $filter) {\n      id\n      type\n      name\n      description\n      conditions {\n        field\n        operator\n        value\n        type\n      }\n      actions {\n        type\n        value\n        metadata\n      }\n      priority\n      isActive\n      isEditable\n      validFrom\n      validUntil\n      createdBy\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.GetPricingRulesDocument,
     "\n  mutation CreatePricingRule($input: CreatePricingRuleInput!) {\n    createPricingRule(input: $input) {\n      id\n      type\n      name\n      description\n      conditions {\n        field\n        operator\n        value\n        type\n      }\n      actions {\n        type\n        value\n        metadata\n      }\n      priority\n      isActive\n      isEditable\n      validFrom\n      validUntil\n      createdBy\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.CreatePricingRuleDocument,
     "\n  mutation UpdatePricingRule($id: ID!, $input: UpdatePricingRuleInput!) {\n    updatePricingRule(id: $id, input: $input) {\n      id\n      type\n      name\n      description\n      conditions {\n        field\n        operator\n        value\n        type\n      }\n      actions {\n        type\n        value\n        metadata\n      }\n      priority\n      isActive\n      isEditable\n      validFrom\n      validUntil\n      createdBy\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.UpdatePricingRuleDocument,
@@ -59,6 +60,7 @@ type Documents = {
     "\n  query GetAvailableBundleGroups {\n    availableBundleGroups\n  }\n": typeof types.GetAvailableBundleGroupsDocument,
 };
 const documents: Documents = {
+    "\n  subscription CatalogSyncProgress {\n    catalogSyncProgress {\n      jobId\n      jobType\n      status\n      bundleGroup\n      countryId\n      bundlesProcessed\n      bundlesAdded\n      bundlesUpdated\n      totalBundles\n      progress\n      message\n      errorMessage\n      startedAt\n      updatedAt\n    }\n  }\n": types.CatalogSyncProgressDocument,
     "\n  query GetPricingRules($filter: PricingRuleFilter) {\n    pricingRules(filter: $filter) {\n      id\n      type\n      name\n      description\n      conditions {\n        field\n        operator\n        value\n        type\n      }\n      actions {\n        type\n        value\n        metadata\n      }\n      priority\n      isActive\n      isEditable\n      validFrom\n      validUntil\n      createdBy\n      createdAt\n      updatedAt\n    }\n  }\n": types.GetPricingRulesDocument,
     "\n  mutation CreatePricingRule($input: CreatePricingRuleInput!) {\n    createPricingRule(input: $input) {\n      id\n      type\n      name\n      description\n      conditions {\n        field\n        operator\n        value\n        type\n      }\n      actions {\n        type\n        value\n        metadata\n      }\n      priority\n      isActive\n      isEditable\n      validFrom\n      validUntil\n      createdBy\n      createdAt\n      updatedAt\n    }\n  }\n": types.CreatePricingRuleDocument,
     "\n  mutation UpdatePricingRule($id: ID!, $input: UpdatePricingRuleInput!) {\n    updatePricingRule(id: $id, input: $input) {\n      id\n      type\n      name\n      description\n      conditions {\n        field\n        operator\n        value\n        type\n      }\n      actions {\n        type\n        value\n        metadata\n      }\n      priority\n      isActive\n      isEditable\n      validFrom\n      validUntil\n      createdBy\n      createdAt\n      updatedAt\n    }\n  }\n": types.UpdatePricingRuleDocument,
@@ -118,6 +120,10 @@ const documents: Documents = {
  */
 export function gql(source: string): unknown;
 
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  subscription CatalogSyncProgress {\n    catalogSyncProgress {\n      jobId\n      jobType\n      status\n      bundleGroup\n      countryId\n      bundlesProcessed\n      bundlesAdded\n      bundlesUpdated\n      totalBundles\n      progress\n      message\n      errorMessage\n      startedAt\n      updatedAt\n    }\n  }\n"): (typeof documents)["\n  subscription CatalogSyncProgress {\n    catalogSyncProgress {\n      jobId\n      jobType\n      status\n      bundleGroup\n      countryId\n      bundlesProcessed\n      bundlesAdded\n      bundlesUpdated\n      totalBundles\n      progress\n      message\n      errorMessage\n      startedAt\n      updatedAt\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
