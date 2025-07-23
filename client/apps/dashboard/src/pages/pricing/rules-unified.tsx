@@ -443,8 +443,20 @@ const UnifiedPricingRulesPage: React.FC = () => {
                       <TableRow key={rule.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-full bg-${typeConfig.color}-100`}>
-                              <Icon className={`h-4 w-4 text-${typeConfig.color}-600`} />
+                            <div className="relative">
+                              <div className={`p-2 rounded-full bg-${typeConfig.color}-100`}>
+                                <Icon className={`h-4 w-4 text-${typeConfig.color}-600`} />
+                              </div>
+                              {!rule.isEditable && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="absolute -top-1 -right-1 h-2 w-2 bg-blue-600 rounded-full border border-white" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    System rule - Cannot be edited or deleted
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
                             </div>
                             <div>
                               <div className="font-medium text-gray-900">{rule.name}</div>
@@ -480,9 +492,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <div className={`h-2 w-2 rounded-full ${rule.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
                             <span className="text-sm">{rule.isActive ? 'Active' : 'Inactive'}</span>
-                            {!rule.isEditable && (
-                              <Badge variant="secondary" className="text-xs">System</Badge>
-                            )}
                           </div>
                         </TableCell>
                         <TableCell>

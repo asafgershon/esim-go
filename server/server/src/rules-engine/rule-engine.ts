@@ -593,10 +593,11 @@ export class PricingRuleEngine {
     selectedBundleMarkup: number, 
     selectedBundleDuration: number,
     requestedDuration: number,
-    bundleGroup: string
+    bundleGroup: string,
+    availableDurations: number[]
   ): Promise<number> {
     // Find the previous duration bundle (e.g., for 13 days request with 15 day bundle, find 10 day bundle)
-    const previousDuration = this.findPreviousDuration(requestedDuration);
+    const previousDuration = this.findPreviousDuration(requestedDuration, availableDurations);
     if (!previousDuration) return 0;
     
     // Get markup for previous duration bundle
