@@ -1,37 +1,45 @@
-# Use the official Bun image
-FROM oven/bun:1-alpine
+# Multi-stage build for optimized image
+FROM oven/bun:1-alpine AS pruner
+
+# Install turbo globally
+RUN bun add -g turbo
+
+WORKDIR /app
+
+# Copy entire monorepo
+COPY server ./
+
+# Prune the monorepo to include only workers and its dependencies
+RUN turbo prune @esim-go/workers --docker
+
+# Second stage - build the pruned monorepo
+FROM oven/bun:1-alpine AS builder
 
 # Install dependencies for building
 RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-# Copy the monorepo root files from server directory
-COPY server/package.json ./
-COPY server/turbo.json ./
-COPY server/bun.lock ./
+# Copy pruned lockfile and package files
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/bun.lock ./bun.lock
 
-# Copy packages directory
-COPY server/packages ./packages
-
-# Copy server workspace (only what workers need)
-COPY server/server/package.json ./server/package.json
-COPY server/server/src/database.types.ts ./server/src/database.types.ts
-COPY server/server/src/repositories ./server/src/repositories
-COPY server/server/src/lib/logger.ts ./server/src/lib/logger.ts
-
-# Copy workers workspace
-COPY server/workers ./workers
-
-# Install all dependencies (skip postinstall scripts since we don't need codegen for workers)
+# Install dependencies (skip postinstall scripts)
 RUN bun install --frozen-lockfile --ignore-scripts
 
-# Build the workspace packages that workers depend on
-WORKDIR /app/packages/utils
+# Copy pruned source code
+COPY --from=pruner /app/out/full/ .
+
+# Build all packages in the pruned workspace
 RUN bun run build
 
-WORKDIR /app/packages/esim-go-client  
-RUN bun run build
+# Final stage - runtime
+FROM oven/bun:1-alpine
+
+WORKDIR /app
+
+# Copy built application from builder
+COPY --from=builder /app .
 
 # Set working directory for workers runtime
 WORKDIR /app/workers
