@@ -57,7 +57,6 @@ If bundle group filtering fails, system falls back to multi-page pagination appr
 #### Implementation Location:
 - **Primary**: `server/server/src/services/catalog-sync.service.ts`
 - **Cache Integration**: `server/server/src/datasources/esim-go/catalogue-datasource.ts`
-- **Backup System**: `server/server/src/services/catalog-backup.service.ts`
 
 #### API Request Format:
 ```javascript

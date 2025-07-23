@@ -33,7 +33,6 @@ import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 // import { CatalogSyncService } from "./services/catalog-sync.service";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
-import { CatalogBackupService } from "./services/catalog-backup.service";
 import {
   CheckoutSessionRepository,
   OrderRepository,
@@ -299,17 +298,6 @@ async function startServer() {
         port: PORT,
         operationType: "server-startup",
       });
-
-      // Initialize backup service and load backup data
-      const catalogBackupService = new CatalogBackupService(redis);
-      try {
-        await catalogBackupService.loadBackupData();
-      } catch (error) {
-        logger.error("Failed to load backup data", error as Error, {
-          operationType: "backup-load",
-        });
-        // Don't fail server startup if backup loading fails
-      }
 
       // Start catalog sync service V2
       // Note: The actual sync will be performed by the worker system
