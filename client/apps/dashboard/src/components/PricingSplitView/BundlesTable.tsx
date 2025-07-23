@@ -73,11 +73,13 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
                         )}
                         <span className="inline-flex items-center gap-1">
                           Cost: ${(bundle.cost || 0).toFixed(2)}
-                          <ConfigurationLevelIndicator 
-                            level={bundle.configurationLevel} 
-                            size="xs" 
-                            showTooltip 
-                          />
+                          {bundle.configurationLevel && (
+                            <ConfigurationLevelIndicator 
+                              level={bundle.configurationLevel} 
+                              size="xs" 
+                              showTooltip 
+                            />
+                          )}
                         </span>
                       </p>
                     </div>

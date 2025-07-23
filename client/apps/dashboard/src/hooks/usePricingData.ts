@@ -7,7 +7,8 @@ import {
   GetCountriesQuery, 
   GetBundlesByCountryQuery,
   GetTripsQuery,
-  Trip
+  Trip,
+  GetCountryBundlesQuery
 } from '@/__generated__/graphql';
 import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_TRIPS, GET_COUNTRY_BUNDLES } from '../lib/graphql/queries';
 import { 
@@ -45,7 +46,7 @@ export const usePricingData = () => {
   const { data: bundlesCountriesData, loading: bundlesLoading, error: bundlesError, refetch: refetchBundlesCountries } = useQuery<GetBundlesByCountryQuery>(GET_BUNDLES_BY_COUNTRY);
   const { data: tripsQueryData, loading: tripsLoading, error: tripsError } = useQuery<GetTripsQuery>(GET_TRIPS);
   // Removed deprecated GET_DATA_PLANS query
-  const [getCountryBundles] = useLazyQuery(GET_COUNTRY_BUNDLES);
+  const [getCountryBundles] = useLazyQuery<GetCountryBundlesQuery>(GET_COUNTRY_BUNDLES);
   const { calculateBatchPrices } = usePricingWithRules();
 
   // Generate country groups from actual data
@@ -140,39 +141,26 @@ export const usePricingData = () => {
         variables: { countryId }
       });
       
-      if (countryBundlesResult.data?.bundles) {
-        const bundles = countryBundlesResult.data.bundles;
+      if (countryBundlesResult.data?.countryBundles) {
+        const bundles = countryBundlesResult.data.countryBundles;
         
         console.log(`✅ Fetched ${bundles.length} bundles for ${countryId}`);
         
-        // Transform the bundles to include additional display fields
-        const transformedBundles = bundles.map(bundle => ({
-          ...bundle,
-          pricePerDay: bundle.duration > 0 && bundle.priceAfterDiscount ? bundle.priceAfterDiscount / bundle.duration : 0,
-          hasCustomDiscount: bundle.hasCustomDiscount || false,
-          configurationLevel: bundle.configurationLevel || 'GLOBAL',
-          discountPerDay: bundle.discountPerDay || 0.10,
-          // These are already in the response but ensure they exist
-          dataAmount: bundle.dataAmount || 'Unknown',
-          isUnlimited: bundle.isUnlimited || false,
-          bundleGroup: bundle.bundleGroup || 'Standard Fixed'
-        }));
-        
         // Calculate average price per day for the country summary
-        const avgPricePerDay = calculateAveragePricePerDay(transformedBundles);
+        const avgPricePerDay = calculateAveragePricePerDay(bundles);
         
-        // Update the country group with the fetched bundles
+        // Update the country group with the fetched bundles directly from backend
         setCountryGroups(prev => prev.map(group => 
           group.countryId === countryId 
             ? { 
                 ...group, 
-                bundles: transformedBundles,
+                bundles,
                 avgPricePerDay
               }
             : group
         ));
         
-        console.log(`📊 Updated country group for ${countryId} with ${transformedBundles.length} bundles`);
+        console.log(`📊 Updated country group for ${countryId} with ${bundles.length} bundles`);
       } else {
         console.warn(`⚠️ No bundles found for country ${countryId}`);
         // Still update the country group to show empty state

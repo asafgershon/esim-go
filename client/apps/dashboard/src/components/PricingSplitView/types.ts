@@ -2,8 +2,10 @@ import { BundlesByCountry, CountryBundle, Trip } from "../../__generated__/graph
 
 // Extended types for additional display fields
 export interface CountryBundleWithDisplay extends CountryBundle {
-  pricePerDay: number;
-  hasCustomDiscount: boolean;
+  // All these fields should come from the backend
+  // Making them optional since backend might not always provide them
+  pricePerDay?: number;
+  hasCustomDiscount?: boolean;
   configurationLevel?: string;
   discountPerDay?: number;
   dataAmount?: string;

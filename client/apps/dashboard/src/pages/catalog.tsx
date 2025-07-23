@@ -15,28 +15,7 @@ import { CatalogSplitView } from '@/components/catalog/CatalogSplitView';
 import { PageLayout } from '@/components/common/PageLayout';
 import { toast } from 'sonner';
 import { SyncConflictModal, type ConflictingJob } from '@/components/SyncConflictModal';
-
-interface CountryBundle {
-  bundleName: string;
-  countryName: string;
-  countryId: string;
-  duration: number;
-  cost: number;
-  costPlus: number;
-  totalCost: number;
-  discountRate: number;
-  discountValue: number;
-  priceAfterDiscount: number;
-  processingRate: number;
-  processingCost: number;
-  finalRevenue: number;
-  currency: string;
-  pricePerDay: number;
-  hasCustomDiscount: boolean;
-  bundleGroup?: string;
-  isUnlimited?: boolean;
-  dataAmount?: number;
-}
+import type { CountryBundle } from '@/__generated__/graphql';
 
 interface CountryData {
   countryName: string;
