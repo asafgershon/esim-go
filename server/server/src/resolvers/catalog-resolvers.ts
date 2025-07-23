@@ -28,50 +28,27 @@ export const catalogResolvers: Partial<Resolvers> = {
           operationType: "pricing-filters-fetch",
         });
 
-        // Get bundle groups from repository
+        // Get all filter data from repository methods
         const bundleGroups = await context.repositories.bundles.getAvailableBundleGroups();
-        
-        // Get bundle data aggregation from datasource for durations and data types
-        const bundleAggregation = await context.repositories.bundles.getBundlesByGroupAggregation();
+        const dataTypeAggregation = await context.repositories.bundles.getBundlesByDataTypeAggregation();
+        const durationAggregation = await context.repositories.bundles.getBundlesByDurationAggregation();
         
         let durations: { label: string; value: string; minDays: number; maxDays: number }[] = [];
         let dataTypes: { label: string; value: string; isUnlimited: boolean }[] = [];
 
-        if (
-          bundleAggregation &&
-          bundleAggregation.total > 0 &&
-          bundleAggregation.byDuration?.length > 0
-        ) {
-          // Extract unique durations from DB aggregation data
-          durations = bundleAggregation.byDuration.map(
-            (durationGroup: any) => ({
-              label: `${durationGroup.duration} days`,
-              value: durationGroup.duration.toString(),
-              minDays: durationGroup.duration,
-              maxDays: durationGroup.duration,
-            })
-          );
-
-          // Dynamic data types based on actual bundle data from DB
-          dataTypes = [];
-          if (bundleAggregation.unlimited > 0) {
-            dataTypes.push({
-              label: "Unlimited",
-              value: "unlimited",
-              isUnlimited: true,
-            });
-          }
-          if (bundleAggregation.total - bundleAggregation.unlimited > 0) {
-            dataTypes.push({
-              label: "Limited",
-              value: "limited",
-              isUnlimited: false,
-            });
-          }
+        // Extract durations from repository aggregation data
+        if (durationAggregation && durationAggregation.length > 0) {
+          // Use actual durations from DB aggregation
+          durations = durationAggregation.map(dur => ({
+            label: dur.label,
+            value: dur.duration.toString(),
+            minDays: dur.duration,
+            maxDays: dur.duration,
+          }));
         } else {
-          // Fallback to static values if DB aggregation data is not available
-          logger.warn("Bundle aggregation data not available, using fallback filters", {
-            operationType: "pricing-filters-fallback",
+          // Fallback to static durations if DB aggregation data is not available
+          logger.warn("Bundle duration aggregation not available, using fallback durations", {
+            operationType: "pricing-filters-duration-fallback",
           });
           
           durations = [
@@ -79,6 +56,22 @@ export const catalogResolvers: Partial<Resolvers> = {
             { label: "8-30 days", value: "medium", minDays: 8, maxDays: 30 },
             { label: "31+ days", value: "long", minDays: 31, maxDays: 999 },
           ];
+        }
+
+        // Extract data types from repository aggregation data
+        if (dataTypeAggregation && dataTypeAggregation.length > 0) {
+          // Use actual data types from DB aggregation
+          dataTypes = dataTypeAggregation.map(type => ({
+            label: type.label,
+            value: type.dataType,
+            isUnlimited: type.isUnlimited,
+          }));
+        } else {
+          // Fallback to static data types if DB aggregation data is not available
+          logger.warn("Bundle data type aggregation not available, using fallback data types", {
+            operationType: "pricing-filters-datatype-fallback",
+          });
+          
           dataTypes = [
             { label: "Unlimited", value: "unlimited", isUnlimited: true },
             { label: "Limited", value: "limited", isUnlimited: false },

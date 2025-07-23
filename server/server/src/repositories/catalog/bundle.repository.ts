@@ -648,6 +648,315 @@ export class BundleRepository extends BaseSupabaseRepository<CatalogBundle, Cata
   }
 
   /**
+   * Get bundles grouped by data type (unlimited vs limited) with counts - efficient aggregation
+   */
+  async getBundlesByDataTypeAggregation(): Promise<Array<{
+    dataType: string;
+    label: string;
+    isUnlimited: boolean;
+    bundleCount: number;
+    priceRange: PricingRange;
+    countryCount: number;
+  }>> {
+    return withPerformanceLogging(
+      this.logger,
+      'get-bundles-by-datatype-aggregation',
+      async () => {
+        const { data, error } = await this.supabase
+          .from('catalog_bundles')
+          .select('unlimited, data_amount, price_cents, countries');
+
+        if (error) {
+          this.logger.error('Failed to get data type aggregation', error);
+          throw error;
+        }
+
+        // Aggregate by data type (unlimited vs limited), count bundles, track prices, and count unique countries
+        const dataTypeStats = new Map<string, {
+          bundleCount: number;
+          prices: number[];
+          countries: Set<string>;
+          isUnlimited: boolean;
+          label: string;
+        }>();
+        
+        this.logger.debug('Raw bundle data sample for data types', {
+          totalBundles: data?.length || 0,
+          sampleBundles: (data || []).slice(0, 3).map(bundle => ({
+            unlimited: bundle.unlimited,
+            data_amount: bundle.data_amount,
+            price_cents: bundle.price_cents,
+            countries: bundle.countries,
+            countryType: typeof bundle.countries,
+            isArray: Array.isArray(bundle.countries)
+          })),
+          operationType: 'datatype-aggregation-debug'
+        });
+        
+        for (const bundle of data || []) {
+          // Determine data type based on unlimited flag and data_amount
+          const isUnlimited = bundle.unlimited === true || bundle.data_amount === -1;
+          const dataType = isUnlimited ? 'unlimited' : 'limited';
+          const label = isUnlimited ? 'Unlimited' : 'Limited';
+          
+          // Initialize stats for this data type if not exists
+          if (!dataTypeStats.has(dataType)) {
+            dataTypeStats.set(dataType, {
+              bundleCount: 0,
+              prices: [],
+              countries: new Set(),
+              isUnlimited,
+              label
+            });
+          }
+          
+          const stats = dataTypeStats.get(dataType)!;
+          
+          // Count bundles for this data type
+          stats.bundleCount += 1;
+          
+          // Track prices for this data type (only valid prices)
+          const priceCents = bundle.price_cents;
+          const isValidPrice = priceCents !== null && priceCents !== undefined && typeof priceCents === 'number' && priceCents > 0;
+          
+          if (isValidPrice) {
+            stats.prices.push(priceCents);
+          }
+          
+          // Track unique countries for this data type
+          if (bundle.countries && Array.isArray(bundle.countries)) {
+            for (const country of bundle.countries) {
+              if (typeof country === 'string') {
+                stats.countries.add(country);
+              }
+            }
+          }
+        }
+
+        // Convert to array and calculate pricing ranges and country counts
+        const result = Array.from(dataTypeStats.entries())
+          .map(([dataType, stats]) => {
+            let priceRange: PricingRange;
+            
+            if (stats.prices.length > 0) {
+              const minPrice = Math.min(...stats.prices);
+              const maxPrice = Math.max(...stats.prices);
+              priceRange = { min: minPrice, max: maxPrice };
+            } else {
+              // No valid pricing data for this data type
+              priceRange = { min: 0, max: 0 };
+              this.logger.debug('Data type has no valid pricing data', {
+                dataType,
+                bundleCount: stats.bundleCount,
+                operationType: 'datatype-pricing-debug'
+              });
+            }
+            
+            return {
+              dataType,
+              label: stats.label,
+              isUnlimited: stats.isUnlimited,
+              bundleCount: stats.bundleCount,
+              priceRange,
+              countryCount: stats.countries.size
+            };
+          })
+          .sort((a, b) => a.label.localeCompare(b.label)); // Sort by label (Limited, Unlimited)
+
+        // Add detailed logging
+        const dataTypeStatsForLogging = {
+          typesWithPricing: 0,
+          typesWithoutPricing: 0,
+          totalValidPrices: 0,
+          dataTypeRanges: [] as Array<{dataType: string, label: string, min: number, max: number, bundleCount: number, countryCount: number}>
+        };
+
+        result.forEach(type => {
+          if (type.priceRange.min > 0 || type.priceRange.max > 0) {
+            dataTypeStatsForLogging.typesWithPricing++;
+            dataTypeStatsForLogging.totalValidPrices += dataTypeStats.get(type.dataType)?.prices.length || 0;
+          } else {
+            dataTypeStatsForLogging.typesWithoutPricing++;
+          }
+          
+          dataTypeStatsForLogging.dataTypeRanges.push({
+            dataType: type.dataType,
+            label: type.label,
+            min: type.priceRange.min,
+            max: type.priceRange.max,
+            bundleCount: type.bundleCount,
+            countryCount: type.countryCount
+          });
+        });
+
+        this.logger.info('Data type aggregation completed', {
+          dataTypeCount: result.length,
+          totalBundles: data?.length || 0,
+          dataTypeStatsForLogging,
+          operationType: 'datatype-aggregation'
+        });
+
+        return result;
+      }
+    );
+  }
+
+  /**
+   * Get bundles grouped by duration with counts - efficient aggregation
+   */
+  async getBundlesByDurationAggregation(): Promise<Array<{
+    duration: number;
+    label: string;
+    bundleCount: number;
+    priceRange: PricingRange;
+    countryCount: number;
+  }>> {
+    return withPerformanceLogging(
+      this.logger,
+      'get-bundles-by-duration-aggregation',
+      async () => {
+        const { data, error } = await this.supabase
+          .from('catalog_bundles')
+          .select('duration, price_cents, countries');
+
+        if (error) {
+          this.logger.error('Failed to get duration aggregation', error);
+          throw error;
+        }
+
+        // Aggregate by duration, count bundles, track prices, and count unique countries
+        const durationStats = new Map<number, {
+          bundleCount: number;
+          prices: number[];
+          countries: Set<string>;
+          label: string;
+        }>();
+        
+        this.logger.debug('Raw bundle data sample for durations', {
+          totalBundles: data?.length || 0,
+          sampleBundles: (data || []).slice(0, 3).map(bundle => ({
+            duration: bundle.duration,
+            price_cents: bundle.price_cents,
+            countries: bundle.countries,
+            countryType: typeof bundle.countries,
+            isArray: Array.isArray(bundle.countries)
+          })),
+          operationType: 'duration-aggregation-debug'
+        });
+        
+        for (const bundle of data || []) {
+          const duration = bundle.duration;
+          if (duration && typeof duration === 'number' && duration > 0) {
+            const label = `${duration} days`;
+            
+            // Initialize stats for this duration if not exists
+            if (!durationStats.has(duration)) {
+              durationStats.set(duration, {
+                bundleCount: 0,
+                prices: [],
+                countries: new Set(),
+                label
+              });
+            }
+            
+            const stats = durationStats.get(duration)!;
+            
+            // Count bundles for this duration
+            stats.bundleCount += 1;
+            
+            // Track prices for this duration (only valid prices)
+            const priceCents = bundle.price_cents;
+            const isValidPrice = priceCents !== null && priceCents !== undefined && typeof priceCents === 'number' && priceCents > 0;
+            
+            if (isValidPrice) {
+              stats.prices.push(priceCents);
+            }
+            
+            // Track unique countries for this duration
+            if (bundle.countries && Array.isArray(bundle.countries)) {
+              for (const country of bundle.countries) {
+                if (typeof country === 'string') {
+                  stats.countries.add(country);
+                }
+              }
+            }
+          } else {
+            this.logger.debug('Bundle without valid duration', {
+              duration,
+              type: typeof duration,
+              price_cents: bundle.price_cents
+            });
+          }
+        }
+
+        // Convert to array and calculate pricing ranges and country counts
+        const result = Array.from(durationStats.entries())
+          .map(([duration, stats]) => {
+            let priceRange: PricingRange;
+            
+            if (stats.prices.length > 0) {
+              const minPrice = Math.min(...stats.prices);
+              const maxPrice = Math.max(...stats.prices);
+              priceRange = { min: minPrice, max: maxPrice };
+            } else {
+              // No valid pricing data for this duration
+              priceRange = { min: 0, max: 0 };
+              this.logger.debug('Duration has no valid pricing data', {
+                duration,
+                bundleCount: stats.bundleCount,
+                operationType: 'duration-pricing-debug'
+              });
+            }
+            
+            return {
+              duration,
+              label: stats.label,
+              bundleCount: stats.bundleCount,
+              priceRange,
+              countryCount: stats.countries.size
+            };
+          })
+          .sort((a, b) => a.duration - b.duration); // Sort by duration ascending
+
+        // Add detailed logging
+        const durationStatsForLogging = {
+          durationsWithPricing: 0,
+          durationsWithoutPricing: 0,
+          totalValidPrices: 0,
+          durationRanges: [] as Array<{duration: number, label: string, min: number, max: number, bundleCount: number, countryCount: number}>
+        };
+
+        result.forEach(dur => {
+          if (dur.priceRange.min > 0 || dur.priceRange.max > 0) {
+            durationStatsForLogging.durationsWithPricing++;
+            durationStatsForLogging.totalValidPrices += durationStats.get(dur.duration)?.prices.length || 0;
+          } else {
+            durationStatsForLogging.durationsWithoutPricing++;
+          }
+          
+          durationStatsForLogging.durationRanges.push({
+            duration: dur.duration,
+            label: dur.label,
+            min: dur.priceRange.min,
+            max: dur.priceRange.max,
+            bundleCount: dur.bundleCount,
+            countryCount: dur.countryCount
+          });
+        });
+
+        this.logger.info('Duration aggregation completed', {
+          durationCount: result.length,
+          totalBundles: data?.length || 0,
+          durationStatsForLogging,
+          operationType: 'duration-aggregation'
+        });
+
+        return result;
+      }
+    );
+  }
+
+  /**
    * Get bundles grouped by region with counts - efficient aggregation
    */
   async getBundlesByRegionAggregation(): Promise<Array<{
