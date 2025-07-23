@@ -31,6 +31,7 @@ import {
 } from "./datasources/esim-go";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
+import { getPubSub } from "./context/pubsub";
 // import { CatalogSyncService } from "./services/catalog-sync.service";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
 import {
@@ -64,6 +65,9 @@ async function startServer() {
 
     // Redis is now configured at Apollo Server level for caching
     const redis = await getRedis();
+    
+    // Initialize PubSub for WebSocket subscriptions
+    const pubsub = await getPubSub(redis);
 
     // Initialize repositories
     const checkoutSessionRepository = new CheckoutSessionRepository();
@@ -104,7 +108,7 @@ async function startServer() {
             auth,
             services: {
               redis,
-              // pubsub: getPubSub(redis), // Add when needed
+              pubsub,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -264,7 +268,7 @@ async function startServer() {
             auth,
             services: {
               redis,
-              // pubsub: getPubSub(redis), // Add when needed
+              pubsub,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,

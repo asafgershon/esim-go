@@ -343,62 +343,40 @@ export const resolvers: Resolvers = {
           });
         }
         
-        // Filter bundles by duration - first try exact match
-        let bundle = countryBundles.find(b => b.duration === numOfDays);
-        
-        // If no exact match, find the smallest bundle that covers the requested duration
-        if (!bundle) {
-          const eligibleBundles = countryBundles
-            .filter(b => b.duration && b.duration >= numOfDays)
-            .sort((a, b) => (a.duration || 0) - (b.duration || 0));
-          
-          if (eligibleBundles.length === 0) {
-            throw new GraphQLError(`No bundles found for ${numOfDays} days or longer in country: ${countryId}`, {
-              extensions: { code: 'NO_BUNDLES_FOUND' }
-            });
-          }
-          
-          bundle = eligibleBundles[0];
-          const logger = createLogger({ component: 'calculatePrice' });
-          logger.info('Using next available bundle duration for pricing interpolation', {
-            requestedDays: numOfDays,
-            selectedBundleDays: bundle.duration,
-            countryId,
-            operationType: 'bundle-duration-selection'
-          });
-        }
-        
         // Get country name for response
         const countries = await context.dataSources.countries.getCountries();
         const country = countries.find(c => c.iso.toLowerCase() === countryId.toLowerCase());
         
-        // Create pricing context for the rule engine using service helper
+        // Map all available bundles for the pricing engine
+        const availableBundles = countryBundles.map(bundle => ({
+          id: bundle?.esim_go_name || `${countryId}-${bundle?.duration || numOfDays}d`,
+          name: bundle?.esim_go_name || '',
+          cost: ((bundle?.price_cents || 0) / 100),
+          duration: bundle?.duration || numOfDays,
+          countryId: countryId,
+          countryName: country?.country || countryId,
+          regionId: regionId || 'global',
+          regionName: regionId || 'Global',
+          group: bundle?.bundle_group || 'Standard Fixed',
+          isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+          dataAmount: bundle?.data_amount?.toString() || '0'
+        }));
+        
+        // Create pricing context for the rule engine - let engine select optimal bundle
         const pricingContext = PricingEngineService.createContext({
-          bundle: {
-            id: bundle?.esim_go_name || `${countryId}-${bundle?.duration || numOfDays}d`,
-            name: bundle?.esim_go_name || '',
-            cost: ((bundle?.price_cents || 0) / 100),
-            duration: bundle?.duration || numOfDays, // Use actual bundle duration, not requested
-            countryId: countryId,
-            countryName: country?.country || countryId,
-            regionId: regionId || 'global',
-            regionName: regionId || 'Global',
-            group: bundle?.bundle_group || 'Standard Fixed',
-            isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-            dataAmount: bundle?.data_amount?.toString() || '0'
-          },
-          requestedDuration: numOfDays, // Pass the actual requested duration
+          availableBundles,
+          requestedDuration: numOfDays,
           paymentMethod: mapPaymentMethodEnum(paymentMethod)
         });
         
-        // Calculate price using rule engine
+        // Calculate price using rule engine (includes bundle selection)
         const calculation = await engineService.calculatePrice(pricingContext);
         
         const countryName = country?.country || countryId;
         
         // Map rule engine result to GraphQL schema
         return {
-          bundleName: bundle?.esim_go_name || `${numOfDays} Day Bundle`,
+          bundleName: calculation.selectedBundle.bundleName || `${numOfDays} Day Bundle`,
           countryName,
           duration: numOfDays,
           currency: 'USD',
@@ -437,46 +415,45 @@ export const resolvers: Resolvers = {
       const results = await Promise.all(
         inputs.map(async (input: CalculatePriceInput) => {
           try {
-            // Get bundle information from catalog
-            // Ensure country code is uppercase to match database format
-            const bundles = await context.dataSources.catalogue.searchPlans({
-              country: input.countryId.toUpperCase(),
-              duration: input.numOfDays
-            });
+            // Get bundle information from catalog using the same method as single calculatePrice
+            const countryBundles = await context.dataSources.catalogue.getBundlesByCountry(
+              input.countryId.toUpperCase()
+            );
             
-            if (!bundles.bundles || bundles.bundles.length === 0) {
-              throw new GraphQLError('No bundles found for the specified criteria', {
+            if (!countryBundles || countryBundles.length === 0) {
+              throw new GraphQLError(`No bundles found for country: ${input.countryId}`, {
                 extensions: { code: 'NO_BUNDLES_FOUND' }
               });
             }
             
-            // Use the first matching bundle
-            const bundle = bundles.bundles[0];
+            // Map all available bundles for the pricing engine
+            const availableBundles = countryBundles.map(bundle => ({
+              id: bundle?.esim_go_name || `${input.countryId}-${bundle?.duration || input.numOfDays}d`,
+              name: bundle?.esim_go_name || '',
+              cost: ((bundle?.price_cents || 0) / 100),
+              duration: bundle?.duration || input.numOfDays,
+              countryId: input.countryId,
+              countryName: countryMap.get(input.countryId) || input.countryId,
+              regionId: 'global', // We don't have region info in this context
+              regionName: 'Global',
+              group: bundle?.bundle_group || 'Standard Fixed',
+              isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+              dataAmount: bundle?.data_amount?.toString() || '0'
+            }));
             
-            // Create pricing context for the rule engine using service helper
+            // Create pricing context for the rule engine - let engine select optimal bundle
             const pricingContext = PricingEngineService.createContext({
-              bundle: {
-                id: bundle.name || `${input.countryId}-${input.numOfDays}d`,
-                name: bundle.name,
-                cost: bundle.price || 0,
-                duration: input.numOfDays,
-                countryId: input.countryId,
-                countryName: countryMap.get(input.countryId) || input.countryId,
-                regionId: bundle.baseCountry?.region || 'global',
-                regionName: bundle.baseCountry?.region || 'Global',
-                group: bundle.bundleGroup || 'Standard Fixed',
-                isUnlimited: bundle.unlimited || bundle.dataAmount === -1,
-                dataAmount: bundle.dataAmount?.toString() || '0'
-              },
+              availableBundles,
+              requestedDuration: input.numOfDays,
               paymentMethod: mapPaymentMethodEnum(input.paymentMethod)
             });
             
-            // Calculate price using rule engine
+            // Calculate price using rule engine (includes bundle selection)
             const calculation = await engineService.calculatePrice(pricingContext);
             
             // Map rule engine result to existing GraphQL schema
             return {
-              bundleName: bundle.name || `${input.numOfDays} Day Bundle`,
+              bundleName: calculation.selectedBundle.bundleName || `${input.numOfDays} Day Bundle`,
               countryName: countryMap.get(input.countryId) || input.countryId,
               duration: input.numOfDays,
               cost: calculation.baseCost,
@@ -2187,6 +2164,20 @@ export const resolvers: Resolvers = {
     esimStatusUpdated: {
       subscribe: () => {
         throw new Error("Subscriptions not implemented yet");
+      },
+    },
+    
+    // Catalog sync progress subscription
+    catalogSyncProgress: {
+      subscribe: async (_, __, context: Context) => {
+        if (!context.services.pubsub) {
+          throw new GraphQLError('PubSub service not available', {
+            extensions: { code: 'SERVICE_UNAVAILABLE' }
+          });
+        }
+        
+        const { PubSubEvents } = await import('./context/pubsub');
+        return context.services.pubsub.asyncIterator([PubSubEvents.CATALOG_SYNC_PROGRESS]);
       },
     },
   },

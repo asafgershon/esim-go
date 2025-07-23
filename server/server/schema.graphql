@@ -143,6 +143,9 @@ type Mutation {
 type Subscription {
   # Real-time eSIM status updates
   esimStatusUpdated(esimId: ID!): ESIMStatusUpdate! @auth
+  
+  # Catalog sync progress (admin only)
+  catalogSyncProgress: CatalogSyncProgressUpdate! @auth(role: "ADMIN")
 }
 
 # User Types
@@ -428,6 +431,23 @@ type ESIMStatusUpdate {
   status: ESIMStatus!
   dataUsed: Float
   dataRemaining: Float
+  updatedAt: String!
+}
+
+type CatalogSyncProgressUpdate {
+  jobId: ID!
+  jobType: SyncJobType!
+  status: SyncJobStatus!
+  bundleGroup: String
+  countryId: String
+  bundlesProcessed: Int!
+  bundlesAdded: Int!
+  bundlesUpdated: Int!
+  totalBundles: Int
+  progress: Float! # Progress percentage (0-100)
+  message: String
+  errorMessage: String
+  startedAt: String!
   updatedAt: String!
 }
 

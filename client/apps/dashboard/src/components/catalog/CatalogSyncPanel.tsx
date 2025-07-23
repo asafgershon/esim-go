@@ -1,10 +1,50 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useSubscription, gql } from '@apollo/client';
+
+const CATALOG_SYNC_PROGRESS_SUBSCRIPTION = gql`
+  subscription CatalogSyncProgress {
+    catalogSyncProgress {
+      jobId
+      jobType
+      status
+      bundleGroup
+      countryId
+      bundlesProcessed
+      bundlesAdded
+      bundlesUpdated
+      totalBundles
+      progress
+      message
+      errorMessage
+      startedAt
+      updatedAt
+    }
+  }
+`;
+
+interface CatalogSyncProgressUpdate {
+  jobId: string;
+  jobType: 'FULL_SYNC' | 'GROUP_SYNC';
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  bundleGroup?: string;
+  countryId?: string;
+  bundlesProcessed: number;
+  bundlesAdded: number;
+  bundlesUpdated: number;
+  totalBundles?: number;
+  progress: number;
+  message?: string;
+  errorMessage?: string;
+  startedAt: string;
+  updatedAt: string;
+}
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
 import { ScrollArea } from '@workspace/ui/components/scroll-area';
 import { Skeleton } from '@workspace/ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@workspace/ui/components/tooltip';
+import { Progress } from '@workspace/ui/components/progress';
 import { 
   X, 
   RefreshCw, 
@@ -14,7 +54,9 @@ import {
   Clock,
   Package,
   Plus,
-  ArrowUp
+  ArrowUp,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 
 interface SyncJob {
@@ -50,6 +92,65 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
   onSync,
   syncLoading
 }) => {
+  const [liveSyncProgress, setLiveSyncProgress] = useState<CatalogSyncProgressUpdate | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
+  
+  // Subscribe to real-time catalog sync progress
+  const { data: syncProgressData, error: syncError } = useSubscription(CATALOG_SYNC_PROGRESS_SUBSCRIPTION, {
+    onSubscriptionData: ({ subscriptionData }) => {
+      if (subscriptionData.data?.catalogSyncProgress) {
+        setLiveSyncProgress(subscriptionData.data.catalogSyncProgress);
+        setWsConnected(true);
+      }
+    },
+    onSubscriptionComplete: () => {
+      console.log('Catalog sync subscription completed');
+    },
+    onError: (error) => {
+      console.error('Catalog sync subscription error:', error);
+      setWsConnected(false);
+    }
+  });
+
+  // Clear live progress when sync completes or fails
+  useEffect(() => {
+    if (liveSyncProgress && (liveSyncProgress.status === 'COMPLETED' || liveSyncProgress.status === 'FAILED')) {
+      const timer = setTimeout(() => {
+        setLiveSyncProgress(null);
+      }, 3000); // Clear after 3 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [liveSyncProgress]);
+
+  const getLiveStatusIcon = (status: CatalogSyncProgressUpdate['status']) => {
+    switch (status) {
+      case 'COMPLETED':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'FAILED':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'PROCESSING':
+        return <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />;
+      case 'PENDING':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getLiveStatusBadge = (status: CatalogSyncProgressUpdate['status']) => {
+    const variants: Record<CatalogSyncProgressUpdate['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      COMPLETED: 'default',
+      FAILED: 'destructive',
+      PROCESSING: 'secondary',
+      PENDING: 'outline'
+    };
+    
+    return (
+      <Badge variant={variants[status] || 'outline'} className="text-xs">
+        {status.toLowerCase()}
+      </Badge>
+    );
+  };
   const getStatusIcon = (status: SyncJob['status']) => {
     switch (status) {
       case 'completed':
@@ -128,8 +229,22 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
     <Card className="h-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div>
-          <CardTitle className="text-lg">Sync History</CardTitle>
-          <CardDescription>Recent catalog synchronization jobs</CardDescription>
+          <CardTitle className="text-lg flex items-center gap-2">
+            Sync History
+            <Tooltip>
+              <TooltipTrigger>
+                {wsConnected ? (
+                  <Wifi className="h-4 w-4 text-green-500" />
+                ) : (
+                  <WifiOff className="h-4 w-4 text-gray-400" />
+                )}
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>WebSocket {wsConnected ? 'connected' : 'disconnected'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </CardTitle>
+          <CardDescription>Real-time catalog synchronization updates</CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <Tooltip>
@@ -173,6 +288,87 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Live Sync Progress - Show as first card when active */}
+              {liveSyncProgress && (
+                <div className="border-2 border-blue-200 dark:border-blue-600 rounded-lg p-3 space-y-2 bg-blue-50/50 dark:bg-blue-900/10">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      {getLiveStatusIcon(liveSyncProgress.status)}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{liveSyncProgress.jobType}</span>
+                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                            LIVE
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {formatRelativeTime(liveSyncProgress.startedAt)}
+                        </p>
+                      </div>
+                    </div>
+                    {getLiveStatusBadge(liveSyncProgress.status)}
+                  </div>
+                  
+                  {liveSyncProgress.bundleGroup && (
+                    <Badge variant="outline" className="text-xs">
+                      {liveSyncProgress.bundleGroup}
+                    </Badge>
+                  )}
+                  
+                  {liveSyncProgress.countryId && (
+                    <Badge variant="outline" className="text-xs">
+                      Country: {liveSyncProgress.countryId}
+                    </Badge>
+                  )}
+                  
+                  {/* Progress Bar */}
+                  {liveSyncProgress.status === 'PROCESSING' && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span>{liveSyncProgress.progress}% complete</span>
+                        {liveSyncProgress.totalBundles && (
+                          <span>{liveSyncProgress.bundlesProcessed} / {liveSyncProgress.totalBundles}</span>
+                        )}
+                      </div>
+                      <Progress value={liveSyncProgress.progress} className="h-2" />
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Package className="h-3 w-3" />
+                      <span>{liveSyncProgress.bundlesProcessed} processed</span>
+                    </div>
+                    {liveSyncProgress.bundlesAdded > 0 && (
+                      <div className="flex items-center gap-1">
+                        <Plus className="h-3 w-3 text-green-500" />
+                        <span>{liveSyncProgress.bundlesAdded} added</span>
+                      </div>
+                    )}
+                    {liveSyncProgress.bundlesUpdated > 0 && (
+                      <div className="flex items-center gap-1">
+                        <RefreshCw className="h-3 w-3 text-blue-500" />
+                        <span>{liveSyncProgress.bundlesUpdated} updated</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {liveSyncProgress.message && (
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      {liveSyncProgress.message}
+                    </p>
+                  )}
+                  
+                  {liveSyncProgress.errorMessage && (
+                    <div className="bg-red-50 dark:bg-red-900/20 rounded p-2">
+                      <p className="text-xs text-red-600 dark:text-red-400">
+                        {liveSyncProgress.errorMessage}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               {syncHistory.map((job) => (
                 <div
                   key={job.id}
