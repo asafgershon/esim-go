@@ -51,8 +51,24 @@ export function transformBundleToDatabase(bundle: CatalogueResponseInner): Catal
   const validatedBundle = ESimGoBundleSchema.parse(bundle);
   
   // Extract country ISO codes and regions from country objects
-  // Store ISO codes for consistent country identification
-  const countryIsoCodes = validatedBundle.countries?.map(country => country.iso).filter(Boolean) || [];
+  // Store ISO codes for consistent country identification, filter out regions
+  const knownRegions = new Set([
+    'Africa', 'Asia', 'Europe', 'North America', 'South America', 
+    'Oceania', 'Antarctica', 'Middle East', 'Caribbean', 'Central America',
+    'Western Europe', 'Eastern Europe', 'Southeast Asia', 'East Asia',
+    'Central Asia', 'Southern Africa', 'Northern Africa', 'Western Africa',
+    'Eastern Africa', 'Central Africa'
+  ]);
+  
+  const countryIsoCodes = validatedBundle.countries
+    ?.map(country => country.iso)
+    .filter(iso => {
+      // Only include valid ISO codes (2 characters) and exclude known regions
+      return iso && 
+             iso.length === 2 && 
+             !knownRegions.has(iso);
+    }) || [];
+    
   const regions = [...new Set(validatedBundle.countries?.map(country => country.region).filter(Boolean) || [])];
   
   // Transform to database format

@@ -91,14 +91,14 @@ function aggregatePricingResults(pricingResults: any[], totalBundles: number): a
       avgCost: 0,
       avgCostPlus: 0,
       avgTotalCost: 0,
-      avgDiscountRate: 0.3,
+      avgDiscountRate: 0,
       totalDiscountValue: 0,
-      avgProcessingRate: 0.045,
+      avgProcessingRate: 0,
       avgProcessingCost: 0,
       avgFinalRevenue: 0,
       avgNetProfit: 0,
       avgPricePerDay: 0,
-      calculationMethod: 'ESTIMATED'
+      calculationMethod: 'NO_DATA'
     };
   }
   
@@ -293,13 +293,31 @@ export const resolvers: Resolvers = {
     },
     countries: async (_, __, context: Context) => {
       const countries = await context.dataSources.countries.getCountries();
-      return countries.map((country) => ({
-        iso: country.iso,
-        name: country.country,
-        nameHebrew: country.hebrewName || country.country,
-        region: country.region,
-        flag: country.flag,
-      }));
+      
+      // List of known regions to filter out from countries list
+      const knownRegions = new Set([
+        'Africa', 'Asia', 'Europe', 'North America', 'South America', 
+        'Oceania', 'Antarctica', 'Middle East', 'Caribbean', 'Central America',
+        'Western Europe', 'Eastern Europe', 'Southeast Asia', 'East Asia',
+        'Central Asia', 'Southern Africa', 'Northern Africa', 'Western Africa',
+        'Eastern Africa', 'Central Africa'
+      ]);
+      
+      return countries
+        .filter((country) => {
+          // Filter out entries that are actually regions (not valid ISO country codes)
+          // Check if the "country" name matches known regions
+          return !knownRegions.has(country.country) && 
+                 country.iso && 
+                 country.iso.length === 2; // Valid ISO codes are exactly 2 characters
+        })
+        .map((country) => ({
+          iso: country.iso,
+          name: country.country,
+          nameHebrew: country.hebrewName || country.country,
+          region: country.region,
+          flag: country.flag,
+        }));
     },
     // trips resolver moved to tripsResolvers
     calculatePrice: async (
@@ -376,7 +394,7 @@ export const resolvers: Resolvers = {
           processingCost: calculation.processingFee,
           finalRevenue: calculation.finalRevenue,
           netProfit: calculation.profit,
-          discountPerDay: calculation.metadata?.discountPerUnusedDay || 0.10
+          discountPerDay: calculation.metadata?.discountPerUnusedDay || 0
         };
       } catch (error) {
         logger.error('Error calculating price with rule engine', error as Error, {
@@ -453,7 +471,7 @@ export const resolvers: Resolvers = {
               finalRevenue: calculation.finalRevenue,
               netProfit: calculation.profit,
               currency: 'USD',
-              discountPerDay: calculation.metadata?.discountPerUnusedDay || 0.10
+              discountPerDay: calculation.metadata?.discountPerUnusedDay || 0
             };
           } catch (error) {
             logger.error(`Error calculating pricing for ${input.countryId} ${input.numOfDays}d`, error as Error, {
@@ -477,7 +495,7 @@ export const resolvers: Resolvers = {
               finalRevenue: 0,
               netProfit: 0,
               currency: 'USD',
-              discountPerDay: 0.10
+              discountPerDay: 0
             };
           }
         })
@@ -765,7 +783,7 @@ export const resolvers: Resolvers = {
                   : 0,
                 discountValue: calculation.totalDiscount || 0,
                 priceAfterDiscount: calculation.priceAfterDiscount || 0,
-                processingRate: calculation.processingRate || 0.045,
+                processingRate: calculation.processingRate || 0,
                 processingCost: calculation.processingFee || 0,
                 finalRevenue: calculation.finalRevenue || 0,
                 netProfit: calculation.profit || 0,
@@ -775,7 +793,7 @@ export const resolvers: Resolvers = {
                   : 0,
                 hasCustomDiscount: hasCustomConfig,
                 configurationLevel: configLevelByBundle.get(plan.duration) || ConfigurationLevel.Global,
-                discountPerDay: calculation.metadata?.discountPerUnusedDay || 0.10,
+                discountPerDay: calculation.metadata?.discountPerUnusedDay || 0,
                 // Add plan-specific metadata to distinguish between unlimited/limited bundles
                 planId: plan.name || plan.id || `${countryId}-${plan.duration}d`,
                 isUnlimited: plan.unlimited || plan.dataAmount === -1,
