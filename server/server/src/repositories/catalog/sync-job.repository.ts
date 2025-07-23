@@ -443,6 +443,107 @@ export class SyncJobRepository extends BaseSupabaseRepository {
   }
 
   /**
+   * Cancel pending jobs that match the criteria
+   */
+  async cancelPendingJobs(params: {
+    jobType: JobType;
+    bundleGroup?: string;
+    countryId?: string;
+  }): Promise<number> {
+    return withPerformanceLogging(
+      this.logger,
+      'cancel-pending-jobs',
+      async () => {
+        let query = this.supabase
+          .from('catalog_sync_jobs')
+          .update({
+            status: 'cancelled',
+            error_message: 'Cancelled to allow new sync job',
+            updated_at: new Date().toISOString(),
+            completed_at: new Date().toISOString()
+          })
+          .eq('status', 'pending')
+          .eq('job_type', params.jobType);
+
+        if (params.bundleGroup) {
+          query = query.eq('bundle_group', params.bundleGroup);
+        }
+
+        if (params.countryId) {
+          query = query.eq('country_id', params.countryId);
+        }
+
+        const { data, error } = await query.select('id');
+
+        if (error) {
+          this.logger.error('Failed to cancel pending jobs', error, { params });
+          throw error;
+        }
+
+        const cancelledCount = data?.length || 0;
+
+        if (cancelledCount > 0) {
+          this.logger.info('Cancelled pending sync jobs', {
+            cancelledCount,
+            jobType: params.jobType,
+            bundleGroup: params.bundleGroup,
+            countryId: params.countryId,
+            operationType: 'pending-jobs-cancelled'
+          });
+        }
+
+        return cancelledCount;
+      },
+      { jobType: params.jobType }
+    );
+  }
+
+  /**
+   * Get active job details for conflict checking
+   */
+  async getActiveJobDetails(params: {
+    jobType: JobType;
+    bundleGroup?: string;
+    countryId?: string;
+  }): Promise<CatalogSyncJob | null> {
+    return withPerformanceLogging(
+      this.logger,
+      'get-active-job-details',
+      async () => {
+        let query = this.supabase
+          .from('catalog_sync_jobs')
+          .select('*')
+          .in('status', ['pending', 'running'])
+          .eq('job_type', params.jobType);
+
+        if (params.bundleGroup) {
+          query = query.eq('bundle_group', params.bundleGroup);
+        }
+
+        if (params.countryId) {
+          query = query.eq('country_id', params.countryId);
+        }
+
+        const { data, error } = await query
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            return null; // No active jobs
+          }
+          this.logger.error('Failed to get active job details', error, { params });
+          throw error;
+        }
+
+        return data;
+      },
+      { jobType: params.jobType }
+    );
+  }
+
+  /**
    * Clean up old completed jobs
    */
   async cleanupOldJobs(daysToKeep: number = 30): Promise<number> {

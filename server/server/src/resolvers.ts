@@ -509,7 +509,7 @@ export const resolvers: Resolvers = {
       return uniqueResults;
     },
     
-    bundlesByCountry: async (_, __, context: Context) => {
+    bundlesCountries: async (_, __, context: Context) => {
       
       try {
         // Use efficient aggregation from repository instead of loading all bundles
@@ -530,7 +530,7 @@ export const resolvers: Resolvers = {
         });
         
         // Map aggregation results to expected format with proper country names
-        const bundlesByCountry = countryAggregation
+        const bundlesCountries = countryAggregation
           .map(({ countryId, bundleCount }) => {
             const countryName = countryNamesMap.get(countryId) || countryId;
             logger.debug('Country mapping', {
@@ -559,16 +559,16 @@ export const resolvers: Resolvers = {
           }) // Include all countries for now
           .sort((a, b) => a.countryName.localeCompare(b.countryName));
         
-        logger.info('✅ BundlesByCountry aggregated efficiently', {
-          countryCount: bundlesByCountry.length,
+        logger.info('✅ BundlesCountries aggregated efficiently', {
+          countryCount: bundlesCountries.length,
           totalAggregated: countryAggregation.length,
-          operationType: 'bundles-by-country-aggregation'
+          operationType: 'bundles-countries-aggregation'
         });
         
-        return bundlesByCountry;
+        return bundlesCountries;
       } catch (error) {
-        logger.error('Error in bundlesByCountry resolver', error as Error, {
-          operationType: 'bundles-by-country-fetch'
+        logger.error('Error in bundlesCountries resolver', error as Error, {
+          operationType: 'bundles-countries-fetch'
         });
 
         // Check if it's a catalog empty error
@@ -587,13 +587,13 @@ export const resolvers: Resolvers = {
       }
     },
 
-    bundlesByRegion: async (_, __, context: Context) => {
+    bundlesRegions: async (_, __, context: Context) => {
       try {
         // Get regions aggregation from repository
         const regionAggregation = await context.dataSources.catalogue.getBundlesByRegionAggregation();
         
         // Map to expected format
-        const bundlesByRegion = regionAggregation
+        const bundlesRegions = regionAggregation
           .map(({ regionName, bundleCount, countryCount }) => ({
             regionName,
             bundleCount,
@@ -602,16 +602,16 @@ export const resolvers: Resolvers = {
           .filter(item => item.regionName && item.regionName.trim() !== '') // Filter out empty regions
           .sort((a, b) => a.regionName.localeCompare(b.regionName));
 
-        logger.info('✅ BundlesByRegion aggregated efficiently', {
-          regionCount: bundlesByRegion.length,
+        logger.info('✅ BundlesRegions aggregated efficiently', {
+          regionCount: bundlesRegions.length,
           totalAggregated: regionAggregation.length,
-          operationType: 'bundles-by-region-aggregation'
+          operationType: 'bundles-regions-aggregation'
         });
 
-        return bundlesByRegion;
+        return bundlesRegions;
       } catch (error) {
-        logger.error('Error in bundlesByRegion resolver', error as Error, {
-          operationType: 'bundles-by-region-fetch'
+        logger.error('Error in bundlesRegions resolver', error as Error, {
+          operationType: 'bundles-regions-fetch'
         });
 
         throw new GraphQLError('Failed to fetch bundles by region', {
@@ -620,313 +620,217 @@ export const resolvers: Resolvers = {
       }
     },
     
-    countryBundles: async (_, { countryId }, context: Context) => {
-      
+    // Main bundles resolver with optional filtering
+    bundles: async (_, { countryId, regionId }, context: Context) => {
       try {
         const engineService = getPricingEngineService(context);
         
-        // Get country info
-        const countries = await context.dataSources.countries.getCountries();
-        const country = countries.find(c => c.iso === countryId);
-        
-        if (!country) {
-          throw new GraphQLError(`Country not found: ${countryId}`, {
-            extensions: { code: 'COUNTRY_NOT_FOUND' }
+        // Validate that only one filter is provided
+        if (countryId && regionId) {
+          throw new GraphQLError('Cannot filter by both countryId and regionId', {
+            extensions: { code: 'INVALID_ARGUMENTS' }
           });
         }
         
-        // Use the catalogue datasource to get bundles for the country
-        const catalogBundles = await context.dataSources.catalogue.getBundlesByCountry(countryId);
+        let catalogBundles: any[] = [];
+        let filterType: 'country' | 'region' | 'all' = 'all';
         
-        logger.info('Fetched bundles for country from catalog', {
-          countryId,
-          bundleCount: catalogBundles.length,
-          operationType: 'catalog-bundles-fetch'
-        });
-        
-        // Convert catalog bundles to data plan format
-        const dataPlans = (catalogBundles || []).map(bundle => ({
-          id: bundle.id,
-          name: bundle.esim_go_name,
-          description: bundle.description || '',
-          baseCountry: country,
-          countries: bundle.countries || [],
-          regions: bundle.regions || [],
-          duration: bundle.duration,
-          price: bundle.price_cents / 100, // Convert cents to dollars
-          currency: bundle.currency,
-          unlimited: bundle.unlimited,
-          dataAmount: bundle.data_amount,
-          bundleGroup: bundle.bundle_group,
-          features: []
-        }));
-        
-        logger.info('Fetched bundles from catalog for country', {
-          countryId,
-          bundleCount: dataPlans.length,
-          operationType: 'country-bundles-fetch'
-        });
-        
-        // DEBUG: Log the raw data from the API
-        logger.info('RAW DATA FROM CATALOGUE API', {
-          countryId,
-          totalPlans: dataPlans.length,
-          unlimitedCount: dataPlans.filter(p => p.unlimited || p.dataAmount === -1).length,
-          limitedCount: dataPlans.filter(p => !p.unlimited && p.dataAmount !== -1).length,
-          unlimitedByFlag: dataPlans.filter(p => p.unlimited).length,
-          unlimitedByDataAmount: dataPlans.filter(p => p.dataAmount === -1).length,
-          samplePlans: dataPlans.slice(0, 5).map(p => ({
-            name: p.name,
-            duration: p.duration,
-            unlimited: p.unlimited,
-            dataAmount: p.dataAmount,
-            bundleGroup: p.bundleGroup
-          })),
-          operationType: 'country-bundles-debug'
-        });
-        
-        // Sort plans by duration for consistent ordering
-        const sortedPlans = dataPlans.sort((a, b) => a.duration - b.duration);
-        
-        // Check if there are custom rules for this country
-        const { PricingRulesRepository } = await import('./repositories/pricing-rules/pricing-rules.repository');
-        const rulesRepository = new PricingRulesRepository(context.supabase);
-        const allRules = await rulesRepository.findAll({ isActive: true });
-        
-        // Check if any rule applies to this country specifically
-        const hasCustomConfig = allRules.some(rule => {
-          return rule.conditions.some((condition: any) => 
-            (condition.field === 'location.country' && condition.value === countryId) ||
-            (condition.field === 'country' && condition.value === countryId)
-          );
-        });
-        
-        // Map rules to configuration levels for display purposes
-        const configLevelByBundle = new Map<number, ConfigurationLevel>();
-        sortedPlans.forEach(plan => {
-          // Check if there's a specific rule for this bundle
-          const hasBundleRule = allRules.some(rule => {
-            return rule.conditions.some((condition: any) => 
-              (condition.field === 'bundle.duration' && condition.value === plan.duration) ||
-              (condition.field === 'duration' && condition.value === plan.duration)
-            );
+        if (countryId) {
+          // Get country info
+          const countries = await context.dataSources.countries.getCountries();
+          const country = countries.find(c => c.iso === countryId);
+          
+          if (!country) {
+            throw new GraphQLError(`Country not found: ${countryId}`, {
+              extensions: { code: 'COUNTRY_NOT_FOUND' }
+            });
+          }
+          
+          catalogBundles = await context.dataSources.catalogue.getBundlesByCountry(countryId);
+          filterType = 'country';
+          
+          logger.info('Fetched bundles for country from catalog', {
+            countryId,
+            bundleCount: catalogBundles.length,
+            operationType: 'bundles-by-country-fetch'
           });
           
-          if (hasBundleRule) {
-            configLevelByBundle.set(plan.duration, ConfigurationLevel.Bundle);
-          } else if (hasCustomConfig) {
-            configLevelByBundle.set(plan.duration, ConfigurationLevel.Country);
-          } else {
-            configLevelByBundle.set(plan.duration, ConfigurationLevel.Global);
-          }
-        });
-
-        // Calculate pricing for each individual plan using actual pricing service
-        // This ensures unlimited and limited bundles with same duration are processed separately
-        const bundles = await Promise.all(
-          sortedPlans.map(async (plan) => {
-            try {
-              // DEBUG: Log the plan structure to see what country data we have
-              logger.info('Bundle plan structure debug', {
-                countryId,
-                planName: plan.name,
-                planDuration: plan.duration,
-                hasBaseCountry: !!plan.baseCountry,
-                baseCountry: plan.baseCountry,
-                hasCountries: !!plan.countries,
-                countriesCount: plan.countries?.length || 0,
-                operationType: 'bundle-country-debug'
-              });
-              
-              // Create pricing context for the rule engine using service helper
-              const pricingContext = PricingEngineService.createContext({
-                bundle: {
-                  id: plan.name || `${countryId}-${plan.duration}d`,
-                  name: plan.name,
-                  cost: plan.price || 0,
+        } else if (regionId) {
+          catalogBundles = await context.dataSources.catalogue.getBundlesByRegion(regionId);
+          filterType = 'region';
+          
+          logger.info('Fetched bundles for region from catalog', {
+            regionId,
+            bundleCount: catalogBundles.length,
+            operationType: 'bundles-by-region-fetch'
+          });
+          
+        } else {
+          // Get all bundles (this might be expensive, consider pagination)
+          catalogBundles = await context.dataSources.catalogue.getAllBundles();
+          filterType = 'all';
+          
+          logger.info('Fetched all bundles from catalog', {
+            bundleCount: catalogBundles.length,
+            operationType: 'bundles-all-fetch'
+          });
+        }
+        
+        // For country-specific requests, we do detailed pricing calculations
+        if (filterType === 'country' && countryId) {
+          const countries = await context.dataSources.countries.getCountries();
+          const country = countries.find(c => c.iso === countryId);
+          
+          // Convert catalog bundles to data plan format
+          const dataPlans = (catalogBundles || []).map(bundle => ({
+            id: bundle.id,
+            name: bundle.esim_go_name,
+            description: bundle.description || '',
+            baseCountry: country,
+            countries: bundle.countries || [],
+            regions: bundle.regions || [],
+            duration: bundle.duration,
+            price: bundle.price_cents / 100, // Convert cents to dollars
+            currency: bundle.currency,
+            unlimited: bundle.unlimited,
+            dataAmount: bundle.data_amount,
+            bundleGroup: bundle.bundle_group,
+            features: []
+          }));
+          
+          // Sort plans by duration for consistent ordering
+          const sortedPlans = dataPlans.sort((a, b) => a.duration - b.duration);
+          
+          // Calculate pricing for each individual plan using actual pricing service
+          const bundles = await Promise.all(
+            sortedPlans.map(async (plan) => {
+              try {
+                // Create pricing context for the rule engine using service helper
+                const pricingContext = PricingEngineService.createContext({
+                  bundle: {
+                    id: plan.name || `${countryId}-${plan.duration}d`,
+                    name: plan.name,
+                    cost: plan.price || 0,
+                    duration: plan.duration,
+                    countryId: countryId,
+                    countryName: country!.country,
+                    regionId: plan.baseCountry?.region || country!.region || 'global',
+                    regionName: plan.baseCountry?.region || country!.region || 'Global',
+                    group: plan.bundleGroup || 'Standard Fixed',
+                    isUnlimited: plan.unlimited || plan.dataAmount === -1,
+                    dataAmount: plan.dataAmount?.toString() || '0'
+                  },
+                  paymentMethod: 'israeli_card'
+                });
+                
+                // Calculate price using rule engine
+                const calculation = await engineService.calculatePrice(pricingContext);
+                
+                return {
+                  bundleName: plan.name || `${plan.duration} Day Bundle`,
+                  countryName: country!.country,
+                  countryId,
                   duration: plan.duration,
-                  countryId: countryId,
-                  countryName: country.country,
-                  regionId: plan.baseCountry?.region || country.region || 'global',
-                  regionName: plan.baseCountry?.region || country.region || 'Global',
-                  group: plan.bundleGroup || 'Standard Fixed',
+                  cost: calculation.baseCost,
+                  costPlus: calculation.subtotal,
+                  totalCost: calculation.finalPrice,
+                  discountRate: calculation.totalDiscount / calculation.subtotal * 100,
+                  discountValue: calculation.totalDiscount,
+                  priceAfterDiscount: calculation.priceAfterDiscount,
+                  processingRate: calculation.processingRate * 100,
+                  processingCost: calculation.processingFee,
+                  finalRevenue: calculation.profit,
+                  currency: 'USD',
+                  pricePerDay: calculation.finalPrice / plan.duration,
+                  hasCustomDiscount: calculation.discounts.length > 0,
+                  bundleGroup: plan.bundleGroup || 'Standard Fixed',
                   isUnlimited: plan.unlimited || plan.dataAmount === -1,
-                  dataAmount: plan.dataAmount?.toString() || '0'
-                },
-                paymentMethod: 'israeli_card'
-              });
-              
-              // Calculate price using rule engine
-              const calculation = await engineService.calculatePrice(pricingContext);
-              
-              return {
-                bundleName: plan.name || `${plan.duration} Day Bundle`,
-                countryName: country.country,
-                countryId,
-                duration: plan.duration,
-                cost: calculation.baseCost || 0,
-                costPlus: (calculation.baseCost || 0) + (calculation.markup || 0),
-                totalCost: calculation.subtotal || 0,
-                discountRate: (calculation.totalDiscount || 0) > 0 && (calculation.subtotal || 0) > 0 
-                  ? (calculation.totalDiscount / calculation.subtotal) 
-                  : 0,
-                discountValue: calculation.totalDiscount || 0,
-                priceAfterDiscount: calculation.priceAfterDiscount || 0,
-                processingRate: calculation.processingRate || 0,
-                processingCost: calculation.processingFee || 0,
-                finalRevenue: calculation.finalRevenue || 0,
-                netProfit: calculation.profit || 0,
-                currency: 'USD',
-                pricePerDay: (plan.duration && plan.duration > 0 && calculation.priceAfterDiscount && isFinite(calculation.priceAfterDiscount)) 
-                  ? (calculation.priceAfterDiscount || 0) / plan.duration 
-                  : 0,
-                hasCustomDiscount: hasCustomConfig,
-                configurationLevel: configLevelByBundle.get(plan.duration) || ConfigurationLevel.Global,
-                discountPerDay: calculation.metadata?.discountPerUnusedDay || 0,
-                // Add plan-specific metadata to distinguish between unlimited/limited bundles
-                planId: plan.name || plan.id || `${countryId}-${plan.duration}d`,
-                isUnlimited: plan.unlimited || plan.dataAmount === -1,
-                dataAmount: (() => {
-                  // Use same formatting logic as DataPlan field resolver
-                  const rawDataAmount = plan.dataAmount;
-                  
-                  // Handle unlimited plans (dataAmount === -1 is the key indicator)
-                  if (plan.unlimited || rawDataAmount === -1) {
-                    return 'Unlimited';
-                  }
-                  
-                  // Handle unknown or zero amounts
-                  if (!rawDataAmount || rawDataAmount === 0) {
-                    return 'Unknown';
-                  }
-                  
-                  // Convert MB to GB and round to nearest 0.5 step (rounded up)
-                  const dataAmountMB = typeof rawDataAmount === 'number' ? rawDataAmount : parseInt(rawDataAmount);
-                  
-                  if (dataAmountMB >= 1024) {
-                    // Convert to GB
-                    const exactGB = dataAmountMB / 1024;
-                    
-                    // Round up to nearest 0.5 step
-                    const roundedGB = Math.ceil(exactGB * 2) / 2;
-                    
-                    // Format as whole number if it's a clean integer, otherwise show .5
-                    if (roundedGB === Math.floor(roundedGB)) {
-                      return `${Math.floor(roundedGB)}GB`;
-                    } else {
-                      return `${roundedGB}GB`;
-                    }
-                  } else {
-                    // For MB values, round to nearest 50MB step (rounded up)
-                    const roundedMB = Math.ceil(dataAmountMB / 50) * 50;
-                    return `${roundedMB}MB`;
-                  }
-                })(),
-                bundleGroup: plan.bundleGroup
-              };
-            } catch (error) {
-              logger.warn('Failed to calculate pricing for bundle', {
-                countryId,
-                duration: plan.duration,
-                planId: plan.name || plan.id,
-                isUnlimited: plan.unlimited || false,
-                error: (error as Error).message,
-                operationType: 'country-bundles-fetch'
-              });
-              
-              // Return bundle with default values instead of null
-              return {
-                bundleName: plan.name || `${plan.duration} Day Bundle`,
-                countryName: country.name || country.country || countryId,
-                countryId,
-                duration: plan.duration || 0,
-                cost: 0,
-                costPlus: 0,
-                totalCost: 0,
-                discountRate: 0,
-                discountValue: 0,
-                priceAfterDiscount: 0,
-                processingRate: 0,
-                processingCost: 0,
-                finalRevenue: 0,
-                netProfit: 0,
-                currency: 'USD',
-                pricePerDay: 0,
-                hasCustomDiscount: false,
-                configurationLevel: 'GLOBAL',
-                discountPerDay: 0.10,
-                planId: plan.name || plan.id || `${countryId}-${plan.duration}d`,
-                isUnlimited: plan.unlimited || plan.dataAmount === -1 || false,
-                dataAmount: plan.unlimited || plan.dataAmount === -1 ? 'Unlimited' : 
-                  plan.dataAmount > 0 ? `${Math.round(plan.dataAmount / 1024)}GB` : 'Unknown',
-                bundleGroup: plan.bundleGroup || 'Standard Fixed'
-              };
-            }
-          })
-        );
+                  dataAmount: plan.unlimited || plan.dataAmount === -1 ? 'Unlimited' : 
+                    plan.dataAmount ? `${Math.round(plan.dataAmount / 1024)}GB` : 'Unknown',
+                  planId: plan.id || `${countryId}-${plan.duration}d`
+                };
+              } catch (error) {
+                logger.error('Error calculating pricing for bundle', error as Error, {
+                  planName: plan.name,
+                  countryId,
+                  operationType: 'bundle-pricing-calculation'
+                });
+                
+                // Return bundle with fallback pricing
+                return {
+                  bundleName: plan.name || `${plan.duration} Day Bundle`,
+                  countryName: country!.country,
+                  countryId,
+                  duration: plan.duration,
+                  cost: plan.price || 0,
+                  costPlus: plan.price || 0,
+                  totalCost: plan.price || 0,
+                  discountRate: 0,
+                  discountValue: 0,
+                  priceAfterDiscount: plan.price || 0,
+                  processingRate: 0,
+                  processingCost: 0,
+                  finalRevenue: 0,
+                  currency: 'USD',
+                  pricePerDay: plan.duration > 0 ? (plan.price || 0) / plan.duration : 0,
+                  hasCustomDiscount: false,
+                  bundleGroup: plan.bundleGroup || 'Standard Fixed',
+                  isUnlimited: plan.unlimited || plan.dataAmount === -1,
+                  dataAmount: plan.unlimited || plan.dataAmount === -1 ? 'Unlimited' : 
+                    plan.dataAmount ? `${Math.round(plan.dataAmount / 1024)}GB` : 'Unknown',
+                  planId: plan.id || `${countryId}-${plan.duration}d`
+                };
+              }
+            })
+          );
+          
+          return bundles.sort((a, b) => a.duration - b.duration);
+          
+        } else {
+          // For region or all bundles, return simplified catalog data
+          const bundles = catalogBundles.map(bundle => ({
+            bundleName: bundle.esim_go_name || bundle.esimGoName || `${bundle.duration} Day Bundle`,
+            countryName: bundle.countries?.[0] || 'Multiple Countries',
+            countryId: bundle.countries?.[0] || (regionId || 'global'),
+            duration: bundle.duration || 0,
+            cost: (bundle.price_cents || bundle.priceCents || 0) / 100,
+            costPlus: 0,
+            totalCost: (bundle.price_cents || bundle.priceCents || 0) / 100,
+            discountRate: 0,
+            discountValue: 0,
+            priceAfterDiscount: (bundle.price_cents || bundle.priceCents || 0) / 100,
+            processingRate: 0,
+            processingCost: 0,
+            finalRevenue: 0,
+            currency: bundle.currency || 'USD',
+            pricePerDay: bundle.duration > 0 ? ((bundle.price_cents || bundle.priceCents || 0) / 100) / bundle.duration : 0,
+            hasCustomDiscount: false,
+            bundleGroup: bundle.bundle_group || bundle.bundleGroup || 'Unknown',
+            isUnlimited: bundle.unlimited || false,
+            dataAmount: bundle.unlimited ? 'Unlimited' : 
+              bundle.data_amount || bundle.dataAmount ? `${Math.round((bundle.data_amount || bundle.dataAmount) / 1024)}GB` : 'Unknown',
+            planId: bundle.id || `${regionId || 'global'}-${bundle.duration}d`
+          }));
+          
+          return bundles.sort((a, b) => a.duration - b.duration);
+        }
         
-        // No need to filter anymore since we return default values instead of null
-        return bundles;
       } catch (error) {
-        logger.error('Error in countryBundles resolver', error as Error, {
+        logger.error('Error in bundles resolver', error as Error, {
           countryId,
-          operationType: 'country-bundles-fetch'
+          regionId,
+          operationType: 'bundles-fetch'
         });
-        throw new GraphQLError('Failed to fetch country bundles', {
+        throw new GraphQLError('Failed to fetch bundles', {
           extensions: { code: 'INTERNAL_ERROR' }
         });
       }
     },
-
-    regionBundles: async (_, { regionName }, context: Context) => {
-      try {
-        // Get all bundles for the region
-        const catalogBundles = await context.dataSources.catalogue.getBundlesByRegion(regionName);
-        
-        logger.info('Fetched bundles for region from catalog', {
-          regionName,
-          bundleCount: catalogBundles.length,
-          operationType: 'region-bundles-fetch'
-        });
-
-        // For catalog view, we just return the raw bundle data with base cost
-        // No pricing calculations needed since this is pure catalog data
-        const bundles = catalogBundles.map(bundle => ({
-          bundleName: bundle.esimGoName || `${bundle.duration} Day Bundle`,
-          countryName: bundle.countries?.[0] || 'Multiple Countries', // Show first country or indicate multiple
-          countryId: bundle.countries?.[0] || regionName,
-          duration: bundle.duration || 0,
-          cost: (bundle.priceCents || 0) / 100, // Convert cents to dollars
-          costPlus: 0, // Not needed for catalog
-          totalCost: (bundle.priceCents || 0) / 100,
-          discountRate: 0,
-          discountValue: 0,
-          priceAfterDiscount: (bundle.priceCents || 0) / 100,
-          processingRate: 0,
-          processingCost: 0,
-          finalRevenue: 0,
-          currency: bundle.currency || 'USD',
-          pricePerDay: bundle.duration > 0 ? ((bundle.priceCents || 0) / 100) / bundle.duration : 0,
-          hasCustomDiscount: false,
-          bundleGroup: bundle.bundleGroup || 'Unknown',
-          isUnlimited: bundle.unlimited || false,
-          dataAmount: bundle.unlimited ? 'Unlimited' : 
-            bundle.dataAmount ? `${Math.round(bundle.dataAmount / 1024)}GB` : 'Unknown',
-          planId: bundle.id || `${regionName}-${bundle.duration}d`
-        }));
-
-        // Sort by duration for consistent ordering
-        return bundles.sort((a, b) => a.duration - b.duration);
-      } catch (error) {
-        logger.error('Error in regionBundles resolver', error as Error, {
-          regionName,
-          operationType: 'region-bundles-fetch'
-        });
-        throw new GraphQLError('Failed to fetch region bundles', {
-          extensions: { code: 'INTERNAL_ERROR' }
-        });
-      }
-    },
+    
+    // REMOVED: countryBundles resolver - replaced by bundles(countryId: "XX")
+    
+    // REMOVED: regionBundles resolver - replaced by bundles(regionId: "XX")
+      
     
 
 
@@ -1306,72 +1210,6 @@ export const resolvers: Resolvers = {
       }
     },
 
-    catalogBundlesByCountry: async (_, __, context: Context) => {
-      try {
-        logger.info('Fetching catalog bundles by country', {
-          operationType: 'catalog-bundles-by-country'
-        });
-
-        // Get bundles grouped by country
-        const { data, error } = await supabaseAdmin
-          .from('catalog_bundles')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          throw new GraphQLError('Failed to fetch catalog bundles by country', {
-            extensions: { code: 'INTERNAL_ERROR' },
-          });
-        }
-
-        // Group by country
-        const countryMap = new Map<string, any[]>();
-        
-        (data || []).forEach(bundle => {
-          if (bundle.countries && Array.isArray(bundle.countries)) {
-            bundle.countries.forEach(country => {
-              if (!countryMap.has(country)) {
-                countryMap.set(country, []);
-              }
-              countryMap.get(country)!.push({
-                id: bundle.id,
-                esimGoName: bundle.esim_go_name,
-                bundleGroup: bundle.bundle_group,
-                description: bundle.description || '',
-                duration: bundle.duration,
-                dataAmount: bundle.data_amount,
-                unlimited: bundle.unlimited,
-                priceCents: bundle.price_cents,
-                currency: bundle.currency,
-                countries: bundle.countries || [],
-                regions: bundle.regions || [],
-                syncedAt: bundle.synced_at,
-                createdAt: bundle.created_at,
-                updatedAt: bundle.updated_at
-              });
-            });
-          }
-        });
-
-        const result = Array.from(countryMap.entries()).map(([country, bundles]) => ({
-          country,
-          bundleCount: bundles.length,
-          bundles
-        }));
-
-        logger.info('Catalog bundles by country fetched successfully', {
-          countryCount: result.length,
-          operationType: 'catalog-bundles-by-country'
-        });
-
-        return result;
-      } catch (error) {
-        logger.error('Failed to fetch catalog bundles by country', error as Error, {
-          operationType: 'catalog-bundles-by-country'
-        });
-        throw error;
-      }
-    },
 
     availableBundleGroups: async (_, __, context: Context) => {
       try {

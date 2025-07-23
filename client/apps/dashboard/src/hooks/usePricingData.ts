@@ -43,7 +43,7 @@ export const usePricingData = () => {
 
   // GraphQL queries
   const { data: countriesData } = useQuery<GetCountriesQuery>(GET_COUNTRIES);
-  const { data: bundlesByCountryData, loading: bundlesLoading, error: bundlesError, refetch: refetchBundlesByCountry } = useQuery<GetBundlesByCountryQuery>(GET_BUNDLES_BY_COUNTRY);
+  const { data: bundlesCountriesData, loading: bundlesLoading, error: bundlesError, refetch: refetchBundlesCountries } = useQuery<GetBundlesByCountryQuery>(GET_BUNDLES_BY_COUNTRY);
   const { data: tripsQueryData, loading: tripsLoading, error: tripsError } = useQuery<GetTripsQuery>(GET_TRIPS);
   const { data: dataPlansData } = useQuery<GetDataPlansQuery>(GET_DATA_PLANS, {
     variables: {
@@ -58,13 +58,13 @@ export const usePricingData = () => {
 
   // Generate country groups from actual data
   useEffect(() => {
-    // If bundlesByCountry data is available, use it
-    if (bundlesByCountryData?.bundlesByCountry) {
+    // If bundlesCountries data is available, use it
+    if (bundlesCountriesData?.bundlesCountries) {
       setLoading(false);
       setError(null);
       
-      // Convert the bundlesByCountry data to CountryGroupData format
-      const groups: CountryGroupData[] = bundlesByCountryData.bundlesByCountry.map((country: BundlesByCountry) => ({
+      // Convert the bundlesCountries data to CountryGroupData format
+      const groups: CountryGroupData[] = bundlesCountriesData.bundlesCountries.map((country: BundlesByCountry) => ({
         ...country,
         bundles: undefined, // Bundles will be loaded on expand
       }));
@@ -74,7 +74,7 @@ export const usePricingData = () => {
       setError('Failed to load pricing summary data');
       setLoading(false);
     }
-  }, [bundlesByCountryData, bundlesError]);
+  }, [bundlesCountriesData, bundlesError]);
 
   // Handle trips data
   useEffect(() => {
@@ -168,8 +168,8 @@ export const usePricingData = () => {
         variables: { countryId }
       });
       
-      if (countryBundlesResult.data?.countryBundles) {
-        const bundles = countryBundlesResult.data.countryBundles;
+      if (countryBundlesResult.data?.bundles) {
+        const bundles = countryBundlesResult.data.bundles;
         
         console.log(`✅ Fetched ${bundles.length} bundles for ${countryId}`);
         
@@ -235,7 +235,7 @@ export const usePricingData = () => {
     setCountryGroups([]);
     
     // Refetch bundles summary data
-    await refetchBundlesByCountry();
+    await refetchBundlesCountries();
   };
 
   return {

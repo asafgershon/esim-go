@@ -741,7 +741,7 @@ export const DEACTIVATE_PROCESSING_FEE_CONFIGURATION = gql(`
 
 export const GET_BUNDLES_BY_COUNTRY = gql(`
   query GetBundlesByCountry {
-    bundlesByCountry {
+    bundlesCountries {
       countryName
       countryId
       bundleCount
@@ -751,7 +751,7 @@ export const GET_BUNDLES_BY_COUNTRY = gql(`
 
 export const GET_BUNDLES_BY_REGION = gql(`
   query GetBundlesByRegion {
-    bundlesByRegion {
+    bundlesRegions {
       regionName
       bundleCount
       countryCount
@@ -761,7 +761,7 @@ export const GET_BUNDLES_BY_REGION = gql(`
 
 export const GET_REGION_BUNDLES = gql(`
   query GetRegionBundles($regionName: String!) {
-    regionBundles(regionName: $regionName) {
+    bundles(regionId: $regionName) {
       bundleName
       countryName
       countryId
@@ -788,7 +788,7 @@ export const GET_REGION_BUNDLES = gql(`
 
 export const GET_COUNTRY_BUNDLES = gql(`
   query GetCountryBundles($countryId: String!) {
-    countryBundles(countryId: $countryId) {
+    bundles(countryId: $countryId) {
       bundleName
       countryName
       countryId
@@ -805,8 +805,6 @@ export const GET_COUNTRY_BUNDLES = gql(`
       currency
       pricePerDay
       hasCustomDiscount
-      configurationLevel
-      discountPerDay
       planId
       isUnlimited
       dataAmount
@@ -924,27 +922,7 @@ export const GET_CATALOG_BUNDLES = gql(`
   }
 `)
 
-export const GET_CATALOG_BUNDLES_BY_COUNTRY = gql(`
-  query GetCatalogBundlesByCountry {
-    catalogBundlesByCountry {
-      country
-      bundleCount
-      bundles {
-        id
-        esimGoName
-        bundleGroup
-        description
-        duration
-        dataAmount
-        unlimited
-        priceCents
-        currency
-        regions
-        syncedAt
-      }
-    }
-  }
-`)
+// REMOVED: GET_CATALOG_BUNDLES_BY_COUNTRY - resolver was removed in consolidation
 
 export const GET_CATALOG_SYNC_HISTORY = gql(`
   query GetCatalogSyncHistory($params: SyncHistoryParams) {
@@ -978,6 +956,13 @@ export const TRIGGER_CATALOG_SYNC = gql(`
       jobId
       message
       error
+      conflictingJob {
+        id
+        jobType
+        status
+        createdAt
+        startedAt
+      }
     }
   }
 `)

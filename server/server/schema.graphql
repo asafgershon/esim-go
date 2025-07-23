@@ -31,17 +31,14 @@ type Query {
   # Batch calculate prices for multiple bundles
   calculatePrices(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
   
-  # Bundles grouped by country with aggregated pricing data
-  bundlesByCountry: [BundlesByCountry!]!
+  # Main bundles resolver with optional filtering
+  bundles(countryId: String, regionId: String): [CountryBundle!]!
   
-  # Bundles grouped by region with aggregated data
-  bundlesByRegion: [BundlesByRegion!]!
+  # Countries with aggregated bundle data
+  bundlesCountries: [BundlesByCountry!]!
   
-  # Get bundles for a specific country
-  countryBundles(countryId: String!): [CountryBundle!]!
-  
-  # Get bundles for a specific region
-  regionBundles(regionName: String!): [CountryBundle!]!
+  # Regions with aggregated bundle data
+  bundlesRegions: [BundlesByRegion!]!
   
   
   # Pricing Rules Engine
@@ -81,7 +78,6 @@ type Query {
   
   # Catalog bundles queries (from new catalog system)
   catalogBundles(criteria: SearchCatalogCriteria): CatalogBundleConnection! @auth(role: "ADMIN")
-  catalogBundlesByCountry: [CatalogCountryBundles!]! @auth(role: "ADMIN")
   availableBundleGroups: [String!]! @auth(role: "ADMIN")
 }
 
@@ -1181,4 +1177,13 @@ type TriggerSyncResponse {
   jobId: String
   message: String
   error: String
+  conflictingJob: ConflictingJobInfo
+}
+
+type ConflictingJobInfo {
+  id: String!
+  jobType: String!
+  status: String!
+  createdAt: String!
+  startedAt: String
 }

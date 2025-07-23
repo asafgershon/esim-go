@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Button, Tooltip, TooltipTrigger, TooltipContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui';
 import { Calculator, DollarSign, Table, CreditCard, RefreshCw, Layers, Plane } from 'lucide-react';
-import { useMutation } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
 import { toast } from 'sonner';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { usePricingData } from '../hooks/usePricingData';
-import { SYNC_CATALOG } from '../lib/graphql/queries';
+import { TRIGGER_CATALOG_SYNC, GET_CATALOG_SYNC_HISTORY } from '../lib/graphql/queries';
+import { SyncConflictModal, type ConflictingJob } from '@/components/SyncConflictModal';
 
 
 
@@ -16,29 +17,84 @@ const PricingPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [showTrips, setShowTrips] = useState(false);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflictingJob, setConflictingJob] = useState<ConflictingJob | null>(null);
 
   // Sync catalog mutation
-  const [syncCatalog, { loading: syncLoading }] = useMutation(SYNC_CATALOG);
+  const [triggerCatalogSync, { loading: syncLoading }] = useMutation(TRIGGER_CATALOG_SYNC);
+  
+  // Sync history query
+  const { data: syncHistoryData } = useQuery(GET_CATALOG_SYNC_HISTORY, {
+    variables: { params: { limit: 10 } }
+  });
 
 
 
 
   // Handle sync catalog
   const handleSyncCatalog = async () => {
+    // Check for running sync jobs
+    const syncHistory = syncHistoryData?.catalogSyncHistory?.jobs || [];
+    const runningJob = syncHistory.find(job => job.status === 'running' || job.status === 'pending');
+    
+    if (runningJob) {
+      // Map job data to ConflictingJob format
+      const conflictJob: ConflictingJob = {
+        id: runningJob.id,
+        jobType: runningJob.jobType,
+        status: runningJob.status as 'pending' | 'running' | 'completed' | 'failed' | 'cancelled',
+        createdAt: runningJob.createdAt,
+        startedAt: runningJob.startedAt,
+        bundleGroup: runningJob.bundleGroup,
+        bundlesProcessed: runningJob.bundlesProcessed
+      };
+      
+      setConflictingJob(conflictJob);
+      setShowConflictModal(true);
+      return;
+    }
+    
+    // No conflicts, proceed with sync
+    await performSync(false);
+  };
+  
+  const performSync = async (force: boolean) => {
     try {
-      const result = await syncCatalog({
-        variables: { force: false }
+      const result = await triggerCatalogSync({
+        variables: { 
+          params: {
+            type: 'FULL_SYNC',
+            force
+          }
+        }
       });
       
-      if (result.data?.syncCatalog.success) {
+      if (result.data?.triggerCatalogSync.success) {
         toast.success('A sync has been triggered and can take up to few minutes...');
+      } else if (result.data?.triggerCatalogSync.conflictingJob) {
+        // Handle server-side conflict detection as fallback
+        const conflictJob: ConflictingJob = {
+          id: result.data.triggerCatalogSync.conflictingJob.id,
+          jobType: result.data.triggerCatalogSync.conflictingJob.jobType,
+          status: result.data.triggerCatalogSync.conflictingJob.status as 'pending' | 'running' | 'completed' | 'failed' | 'cancelled',
+          createdAt: result.data.triggerCatalogSync.conflictingJob.createdAt,
+          startedAt: result.data.triggerCatalogSync.conflictingJob.startedAt,
+        };
+        setConflictingJob(conflictJob);
+        setShowConflictModal(true);
       } else {
-        toast.error(result.data?.syncCatalog.error || 'Sync failed');
+        toast.error(result.data?.triggerCatalogSync.error || 'Sync failed');
       }
     } catch (error) {
       console.error('Error triggering sync:', error);
       toast.error('Failed to trigger catalog sync. Please try again.');
     }
+  };
+
+  const handleForceSync = async () => {
+    setShowConflictModal(false);
+    setConflictingJob(null);
+    await performSync(true);
   };
 
 
@@ -238,6 +294,19 @@ const PricingPage: React.FC = () => {
           setShowTrips 
         }} />
       </div>
+      
+      {conflictingJob && (
+        <SyncConflictModal
+          isOpen={showConflictModal}
+          onClose={() => {
+            setShowConflictModal(false);
+            setConflictingJob(null);
+          }}
+          onConfirmForce={handleForceSync}
+          conflictingJob={conflictingJob}
+          syncType="catalog sync"
+        />
+      )}
     </div>
   );
 };

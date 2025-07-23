@@ -19,6 +19,7 @@ import {
   HighDemandCountryRepository,
 } from "../repositories";
 import { TripRepository } from "../repositories/trips/trip.repository";
+import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
 
 export type Context = {
   auth: SupabaseAuthContext;
@@ -34,6 +35,7 @@ export type Context = {
     users: UserRepository;
     trips: TripRepository;
     highDemandCountries: HighDemandCountryRepository;
+    syncJob: SyncJobRepository;
   };
   dataSources: {
     catalogue: CatalogueDataSource;

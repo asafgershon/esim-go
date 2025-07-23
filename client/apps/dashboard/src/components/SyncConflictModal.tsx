@@ -1,16 +1,15 @@
 import React from 'react';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@workspace/ui/components/dialog';
+import { Button } from '@workspace/ui/components/button';
+import { Badge } from '@workspace/ui/components/badge';
 import { AlertTriangle, Clock, Database } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 
 export interface ConflictingJob {
   id: string;
@@ -86,23 +85,23 @@ export function SyncConflictModal({
   const duration = conflictingJob.startedAt ? formatDuration(conflictingJob.startedAt) : null;
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent className="sm:max-w-[500px]">
-        <AlertDialogHeader>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
               <AlertTriangle className="h-6 w-6 text-amber-600" />
             </div>
             <div>
-              <AlertDialogTitle className="text-left">
+              <DialogTitle className="text-left">
                 Sync Job Conflict Detected
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-left">
+              </DialogTitle>
+              <DialogDescription className="text-left">
                 Another sync operation is currently active
-              </AlertDialogDescription>
+              </DialogDescription>
             </div>
           </div>
-        </AlertDialogHeader>
+        </DialogHeader>
 
         <div className="space-y-4">
           <div className="rounded-lg border bg-muted/30 p-4">
@@ -168,18 +167,18 @@ export function SyncConflictModal({
           </div>
         </div>
 
-        <AlertDialogFooter className="gap-2">
-          <AlertDialogCancel onClick={onClose}>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose}>
             Cancel
-          </AlertDialogCancel>
-          <AlertDialogAction
+          </Button>
+          <Button
             onClick={onConfirmForce}
-            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            variant="destructive"
           >
             Force Sync Anyway
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
