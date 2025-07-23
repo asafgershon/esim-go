@@ -1070,16 +1070,23 @@ export const resolvers: Resolvers = {
       }
     },
 
-    // DEBUG: Direct API call to bypass cache and see raw data
+    // DEBUG: DISABLED - Direct API calls removed
     debugRawCatalogData: async (_, { countryId }, context: Context) => {
+      return {
+        success: false,
+        error: 'debugRawCatalogData is disabled - direct API calls have been removed. Use database queries instead.',
+        totalPlans: 0,
+        unlimitedCount: 0,
+        samplePlans: []
+      };
       try {
         logger.info('Debug: Making direct API call to eSIM Go', { countryId });
         
-        // Force a direct API call by using the fallback mechanism
-        const dataPlansResult = await (context.dataSources.catalogue as any).fallbackToApiCall({
-          country: countryId
-        });
-        const dataPlans = dataPlansResult.bundles || [];
+        // DISABLED: Force a direct API call by using the fallback mechanism
+        // const dataPlansResult = await (context.dataSources.catalogue as any).fallbackToApiCall({
+        //   country: countryId
+        // });
+        const dataPlans = []; // dataPlansResult.bundles || [];
         
         logger.info('DEBUG: Raw API Response Analysis', {
           countryId,

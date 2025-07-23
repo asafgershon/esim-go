@@ -291,13 +291,18 @@ export class CatalogueDataSource extends ESIMGoDataSource {
 
           return groups;
         } catch (error) {
-          this.log.warn('Failed to get bundle groups from database, falling back to API', {
-            error: (error as Error).message,
-            operationType: 'api-fallback'
+          this.log.error('Failed to get bundle groups from database', error as Error, {
+            operationType: 'database-groups-error'
           });
 
-          // Fallback to API
-          return await this.fetchOrganizationGroupsFromApi();
+          // Return fallback groups instead of API call
+          const fallbackGroups = ['Standard Fixed', 'Standard - Unlimited Lite', 'Standard - Unlimited Essential'];
+          this.log.info('Using fallback bundle groups', {
+            groups: fallbackGroups,
+            operationType: 'fallback-groups'
+          });
+          
+          return fallbackGroups;
         }
       }
     );
@@ -398,18 +403,6 @@ export class CatalogueDataSource extends ESIMGoDataSource {
     );
   }
 
-  /**
-   * Fallback to fetch organization groups from API
-   */
-  private async fetchOrganizationGroupsFromApi(): Promise<string[]> {
-    try {
-      const response = await this.getWithErrorHandling<{ groups?: string[] }>("/v2.5/organization/groups");
-      return response.groups || [];
-    } catch (error) {
-      this.log.error('Failed to fetch organization groups from API', error as Error);
-      return ['Standard Fixed', 'Standard - Unlimited Lite', 'Standard - Unlimited Essential'];
-    }
-  }
 
   /**
    * Cleanup method - simplified since we're not using caching

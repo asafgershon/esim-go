@@ -1,12 +1,14 @@
 import { ESIMGoDataSource } from "./esim-go-base";
 import { GraphQLError } from "graphql";
 import { createLogger, withPerformanceLogging } from "../../lib/logger";
+import { BundleRepository } from "../../repositories/catalog/bundle.repository";
 
 /**
  * DataSource for eSIM Go Pricing API
  * Handles real-time pricing calculations using the /orders/calculate endpoint
  */
 export class PricingDataSource extends ESIMGoDataSource {
+  private bundleRepository: BundleRepository;
   private logger = createLogger({ 
     component: 'PricingDataSource',
     operationType: 'pricing-operations'
@@ -17,6 +19,7 @@ export class PricingDataSource extends ESIMGoDataSource {
 
   constructor(config?: any) {
     super(config);
+    this.bundleRepository = new BundleRepository('catalog_bundles');
   }
 
   /**
@@ -54,108 +57,45 @@ export class PricingDataSource extends ESIMGoDataSource {
           operationType: 'cache-bypass-debug'
         });
 
-        // Get bundle price from catalog API
+        // Get bundle price from catalog database
         try {
-          const url = new URL('/v2.5/catalogue', this.baseURL);
-          url.searchParams.set('countries', countryCode);
-          url.searchParams.set('perPage', '50'); // Max per page to avoid 401 errors
-          
-          this.logger.info('Fetching bundle pricing from catalog', { 
+          this.logger.info('Fetching bundle pricing from database', { 
             bundleName,
             countryCode,
-            url: url.toString(),
-            operationType: 'catalog-pricing-request'
+            operationType: 'database-pricing-request'
           });
 
-          const response = await fetch(url.toString(), {
-            method: 'GET',
-            headers: {
-              'X-API-Key': process.env.ESIM_GO_API_KEY!,
-              'Content-Type': 'application/json',
-              'User-Agent': 'curl/8.7.1',
-            },
-            signal: AbortSignal.timeout(15000),
+          // Search for bundles in the specific country
+          const searchResult = await this.bundleRepository.searchBundles({
+            countries: [countryCode],
+            limit: 100 // Get a reasonable number to find the bundle
           });
-
-          if (!response.ok) {
-            const errorBody = await response.text();
-            this.logger.error('Catalog pricing request failed', undefined, {
-              status: response.status,
-              statusText: response.statusText,
-              errorBody,
-              bundleName,
+          
+          if (searchResult.bundles.length === 0) {
+            this.logger.error('No bundles found for country in database', undefined, {
               countryCode,
-              operationType: 'catalog-pricing-error'
+              bundleName,
+              operationType: 'database-pricing-error'
             });
-            throw new Error(`${response.status}: ${response.statusText}`);
+            throw new Error(`No bundles found for country ${countryCode} in catalog database`);
           }
 
-          const catalogResponse = await response.json() as {
-            bundles: Array<{
-              name: string;
-              price: number;
-              currency?: string;
-              description?: string;
-              duration?: number;
-            }>;
-          };
-
-          this.logger.info('Catalog response received', {
+          this.logger.info('Database bundles retrieved', {
             countryCode,
-            totalBundles: catalogResponse.bundles.length,
+            totalBundles: searchResult.bundles.length,
             searchingFor: bundleName,
-            // Show ALL Austria bundles for debugging
-            allBundles: catalogResponse.bundles.map(b => ({
-              name: b.name,
-              price: b.price,
-              description: b.description,
-              duration: b.duration
-            })),
-            operationType: 'catalog-response-debug'
+            operationType: 'database-response'
           });
 
-          // CRITICAL: Check if we're getting the expected Austria 7-day bundle price
-          const austria7DayBundle = catalogResponse.bundles.find(b => b.name === 'esim_1GB_7D_AT_V2');
-          if (austria7DayBundle) {
-            this.logger.error('PRICE MISMATCH CHECK', {
-              bundleName: 'esim_1GB_7D_AT_V2',
-              actualPrice: austria7DayBundle.price,
-              expectedPrice: 10.32,
-              priceMatches: austria7DayBundle.price === 10.32,
-              priceDifference: Math.abs(austria7DayBundle.price - 10.32),
-              operationType: 'price-verification'
-            });
-          }
-
-          // Find the specific bundle in the catalog
-          const bundle = catalogResponse.bundles.find(b => b.name === bundleName);
+          // Find the specific bundle in the database results
+          const bundle = searchResult.bundles.find(b => b.bundle_name === bundleName || b.name === bundleName);
           
           if (!bundle) {
             this.logger.warn('Bundle search details', {
               bundleName,
               countryCode,
-              availableNames: catalogResponse.bundles.map(b => b.name),
+              availableNames: searchResult.bundles.map(b => b.bundle_name || b.name),
               operationType: 'bundle-search-debug'
-            });
-          } else {
-            this.logger.info('Bundle found in catalog', {
-              bundleName,
-              foundBundle: {
-                name: bundle.name,
-                price: bundle.price,
-                currency: bundle.currency,
-                description: bundle.description
-              },
-              operationType: 'bundle-found-debug'
-            });
-          }
-          
-          if (!bundle) {
-            this.logger.warn('Bundle not found in catalog for country', {
-              bundleName,
-              countryCode,
-              availableBundles: catalogResponse.bundles.length,
-              operationType: 'bundle-not-found'
             });
             
             // Return 0 instead of estimating - as requested
@@ -166,8 +106,19 @@ export class PricingDataSource extends ESIMGoDataSource {
             };
           }
 
+          this.logger.info('Bundle found in database', {
+            bundleName,
+            foundBundle: {
+              name: bundle.bundle_name || bundle.name,
+              price: bundle.cost,
+              currency: bundle.currency,
+              description: bundle.description
+            },
+            operationType: 'bundle-found-debug'
+          });
+
           const pricingData = {
-            basePrice: bundle.price,
+            basePrice: bundle.cost || 0,
             currency: bundle.currency || 'USD',
             bundleName,
           };
