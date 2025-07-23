@@ -89,18 +89,32 @@ interface TestResult {
 }
 
 export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }) => {
-  const [testContext, setTestContext] = useState<TestContext>({
-    bundleId: 'test-bundle-1',
-    bundleName: 'Standard Fixed 7d',
-    bundleGroup: 'Standard Fixed',
-    duration: 7,
-    cost: 5.50,
-    countryId: 'US',
-    regionId: 'AMERICA',
-    userId: 'test-user-1',
-    isNewUser: false,
-    paymentMethod: 'FOREIGN_CARD',
-    requestedDuration: 7,
+  // Helper functions to generate dynamic values
+  const generateBundleId = (group: string, duration: number, countryId: string) => {
+    const groupKey = group.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    return `${countryId.toLowerCase()}-${groupKey}-${duration}d`;
+  };
+
+  const generateBundleName = (group: string, duration: number) => {
+    return `${group} ${duration}d`;
+  };
+  const [testContext, setTestContext] = useState<TestContext>(() => {
+    const initialGroup = 'Standard Fixed';
+    const initialDuration = 7;
+    const initialCountryId = 'US';
+    
+    return {
+      bundleId: generateBundleId(initialGroup, initialDuration, initialCountryId),
+      bundleName: generateBundleName(initialGroup, initialDuration),
+      bundleGroup: initialGroup,
+      duration: initialDuration,
+      cost: 5.50,
+      countryId: initialCountryId,
+      regionId: 'AMERICA',
+      isNewUser: false,
+      paymentMethod: 'FOREIGN_CARD',
+      requestedDuration: initialDuration,
+    };
   });
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -311,7 +325,12 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                     <Label>Bundle Group</Label>
                     <Select 
                       value={testContext.bundleGroup} 
-                      onValueChange={(value) => setTestContext(prev => ({ ...prev, bundleGroup: value }))}
+                      onValueChange={(value) => setTestContext(prev => ({
+                        ...prev,
+                        bundleGroup: value,
+                        bundleId: generateBundleId(value, prev.duration, prev.countryId),
+                        bundleName: generateBundleName(value, prev.duration)
+                      }))}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -331,10 +350,16 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                     <Input
                       type="number"
                       value={testContext.duration}
-                      onChange={(e) => setTestContext(prev => ({ 
-                        ...prev, 
-                        duration: parseInt(e.target.value) || 1 
-                      }))}
+                      onChange={(e) => {
+                        const duration = parseInt(e.target.value) || 1;
+                        setTestContext(prev => ({ 
+                          ...prev, 
+                          duration,
+                          requestedDuration: duration,
+                          bundleId: generateBundleId(prev.bundleGroup, duration, prev.countryId),
+                          bundleName: generateBundleName(prev.bundleGroup, duration)
+                        }));
+                      }}
                     />
                   </div>
                 </div>
@@ -349,7 +374,8 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                         setTestContext(prev => ({ 
                           ...prev, 
                           countryId: value,
-                          regionId: country?.region || 'AMERICA'
+                          regionId: country?.region || 'AMERICA',
+                          bundleId: generateBundleId(prev.bundleGroup, prev.duration, value)
                         }));
                       }}
                     >

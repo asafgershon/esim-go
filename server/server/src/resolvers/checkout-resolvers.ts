@@ -176,14 +176,127 @@ export const checkoutResolvers: Partial<Resolvers> = {
           "regionId:",
           regionId
         );
-        const pricing = await context.services.pricing.calculatePrice(
-          numOfDays,
-          regionId,
-          countryId,
-          context.dataSources.catalogue
-        );
+        // Validate input parameters strictly - this is payment flow
+        if (!numOfDays || numOfDays <= 0) {
+          throw new Error(`Invalid requested duration: ${numOfDays}`);
+        }
+        if (!countryId) {
+          throw new Error('Country ID is required for checkout');
+        }
 
-        const { plan } = pricing;
+        // Fetch available bundles with strict validation
+        const bundleResults = await context.dataSources.catalogue.searchPlans({
+          country: countryId,
+          region: regionId
+        });
+
+        // STRICT VALIDATION - fail if no bundles available
+        if (!bundleResults?.bundles || bundleResults.bundles.length === 0) {
+          throw new Error(`No bundles available for country: ${countryId}${regionId ? `, region: ${regionId}` : ''}`);
+        }
+
+        // Validate and transform bundle data - fail if any required data missing
+        const validatedBundles = bundleResults.bundles.map((bundle, index) => {
+          // Check for price_cents first, then fallback to price field
+          const bundlePrice = bundle.price_cents ? bundle.price_cents / 100 : (bundle.price || 0);
+          if (!bundlePrice || bundlePrice <= 0) {
+            throw new Error(`Bundle ${index} (${bundle.esim_go_name || 'unknown'}): Invalid or missing price: ${bundlePrice}`);
+          }
+          if (!bundle.duration || bundle.duration <= 0) {
+            throw new Error(`Bundle ${index} (${bundle.esim_go_name || 'unknown'}): Invalid or missing duration: ${bundle.duration}`);
+          }
+          if (!bundle.esim_go_name) {
+            throw new Error(`Bundle ${index}: Missing bundle name (esim_go_name)`);
+          }
+          
+          // Extract countries - this is stored as JSON array
+          const countries = Array.isArray(bundle.countries) ? bundle.countries : [];
+          const primaryCountry = countries[0] || countryId;
+          
+          return {
+            id: bundle.id || bundle.esim_go_name,
+            name: bundle.esim_go_name,
+            cost: bundlePrice,
+            duration: bundle.duration,
+            countryId: primaryCountry,
+            countryName: primaryCountry, // We don't have country names in bundle data
+            regionId: regionId || '',
+            regionName: 'Unknown',
+            group: bundle.bundle_group || 'Standard Fixed',
+            isUnlimited: bundle.unlimited || false,
+            dataAmount: bundle.data_amount ? `${bundle.data_amount}GB` : '0GB'
+          };
+        });
+
+        // Use new pricing engine with strict validation
+        const { PricingEngineService } = await import('../services/pricing-engine.service');
+        const pricingEngine = new PricingEngineService(context.supabase);
+        await pricingEngine.initialize();
+
+        // Create pricing context with validated data
+        const pricingContext = PricingEngineService.createContext({
+          availableBundles: validatedBundles,
+          requestedDuration: numOfDays,
+          user: context.auth?.user ? {
+            id: context.auth.user.id,
+            isNew: false,
+            isFirstPurchase: false
+          } : undefined,
+          paymentMethod: 'israeli_card'
+        });
+
+        // Calculate pricing with the engine
+        const pricingResult = await pricingEngine.calculatePrice(pricingContext);
+
+        // STRICT VALIDATION of pricing result - this affects payment
+        if (!pricingResult) {
+          throw new Error('Pricing calculation failed - no result returned');
+        }
+        if (!pricingResult.finalPrice || pricingResult.finalPrice <= 0) {
+          throw new Error(`Invalid final price calculated: ${pricingResult.finalPrice}`);
+        }
+        if (!pricingResult.baseCost || pricingResult.baseCost <= 0) {
+          throw new Error(`Invalid base cost calculated: ${pricingResult.baseCost}`);
+        }
+
+        // The pricing engine should have selected a bundle - we need to determine which one
+        // For now, we'll find the bundle that matches the duration or find the optimal one
+        let selectedBundle = validatedBundles.find(b => b.duration === numOfDays);
+        if (!selectedBundle) {
+          // Find the bundle with the smallest duration that's >= requested duration
+          selectedBundle = validatedBundles
+            .filter(b => b.duration >= numOfDays)
+            .sort((a, b) => a.duration - b.duration)[0];
+        }
+        if (!selectedBundle) {
+          // Fallback to the bundle with the longest duration
+          selectedBundle = validatedBundles
+            .sort((a, b) => b.duration - a.duration)[0];
+        }
+
+        if (!selectedBundle) {
+          throw new Error('No suitable bundle could be selected');
+        }
+
+        // Construct plan data from selected bundle and pricing result
+        const plan = {
+          id: selectedBundle.id,
+          name: selectedBundle.name,
+          duration: selectedBundle.duration,
+          price: pricingResult.finalPrice,
+          currency: "USD",
+          countries: [countryId],
+          bundleGroup: selectedBundle.group,
+          dataAmount: selectedBundle.dataAmount,
+          isUnlimited: selectedBundle.isUnlimited
+        };
+
+        // Final validation of plan data before creating checkout session
+        if (!plan.id || !plan.name || !plan.duration || !plan.price) {
+          throw new Error('Invalid plan data constructed - missing required fields');
+        }
+
+        const pricing = pricingResult;
 
 
         // Create session in database using repository
