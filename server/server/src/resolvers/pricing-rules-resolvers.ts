@@ -311,7 +311,7 @@ export const pricingRulesQueries: QueryResolvers = {
         bundle: {
           id: testContext.bundleId || 'test-bundle',
           name: testContext.bundleName || 'Test Bundle',
-          cost: testContext.baseCost || 10.0,
+          cost: testContext.baseCost || 0,
           duration: testContext.duration || 7,
           countryId: testContext.countryId || 'US',
           countryName: testContext.countryName || 'United States',

@@ -365,7 +365,7 @@ export function PricingHierarchyExplanation({
               <div>
                 <h4 className="font-medium">Processing Fees</h4>
                 <p className="text-sm text-gray-600">
-                  Payment method-specific rates (Israeli cards: 1.4%, Foreign cards: 4.5%)
+                  Payment method-specific rates (configured via pricing rules)
                 </p>
               </div>
             </div>

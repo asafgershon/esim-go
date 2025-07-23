@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PricingRuleEngine } from '../../../src/rules-engine/rule-engine';
-import type { PricingContext, CreatePricingRuleInput } from '../../../src/rules-engine/types';
+import type { PricingContext } from '../../../src/rules-engine/types';
+import type { CreatePricingRuleInput } from '../../../src/types';
 import type { RuleType } from '../../../src/types';
 
 describe('Advanced Pricing Cases', () => {
