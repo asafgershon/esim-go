@@ -612,13 +612,55 @@ export class PricingRuleEngine {
     return markupDifference / daysDifference;
   }
   
-  private findPreviousDuration(requestedDuration: number): number | null {
-    const standardDurations = [1, 3, 5, 7, 10, 15, 30];
+  private selectOptimalBundle(context: PricingContext): Bundle {
+    const { availableBundles, requestedDuration } = context;
+    
+    if (!availableBundles || availableBundles.length === 0) {
+      throw new Error('No bundles available for pricing calculation');
+    }
+    
+    // 1. Try exact match first
+    const exactMatch = availableBundles.find(b => b.duration === requestedDuration);
+    if (exactMatch) {
+      this.logger.info('Found exact duration match', {
+        bundleId: exactMatch.id,
+        duration: exactMatch.duration,
+        requestedDuration,
+        operationType: 'bundle-selection'
+      });
+      return exactMatch;
+    }
+    
+    // 2. Find eligible bundles (duration >= requested)
+    const eligibleBundles = availableBundles
+      .filter(b => b.duration >= requestedDuration)
+      .sort((a, b) => a.duration - b.duration);
+    
+    if (eligibleBundles.length === 0) {
+      throw new Error(`No bundles available for ${requestedDuration} days or longer`);
+    }
+    
+    // 3. Return the smallest eligible bundle (next available)
+    const selectedBundle = eligibleBundles[0];
+    this.logger.info('Selected next available bundle', {
+      bundleId: selectedBundle.id,
+      bundleDuration: selectedBundle.duration,
+      requestedDuration,
+      unusedDays: selectedBundle.duration - requestedDuration,
+      operationType: 'bundle-selection'
+    });
+    
+    return selectedBundle;
+  }
+  
+  private findPreviousDuration(requestedDuration: number, availableDurations: number[]): number | null {
+    // Sort durations in ascending order
+    const sortedDurations = [...availableDurations].sort((a, b) => a - b);
     
     // Find the largest duration that is less than or equal to requested duration
-    for (let i = standardDurations.length - 1; i >= 0; i--) {
-      if (standardDurations[i] <= requestedDuration) {
-        return standardDurations[i];
+    for (let i = sortedDurations.length - 1; i >= 0; i--) {
+      if (sortedDurations[i] <= requestedDuration) {
+        return sortedDurations[i];
       }
     }
     

@@ -338,21 +338,19 @@ const UnifiedPricingRulesPage: React.FC = () => {
         <div className="flex-1 flex flex-col space-y-4">
 
           {/* Filters */}
-          <div className="space-y-4">
-            {/* Search and Type Filter */}
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search rules..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+          <div className="flex items-center justify-between gap-4">
+            {/* Search on the left */}
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search rules..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
             </div>
 
-            {/* Quick Filters */}
+            {/* Quick Filters on the right */}
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-gray-600">Quick filters:</span>
               
