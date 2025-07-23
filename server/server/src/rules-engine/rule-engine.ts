@@ -90,10 +90,44 @@ export class PricingRuleEngine {
   }
 
   async *calculatePriceSteps(context: PricingContext): AsyncGenerator<PricingStep, PricingRuleCalculation, undefined> {
-    this.logger.info('Starting price calculation', {
-      bundleId: context.bundle.id,
-      countryId: context.bundle.countryId,
-      duration: context.bundle.duration,
+    // First, select the optimal bundle
+    const selectedBundle = this.selectOptimalBundle(context);
+    
+    // Yield bundle selection step
+    yield {
+      type: PricingStepType.BUNDLE_SELECTION,
+      timestamp: new Date(),
+      message: `Selected ${selectedBundle.duration}-day bundle for ${context.requestedDuration}-day request`,
+      data: {
+        requestedDuration: context.requestedDuration,
+        availableBundles: context.availableBundles.map(b => ({
+          id: b.id,
+          name: b.name,
+          duration: b.duration,
+          cost: b.cost
+        })),
+        selectedBundle: {
+          id: selectedBundle.id,
+          name: selectedBundle.name,
+          duration: selectedBundle.duration,
+          reason: selectedBundle.duration === context.requestedDuration ? 'exact_match' : 'next_available'
+        },
+        unusedDays: selectedBundle.duration - context.requestedDuration
+      }
+    } as BundleSelectionStep;
+    
+    // Update context with selected bundle
+    context.bundle = selectedBundle;
+    context.country = selectedBundle.countryId;
+    context.region = selectedBundle.regionId;
+    context.bundleGroup = selectedBundle.group;
+    context.duration = selectedBundle.duration;
+    
+    this.logger.info('Starting price calculation with selected bundle', {
+      bundleId: selectedBundle.id,
+      countryId: selectedBundle.countryId,
+      duration: selectedBundle.duration,
+      requestedDuration: context.requestedDuration,
       operationType: 'price-calculation'
     });
     

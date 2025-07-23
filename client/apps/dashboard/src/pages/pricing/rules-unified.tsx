@@ -336,62 +336,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col space-y-4">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Rules</p>
-                    <p className="text-2xl font-bold text-gray-900">{rules.length}</p>
-                  </div>
-                  <Settings className="h-8 w-8 text-gray-400" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Active Rules</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {rules.filter((r: PricingRule) => r.isActive).length}
-                    </p>
-                  </div>
-                  <CheckCircle className="h-8 w-8 text-green-400" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">System Rules</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {rules.filter((r: PricingRule) => !r.isEditable).length}
-                    </p>
-                  </div>
-                  <Target className="h-8 w-8 text-blue-400" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Custom Rules</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {rules.filter((r: PricingRule) => r.isEditable).length}
-                    </p>
-                  </div>
-                  <BarChart3 className="h-8 w-8 text-purple-400" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
 
           {/* Filters */}
           <div className="space-y-4">
@@ -629,6 +573,37 @@ const UnifiedPricingRulesPage: React.FC = () => {
                   })}
                 </TableBody>
               </Table>
+            </div>
+            
+            {/* Sticky Stats Footer */}
+            <div className="sticky bottom-0 bg-background border-t px-4 py-3">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-600">Total:</span>
+                    <span className="font-medium text-gray-900">{rules.length}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-gray-600">Active:</span>
+                    <span className="font-medium text-green-600">{rules.filter((r: PricingRule) => r.isActive).length}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-blue-500" />
+                    <span className="text-gray-600">System:</span>
+                    <span className="font-medium text-blue-600">{rules.filter((r: PricingRule) => !r.isEditable).length}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-purple-500" />
+                    <span className="text-gray-600">Custom:</span>
+                    <span className="font-medium text-purple-600">{rules.filter((r: PricingRule) => r.isEditable).length}</span>
+                  </div>
+                </div>
+                <div className="text-gray-500">
+                  Showing {filteredRules.length} of {rules.length} rules
+                </div>
+              </div>
             </div>
           </Card>
 
