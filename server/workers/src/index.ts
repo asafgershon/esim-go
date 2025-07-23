@@ -1,5 +1,6 @@
 import { createLogger } from '@esim-go/utils';
 import { config } from './config/index.js';
+import { catalogSyncWorker } from './workers/catalog-sync.worker.js';
 import { startScheduler, stopScheduler } from './workers/scheduler.worker.js';
 import { checkSupabaseConnection } from './services/supabase.service.js';
 import { catalogSyncQueueManager } from './queues/catalog-sync.queue.js';
@@ -24,8 +25,10 @@ async function start() {
       throw new Error('Supabase connection failed');
     }
 
-    // Start the scheduler (which handles catalog sync jobs)
-    logger.info('Starting scheduler worker');
+    // Start the catalog sync worker
+    logger.info('Starting catalog sync worker');
+    
+    // Start the scheduler
     startScheduler();
     
     // Start health check server
@@ -43,6 +46,9 @@ async function start() {
       
       // Stop scheduler
       stopScheduler();
+      
+      // Close worker
+      await catalogSyncWorker.close();
       
       // Close queue connections
       await catalogSyncQueueManager.close();
