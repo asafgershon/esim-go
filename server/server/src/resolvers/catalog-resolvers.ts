@@ -24,21 +24,25 @@ export const catalogResolvers: Partial<Resolvers> = {
     // Pricing filters - returns all available filter options dynamically
     pricingFilters: async (_, __, context: Context) => {
       try {
-        // Get dynamic bundle groups with fallback handling
-        const bundleGroups = await context.dataSources.catalogue.getOrganizationGroups();
+        logger.info("Fetching pricing filters from DB aggregation", {
+          operationType: "pricing-filters-fetch",
+        });
 
-        // Get bundle data aggregation for dynamic durations and data types
-        const bundleAggregation = await context.dataSources.catalogue.getBundleDataAggregation();
-
-        let durations: { label: string; value: string; minDays?: number; maxDays?: number }[] = [];
-        let dataTypes: { label: string; value: string; isUnlimited?: boolean }[] = [];
+        // Get bundle groups from repository
+        const bundleGroups = await context.repositories.bundles.getAvailableBundleGroups();
+        
+        // Get bundle data aggregation from datasource for durations and data types
+        const bundleAggregation = await context.repositories.bundles.getBundlesByGroupAggregation();
+        
+        let durations: { label: string; value: string; minDays: number; maxDays: number }[] = [];
+        let dataTypes: { label: string; value: string; isUnlimited: boolean }[] = [];
 
         if (
           bundleAggregation &&
           bundleAggregation.total > 0 &&
           bundleAggregation.byDuration?.length > 0
         ) {
-          // Extract unique durations from aggregation data
+          // Extract unique durations from DB aggregation data
           durations = bundleAggregation.byDuration.map(
             (durationGroup: any) => ({
               label: `${durationGroup.duration} days`,
@@ -48,7 +52,7 @@ export const catalogResolvers: Partial<Resolvers> = {
             })
           );
 
-          // Dynamic data types based on actual bundle data
+          // Dynamic data types based on actual bundle data from DB
           dataTypes = [];
           if (bundleAggregation.unlimited > 0) {
             dataTypes.push({
@@ -65,7 +69,11 @@ export const catalogResolvers: Partial<Resolvers> = {
             });
           }
         } else {
-          // Fallback to static values if aggregation data is not available
+          // Fallback to static values if DB aggregation data is not available
+          logger.warn("Bundle aggregation data not available, using fallback filters", {
+            operationType: "pricing-filters-fallback",
+          });
+          
           durations = [
             { label: "1-7 days", value: "short", minDays: 1, maxDays: 7 },
             { label: "8-30 days", value: "medium", minDays: 8, maxDays: 30 },
@@ -77,19 +85,17 @@ export const catalogResolvers: Partial<Resolvers> = {
           ];
         }
 
+        logger.info("Pricing filters fetched successfully", {
+          bundleGroupCount: bundleGroups.length,
+          durationCount: durations.length,
+          dataTypeCount: dataTypes.length,
+          operationType: "pricing-filters-fetch",
+        });
+
         return {
           bundleGroups,
-          durations: durations.map(d => ({
-            label: d.label,
-            value: d.value,
-            minDays: d.minDays ?? 1,
-            maxDays: d.maxDays ?? 999
-          })),
-          dataTypes: dataTypes.map(dt => ({
-            label: dt.label,
-            value: dt.value,
-            isUnlimited: dt.isUnlimited ?? false
-          })),
+          durations,
+          dataTypes,
         };
       } catch (error) {
         logger.error("Error fetching pricing filters", error as Error, {

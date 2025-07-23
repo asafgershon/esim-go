@@ -3,6 +3,7 @@ import { type Database } from '../../database.types';
 import { createLogger, withPerformanceLogging } from '../../lib/logger';
 import type { CatalogueResponseInner } from '@esim-go/client';
 import { transformBundlesToDatabase, convertCentsToDollars, convertBytesToMB } from './bundle-transform.schema';
+import type { PricingRange } from '../../types';
 
 type CatalogBundle = Database['public']['Tables']['catalog_bundles']['Row'];
 type CatalogBundleInsert = Database['public']['Tables']['catalog_bundles']['Insert'];
@@ -357,6 +358,7 @@ export class BundleRepository extends BaseSupabaseRepository<CatalogBundle, Cata
     countryId: string;
     countryName: string;
     bundleCount: number;
+    priceRange: PricingRange
   }>> {
     return withPerformanceLogging(
       this.logger,
@@ -364,31 +366,45 @@ export class BundleRepository extends BaseSupabaseRepository<CatalogBundle, Cata
       async () => {
         const { data, error } = await this.supabase
           .from('catalog_bundles')
-          .select('countries');
+          .select('countries, price_cents');
 
         if (error) {
           this.logger.error('Failed to get country aggregation', error);
           throw error;
         }
 
-        // Aggregate countries and count bundles
+        // Aggregate countries, count bundles, and track prices per country
         const countryBundleCount = new Map<string, number>();
+        const countryPrices = new Map<string, number[]>();
         
         this.logger.debug('Raw bundle data sample', {
           totalBundles: data?.length || 0,
           sampleBundles: (data || []).slice(0, 3).map(bundle => ({
             countries: bundle.countries,
             countryType: typeof bundle.countries,
-            isArray: Array.isArray(bundle.countries)
+            isArray: Array.isArray(bundle.countries),
+            price_cents: bundle.price_cents
           })),
           operationType: 'country-aggregation-debug'
         });
         
         for (const bundle of data || []) {
           if (bundle.countries && Array.isArray(bundle.countries)) {
+            const priceCents = bundle.price_cents;
+            const isValidPrice = priceCents !== null && priceCents !== undefined && typeof priceCents === 'number' && priceCents > 0;
+            
             for (const country of bundle.countries) {
               if (typeof country === 'string') {
+                // Count bundles for this country
                 countryBundleCount.set(country, (countryBundleCount.get(country) || 0) + 1);
+                
+                // Track prices for this country (only valid prices)
+                if (isValidPrice) {
+                  if (!countryPrices.has(country)) {
+                    countryPrices.set(country, []);
+                  }
+                  countryPrices.get(country)!.push(priceCents);
+                }
               } else {
                 this.logger.debug('Non-string country found', {
                   country,
@@ -399,27 +415,231 @@ export class BundleRepository extends BaseSupabaseRepository<CatalogBundle, Cata
           } else {
             this.logger.debug('Bundle without valid countries array', {
               countries: bundle.countries,
-              type: typeof bundle.countries
+              type: typeof bundle.countries,
+              price_cents: bundle.price_cents
             });
           }
         }
 
-        // Convert to array and sort by country name
-        // Note: countryId here is actually the ISO code from the database
+        // Convert to array and calculate per-country pricing ranges
         const result = Array.from(countryBundleCount.entries())
-          .map(([countryIso, bundleCount]) => ({
-            countryId: countryIso, // Using ISO code as the ID
-            countryName: countryIso, // For now, use ISO code as name - frontend will map to full names
-            bundleCount
-          }))
+          .map(([countryIso, bundleCount]) => {
+            const prices = countryPrices.get(countryIso) || [];
+            let priceRange: PricingRange;
+            
+            if (prices.length > 0) {
+              const minPrice = Math.min(...prices);
+              const maxPrice = Math.max(...prices);
+              priceRange = { min: minPrice, max: maxPrice };
+            } else {
+              // No valid pricing data for this country
+              priceRange = { min: 0, max: 0 };
+              this.logger.debug('Country has no valid pricing data', {
+                countryId: countryIso,
+                bundleCount,
+                operationType: 'country-pricing-debug'
+              });
+            }
+            
+            return {
+              countryId: countryIso, // Using ISO code as the ID
+              countryName: countryIso, // For now, use ISO code as name - frontend will map to full names
+              bundleCount,
+              priceRange
+            };
+          })
           .sort((a, b) => a.countryName.localeCompare(b.countryName));
+
+        // Add detailed pricing logging
+        const pricingStats = {
+          countriesWithPricing: 0,
+          countriesWithoutPricing: 0,
+          totalValidPrices: 0,
+          samplePricingRanges: [] as Array<{countryId: string, min: number, max: number, bundleCount: number}>
+        };
+
+        result.forEach(country => {
+          if (country.priceRange.min > 0 || country.priceRange.max > 0) {
+            pricingStats.countriesWithPricing++;
+            pricingStats.totalValidPrices += countryPrices.get(country.countryId)?.length || 0;
+            
+            // Add to sample (first 5 countries with pricing)
+            if (pricingStats.samplePricingRanges.length < 5) {
+              pricingStats.samplePricingRanges.push({
+                countryId: country.countryId,
+                min: country.priceRange.min,
+                max: country.priceRange.max,
+                bundleCount: country.bundleCount
+              });
+            }
+          } else {
+            pricingStats.countriesWithoutPricing++;
+          }
+        });
 
         this.logger.info('Country aggregation completed', {
           countryCount: result.length,
           totalBundles: data?.length || 0,
-          uniqueCountries: Array.from(countryBundleCount.keys()),
-          countryBundleCounts: Array.from(countryBundleCount.entries()),
+          pricingStats,
+          uniqueCountries: Array.from(countryBundleCount.keys()).slice(0, 10), // Limit to first 10 for logging
           operationType: 'country-aggregation'
+        });
+
+        return result;
+      }
+    );
+  }
+
+  /**
+   * Get bundles grouped by bundle group with counts and pricing - efficient aggregation
+   */
+  async getBundlesByGroupAggregation(): Promise<Array<{
+    bundleGroup: string;
+    bundleCount: number;
+    priceRange: PricingRange;
+    countryCount: number;
+  }>> {
+    return withPerformanceLogging(
+      this.logger,
+      'get-bundles-by-group-aggregation',
+      async () => {
+        const { data, error } = await this.supabase
+          .from('catalog_bundles')
+          .select('bundle_group, price_cents, countries');
+
+        if (error) {
+          this.logger.error('Failed to get bundle group aggregation', error);
+          throw error;
+        }
+
+        // Aggregate bundle groups, count bundles, track prices, and count unique countries
+        const groupBundleCount = new Map<string, number>();
+        const groupPrices = new Map<string, number[]>();
+        const groupCountries = new Map<string, Set<string>>();
+        
+        this.logger.debug('Raw bundle data sample for groups', {
+          totalBundles: data?.length || 0,
+          sampleBundles: (data || []).slice(0, 3).map(bundle => ({
+            bundle_group: bundle.bundle_group,
+            price_cents: bundle.price_cents,
+            countries: bundle.countries,
+            countryType: typeof bundle.countries,
+            isArray: Array.isArray(bundle.countries)
+          })),
+          operationType: 'group-aggregation-debug'
+        });
+        
+        for (const bundle of data || []) {
+          const bundleGroup = bundle.bundle_group;
+          if (bundleGroup && typeof bundleGroup === 'string' && bundleGroup.trim()) {
+            const groupName = bundleGroup.trim();
+            
+            // Count bundles for this group
+            groupBundleCount.set(groupName, (groupBundleCount.get(groupName) || 0) + 1);
+            
+            // Track prices for this group (only valid prices)
+            const priceCents = bundle.price_cents;
+            const isValidPrice = priceCents !== null && priceCents !== undefined && typeof priceCents === 'number' && priceCents > 0;
+            
+            if (isValidPrice) {
+              if (!groupPrices.has(groupName)) {
+                groupPrices.set(groupName, []);
+              }
+              groupPrices.get(groupName)!.push(priceCents);
+            }
+            
+            // Track unique countries for this group
+            if (bundle.countries && Array.isArray(bundle.countries)) {
+              if (!groupCountries.has(groupName)) {
+                groupCountries.set(groupName, new Set());
+              }
+              const countrySet = groupCountries.get(groupName)!;
+              for (const country of bundle.countries) {
+                if (typeof country === 'string') {
+                  countrySet.add(country);
+                }
+              }
+            }
+          } else {
+            this.logger.debug('Bundle without valid bundle_group', {
+              bundle_group: bundleGroup,
+              type: typeof bundleGroup,
+              price_cents: bundle.price_cents
+            });
+          }
+        }
+
+        // Convert to array and calculate per-group pricing ranges and country counts
+        const result = Array.from(groupBundleCount.entries())
+          .map(([bundleGroup, bundleCount]) => {
+            const prices = groupPrices.get(bundleGroup) || [];
+            let priceRange: PricingRange;
+            
+            if (prices.length > 0) {
+              const minPrice = Math.min(...prices);
+              const maxPrice = Math.max(...prices);
+              priceRange = { min: minPrice, max: maxPrice };
+            } else {
+              // No valid pricing data for this group
+              priceRange = { min: 0, max: 0 };
+              this.logger.debug('Bundle group has no valid pricing data', {
+                bundleGroup,
+                bundleCount,
+                operationType: 'group-pricing-debug'
+              });
+            }
+            
+            const countrySet = groupCountries.get(bundleGroup) || new Set();
+            const countryCount = countrySet.size;
+            
+            return {
+              bundleGroup,
+              bundleCount,
+              priceRange,
+              countryCount
+            };
+          })
+          .sort((a, b) => a.bundleGroup.localeCompare(b.bundleGroup));
+
+        // Add detailed pricing and country logging
+        const groupStats = {
+          groupsWithPricing: 0,
+          groupsWithoutPricing: 0,
+          totalValidPrices: 0,
+          sampleGroupRanges: [] as Array<{bundleGroup: string, min: number, max: number, bundleCount: number, countryCount: number}>
+        };
+
+        result.forEach(group => {
+          if (group.priceRange.min > 0 || group.priceRange.max > 0) {
+            groupStats.groupsWithPricing++;
+            groupStats.totalValidPrices += groupPrices.get(group.bundleGroup)?.length || 0;
+            
+            // Add to sample (first 5 groups with pricing)
+            if (groupStats.sampleGroupRanges.length < 5) {
+              groupStats.sampleGroupRanges.push({
+                bundleGroup: group.bundleGroup,
+                min: group.priceRange.min,
+                max: group.priceRange.max,
+                bundleCount: group.bundleCount,
+                countryCount: group.countryCount
+              });
+            }
+          } else {
+            groupStats.groupsWithoutPricing++;
+          }
+        });
+
+        this.logger.info('Bundle group aggregation completed', {
+          groupCount: result.length,
+          totalBundles: data?.length || 0,
+          groupStats,
+          bundleGroups: result.map(g => ({ 
+            name: g.bundleGroup, 
+            bundles: g.bundleCount, 
+            countries: g.countryCount,
+            priceRange: g.priceRange
+          })),
+          operationType: 'group-aggregation'
         });
 
         return result;
