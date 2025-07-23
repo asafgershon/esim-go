@@ -622,31 +622,43 @@ export const resolvers: Resolvers = {
           });
         }
         
-        // Use cached catalogue data to get bundles for this country  
-        // TODO: Re-enable country filtering when backend JSONB queries are fixed
-        const dataPlansResult = await context.dataSources.catalogue.searchPlans({
-          // country: countryId  // Temporarily disabled due to JSONB query issues
-        });
-        const allPlans = dataPlansResult.bundles || [];
+        // Get bundles from catalog_bundles table which stores ISO codes
+        const { data: catalogBundles, error } = await supabaseAdmin
+          .from('catalog_bundles')
+          .select('*')
+          .contains('countries', [countryId]);
+          
+        if (error) {
+          logger.error('Failed to fetch catalog bundles for country', error, {
+            countryId,
+            operationType: 'catalog-bundles-fetch'
+          });
+          throw new GraphQLError('Failed to fetch bundles for country', {
+            extensions: { code: 'INTERNAL_ERROR' }
+          });
+        }
         
-        // Filter by country on the backend since database filtering is disabled
-        const dataPlans = allPlans.filter(plan => {
-          if (!plan.countries || !Array.isArray(plan.countries)) {
-            return false;
-          }
-          // Match by country name or ISO code
-          return plan.countries.some((countryName: string) => 
-            countryName === countryId || 
-            countryName.toLowerCase() === countryId.toLowerCase() ||
-            countryName === country.name // Match by full country name
-          );
-        });
+        // Convert catalog bundles to data plan format
+        const dataPlans = (catalogBundles || []).map(bundle => ({
+          id: bundle.id,
+          name: bundle.esim_go_name,
+          description: bundle.description || '',
+          baseCountry: country,
+          countries: bundle.countries || [],
+          regions: bundle.regions || [],
+          duration: bundle.duration,
+          price: bundle.price_cents / 100, // Convert cents to dollars
+          currency: bundle.currency,
+          unlimited: bundle.unlimited,
+          dataAmount: bundle.data_amount,
+          bundleGroup: bundle.bundle_group,
+          features: []
+        }));
         
-        logger.info('Country filtering applied on backend', {
+        logger.info('Fetched bundles from catalog for country', {
           countryId,
-          totalPlans: allPlans.length,
-          filteredPlans: dataPlans.length,
-          operationType: 'country-filter-backend'
+          bundleCount: dataPlans.length,
+          operationType: 'country-bundles-fetch'
         });
         
         // DEBUG: Log the raw data from the API
@@ -750,19 +762,21 @@ export const resolvers: Resolvers = {
                 countryName: country.country,
                 countryId,
                 duration: plan.duration,
-                cost: calculation.baseCost,
-                costPlus: calculation.baseCost + calculation.markup,
-                totalCost: calculation.subtotal,
-                discountRate: calculation.totalDiscount > 0 ? (calculation.totalDiscount / calculation.subtotal) : 0,
-                discountValue: calculation.totalDiscount,
-                priceAfterDiscount: calculation.priceAfterDiscount,
-                processingRate: calculation.processingRate,
-                processingCost: calculation.processingFee,
-                finalRevenue: calculation.finalRevenue,
-                netProfit: calculation.profit,
+                cost: calculation.baseCost || 0,
+                costPlus: (calculation.baseCost || 0) + (calculation.markup || 0),
+                totalCost: calculation.subtotal || 0,
+                discountRate: (calculation.totalDiscount || 0) > 0 && (calculation.subtotal || 0) > 0 
+                  ? (calculation.totalDiscount / calculation.subtotal) 
+                  : 0,
+                discountValue: calculation.totalDiscount || 0,
+                priceAfterDiscount: calculation.priceAfterDiscount || 0,
+                processingRate: calculation.processingRate || 0.045,
+                processingCost: calculation.processingFee || 0,
+                finalRevenue: calculation.finalRevenue || 0,
+                netProfit: calculation.profit || 0,
                 currency: 'USD',
-                pricePerDay: (plan.duration && plan.duration > 0 && isFinite(calculation.priceAfterDiscount)) 
-                  ? calculation.priceAfterDiscount / plan.duration 
+                pricePerDay: (plan.duration && plan.duration > 0 && calculation.priceAfterDiscount && isFinite(calculation.priceAfterDiscount)) 
+                  ? (calculation.priceAfterDiscount || 0) / plan.duration 
                   : 0,
                 hasCustomDiscount: hasCustomConfig,
                 configurationLevel: configLevelByBundle.get(plan.duration) || ConfigurationLevel.Global,
