@@ -11,7 +11,9 @@ interface UsePricingParams {
 
 interface PricingData {
   dailyPrice: number;
-  totalPrice: number;
+  totalPrice: number; // Final price after discount (what users pay)
+  originalPrice: number; // Price before discount (totalCost)
+  discountAmount: number; // Discount value
   hasDiscount: boolean;
   days: number;
 }
@@ -34,7 +36,7 @@ export function usePricing({ numOfDays, regionId, countryId, debounceMs = 300 }:
           variables: {
             numOfDays,
             regionId: regionId || "",
-            countryId: countryId || "",
+            countryId: countryId ? countryId.toUpperCase() : "",
           },
         });
       }, debounceMs);
@@ -52,13 +54,17 @@ export function usePricing({ numOfDays, regionId, countryId, debounceMs = 300 }:
   const pricing: PricingData | null = useMemo(() => {
     if (!priceData?.calculatePrice) return null;
 
-    const totalPrice = priceData.calculatePrice.totalCost;
+    const originalPrice = priceData.calculatePrice.totalCost;
+    const discountAmount = priceData.calculatePrice.discountValue;
+    const totalPrice = priceData.calculatePrice.priceAfterDiscount;
     const dailyPrice = totalPrice / numOfDays;
-    const hasDiscount = priceData.calculatePrice.discountValue > 0;
+    const hasDiscount = discountAmount > 0;
 
     return {
       dailyPrice,
       totalPrice,
+      originalPrice,
+      discountAmount,
       hasDiscount,
       days: numOfDays,
     };

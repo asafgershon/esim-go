@@ -89,13 +89,34 @@ export function OrderDetailsSection({
             <div className="flex justify-between">
               <span className="text-muted-foreground">מחיר יומי</span>
               <span className="font-medium">
-                ${pricing ? (pricing.totalPrice / numOfDays).toFixed(2) : (displayPrice / numOfDays).toFixed(2)}
+                ${pricing ? pricing.dailyPrice.toFixed(2) : (displayPrice / numOfDays).toFixed(2)}
               </span>
             </div>
           </div>
 
-          {/* Total Price */}
-          <div className="border-t pt-4">
+          {/* Pricing Section */}
+          <div className="border-t pt-4 space-y-3">
+            {/* Show original price if discount exists */}
+            {pricing?.hasDiscount && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">מחיר מקורי</span>
+                <span className="line-through text-muted-foreground">
+                  ${pricing.originalPrice.toFixed(2)}
+                </span>
+              </div>
+            )}
+            
+            {/* Show discount amount if exists */}
+            {pricing?.hasDiscount && (
+              <div className="flex justify-between">
+                <span className="text-green-600">הנחה</span>
+                <span className="text-green-600 font-medium">
+                  -${pricing.discountAmount.toFixed(2)}
+                </span>
+              </div>
+            )}
+            
+            {/* Final Price */}
             <div className="flex justify-between items-center">
               <span className="text-lg font-semibold">סה״כ מחיר</span>
               <span className="text-xl font-bold text-primary">
@@ -108,6 +129,15 @@ export function OrderDetailsSection({
                 />
               </span>
             </div>
+            
+            {/* You Save message */}
+            {pricing?.hasDiscount && (
+              <div className="text-center py-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <span className="text-green-700 dark:text-green-300 font-medium">
+                  חסכת ${pricing.discountAmount.toFixed(2)}!
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}

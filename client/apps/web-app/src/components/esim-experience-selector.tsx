@@ -123,7 +123,7 @@ export function EsimExperienceSelector() {
     // Navigate to checkout with current parameters
     const params = new URLSearchParams();
     params.set("numOfDays", numOfDays.toString());
-    if (countryId) params.set("countryId", countryId);
+    if (countryId) params.set("countryId", countryId.toUpperCase());
     if (tripId) params.set("tripId", tripId);
     if (pricing?.totalPrice)
       params.set("totalPrice", pricing.totalPrice.toString());
@@ -401,13 +401,28 @@ export function EsimExperienceSelector() {
                   </div>
                 </div>
 
-                {pricing?.hasDiscount && (
-                  <div className="text-sm text-primary font-medium">
-                    יותר ימים = מחירים נמוכים יותר!
-                  </div>
-                )}
-
-                <div className="border-t pt-3">
+                <div className="border-t pt-3 space-y-2">
+                  {/* Show original price if discounted */}
+                  {pricing?.hasDiscount && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">מחיר מקורי:</span>
+                      <span className="line-through text-muted-foreground">
+                        ${pricing.originalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Show discount amount */}
+                  {pricing?.hasDiscount && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-green-600">הנחה:</span>
+                      <span className="text-green-600 font-medium">
+                        -${pricing.discountAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Final total price */}
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold">
                       סה״כ:{" "}
@@ -421,6 +436,13 @@ export function EsimExperienceSelector() {
                       />
                     </span>
                   </div>
+                  
+                  {/* You save message */}
+                  {pricing?.hasDiscount && (
+                    <div className="text-center py-1 text-xs bg-green-50 dark:bg-green-900/20 rounded text-green-700 dark:text-green-300">
+                      חסכת ${pricing.discountAmount.toFixed(2)}!
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -259,7 +259,7 @@ export function CheckoutContainer() {
             numOfDays={numOfDays as number}
             countryId={countryId as string}
             tripId={regionId as string}
-            totalPrice={session?.pricing?.total || 0}
+            totalPrice={0} // Let usePricing hook handle pricing calculation
             sectionNumber={1}
           />
           <DeliveryMethodSection
