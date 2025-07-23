@@ -817,15 +817,40 @@ export const resolvers: Resolvers = {
                 error: (error as Error).message,
                 operationType: 'country-bundles-fetch'
               });
-              return null;
+              
+              // Return bundle with default values instead of null
+              return {
+                bundleName: plan.name || `${plan.duration} Day Bundle`,
+                countryName: country.name || country.country || countryId,
+                countryId,
+                duration: plan.duration || 0,
+                cost: 0,
+                costPlus: 0,
+                totalCost: 0,
+                discountRate: 0,
+                discountValue: 0,
+                priceAfterDiscount: 0,
+                processingRate: 0,
+                processingCost: 0,
+                finalRevenue: 0,
+                netProfit: 0,
+                currency: 'USD',
+                pricePerDay: 0,
+                hasCustomDiscount: false,
+                configurationLevel: 'GLOBAL',
+                discountPerDay: 0.10,
+                planId: plan.name || plan.id || `${countryId}-${plan.duration}d`,
+                isUnlimited: plan.unlimited || plan.dataAmount === -1 || false,
+                dataAmount: plan.unlimited || plan.dataAmount === -1 ? 'Unlimited' : 
+                  plan.dataAmount > 0 ? `${Math.round(plan.dataAmount / 1024)}GB` : 'Unknown',
+                bundleGroup: plan.bundleGroup || 'Standard Fixed'
+              };
             }
           })
         );
         
-        // Filter out failed calculations (already sorted by duration)
-        const result = bundles.filter(bundle => bundle !== null);
-        
-        return result;
+        // No need to filter anymore since we return default values instead of null
+        return bundles;
       } catch (error) {
         logger.error('Error in countryBundles resolver', error as Error, {
           countryId,

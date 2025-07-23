@@ -1,45 +1,23 @@
-# Multi-stage build for optimized image
-FROM oven/bun:1-alpine AS pruner
-
-# Install turbo globally
-RUN bun add -g turbo
-
-WORKDIR /app
-
-# Copy entire monorepo
-COPY server ./
-
-# Prune the monorepo to include only workers and its dependencies
-RUN turbo prune @esim-go/workers --docker
-
-# Second stage - build the pruned monorepo
-FROM oven/bun:1-alpine AS builder
+# Use the official Bun image
+FROM oven/bun:1-alpine
 
 # Install dependencies for building
 RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-# Copy pruned lockfile and package files
-COPY --from=pruner /app/out/json/ .
-COPY --from=pruner /app/out/bun.lock ./bun.lock
+# Copy the entire server monorepo
+COPY server ./
 
-# Install dependencies (skip postinstall scripts)
+# Install all dependencies
 RUN bun install --frozen-lockfile --ignore-scripts
 
-# Copy pruned source code
-COPY --from=pruner /app/out/full/ .
-
-# Build all packages in the pruned workspace
+# Build the workspace packages
+WORKDIR /app/packages/utils
 RUN bun run build
 
-# Final stage - runtime
-FROM oven/bun:1-alpine
-
-WORKDIR /app
-
-# Copy built application from builder
-COPY --from=builder /app .
+WORKDIR /app/packages/esim-go-client  
+RUN bun run build
 
 # Set working directory for workers runtime
 WORKDIR /app/workers
