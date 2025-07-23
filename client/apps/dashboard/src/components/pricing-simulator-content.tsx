@@ -13,7 +13,7 @@ import {
 } from '@workspace/ui';
 import React, { useState, useEffect } from 'react';
 import { Calculator, Globe, Clock } from 'lucide-react';
-import { CALCULATE_BATCH_PRICING_WITH_RULES, GET_COUNTRY_BUNDLES } from '../lib/graphql/queries';
+import { GET_COUNTRY_BUNDLES } from '../lib/graphql/queries';
 import { Country } from '@/__generated__/graphql';
 
 interface PricingSimulatorContentProps {
@@ -24,38 +24,22 @@ interface SimulationResult {
   bundleName: string;
   countryName: string;
   duration: number;
-  baseCost: number;
-  markup: number;
-  subtotal: number;
-  discounts: Array<{
-    ruleName: string;
-    amount: number;
-    type: string;
-  }>;
-  totalDiscount: number;
+  cost: number;
+  costPlus: number;
+  totalCost: number;
+  discountRate: number;
+  discountValue: number;
   priceAfterDiscount: number;
-  processingFee: number;
-  processingRate: number;
-  finalPrice: number;
+  processingCost: number;
   finalRevenue: number;
-  revenueAfterProcessing: number;
-  profit: number;
-  appliedRules: Array<{
-    id: string;
-    name: string;
-    type: string;
-    impact: string;
-  }>;
   currency: string;
+  discountPerDay: number;
 }
 
 export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = ({
   countries,
 }) => {
-  const [calculateBatchPricing, { loading: pricingLoading }] = useLazyQuery(CALCULATE_BATCH_PRICING_WITH_RULES);
-  const [getCountryBundles, { loading: bundlesLoading }] = useLazyQuery(GET_COUNTRY_BUNDLES);
-  
-  const loading = pricingLoading || bundlesLoading;
+  const [getCountryBundles, { loading }] = useLazyQuery(GET_COUNTRY_BUNDLES);
   
   // Simulation state
   const [selectedCountry, setSelectedCountry] = useState<string>('');
@@ -140,45 +124,31 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
         return;
       }
       
-      // Ensure all required fields have valid values
-      const bundleRequest = {
-        bundleId: suitableBundle.planId || `bundle-${selectedCountry}-${suitableBundle.duration}`,
-        bundleName: suitableBundle.bundleName || `Bundle ${suitableBundle.duration} days`,
-        cost: suitableBundle.cost || 0,
-        duration: suitableBundle.duration || bestBundle,
-        countryId: selectedCountry,
-        countryName: suitableBundle.countryName || country.name,
-        regionId: country.region,
-        regionName: country.region,
-        bundleGroup: suitableBundle.bundleGroup || 'Standard',
-        isUnlimited: suitableBundle.isUnlimited || false,
-        dataAmount: suitableBundle.dataAmount || 'Unknown',
-        paymentMethod: selectedPaymentMethod,
-        requestedDuration: simulatorDays,
-      };
+      // Debug log to see what we have
+      console.log('Suitable bundle found:', suitableBundle);
       
-      // Debug log to see what we're sending
-      console.log('Bundle request:', bundleRequest);
-      
-      // Now use the bundle details for rule-based pricing
-      const result = await calculateBatchPricing({
-        variables: {
-          requests: [bundleRequest],
-        },
-      });
-
-      if (result.data?.calculateBatchPricing && result.data.calculateBatchPricing.length > 0) {
-        const pricingData = result.data.calculateBatchPricing[0];
+      // Use the bundle data directly since it already has pricing information
+      if (suitableBundle.cost && suitableBundle.priceAfterDiscount) {
+        const baseCost = suitableBundle.cost || 0;
+        const costPlusMarkup = suitableBundle.costPlus;
         
         setSimulationResult({
-          ...pricingData,
-          bundleName: suitableBundle.bundleName,
-          countryName: suitableBundle.countryName,
-          duration: suitableBundle.duration,
-          currency: 'USD', // Default currency
+          bundleName: suitableBundle.bundleName || `Bundle ${bestBundle} days`,
+          countryName: suitableBundle.countryName || country.name,
+          duration: suitableBundle.duration || bestBundle,
+          cost: baseCost,
+          costPlus: costPlusMarkup,
+          totalCost: suitableBundle.totalCost || costPlusMarkup,
+          discountRate: suitableBundle.discountRate || 0,
+          discountValue: suitableBundle.discountValue || 0,
+          priceAfterDiscount: suitableBundle.priceAfterDiscount || suitableBundle.totalCost || costPlusMarkup,
+          processingCost: suitableBundle.processingCost || 0,
+          finalRevenue: suitableBundle.finalRevenue || (suitableBundle.priceAfterDiscount || costPlusMarkup) - (suitableBundle.processingCost || 0),
+          currency: suitableBundle.currency || 'USD',
+          discountPerDay: suitableBundle.discountPerDay || 0,
         });
       } else {
-        setError('Failed to calculate pricing with new engine');
+        setError('Bundle found but pricing data is incomplete');
       }
     } catch (error) {
       const logger = { error: (msg: string, err: any) => console.error(msg, err) };
@@ -335,9 +305,9 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                       <strong>Unused Days:</strong> {simulationResult.duration - simulatorDays} days
                     </p>
                   )}
-                  {simulationResult.appliedRules && simulationResult.appliedRules.length > 0 && (
+                  {simulationResult.discountValue > 0 && (
                     <p className="text-green-600">
-                      <strong>Applied Rules:</strong> {simulationResult.appliedRules.length} rules active
+                      <strong>Discount Applied:</strong> {formatPercentage(simulationResult.discountRate)} discount
                     </p>
                   )}
                 </div>
@@ -349,33 +319,21 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Base Cost:</span>
-                    <span>{formatCurrency(simulationResult.baseCost)}</span>
+                    <span>{formatCurrency(simulationResult.cost)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Our Markup:</span>
-                    <span>{formatCurrency(simulationResult.markup)}</span>
+                    <span>Cost Plus Markup:</span>
+                    <span>{formatCurrency(simulationResult.costPlus)}</span>
                   </div>
                   <div className="flex justify-between font-medium border-t pt-2">
-                    <span>Subtotal:</span>
-                    <span>{formatCurrency(simulationResult.subtotal)}</span>
+                    <span>Total Cost:</span>
+                    <span>{formatCurrency(simulationResult.totalCost)}</span>
                   </div>
                   
-                  {/* Applied Discounts */}
-                  {simulationResult.discounts && simulationResult.discounts.length > 0 && (
-                    <div className="space-y-1">
-                      {simulationResult.discounts.map((discount, index) => (
-                        <div key={index} className="flex justify-between text-green-600">
-                          <span>{discount.ruleName}:</span>
-                          <span>-{formatCurrency(discount.amount)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {simulationResult.totalDiscount > 0 && (
+                  {simulationResult.discountValue > 0 && (
                     <div className="flex justify-between font-medium">
-                      <span>Total Discount:</span>
-                      <span className="text-green-600">-{formatCurrency(simulationResult.totalDiscount)}</span>
+                      <span>Discount ({formatPercentage(simulationResult.discountRate)}):</span>
+                      <span className="text-green-600">-{formatCurrency(simulationResult.discountValue)}</span>
                     </div>
                   )}
                   
@@ -384,30 +342,26 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                   <div className="flex justify-between font-medium text-lg">
                     <span>Final Price:</span>
                     <span className="text-blue-600">
-                      {formatCurrency(simulationResult.finalPrice)}
+                      {formatCurrency(simulationResult.priceAfterDiscount)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Price per day:</span>
                     <span>
-                      {formatCurrency(simulationResult.finalPrice / simulatorDays)}
+                      {formatCurrency(simulationResult.priceAfterDiscount / simulatorDays)}
                     </span>
                   </div>
                   
                   <Separator className="my-2" />
                   
                   <div className="flex justify-between">
-                    <span>Processing Fee ({formatPercentage(simulationResult.processingRate)}):</span>
-                    <span className="text-yellow-600">-{formatCurrency(simulationResult.processingFee)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Revenue After Processing:</span>
-                    <span>{formatCurrency(simulationResult.revenueAfterProcessing)}</span>
+                    <span>Processing Cost:</span>
+                    <span className="text-yellow-600">{formatCurrency(simulationResult.processingCost)}</span>
                   </div>
                   <div className="flex justify-between font-medium border-t pt-2">
-                    <span>Final Revenue (Profit):</span>
-                    <span className={`${simulationResult.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(simulationResult.profit)}
+                    <span>Final Revenue:</span>
+                    <span className="text-green-600">
+                      {formatCurrency(simulationResult.finalRevenue)}
                     </span>
                   </div>
                 </div>
@@ -415,21 +369,20 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
 
               {/* Profit Analysis */}
               <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2 text-green-900">Profit Analysis</h4>
+                <h4 className="font-medium mb-2 text-green-900">Analysis</h4>
                 <div className="text-sm text-green-800 space-y-1">
                   <p>
                     <strong>Profit Margin:</strong> {' '}
-                    {simulationResult.profit >= 0 ? '+' : ''}
-                    {((simulationResult.profit / simulationResult.subtotal) * 100).toFixed(1)}%
+                    {((simulationResult.finalRevenue / simulationResult.priceAfterDiscount) * 100).toFixed(1)}%
                   </p>
                   <p>
                     <strong>Break-even Price:</strong> {' '}
-                    {formatCurrency(simulationResult.baseCost + simulationResult.markup + simulationResult.processingFee + 0.01)}
+                    {formatCurrency(simulationResult.cost + simulationResult.processingCost + 0.01)}
                   </p>
-                  {simulationResult.appliedRules && simulationResult.appliedRules.length > 0 && (
+                  {simulationResult.discountPerDay > 0 && (
                     <p>
-                      <strong>Rules Applied:</strong> {' '}
-                      {simulationResult.appliedRules.map(rule => rule.name).join(', ')}
+                      <strong>Discount Per Day:</strong> {' '}
+                      {formatPercentage(simulationResult.discountPerDay)}
                     </p>
                   )}
                 </div>

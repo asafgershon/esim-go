@@ -788,7 +788,7 @@ export const GET_REGION_BUNDLES = gql(`
 
 export const GET_COUNTRY_BUNDLES = gql(`
   query GetCountryBundles($countryId: String!) {
-    bundles(countryId: $countryId) {
+    countryBundles: bundles(countryId: $countryId) {
       bundleName
       countryName
       countryId
