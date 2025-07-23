@@ -405,6 +405,88 @@ export class CatalogueDataSource extends ESIMGoDataSource {
 
 
   /**
+   * Get bundle data aggregation for filters
+   */
+  async getBundleDataAggregation(): Promise<{
+    total: number;
+    unlimited: number;
+    byDuration: Array<{ duration: number; count: number }>;
+    byBundleGroup: Array<{ bundleGroup: string; count: number }>;
+    lastUpdated: string;
+  }> {
+    return withPerformanceLogging(
+      this.log,
+      'get-bundle-data-aggregation',
+      async () => {
+        // First check if catalog is empty
+        const isEmpty = await this.isCatalogEmpty();
+        
+        if (isEmpty) {
+          this.log.warn('📊 Cannot get aggregation - catalog is empty', {
+            operationType: 'catalog-empty'
+          });
+          
+          return {
+            total: 0,
+            unlimited: 0,
+            byDuration: [],
+            byBundleGroup: [],
+            lastUpdated: new Date().toISOString()
+          };
+        }
+
+        // Get all bundles for aggregation
+        const allBundles = await this.bundleRepository.searchBundles({
+          limit: 10000 // Large limit to get all bundles
+        });
+
+        const bundles = allBundles.bundles;
+        
+        // Calculate aggregations
+        const unlimited = bundles.filter(b => b.is_unlimited).length;
+        
+        // Group by duration
+        const durationMap = new Map<number, number>();
+        bundles.forEach(bundle => {
+          const duration = bundle.duration || 0;
+          durationMap.set(duration, (durationMap.get(duration) || 0) + 1);
+        });
+        
+        // Group by bundle group
+        const bundleGroupMap = new Map<string, number>();
+        bundles.forEach(bundle => {
+          const group = bundle.bundle_group || 'Unknown';
+          bundleGroupMap.set(group, (bundleGroupMap.get(group) || 0) + 1);
+        });
+
+        const aggregation = {
+          total: bundles.length,
+          unlimited,
+          byDuration: Array.from(durationMap.entries()).map(([duration, count]) => ({
+            duration,
+            count
+          })).sort((a, b) => a.duration - b.duration),
+          byBundleGroup: Array.from(bundleGroupMap.entries()).map(([bundleGroup, count]) => ({
+            bundleGroup,
+            count
+          })).sort((a, b) => a.bundleGroup.localeCompare(b.bundleGroup)),
+          lastUpdated: new Date().toISOString()
+        };
+
+        this.log.info('✅ Bundle data aggregation calculated', {
+          total: aggregation.total,
+          unlimited: aggregation.unlimited,
+          durationGroups: aggregation.byDuration.length,
+          bundleGroups: aggregation.byBundleGroup.length,
+          operationType: 'bundle-aggregation'
+        });
+
+        return aggregation;
+      }
+    );
+  }
+
+  /**
    * Cleanup method - simplified since we're not using caching
    */
   async cleanup(): Promise<void> {
