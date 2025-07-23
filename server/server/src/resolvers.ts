@@ -36,29 +36,6 @@ const getPricingEngineService = (context: Context): PricingEngineService => {
   return pricingEngineService;
 };
 
-// Simple in-memory cache for bundlesByCountry (TTL: 30 minutes)
-const bundlesByCountryCache = {
-  data: null as any,
-  timestamp: 0,
-  TTL: 30 * 60 * 1000, // 30 minutes
-  
-  get() {
-    if (this.data && Date.now() - this.timestamp < this.TTL) {
-      return this.data;
-    }
-    return null;
-  },
-  
-  set(data: any) {
-    this.data = data;
-    this.timestamp = Date.now();
-  },
-  
-  clear() {
-    this.data = null;
-    this.timestamp = 0;
-  }
-};
 
 // Helper function to determine configuration level based on pricing config fields
 function getConfigurationLevel(config: any): ConfigurationLevel {
@@ -522,11 +499,6 @@ export const resolvers: Resolvers = {
     },
     
     bundlesByCountry: async (_, __, context: Context) => {
-      // Check cache first
-      const cachedData = bundlesByCountryCache.get();
-      if (cachedData) {
-        return cachedData;
-      }
       
       try {
         // Use efficient aggregation from repository instead of loading all bundles
@@ -575,9 +547,6 @@ export const resolvers: Resolvers = {
             return shouldInclude;
           }) // Include all countries for now
           .sort((a, b) => a.countryName.localeCompare(b.countryName));
-        
-        // Cache result
-        bundlesByCountryCache.set(bundlesByCountry);
         
         logger.info('✅ BundlesByCountry aggregated efficiently', {
           countryCount: bundlesByCountry.length,
@@ -1924,10 +1893,11 @@ export const resolvers: Resolvers = {
       }
     },
     
-    // Diagnostic sync mutation - bypasses lock for investigation
+    // Diagnostic sync mutation - DISABLED (old CatalogSyncService removed)
     testCatalogSync: async (_, __, context: Context) => {
+      throw new Error('testCatalogSync is disabled - old CatalogSyncService has been removed. Use syncCatalog instead.');
       try {
-        const { CatalogSyncService } = await import('./services/catalog-sync.service');
+        // const { CatalogSyncService } = await import('./services/catalog-sync.service');
         
         // Create diagnostic version that bypasses distributed lock
         const testSyncBundleGroup = async (groupName: string) => {
@@ -2218,28 +2188,17 @@ export const resolvers: Resolvers = {
         
         const duration = Date.now() - startTime;
         
-        // Try to get metadata from cache to get bundle count
+        // Get bundle count from database instead of Redis
         let totalBundles = 0;
         try {
-          // Add a small delay to ensure metadata has been written
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          const metadataJson = await context.redis.get('esim-go:catalog:metadata');
-          if (metadataJson) {
-            const metadata = JSON.parse(metadataJson);
-            totalBundles = metadata.totalBundles || 0;
-            logger.info('Successfully retrieved sync metadata', {
-              totalBundles,
-              bundleGroups: metadata.bundleGroups?.length || 0,
-              operationType: 'catalog-sync-manual'
-            });
-          } else {
-            logger.warn('Metadata not found in cache after sync', {
-              operationType: 'catalog-sync-manual'
-            });
-          }
+          const bundleRepository = new BundleRepository(supabaseAdmin);
+          totalBundles = await bundleRepository.getTotalCount();
+          logger.info('Successfully retrieved bundle count from database', {
+            totalBundles,
+            operationType: 'catalog-sync-manual'
+          });
         } catch (metadataError) {
-          logger.warn('Failed to get metadata after sync', metadataError as Error, {
+          logger.warn('Failed to get bundle count from database', metadataError as Error, {
             operationType: 'catalog-sync-manual'
           });
         }

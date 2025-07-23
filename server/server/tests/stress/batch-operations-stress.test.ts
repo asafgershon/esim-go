@@ -26,7 +26,7 @@ const createStressTestCache = (dataSize: number = 1000, shouldFail: boolean = fa
       roamingCountries: ['US', 'CA']
     };
     
-    cache.set(`esim-go:catalog:bundle:bundle-${i}`, JSON.stringify(bundleData));
+    cache.set(`test:stress:bundle:${i}`, JSON.stringify(bundleData));
   }
 
   return {
@@ -75,7 +75,7 @@ describe('Batch Operations Stress Tests', () => {
     });
 
     it('should handle 500 bundle retrievals efficiently', async () => {
-      const keys = Array.from({ length: 500 }, (_, i) => `esim-go:catalog:bundle:bundle-${i}`);
+      const keys = Array.from({ length: 500 }, (_, i) => `test:stress:bundle:${i}`);
       const startTime = Date.now();
       const startMemory = process.memoryUsage().heapUsed;
 
@@ -106,7 +106,7 @@ describe('Batch Operations Stress Tests', () => {
     });
 
     it('should handle 3000 bundle retrievals with streaming', async () => {
-      const keys = Array.from({ length: 3000 }, (_, i) => `esim-go:catalog:bundle:bundle-${i}`);
+      const keys = Array.from({ length: 3000 }, (_, i) => `test:stress:bundle:${i}`);
       const startTime = Date.now();
       const startMemory = process.memoryUsage().heapUsed;
 
@@ -155,7 +155,7 @@ describe('Batch Operations Stress Tests', () => {
     });
 
     it('should handle 10k+ bundle retrievals without memory leaks', async () => {
-      const keys = Array.from({ length: 10000 }, (_, i) => `esim-go:catalog:bundle:bundle-${i}`);
+      const keys = Array.from({ length: 10000 }, (_, i) => `test:stress:bundle:${i}`);
       const startTime = Date.now();
       const startMemory = process.memoryUsage().heapUsed;
       
@@ -217,7 +217,7 @@ describe('Batch Operations Stress Tests', () => {
     }, 150000); // 2.5 minute timeout for this test
 
     it('should handle memory pressure gracefully', async () => {
-      const keys = Array.from({ length: 15000 }, (_, i) => `esim-go:catalog:bundle:bundle-${i}`);
+      const keys = Array.from({ length: 15000 }, (_, i) => `test:stress:bundle:${i}`);
       
       // Artificially increase memory usage before test
       const memoryBallast = new Array(1000000).fill('memory pressure test');
@@ -270,7 +270,7 @@ describe('Batch Operations Stress Tests', () => {
     });
 
     it('should handle cache failures gracefully during large operations', async () => {
-      const keys = Array.from({ length: 5000 }, (_, i) => `esim-go:catalog:bundle:bundle-${i}`);
+      const keys = Array.from({ length: 5000 }, (_, i) => `test:stress:bundle:${i}`);
       
       let totalRetrieved = 0;
       let errorCount = 0;
@@ -306,7 +306,7 @@ describe('Batch Operations Stress Tests', () => {
       mockCache = createStressTestCache(testSize);
       batchOperations = new BatchCacheOperations(mockCache);
       
-      const keys = Array.from({ length: testSize }, (_, i) => `esim-go:catalog:bundle:bundle-${i}`);
+      const keys = Array.from({ length: testSize }, (_, i) => `test:stress:bundle:${i}`);
 
       // Test batch operations
       const batchStartTime = Date.now();

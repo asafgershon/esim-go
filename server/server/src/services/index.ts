@@ -5,5 +5,4 @@ export { handleESIMGoWebhook } from './esim-go-webhook';
 export { getRedis } from './redis';
 
 // Export catalog sync services
-export { CatalogSyncService } from './catalog-sync.service';
 export { CatalogSyncServiceV2 } from './catalog-sync-v2.service';
