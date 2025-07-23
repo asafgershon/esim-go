@@ -161,6 +161,20 @@ export const CALCULATE_PRICE = gql`
   }
 `;
 
+export const CALCULATE_PRICES_BATCH = gql`
+  query CalculatePricesBatch($inputs: [CalculatePriceInput!]!) {
+    calculatePrices(inputs: $inputs) {
+      bundleName
+      countryName
+      duration
+      currency
+      totalCost
+      discountValue
+      priceAfterDiscount
+    }
+  }
+`;
+
 export const GET_MY_ESIMS = gql`
   query GetMyESIMs {
     myESIMs {

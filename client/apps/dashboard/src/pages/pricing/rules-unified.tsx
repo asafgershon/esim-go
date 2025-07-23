@@ -70,8 +70,8 @@ import { toast } from 'sonner';
 import { RuleBuilder } from '../../components/pricing/rule-builder';
 import { RuleTestingPanel } from '../../components/pricing/rule-testing-panel';
 import { RuleAnalytics } from '../../components/pricing/rule-analytics';
-import { MarkupRuleDialog } from '../../components/pricing/markup-rule-dialog';
-import { ProcessingFeeDialog } from '../../components/pricing/processing-fee-dialog';
+import { MarkupRuleDrawer } from '../../components/pricing/markup-rule-drawer';
+import { ProcessingFeeDrawer } from '../../components/pricing/processing-fee-drawer';
 
 interface PricingRule {
   id: string;
@@ -734,8 +734,8 @@ const UnifiedPricingRulesPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Markup Rule Dialog */}
-      <MarkupRuleDialog
+      {/* Markup Rule Drawer */}
+      <MarkupRuleDrawer
         open={showMarkupDialog}
         onOpenChange={setShowMarkupDialog}
         onSave={async (ruleData) => {
@@ -752,8 +752,8 @@ const UnifiedPricingRulesPage: React.FC = () => {
         }}
       />
 
-      {/* Processing Fee Dialog */}
-      <ProcessingFeeDialog
+      {/* Processing Fee Drawer */}
+      <ProcessingFeeDrawer
         open={showProcessingDialog}
         onOpenChange={setShowProcessingDialog}
         onSave={async (ruleData) => {

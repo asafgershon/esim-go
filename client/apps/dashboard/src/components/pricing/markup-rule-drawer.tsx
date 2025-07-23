@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
   Button,
   Input,
   Label,
@@ -23,13 +23,13 @@ import {
 } from '@workspace/ui';
 import { DollarSign, Info } from 'lucide-react';
 
-interface MarkupRuleDialogProps {
+interface MarkupRuleDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (ruleData: any) => Promise<void>;
 }
 
-export function MarkupRuleDialog({ open, onOpenChange, onSave }: MarkupRuleDialogProps) {
+export function MarkupRuleDrawer({ open, onOpenChange, onSave }: MarkupRuleDrawerProps) {
   const [loading, setLoading] = useState(false);
   const [ruleName, setRuleName] = useState('');
   const [description, setDescription] = useState('');
@@ -98,17 +98,17 @@ export function MarkupRuleDialog({ open, onOpenChange, onSave }: MarkupRuleDialo
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-green-600" />
             Add Markup Rule
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             Create a simplified markup rule for bundle pricing. This rule will add a percentage or fixed amount to the base price.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <div className="space-y-6 py-4">
           {/* Basic Information */}
@@ -250,7 +250,7 @@ export function MarkupRuleDialog({ open, onOpenChange, onSave }: MarkupRuleDialo
           </Card>
         </div>
 
-        <DialogFooter>
+        <SheetFooter className="sticky bottom-0 bg-background pt-4 mt-6 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -260,8 +260,8 @@ export function MarkupRuleDialog({ open, onOpenChange, onSave }: MarkupRuleDialo
           >
             {loading ? 'Creating...' : 'Create Markup Rule'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

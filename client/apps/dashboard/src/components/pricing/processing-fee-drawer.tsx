@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
   Button,
   Input,
   Label,
@@ -24,13 +24,13 @@ import {
 } from '@workspace/ui';
 import { CreditCard, Info } from 'lucide-react';
 
-interface ProcessingFeeDialogProps {
+interface ProcessingFeeDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (ruleData: any) => Promise<void>;
 }
 
-export function ProcessingFeeDialog({ open, onOpenChange, onSave }: ProcessingFeeDialogProps) {
+export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFeeDrawerProps) {
   const [loading, setLoading] = useState(false);
   const [ruleName, setRuleName] = useState('');
   const [description, setDescription] = useState('');
@@ -111,17 +111,17 @@ export function ProcessingFeeDialog({ open, onOpenChange, onSave }: ProcessingFe
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-purple-600" />
             Add Processing Fee Rule
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             Create a processing fee rule for transactions. This fee is typically used to cover payment processing costs.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <div className="space-y-6 py-4">
           {/* Basic Information */}
@@ -311,7 +311,7 @@ export function ProcessingFeeDialog({ open, onOpenChange, onSave }: ProcessingFe
           </Card>
         </div>
 
-        <DialogFooter>
+        <SheetFooter className="sticky bottom-0 bg-background pt-4 mt-6 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -321,8 +321,8 @@ export function ProcessingFeeDialog({ open, onOpenChange, onSave }: ProcessingFe
           >
             {loading ? 'Creating...' : 'Create Processing Fee'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
