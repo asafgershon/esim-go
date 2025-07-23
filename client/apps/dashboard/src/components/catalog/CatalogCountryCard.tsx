@@ -1,41 +1,6 @@
-import React from 'react';
+import { CatalogBundle } from '@/__generated__/graphql';
 import { Card, CardContent } from '@workspace/ui/components/card';
-import { Badge } from '@workspace/ui/components/badge';
-import { Button } from '@workspace/ui/components/button';
-import { 
-  ChevronRight, 
-  ChevronDown, 
-  Package, 
-  Clock, 
-  DollarSign,
-  Database,
-  Wifi,
-  WifiOff
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-
-interface CatalogBundle {
-  bundleName: string;
-  countryName: string;
-  countryId: string;
-  duration: number;
-  cost: number;
-  costPlus: number;
-  totalCost: number;
-  discountRate: number;
-  discountValue: number;
-  priceAfterDiscount: number;
-  processingRate: number;
-  processingCost: number;
-  finalRevenue: number;
-  currency: string;
-  pricePerDay: number;
-  hasCustomDiscount: boolean;
-  bundleGroup?: string;
-  isUnlimited?: boolean;
-  dataAmount?: string;
-  planId?: string;
-}
+import React from 'react';
 
 interface CatalogCountryCardProps {
   country: string;
@@ -56,24 +21,15 @@ interface CatalogCountryCardProps {
 export const CatalogCountryCard: React.FC<CatalogCountryCardProps> = ({
   country,
   countryName,
-  bundleCount,
-  bundles,
-  isExpanded,
   isLoading = false,
   isSelected = false,
   onToggle,
   summary
 }) => {
-  const formatPrice = (price: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(price);
-  };
-  
+
   const formatDataAmount = (bundle: CatalogBundle): string => {
-    if (bundle.isUnlimited) return 'Unlimited';
-    return bundle.dataAmount || 'Unknown';
+    if (bundle.unlimited) return 'Unlimited';
+    return bundle.data?.toString() || 'Unknown';
   };
   
   const getCountryFlag = (countryCode: string): string => {

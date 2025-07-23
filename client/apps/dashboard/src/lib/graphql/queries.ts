@@ -139,8 +139,11 @@ export const GET_TRIPS = gql(`
       id
       name
       description
-      regionId
-      countryIds
+      region
+      countries {
+        iso
+        name
+      }
       createdAt
       updatedAt
       createdBy
@@ -164,8 +167,11 @@ export const CREATE_TRIP = gql(`
         id
         name
         description
-        regionId
-        countryIds
+        region
+        countries {
+          iso
+          name
+        }
         createdAt
         updatedAt
         createdBy
@@ -190,8 +196,14 @@ export const UPDATE_TRIP = gql(`
         id
         name
         description
-        regionId
-        countryIds
+        region
+        countries {
+          iso
+          name
+          nameHebrew
+          region
+          flag
+        }
         createdAt
         updatedAt
         createdBy
@@ -304,14 +316,17 @@ export const GET_CATALOG_BUNDLES = gql(`
       bundles {
         id
         esimGoName
-        bundleGroup
+        group
         description
         duration
-        dataAmount
+        data
         unlimited
         priceCents
         currency
-        countries
+        countries {
+          iso
+          name
+        }
         regions
         syncedAt
         createdAt
@@ -342,10 +357,8 @@ export const ASSIGN_PACKAGE_TO_USER = gql(`
 `)
 
 export const CALCULATE_PRICING = gql(`
-  query CalculatePricing($numOfDays: Int!, $regionId: String!, $countryId: String!, $paymentMethod: PaymentMethod) {
-    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId, paymentMethod: $paymentMethod) {
-      bundleName
-      countryName
+  query CalculatePricing($numOfDays: Int!, $countryId: String!, $paymentMethod: PaymentMethod) {
+    calculatePrice(numOfDays: $numOfDays, countryId: $countryId, paymentMethod: $paymentMethod) {
       duration
       cost
       costPlus
@@ -364,8 +377,6 @@ export const CALCULATE_PRICING = gql(`
 export const CALCULATE_BATCH_PRICING = gql(`
   query CalculateBatchPricing($inputs: [CalculatePriceInput!]!) {
     calculatePrices(inputs: $inputs) {
-      bundleName
-      countryName
       duration
       cost
       costPlus
@@ -567,17 +578,25 @@ export const GET_PROCESSING_FEE_CONFIGURATIONS = gql(`
 export const GET_BUNDLES_BY_COUNTRY = gql(`
   query GetBundlesByCountry($includeBundles: Boolean = false) {
     bundlesCountries(includeBundles: $includeBundles) {
-      countryName
-      countryId
+      country {
+        iso
+        name
+        nameHebrew
+        region
+        flag
+      }
       bundleCount
       pricingRange {
         min
         max
       }
       bundles @include(if: $includeBundles) {
-        bundleName
-        countryName
-        countryId
+          name
+          id
+        country {
+          iso
+          name
+        }
         duration
         cost
         costPlus
@@ -592,12 +611,10 @@ export const GET_BUNDLES_BY_COUNTRY = gql(`
         currency
         pricePerDay
         hasCustomDiscount
-        configurationLevel
         discountPerDay
-        planId
         isUnlimited
-        dataAmount
-        bundleGroup
+        data
+        group
       }
     }
   }
@@ -606,17 +623,22 @@ export const GET_BUNDLES_BY_COUNTRY = gql(`
 export const GET_COUNTRIES_WITH_BUNDLES = gql(`
   query GetCountriesWithBundles {
     bundlesCountries(includeBundles: true) {
-      countryName
-      countryId
+      country {
+        iso
+        name
+      }
       bundleCount
       pricingRange {
         min
         max
       }
       bundles {
-        bundleName
-        countryName
-        countryId
+        id
+        name
+        country {
+          iso
+          name
+        }
         duration
         cost
         costPlus
@@ -631,12 +653,11 @@ export const GET_COUNTRIES_WITH_BUNDLES = gql(`
         currency
         pricePerDay
         hasCustomDiscount
-        configurationLevel
         discountPerDay
-        planId
         isUnlimited
-        dataAmount
-        bundleGroup
+        data
+        id
+        group
       }
     }
   }
@@ -645,7 +666,7 @@ export const GET_COUNTRIES_WITH_BUNDLES = gql(`
 export const GET_BUNDLES_BY_REGION = gql(`
   query GetBundlesByRegion {
     bundlesRegions {
-      regionName
+      region
       bundleCount
       countryCount
     }
@@ -653,11 +674,14 @@ export const GET_BUNDLES_BY_REGION = gql(`
 `)
 
 export const GET_REGION_BUNDLES = gql(`
-  query GetRegionBundles($regionName: String!) {
-    bundles(regionId: $regionName) {
-      bundleName
-      countryName
-      countryId
+  query GetRegionBundles($regionId: String!) {
+    bundles(regionId: $regionId) {
+      id
+      name
+      country {
+        iso
+        name
+      }
       duration
       cost
       costPlus
@@ -671,10 +695,9 @@ export const GET_REGION_BUNDLES = gql(`
       currency
       pricePerDay
       hasCustomDiscount
-      bundleGroup
+      group
       isUnlimited
-      dataAmount
-      planId
+      data
     }
   }
 `)
@@ -682,26 +705,24 @@ export const GET_REGION_BUNDLES = gql(`
 export const GET_COUNTRY_BUNDLES = gql(`
   query GetCountryBundles($countryId: String!) {
     countryBundles: bundles(countryId: $countryId) {
-      bundleName
-      countryName
-      countryId
+      id
+      name
+      pricingBreakdown {
+        cost
+        costPlus
+        totalCost
+        discountRate
+        discountValue
+      }
+      country {
+        iso
+        name
+      }
       duration
-      cost
-      costPlus
-      totalCost
-      discountRate
-      discountValue
-      priceAfterDiscount
-      processingRate
-      processingCost
-      finalRevenue
       currency
-      pricePerDay
-      hasCustomDiscount
-      planId
       isUnlimited
-      dataAmount
-      bundleGroup
+      data
+      group
       appliedRules {
         id
         name
@@ -739,7 +760,7 @@ export const GET_BUNDLE_GROUPS = gql(`
 export const GET_PRICING_FILTERS = gql(`
   query GetPricingFilters {
     pricingFilters {
-      bundleGroups
+      groups
       durations {
         label
         value
@@ -789,8 +810,8 @@ export const GET_BUNDLE_DATA_AGGREGATION = gql(`
         percentage
         category
       }
-      byBundleGroup {
-        bundleGroup
+      byGroup {
+        group
         total
         unlimited
         limited
@@ -802,8 +823,6 @@ export const GET_BUNDLE_DATA_AGGREGATION = gql(`
 `)
 
 
-// REMOVED: GET_CATALOG_BUNDLES_BY_COUNTRY - resolver was removed in consolidation
-
 export const GET_CATALOG_SYNC_HISTORY = gql(`
   query GetCatalogSyncHistory($params: SyncHistoryParams) {
     catalogSyncHistory(params: $params) {
@@ -812,7 +831,7 @@ export const GET_CATALOG_SYNC_HISTORY = gql(`
         jobType
         status
         priority
-        bundleGroup
+        group
         countryId
         bundlesProcessed
         bundlesAdded

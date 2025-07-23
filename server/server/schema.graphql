@@ -24,7 +24,7 @@ type Query {
   trips: [Trip!]!
 
   # Calculate price - Public access, sensitive fields protected at field level
-  calculatePrice(numOfDays: Int!, regionId: String!, countryId: String!, paymentMethod: PaymentMethod): PricingBreakdown!
+  calculatePrice(numOfDays: Int!, countryId: String!, paymentMethod: PaymentMethod): PricingBreakdown!
   
   # Batch calculate prices for multiple bundles
   calculatePrices(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
@@ -165,7 +165,7 @@ type Trip {
   id: ID!
   name: String!
   description: String!
-  regionId: String!
+  region: String!
   countries: [Country!]!
   countryIds: [ISOCountryCode!]!
   createdAt: String!
@@ -606,6 +606,7 @@ type BundlesByRegion {
 
 # Individual bundles for a specific country
 type CountryBundle {
+  id: ID!
   name: String!
   country: Country!
   duration: Int!
@@ -616,6 +617,23 @@ type CountryBundle {
   data: Float
   group: String
   
+  # Pricing fields - Public
+  totalCost: Float! # Subtotal before discounts
+  discountValue: Float! # Total discount amount
+  priceAfterDiscount: Float! # Final price users pay
+  
+  # Admin-only business sensitive fields
+  cost: Float! @auth(role: "ADMIN") # Base cost from supplier
+  costPlus: Float! @auth(role: "ADMIN") # Cost + markup
+  discountRate: Float! @auth(role: "ADMIN") # Discount percentage
+  processingRate: Float! @auth(role: "ADMIN") # Processing fee percentage
+  processingCost: Float! @auth(role: "ADMIN") # Processing fee amount
+  finalRevenue: Float! @auth(role: "ADMIN") # Revenue after processing
+  netProfit: Float! @auth(role: "ADMIN") # Final profit
+  pricePerDay: Float! @auth(role: "ADMIN") # Daily rate
+  hasCustomDiscount: Boolean! @auth(role: "ADMIN") # Whether discount rules apply
+  discountPerDay: Float! @auth(role: "ADMIN") # Unused day discount rate
+  
   # Rule-based pricing breakdown - Admin only
   appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
   discounts: [DiscountApplication!] @auth(role: "ADMIN") # Detailed discount breakdown (nullable)
@@ -624,8 +642,7 @@ type CountryBundle {
 # Batch pricing input
 input CalculatePriceInput {
   numOfDays: Int!
-  region: String!
-  country: String!
+  countryId: String!
   paymentMethod: PaymentMethod
 }
 
@@ -890,7 +907,7 @@ type ToggleHighDemandResponse {
 
 # Pricing Filters Types
 type PricingFilters {
-  bundleGroups: [String!]!
+  groups: [String!]!
   durations: [DurationRange!]!
   dataTypes: [DataType!]!
 }
@@ -978,7 +995,7 @@ type BundleDataAggregation {
   unlimited: Int!
   byDataAmount: [DataAmountGroup!]!
   byDuration: [DurationGroup!]!
-  byBundleGroup: [BundleGroupDataStats!]!
+  byGroup: [GroupDataStats!]!
   lastUpdated: String!
 }
 
@@ -995,8 +1012,8 @@ type DurationGroup {
   category: String!
 }
 
-type BundleGroupDataStats {
-  bundleGroup: String!
+type GroupDataStats {
+  group: String!
   total: Int!
   unlimited: Int!
   limited: Int!
@@ -1019,7 +1036,7 @@ type CatalogSyncJob {
   type: SyncJobType!
   status: String! # For compatibility with frontend
   priority: String! # For compatibility with frontend
-  bundleGroup: String
+  group: String
   countryId: String
   bundlesProcessed: Int
   bundlesAdded: Int
@@ -1069,14 +1086,14 @@ input SearchCatalogCriteria {
 type CatalogBundle {
   id: ID!
   esimGoName: String!
-  bundleGroup: String!
+  group: String!
   description: String!
   duration: Int!
-  dataAmount: Int! # -1 for unlimited
+  data: Int! # -1 for unlimited
   unlimited: Boolean!
   priceCents: Int!
   currency: String!
-  countries: [String!]!
+  countries: [Country!]!
   regions: [String!]!
   syncedAt: String!
   createdAt: String!
