@@ -1,12 +1,12 @@
 import { CountryBundle, Trip } from '@/__generated__/graphql';
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { CountryPricingSplitView } from '../../components/country-pricing-split-view';
+import { BundlesByCountryWithBundles, CountryPricingSplitView } from '../../components/country-pricing-split-view';
 
 interface OutletContext {
-  countryGroups: any[];
+  countryGroups: BundlesByCountryWithBundles[];
   tripsData: Trip[];
-  expandCountry: (iso: string) => void;
+  expandCountry: (countryId: string) => Promise<void>;
   handleBundleClick?: (bundle: CountryBundle) => void;
   loading: boolean;
   error: string | null;

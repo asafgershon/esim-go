@@ -1,10 +1,8 @@
-import React, { useState, useMemo, useCallback } from "react";
+import { CountryBundle } from "@/__generated__/graphql";
 import {
   Button,
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  List,
+  ScrollArea,
   Sheet,
   SheetContent,
   SheetDescription,
@@ -13,37 +11,34 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
-  ScrollArea,
-  InputWithAdornment,
-  List,
+  TooltipTrigger
 } from "@workspace/ui";
-import { TrendingUp, MapPin, Package, X, Plane } from "lucide-react";
-import { toast } from "sonner";
-import Fuse from "fuse.js";
-import { Panel, PanelGroup } from "react-resizable-panels";
 import { AnimatePresence, motion } from "framer-motion";
+import Fuse from "fuse.js";
+import { MapPin, Package, Plane, X } from "lucide-react";
+import React, { useCallback, useMemo, useState } from "react";
+import { Panel, PanelGroup } from "react-resizable-panels";
+import { toast } from "sonner";
 import { useHighDemandCountries } from "../../hooks/useHighDemandCountries";
 import { ResizeHandle } from "../resize-handle";
-import { PricingPreviewPanel } from "./PricingPreviewPanel";
 import { BundlesTable } from "./BundlesTable";
 import { CountryCard } from "./CountryCard";
+import { PricingPreviewPanel } from "./PricingPreviewPanel";
 import { TripCard } from "./TripCard";
-import { CommandFilterPalette } from "./filters/CommandFilterPalette";
 import { FilterState } from "./filters";
-import { CountryPricingSplitViewProps, BundlesByCountryWithBundles, CountryBundleWithDisplay } from "./types";
+import { CommandFilterPalette } from "./filters/CommandFilterPalette";
+import { BundlesByCountryWithBundles, CountryPricingSplitViewProps } from "./types";
 
 export function CountryPricingSplitView({
   bundlesByCountry = [],
   tripsData = [],
   onExpandCountry,
-  loading = false,
   showTrips = false,
   onToggleTrips,
 }: CountryPricingSplitViewProps) {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<string | null>(null);
-  const [selectedBundle, setSelectedBundle] = useState<CountryBundleWithDisplay | null>(null);
+  const [selectedBundle, setSelectedBundle] = useState<CountryBundle | null>(null);
   const [loadingCountries, setLoadingCountries] = useState<Set<string>>(new Set());
   const [showHighDemandOnly, setShowHighDemandOnly] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
@@ -127,7 +122,7 @@ export function CountryPricingSplitView({
   }, [tripsData, searchQuery, tripFuse]);
 
   // Helper function to filter bundles based on selected filters
-  const filterBundles = useCallback((bundles: CountryBundleWithDisplay[]) => {
+  const filterBundles = useCallback((bundles: CountryBundle[]) => {
     let filtered = bundles;
 
     // Filter by bundle groups
@@ -467,7 +462,6 @@ export function CountryPricingSplitView({
                   <div className="flex-1 min-h-0">
                     <BundlesTable 
                       country={selectedCountryData} 
-                      showHeader={false}
                       loadingCountries={loadingCountries}
                       selectedBundle={selectedBundle}
                       onBundleSelect={setSelectedBundle}
@@ -680,7 +674,6 @@ export function CountryPricingSplitView({
             {selectedCountryData && (
               <BundlesTable 
                 country={selectedCountryData} 
-                showHeader={false}
                 loadingCountries={loadingCountries}
                 selectedBundle={selectedBundle}
                 onBundleSelect={setSelectedBundle}

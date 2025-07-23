@@ -1,32 +1,30 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { CountryBundle } from "@/__generated__/graphql";
 import {
-  Button,
-  ScrollArea,
   Badge,
-  InputWithAdornment,
+  Button,
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
+  InputWithAdornment,
   Popover,
   PopoverContent,
   PopoverTrigger,
+  ScrollArea,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@workspace/ui";
-import { TrendingDown, AlertCircle, X, Edit3, Check, CreditCard, Smartphone } from "lucide-react";
+import { AlertCircle, Check, CreditCard, Edit3, Smartphone, TrendingDown, X } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useMutation } from "@apollo/client";
-import { GET_COUNTRY_BUNDLES } from "../../lib/graphql/queries";
 import { ConfigurationLevelIndicator } from "../configuration-level-indicator";
-import { CountryBundleWithDisplay } from "./types";
 
 interface PricingPreviewPanelProps {
-  bundle: CountryBundleWithDisplay;
+  bundle: CountryBundle;
   onClose: () => void;
   onConfigurationSaved?: () => void;
 }
@@ -452,6 +450,57 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Applied Rules Section */}
+          {(bundle.appliedRules?.length > 0 || bundle.discounts?.length > 0) && (
+            <div className="space-y-3">
+              <div className="border-t pt-3">
+                <h5 className="font-medium text-sm text-gray-900 mb-2">Applied Rules</h5>
+                
+                {/* Applied Rules */}
+                {bundle.appliedRules?.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium text-gray-700">Rules:</div>
+                    {bundle.appliedRules.map((rule, index) => (
+                      <div key={rule.id || index} className="flex items-center justify-between text-xs bg-blue-50 p-2 rounded">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {rule.type}
+                          </Badge>
+                          <span className="text-gray-700">{rule.name}</span>
+                        </div>
+                        <span className={`font-mono font-medium ${
+                          rule.impact > 0 ? 'text-green-600' : rule.impact < 0 ? 'text-red-600' : 'text-gray-600'
+                        }`}>
+                          {rule.impact > 0 ? '+' : ''}{formatCurrency(rule.impact)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Discounts Breakdown */}
+                {bundle.discounts?.length > 0 && (
+                  <div className="space-y-2 mt-3">
+                    <div className="text-xs font-medium text-gray-700">Discounts:</div>
+                    {bundle.discounts.map((discount, index) => (
+                      <div key={index} className="flex items-center justify-between text-xs bg-green-50 p-2 rounded">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs bg-green-100">
+                            {discount.type}
+                          </Badge>
+                          <span className="text-gray-700">{discount.ruleName}</span>
+                        </div>
+                        <span className="font-mono font-medium text-green-600">
+                          -{formatCurrency(discount.amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Actions & Warnings */}
           <div className="space-y-3">

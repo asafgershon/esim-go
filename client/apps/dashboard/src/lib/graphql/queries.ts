@@ -702,6 +702,17 @@ export const GET_COUNTRY_BUNDLES = gql(`
       isUnlimited
       dataAmount
       bundleGroup
+      appliedRules {
+        id
+        name
+        type
+        impact
+      }
+      discounts {
+        ruleName
+        amount
+        type
+      }
     }
   }
 `)

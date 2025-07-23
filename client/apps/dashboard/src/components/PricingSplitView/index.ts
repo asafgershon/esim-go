@@ -3,7 +3,6 @@ export { PricingPreviewPanel } from "./PricingPreviewPanel";
 export { BundlesTable } from "./BundlesTable";
 export { CountryCard } from "./CountryCard";
 export type { 
-  CountryBundleWithDisplay, 
   BundlesByCountryWithBundles, 
   CountryPricingSplitViewProps 
 } from "./types";

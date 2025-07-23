@@ -9,29 +9,9 @@ import {
   TrendingUp,
   Calculator
 } from "lucide-react";
+import { CountryBundle } from "@/__generated__/graphql";
 
-interface CountryBundle {
-  bundleName: string;
-  countryName: string;
-  countryId: string;
-  duration: number;
-  cost: number;
-  costPlus: number;
-  totalCost: number;
-  discountRate: number;
-  discountValue: number;
-  priceAfterDiscount: number;
-  processingRate: number;
-  processingCost: number;
-  finalRevenue: number;
-  currency: string;
-  pricePerDay: number;
-  hasCustomDiscount: boolean;
-  bundleGroup?: string;
-  isUnlimited?: boolean;
-  dataAmount?: string;
-  planId?: string;
-}
+
 
 interface CatalogBundlePreviewProps {
   bundle: CountryBundle;
@@ -96,14 +76,17 @@ export const CatalogBundlePreview: React.FC<CatalogBundlePreviewProps> = ({ bund
             <div className="flex items-center justify-between">
               <span className="font-medium">Base Price</span>
               <span className="font-semibold text-lg">
-                {formatPrice(bundle.cost, bundle.currency)}
+                {formatPrice(bundle.cost || 0, bundle.currency)}
               </span>
             </div>
             
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Per Day</span>
-              <span>{formatPrice(bundle.cost / bundle.duration, bundle.currency)}</span>
-            </div>
+            {bundle.cost && bundle.duration && bundle.pricePerDay && (
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Per Day</span>
+                
+                <span>{formatPrice(bundle.pricePerDay) || formatPrice(bundle.cost / bundle.duration, bundle.currency)}</span>
+              </div>
+            )}
           </div>
         </div>
 

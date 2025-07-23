@@ -2,19 +2,18 @@ import React from "react";
 import { ScrollArea } from "@workspace/ui";
 import { Package } from "lucide-react";
 import { ConfigurationLevelIndicator } from "../configuration-level-indicator";
-import { BundlesByCountryWithBundles, CountryBundleWithDisplay } from "./types";
+import { BundlesByCountryWithBundles } from "./types";
+import { CountryBundle } from "@/__generated__/graphql";
 
 interface BundlesTableProps {
   country: BundlesByCountryWithBundles;
-  showHeader?: boolean;
   loadingCountries: Set<string>;
-  selectedBundle: CountryBundleWithDisplay | null;
-  onBundleSelect: (bundle: CountryBundleWithDisplay) => void;
+  selectedBundle: CountryBundle | null;
+  onBundleSelect: (bundle: CountryBundle) => void;
 }
 
 export const BundlesTable: React.FC<BundlesTableProps> = ({ 
   country, 
-  showHeader = true, 
   loadingCountries,
   selectedBundle,
   onBundleSelect
@@ -88,10 +87,7 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
                 
                 <div className="text-right">
                   <div className="text-lg font-semibold text-blue-600">
-                    ${(bundle.priceAfterDiscount || 0).toFixed(2)}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    ${(bundle.pricePerDay || 0).toFixed(2)}/day
+                    ${(bundle.cost || 0).toFixed(2)}
                   </div>
                 </div>
               </div>

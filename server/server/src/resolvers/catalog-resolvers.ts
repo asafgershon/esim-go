@@ -588,7 +588,9 @@ export const catalogResolvers: Partial<Resolvers> = {
           processingCost: calculation.processingFee,
           finalRevenue: calculation.finalRevenue,
           netProfit: calculation.profit,
-          discountPerDay: calculation.metadata?.discountPerUnusedDay || 0
+          discountPerDay: calculation.metadata?.discountPerUnusedDay || 0,
+          // Cache the full calculation for field resolvers (appliedRules, discounts)
+          _pricingCalculation: calculation
         };
       } catch (error) {
         logger.error('Error calculating price with rule engine', error as Error, {
@@ -669,7 +671,9 @@ export const catalogResolvers: Partial<Resolvers> = {
                 finalRevenue: calculation.finalRevenue,
                 netProfit: calculation.profit,
                 currency: 'USD',
-                discountPerDay: calculation.metadata?.discountPerUnusedDay || 0
+                discountPerDay: calculation.metadata?.discountPerUnusedDay || 0,
+                // Cache the full calculation for field resolvers (appliedRules, discounts)
+                _pricingCalculation: calculation
               };
             } catch (error) {
               logger.error(`Error calculating pricing for ${input.countryId} ${input.numOfDays}d`, error as Error, {
@@ -1293,6 +1297,90 @@ export const catalogResolvers: Partial<Resolvers> = {
           operationType: 'countryBundle-discountPerDay-field-resolver'
         });
         return 0;
+      }
+    },
+
+    // Field resolver for appliedRules (rules that affected the pricing)
+    appliedRules: async (parent: any, _, context: Context) => {
+      try {
+        if (parent._pricingCalculation) {
+          return parent._pricingCalculation.appliedRules || [];
+        }
+        
+        const calculation = await calculateBundlePricing(parent, context);
+        parent._pricingCalculation = calculation;
+        return calculation.appliedRules || [];
+      } catch (error) {
+        logger.error('Error getting applied rules for bundle', error as Error, {
+          bundleName: parent.bundleName,
+          operationType: 'countryBundle-appliedRules-field-resolver'
+        });
+        return [];
+      }
+    },
+
+    // Field resolver for discounts (detailed discount breakdown)
+    discounts: async (parent: any, _, context: Context) => {
+      try {
+        if (parent._pricingCalculation) {
+          return parent._pricingCalculation.discounts || [];
+        }
+        
+        const calculation = await calculateBundlePricing(parent, context);
+        parent._pricingCalculation = calculation;
+        return calculation.discounts || [];
+      } catch (error) {
+        logger.error('Error getting discount breakdown for bundle', error as Error, {
+          bundleName: parent.bundleName,
+          operationType: 'countryBundle-discounts-field-resolver'
+        });
+        return [];
+      }
+    },
+  },
+
+  PricingBreakdown: {
+    // Field resolver for appliedRules (rules that affected the pricing)
+    appliedRules: async (parent: any, _, context: Context) => {
+      try {
+        if (parent._pricingCalculation) {
+          return parent._pricingCalculation.appliedRules || [];
+        }
+        
+        // If no cached calculation, return empty array
+        logger.info('No pricing calculation available for appliedRules', {
+          bundleName: parent.bundleName,
+          operationType: 'pricingBreakdown-appliedRules-field-resolver'
+        });
+        return [];
+      } catch (error) {
+        logger.error('Error getting applied rules', error as Error, {
+          bundleName: parent.bundleName,
+          operationType: 'pricingBreakdown-appliedRules-field-resolver'
+        });
+        return [];
+      }
+    },
+
+    // Field resolver for discounts (detailed discount breakdown)
+    discounts: async (parent: any, _, context: Context) => {
+      try {
+        if (parent._pricingCalculation) {
+          return parent._pricingCalculation.discounts || [];
+        }
+        
+        // If no cached calculation, return empty array
+        logger.info('No pricing calculation available for discounts', {
+          bundleName: parent.bundleName,
+          operationType: 'pricingBreakdown-discounts-field-resolver'
+        });
+        return [];
+      } catch (error) {
+        logger.error('Error getting discount breakdown', error as Error, {
+          bundleName: parent.bundleName,
+          operationType: 'pricingBreakdown-discounts-field-resolver'
+        });
+        return [];
       }
     },
   },

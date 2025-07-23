@@ -570,6 +570,10 @@ type PricingBreakdown {
   finalRevenue: Float! @auth(role: "ADMIN") # Revenue after processing
   netProfit: Float! @auth(role: "ADMIN") # Final profit
   discountPerDay: Float! @auth(role: "ADMIN") # Per-day discount rate
+  
+  # Rule-based pricing breakdown - Admin only
+  appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
+  discounts: [DiscountApplication!] @auth(role: "ADMIN") # Detailed discount breakdown (nullable)
 }
 
 # Configuration level enum to indicate pricing override level
@@ -627,6 +631,10 @@ type CountryBundle {
   isUnlimited: Boolean!
   dataAmount: String!
   bundleGroup: String
+  
+  # Rule-based pricing breakdown - Admin only
+  appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
+  discounts: [DiscountApplication!] @auth(role: "ADMIN") # Detailed discount breakdown (nullable)
 }
 
 # Batch pricing input
