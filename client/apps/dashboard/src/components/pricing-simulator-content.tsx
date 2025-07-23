@@ -13,58 +13,32 @@ import {
 } from '@workspace/ui';
 import React, { useState, useEffect } from 'react';
 import { Calculator, Globe, Clock } from 'lucide-react';
-import { GET_COUNTRY_BUNDLES } from '../lib/graphql/queries';
-import { Country } from '@/__generated__/graphql';
+import { CALCULATE_BATCH_PRICING } from '../lib/graphql/queries';
+import { 
+  Country, 
+  CalculateBatchPricingQuery, 
+  CalculateBatchPricingQueryVariables,
+  PricingBreakdown,
+  PaymentMethod 
+} from '@/__generated__/graphql';
 
 interface PricingSimulatorContentProps {
   countries: Country[];
 }
 
-interface SimulationResult {
-  bundleName: string;
-  countryName: string;
-  duration: number;
-  cost: number;
-  costPlus: number;
-  totalCost: number;
-  discountRate: number;
-  discountValue: number;
-  priceAfterDiscount: number;
-  processingCost: number;
-  finalRevenue: number;
-  currency: string;
-  discountPerDay: number;
-}
+// Using PricingBreakdown from generated types instead of custom interface
 
 export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = ({
   countries,
 }) => {
-  const [getCountryBundles, { loading }] = useLazyQuery(GET_COUNTRY_BUNDLES);
+  const [calculatePrices, { loading }] = useLazyQuery<CalculateBatchPricingQuery, CalculateBatchPricingQueryVariables>(CALCULATE_BATCH_PRICING);
   
   // Simulation state
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [simulatorDays, setSimulatorDays] = useState(7);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('ISRAELI_CARD');
-  const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>(PaymentMethod.IsraeliCard);
+  const [simulationResult, setSimulationResult] = useState<PricingBreakdown | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
-  // Available bundle durations (common eSIM Go durations)
-  const availableBundles = [1, 3, 5, 7, 10, 14, 21, 30];
-  
-  // Find the best bundle for simulator
-  const getBestBundle = (requestedDays: number) => {
-    // Try exact match first
-    if (availableBundles.includes(requestedDays)) {
-      return requestedDays;
-    }
-    // Find smallest bundle that covers the requested days
-    const suitableBundles = availableBundles.filter(bundle => bundle >= requestedDays);
-    if (suitableBundles.length > 0) {
-      return Math.min(...suitableBundles);
-    }
-    // If no bundle covers it, use the largest
-    return Math.max(...availableBundles);
-  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -99,61 +73,30 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
     setError(null);
     
     try {
-      const bestBundle = getBestBundle(simulatorDays);
-      
-      // First, search for bundles in this country
-      const bundlesResult = await getCountryBundles({
+      // Use the backend calculatePrices mutation for precise pricing
+      const result = await calculatePrices({
         variables: {
-          countryId: selectedCountry,
+          inputs: [{
+            numOfDays: simulatorDays,
+            regionId: 'global',
+            countryId: selectedCountry.toUpperCase(),
+            paymentMethod: selectedPaymentMethod,
+          }]
         },
       });
       
-      if (!bundlesResult.data?.countryBundles || bundlesResult.data.countryBundles.length === 0) {
-        setError('No bundles found for this country');
+      if (!result.data?.calculatePrices || result.data.calculatePrices.length === 0) {
+        setError('No pricing available for this country and duration');
         return;
       }
       
-      // Find a bundle that matches our duration (or closest match)
-      const bundles = bundlesResult.data.countryBundles;
-      const suitableBundle = bundles.find(bundle => bundle.duration === bestBundle) ||
-                             bundles.find(bundle => bundle.duration >= bestBundle) ||
-                             bundles[0]; // fallback to first bundle
+      // Use the first (and should be only) result from the batch calculation
+      const pricingResult = result.data.calculatePrices[0];
       
-      if (!suitableBundle) {
-        setError('No suitable bundle found for this duration');
-        return;
-      }
-      
-      // Debug log to see what we have
-      console.log('Suitable bundle found:', suitableBundle);
-      
-      // Use the bundle data directly since it already has pricing information
-      if (suitableBundle.cost && suitableBundle.priceAfterDiscount) {
-        const baseCost = suitableBundle.cost || 0;
-        const costPlusMarkup = suitableBundle.costPlus;
-        
-        setSimulationResult({
-          bundleName: suitableBundle.bundleName || `Bundle ${bestBundle} days`,
-          countryName: suitableBundle.countryName || country.name,
-          duration: suitableBundle.duration || bestBundle,
-          cost: baseCost,
-          costPlus: costPlusMarkup,
-          totalCost: suitableBundle.totalCost || costPlusMarkup,
-          discountRate: suitableBundle.discountRate || 0,
-          discountValue: suitableBundle.discountValue || 0,
-          priceAfterDiscount: suitableBundle.priceAfterDiscount || suitableBundle.totalCost || costPlusMarkup,
-          processingCost: suitableBundle.processingCost || 0,
-          finalRevenue: suitableBundle.finalRevenue || (suitableBundle.priceAfterDiscount || costPlusMarkup) - (suitableBundle.processingCost || 0),
-          currency: suitableBundle.currency || 'USD',
-          discountPerDay: suitableBundle.discountPerDay || 0,
-        });
-      } else {
-        setError('Bundle found but pricing data is incomplete');
-      }
+      setSimulationResult(pricingResult);
     } catch (error) {
-      const logger = { error: (msg: string, err: any) => console.error(msg, err) };
-      logger.error('Simulation error:', error);
-      setError('Failed to calculate pricing');
+      console.error('Simulation error:', error);
+      setError('Failed to calculate pricing. Please try again.');
     }
   };
 
@@ -205,21 +148,21 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
               {/* Payment Method Selection */}
               <div>
                 <Label htmlFor="paymentMethod">Payment Method</Label>
-                <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
+                <Select value={selectedPaymentMethod} onValueChange={(value) => setSelectedPaymentMethod(value as PaymentMethod)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ISRAELI_CARD">
+                    <SelectItem value={PaymentMethod.IsraeliCard}>
                       <div className="flex items-center gap-2">
                         <span>Israeli Card</span>
                         <Badge variant="outline" className="text-xs">Default</Badge>
                       </div>
                     </SelectItem>
-                    <SelectItem value="FOREIGN_CARD">Foreign Card</SelectItem>
-                    <SelectItem value="BIT">Bit Payment</SelectItem>
-                    <SelectItem value="AMEX">American Express</SelectItem>
-                    <SelectItem value="DINERS">Diners Club</SelectItem>
+                    <SelectItem value={PaymentMethod.ForeignCard}>Foreign Card</SelectItem>
+                    <SelectItem value={PaymentMethod.Bit}>Bit Payment</SelectItem>
+                    <SelectItem value={PaymentMethod.Amex}>American Express</SelectItem>
+                    <SelectItem value={PaymentMethod.Diners}>Diners Club</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -323,7 +266,7 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                   </div>
                   <div className="flex justify-between">
                     <span>Cost Plus Markup:</span>
-                    <span>{formatCurrency(simulationResult.costPlus)}</span>
+                    <span>{formatCurrency(simulationResult.costPlus || 0)}</span>
                   </div>
                   <div className="flex justify-between font-medium border-t pt-2">
                     <span>Total Cost:</span>
@@ -356,7 +299,7 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                   
                   <div className="flex justify-between">
                     <span>Processing Cost:</span>
-                    <span className="text-yellow-600">{formatCurrency(simulationResult.processingCost)}</span>
+                    <span className="text-yellow-600">{formatCurrency(simulationResult.processingCost || 0)}</span>
                   </div>
                   <div className="flex justify-between font-medium border-t pt-2">
                     <span>Final Revenue:</span>
@@ -377,7 +320,7 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                   </p>
                   <p>
                     <strong>Break-even Price:</strong> {' '}
-                    {formatCurrency(simulationResult.cost + simulationResult.processingCost + 0.01)}
+                    {formatCurrency(simulationResult.cost + (simulationResult.processingCost || 0) + 0.01)}
                   </p>
                   {simulationResult.discountPerDay > 0 && (
                     <p>
@@ -388,12 +331,6 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
                 </div>
               </div>
 
-              {/* Export Button */}
-              <div className="pt-4">
-                <Button className="w-full">
-                  Export Results
-                </Button>
-              </div>
             </div>
           )}
 
