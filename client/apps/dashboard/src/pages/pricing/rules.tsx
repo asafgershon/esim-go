@@ -13,10 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
   Input,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -64,7 +60,6 @@ import {
 } from '../../lib/graphql/queries';
 import { RuleBuilder } from '../../components/pricing/rule-builder';
 import { RuleAnalytics } from '../../components/pricing/rule-analytics';
-import { RuleTestingPanel } from '../../components/pricing/rule-testing-panel';
 
 interface PricingRule {
   id: string;
@@ -84,12 +79,16 @@ interface PricingRule {
 }
 
 const RulesPage: React.FC = () => {
-  const [selectedTab, setSelectedTab] = useState('manage');
   const [selectedRuleType, setSelectedRuleType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingRule, setEditingRule] = useState<PricingRule | null>(null);
   const [selectedRules, setSelectedRules] = useState<string[]>([]);
+  
+  // Quick filter states
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showInactiveRules, setShowInactiveRules] = useState(false);
+  const [showSystemRules, setShowSystemRules] = useState(true);
 
   // GraphQL queries and mutations
   const { data: rulesData, loading, error, refetch } = useQuery(GET_PRICING_RULES, {
@@ -106,12 +105,15 @@ const RulesPage: React.FC = () => {
 
   const rules = rulesData?.pricingRules || [];
 
-  // Filter rules based on search and type
+  // Filter rules based on search, type, and quick filters
   const filteredRules = rules.filter((rule: PricingRule) => {
     const matchesSearch = rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          rule.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = selectedRuleType === 'all' || rule.type === selectedRuleType;
-    return matchesSearch && matchesType;
+    const matchesActiveFilter = showInactiveRules || rule.isActive;
+    const matchesSystemFilter = showSystemRules || rule.isEditable;
+    
+    return matchesSearch && matchesType && matchesActiveFilter && matchesSystemFilter;
   });
 
   // Group rules by type for better organization
@@ -254,58 +256,79 @@ const RulesPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Main Content Tabs */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="manage" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Manage Rules
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="testing" className="flex items-center gap-2">
-            <Play className="h-4 w-4" />
-            Rule Testing
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Manage Rules Tab */}
-        <TabsContent value="manage" className="space-y-4">
+      {/* Main Content */}
+      <div className="space-y-4">
           {/* Filters */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search rules..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+          <div className="space-y-4">
+            {/* Search and Type Filter */}
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search rules..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={selectedRuleType} onValueChange={setSelectedRuleType}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ruleTypes.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                      <SelectItem key={type.value} value={type.value}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          {type.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={() => setShowCreateDialog(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Create Rule
+              </Button>
             </div>
-            <Select value={selectedRuleType} onValueChange={setSelectedRuleType}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                {ruleTypes.map((type) => {
-                  const Icon = type.icon;
-                  return (
-                    <SelectItem key={type.value} value={type.value}>
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4" />
-                        {type.label}
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              More Filters
-            </Button>
+
+            {/* Quick Filters */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-600">Quick filters:</span>
+              <Button
+                variant={showAnalytics ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowAnalytics(!showAnalytics)}
+                className={showAnalytics ? "" : "border-dashed"}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analytics
+              </Button>
+              <Button
+                variant={showInactiveRules ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowInactiveRules(!showInactiveRules)}
+                className={showInactiveRules ? "" : "border-dashed"}
+              >
+                <Pause className="h-4 w-4 mr-2" />
+                Show Inactive
+              </Button>
+              <Button
+                variant={!showSystemRules ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowSystemRules(!showSystemRules)}
+                className={!showSystemRules ? "" : "border-dashed"}
+              >
+                <Target className="h-4 w-4 mr-2" />
+                Hide System Rules
+              </Button>
+            </div>
           </div>
 
           {/* Rules Table */}
@@ -482,18 +505,20 @@ const RulesPage: React.FC = () => {
               </div>
             </Card>
           )}
-        </TabsContent>
 
-        {/* Analytics Tab */}
-        <TabsContent value="analytics">
-          <RuleAnalytics rules={rules} />
-        </TabsContent>
-
-        {/* Testing Tab */}
-        <TabsContent value="testing">
-          <RuleTestingPanel rules={rules} />
-        </TabsContent>
-      </Tabs>
+          {/* Analytics Section - Shows when analytics filter is active */}
+          {showAnalytics && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Rule Analytics</CardTitle>
+                <CardDescription>Performance metrics and insights for your pricing rules</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RuleAnalytics rules={rules} />
+              </CardContent>
+            </Card>
+          )}
+      </div>
 
       {/* Create/Edit Rule Dialog */}
       <Dialog open={showCreateDialog || !!editingRule} onOpenChange={(open) => {
