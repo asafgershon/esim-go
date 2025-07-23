@@ -73,7 +73,8 @@ import { toast } from 'sonner';
 
 // Import components
 import { RuleBuilder } from '../../components/pricing/rule-builder';
-import { RuleTestingPanel } from '../../components/pricing/rule-testing-panel';
+import { SplitView } from '../../components/common/SplitView';
+import { RuleTestPanelPlaceholder } from '../../components/pricing/rule-test-panel-placeholder';
 import { MarkupRuleDrawer } from '../../components/pricing/markup-rule-drawer';
 import { ProcessingFeeDrawer } from '../../components/pricing/processing-fee-drawer';
 
@@ -95,8 +96,7 @@ interface PricingRule {
 }
 
 const UnifiedPricingRulesPage: React.FC = () => {
-  const [showTestingPanel, setShowTestingPanel] = useState(false);
-  const [testingPanelWidth, setTestingPanelWidth] = useState(480);
+  const [selectedRuleForTesting, setSelectedRuleForTesting] = useState<PricingRule | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   
   // Filter states
@@ -166,29 +166,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
   };
 
   // Toggle testing panel
-  const toggleTestingPanel = useCallback(() => {
-    setShowTestingPanel(prev => !prev);
-  }, []);
-
-  // Handle panel resize
-  const handlePanelResize = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startWidth = testingPanelWidth;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const newWidth = startWidth - (e.clientX - startX);
-      setTestingPanelWidth(Math.min(Math.max(newWidth, 320), 800));
-    };
-
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [testingPanelWidth]);
 
   // Rule actions
   const handleToggleRule = async (ruleId: string) => {
@@ -258,15 +235,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
         {/* Mobile header with testing toggle */}
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Pricing Rules</h2>
-          <Button
-            variant={showTestingPanel ? 'default' : 'outline'}
-            size="sm"
-            onClick={toggleTestingPanel}
-            className="flex items-center gap-2"
-          >
-            <TestTube className="h-4 w-4" />
-            Test
-          </Button>
         </div>
 
         {/* Mobile content - simplified view */}
@@ -275,23 +243,13 @@ const UnifiedPricingRulesPage: React.FC = () => {
           <p className="text-sm text-gray-600">Mobile view implementation needed</p>
         </div>
 
-        {/* Mobile Testing Panel Sheet */}
-        <Sheet open={showTestingPanel} onOpenChange={setShowTestingPanel}>
-          <SheetContent side="bottom" className="h-[85vh]">
-            <SheetHeader>
-              <SheetTitle>Rule Testing Panel</SheetTitle>
-            </SheetHeader>
-            <div className="mt-4 h-full overflow-y-auto pb-20">
-              <RuleTestingPanel rules={rules} />
-            </div>
-          </SheetContent>
-        </Sheet>
       </div>
     );
   }
 
   // Desktop view
-  return (
+  const mainContent = (
+    <div className="flex flex-col space-y-4 p-4">
     <div className="h-full flex flex-col">
       {/* Header with testing toggle */}
       <div className="flex justify-between items-center mb-6">
@@ -321,15 +279,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
             Add Processing Fee
           </Button>
         </div>
-        <Button
-          variant={showTestingPanel ? 'default' : 'outline'}
-          size="sm"
-          onClick={toggleTestingPanel}
-          className="flex items-center gap-2"
-        >
-          <TestTube className="h-4 w-4" />
-          {showTestingPanel ? 'Hide' : 'Show'} Testing Panel
-        </Button>
       </div>
 
       {/* Main content with split view */}
@@ -535,14 +484,30 @@ const UnifiedPricingRulesPage: React.FC = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => setEditingRule(rule)}
+                                  onClick={() => setSelectedRuleForTesting(rule)}
                                   className="h-8 w-8 p-0"
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <TestTube className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Edit rule</TooltipContent>
+                              <TooltipContent>Test rule</TooltipContent>
                             </Tooltip>
+
+                            {rule.isEditable && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setEditingRule(rule)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Edit rule</TooltipContent>
+                              </Tooltip>
+                            )}
 
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -640,43 +605,90 @@ const UnifiedPricingRulesPage: React.FC = () => {
             </Card>
           )}
 
-        </div>
+    </div>
+  );
 
-        {/* Desktop Testing Panel - Integrated split view */}
-        {showTestingPanel && (
-          <div 
-            className="relative border-l bg-background flex flex-col"
-            style={{ width: `${testingPanelWidth}px` }}
+  const testPanel = selectedRuleForTesting ? (
+    <RuleTestPanelPlaceholder selectedRule={selectedRuleForTesting} />
+  ) : null;
+
+  const testPanelHeader = selectedRuleForTesting ? (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <TestTube className="h-4 w-4" />
+        <span className="font-medium">Rule Testing</span>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setSelectedRuleForTesting(null)}
+        className="h-6 w-6 p-0"
+      >
+        <X className="h-3 w-3" />
+      </Button>
+    </div>
+  ) : null;
+
+  const panels = [
+    {
+      id: 'main-content',
+      defaultSize: selectedRuleForTesting ? 70 : 100,
+      minSize: 50,
+      content: mainContent,
+    },
+    ...(selectedRuleForTesting
+      ? [
+          {
+            id: 'test-panel',
+            defaultSize: 30,
+            minSize: 25,
+            maxSize: 50,
+            content: testPanel,
+            header: testPanelHeader,
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-4">
+          {/* Quick add buttons */}
+          <Button
+            onClick={() => setShowCreateDialog(true)}
+            className="flex items-center gap-2"
           >
-            {/* Resize Handle */}
-            <div
-              className="absolute left-0 top-0 h-full w-1 cursor-ew-resize hover:bg-blue-500 transition-colors z-10"
-              onMouseDown={handlePanelResize}
-              style={{ marginLeft: '-2px' }}
-            />
-            
-            {/* Panel Header */}
-            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-background z-10">
-              <div className="flex items-center gap-2">
-                <TestTube className="h-5 w-5 text-blue-600" />
-                <h2 className="text-lg font-semibold">Rule Testing Panel</h2>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleTestingPanel}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Plus className="h-4 w-4" />
+            Custom Rule
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowMarkupDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <DollarSign className="h-4 w-4" />
+            Add Markup
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowProcessingDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <CreditCard className="h-4 w-4" />
+            Add Processing Fee
+          </Button>
+        </div>
+      </div>
 
-            {/* Testing Panel Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              <RuleTestingPanel rules={rules} />
-            </div>
-          </div>
-        )}
+      {/* Main content with split view */}
+      <div className="flex-1 min-h-0">
+        <SplitView
+          direction="horizontal"
+          autoSaveId="pricing-rules-split"
+          panels={panels}
+        />
       </div>
 
       {/* Create/Edit Rule Dialog */}
