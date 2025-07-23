@@ -424,6 +424,7 @@ export const catalogResolvers: Partial<Resolvers> = {
           countryId: item.countryId,
           countryName: countryMap.get(item.countryId) || item.countryId,
           bundleCount: item.bundleCount,
+          priceRange: item.priceRange
         }));
 
         logger.info("Bundles by country aggregation fetched successfully", {
@@ -739,6 +740,32 @@ export const catalogResolvers: Partial<Resolvers> = {
           "Standard - Unlimited Plus",
           "Regional Bundles"
         ];
+      }
+    },
+
+    // High demand countries - returns list of country ISO codes marked as high demand
+    highDemandCountries: async (_, __, context: Context) => {
+      try {
+        logger.info("Fetching high demand countries", {
+          operationType: "high-demand-countries-fetch",
+        });
+
+        // Use high demand country repository to get all high demand countries
+        const highDemandCountries = await context.repositories.highDemandCountries.getAllHighDemandCountries();
+
+        logger.info("High demand countries fetched successfully", {
+          countryCount: highDemandCountries.length,
+          operationType: "high-demand-countries-fetch",
+        });
+
+        return highDemandCountries;
+      } catch (error) {
+        logger.error("Failed to fetch high demand countries", error as Error, {
+          operationType: "high-demand-countries-fetch",
+        });
+        throw new GraphQLError("Failed to fetch high demand countries", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
       }
     },
   },
