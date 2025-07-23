@@ -18,20 +18,27 @@ export interface PricingRule extends Omit<GraphQLPricingRule, 'validFrom' | 'val
   updatedAt: Date;
 }
 
+export interface Bundle {
+  id: string;
+  name: string;
+  group: string;
+  duration: number;
+  cost: number;
+  countryId: string;
+  countryName: string;
+  regionId: string;
+  regionName: string;
+  isUnlimited: boolean;
+  dataAmount: string;
+}
+
 export interface PricingContext {
-  bundle: {
-    id: string;
-    name: string;
-    group: string;
-    duration: number;
-    cost: number;
-    countryId: string;
-    countryName: string;
-    regionId: string;
-    regionName: string;
-    isUnlimited: boolean;
-    dataAmount: string;
-  };
+  // Available bundles to choose from
+  availableBundles: Bundle[];
+  // The duration the customer requested
+  requestedDuration: number;
+  
+  // User information
   user?: {
     id: string;
     isNew?: boolean;
@@ -39,14 +46,17 @@ export interface PricingContext {
     purchaseCount?: number;
     segment?: string;
   };
+  
+  // Payment and timing
   paymentMethod: string;
-  requestedDuration?: number;
   currentDate: Date;
-  // Helper fields for easier rule writing
-  country: string; // Same as bundle.countryId
-  region: string; // Same as bundle.regionId
-  bundleGroup: string; // Same as bundle.group
-  duration: number; // Same as bundle.duration
+  
+  // These fields will be populated after bundle selection
+  bundle?: Bundle; // Selected bundle
+  country?: string; // Same as bundle.countryId
+  region?: string; // Same as bundle.regionId
+  bundleGroup?: string; // Same as bundle.group
+  duration?: number; // Same as bundle.duration
 }
 
 export interface PricingCalculation {
@@ -74,6 +84,19 @@ export interface PricingCalculation {
     type: RuleType;
     impact: number;
   }>;
+  // Bundle selection information
+  selectedBundle: {
+    bundleId: string;
+    bundleName: string;
+    duration: number;
+    reason: 'exact_match' | 'next_available' | 'best_value';
+  };
+  // Metadata that can include additional calculation details
+  metadata?: {
+    discountPerUnusedDay?: number;
+    unusedDays?: number;
+    [key: string]: any;
+  };
 }
 
 export interface RuleEvaluationResult {

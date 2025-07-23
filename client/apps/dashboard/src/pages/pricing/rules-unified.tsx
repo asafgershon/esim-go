@@ -17,6 +17,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Table,
   TableBody,
   TableCell,
@@ -43,6 +46,8 @@ import {
   X,
   Search,
   Filter,
+  FilterIcon,
+  Check,
   DollarSign,
   Zap,
   TrendingUp,
@@ -98,9 +103,11 @@ const UnifiedPricingRulesPage: React.FC = () => {
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRuleType, setSelectedRuleType] = useState<string>('all');
+  const [selectedRuleTypes, setSelectedRuleTypes] = useState<string[]>([]);
   const [showInactiveRules, setShowInactiveRules] = useState(false);
   const [showSystemRules, setShowSystemRules] = useState(true);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [typeFilterOpen, setTypeFilterOpen] = useState(false);
   
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -134,7 +141,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
   const filteredRules = rules.filter((rule: PricingRule) => {
     const matchesSearch = rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          rule.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedRuleType === 'all' || rule.type === selectedRuleType;
+    const matchesType = selectedRuleTypes.length === 0 || selectedRuleTypes.includes(rule.type);
     const matchesActiveFilter = showInactiveRules || rule.isActive;
     const matchesSystemFilter = showSystemRules || rule.isEditable;
     
@@ -143,7 +150,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
 
   // Rule type configurations
   const ruleTypes = [
-    { value: 'all', label: 'All Rules', icon: Settings, color: 'gray' },
     { value: 'SYSTEM_MARKUP', label: 'Markup', icon: DollarSign, color: 'green' },
     { value: 'SYSTEM_PROCESSING', label: 'Processing', icon: CreditCard, color: 'purple' },
     { value: 'BUSINESS_DISCOUNT', label: 'Discount', icon: TrendingUp, color: 'blue' },
@@ -151,8 +157,16 @@ const UnifiedPricingRulesPage: React.FC = () => {
     { value: 'SEGMENT', label: 'Segment', icon: Target, color: 'pink' },
   ];
 
+  const toggleRuleType = (type: string) => {
+    setSelectedRuleTypes(prev => 
+      prev.includes(type) 
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
   const getRuleTypeConfig = (type: string) => {
-    return ruleTypes.find(rt => rt.value === type) || ruleTypes[0];
+    return ruleTypes.find(rt => rt.value === type) || { value: type, label: type, icon: Settings, color: 'gray' };
   };
 
   // Toggle testing panel
@@ -396,29 +410,64 @@ const UnifiedPricingRulesPage: React.FC = () => {
                   className="pl-10"
                 />
               </div>
-              <Select value={selectedRuleType} onValueChange={setSelectedRuleType}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ruleTypes.map((type) => {
-                    const Icon = type.icon;
-                    return (
-                      <SelectItem key={type.value} value={type.value}>
-                        <div className="flex items-center gap-2">
-                          <Icon className="h-4 w-4" />
-                          {type.label}
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
             </div>
 
             {/* Quick Filters */}
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-gray-600">Quick filters:</span>
+              
+              {/* Type Filter Popover */}
+              <Popover open={typeFilterOpen} onOpenChange={setTypeFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={selectedRuleTypes.length > 0 ? "default" : "outline"}
+                    size="sm"
+                    className={selectedRuleTypes.length === 0 ? "border-dashed" : ""}
+                  >
+                    <FilterIcon className="h-4 w-4 mr-2" />
+                    Type
+                    {selectedRuleTypes.length > 0 && (
+                      <Badge variant="secondary" className="ml-2 h-5 px-1">
+                        {selectedRuleTypes.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-3" align="start">
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium mb-2">Filter by Rule Type</div>
+                    {ruleTypes.map((type) => {
+                      const Icon = type.icon;
+                      const isSelected = selectedRuleTypes.includes(type.value);
+                      return (
+                        <button
+                          key={type.value}
+                          onClick={() => toggleRuleType(type.value)}
+                          className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon className={`h-4 w-4 text-${type.color}-600`} />
+                            <span>{type.label}</span>
+                          </div>
+                          {isSelected && <Check className="h-4 w-4 text-primary" />}
+                        </button>
+                      );
+                    })}
+                    {selectedRuleTypes.length > 0 && (
+                      <>
+                        <Separator className="my-2" />
+                        <button
+                          onClick={() => setSelectedRuleTypes([])}
+                          className="w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                        >
+                          Clear filters
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
               <Button
                 variant={showAnalytics ? "default" : "outline"}
                 size="sm"
@@ -611,7 +660,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
                 <Settings className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-4 text-lg font-medium text-gray-900">No rules found</h3>
                 <p className="mt-2 text-gray-500">
-                  {searchQuery || selectedRuleType !== 'all' 
+                  {searchQuery || selectedRuleTypes.length > 0
                     ? 'Try adjusting your search or filters'
                     : 'Get started by creating your first pricing rule'
                   }

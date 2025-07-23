@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { EsimSkeleton } from "./esim-skeleton";
 import { EnhancedCountry, useCountries } from "@/hooks/useCountries";
 import { EnhancedTrip, useTrips } from "@/hooks/useTrips";
-import { usePricing } from "@/hooks/usePricing";
+import { useBatchPricing } from "@/hooks/useBatchPricing";
 
 const CountUp = lazy(() => import("react-countup"));
 // Backend handles discount logic, so this is no longer needed
@@ -84,9 +84,8 @@ export function EsimExperienceSelector() {
     }
     return null;
   }, [countryId, tripId, countries, trips]);
-  // Calculate pricing using backend
-  const { pricing, loading: priceLoading } = usePricing({
-    numOfDays,
+  // Calculate pricing using backend with batch loading
+  const { getPricing, isReady } = useBatchPricing({
     regionId:
       selectedDestinationData?.type === "trip"
         ? selectedDestinationData.data?.id
@@ -96,6 +95,11 @@ export function EsimExperienceSelector() {
         ? selectedDestinationData.data?.id
         : undefined,
   });
+
+  // Get pricing for current number of days
+  const pricing = useMemo(() => {
+    return getPricing(numOfDays);
+  }, [getPricing, numOfDays]);
   const handleTabChange = (tab: "countries" | "trips") => {
     setActiveTab(tab);
     // Clear selection when switching tabs
@@ -340,7 +344,7 @@ export function EsimExperienceSelector() {
             </div>
 
             {/* Pricing Summary */}
-            {priceLoading ? (
+            {!isReady || !pricing ? (
               <div className="space-y-3 pt-3 border-t">
                 {/* Days skeleton */}
                 <div className="flex items-center justify-between">

@@ -185,20 +185,8 @@ export const GET_MY_ESIMS = gql`
       assignedDate
       lastAction
       actionDate
-      plan {
-        id
-        name
-        description
-        region
-        countries {
-          iso
-          name
-          nameHebrew
-        }
-        duration
-        price
-        currency
-      }
+      bundleId
+      bundleName
       usage {
         totalUsed
         totalRemaining
@@ -238,20 +226,8 @@ export const GET_ACTIVE_ESIM_PLAN = gql`
       qrCode
       status
       assignedDate
-      plan {
-        id
-        name
-        description
-        region
-        countries {
-          iso
-          name
-          nameHebrew
-        }
-        duration
-        price
-        currency
-      }
+      bundleId
+      bundleName
       usage {
         totalUsed
         totalRemaining

@@ -1,6 +1,5 @@
 import { useLazyQuery } from '@apollo/client';
 import { CALCULATE_PRICES_BATCH } from '@/lib/graphql/mutations';
-import { CalculatePricesBatchQuery } from '@/__generated__/graphql';
 import { useEffect, useMemo, useState } from 'react';
 
 interface UseBatchPricingParams {
@@ -18,9 +17,21 @@ interface PricingData {
   days: number;
 }
 
+interface CalculatePricesBatchData {
+  calculatePrices: Array<{
+    bundleName: string;
+    countryName: string;
+    duration: number;
+    currency: string;
+    totalCost: number;
+    discountValue: number;
+    priceAfterDiscount: number;
+  }>;
+}
+
 export function useBatchPricing({ regionId, countryId, maxDays = 30 }: UseBatchPricingParams) {
   const [calculatePricesBatch, { data: batchData, loading: batchLoading, error }] = 
-    useLazyQuery<CalculatePricesBatchQuery>(CALCULATE_PRICES_BATCH);
+    useLazyQuery<CalculatePricesBatchData>(CALCULATE_PRICES_BATCH);
   
   const [pricingCache, setPricingCache] = useState<Map<number, PricingData>>(new Map());
   const [isInitializing, setIsInitializing] = useState(false);
