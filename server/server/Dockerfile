@@ -29,5 +29,8 @@ ENV NODE_ENV=production
 # Expose GraphQL port
 EXPOSE 4000
 
-# Run the server
+# Stay in server directory for runtime
+WORKDIR /app/server
+
+# Run the server directly (build already done)
 CMD ["bun", "run", "src/app.ts"]

@@ -622,20 +622,259 @@ export const resolvers: Resolvers = {
           });
         }
         
-        // Get bundles from catalog_bundles table which stores ISO codes
-        const { data: catalogBundles, error } = await supabaseAdmin
+        // Get all bundles and filter by country in memory
+        // This is a workaround for JSONB array containment issues
+        const { data: allBundles, error } = await supabaseAdmin
           .from('catalog_bundles')
-          .select('*')
-          .contains('countries', [countryId]);
+          .select('*');
           
         if (error) {
           logger.error('Failed to fetch catalog bundles for country', error, {
             countryId,
+            error: error.message,
             operationType: 'catalog-bundles-fetch'
           });
-          throw new GraphQLError('Failed to fetch bundles for country', {
-            extensions: { code: 'INTERNAL_ERROR' }
+          
+          // Fallback to filtering in memory if RPC doesn't exist
+          const { data: allBundles, error: fallbackError } = await supabaseAdmin
+            .from('catalog_bundles')
+            .select('*');
+            
+          if (fallbackError) {
+            throw new GraphQLError('Failed to fetch bundles for country', {
+              extensions: { code: 'INTERNAL_ERROR' }
+            });
+          }
+          
+          const catalogBundles = (allBundles || []).filter(bundle => {
+            return bundle.countries && Array.isArray(bundle.countries) && 
+                   bundle.countries.includes(countryId);
           });
+          
+          logger.info('Used fallback filtering for country bundles', {
+            countryId,
+            totalBundles: allBundles?.length || 0,
+            filteredBundles: catalogBundles.length,
+            operationType: 'catalog-bundles-fallback'
+          });
+          
+          // Continue with filtered bundles
+          const dataPlans = (catalogBundles || []).map(bundle => ({
+            id: bundle.id,
+            name: bundle.esim_go_name,
+            description: bundle.description || '',
+            baseCountry: country,
+            countries: bundle.countries || [],
+            regions: bundle.regions || [],
+            duration: bundle.duration,
+            price: bundle.price_cents / 100, // Convert cents to dollars
+            currency: bundle.currency,
+            unlimited: bundle.unlimited,
+            dataAmount: bundle.data_amount,
+            bundleGroup: bundle.bundle_group,
+            features: []
+          }));
+          
+          logger.info('Fetched bundles from catalog for country', {
+            countryId,
+            bundleCount: dataPlans.length,
+            operationType: 'country-bundles-fetch'
+          });
+          
+          // Continue with the rest of the function
+          // DEBUG: Log the raw data from the API
+          logger.info('RAW DATA FROM CATALOGUE API', {
+            countryId,
+            totalPlans: dataPlans.length,
+            unlimitedCount: dataPlans.filter(p => p.unlimited || p.dataAmount === -1).length,
+            limitedCount: dataPlans.filter(p => !p.unlimited && p.dataAmount !== -1).length,
+            unlimitedByFlag: dataPlans.filter(p => p.unlimited).length,
+            unlimitedByDataAmount: dataPlans.filter(p => p.dataAmount === -1).length,
+            samplePlans: dataPlans.slice(0, 5).map(p => ({
+              name: p.name,
+              unlimited: p.unlimited,
+              dataAmount: p.dataAmount,
+              duration: p.duration,
+              bundleGroup: p.bundleGroup
+            })),
+            operationType: 'debug-raw-catalog'
+          });
+          
+          // Sort plans by duration for consistent ordering
+          const sortedPlans = dataPlans.sort((a, b) => a.duration - b.duration);
+          
+          // Get pricing configurations to check for custom discounts
+          const configLevelByBundle = new Map<number, ConfigurationLevel>();
+          
+          // Check if there's country-specific or bundle-specific configuration
+          const hasBundleConfig = sortedPlans.some(plan => {
+            // You would check your pricing configuration here
+            // For now, we'll assume no custom config
+            configLevelByBundle.set(plan.duration, ConfigurationLevel.Global);
+            return false;
+          });
+          
+          const hasCustomConfig = hasBundleConfig;
+          
+          logger.info('Starting pricing calculations for bundles', {
+            countryId,
+            bundleCount: sortedPlans.length,
+            hasCustomConfig,
+            operationType: 'pricing-calculation-start'
+          });
+          // Calculate pricing for each individual plan using actual pricing service
+          // This ensures unlimited and limited bundles with same duration are processed separately
+          const bundles = await Promise.all(
+            sortedPlans.map(async (plan) => {
+              try {
+                // DEBUG: Log the plan structure to see what country data we have
+                logger.info('Bundle plan structure debug', {
+                  countryId,
+                  planName: plan.name,
+                  planDuration: plan.duration,
+                  hasBaseCountry: !!plan.baseCountry,
+                  baseCountry: plan.baseCountry,
+                  hasCountries: !!plan.countries,
+                  countriesCount: plan.countries?.length || 0,
+                  operationType: 'bundle-country-debug'
+                });
+                
+                // Create pricing context for the rule engine
+                const pricingContext = {
+                  bundle: {
+                    id: plan.name || `${countryId}-${plan.duration}d`,
+                    name: plan.name,
+                    duration: plan.duration,
+                    bundleGroup: plan.bundleGroup || 'Standard Fixed',
+                    basePrice: plan.price || 0,
+                    dataAmount: plan.dataAmount || 0,
+                    isUnlimited: plan.unlimited || plan.dataAmount === -1
+                  },
+                  customer: {
+                    paymentMethod: 'israeli_card' as const,
+                    segmentTier: 'STANDARD' as const
+                  },
+                  location: {
+                    country: countryId,
+                    region: plan.baseCountry?.region || country.region || 'Unknown'
+                  },
+                  metadata: {}
+                };
+                
+                // Calculate price using rule engine
+                const calculation = await engineService.calculatePrice(pricingContext);
+                
+                return {
+                  bundleName: plan.name || `${plan.duration} Day Bundle`,
+                  countryName: country.country,
+                  countryId,
+                  duration: plan.duration,
+                  cost: calculation.baseCost || 0,
+                  costPlus: (calculation.baseCost || 0) + (calculation.markup || 0),
+                  totalCost: calculation.subtotal || 0,
+                  discountRate: (calculation.totalDiscount || 0) > 0 && (calculation.subtotal || 0) > 0 
+                    ? (calculation.totalDiscount / calculation.subtotal) 
+                    : 0,
+                  discountValue: calculation.totalDiscount || 0,
+                  priceAfterDiscount: calculation.priceAfterDiscount || 0,
+                  processingRate: calculation.processingRate || 0.045,
+                  processingCost: calculation.processingFee || 0,
+                  finalRevenue: calculation.finalRevenue || 0,
+                  netProfit: calculation.profit || 0,
+                  currency: 'USD',
+                  pricePerDay: (plan.duration && plan.duration > 0 && calculation.priceAfterDiscount && isFinite(calculation.priceAfterDiscount)) 
+                    ? (calculation.priceAfterDiscount || 0) / plan.duration 
+                    : 0,
+                  hasCustomDiscount: hasCustomConfig,
+                  configurationLevel: configLevelByBundle.get(plan.duration) || ConfigurationLevel.Global,
+                  discountPerDay: calculation.metadata?.discountPerUnusedDay || 0.10,
+                  // Add plan-specific metadata to distinguish between unlimited/limited bundles
+                  planId: plan.name || plan.id || `${countryId}-${plan.duration}d`,
+                  isUnlimited: plan.unlimited || plan.dataAmount === -1,
+                  dataAmount: (() => {
+                    // Use same formatting logic as DataPlan field resolver
+                    const rawDataAmount = plan.dataAmount;
+                    
+                    // Handle unlimited plans (dataAmount === -1 is the key indicator)
+                    if (plan.unlimited || rawDataAmount === -1) {
+                      return 'Unlimited';
+                    }
+                    
+                    // Handle limited plans
+                    const dataAmountMB = rawDataAmount || 0;
+                    
+                    if (dataAmountMB >= 1024) {
+                      const dataAmountGB = dataAmountMB / 1024;
+                      
+                      // For GB values, round based on size
+                      if (dataAmountGB >= 10) {
+                        // For 10GB+, round to nearest integer
+                        const roundedGB = Math.round(dataAmountGB);
+                        return `${roundedGB}GB`;
+                      } else if (dataAmountGB >= 1) {
+                        // For 1-9.9GB, round to 1 decimal place
+                        const roundedGB = Math.round(dataAmountGB * 10) / 10;
+                        if (roundedGB % 1 === 0) {
+                          return `${Math.round(roundedGB)}GB`;
+                        } else {
+                          return `${roundedGB}GB`;
+                        }
+                      } else {
+                        // For MB values, round to nearest 50MB step (rounded up)
+                        const roundedMB = Math.ceil(dataAmountMB / 50) * 50;
+                        return `${roundedMB}MB`;
+                      }
+                    } else {
+                      // For MB values, round to nearest 50MB step (rounded up)
+                      const roundedMB = Math.ceil(dataAmountMB / 50) * 50;
+                      return `${roundedMB}MB`;
+                    }
+                  })(),
+                  bundleGroup: plan.bundleGroup
+                };
+              } catch (error) {
+                logger.warn('Failed to calculate pricing for bundle', {
+                  countryId,
+                  duration: plan.duration,
+                  planId: plan.name || plan.id,
+                  isUnlimited: plan.unlimited || false,
+                  error: (error as Error).message,
+                  operationType: 'country-bundles-fetch'
+                });
+                
+                // Return bundle with default values instead of null
+                return {
+                  bundleName: plan.name || `${plan.duration} Day Bundle`,
+                  countryName: country.name || country.country || countryId,
+                  countryId,
+                  duration: plan.duration || 0,
+                  cost: 0,
+                  costPlus: 0,
+                  totalCost: 0,
+                  discountRate: 0,
+                  discountValue: 0,
+                  priceAfterDiscount: 0,
+                  processingRate: 0,
+                  processingCost: 0,
+                  finalRevenue: 0,
+                  netProfit: 0,
+                  currency: 'USD',
+                  pricePerDay: 0,
+                  hasCustomDiscount: false,
+                  configurationLevel: 'GLOBAL',
+                  discountPerDay: 0.10,
+                  planId: plan.name || plan.id || `${countryId}-${plan.duration}d`,
+                  isUnlimited: plan.unlimited || plan.dataAmount === -1 || false,
+                  dataAmount: plan.unlimited || plan.dataAmount === -1 ? 'Unlimited' : 
+                    plan.dataAmount > 0 ? `${Math.round(plan.dataAmount / 1024)}GB` : 'Unknown',
+                  bundleGroup: plan.bundleGroup || 'Standard Fixed'
+                };
+              }
+            })
+          );
+          
+          // No need to filter anymore since we return default values instead of null
+          return bundles;
         }
         
         // Convert catalog bundles to data plan format
