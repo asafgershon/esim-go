@@ -299,6 +299,54 @@ export class BundleRepository extends BaseSupabaseRepository {
   }
 
   /**
+   * Get bundles for a specific country
+   */
+  async getBundlesByCountry(countryId: string): Promise<CatalogBundle[]> {
+    return withPerformanceLogging(
+      this.logger,
+      'get-bundles-by-country',
+      async () => {
+        // First try with contains operator
+        let { data, error } = await this.supabase
+          .from('catalog_bundles')
+          .select('*')
+          .contains('countries', [countryId]);
+        
+        // If contains fails, fallback to fetching all and filtering
+        if (error) {
+          this.logger.warn('Contains query failed, using fallback filtering', {
+            countryId,
+            error: error.message
+          });
+          
+          const { data: allBundles, error: fallbackError } = await this.supabase
+            .from('catalog_bundles')
+            .select('*');
+            
+          if (fallbackError) {
+            throw fallbackError;
+          }
+          
+          data = (allBundles || []).filter(bundle => 
+            bundle.countries && 
+            Array.isArray(bundle.countries) && 
+            bundle.countries.includes(countryId)
+          );
+        }
+        
+        this.logger.info('Retrieved bundles for country', {
+          countryId,
+          bundleCount: data?.length || 0,
+          operationType: 'get-bundles-by-country'
+        });
+        
+        return data || [];
+      },
+      { countryId }
+    );
+  }
+
+  /**
    * Get bundles grouped by country with counts - efficient aggregation
    */
   async getBundlesByCountryAggregation(): Promise<Array<{

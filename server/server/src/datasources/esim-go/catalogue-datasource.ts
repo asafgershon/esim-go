@@ -159,6 +159,33 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   }
 
   /**
+   * Get bundles for a specific country
+   */
+  async getBundlesByCountry(countryId: string): Promise<CatalogBundle[]> {
+    return withPerformanceLogging(
+      this.log,
+      'get-bundles-by-country',
+      async () => {
+        // Check if catalog is empty first
+        const isEmpty = await this.isCatalogEmpty();
+        
+        if (isEmpty) {
+          this.log.error('📊 Cannot get bundles by country - catalog is empty', { 
+            countryId,
+            operationType: 'catalog-empty'
+          });
+          
+          throw new Error(
+            'Catalog data is not available. Please run catalog sync to populate the database with eSIM bundles.'
+          );
+        }
+        
+        return await this.bundleRepository.getBundlesByCountry(countryId);
+      }
+    );
+  }
+
+  /**
    * Get bundles grouped by country with counts - efficient aggregation
    */
   async getBundlesByCountryAggregation(): Promise<Array<{
