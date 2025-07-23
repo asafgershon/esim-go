@@ -5,12 +5,11 @@ import {
   Country, 
   CountryBundle, 
   GetCountriesQuery, 
-  GetDataPlansQuery, 
   GetBundlesByCountryQuery,
   GetTripsQuery,
   Trip
 } from '@/__generated__/graphql';
-import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_DATA_PLANS, GET_TRIPS, GET_COUNTRY_BUNDLES } from '../lib/graphql/queries';
+import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_TRIPS, GET_COUNTRY_BUNDLES } from '../lib/graphql/queries';
 import { 
   calculateAveragePricePerDay, 
   buildBatchPricingInput, 
@@ -45,14 +44,7 @@ export const usePricingData = () => {
   const { data: countriesData } = useQuery<GetCountriesQuery>(GET_COUNTRIES);
   const { data: bundlesCountriesData, loading: bundlesLoading, error: bundlesError, refetch: refetchBundlesCountries } = useQuery<GetBundlesByCountryQuery>(GET_BUNDLES_BY_COUNTRY);
   const { data: tripsQueryData, loading: tripsLoading, error: tripsError } = useQuery<GetTripsQuery>(GET_TRIPS);
-  const { data: dataPlansData } = useQuery<GetDataPlansQuery>(GET_DATA_PLANS, {
-    variables: {
-      filter: {
-        limit: 1000
-      }
-    }
-  });
-  const [getCountryDataPlans] = useLazyQuery(GET_DATA_PLANS);
+  // Removed deprecated GET_DATA_PLANS query
   const [getCountryBundles] = useLazyQuery(GET_COUNTRY_BUNDLES);
   const { calculateBatchPrices } = usePricingWithRules();
 
@@ -90,27 +82,7 @@ export const usePricingData = () => {
     setLoading(bundlesLoading || tripsLoading);
   }, [bundlesLoading, tripsLoading]);
 
-  // Fetch country data plans
-  const fetchCountryDataPlans = async (countryId: string, bundleGroup?: string) => {
-    // TODO: Re-enable country filtering when backend JSONB queries are fixed
-    // For now, fetch all bundles and filter on frontend
-    const filter: any = {
-      // country: countryId,  // Temporarily disabled due to backend JSONB query issues
-      limit: 1000
-    };
-    
-    if (bundleGroup) {
-      filter.bundleGroup = bundleGroup;
-    }
-    
-    console.log(`⚠️ Country filtering temporarily disabled. Fetching all bundles and filtering for ${countryId} on frontend.`);
-    
-    return await getCountryDataPlans({
-      variables: {
-        filter
-      }
-    });
-  };
+  // Note: Country data plans functionality moved to catalog bundles system
 
   // Calculate pricing for country bundles using rule-based engine
   const calculateCountryPricing = async (countryId: string, regionId: string, durations: Set<number>) => {

@@ -2,7 +2,6 @@ import { z } from "zod";
 import type {
   ESIMGoDataPlan
 } from "../datasources/esim-go/types";
-import type { DataPlan } from "../types";
 import { convertCentsToDollars, convertBytesToMB } from '../repositories/catalog/bundle-transform.schema';
 
 // Input validation schemas
@@ -72,85 +71,20 @@ const bytesToMB = (bytes: number | null): number => {
   return bytes !== null ? bytes / (1024 * 1024) : 0;
 };
 
-/**
- * Validated mapping function for eSIM Go data plan to GraphQL DataPlan type
- */
-export function mapDataPlan(plan: ESIMGoDataPlan, dbPlan?: DataPlan): DataPlan {
-  // Validate input data with Zod
-  const validatedPlan = ESIMGoDataPlanSchema.parse(plan);
-  
-  return {
-    id: dbPlan?.id || validatedPlan.name,
-    name: validatedPlan.name,
-    description: validatedPlan.description,
-    region: validatedPlan.baseCountry?.region || '',
-    countries: validatedPlan.countries,
-    // Add baseCountry to the mapped data so resolvers can access it
-    baseCountry: validatedPlan.baseCountry,
-    duration: validatedPlan.duration,
-    price: validatedPlan.price,
-    currency: "USD",
-    isUnlimited: validatedPlan.unlimited,
-    bundleGroup: validatedPlan.bundleGroup,
-    features: [
-      validatedPlan.unlimited ? "Unlimited Data" : `${validatedPlan.dataAmount || 0} MB`,
-      `${validatedPlan.duration} Days`,
-      validatedPlan.speed || "High Speed",
-      "24/7 Support",
-      "Instant Activation",
-    ],
-    availableQuantity: validatedPlan.availableQuantity || null,
-    // Store raw dataAmount for field resolver to access
-    _rawDataAmount: validatedPlan.dataAmount || 0,
-  };
-}
-
-/**
- * Map database catalog bundle to GraphQL DataPlan type
- * This handles the new database format after catalog sync
- */
-export function mapDatabaseBundleToDataPlan(dbBundle: any): DataPlan {
-  return {
-    id: dbBundle.id || dbBundle.esim_go_name,
-    name: dbBundle.esim_go_name || 'Unknown Bundle',
-    description: dbBundle.description || '',
-    region: (dbBundle.regions && Array.isArray(dbBundle.regions) && dbBundle.regions[0]) || 'Unknown',
-    countries: (dbBundle.countries || []).map((countryName: string) => ({
-      name: countryName,
-      region: 'Unknown', // We don't have region info for individual countries in DB
-      iso: countryName // Using country name as ISO for now
-    })),
-    duration: dbBundle.duration || 0,
-    price: convertCentsToDollars(dbBundle.price_cents),
-    currency: dbBundle.currency || "USD",
-    isUnlimited: dbBundle.unlimited || false,
-    bundleGroup: dbBundle.bundle_group,
-    features: [
-      dbBundle.unlimited ? "Unlimited Data" : `${convertBytesToMB(dbBundle.data_amount) || 0} MB`,
-      `${dbBundle.duration || 0} Days`,
-      "High Speed",
-      "24/7 Support", 
-      "Instant Activation",
-    ],
-    availableQuantity: null,
-    // Store raw dataAmount for field resolver to access
-    _rawDataAmount: convertBytesToMB(dbBundle.data_amount) || 0,
-  };
-}
 
 /**
  * Validated mapping function for eSIM Go order to GraphQL Order type
  */
-export function mapOrder(order: any, dbOrder: any, dataPlan: any): any {
+export function mapOrder(order: any, dbOrder: any, bundleName?: string, bundleId?: string): any {
   // Validate input data with Zod
   const validatedOrder = ESIMGoOrderSchema.parse(order);
-  const validatedPlan = ESIMGoDataPlanSchema.parse(dataPlan);
   
   return {
     id: dbOrder.id,
     reference: validatedOrder.reference,
     status: validatedOrder.status,
-    dataPlan: mapDataPlan(validatedPlan),
+    bundleId: bundleId || null,
+    bundleName: bundleName || validatedOrder.bundleName || null,
     quantity: validatedOrder.quantity,
     totalPrice: validatedOrder.totalPrice,
     esims: [], // Populated separately
@@ -162,14 +96,15 @@ export function mapOrder(order: any, dbOrder: any, dataPlan: any): any {
 /**
  * Validated mapping function for eSIM Go eSIM to GraphQL ESIM type
  */
-export function mapESIM(esim: any, dbESIM: any, order: any, plan: any): any {
+export function mapESIM(esim: any, dbESIM: any, order: any, bundleId?: string, bundleName?: string): any {
   // Validate input data with Zod
   const validatedESIM = ESIMGoESIMSchema.parse(esim);
   
   return {
     id: dbESIM.id,
     order,
-    plan: mapDataPlan(plan),
+    bundleId: bundleId || null,
+    bundleName: bundleName || null,
     iccid: validatedESIM.iccid,
     customerRef: validatedESIM.customerRef || null,
     qrCode: validatedESIM.qrCode || null,

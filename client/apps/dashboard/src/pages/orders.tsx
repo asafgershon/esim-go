@@ -25,6 +25,8 @@ import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 // import { OrderDetailsDrawer } from "@/components/order-details-drawer";
 import { useState } from "react";
+import { PageLayout } from "@/components/common/PageLayout";
+import { Package } from "lucide-react";
 
 function getStatusColor(
   status: string
@@ -54,15 +56,8 @@ type Order = {
     phoneNumber?: string | null;
     role: string;
   } | null;
-  dataPlan?: {
-    id: string;
-    name: string;
-    description: string;
-    region: string;
-    duration: number;
-    price: number;
-    currency: string;
-  } | null | undefined;
+  bundleId?: string | null;
+  bundleName?: string | null;
   quantity: number;
   totalPrice: number;
   createdAt: string;
@@ -148,9 +143,9 @@ const getColumns = (handleOrderClick: (orderId: string) => void): ColumnDef<Orde
       const order = row.original;
       return (
         <div>
-          <p className="text-sm font-medium">{order.dataPlan?.name}</p>
+          <p className="text-sm font-medium">{order.bundleName || 'N/A'}</p>
           <p className="text-xs text-muted-foreground">
-            {order.dataPlan?.region} • {order.dataPlan?.duration} days
+            Bundle ID: {order.bundleId || 'N/A'}
           </p>
         </div>
       );
@@ -193,7 +188,7 @@ const getColumns = (handleOrderClick: (orderId: string) => void): ColumnDef<Orde
     },
     cell: ({ row }) => {
       const order = row.original;
-      return `$${order.totalPrice.toFixed(2)} ${order.dataPlan?.currency || ""}`;
+      return `$${order.totalPrice.toFixed(2)}`;
     },
   },
   {
@@ -274,63 +269,64 @@ export function OrdersPage() {
   // Custom search function to search across multiple fields
   const searchableOrders = orders.map((order: any) => ({
     ...order,
-    searchableText: `${order.reference} ${order.user?.email || ''} ${order.user?.firstName || ''} ${order.user?.lastName || ''} ${order.dataPlan?.name || ''} ${order.status}`.toLowerCase()
+    searchableText: `${order.reference} ${order.user?.email || ''} ${order.user?.firstName || ''} ${order.user?.lastName || ''} ${order.bundleName || ''} ${order.status}`.toLowerCase()
   }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-        <p className="text-muted-foreground">
-          Manage and view all platform orders
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>All Orders</CardTitle>
-          <CardDescription>
-            A list of all orders placed on the platform
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          {loading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-[200px]" />
-                    <Skeleton className="h-4 w-[150px]" />
+    <PageLayout.Container>
+      <PageLayout.Header
+        subtitle="Orders"
+        description="Manage and view all platform orders"
+        icon={<Package className="h-6 w-6" />}
+      />
+      
+      <PageLayout.Content>
+        <Card>
+          <CardHeader>
+            <CardTitle>All Orders</CardTitle>
+            <CardDescription>
+              A list of all orders placed on the platform
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            {loading ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-[200px]" />
+                      <Skeleton className="h-4 w-[150px]" />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : error ? (
-            <div className="text-center">
-              <p className="text-sm text-destructive">
-                Error loading orders: {error.message}
-              </p>
-            </div>
-          ) : (
-            <AdvancedDataTable 
-              columns={getColumns(handleOrderClick)} 
-              data={searchableOrders} 
-              searchKey="searchableText"
-              searchPlaceholder="Search orders or customers..."
-              enableSorting={true}
-              enableFiltering={true}
-              enablePagination={true}
-              initialPageSize={10}
-            />
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="text-center">
+                <p className="text-sm text-destructive">
+                  Error loading orders: {error.message}
+                </p>
+              </div>
+            ) : (
+              <AdvancedDataTable 
+                columns={getColumns(handleOrderClick)} 
+                data={searchableOrders} 
+                searchKey="searchableText"
+                searchPlaceholder="Search orders or customers..."
+                enableSorting={true}
+                enableFiltering={true}
+                enablePagination={true}
+                initialPageSize={10}
+              />
+            )}
+          </CardContent>
+        </Card>
 
-      {/* <OrderDetailsDrawer
-        orderId={selectedOrderId}
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-      /> */}
-    </div>
+        {/* <OrderDetailsDrawer
+          orderId={selectedOrderId}
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+        /> */}
+      </PageLayout.Content>
+    </PageLayout.Container>
   );
 }

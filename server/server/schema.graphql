@@ -14,8 +14,6 @@ type Query {
   myESIMs: [ESIM!]! @auth
   esimDetails(id: ID!): ESIM @auth
 
-  dataPlans(filter: DataPlanFilter): DataPlanConnection!
-  dataPlan(id: ID!): DataPlan
 
   # Order queries
   myOrders(filter: OrderFilter): [Order!]! @auth
@@ -70,8 +68,6 @@ type Query {
   # High demand countries
   highDemandCountries: [String!]! @auth(role: "ADMIN")
   
-  # DEBUG: Direct API call to see raw catalog data
-  debugRawCatalogData(countryId: String!): DebugCatalogResponse
   
   # Catalog sync history
   catalogSyncHistory(params: SyncHistoryParams): CatalogSyncHistoryConnection! @auth(role: "ADMIN")
@@ -115,10 +111,6 @@ type Mutation {
   clonePricingRule(id: ID!, newName: String!): PricingRule!
   reorderPricingRules(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
   
-  # Processing fee configuration management
-  createProcessingFeeConfiguration(input: ProcessingFeeConfigurationInput!): ProcessingFeeConfiguration @auth(role: "ADMIN")
-  updateProcessingFeeConfiguration(id: ID!, input: ProcessingFeeConfigurationInput!): ProcessingFeeConfiguration @auth(role: "ADMIN")
-  deactivateProcessingFeeConfiguration(id: ID!): ProcessingFeeConfiguration @auth(role: "ADMIN")
   
   # Markup configuration management
   createMarkupConfig(input: CreateMarkupConfigInput!): MarkupConfig @auth(role: "ADMIN")
@@ -292,7 +284,8 @@ type DeleteTripResponse {
 type PackageAssignment {
   id: ID!
   user: User!
-  dataPlan: DataPlan!
+  bundleId: String!
+  bundleName: String!
   assignedAt: String!
   assignedBy: User!
   status: AssignmentStatus!
@@ -314,44 +307,6 @@ type AssignPackageResponse {
   assignment: PackageAssignment
 }
 
-# Data Plan Types (from eSIM Go catalogue)
-type DataPlan {
-  id: ID!
-  name: String! # eSIM Go bundle name
-  description: String!
-  region: String!
-  countries: [Country!]!
-  duration: Int! # Duration in days
-  price: Float! # Price in USD
-  currency: String!
-  isUnlimited: Boolean!
-  bundleGroup: String
-  features: [String!]!
-  availableQuantity: Int
-  dataAmount: String! # Human-readable data amount like "1GB", "500MB", "Unlimited"
-}
-
-# Data plan filtering
-input DataPlanFilter {
-  region: String
-  country: String # ISO code
-  duration: Int # Days
-  maxPrice: Float
-  bundleGroup: String
-  search: String # Search term for name/description
-  limit: Int # Number of items per page (default: 50, max: 200)
-  offset: Int # Starting position for pagination (default: 0)
-}
-
-# Pagination types for data plans
-type DataPlanConnection {
-  items: [DataPlan!]!
-  totalCount: Int!
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-  pageInfo: PageInfo!
-  lastFetched: String
-}
 
 type PageInfo {
   limit: Int!
@@ -366,7 +321,8 @@ type Order {
   id: ID!
   reference: String! # eSIM Go order reference
   status: OrderStatus!
-  dataPlan: DataPlan
+  bundleId: String
+  bundleName: String
   quantity: Int!
   totalPrice: Float!
   esims: [ESIM!]!
@@ -393,7 +349,8 @@ input OrderFilter {
 type ESIM {
   id: ID!
   order: Order!
-  plan: DataPlan!
+  bundleId: String!
+  bundleName: String!
   iccid: String! # eSIM identifier
   customerRef: String
   qrCode: String # QR code for eSIM installation
@@ -942,22 +899,6 @@ type ToggleHighDemandResponse {
   error: String
 }
 
-# Debug types
-type DebugPlan {
-  name: String!
-  unlimited: Boolean!
-  dataAmount: Int!
-  duration: Int!
-  bundleGroup: String
-}
-
-type DebugCatalogResponse {
-  success: Boolean!
-  error: String
-  totalPlans: Int!
-  unlimitedCount: Int!
-  samplePlans: [DebugPlan!]!
-}
 
 # Pricing Filters Types
 type PricingFilters {

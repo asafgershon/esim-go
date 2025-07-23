@@ -290,6 +290,8 @@ export const GET_ORDERS = gql(`
       totalPrice
       createdAt
       updatedAt
+      bundleId
+      bundleName
       user {
         id
         email
@@ -297,15 +299,6 @@ export const GET_ORDERS = gql(`
         lastName
         phoneNumber
         role
-      }
-      dataPlan {
-        id
-        name
-        description
-        region
-        duration
-        price
-        currency
       }
     }
   }
@@ -321,15 +314,8 @@ export const GET_USER_ORDERS = gql(`
       totalPrice
       createdAt
       updatedAt
-      dataPlan {
-        id
-        name
-        description
-        region
-        duration
-        price
-        currency
-      }
+      bundleId
+      bundleName
     }
   }
 `)
@@ -359,41 +345,26 @@ export const INVITE_ADMIN_USER = gql(`
   }
 `)
 
-export const GET_DATA_PLANS = gql(`
-  query GetDataPlans($filter: DataPlanFilter) {
-    dataPlans(filter: $filter) {
-      items {
+export const GET_CATALOG_BUNDLES = gql(`
+  query GetCatalogBundles($criteria: SearchCatalogCriteria) {
+    catalogBundles(criteria: $criteria) {
+      bundles {
         id
-        name
-        description
-        region
-        duration
-        price
-        currency
-        isUnlimited
+        esimGoName
         bundleGroup
-        features
-        availableQuantity
+        description
+        duration
         dataAmount
-        countries {
-          iso
-          name
-          nameHebrew
-          region
-          flag
-        }
+        unlimited
+        priceCents
+        currency
+        countries
+        regions
+        syncedAt
+        createdAt
+        updatedAt
       }
       totalCount
-      hasNextPage
-      hasPreviousPage
-      pageInfo {
-        limit
-        offset
-        total
-        pages
-        currentPage
-      }
-      lastFetched
     }
   }
 `)
@@ -410,15 +381,6 @@ export const ASSIGN_PACKAGE_TO_USER = gql(`
           email
           firstName
           lastName
-        }
-        dataPlan {
-          id
-          name
-          description
-          region
-          duration
-          price
-          currency
         }
         assignedAt
       }
@@ -646,98 +608,8 @@ export const GET_PROCESSING_FEE_CONFIGURATIONS = gql(`
   }
 `)
 
-export const CREATE_PROCESSING_FEE_CONFIGURATION = gql(`
-  mutation CreateProcessingFeeConfiguration($input: ProcessingFeeConfigurationInput!) {
-    createProcessingFeeConfiguration(input: $input) {
-      id
-      israeliCardsRate
-      foreignCardsRate
-      premiumDinersRate
-      premiumAmexRate
-      bitPaymentRate
-      fixedFeeNIS
-      fixedFeeForeign
-      monthlyFixedCost
-      bankWithdrawalFee
-      monthlyMinimumFee
-      setupCost
-      threeDSecureFee
-      chargebackFee
-      cancellationFee
-      invoiceServiceFee
-      appleGooglePayFee
-      isActive
-      effectiveFrom
-      effectiveTo
-      createdAt
-      updatedAt
-      createdBy
-      notes
-    }
-  }
-`)
 
-export const UPDATE_PROCESSING_FEE_CONFIGURATION = gql(`
-  mutation UpdateProcessingFeeConfiguration($id: ID!, $input: ProcessingFeeConfigurationInput!) {
-    updateProcessingFeeConfiguration(id: $id, input: $input) {
-      id
-      israeliCardsRate
-      foreignCardsRate
-      premiumDinersRate
-      premiumAmexRate
-      bitPaymentRate
-      fixedFeeNIS
-      fixedFeeForeign
-      monthlyFixedCost
-      bankWithdrawalFee
-      monthlyMinimumFee
-      setupCost
-      threeDSecureFee
-      chargebackFee
-      cancellationFee
-      invoiceServiceFee
-      appleGooglePayFee
-      isActive
-      effectiveFrom
-      effectiveTo
-      createdAt
-      updatedAt
-      createdBy
-      notes
-    }
-  }
-`)
 
-export const DEACTIVATE_PROCESSING_FEE_CONFIGURATION = gql(`
-  mutation DeactivateProcessingFeeConfiguration($id: ID!) {
-    deactivateProcessingFeeConfiguration(id: $id) {
-      id
-      israeliCardsRate
-      foreignCardsRate
-      premiumDinersRate
-      premiumAmexRate
-      bitPaymentRate
-      fixedFeeNIS
-      fixedFeeForeign
-      monthlyFixedCost
-      bankWithdrawalFee
-      monthlyMinimumFee
-      setupCost
-      threeDSecureFee
-      chargebackFee
-      cancellationFee
-      invoiceServiceFee
-      appleGooglePayFee
-      isActive
-      effectiveFrom
-      effectiveTo
-      createdAt
-      updatedAt
-      createdBy
-      notes
-    }
-  }
-`)
 
 export const GET_BUNDLES_BY_COUNTRY = gql(`
   query GetBundlesByCountry {
@@ -897,30 +769,6 @@ export const GET_BUNDLE_DATA_AGGREGATION = gql(`
   }
 `)
 
-// Catalog Queries
-export const GET_CATALOG_BUNDLES = gql(`
-  query GetCatalogBundles($criteria: SearchCatalogCriteria) {
-    catalogBundles(criteria: $criteria) {
-      bundles {
-        id
-        esimGoName
-        bundleGroup
-        description
-        duration
-        dataAmount
-        unlimited
-        priceCents
-        currency
-        countries
-        regions
-        syncedAt
-        createdAt
-        updatedAt
-      }
-      totalCount
-    }
-  }
-`)
 
 // REMOVED: GET_CATALOG_BUNDLES_BY_COUNTRY - resolver was removed in consolidation
 

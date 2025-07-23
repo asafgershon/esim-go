@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import type { GetDataPlansQuery } from "@/__generated__/graphql";
-import { ASSIGN_PACKAGE_TO_USER, GET_DATA_PLANS } from "@/lib/graphql/queries";
+import type { GetCatalogBundlesQuery } from "@/__generated__/graphql";
+import { ASSIGN_PACKAGE_TO_USER, GET_CATALOG_BUNDLES } from "@/lib/graphql/queries";
 import { useMutation, useQuery } from "@apollo/client";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import { Button } from "@workspace/ui/components/button";
@@ -26,15 +26,15 @@ type User = {
   role: string;
 };
 
-type DataPlan = {
+type CatalogBundle = {
   id: string;
-  name: string;
+  esimGoName: string;
   description: string;
-  region: string;
+  regions: string[];
   duration: number;
-  price: number;
+  priceCents: number;
   currency: string;
-  isUnlimited: boolean;
+  unlimited: boolean;
   bundleGroup?: string;
 };
 
@@ -45,7 +45,7 @@ interface AssignESimModalProps {
 }
 
 export function AssignESimModal({ user, open, onOpenChange }: AssignESimModalProps) {
-  const [selectedPlan, setSelectedPlan] = useState<DataPlan | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<CatalogBundle | null>(null);
   const [planSearchTerm, setPlanSearchTerm] = useState("");
   const [debouncedPlanSearchTerm, setDebouncedPlanSearchTerm] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
@@ -74,14 +74,14 @@ export function AssignESimModal({ user, open, onOpenChange }: AssignESimModalPro
     return debouncedPlanSearchTerm.trim() ? { search: debouncedPlanSearchTerm } : {};
   }, [debouncedPlanSearchTerm]);
   
-  const { data: plansData, loading: plansLoading } = useQuery<GetDataPlansQuery>(GET_DATA_PLANS, {
-    variables: { filter: planFilter },
+  const { data: plansData, loading: plansLoading } = useQuery<GetCatalogBundlesQuery>(GET_CATALOG_BUNDLES, {
+    variables: { criteria: planFilter },
     skip: !open, // Only fetch when modal is open
   });
 
   const [assignPackage] = useMutation(ASSIGN_PACKAGE_TO_USER);
 
-  const plans = plansData?.dataPlans?.items || [];
+  const plans = plansData?.catalogBundles?.bundles || [];
 
   const handleAssignPackage = async () => {
     if (!user || !selectedPlan) {
@@ -94,12 +94,12 @@ export function AssignESimModal({ user, open, onOpenChange }: AssignESimModalPro
       const result = await assignPackage({
         variables: {
           userId: user.id,
-          planId: selectedPlan.id,
+          planId: selectedPlan.esimGoName, // Use the eSIM Go bundle name as the plan ID
         },
       });
 
       if (result.data?.assignPackageToUser?.success) {
-        toast.success(`Package "${selectedPlan.name}" assigned to ${user.email}`);
+        toast.success(`Package "${selectedPlan.esimGoName}" assigned to ${user.email}`);
         onOpenChange(false);
       } else {
         toast.error(result.data?.assignPackageToUser?.error || "Failed to assign package");
@@ -191,22 +191,22 @@ export function AssignESimModal({ user, open, onOpenChange }: AssignESimModalPro
                         ? "border-primary bg-primary/5 shadow-sm"
                         : "hover:bg-muted/50"
                     }`}
-                    onClick={() => plan && setSelectedPlan(plan as DataPlan)}
+                    onClick={() => plan && setSelectedPlan(plan as CatalogBundle)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className="text-sm font-medium">{plan.name}</h4>
+                        <h4 className="text-sm font-medium">{plan.esimGoName}</h4>
                         <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                           {plan.description}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs bg-secondary px-2 py-1 rounded">
-                            {plan.region}
+                            {plan.regions[0]}
                           </span>
                           <span className="text-xs bg-secondary px-2 py-1 rounded">
                             {plan.duration} days
                           </span>
-                          {plan.isUnlimited && (
+                          {plan.unlimited && (
                             <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                               Unlimited
                             </span>
@@ -215,7 +215,7 @@ export function AssignESimModal({ user, open, onOpenChange }: AssignESimModalPro
                       </div>
                       <div className="text-right ml-4">
                         <p className="text-sm font-semibold">
-                          {plan.price} {plan.currency}
+                          ${(plan.priceCents / 100).toFixed(2)}
                         </p>
                         {selectedPlan?.id === plan.id && (
                           <CheckCircle className="h-4 w-4 text-primary ml-auto mt-1" />
@@ -240,10 +240,10 @@ export function AssignESimModal({ user, open, onOpenChange }: AssignESimModalPro
                   <span className="text-sm font-medium">Ready to assign</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  Package "{selectedPlan.name}" will be assigned to {user.email}
+                  Package "{selectedPlan.esimGoName}" will be assigned to {user.email}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  {selectedPlan.region} • {selectedPlan.duration} days • {selectedPlan.price} {selectedPlan.currency}
+                  {selectedPlan.regions[0]} • {selectedPlan.duration} days • ${(selectedPlan.priceCents / 100).toFixed(2)}
                 </div>
               </div>
             ) : (

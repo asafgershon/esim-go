@@ -36,6 +36,8 @@ import { formatDistanceToNow } from "date-fns";
 import { InviteAdminDialog } from "@/components/invite-admin-dialog";
 import { UserDetailsDrawer } from "@/components/user-details-drawer";
 import { AssignESimModal } from "@/components/assign-esim-modal";
+import { PageLayout } from "@/components/common/PageLayout";
+import { Users } from "lucide-react";
 
 type User = {
   id: string;
@@ -326,69 +328,68 @@ export function UsersPage() {
   const users = data?.users || [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-          <p className="text-muted-foreground">
-            Manage and view all platform users
-          </p>
-        </div>
-        <InviteAdminDialog />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>All Users</CardTitle>
-          <CardDescription>
-            A list of all users registered on the platform
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          {loading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
+    <PageLayout.Container>
+      <PageLayout.Header
+        subtitle="Users"
+        description="Manage and view all platform users"
+        icon={<Users className="h-6 w-6" />}
+        actions={<InviteAdminDialog />}
+      />
+      
+      <PageLayout.Content>
+        <Card>
+          <CardHeader>
+            <CardTitle>All Users</CardTitle>
+            <CardDescription>
+              A list of all users registered on the platform
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            {loading ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-[250px]" />
+                      <Skeleton className="h-4 w-[200px]" />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : error ? (
-            <div className="text-center">
-              <p className="text-sm text-destructive">
-                Error loading users: {error.message}
-              </p>
-            </div>
-          ) : (
-            <AdvancedDataTable 
-              columns={columns} 
-              data={users} 
-              searchKey="email"
-              searchPlaceholder="Search users..."
-              enableSorting={true}
-              enableFiltering={true}
-              enablePagination={true}
-              initialPageSize={10}
-            />
-          )}
-        </CardContent>
-      </Card>
-      
-      <UserDetailsDrawer 
-        user={selectedUser}
-        open={isDrawerOpen}
-        onOpenChange={setIsDrawerOpen}
-      />
-      
-      <AssignESimModal
-        user={assignModalUser}
-        open={isAssignModalOpen}
-        onOpenChange={setIsAssignModalOpen}
-      />
-    </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="text-center">
+                <p className="text-sm text-destructive">
+                  Error loading users: {error.message}
+                </p>
+              </div>
+            ) : (
+              <AdvancedDataTable 
+                columns={columns} 
+                data={users} 
+                searchKey="email"
+                searchPlaceholder="Search users..."
+                enableSorting={true}
+                enableFiltering={true}
+                enablePagination={true}
+                initialPageSize={10}
+              />
+            )}
+          </CardContent>
+        </Card>
+        
+        <UserDetailsDrawer 
+          user={selectedUser}
+          open={isDrawerOpen}
+          onOpenChange={setIsDrawerOpen}
+        />
+        
+        <AssignESimModal
+          user={assignModalUser}
+          open={isAssignModalOpen}
+          onOpenChange={setIsAssignModalOpen}
+        />
+      </PageLayout.Content>
+    </PageLayout.Container>
   );
 }
