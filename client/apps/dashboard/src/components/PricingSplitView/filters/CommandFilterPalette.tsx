@@ -272,22 +272,6 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          {/* High Demand filter badge */}
-          {showHighDemandOnly && (
-            <Badge 
-              variant="secondary" 
-              className="h-7 px-3 gap-2 text-xs bg-primary/10 border-primary/20 hover:bg-primary/15"
-            >
-              <TrendingUp className="h-3 w-3" />
-              High Demand
-              <button 
-                onClick={onHighDemandToggle}
-                className="ml-1 hover:bg-primary/20 rounded-full p-0.5 transition-colors"
-              >
-                <X className="h-2.5 w-2.5" />
-              </button>
-            </Badge>
-          )}
         
           {/* Bundle Group filters */}
           {Array.from(selectedFilters.bundleGroups).map(group => (
@@ -546,6 +530,21 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
               </PopoverContent>
             </Popover>
           )}
+
+          {/* High Demand Quick Filter Button */}
+          <Button
+            variant={showHighDemandOnly ? "default" : "outline"}
+            size="sm"
+            onClick={onHighDemandToggle}
+            className={`h-7 px-3 gap-2 ${
+              showHighDemandOnly 
+                ? "bg-primary text-primary-foreground" 
+                : "border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800"
+            }`}
+          >
+            <TrendingUp className="h-3 w-3" />
+            <span className="text-xs font-medium">High Demand</span>
+          </Button>
 
           {/* Add Filter button */}
           <DropdownMenu 
