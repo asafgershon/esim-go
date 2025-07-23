@@ -7,7 +7,7 @@ export const calculateAveragePricePerDay = (bundles: CountryBundle[]): number =>
   if (bundles.length === 0) return 0;
   
   const totalPricePerDay = bundles.reduce((sum, bundle) => 
-    sum + bundle.pricePerDay, 0
+    sum + (bundle.pricePerDay || 0), 0
   );
   
   return totalPricePerDay / bundles.length;

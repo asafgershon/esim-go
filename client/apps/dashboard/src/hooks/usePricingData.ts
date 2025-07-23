@@ -176,7 +176,7 @@ export const usePricingData = () => {
         // Transform the bundles to include additional display fields
         const transformedBundles = bundles.map(bundle => ({
           ...bundle,
-          pricePerDay: bundle.duration > 0 ? bundle.priceAfterDiscount / bundle.duration : 0,
+          pricePerDay: bundle.duration > 0 && bundle.priceAfterDiscount ? bundle.priceAfterDiscount / bundle.duration : 0,
           hasCustomDiscount: bundle.hasCustomDiscount || false,
           configurationLevel: bundle.configurationLevel || 'GLOBAL',
           discountPerDay: bundle.discountPerDay || 0.10,

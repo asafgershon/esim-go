@@ -26,8 +26,14 @@ COPY server/workers ./workers
 # Install all dependencies (skip postinstall scripts since we don't need codegen for workers)
 RUN bun install --frozen-lockfile --ignore-scripts
 
-# No build step needed - Bun runs TypeScript directly
-# Just set the working directory for runtime
+# Build the workspace packages that workers depend on
+WORKDIR /app/packages/utils
+RUN bun run build
+
+WORKDIR /app/packages/esim-go-client  
+RUN bun run build
+
+# Set working directory for workers runtime
 WORKDIR /app/workers
 
 # Set runtime environment
