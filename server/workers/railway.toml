@@ -1,9 +1,8 @@
 [build]
-builder = "nixpacks"
-buildCommand = "cd server/workers && bun install --frozen-lockfile && bun run build"
+builder = "dockerfile"
+dockerfilePath = "server/workers/Dockerfile"
 
 [deploy]
-startCommand = "cd server/workers && bun run start"
 healthcheckPath = "/health"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
