@@ -10,6 +10,7 @@ import type { PricingContext } from './types';
 import { 
   PricingStepType,
   type PricingStep,
+  type BundleSelectionStep,
   type InitializationStep,
   type RuleEvaluationStep,
   type RuleApplicationStep,
@@ -260,11 +261,18 @@ export class PricingRuleEngine {
     if (state.unusedDays > 0) {
       try {
         // Calculate dynamic discount per day based on markup differences
+        // Get available durations from context bundles
+        const availableDurations = context.availableBundles
+          .map(b => b.duration)
+          .filter((value, index, self) => self.indexOf(value) === index) // unique durations
+          .sort((a, b) => a - b);
+        
         const discountPerDay = await this.calculateUnusedDayDiscount(
           state.markup,
-          context.bundle.duration,
-          context.requestedDuration || context.bundle.duration,
-          context.bundle.bundleGroup || context.bundleGroup || 'Standard Fixed'
+          context.bundle!.duration,
+          context.requestedDuration,
+          context.bundle!.group,
+          availableDurations
         );
         
         if (discountPerDay > 0) {
@@ -403,7 +411,17 @@ export class PricingRuleEngine {
       profit,
       maxRecommendedPrice,
       maxDiscountPercentage,
-      appliedRules
+      appliedRules,
+      selectedBundle: {
+        bundleId: context.bundle!.id,
+        bundleName: context.bundle!.name,
+        duration: context.bundle!.duration,
+        reason: context.bundle!.duration === context.requestedDuration ? 'exact_match' : 'next_available'
+      },
+      metadata: {
+        discountPerUnusedDay: state.discountPerUnusedDay,
+        unusedDays: state.unusedDays
+      }
     };
 
     // Yield completed step

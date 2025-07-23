@@ -1,6 +1,7 @@
 import type { PricingRule, AppliedRule, DiscountApplication } from '../types';
 
 export enum PricingStepType {
+  BUNDLE_SELECTION = 'BUNDLE_SELECTION',
   INITIALIZATION = 'INITIALIZATION',
   SYSTEM_RULE_EVALUATION = 'SYSTEM_RULE_EVALUATION',
   SYSTEM_RULE_APPLICATION = 'SYSTEM_RULE_APPLICATION',
@@ -17,6 +18,26 @@ export interface BasePricingStep {
   type: PricingStepType;
   timestamp: Date;
   message: string;
+}
+
+export interface BundleSelectionStep extends BasePricingStep {
+  type: PricingStepType.BUNDLE_SELECTION;
+  data: {
+    requestedDuration: number;
+    availableBundles: Array<{
+      id: string;
+      name: string;
+      duration: number;
+      cost: number;
+    }>;
+    selectedBundle: {
+      id: string;
+      name: string;
+      duration: number;
+      reason: 'exact_match' | 'next_available' | 'best_value';
+    };
+    unusedDays: number;
+  };
 }
 
 export interface InitializationStep extends BasePricingStep {
@@ -99,6 +120,7 @@ export interface CompletedStep extends BasePricingStep {
 }
 
 export type PricingStep = 
+  | BundleSelectionStep
   | InitializationStep
   | RuleEvaluationStep
   | RuleApplicationStep

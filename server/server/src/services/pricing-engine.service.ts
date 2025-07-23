@@ -55,9 +55,8 @@ export class PricingEngineService {
         return this.engine.calculatePrice(context);
       },
       {
-        bundleId: context.bundle.id,
-        country: context.bundle.countryId,
-        duration: context.bundle.duration
+        availableBundlesCount: context.availableBundles?.length || 0,
+        requestedDuration: context.requestedDuration || 0
       }
     );
   }
@@ -109,19 +108,22 @@ export class PricingEngineService {
   validateContext(context: PricingContext): string[] {
     const errors: string[] = [];
     
-    if (!context.bundle) {
-      errors.push('Bundle is required');
+    if (!context.availableBundles || context.availableBundles.length === 0) {
+      errors.push('At least one bundle is required');
     } else {
-      if (!context.bundle.id) errors.push('Bundle ID is required');
-      if (!context.bundle.cost || context.bundle.cost < 0) {
-        errors.push('Bundle cost must be a positive number');
-      }
-      if (!context.bundle.duration || context.bundle.duration < 1) {
-        errors.push('Bundle duration must be at least 1 day');
-      }
+      // Validate each bundle
+      context.availableBundles.forEach((bundle, index) => {
+        if (!bundle.id) errors.push(`Bundle ${index}: ID is required`);
+        if (!bundle.cost || bundle.cost < 0) {
+          errors.push(`Bundle ${index}: cost must be a positive number`);
+        }
+        if (!bundle.duration || bundle.duration < 1) {
+          errors.push(`Bundle ${index}: duration must be at least 1 day`);
+        }
+      });
     }
     
-    if (context.requestedDuration && context.requestedDuration < 1) {
+    if (!context.requestedDuration || context.requestedDuration < 1) {
       errors.push('Requested duration must be at least 1 day');
     }
     
@@ -135,13 +137,15 @@ export class PricingEngineService {
     selectedBundleMarkup: number,
     selectedBundleDuration: number,
     requestedDuration: number,
-    bundleGroup: string
+    bundleGroup: string,
+    availableDurations: number[]
   ): Promise<number> {
     return this.engine.calculateUnusedDayDiscount(
       selectedBundleMarkup,
       selectedBundleDuration,
       requestedDuration,
-      bundleGroup
+      bundleGroup,
+      availableDurations
     );
   }
 
@@ -239,7 +243,7 @@ export class PricingEngineService {
    * Helper method for GraphQL resolvers
    */
   static createContext(params: {
-    bundle: {
+    availableBundles: Array<{
       id: string;
       name: string;
       cost: number;
@@ -251,7 +255,8 @@ export class PricingEngineService {
       group: string;
       isUnlimited: boolean;
       dataAmount: string;
-    };
+    }>;
+    requestedDuration: number;
     user?: {
       id: string;
       isNew?: boolean;
@@ -260,19 +265,13 @@ export class PricingEngineService {
       segment?: string;
     };
     paymentMethod?: string;
-    requestedDuration?: number;
   }): PricingContext {
     return {
-      bundle: params.bundle,
+      availableBundles: params.availableBundles,
+      requestedDuration: params.requestedDuration,
       user: params.user,
       paymentMethod: params.paymentMethod || 'israeli_card',
-      requestedDuration: params.requestedDuration,
-      currentDate: new Date(),
-      // Add shortcuts for convenience
-      country: params.bundle.countryId,
-      region: params.bundle.regionName,
-      bundleGroup: params.bundle.group,
-      duration: params.bundle.duration
+      currentDate: new Date()
     };
   }
 }

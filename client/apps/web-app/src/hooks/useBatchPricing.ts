@@ -1,7 +1,7 @@
 import { useLazyQuery } from '@apollo/client';
 import { CALCULATE_PRICES_BATCH } from '@/lib/graphql/mutations';
 import { CalculatePricesBatchQuery } from '@/__generated__/graphql';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 
 interface UseBatchPricingParams {
   regionId?: string;
@@ -23,12 +23,25 @@ export function useBatchPricing({ regionId, countryId, maxDays = 30 }: UseBatchP
     useLazyQuery<CalculatePricesBatchQuery>(CALCULATE_PRICES_BATCH);
   
   const [pricingCache, setPricingCache] = useState<Map<number, PricingData>>(new Map());
-  const [isInitializing, setIsInitializing] = useState(false);
+  const isRequestingRef = useRef(false);
+  const lastRequestKeyRef = useRef<string>('');
 
   // Fetch all prices when parameters change
   useEffect(() => {
-    if ((regionId || countryId) && !batchLoading && !isInitializing) {
-      setIsInitializing(true);
+    const requestKey = `${regionId || ''}-${countryId || ''}-${maxDays}`;
+    
+    // Only trigger when we have a region/country
+    if ((regionId || countryId)) {
+      // Avoid duplicate requests for the same parameters
+      if (isRequestingRef.current || batchLoading || lastRequestKeyRef.current === requestKey) {
+        return;
+      }
+      
+      isRequestingRef.current = true;
+      lastRequestKeyRef.current = requestKey;
+      
+      // Clear existing cache when parameters change
+      setPricingCache(new Map());
       
       // Create inputs for all days from 1 to maxDays
       const inputs = Array.from({ length: maxDays }, (_, i) => ({
@@ -40,10 +53,14 @@ export function useBatchPricing({ regionId, countryId, maxDays = 30 }: UseBatchP
       calculatePricesBatch({
         variables: { inputs }
       }).finally(() => {
-        setIsInitializing(false);
+        isRequestingRef.current = false;
       });
+    } else {
+      // Reset when no region/country
+      lastRequestKeyRef.current = '';
+      setPricingCache(new Map());
     }
-  }, [regionId, countryId, maxDays, calculatePricesBatch, batchLoading, isInitializing]);
+  }, [regionId, countryId, maxDays, batchLoading]);
 
   // Process batch data into cache
   useEffect(() => {
@@ -80,12 +97,12 @@ export function useBatchPricing({ regionId, countryId, maxDays = 30 }: UseBatchP
 
   // Check if data is ready
   const isReady = useMemo(() => {
-    return pricingCache.size > 0 && !batchLoading && !isInitializing;
-  }, [pricingCache.size, batchLoading, isInitializing]);
+    return pricingCache.size > 0 && !batchLoading && !isRequestingRef.current;
+  }, [pricingCache.size, batchLoading]);
 
   return {
     getPricing,
-    loading: batchLoading || isInitializing,
+    loading: batchLoading || isRequestingRef.current,
     error,
     isReady,
     pricingCache

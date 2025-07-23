@@ -1,3 +1,5 @@
+"use client";
+
 import React, { ReactNode, createContext, useContext, forwardRef } from 'react';
 import { ScrollArea } from './scroll-area';
 import { Skeleton } from './skeleton';

@@ -82,7 +82,7 @@ async function debugPricingIssue() {
         logger.info('🧪 Testing pricing calculation with sample bundle');
         
         const pricingContext = PricingEngineService.createContext({
-          bundle: {
+          availableBundles: [{
             id: testBundle.esim_go_name,
             name: testBundle.esim_go_name,
             cost: testBundle.price_cents / 100, // Convert cents to dollars
@@ -94,7 +94,8 @@ async function debugPricingIssue() {
             group: 'Standard Fixed',
             isUnlimited: false,
             dataAmount: '1024'
-          },
+          }],
+          requestedDuration: testBundle.duration || 7,
           paymentMethod: 'israeli_card'
         });
 
