@@ -558,7 +558,8 @@ export const resolvers: Resolvers = {
             });
             return {
               countryName,
-              countryId: countryId
+              countryId: countryId,
+              bundleCount: bundleCount
             };
           })
           .filter(item => {

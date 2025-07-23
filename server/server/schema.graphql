@@ -613,6 +613,7 @@ enum ConfigurationLevel {
 type BundlesByCountry {
   countryName: String!
   countryId: String!
+  bundleCount: Int!
 }
 
 # Individual bundles for a specific country

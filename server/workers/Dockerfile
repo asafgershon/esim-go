@@ -6,28 +6,32 @@ RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-# Copy root package files
-COPY package.json bun.lockb ./
-COPY server/packages ./server/packages
-COPY server/server/src/database.types.ts ./server/server/src/
-COPY server/server/src/repositories ./server/server/src/repositories
-COPY server/server/src/lib/logger.ts ./server/server/src/lib/
+# Copy the monorepo root files from server directory
+COPY server/package.json ./
+COPY server/turbo.json ./
+COPY server/bun.lock ./
+
+# Copy packages that workers depend on
+COPY server/packages ./packages
+COPY server/server/src/database.types.ts ./server/src/database.types.ts
+COPY server/server/src/repositories ./server/src/repositories
+COPY server/server/src/lib/logger.ts ./server/src/lib/logger.ts
 
 # Copy workers package
-COPY server/workers ./server/workers
+COPY server/workers ./workers
 
 # Install all dependencies
 RUN bun install --frozen-lockfile
 
 # Build the packages
-WORKDIR /app/server/packages/utils
+WORKDIR /app/packages/utils
 RUN bun run build
 
-WORKDIR /app/server/packages/esim-go-client
+WORKDIR /app/packages/esim-go-client
 RUN bun run build
 
 # Build workers
-WORKDIR /app/server/workers
+WORKDIR /app/workers
 RUN bun run build
 
 # Set runtime environment

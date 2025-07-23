@@ -744,6 +744,7 @@ export const GET_BUNDLES_BY_COUNTRY = gql(`
     bundlesByCountry {
       countryName
       countryId
+      bundleCount
     }
   }
 `)
