@@ -86,14 +86,8 @@ const UnifiedPricingRulesPage: React.FC = () => {
     // Mobile: Use Sheet component for testing panel
     return (
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Pricing Rules Management</h1>
-            <p className="text-gray-600 mt-1">
-              Comprehensive pricing rule management
-            </p>
-          </div>
+        {/* Testing Panel Toggle */}
+        <div className="flex justify-end">
           <Button
             variant={showTestingPanel ? 'default' : 'outline'}
             size="sm"
@@ -152,14 +146,8 @@ const UnifiedPricingRulesPage: React.FC = () => {
   // Desktop: Split view layout
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pricing Rules Management</h1>
-          <p className="text-gray-600 mt-1">
-            Comprehensive pricing rule management including system rules, markup configuration, and processing fees
-          </p>
-        </div>
+      {/* Testing Panel Toggle */}
+      <div className="flex justify-end mb-4">
         <Button
           variant={showTestingPanel ? 'default' : 'outline'}
           size="sm"
