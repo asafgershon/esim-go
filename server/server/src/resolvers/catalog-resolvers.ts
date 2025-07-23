@@ -324,7 +324,7 @@ export const catalogResolvers: Partial<Resolvers> = {
           });
 
           // Map to CountryBundle format
-          return countryBundles.map((bundle: any) => ({
+          return countryBundles.map((bundle) => ({
             bundleName: bundle?.esim_go_name || 'Bundle',
             countryName: countryId,
             countryId: countryId,
@@ -340,7 +340,7 @@ export const catalogResolvers: Partial<Resolvers> = {
             finalRevenue: ((bundle?.price_cents || 0) / 100),
             netProfit: 0,
             currency: 'USD',
-            pricePerDay: 0,
+            pricePerDay: (bundle.price_cents ? bundle.price_cents / (bundle.duration || 1) : 0) / 100,
             hasCustomDiscount: false,
             configurationLevel: 'GLOBAL' as any,
             discountPerDay: 0,
@@ -405,9 +405,10 @@ export const catalogResolvers: Partial<Resolvers> = {
     },
 
     // Countries with aggregated bundle data
-    bundlesCountries: async (_, __, context: Context) => {
+    bundlesCountries: async (_, { includeBundles = false }, context: Context) => {
       try {
         logger.info("Fetching bundles by country aggregation", {
+          includeBundles,
           operationType: "bundles-countries-fetch",
         });
 
@@ -423,11 +424,13 @@ export const catalogResolvers: Partial<Resolvers> = {
           countryId: item.countryId,
           countryName: countryMap.get(item.countryId) || item.countryId,
           bundleCount: item.bundleCount,
-          priceRange: item.priceRange
+          pricingRange: item.pricingRange,
+          bundles: null // Will be populated by field resolver if requested
         }));
 
         logger.info("Bundles by country aggregation fetched successfully", {
           countryCount: bundlesCountries.length,
+          includeBundles,
           operationType: "bundles-countries-fetch",
         });
 
@@ -714,7 +717,7 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Use catalogue datasource to get organization groups
-        const bundleGroups = await context.dataSources.catalogue.getOrganizationGroups();
+        const bundleGroups = await context.repositories.bundles.getAvailableBundleGroups();
 
         logger.info("Bundle groups fetched successfully (legacy)", {
           groupCount: bundleGroups.length,
@@ -1024,6 +1027,142 @@ export const catalogResolvers: Partial<Resolvers> = {
           syncDuration: duration,
           syncedAt: new Date().toISOString(),
         };
+      }
+    },
+  },
+
+  BundlesByCountry: {
+    bundles: async (parent: any, _, context: Context) => {
+      try {
+        // Only calculate bundles if they weren't already provided or if explicitly requested
+        if (parent.bundles !== null) {
+          return parent.bundles;
+        }
+
+        logger.info("Calculating bundles with pricing for country", {
+          countryId: parent.countryId,
+          operationType: "bundles-countries-field-resolver",
+        });
+
+        // Get bundles for this country
+        const countryBundles = await context.repositories.bundles.getBundlesByCountry(parent.countryId);
+        
+        if (!countryBundles || countryBundles.length === 0) {
+          logger.warn("No bundles found for country in field resolver", {
+            countryId: parent.countryId,
+            operationType: "bundles-countries-field-resolver",
+          });
+          return [];
+        }
+
+        // Get pricing engine service
+        const engineService = getPricingEngineService(context);
+
+        // Calculate pricing for each bundle using its own duration
+        const bundlesWithPricing = await Promise.all(
+          countryBundles.map(async (bundle: any) => {
+            try {
+              // Map bundle for pricing engine
+              const availableBundles = [{
+                id: bundle?.esim_go_name || `${parent.countryId}-${bundle?.duration}d`,
+                name: bundle?.esim_go_name || '',
+                cost: ((bundle?.price_cents || 0) / 100),
+                duration: bundle?.duration || 1,
+                countryId: parent.countryId,
+                countryName: parent.countryName,
+                regionId: 'global',
+                regionName: 'Global',
+                group: bundle?.bundle_group || 'Standard Fixed',
+                isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+                dataAmount: bundle?.data_amount?.toString() || '0'
+              }];
+
+              // Create pricing context using bundle's own duration as requestedDuration
+              const pricingContext = PricingEngineService.createContext({
+                availableBundles,
+                requestedDuration: bundle?.duration || 1,
+                paymentMethod: 'ISRAELI_CARD' // Default payment method
+              });
+
+              // Calculate price using rule engine
+              const calculation = await engineService.calculatePrice(pricingContext);
+
+              // Map to CountryBundle format with calculated pricing
+              return {
+                bundleName: bundle?.esim_go_name || 'Bundle',
+                countryName: parent.countryName,
+                countryId: parent.countryId,
+                duration: bundle?.duration || 0,
+                cost: calculation.baseCost,
+                costPlus: calculation.baseCost + calculation.markup,
+                totalCost: calculation.subtotal,
+                discountRate: calculation.totalDiscount > 0 ? (calculation.totalDiscount / calculation.subtotal) : 0,
+                discountValue: calculation.totalDiscount,
+                priceAfterDiscount: calculation.priceAfterDiscount,
+                processingRate: calculation.processingRate,
+                processingCost: calculation.processingFee,
+                finalRevenue: calculation.finalRevenue,
+                netProfit: calculation.profit,
+                currency: 'USD',
+                pricePerDay: (calculation.priceAfterDiscount / (bundle?.duration || 1)),
+                hasCustomDiscount: calculation.discounts.length > 0,
+                configurationLevel: 'GLOBAL' as any,
+                discountPerDay: calculation.metadata?.discountPerUnusedDay || 0,
+                planId: bundle?.esim_go_name || 'bundle',
+                isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+                dataAmount: bundle?.data_amount?.toString() || '0',
+                bundleGroup: bundle?.bundle_group || 'Standard Fixed'
+              };
+            } catch (bundleError) {
+              logger.error(`Error calculating pricing for bundle in country ${parent.countryId}`, bundleError as Error, {
+                bundleName: bundle?.esim_go_name,
+                countryId: parent.countryId,
+                operationType: "bundles-countries-field-resolver",
+              });
+              
+              // Return bundle with basic pricing as fallback
+              return {
+                bundleName: bundle?.esim_go_name || 'Bundle',
+                countryName: parent.countryName,
+                countryId: parent.countryId,
+                duration: bundle?.duration || 0,
+                cost: ((bundle?.price_cents || 0) / 100),
+                costPlus: ((bundle?.price_cents || 0) / 100),
+                totalCost: ((bundle?.price_cents || 0) / 100),
+                discountRate: 0,
+                discountValue: 0,
+                priceAfterDiscount: ((bundle?.price_cents || 0) / 100),
+                processingRate: 0,
+                processingCost: 0,
+                finalRevenue: ((bundle?.price_cents || 0) / 100),
+                netProfit: 0,
+                currency: 'USD',
+                pricePerDay: (bundle.price_cents ? bundle.price_cents / (bundle.duration || 1) : 0) / 100,
+                hasCustomDiscount: false,
+                configurationLevel: 'GLOBAL' as any,
+                discountPerDay: 0,
+                planId: bundle?.esim_go_name || 'bundle',
+                isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+                dataAmount: bundle?.data_amount?.toString() || '0',
+                bundleGroup: bundle?.bundle_group || 'Standard Fixed'
+              };
+            }
+          })
+        );
+
+        logger.info("Bundles with pricing calculated successfully", {
+          countryId: parent.countryId,
+          bundleCount: bundlesWithPricing.length,
+          operationType: "bundles-countries-field-resolver",
+        });
+
+        return bundlesWithPricing;
+      } catch (error) {
+        logger.error("Failed to calculate bundles with pricing", error as Error, {
+          countryId: parent.countryId,
+          operationType: "bundles-countries-field-resolver",
+        });
+        return [];
       }
     },
   },

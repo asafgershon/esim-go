@@ -565,14 +565,78 @@ export const GET_PROCESSING_FEE_CONFIGURATIONS = gql(`
 
 
 export const GET_BUNDLES_BY_COUNTRY = gql(`
-  query GetBundlesByCountry {
-    bundlesCountries {
+  query GetBundlesByCountry($includeBundles: Boolean = false) {
+    bundlesCountries(includeBundles: $includeBundles) {
       countryName
       countryId
       bundleCount
       pricingRange {
         min
         max
+      }
+      bundles @include(if: $includeBundles) {
+        bundleName
+        countryName
+        countryId
+        duration
+        cost
+        costPlus
+        totalCost
+        discountRate
+        discountValue
+        priceAfterDiscount
+        processingRate
+        processingCost
+        finalRevenue
+        netProfit
+        currency
+        pricePerDay
+        hasCustomDiscount
+        configurationLevel
+        discountPerDay
+        planId
+        isUnlimited
+        dataAmount
+        bundleGroup
+      }
+    }
+  }
+`)
+
+export const GET_COUNTRIES_WITH_BUNDLES = gql(`
+  query GetCountriesWithBundles {
+    bundlesCountries(includeBundles: true) {
+      countryName
+      countryId
+      bundleCount
+      pricingRange {
+        min
+        max
+      }
+      bundles {
+        bundleName
+        countryName
+        countryId
+        duration
+        cost
+        costPlus
+        totalCost
+        discountRate
+        discountValue
+        priceAfterDiscount
+        processingRate
+        processingCost
+        finalRevenue
+        netProfit
+        currency
+        pricePerDay
+        hasCustomDiscount
+        configurationLevel
+        discountPerDay
+        planId
+        isUnlimited
+        dataAmount
+        bundleGroup
       }
     }
   }

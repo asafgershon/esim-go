@@ -33,7 +33,7 @@ type Query {
   bundles(countryId: String, regionId: String): [CountryBundle!]!
   
   # Countries with aggregated bundle data
-  bundlesCountries: [BundlesByCountry!]!
+  bundlesCountries(includeBundles: Boolean = false): [BundlesByCountry!]!
   
   # Regions with aggregated bundle data
   bundlesRegions: [BundlesByRegion!]!
@@ -586,6 +586,7 @@ type BundlesByCountry {
   countryId: String!
   bundleCount: Int!
   pricingRange: PricingRange
+  bundles: [CountryBundle!]
 }
 
 type PricingRange {
