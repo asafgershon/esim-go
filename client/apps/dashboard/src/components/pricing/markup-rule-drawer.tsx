@@ -100,7 +100,7 @@ export function MarkupRuleDrawer({ open, onOpenChange, onSave }: MarkupRuleDrawe
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto">
-        <SheetHeader>
+        <SheetHeader className="px-6">
           <SheetTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-green-600" />
             Add Markup Rule
@@ -110,7 +110,7 @@ export function MarkupRuleDrawer({ open, onOpenChange, onSave }: MarkupRuleDrawe
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 px-6 py-4">
           {/* Basic Information */}
           <div className="space-y-4">
             <div className="space-y-2">
@@ -250,7 +250,7 @@ export function MarkupRuleDrawer({ open, onOpenChange, onSave }: MarkupRuleDrawe
           </Card>
         </div>
 
-        <SheetFooter className="sticky bottom-0 bg-background pt-4 mt-6 border-t">
+        <SheetFooter className="sticky bottom-0 bg-background px-6 pt-4 mt-6 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

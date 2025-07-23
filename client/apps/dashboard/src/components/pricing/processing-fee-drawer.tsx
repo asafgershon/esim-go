@@ -113,7 +113,7 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto">
-        <SheetHeader>
+        <SheetHeader className="px-6">
           <SheetTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-purple-600" />
             Add Processing Fee Rule
@@ -123,7 +123,7 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 px-6 py-4">
           {/* Basic Information */}
           <div className="space-y-4">
             <div className="space-y-2">
@@ -311,7 +311,7 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
           </Card>
         </div>
 
-        <SheetFooter className="sticky bottom-0 bg-background pt-4 mt-6 border-t">
+        <SheetFooter className="sticky bottom-0 bg-background px-6 pt-4 mt-6 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
