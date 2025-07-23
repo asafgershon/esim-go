@@ -49,7 +49,7 @@ export class CatalogueDataSourceV2 {
         this.logger.info('Searching plans from persistent storage', {
           country: criteria.country,
           duration: criteria.duration,
-          bundleGroup: criteria.bundleGroup,
+          bundleGroup: criteria.bundleGroups,
           dataAmount: criteria.dataAmount,
           limit: criteria.limit,
         });

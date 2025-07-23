@@ -52,10 +52,7 @@ type Query {
   currentProcessingFeeConfiguration: ProcessingFeeConfiguration @auth(role: "ADMIN")
   processingFeeConfigurations(limit: Int = 10, offset: Int = 0, includeInactive: Boolean = false): [ProcessingFeeConfiguration!]! @auth(role: "ADMIN")
   processingFeeConfiguration(id: ID!): ProcessingFeeConfiguration @auth(role: "ADMIN")
-  
-  # Markup configurations
-  markupConfig: [MarkupConfig!]! @auth(role: "ADMIN")
-  
+    
   # Bundle groups
   bundleGroups: [String!]! @auth(role: "ADMIN")
   
@@ -111,11 +108,6 @@ type Mutation {
   clonePricingRule(id: ID!, newName: String!): PricingRule!
   reorderPricingRules(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
   
-  
-  # Markup configuration management
-  createMarkupConfig(input: CreateMarkupConfigInput!): MarkupConfig @auth(role: "ADMIN")
-  updateMarkupConfig(id: ID!, input: UpdateMarkupConfigInput!): MarkupConfig @auth(role: "ADMIN")
-  deleteMarkupConfig(id: ID!): DeleteMarkupConfigResponse @auth(role: "ADMIN")
   
   # Package Assignment
   assignPackageToUser(userId: ID!, planId: ID!): AssignPackageResponse @auth(role: "ADMIN")
@@ -740,6 +732,8 @@ type PricingRuleCalculation {
   
   # Applied rules
   appliedRules: [AppliedRule!]!
+
+  selectedBundle: CountryBundle!
 }
 
 type DiscountApplication {
@@ -868,35 +862,6 @@ input ProcessingFeeConfigurationInput {
   notes: String
 }
 
-# Markup Configuration Types
-type MarkupConfig {
-  id: ID!
-  bundleGroup: String!              # Bundle group name (e.g., "Standard - Unlimited Essential")
-  durationDays: Int!                # Duration in days
-  markupAmount: Float!              # Fixed markup amount in USD
-  createdAt: DateTime!
-  updatedAt: DateTime!
-}
-
-# Input for creating markup configuration
-input CreateMarkupConfigInput {
-  bundleGroup: String!
-  durationDays: Int!
-  markupAmount: Float!
-}
-
-# Input for updating markup configuration
-input UpdateMarkupConfigInput {
-  bundleGroup: String
-  durationDays: Int
-  markupAmount: Float
-}
-
-# Response for delete operations
-type DeleteMarkupConfigResponse {
-  success: Boolean!
-  message: String
-}
 
 # Order Validation Types
 input ValidateOrderInput {

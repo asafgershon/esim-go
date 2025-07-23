@@ -18,16 +18,19 @@ import {
   UserRepository,
   HighDemandCountryRepository,
   PricingRulesRepository,
+  BundleRepository,
 } from "../repositories";
 import { TripRepository } from "../repositories/trip.repository";
 import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { CatalogSyncServiceV2 } from "../services";
 
 export type Context = {
   auth: SupabaseAuthContext;
   services: {
     db: SupabaseClient;
     redis: Redis;
+    syncs: CatalogSyncServiceV2;
     pubsub?: RedisPubSub;
   };
   repositories: {
@@ -38,6 +41,7 @@ export type Context = {
     trips: TripRepository;
     highDemandCountries: HighDemandCountryRepository;
     syncJob: SyncJobRepository;
+    bundles: BundleRepository;
     pricingRules: PricingRulesRepository;
   };
   dataSources: {

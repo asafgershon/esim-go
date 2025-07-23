@@ -9,12 +9,17 @@ import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import type { Resolvers } from "../types";
 
-const logger = createLogger({ 
-  component: 'AuthResolvers',
-  operationType: 'resolver'
+const logger = createLogger({
+  component: "AuthResolvers",
+  operationType: "resolver",
 });
 
 export const authResolvers: Partial<Resolvers> = {
+  Query: {
+    me: async (_, __, context: Context) => {
+      return context.auth.user;
+    },
+  },
   Mutation: {
     signUp: async (_, { input }) => {
       try {
@@ -310,4 +315,4 @@ export const authResolvers: Partial<Resolvers> = {
       }
     },
   },
-}; 
+};

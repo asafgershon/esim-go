@@ -266,6 +266,8 @@ export const esimResolvers: Partial<Resolvers> = {
         });
       }
     },
+
+    
   },
 
   Mutation: {
@@ -465,6 +467,15 @@ export const esimResolvers: Partial<Resolvers> = {
         error: "Not implemented yet",
         esim: null,
       };
+    },
+  },
+
+  Subscription: {
+    // TODO: Implement real-time eSIM status updates
+    esimStatusUpdated: {
+      subscribe: () => {
+        throw new Error("Subscriptions not implemented yet");
+      },
     },
   },
 };

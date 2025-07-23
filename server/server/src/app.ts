@@ -23,7 +23,7 @@ import {
   supabaseAdmin,
 } from "./context/supabase-auth";
 import {
-  CatalogueDataSource,
+  CatalogueDataSourceV2,
   CountriesDataSource,
   ESIMsDataSource,
   InventoryDataSource,
@@ -33,6 +33,7 @@ import {
 } from "./datasources/esim-go";
 import { logger } from "./lib/logger";
 import {
+  BundleRepository,
   CheckoutSessionRepository,
   ESIMRepository,
   HighDemandCountryRepository,
@@ -78,7 +79,7 @@ async function startServer() {
     const highDemandCountryRepository = new HighDemandCountryRepository();
     const syncJobRepository = new SyncJobRepository();
     const pricingRulesRepository = new PricingRulesRepository();
-
+    const bundleRepository = new BundleRepository();
     // Create an Express app and HTTP server
     const app = express();
     const httpServer = createServer(app);
@@ -111,6 +112,7 @@ async function startServer() {
               redis,
               pubsub,
               db: supabaseAdmin,
+              syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -123,7 +125,7 @@ async function startServer() {
               pricingRules: pricingRulesRepository,
             },
             dataSources: {
-              catalogue: new CatalogueDataSource({ cache: redis }),
+              catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
               orders: new OrdersDataSource({ cache: redis }),
               esims: new ESIMsDataSource({ cache: redis }),
               countries: new CountriesDataSource({ cache: redis }),
@@ -276,6 +278,8 @@ async function startServer() {
             services: {
               redis,
               pubsub,
+              syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
+              db: supabaseAdmin,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -285,9 +289,10 @@ async function startServer() {
               trips: tripRepository,
               highDemandCountries: highDemandCountryRepository,
               syncJob: syncJobRepository,
+              bundles: bundleRepository,
             },
             dataSources: {
-              catalogue: new CatalogueDataSource({ cache: redis }),
+              catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
               orders: new OrdersDataSource({ cache: redis }),
               esims: new ESIMsDataSource({ cache: redis }),
               countries: new CountriesDataSource({ cache: redis }),
@@ -312,23 +317,6 @@ async function startServer() {
         wsEndpoint: `ws://localhost:${PORT}/graphql`,
         port: PORT,
         operationType: "server-startup",
-      });
-
-      // Start catalog sync service V2
-      // Note: The actual sync will be performed by the worker system
-      // This just creates jobs in the database for workers to process
-      const catalogueDataSource = new CatalogueDataSource({ cache: redis });
-      // Commenting out old sync service to prevent conflicts
-      // const catalogSyncService = new CatalogSyncService(catalogueDataSource, redis);
-      // catalogSyncService.startPeriodicSync();
-
-      // Initialize V2 sync service (for creating jobs)
-      const catalogSyncServiceV2 = new CatalogSyncServiceV2(
-        env.ESIM_GO_API_KEY
-      );
-      logger.info("Catalog Sync Service V2 initialized", {
-        component: "CatalogSyncServiceV2",
-        operationType: "startup",
       });
     });
   } catch (error) {

@@ -123,6 +123,10 @@ export class PricingRuleEngine {
     context.region = selectedBundle.regionId;
     context.bundleGroup = selectedBundle.group;
     context.duration = selectedBundle.duration;
+
+    if (!context.bundle) {
+      throw new Error('No bundle found for context');
+    }
     
     this.logger.info('Starting price calculation with selected bundle', {
       bundleId: selectedBundle.id,
@@ -258,7 +262,7 @@ export class PricingRuleEngine {
     }
 
     // Apply unused days discount if applicable using markup-based formula
-    if (state.unusedDays > 0) {
+    if ((state.unusedDays  || 0) > 0) {
       try {
         // Calculate dynamic discount per day based on markup differences
         // Get available durations from context bundles
