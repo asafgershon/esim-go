@@ -227,9 +227,22 @@ export function CountryPricingSplitView({
   // Get summary info for a country
   const getCountrySummary = (country: BundlesByCountryWithBundles) => {
     if (!country.bundles) {
+      // When bundles aren't loaded yet, use the pricing range from the aggregation
+      const pricingRange = country.pricingRange;
+      if (pricingRange && pricingRange.min !== undefined && pricingRange.max !== undefined) {
+        return {
+          count: country.bundleCount || 0,
+          range: {
+            min: pricingRange.min / 100, // Convert cents to dollars
+            max: pricingRange.max / 100, // Convert cents to dollars
+          },
+          status: "pending" as const,
+        };
+      }
+      
       return {
         count: country.bundleCount || 0,
-        range: "Not loaded",
+        range: { min: 0, max: 0 },
         status: "pending" as const,
       };
     }
@@ -241,7 +254,7 @@ export function CountryPricingSplitView({
     if (prices.length === 0) {
       return {
         count,
-        range: "No pricing data",
+        range: { min: 0, max: 0 },
         status: "loaded" as const,
       };
     }
@@ -251,7 +264,7 @@ export function CountryPricingSplitView({
     
     return {
       count,
-      range: minPrice === maxPrice ? `$${minPrice.toFixed(2)}` : `$${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`,
+      range: { min: minPrice, max: maxPrice },
       status: "loaded" as const,
     };
   };

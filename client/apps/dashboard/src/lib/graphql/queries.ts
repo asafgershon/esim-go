@@ -131,54 +131,7 @@ export const CLONE_PRICING_RULE = gql(`
   }
 `)
 
-// Markup Configuration Queries
-export const GET_MARKUP_CONFIG = gql(`
-  query GetMarkupConfig {
-    markupConfig {
-      id
-      bundleGroup
-      durationDays
-      markupAmount
-      createdAt
-      updatedAt
-    }
-  }
-`)
 
-export const CREATE_MARKUP_CONFIG = gql(`
-  mutation CreateMarkupConfig($input: CreateMarkupConfigInput!) {
-    createMarkupConfig(input: $input) {
-      id
-      bundleGroup
-      durationDays
-      markupAmount
-      createdAt
-      updatedAt
-    }
-  }
-`)
-
-export const UPDATE_MARKUP_CONFIG = gql(`
-  mutation UpdateMarkupConfig($id: ID!, $input: UpdateMarkupConfigInput!) {
-    updateMarkupConfig(id: $id, input: $input) {
-      id
-      bundleGroup
-      durationDays
-      markupAmount
-      createdAt
-      updatedAt
-    }
-  }
-`)
-
-export const DELETE_MARKUP_CONFIG = gql(`
-  mutation DeleteMarkupConfig($id: ID!) {
-    deleteMarkupConfig(id: $id) {
-      success
-      message
-    }
-  }
-`)
 
 export const GET_TRIPS = gql(`
   query GetTrips {
@@ -617,6 +570,10 @@ export const GET_BUNDLES_BY_COUNTRY = gql(`
       countryName
       countryId
       bundleCount
+      pricingRange {
+        min
+        max
+      }
     }
   }
 `)

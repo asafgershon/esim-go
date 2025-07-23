@@ -585,6 +585,12 @@ type BundlesByCountry {
   countryName: String!
   countryId: String!
   bundleCount: Int!
+  pricingRange: PricingRange
+}
+
+type PricingRange {
+  min: Float!
+  max: Float!
 }
 
 # Bundles by Region Types - aggregated region data

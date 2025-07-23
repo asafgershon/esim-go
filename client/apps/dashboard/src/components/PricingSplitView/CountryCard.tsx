@@ -12,6 +12,7 @@ import {
 } from "@workspace/ui";
 import { TrendingUp, MapPin } from "lucide-react";
 import { BundlesByCountryWithBundles } from "./types";
+import { PricingRange } from "@/__generated__/graphql";
 
 interface CountryCardProps {
   country: BundlesByCountryWithBundles;
@@ -23,7 +24,7 @@ interface CountryCardProps {
   toggleLoading: boolean;
   summary: {
     count: number;
-    range: string;
+    range: PricingRange;
     status: "pending" | "loaded";
   };
 }
@@ -99,7 +100,11 @@ export const CountryCard: React.FC<CountryCardProps> = ({
               Loading bundles...
             </span>
           ) : (
-            `${summary.count} bundles • ${summary.range}`
+            `${summary.count} bundles • ${
+              summary.range.min === summary.range.max 
+                ? `$${summary.range.min.toFixed(2)}`
+                : `$${summary.range.min.toFixed(2)} - $${summary.range.max.toFixed(2)}`
+            }`
           )}
         </CardDescription>
       </CardHeader>

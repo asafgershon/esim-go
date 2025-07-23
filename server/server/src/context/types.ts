@@ -3,7 +3,7 @@ import type { Redis } from "ioredis";
 import type { RedisPubSub } from "graphql-redis-subscriptions";
 import type { SupabaseAuthContext } from "./supabase-auth";
 import type {
-  CatalogueDataSource,
+  CatalogueDataSourceV2,
   OrdersDataSource,
   ESIMsDataSource,
   CountriesDataSource,
@@ -45,7 +45,7 @@ export type Context = {
     pricingRules: PricingRulesRepository;
   };
   dataSources: {
-    catalogue: CatalogueDataSource;
+    catalogue: CatalogueDataSourceV2;
     orders: OrdersDataSource;
     esims: ESIMsDataSource;
     countries: CountriesDataSource;

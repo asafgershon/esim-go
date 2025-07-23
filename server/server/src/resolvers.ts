@@ -39,49 +39,74 @@ export const resolvers: Resolvers = {
     // Catalog resolvers are merged from catalog-resolvers.ts
     ...catalogResolvers.Query!,
     countries: async (_, __, context: Context) => {
-      const countries = await context.dataSources.countries.getCountries();
+      try {
+        // Get countries with bundle data instead of basic countries
+        const bundleCountries = await context.repositories.bundles.getBundlesByCountryAggregation();
+        
+        // Get full country data for mapping
+        const allCountries = await context.dataSources.countries.getCountries();
+        const countryMap = new Map(allCountries.map((country: any) => [country.iso, country]));
+        
+        // Map bundle countries to full country data
+        const result = [];
+        for (const bundleCountry of bundleCountries) {
+          const countryData = countryMap.get(bundleCountry.countryId);
+          if (countryData) {
+            result.push({
+              iso: countryData.iso,
+              name: countryData.country,
+              nameHebrew: countryData.hebrewName || countryData.country,
+              region: countryData.region,
+              flag: countryData.flag,
+            });
+          }
+        }
+        return result;
+      } catch (error) {
+        console.error("Error fetching countries with bundle data:", error);
+        // Fallback to original implementation
+        const countries = await context.dataSources.countries.getCountries();
 
-      // List of known regions to filter out from countries list
-      const knownRegions = new Set([
-        "Africa",
-        "Asia",
-        "Europe",
-        "North America",
-        "South America",
-        "Oceania",
-        "Antarctica",
-        "Middle East",
-        "Caribbean",
-        "Central America",
-        "Western Europe",
-        "Eastern Europe",
-        "Southeast Asia",
-        "East Asia",
-        "Central Asia",
-        "Southern Africa",
-        "Northern Africa",
-        "Western Africa",
-        "Eastern Africa",
-        "Central Africa",
-      ]);
+        // List of known regions to filter out from countries list
+        const knownRegions = new Set([
+          "Africa",
+          "Asia",
+          "Europe",
+          "North America",
+          "South America",
+          "Oceania",
+          "Antarctica",
+          "Middle East",
+          "Caribbean",
+          "Central America",
+          "Western Europe",
+          "Eastern Europe",
+          "Southeast Asia",
+          "East Asia",
+          "Central Asia",
+          "Southern Africa",
+          "Northern Africa",
+          "Western Africa",
+          "Eastern Africa",
+          "Central Africa",
+        ]);
 
-      return countries
-        .filter((country) => {
-          // Filter out entries that are actually regions (not valid ISO country codes)
-          // Check if the "country" name matches known regions
-          return (
-            !knownRegions.has(country.country) &&
-            country.iso &&
-            country.iso.length === 2
-          ); // Valid ISO codes are exactly 2 characters
-        })
-        .map((country) => ({
-          iso: country.iso,
-          name: country.country,
-          nameHebrew: country.hebrewName || country.country,
-          region: country.region,
-          flag: country.flag,
-        }));
+        return countries
+          .filter((country) => {
+            return (
+              !knownRegions.has(country.country) &&
+              country.iso &&
+              country.iso.length === 2
+            );
+          })
+          .map((country) => ({
+            iso: country.iso,
+            name: country.country,
+            nameHebrew: country.hebrewName || country.country,
+            region: country.region,
+            flag: country.flag,
+          }));
+      }
     },
     // trips resolver moved to tripsResolvers
 
