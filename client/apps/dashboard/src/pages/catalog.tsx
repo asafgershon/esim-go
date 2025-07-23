@@ -74,7 +74,7 @@ function CatalogPageContent() {
       const { data } = await getCountryBundles({
         variables: { countryId }
       });
-      return data?.bundles || [];
+      return data?.countryBundles || [];
     } catch (error) {
       toast.error(`Failed to load bundles for country ${countryId}`);
       throw error;
