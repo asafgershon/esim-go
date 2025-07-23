@@ -23,8 +23,8 @@ COPY server/server/src/lib/logger.ts ./server/src/lib/logger.ts
 # Copy workers workspace
 COPY server/workers ./workers
 
-# Install all dependencies
-RUN bun install --frozen-lockfile
+# Install all dependencies (skip postinstall scripts since we don't need codegen for workers)
+RUN bun install --frozen-lockfile --ignore-scripts
 
 # Build the packages
 WORKDIR /app/packages/utils

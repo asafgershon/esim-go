@@ -160,15 +160,6 @@ export const usePricingData = () => {
 
   // Lazy load bundles for a country when expanded
   const expandCountry = async (countryId: string) => {
-    // countryId could be either:
-    // 1. Country name (e.g., "Aland Islands") from old data
-    // 2. ISO code (e.g., "AX") from new data after transformation update
-    const country = countriesData?.countries?.find((c: Country) => 
-      c.name === countryId || 
-      c.iso === countryId ||
-      c.iso?.toLowerCase() === countryId.toLowerCase()
-    );
-
     try {
       // Use the dedicated countryBundles query which already returns filtered and calculated data
       console.log(`🔍 Fetching bundles for country: ${countryId}`);
@@ -177,183 +168,65 @@ export const usePricingData = () => {
         variables: { countryId }
       });
       
-      const allPlans: any[] = [];
-      
-      if (allBundlesResult.data?.dataPlans?.items) {
-        // First filter by country (since backend filtering is disabled)
-        const countryBundles = allBundlesResult.data.dataPlans.items.filter((plan: any) => {
-          // Check if bundle's countries array includes the requested country
-          if (!plan.countries || !Array.isArray(plan.countries)) {
-            return false;
-          }
-          
-          // Debug: Check the structure of countries array
-          if (plan.countries.length > 0 && typeof plan.countries[0] !== 'string') {
-            console.warn('⚠️ Countries array contains non-string values:', {
-              bundleName: plan.name,
-              firstCountry: plan.countries[0],
-              type: typeof plan.countries[0]
-            });
-          }
-          
-          // Match by country name (countryId is actually the country name)
-          return plan.countries.some((countryItem: any) => {
-            // Countries come as objects with { name, iso, region, etc }
-            if (!countryItem) return false;
-            
-            // Get the country name from the object
-            const countryName = countryItem.name || '';
-            const countryIso = countryItem.iso || '';
-            
-            if (!countryName || typeof countryName !== 'string') {
-              return false;
-            }
-            
-            // Check if the country matches by name or ISO
-            // Handle both old data (country names) and new data (ISO codes)
-            return countryName === countryId || 
-              countryName.toLowerCase() === countryId.toLowerCase() ||
-              countryIso === countryId ||
-              countryIso.toLowerCase() === countryId.toLowerCase() ||
-              // Also check if countryId is an ISO code that matches the bundle's country name
-              (country && countryName === country.name) ||
-              // Or if countryId is a name that matches the bundle's ISO
-              (country && country.iso && countryIso === country.iso);
-          });
-        });
+      if (countryBundlesResult.data?.countryBundles) {
+        const bundles = countryBundlesResult.data.countryBundles;
         
-        console.log(`🔍 Filtered ${countryBundles.length} bundles for country ${countryId} out of ${allBundlesResult.data.dataPlans.items.length} total`);
+        console.log(`✅ Fetched ${bundles.length} bundles for ${countryId}`);
         
-        // Debug: Log sample bundle structure to understand the data format
-        if (countryBundles.length > 0) {
-          console.log('📋 Sample bundle structure:', {
-            firstBundle: countryBundles[0],
-            fields: Object.keys(countryBundles[0]),
-            dataAmount: countryBundles[0].dataAmount,
-            isUnlimited: countryBundles[0].isUnlimited,
-            countries: countryBundles[0].countries,
-            firstCountry: countryBundles[0].countries?.[0]
-          });
-        }
+        // Transform the bundles to include additional display fields
+        const transformedBundles = bundles.map(bundle => ({
+          ...bundle,
+          pricePerDay: bundle.duration > 0 ? bundle.priceAfterDiscount / bundle.duration : 0,
+          hasCustomDiscount: bundle.hasCustomDiscount || false,
+          configurationLevel: bundle.configurationLevel || 'GLOBAL',
+          discountPerDay: bundle.discountPerDay || 0.10,
+          // These are already in the response but ensure they exist
+          dataAmount: bundle.dataAmount || 'Unknown',
+          isUnlimited: bundle.isUnlimited || false,
+          bundleGroup: bundle.bundleGroup || 'Standard Fixed'
+        }));
         
-        // Then filter for unlimited bundles (dataAmount === -1 or isUnlimited === true)
-        const unlimitedBundles = countryBundles.filter(
-          (plan: any) => plan.dataAmount === -1 || plan.isUnlimited === true
-        );
+        // Calculate average price per day for the country summary
+        const avgPricePerDay = calculateAveragePricePerDay(transformedBundles);
         
-        console.log(`✅ Found ${unlimitedBundles.length} unlimited bundles out of ${countryBundles.length} country bundles`);
+        // Update the country group with the fetched bundles
+        setCountryGroups(prev => prev.map(group => 
+          group.countryId === countryId 
+            ? { 
+                ...group, 
+                bundles: transformedBundles,
+                avgPricePerDay
+              }
+            : group
+        ));
         
-        // Group by bundle group for logging
-        const bundleGroups = unlimitedBundles.reduce((groups: any, bundle: any) => {
-          const group = bundle.bundleGroup || 'Unknown';
-          groups[group] = (groups[group] || 0) + 1;
-          return groups;
-        }, {});
-        
-        console.log('📊 Unlimited bundles by group:', bundleGroups);
-        
-        allPlans.push(...unlimitedBundles);
+        console.log(`📊 Updated country group for ${countryId} with ${transformedBundles.length} bundles`);
       } else {
-        console.log('⚠️ No bundles found for country');
-      }
-
-      if (allPlans.length > 0) {
-        // FIXED: Instead of extracting only unique durations, get all durations from all plans
-        const allDurations = allPlans.map(plan => plan.duration);
-        const durations = new Set(allDurations); // Still need to deduplicate for batch API call
-
-        // DEBUG: Log the expansion details to help diagnose unlimited bundles
-        console.log(`🔍 Country expansion debug for ${countryId}:`, {
-          fetchedPlans: allPlans.length,
-          allDurations: allDurations.sort((a, b) => a - b),
-          uniqueDurations: Array.from(durations).sort((a, b) => a - b),
-          bundleGroups: [...new Set(allPlans.map(p => p.bundleGroup))],
-          samplePlans: allPlans.slice(0, 10).map(p => ({
-            name: p.name,
-            duration: p.duration,
-            bundleGroup: p.bundleGroup,
-            dataAmount: p.dataAmount, // Now human-readable from resolver
-            isUnlimited: p.isUnlimited
-          }))
-        });
-
-        // Calculate pricing for this country using rule-based engine
-        // Use a default region if country is not found in the countries list
-        const regionId = country?.region || 'global';
-        const pricingResults = await calculateCountryPricing(countryId, regionId, durations);
-
-        if (pricingResults && pricingResults.length > 0) {
-          // Create a map of duration -> pricing data for quick lookup
-          const pricingByDuration = new Map<number, any>();
-          
-          // Each result contains detailed rule information
-          pricingResults.forEach(result => {
-            // Extract duration from the result or input
-            const durationArray = Array.from(durations);
-            const resultIndex = pricingResults.indexOf(result);
-            const duration = durationArray[resultIndex] || durationArray[0];
-            
-            // Transform rule-based result to bundle format
-            const transformedResult = {
-              bundleName: `Bundle ${duration}d`,
-              countryName: country?.name || countryId,
-              duration: duration,
-              cost: result.pricing?.baseCost || 0,
-              costPlus: result.pricing?.markup || 0,
-              totalCost: result.pricing?.subtotal || 0,
-              discountValue: result.pricing?.totalDiscount || 0,
-              priceAfterDiscount: result.pricing?.priceAfterDiscount || 0,
-              processingRate: result.pricing?.processingRate || 0,
-              processingCost: result.pricing?.processingFee || 0,
-              finalRevenue: result.pricing?.finalRevenue || 0,
-              currency: 'USD',
-              // Rule information
-              appliedRules: result.appliedRules || [],
-              ruleCount: result.appliedRules?.length || 0,
-              ruleImpact: result.ruleBreakdown?.totalImpact || 0,
-            };
-            
-            pricingByDuration.set(duration, transformedResult);
-          });
-          
-          // Generate bundles for ALL plans (not just unique durations)
-          const allBundles: CountryBundleWithRules[] = allPlans.map(plan => {
-            const basePricing = pricingByDuration.get(plan.duration);
-            if (!basePricing) {
-              console.warn(`No pricing found for plan ${plan.name} with duration ${plan.duration}`);
-              return null;
-            }
-            
-            // Create a bundle entry for this specific plan
-            return {
-              ...basePricing,
-              bundleName: plan.name, // Use the actual plan name
-              duration: plan.duration,
-              dataAmount: plan.dataAmount, // Store the formatted data amount for badge display
-            };
-          }).filter(Boolean) as CountryBundleWithRules[];
-          
-          // Calculate rules summary for the country
-          const rulesSummary = calculateRulesSummary(allBundles);
-          
-          // DEBUG: Log the resulting bundles
-          console.log(`✅ Rule-based pricing calculation result for ${countryId}:`, {
-            originalPricingResults: pricingResults.length,
-            finalBundleCount: allBundles.length,
-            rulesSummary,
-            sampleBundles: allBundles.slice(0, 3).map(b => ({
-              bundleName: b.bundleName,
-              duration: b.duration,
-              ruleCount: b.ruleCount
-            }))
-          });
-          
-          updateCountryGroupWithBundles(countryId, allBundles, rulesSummary);
-        }
+        console.warn(`⚠️ No bundles found for country ${countryId}`);
+        // Still update the country group to show empty state
+        setCountryGroups(prev => prev.map(group => 
+          group.countryId === countryId 
+            ? { 
+                ...group, 
+                bundles: [],
+                avgPricePerDay: 0
+              }
+            : group
+        ));
       }
     } catch (error) {
       console.error('Error fetching bundles for country:', countryId, error);
       setError(`Failed to load bundles for ${countryId}`);
+      // Update the country group to show error state
+      setCountryGroups(prev => prev.map(group => 
+        group.countryId === countryId 
+          ? { 
+              ...group, 
+              bundles: [],
+              avgPricePerDay: 0
+            }
+          : group
+      ));
     }
   };
 
