@@ -3,8 +3,6 @@ import { supabaseAdmin } from "../context/supabase-auth";
 import type { Context } from "../context/types";
 import {
   mapBundle,
-  mapDataPlan,
-  mapDatabaseBundleToDataPlan,
   mapESIM,
   mapOrder,
 } from "../schemas/transformations";
@@ -12,98 +10,6 @@ import type { Resolvers } from "../types";
 
 export const esimResolvers: Partial<Resolvers> = {
   Query: {
-    // Data plan browsing (public, no auth required)
-    dataPlans: async (_, { filter }, context: Context) => {
-      try {
-        const limit = filter?.limit || 50;
-        const offset = filter?.offset || 0;
-        
-        const response = await context.dataSources.catalogue.searchPlans({
-          region: filter?.region || undefined,
-          country: filter?.country || undefined,
-          duration: filter?.duration || undefined,
-          maxPrice: filter?.maxPrice || undefined,
-          bundleGroup: filter?.bundleGroup || undefined,
-          search: filter?.search || undefined,
-          limit,
-          offset,
-        });
-
-        // Map plans from database using the correct transformation
-        const filteredPlans = (response.bundles || []).map((bundle) => mapDatabaseBundleToDataPlan(bundle));
-        
-        // Calculate pagination metadata
-        const totalCount = response.totalCount || 0;
-        const hasNextPage = offset + limit < totalCount;
-        const hasPreviousPage = offset > 0;
-        const pages = Math.ceil(totalCount / limit);
-        const currentPage = Math.floor(offset / limit) + 1;
-        
-        return {
-          items: filteredPlans,
-          totalCount,
-          hasNextPage,
-          hasPreviousPage,
-          pageInfo: {
-            limit,
-            offset,
-            total: totalCount,
-            pages,
-            currentPage,
-          },
-          lastFetched: (response as any).lastFetched || null,
-        };
-      } catch (error) {
-        console.error("Error fetching data plans:", error);
-        console.error("Filter parameters:", filter);
-        
-        // Check if it's a catalog empty error
-        if (error instanceof Error && error.message.includes('Catalog data is not available')) {
-          throw new GraphQLError("Catalog data is not available. Please run catalog sync to populate the database with eSIM bundles.", {
-            extensions: {
-              code: "CATALOG_EMPTY",
-              hint: "Run the catalog sync process to populate the database",
-            },
-          });
-        }
-        
-        // Pass through the actual error details for debugging
-        throw new GraphQLError(`Failed to fetch data plans: ${error instanceof Error ? error.message : String(error)}`, {
-          extensions: {
-            code: "DATA_PLANS_FETCH_ERROR",
-            originalError: error instanceof Error ? error.message : String(error),
-          },
-        });
-      }
-    },
-
-    dataPlan: async (_, { id }, context: Context) => {
-      try {
-        // First try to get from database
-        const { data: dbPlan } = await supabaseAdmin
-          .from("data_plans")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (!dbPlan) {
-          return null;
-        }
-
-        // Get full details from eSIM Go API
-        const plan = await context.dataSources.catalogue.getPlanByName(
-          dbPlan.name
-        );
-        if (!plan) {
-          return null;
-        }
-
-        return mapDataPlan(plan, dbPlan);
-      } catch (error) {
-        console.error("Error fetching data plan:", error);
-        return null;
-      }
-    },
 
     // Order queries (auth required)
     myOrders: async (_, { filter }, context: Context) => {

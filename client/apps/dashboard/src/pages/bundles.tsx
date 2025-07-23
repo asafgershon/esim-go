@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
-import { GET_DATA_PLANS } from '@/lib/graphql/queries';
-import type { GetDataPlansQuery, DataPlanFilter } from '@/__generated__/graphql';
+import { GET_CATALOG_BUNDLES } from '@/lib/graphql/queries';
+import type { GetCatalogBundlesQuery, SearchCatalogCriteria } from '@/__generated__/graphql';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { AdvancedDataTable } from '@workspace/ui/components/advanced-data-table';
 import { Badge } from '@workspace/ui/components/badge';
@@ -14,28 +14,24 @@ import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown, Download, Package, Globe, Clock, DollarSign, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 
-type DataPlan = {
+type CatalogBundle = {
   id: string;
-  name: string;
+  esimGoName: string;
+  bundleGroup: string;
   description: string;
-  region: string;
-  countries: Array<{
-    iso: string;
-    name: string;
-    nameHebrew?: string | null;
-    region: string;
-    flag?: string | null;
-  }>;
   duration: number;
-  price: number;
+  dataAmount: number; // -1 for unlimited
+  unlimited: boolean;
+  priceCents: number;
   currency: string;
-  isUnlimited: boolean;
-  bundleGroup?: string | null;
-  features: string[];
-  availableQuantity?: number | null;
+  countries: string[];
+  regions: string[];
+  syncedAt: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
-const columns: ColumnDef<DataPlan>[] = [
+const columns: ColumnDef<CatalogBundle>[] = [
   {
     accessorKey: 'name',
     header: ({ column }) => {
