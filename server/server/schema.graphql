@@ -551,8 +551,8 @@ extend type Mutation {
 # Pricing Types
 type PricingBreakdown {
   # Bundle Information - Public
-  bundleName: String!
-  countryName: String!
+  bundle: CountryBundle!
+  country: Country!
   duration: Int!
   currency: String!
   
@@ -586,8 +586,7 @@ enum ConfigurationLevel {
 
 # Bundles by Country Types - simplified country data
 type BundlesByCountry {
-  countryName: String!
-  countryId: String!
+  country: Country!
   bundleCount: Int!
   pricingRange: PricingRange
   bundles: [CountryBundle!]
@@ -600,37 +599,22 @@ type PricingRange {
 
 # Bundles by Region Types - aggregated region data
 type BundlesByRegion {
-  regionName: String!
+  region: String!
   bundleCount: Int!
   countryCount: Int!
 }
 
 # Individual bundles for a specific country
 type CountryBundle {
-  bundleName: String!
-  countryName: String!
-  countryId: String!
+  name: String!
+  country: Country!
   duration: Int!
-  cost: Float
-  costPlus: Float
-  totalCost: Float
-  discountRate: Float
-  discountValue: Float
-  priceAfterDiscount: Float
-  processingRate: Float
-  processingCost: Float
-  finalRevenue: Float
-  netProfit: Float
+  price: Float
   currency: String!
-  pricePerDay: Float
-  hasCustomDiscount: Boolean
-  configurationLevel: ConfigurationLevel
-  discountPerDay: Float
-  # Plan-specific metadata to distinguish between unlimited/limited bundles
-  planId: String!
+  pricingBreakdown: PricingBreakdown
   isUnlimited: Boolean!
-  dataAmount: String!
-  bundleGroup: String
+  data: Float
+  group: String
   
   # Rule-based pricing breakdown - Admin only
   appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
@@ -640,8 +624,8 @@ type CountryBundle {
 # Batch pricing input
 input CalculatePriceInput {
   numOfDays: Int!
-  regionId: String!
-  countryId: String!
+  region: String!
+  country: String!
   paymentMethod: PaymentMethod
 }
 
