@@ -95,7 +95,7 @@ function CatalogPageContent() {
       const { data } = await getCountryBundles({
         variables: { countryId }
       });
-      return data?.countryBundles || [];
+      return data?.bundles || [];
     } catch (error) {
       toast.error(`Failed to load bundles for country ${countryId}`);
       throw error;
@@ -107,7 +107,7 @@ function CatalogPageContent() {
       const { data } = await getRegionBundles({
         variables: { regionName }
       });
-      return data?.regionBundles || [];
+      return data?.bundles || [];
     } catch (error) {
       toast.error(`Failed to load bundles for region ${regionName}`);
       throw error;

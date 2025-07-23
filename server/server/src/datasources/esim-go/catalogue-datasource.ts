@@ -311,7 +311,7 @@ export class CatalogueDataSource extends ESIMGoDataSource {
   /**
    * Get all available data plans - simplified version
    */
-  async getAllBundels(): Promise<CatalogBundle[]> {
+  async getAllBundles(): Promise<CatalogBundle[]> {
     return withPerformanceLogging(
       this.log,
       'get-all-bundles',

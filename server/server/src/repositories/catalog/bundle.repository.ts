@@ -515,27 +515,52 @@ export class BundleRepository extends BaseSupabaseRepository {
       this.logger,
       'get-bundles-by-region',
       async () => {
-        // Query bundles that have this region in their regions array
-        const { data, error } = await this.supabase
-          .from('catalog_bundles')
-          .select('*')
-          .contains('regions', [regionName]);
+        // JSONB contains operator has syntax issues with JSON arrays
+        // Use manual filtering approach with pagination to get all bundles
+        let allBundles: CatalogBundle[] = [];
+        let hasMore = true;
+        let offset = 0;
+        const pageSize = 1000; // Supabase default limit
 
-        if (error) {
-          this.logger.error('Failed to get bundles by region', error, {
-            regionName,
-            operationType: 'get-bundles-by-region'
-          });
-          throw error;
+        while (hasMore) {
+          const { data, error } = await this.supabase
+            .from('catalog_bundles')
+            .select('*')
+            .range(offset, offset + pageSize - 1);
+
+          if (error) {
+            this.logger.error('Failed to get bundles by region', error, {
+              regionName,
+              offset,
+              operationType: 'get-bundles-by-region'
+            });
+            throw error;
+          }
+
+          if (data && data.length > 0) {
+            allBundles = allBundles.concat(data);
+            offset += pageSize;
+            hasMore = data.length === pageSize; // Continue if we got a full page
+          } else {
+            hasMore = false;
+          }
         }
+
+        // Filter bundles that have this region in their regions array
+        const filteredBundles = allBundles.filter(bundle =>
+          bundle.regions &&
+          Array.isArray(bundle.regions) &&
+          bundle.regions.includes(regionName)
+        );
 
         this.logger.info('Retrieved bundles for region', {
           regionName,
-          bundleCount: data?.length || 0,
+          bundleCount: filteredBundles.length,
+          totalBundlesScanned: allBundles.length,
           operationType: 'get-bundles-by-region'
         });
 
-        return data || [];
+        return filteredBundles;
       }
     );
   }
