@@ -12,7 +12,7 @@
 
 ## Development Practices
 - Always use graphql-codegen
-- After creating db migration run in the `server/server` directory `bun run codgen:dbtypes`
+- After creating db migration run in the `server/server` directory `bun run codgen`
 - Always use generated types in the `web-app` or `dashboard` for network responses
 - **IMPORTANT**: Always use generated types from `@/__generated__/graphql` when using Apollo Client hooks:
   - `useQuery<GetCountriesQuery>(GET_COUNTRIES)`
