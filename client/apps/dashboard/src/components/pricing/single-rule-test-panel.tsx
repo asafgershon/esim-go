@@ -57,17 +57,13 @@ interface TestContext {
   bundleName: string;
   bundleGroup: string;
   duration: number;
-  baseCost: number;
+  cost: number;
   countryId: string;
-  countryName: string;
   regionId: string;
-  regionName: string;
   userId?: string;
-  userSegment?: string;
-  isNewUser: boolean;
+  isNewUser?: boolean;
   paymentMethod: string;
-  isUnlimited?: boolean;
-  dataAmount?: number;
+  requestedDuration?: number;
 }
 
 interface TestResult {
@@ -98,17 +94,13 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
     bundleName: 'Standard Fixed 7d',
     bundleGroup: 'Standard Fixed',
     duration: 7,
-    baseCost: 5.50,
+    cost: 5.50,
     countryId: 'US',
-    countryName: 'United States',
     regionId: 'AMERICA',
-    regionName: 'America',
     userId: 'test-user-1',
-    userSegment: 'STANDARD',
     isNewUser: false,
     paymentMethod: 'FOREIGN_CARD',
-    isUnlimited: false,
-    dataAmount: 1024,
+    requestedDuration: 7,
   });
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -147,13 +139,13 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
   ];
 
   const countries = [
-    { code: 'US', name: 'United States', region: 'AMERICA', regionName: 'America' },
-    { code: 'GB', name: 'United Kingdom', region: 'EUROPE', regionName: 'Europe' },
-    { code: 'IL', name: 'Israel', region: 'ASIA', regionName: 'Asia' },
-    { code: 'JP', name: 'Japan', region: 'ASIA', regionName: 'Asia' },
-    { code: 'DE', name: 'Germany', region: 'EUROPE', regionName: 'Europe' },
-    { code: 'FR', name: 'France', region: 'EUROPE', regionName: 'Europe' },
-    { code: 'AU', name: 'Australia', region: 'OCEANIA', regionName: 'Oceania' },
+    { code: 'US', name: 'United States', region: 'AMERICA' },
+    { code: 'GB', name: 'United Kingdom', region: 'EUROPE' },
+    { code: 'IL', name: 'Israel', region: 'ASIA' },
+    { code: 'JP', name: 'Japan', region: 'ASIA' },
+    { code: 'DE', name: 'Germany', region: 'EUROPE' },
+    { code: 'FR', name: 'France', region: 'EUROPE' },
+    { code: 'AU', name: 'Australia', region: 'OCEANIA' },
   ];
 
   const handleRuleTest = async () => {
@@ -357,9 +349,7 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                         setTestContext(prev => ({ 
                           ...prev, 
                           countryId: value,
-                          countryName: country?.name || 'Unknown',
-                          regionId: country?.region || 'AMERICA',
-                          regionName: country?.regionName || 'America'
+                          regionId: country?.region || 'AMERICA'
                         }));
                       }}
                     >
@@ -402,10 +392,10 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                     <Input
                       type="number"
                       step="0.01"
-                      value={testContext.baseCost}
+                      value={testContext.cost}
                       onChange={(e) => setTestContext(prev => ({ 
                         ...prev, 
-                        baseCost: parseFloat(e.target.value) || 0 
+                        cost: parseFloat(e.target.value) || 0 
                       }))}
                     />
                   </div>
