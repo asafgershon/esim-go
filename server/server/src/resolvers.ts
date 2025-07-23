@@ -562,14 +562,17 @@ export const resolvers: Resolvers = {
             };
           })
           .filter(item => {
-            const shouldInclude = item.countryName !== item.countryId;
-            if (!shouldInclude) {
-              logger.debug('Country filtered out - no name mapping', {
-                countryId: item.countryId
+            // For now, include all countries - even if we don't have proper names
+            // This will help us see all available countries in the debug phase
+            const shouldInclude = true; // item.countryName !== item.countryId;
+            if (item.countryName === item.countryId) {
+              logger.debug('Country without name mapping included anyway', {
+                countryId: item.countryId,
+                usingCountryCodeAsName: true
               });
             }
             return shouldInclude;
-          }) // Only include countries we have names for
+          }) // Include all countries for now
           .sort((a, b) => a.countryName.localeCompare(b.countryName));
         
         // Cache result
@@ -618,11 +621,32 @@ export const resolvers: Resolvers = {
           });
         }
         
-        // Use cached catalogue data to get bundles for this country
+        // Use cached catalogue data to get bundles for this country  
+        // TODO: Re-enable country filtering when backend JSONB queries are fixed
         const dataPlansResult = await context.dataSources.catalogue.searchPlans({
-          country: countryId
+          // country: countryId  // Temporarily disabled due to JSONB query issues
         });
-        const dataPlans = dataPlansResult.bundles || [];
+        const allPlans = dataPlansResult.bundles || [];
+        
+        // Filter by country on the backend since database filtering is disabled
+        const dataPlans = allPlans.filter(plan => {
+          if (!plan.countries || !Array.isArray(plan.countries)) {
+            return false;
+          }
+          // Match by country name or ISO code
+          return plan.countries.some((countryName: string) => 
+            countryName === countryId || 
+            countryName.toLowerCase() === countryId.toLowerCase() ||
+            countryName === country.name // Match by full country name
+          );
+        });
+        
+        logger.info('Country filtering applied on backend', {
+          countryId,
+          totalPlans: allPlans.length,
+          filteredPlans: dataPlans.length,
+          operationType: 'country-filter-backend'
+        });
         
         // DEBUG: Log the raw data from the API
         logger.info('RAW DATA FROM CATALOGUE API', {
