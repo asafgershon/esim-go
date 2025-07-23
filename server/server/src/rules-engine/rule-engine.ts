@@ -1,11 +1,11 @@
 import type { 
   PricingRule, 
-  RuleType,
   PricingRuleCalculation,
   AppliedRule,
   DiscountApplication,
   CreatePricingRuleInput
 } from '../types';
+import { RuleType, ActionType } from '../types';
 import type { PricingContext } from './types';
 import { 
   PricingStepType,
@@ -96,6 +96,9 @@ export class PricingRuleEngine {
       duration: context.bundle.duration,
       operationType: 'price-calculation'
     });
+    
+    // Validate that required system rules are configured
+    this.validateRequiredSystemRules();
 
     // Yield initialization step
     yield {
@@ -110,14 +113,14 @@ export class PricingRuleEngine {
       }
     } as InitializationStep;
 
-    // Initialize pricing state
+    // Initialize pricing state - no hardcoded defaults, must come from rules
     const state: PricingState = {
       baseCost: context.bundle.cost,
       markup: 0,
       subtotal: context.bundle.cost,
       discounts: [],
-      processingRate: 0.045, // Default 4.5%
-      discountPerUnusedDay: 0.10, // Default 10% per day
+      processingRate: 0, // Will be set by system rules
+      discountPerUnusedDay: 0, // Will be set by system rules
       unusedDays: this.calculateUnusedDays(context)
     };
 
@@ -259,32 +262,32 @@ export class PricingRuleEngine {
           operationType: 'unused-days-discount'
         });
         
-        const fallbackDiscountRate = 0.10; // 10% per day fallback
-        const unusedDaysDiscount = state.subtotal * (state.unusedDays * fallbackDiscountRate);
+        // No fallback rate - if markup calculation fails, no discount is applied
+        this.logger.warn('No unused days discount applied - markup calculation failed and no fallback configured', {
+          unusedDays: state.unusedDays,
+          operationType: 'unused-days-discount'
+        });
+        // Skip the unused days discount if no valid calculation method available
         
         yield {
           type: PricingStepType.UNUSED_DAYS_CALCULATION,
           timestamp: new Date(),
-          message: `Calculating unused days discount using fallback rate (${state.unusedDays} days @ ${(fallbackDiscountRate * 100).toFixed(1)}%)`,
+          message: `No unused days discount applied - calculation failed`,
           data: {
             unusedDays: state.unusedDays,
-            discountPerDay: fallbackDiscountRate,
-            totalDiscount: unusedDaysDiscount,
-            calculationMethod: 'percentage-fallback'
+            discountPerDay: 0,
+            totalDiscount: 0,
+            calculationMethod: 'none-failed'
           }
         } as UnusedDaysCalculationStep;
-        
-        state.discounts.push({
-          ruleName: 'Unused Days Discount (Fallback)',
-          amount: unusedDaysDiscount,
-          type: 'percentage'
-        });
       }
     }
 
     // Calculate final pricing
     const totalDiscount = state.discounts.reduce((sum, d) => sum + d.amount, 0);
-    const priceAfterDiscount = Math.max(0.01, state.subtotal - totalDiscount);
+    // Use minimum price from system rules or 0 if not configured
+    const minimumPrice = this.getMinimumPrice();
+    const priceAfterDiscount = Math.max(minimumPrice, state.subtotal - totalDiscount);
     const processingFee = priceAfterDiscount * state.processingRate;
     const finalPrice = priceAfterDiscount + processingFee;
     
@@ -309,8 +312,8 @@ export class PricingRuleEngine {
       }
     } as FinalCalculationStep;
 
-    // Calculate recommendations
-    const MINIMUM_PROFIT_MARGIN = 1.50;
+    // Calculate recommendations - minimum profit margin should come from business rules
+    const MINIMUM_PROFIT_MARGIN = this.getMinimumProfitMargin() || 0;
     const maxRecommendedPrice = state.baseCost + MINIMUM_PROFIT_MARGIN;
     
     // Calculate max discount percentage while maintaining minimum profit
@@ -479,7 +482,9 @@ export class PricingRuleEngine {
   }
 
   private categorizeRule(rule: PricingRule): void {
-    if (rule.type === 'SYSTEM_MARKUP' || rule.type === 'SYSTEM_PROCESSING') {
+    if (rule.type === RuleType.SystemMarkup || 
+        rule.type === RuleType.SystemProcessing || 
+        rule.type === RuleType.SystemMinimumPrice) {
       this.systemRules.push(rule);
     } else {
       this.businessRules.push(rule);
@@ -500,6 +505,53 @@ export class PricingRuleEngine {
       return 0;
     }
     return context.bundle.duration - context.requestedDuration;
+  }
+  
+  // Validate that required system rules are configured
+  private validateRequiredSystemRules(): void {
+    const hasProcessingRule = this.systemRules.some(rule => 
+      rule.type === RuleType.SystemProcessing && 
+      rule.isActive &&
+      rule.actions.some(a => a.type === ActionType.SetProcessingRate)
+    );
+    
+    if (!hasProcessingRule) {
+      throw new Error('No active processing rate rule configured. System requires at least one SYSTEM_PROCESSING rule with SET_PROCESSING_RATE action.');
+    }
+    
+    // Note: Markup rules are optional as they may be country/bundle specific
+  }
+  
+  // Get minimum profit margin from business rules or return 0 if not configured
+  private getMinimumProfitMargin(): number {
+    const profitRule = this.businessRules.find(rule => 
+      rule.type === RuleType.BusinessMinimumProfit &&
+      rule.isActive &&
+      rule.actions.some(a => a.type === ActionType.SetMinimumProfit)
+    );
+    
+    if (profitRule) {
+      const profitAction = profitRule.actions.find(a => a.type === ActionType.SetMinimumProfit);
+      return profitAction ? profitAction.value : 0;
+    }
+    
+    return 0; // No minimum profit configured
+  }
+  
+  // Get minimum price from system rules or return 0 if not configured
+  private getMinimumPrice(): number {
+    const priceRule = this.systemRules.find(rule => 
+      rule.type === RuleType.SystemMinimumPrice &&
+      rule.isActive &&
+      rule.actions.some(a => a.type === ActionType.SetMinimumPrice)
+    );
+    
+    if (priceRule) {
+      const priceAction = priceRule.actions.find(a => a.type === ActionType.SetMinimumPrice);
+      return priceAction ? priceAction.value : 0;
+    }
+    
+    return 0; // No minimum price configured
   }
   
   // Calculate discount per unused day based on markup difference formula

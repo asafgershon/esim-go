@@ -1,5 +1,6 @@
 import { PricingRuleEngine } from '../rules-engine/rule-engine';
 import { PricingRulesRepository } from '../repositories/pricing-rules/pricing-rules.repository';
+import { DefaultRulesService } from './default-rules.service';
 import type { PricingContext } from '../rules-engine/types';
 import type { PricingRuleCalculation, type PricingStep } from '../types';
 import { createLogger, withPerformanceLogging } from '../lib/logger';
@@ -173,7 +174,35 @@ export class PricingEngineService {
     // Load from database
     this.logger.info('Loading rules from database');
     
-    const activeRules = await this.repository.findActiveRules();
+    let activeRules = await this.repository.findActiveRules();
+    
+    // If no rules exist, create default system rules
+    if (activeRules.length === 0) {
+      this.logger.info('No pricing rules found, creating default system rules');
+      
+      const defaultRules = DefaultRulesService.createSystemRulesFromDefaults();
+      
+      // Create the default rules in the database
+      for (const rule of defaultRules) {
+        try {
+          await this.repository.create(rule);
+          this.logger.info('Created default rule', { ruleName: rule.name, ruleType: rule.type });
+        } catch (error) {
+          this.logger.error('Failed to create default rule', error as Error, {
+            ruleName: rule.name,
+            ruleType: rule.type
+          });
+        }
+      }
+      
+      // Reload rules after creating defaults
+      activeRules = await this.repository.findActiveRules();
+      
+      this.logger.info('Default system rules created', {
+        createdCount: defaultRules.length,
+        loadedCount: activeRules.length
+      });
+    }
     
     // Separate system and business rules
     const systemRules = activeRules.filter(r => !r.isEditable);
@@ -236,7 +265,7 @@ export class PricingEngineService {
     return {
       bundle: params.bundle,
       user: params.user,
-      paymentMethod: params.paymentMethod,
+      paymentMethod: params.paymentMethod || 'israeli_card',
       requestedDuration: params.requestedDuration,
       currentDate: new Date(),
       // Add shortcuts for convenience

@@ -28,8 +28,8 @@ export abstract class BaseActionExecutor {
     return baseAmount * (percentage / 100);
   }
   
-  protected ensureMinimumPrice(price: number): number {
-    // Ensure price never goes below $0.01
-    return Math.max(0.01, price);
+  protected ensureMinimumPrice(price: number, minimumPrice: number = 0): number {
+    // Use configured minimum price or 0 if not set
+    return Math.max(minimumPrice, price);
   }
 }

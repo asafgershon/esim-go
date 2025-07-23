@@ -95,7 +95,7 @@ export const DiscountConfigurationManagement: React.FC = () => {
     name: '',
     description: '',
     discountRate: 0,
-    discountPerDay: 0.1,
+    discountPerDay: 0,
     isActive: true,
   });
 
@@ -169,7 +169,7 @@ export const DiscountConfigurationManagement: React.FC = () => {
         name: '',
         description: '',
         discountRate: 0,
-        discountPerDay: 0.1,
+        discountPerDay: 0,
         isActive: true,
       });
     } catch (error) {

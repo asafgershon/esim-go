@@ -34,9 +34,9 @@ export interface PricingContext {
   };
   user?: {
     id: string;
-    isNew: boolean;
-    isFirstPurchase: boolean;
-    purchaseCount: number;
+    isNew?: boolean;
+    isFirstPurchase?: boolean;
+    purchaseCount?: number;
     segment?: string;
   };
   paymentMethod: string;

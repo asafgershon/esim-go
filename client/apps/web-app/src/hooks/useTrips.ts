@@ -29,19 +29,20 @@ const tripIcons: Record<string, string> = {
   'default': '🌍'
 };
 
-// Base prices for different regions
+// Base prices for different regions - TODO: These should come from the database/rules engine
+// For now using 0 to force proper pricing calculation through rules engine
 const basePrices: Record<string, number> = {
-  'south-america': 5.04,
-  'africa': 5.04,
-  'african-safari': 5.04,
-  'europe': 2.5,
-  'east-asia': 3.0,
-  'asia': 3.0,
-  'caribbean': 5.4,
-  'middle-east': 4.0,
-  'north-america': 4.5,
-  'oceania': 6.0,
-  'default': 3.0
+  'south-america': 0,
+  'africa': 0,
+  'african-safari': 0,
+  'europe': 0,
+  'east-asia': 0,
+  'asia': 0,
+  'caribbean': 0,
+  'middle-east': 0,
+  'north-america': 0,
+  'oceania': 0,
+  'default': 0
 };
 
 export function useTrips() {

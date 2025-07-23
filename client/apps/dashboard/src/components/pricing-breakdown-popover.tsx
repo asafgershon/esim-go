@@ -51,7 +51,7 @@ export function PricingBreakdownPopover({
   fixedMarkup,
   totalCost,
   unusedDays = 0,
-  discountPerDay = 0.1,
+  discountPerDay = 0,
   discountValue = 0,
   processingRate,
   processingCost,
@@ -72,7 +72,8 @@ export function PricingBreakdownPopover({
   };
 
   const profitMargin = totalCost > 0 ? (netProfit / totalCost) * 100 : 0;
-  const isUnprofitable = netProfit < 1.50;
+  // Note: Minimum profit threshold should come from business rules, not hardcoded
+  const isUnprofitable = netProfit < 0;
 
   return (
     <Popover>

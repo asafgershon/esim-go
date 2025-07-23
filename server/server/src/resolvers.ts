@@ -344,34 +344,31 @@ export const resolvers: Resolvers = {
         // Use the first matching bundle
         const bundle = bundles.bundles[0];
         
-        // Create pricing context for the rule engine
-        const pricingContext = {
+        // Get country name for response
+        const countries = await context.dataSources.countries.getCountries();
+        const country = countries.find(c => c.iso === countryId);
+        
+        // Create pricing context for the rule engine using service helper
+        const pricingContext = PricingEngineService.createContext({
           bundle: {
             id: bundle.name || `${countryId}-${numOfDays}d`,
             name: bundle.name,
+            cost: bundle.price || 0,
             duration: numOfDays,
-            bundleGroup: bundle.bundleGroup || 'Standard Fixed',
-            basePrice: bundle.price || 0,
-            dataAmount: bundle.dataAmount || 0,
-            isUnlimited: bundle.unlimited || bundle.dataAmount === -1
+            countryId: countryId,
+            countryName: country?.country || countryId,
+            regionId: regionId || bundle.baseCountry?.region || 'global',
+            regionName: regionId || bundle.baseCountry?.region || 'Global',
+            group: bundle.bundleGroup || 'Standard Fixed',
+            isUnlimited: bundle.unlimited || bundle.dataAmount === -1,
+            dataAmount: bundle.dataAmount?.toString() || '0'
           },
-          customer: {
-            paymentMethod: mapPaymentMethodEnum(paymentMethod),
-            segmentTier: 'STANDARD' as const
-          },
-          location: {
-            country: countryId,
-            region: regionId || bundle.baseCountry?.region || 'Unknown'
-          },
-          metadata: {}
-        };
+          paymentMethod: mapPaymentMethodEnum(paymentMethod)
+        });
         
         // Calculate price using rule engine
         const calculation = await engineService.calculatePrice(pricingContext);
         
-        // Get country name for response
-        const countries = await context.dataSources.countries.getCountries();
-        const country = countries.find(c => c.iso === countryId);
         const countryName = country?.country || countryId;
         
         // Map rule engine result to GraphQL schema
@@ -430,27 +427,23 @@ export const resolvers: Resolvers = {
             // Use the first matching bundle
             const bundle = bundles.bundles[0];
             
-            // Create pricing context for the rule engine
-            const pricingContext = {
+            // Create pricing context for the rule engine using service helper
+            const pricingContext = PricingEngineService.createContext({
               bundle: {
                 id: bundle.name || `${input.countryId}-${input.numOfDays}d`,
                 name: bundle.name,
+                cost: bundle.price || 0,
                 duration: input.numOfDays,
-                bundleGroup: bundle.bundleGroup || 'Standard Fixed',
-                basePrice: bundle.price || 0,
-                dataAmount: bundle.dataAmount || 0,
-                isUnlimited: bundle.unlimited || bundle.dataAmount === -1
+                countryId: input.countryId,
+                countryName: countryMap.get(input.countryId) || input.countryId,
+                regionId: bundle.baseCountry?.region || 'global',
+                regionName: bundle.baseCountry?.region || 'Global',
+                group: bundle.bundleGroup || 'Standard Fixed',
+                isUnlimited: bundle.unlimited || bundle.dataAmount === -1,
+                dataAmount: bundle.dataAmount?.toString() || '0'
               },
-              customer: {
-                paymentMethod: mapPaymentMethodEnum(input.paymentMethod),
-                segmentTier: 'STANDARD' as const
-              },
-              location: {
-                country: input.countryId,
-                region: bundle.baseCountry?.region || 'Unknown'
-              },
-              metadata: {}
-            };
+              paymentMethod: mapPaymentMethodEnum(input.paymentMethod)
+            });
             
             // Calculate price using rule engine
             const calculation = await engineService.calculatePrice(pricingContext);
@@ -745,27 +738,23 @@ export const resolvers: Resolvers = {
                 operationType: 'bundle-country-debug'
               });
               
-              // Create pricing context for the rule engine
-              const pricingContext = {
+              // Create pricing context for the rule engine using service helper
+              const pricingContext = PricingEngineService.createContext({
                 bundle: {
                   id: plan.name || `${countryId}-${plan.duration}d`,
                   name: plan.name,
+                  cost: plan.price || 0,
                   duration: plan.duration,
-                  bundleGroup: plan.bundleGroup || 'Standard Fixed',
-                  basePrice: plan.price || 0,
-                  dataAmount: plan.dataAmount || 0,
-                  isUnlimited: plan.unlimited || plan.dataAmount === -1
+                  countryId: countryId,
+                  countryName: country.country,
+                  regionId: plan.baseCountry?.region || country.region || 'global',
+                  regionName: plan.baseCountry?.region || country.region || 'Global',
+                  group: plan.bundleGroup || 'Standard Fixed',
+                  isUnlimited: plan.unlimited || plan.dataAmount === -1,
+                  dataAmount: plan.dataAmount?.toString() || '0'
                 },
-                customer: {
-                  paymentMethod: 'israeli_card' as const,
-                  segmentTier: 'STANDARD' as const
-                },
-                location: {
-                  country: countryId,
-                  region: plan.baseCountry?.region || country.region || 'Unknown'
-                },
-                metadata: {}
-              };
+                paymentMethod: 'israeli_card'
+              });
               
               // Calculate price using rule engine
               const calculation = await engineService.calculatePrice(pricingContext);
@@ -1859,6 +1848,66 @@ export const resolvers: Resolvers = {
           operationType: 'trigger-catalog-sync'
         });
 
+        // Map GraphQL enum values to database constraint values
+        const mapJobType = (graphqlType: string): string => {
+          switch (graphqlType) {
+            case 'FULL_SYNC': return 'full-sync';
+            case 'GROUP_SYNC': return 'group-sync'; 
+            case 'COUNTRY_SYNC': return 'country-sync';
+            case 'METADATA_SYNC': return 'bundle-sync'; // Map to valid constraint value
+            default: return 'full-sync';
+          }
+        };
+
+        // Check for conflicting active jobs
+        const conflictingJob = await context.repositories.syncJob.getActiveJobDetails({
+          jobType: mapJobType(type),
+          bundleGroup,
+          countryId
+        });
+
+        if (conflictingJob && !force) {
+          const conflictMessage = `A ${conflictingJob.job_type} job is already ${conflictingJob.status}`;
+          const createdTime = new Date(conflictingJob.created_at).toLocaleString();
+          
+          logger.warn('Catalog sync blocked by conflicting job', {
+            conflictingJobId: conflictingJob.id,
+            conflictingJobType: conflictingJob.job_type,
+            conflictingJobStatus: conflictingJob.status,
+            createdAt: conflictingJob.created_at,
+            operationType: 'sync-conflict-detected'
+          });
+
+          return {
+            success: false,
+            jobId: null,
+            message: null,
+            error: `${conflictMessage}. Created: ${createdTime}. Use force=true to cancel the existing job and start a new one.`,
+            conflictingJob: {
+              id: conflictingJob.id,
+              jobType: conflictingJob.job_type,
+              status: conflictingJob.status,
+              createdAt: conflictingJob.created_at,
+              startedAt: conflictingJob.started_at
+            }
+          };
+        }
+
+        // If force=true and there's a conflicting job, cancel pending jobs
+        if (conflictingJob && force) {
+          const cancelledCount = await context.repositories.syncJob.cancelPendingJobs({
+            jobType: mapJobType(type),
+            bundleGroup,
+            countryId
+          });
+
+          logger.info('Force cancelled conflicting jobs before starting new sync', {
+            cancelledCount,
+            conflictingJobId: conflictingJob.id,
+            operationType: 'force-cancel-sync-jobs'
+          });
+        }
+
         // Import the BullMQ queue to actually queue jobs
         const { Queue } = await import('bullmq');
         const { default: IORedis } = await import('ioredis');
@@ -1877,17 +1926,6 @@ export const resolvers: Resolvers = {
         // Generate proper UUID for the job ID
         const { randomUUID } = await import('crypto');
         const jobId = randomUUID();
-        
-        // Map GraphQL enum values to database constraint values
-        const mapJobType = (graphqlType: string): string => {
-          switch (graphqlType) {
-            case 'FULL_SYNC': return 'full-sync';
-            case 'GROUP_SYNC': return 'group-sync'; 
-            case 'COUNTRY_SYNC': return 'country-sync';
-            case 'METADATA_SYNC': return 'bundle-sync'; // Map to valid constraint value
-            default: return 'full-sync';
-          }
-        };
 
         // Create a sync job record in the database
         const { data: syncJob, error } = await supabaseAdmin
@@ -1973,7 +2011,8 @@ export const resolvers: Resolvers = {
           success: true,
           jobId: syncJob.id,
           message: `Catalog sync job has been queued successfully (BullMQ: ${bullmqJob.id})`,
-          error: null
+          error: null,
+          conflictingJob: null
         };
 
       } catch (error) {
@@ -1991,7 +2030,8 @@ export const resolvers: Resolvers = {
           success: false,
           jobId: null,
           message: null,
-          error: `Failed to trigger catalog sync: ${(error as Error).message}`
+          error: `Failed to trigger catalog sync: ${(error as Error).message}`,
+          conflictingJob: null
         };
       }
     },
