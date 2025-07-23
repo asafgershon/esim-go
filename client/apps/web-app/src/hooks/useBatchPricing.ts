@@ -1,7 +1,7 @@
 import { useLazyQuery } from '@apollo/client';
 import { CALCULATE_PRICES_BATCH } from '@/lib/graphql/mutations';
 import { CalculatePricesBatchQuery } from '@/__generated__/graphql';
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface UseBatchPricingParams {
   regionId?: string;
@@ -23,23 +23,11 @@ export function useBatchPricing({ regionId, countryId, maxDays = 30 }: UseBatchP
     useLazyQuery<CalculatePricesBatchQuery>(CALCULATE_PRICES_BATCH);
   
   const [pricingCache, setPricingCache] = useState<Map<number, PricingData>>(new Map());
-  const [isRequesting, setIsRequesting] = useState(false);
-  const lastRequestKeyRef = useRef<string>('');
 
   // Fetch all prices when parameters change
   useEffect(() => {
-    const requestKey = `${regionId || ''}-${countryId || ''}-${maxDays}`;
-    
     // Only trigger when we have a region/country
-    if ((regionId || countryId)) {
-      // Avoid duplicate requests for the same parameters
-      if (isRequesting || batchLoading || lastRequestKeyRef.current === requestKey) {
-        return;
-      }
-      
-      setIsRequesting(true);
-      lastRequestKeyRef.current = requestKey;
-      
+    if (regionId || countryId) {
       // Clear existing cache when parameters change
       setPricingCache(new Map());
       
@@ -52,15 +40,12 @@ export function useBatchPricing({ regionId, countryId, maxDays = 30 }: UseBatchP
 
       calculatePricesBatch({
         variables: { inputs }
-      }).finally(() => {
-        isRequestingRef.current = false;
       });
     } else {
       // Reset when no region/country
-      lastRequestKeyRef.current = '';
       setPricingCache(new Map());
     }
-  }, [regionId, countryId, maxDays, batchLoading]);
+  }, [regionId, countryId, maxDays, calculatePricesBatch]);
 
   // Process batch data into cache
   useEffect(() => {
