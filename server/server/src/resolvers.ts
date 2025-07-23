@@ -332,39 +332,62 @@ export const resolvers: Resolvers = {
         const engineService = getPricingEngineService(context);
         
         // Get bundle information from catalog
-        const bundles = await context.dataSources.catalogue.searchPlans({
-          country: countryId,
-          duration: numOfDays
-        });
+        // Use getBundlesByCountry which properly handles country filtering
+        const countryBundles = await context.dataSources.catalogue.getBundlesByCountry(
+          countryId.toUpperCase()
+        );
         
-        if (!bundles.bundles || bundles.bundles.length === 0) {
-          throw new GraphQLError('No bundles found for the specified criteria', {
+        if (!countryBundles || countryBundles.length === 0) {
+          throw new GraphQLError(`No bundles found for country: ${countryId}`, {
             extensions: { code: 'NO_BUNDLES_FOUND' }
           });
         }
         
-        // Use the first matching bundle
-        const bundle = bundles.bundles[0];
+        // Filter bundles by duration - first try exact match
+        let bundle = countryBundles.find(b => b.duration === numOfDays);
+        
+        // If no exact match, find the smallest bundle that covers the requested duration
+        if (!bundle) {
+          const eligibleBundles = countryBundles
+            .filter(b => b.duration && b.duration >= numOfDays)
+            .sort((a, b) => (a.duration || 0) - (b.duration || 0));
+          
+          if (eligibleBundles.length === 0) {
+            throw new GraphQLError(`No bundles found for ${numOfDays} days or longer in country: ${countryId}`, {
+              extensions: { code: 'NO_BUNDLES_FOUND' }
+            });
+          }
+          
+          bundle = eligibleBundles[0];
+          const logger = createLogger({ component: 'calculatePrice' });
+          logger.info('Using next available bundle duration for pricing interpolation', {
+            requestedDays: numOfDays,
+            selectedBundleDays: bundle.duration,
+            countryId,
+            operationType: 'bundle-duration-selection'
+          });
+        }
         
         // Get country name for response
         const countries = await context.dataSources.countries.getCountries();
-        const country = countries.find(c => c.iso === countryId);
+        const country = countries.find(c => c.iso.toLowerCase() === countryId.toLowerCase());
         
         // Create pricing context for the rule engine using service helper
         const pricingContext = PricingEngineService.createContext({
           bundle: {
-            id: bundle.name || `${countryId}-${numOfDays}d`,
-            name: bundle.name,
-            cost: bundle.price || 0,
-            duration: numOfDays,
+            id: bundle?.esim_go_name || `${countryId}-${bundle?.duration || numOfDays}d`,
+            name: bundle?.esim_go_name || '',
+            cost: ((bundle?.price_cents || 0) / 100),
+            duration: bundle?.duration || numOfDays, // Use actual bundle duration, not requested
             countryId: countryId,
             countryName: country?.country || countryId,
-            regionId: regionId || bundle.baseCountry?.region || 'global',
-            regionName: regionId || bundle.baseCountry?.region || 'Global',
-            group: bundle.bundleGroup || 'Standard Fixed',
-            isUnlimited: bundle.unlimited || bundle.dataAmount === -1,
-            dataAmount: bundle.dataAmount?.toString() || '0'
+            regionId: regionId || 'global',
+            regionName: regionId || 'Global',
+            group: bundle?.bundle_group || 'Standard Fixed',
+            isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+            dataAmount: bundle?.data_amount?.toString() || '0'
           },
+          requestedDuration: numOfDays, // Pass the actual requested duration
           paymentMethod: mapPaymentMethodEnum(paymentMethod)
         });
         
@@ -375,7 +398,7 @@ export const resolvers: Resolvers = {
         
         // Map rule engine result to GraphQL schema
         return {
-          bundleName: bundle.name || `${numOfDays} Day Bundle`,
+          bundleName: bundle?.esim_go_name || `${numOfDays} Day Bundle`,
           countryName,
           duration: numOfDays,
           currency: 'USD',
@@ -415,8 +438,9 @@ export const resolvers: Resolvers = {
         inputs.map(async (input: CalculatePriceInput) => {
           try {
             // Get bundle information from catalog
+            // Ensure country code is uppercase to match database format
             const bundles = await context.dataSources.catalogue.searchPlans({
-              country: input.countryId,
+              country: input.countryId.toUpperCase(),
               duration: input.numOfDays
             });
             

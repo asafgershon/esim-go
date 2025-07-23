@@ -95,7 +95,7 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
       is_editable: true, // New rules are always editable
       valid_from: input.validFrom || null,
       valid_until: input.validUntil || null,
-      created_by: 'system' // TODO: Get from context
+      created_by: '00000000-0000-0000-0000-000000000000' // System user UUID
     };
 
     const { data, error } = await this.supabase

@@ -1,49 +1,117 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  Separator,
+  CardDescription,
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
+  Badge,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  Separator,
 } from '@workspace/ui';
 import { 
   Settings, 
   Target, 
   CreditCard,
-  AlertCircle,
-  ChevronRight,
-  ChevronLeft,
+  Plus,
   TestTube,
-  X
+  X,
+  Search,
+  Filter,
+  DollarSign,
+  Zap,
+  TrendingUp,
+  BarChart3,
+  Edit,
+  Copy,
+  Trash2,
+  Play,
+  Pause,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
-import { useQuery } from '@apollo/client';
-import { GET_PRICING_RULES } from '../../lib/graphql/queries';
+import { useQuery, useMutation } from '@apollo/client';
+import { 
+  GET_PRICING_RULES,
+  CREATE_PRICING_RULE,
+  UPDATE_PRICING_RULE,
+  DELETE_PRICING_RULE,
+  TOGGLE_PRICING_RULE,
+  CLONE_PRICING_RULE
+} from '../../lib/graphql/queries';
+import { toast } from 'sonner';
 
-// Import existing components
-import RulesPage from './rules';
-import { MarkupTableManagement } from '../../components/markup-table-management';
-import { ProcessingFeeManagement } from '../../components/processing-fee-management';
+// Import components
+import { RuleBuilder } from '../../components/pricing/rule-builder';
 import { RuleTestingPanel } from '../../components/pricing/rule-testing-panel';
+import { RuleAnalytics } from '../../components/pricing/rule-analytics';
+import { MarkupRuleDialog } from '../../components/pricing/markup-rule-dialog';
+import { ProcessingFeeDialog } from '../../components/pricing/processing-fee-dialog';
+
+interface PricingRule {
+  id: string;
+  type: string;
+  name: string;
+  description: string;
+  conditions: any[];
+  actions: any[];
+  priority: number;
+  isActive: boolean;
+  isEditable: boolean;
+  validFrom?: string;
+  validUntil?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const UnifiedPricingRulesPage: React.FC = () => {
-  const [selectedTab, setSelectedTab] = useState('rules');
   const [showTestingPanel, setShowTestingPanel] = useState(false);
-  const [testingPanelWidth, setTestingPanelWidth] = useState(480); // Default width
+  const [testingPanelWidth, setTestingPanelWidth] = useState(480);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRuleType, setSelectedRuleType] = useState<string>('all');
+  const [showInactiveRules, setShowInactiveRules] = useState(false);
+  const [showSystemRules, setShowSystemRules] = useState(true);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  
+  // Dialog states
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showMarkupDialog, setShowMarkupDialog] = useState(false);
+  const [showProcessingDialog, setShowProcessingDialog] = useState(false);
+  const [editingRule, setEditingRule] = useState<PricingRule | null>(null);
 
   // Check for mobile viewport
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024); // Changed to lg breakpoint
+      setIsMobile(window.innerWidth < 1024);
     };
     
     checkMobile();
@@ -52,9 +120,40 @@ const UnifiedPricingRulesPage: React.FC = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Query for rules data to pass to testing panel
-  const { data: rulesData } = useQuery(GET_PRICING_RULES);
+  // GraphQL queries and mutations
+  const { data: rulesData, loading, error, refetch } = useQuery(GET_PRICING_RULES);
+  const [createRule] = useMutation(CREATE_PRICING_RULE);
+  const [updateRule] = useMutation(UPDATE_PRICING_RULE);
+  const [deleteRule] = useMutation(DELETE_PRICING_RULE);
+  const [toggleRule] = useMutation(TOGGLE_PRICING_RULE);
+  const [cloneRule] = useMutation(CLONE_PRICING_RULE);
+
   const rules = rulesData?.pricingRules || [];
+
+  // Filter rules based on search and filters
+  const filteredRules = rules.filter((rule: PricingRule) => {
+    const matchesSearch = rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         rule.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = selectedRuleType === 'all' || rule.type === selectedRuleType;
+    const matchesActiveFilter = showInactiveRules || rule.isActive;
+    const matchesSystemFilter = showSystemRules || rule.isEditable;
+    
+    return matchesSearch && matchesType && matchesActiveFilter && matchesSystemFilter;
+  });
+
+  // Rule type configurations
+  const ruleTypes = [
+    { value: 'all', label: 'All Rules', icon: Settings, color: 'gray' },
+    { value: 'SYSTEM_MARKUP', label: 'Markup', icon: DollarSign, color: 'green' },
+    { value: 'SYSTEM_PROCESSING', label: 'Processing', icon: CreditCard, color: 'purple' },
+    { value: 'BUSINESS_DISCOUNT', label: 'Discount', icon: TrendingUp, color: 'blue' },
+    { value: 'PROMOTION', label: 'Promotion', icon: BarChart3, color: 'orange' },
+    { value: 'SEGMENT', label: 'Segment', icon: Target, color: 'pink' },
+  ];
+
+  const getRuleTypeConfig = (type: string) => {
+    return ruleTypes.find(rt => rt.value === type) || ruleTypes[0];
+  };
 
   // Toggle testing panel
   const toggleTestingPanel = useCallback(() => {
@@ -69,7 +168,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
 
     const handleMouseMove = (e: MouseEvent) => {
       const newWidth = startWidth - (e.clientX - startX);
-      setTestingPanelWidth(Math.min(Math.max(newWidth, 320), 800)); // Min 320px, max 800px
+      setTestingPanelWidth(Math.min(Math.max(newWidth, 320), 800));
     };
 
     const handleMouseUp = () => {
@@ -81,13 +180,74 @@ const UnifiedPricingRulesPage: React.FC = () => {
     document.addEventListener('mouseup', handleMouseUp);
   }, [testingPanelWidth]);
 
-  // Render content
+  // Rule actions
+  const handleToggleRule = async (ruleId: string) => {
+    try {
+      await toggleRule({ variables: { id: ruleId } });
+      await refetch();
+      toast.success('Rule status updated');
+    } catch (error) {
+      toast.error('Failed to update rule status');
+    }
+  };
+
+  const handleCloneRule = async (ruleId: string, newName: string) => {
+    try {
+      await cloneRule({ variables: { id: ruleId, newName } });
+      await refetch();
+      toast.success('Rule cloned successfully');
+    } catch (error) {
+      toast.error('Failed to clone rule');
+    }
+  };
+
+  const handleDeleteRule = async (ruleId: string) => {
+    try {
+      await deleteRule({ variables: { id: ruleId } });
+      await refetch();
+      toast.success('Rule deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete rule');
+    }
+  };
+
+  const getRulePriorityColor = (priority: number) => {
+    if (priority >= 90) return 'bg-red-100 text-red-800';
+    if (priority >= 50) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-green-100 text-green-800';
+  };
+
+  const getRulePriorityLabel = (priority: number) => {
+    if (priority >= 90) return 'High';
+    if (priority >= 50) return 'Medium';
+    return 'Low';
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <span className="ml-2">Loading pricing rules...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-800">Failed to load pricing rules: {error.message}</p>
+        <Button onClick={() => refetch()} className="mt-2">Try Again</Button>
+      </div>
+    );
+  }
+
+  // Mobile view
   if (isMobile) {
-    // Mobile: Use Sheet component for testing panel
     return (
       <div className="space-y-6">
-        {/* Testing Panel Toggle */}
-        <div className="flex justify-end">
+        {/* Mobile header with testing toggle */}
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold">Pricing Rules</h2>
           <Button
             variant={showTestingPanel ? 'default' : 'outline'}
             size="sm"
@@ -99,34 +259,11 @@ const UnifiedPricingRulesPage: React.FC = () => {
           </Button>
         </div>
 
-        {/* Main Content Tabs */}
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="rules" className="flex items-center gap-1 text-xs">
-              <Settings className="h-3 w-3" />
-              Rules
-            </TabsTrigger>
-            <TabsTrigger value="markup" className="flex items-center gap-1 text-xs">
-              <Target className="h-3 w-3" />
-              Markup
-            </TabsTrigger>
-            <TabsTrigger value="processing" className="flex items-center gap-1 text-xs">
-              <CreditCard className="h-3 w-3" />
-              Fees
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Tab Content */}
-          <TabsContent value="rules" className="space-y-4">
-            <RulesPage />
-          </TabsContent>
-          <TabsContent value="markup" className="space-y-4">
-            <MarkupTableManagement />
-          </TabsContent>
-          <TabsContent value="processing" className="space-y-4">
-            <ProcessingFeeManagement />
-          </TabsContent>
-        </Tabs>
+        {/* Mobile content - simplified view */}
+        <div className="space-y-4">
+          {/* Add this implementation based on mobile needs */}
+          <p className="text-sm text-gray-600">Mobile view implementation needed</p>
+        </div>
 
         {/* Mobile Testing Panel Sheet */}
         <Sheet open={showTestingPanel} onOpenChange={setShowTestingPanel}>
@@ -143,11 +280,37 @@ const UnifiedPricingRulesPage: React.FC = () => {
     );
   }
 
-  // Desktop: Split view layout
+  // Desktop view
   return (
     <div className="h-full flex flex-col">
-      {/* Testing Panel Toggle */}
-      <div className="flex justify-end mb-4">
+      {/* Header with testing toggle */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-4">
+          {/* Quick add buttons */}
+          <Button
+            onClick={() => setShowCreateDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Custom Rule
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowMarkupDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <DollarSign className="h-4 w-4" />
+            Add Markup
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowProcessingDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <CreditCard className="h-4 w-4" />
+            Add Processing Fee
+          </Button>
+        </div>
         <Button
           variant={showTestingPanel ? 'default' : 'outline'}
           size="sm"
@@ -162,81 +325,324 @@ const UnifiedPricingRulesPage: React.FC = () => {
       {/* Main content with split view */}
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Main Content Area */}
-        <div className={`flex-1 flex flex-col transition-all duration-300`}>
-          {/* Main Content Tabs */}
-          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1 flex flex-col space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="rules" className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Rules Engine
-              </TabsTrigger>
-              <TabsTrigger value="markup" className="flex items-center gap-2">
-                <Target className="h-4 w-4" />
-                Markup Configuration
-              </TabsTrigger>
-              <TabsTrigger value="processing" className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                Processing Fees
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Rules Engine Tab */}
-            <TabsContent value="rules" className="flex-1 flex flex-col space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+        <div className="flex-1 flex flex-col space-y-4">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-blue-900">Rules Engine Overview</h3>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Create and manage complex pricing rules with conditions and actions. 
-                      Rules are processed in priority order and can handle dynamic pricing scenarios.
+                    <p className="text-sm font-medium text-gray-600">Total Rules</p>
+                    <p className="text-2xl font-bold text-gray-900">{rules.length}</p>
+                  </div>
+                  <Settings className="h-8 w-8 text-gray-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Active Rules</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {rules.filter((r: PricingRule) => r.isActive).length}
                     </p>
                   </div>
+                  <CheckCircle className="h-8 w-8 text-green-400" />
                 </div>
-              </div>
-              <div className="flex-1 min-h-0">
-                <RulesPage />
-              </div>
-            </TabsContent>
+              </CardContent>
+            </Card>
 
-            {/* Markup Configuration Tab */}
-            <TabsContent value="markup" className="flex-1 flex flex-col space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Target className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-green-900">Markup Configuration</h3>
-                    <p className="text-sm text-green-700 mt-1">
-                      Configure fixed markup amounts for different bundle groups and durations. 
-                      These create system-level pricing rules automatically.
+                    <p className="text-sm font-medium text-gray-600">System Rules</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {rules.filter((r: PricingRule) => !r.isEditable).length}
                     </p>
                   </div>
+                  <Target className="h-8 w-8 text-blue-400" />
                 </div>
-              </div>
-              <div className="flex-1 min-h-0">
-                <MarkupTableManagement />
-              </div>
-            </TabsContent>
+              </CardContent>
+            </Card>
 
-            {/* Processing Fees Tab */}
-            <TabsContent value="processing" className="flex-1 flex flex-col space-y-4">
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <CreditCard className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-purple-900">Processing Fees Configuration</h3>
-                    <p className="text-sm text-purple-700 mt-1">
-                      Manage payment processing rates and fees. Critical fields automatically update pricing rules 
-                      that affect final customer pricing.
+                    <p className="text-sm font-medium text-gray-600">Custom Rules</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {rules.filter((r: PricingRule) => r.isEditable).length}
                     </p>
                   </div>
+                  <BarChart3 className="h-8 w-8 text-purple-400" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filters */}
+          <div className="space-y-4">
+            {/* Search and Type Filter */}
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search rules..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={selectedRuleType} onValueChange={setSelectedRuleType}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ruleTypes.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                      <SelectItem key={type.value} value={type.value}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          {type.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Quick Filters */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-600">Quick filters:</span>
+              <Button
+                variant={showAnalytics ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowAnalytics(!showAnalytics)}
+                className={showAnalytics ? "" : "border-dashed"}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analytics
+              </Button>
+              <Button
+                variant={showInactiveRules ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowInactiveRules(!showInactiveRules)}
+                className={showInactiveRules ? "" : "border-dashed"}
+              >
+                <Pause className="h-4 w-4 mr-2" />
+                Show Inactive
+              </Button>
+              <Button
+                variant={!showSystemRules ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowSystemRules(!showSystemRules)}
+                className={!showSystemRules ? "" : "border-dashed"}
+              >
+                <Target className="h-4 w-4 mr-2" />
+                Hide System Rules
+              </Button>
+            </div>
+          </div>
+
+          {/* Rules Table */}
+          <Card className="flex-1 flex flex-col">
+            <div className="flex-1 overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead>Rule</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Conditions</TableHead>
+                    <TableHead>Actions</TableHead>
+                    <TableHead>Modified</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredRules.map((rule: PricingRule) => {
+                    const typeConfig = getRuleTypeConfig(rule.type);
+                    const Icon = typeConfig.icon;
+
+                    return (
+                      <TableRow key={rule.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-full bg-${typeConfig.color}-100`}>
+                              <Icon className={`h-4 w-4 text-${typeConfig.color}-600`} />
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">{rule.name}</div>
+                              {rule.description && (
+                                <div className="text-sm text-gray-500 truncate max-w-xs">
+                                  {rule.description}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`bg-${typeConfig.color}-50 text-${typeConfig.color}-700`}>
+                            {typeConfig.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Badge 
+                                variant="outline" 
+                                className={getRulePriorityColor(rule.priority)}
+                              >
+                                {rule.priority} - {getRulePriorityLabel(rule.priority)}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Higher priority rules are evaluated first
+                            </TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${rule.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+                            <span className="text-sm">{rule.isActive ? 'Active' : 'Inactive'}</span>
+                            {!rule.isEditable && (
+                              <Badge variant="secondary" className="text-xs">System</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-gray-600">
+                            {rule.conditions.length} condition{rule.conditions.length !== 1 ? 's' : ''}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-gray-600">
+                            {rule.actions.length} action{rule.actions.length !== 1 ? 's' : ''}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-gray-500">
+                            {new Date(rule.updatedAt).toLocaleDateString()}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleToggleRule(rule.id)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  {rule.isActive ? 
+                                    <Pause className="h-4 w-4 text-orange-600" /> : 
+                                    <Play className="h-4 w-4 text-green-600" />
+                                  }
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {rule.isActive ? 'Deactivate rule' : 'Activate rule'}
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditingRule(rule)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit rule</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCloneRule(rule.id, `${rule.name} (Copy)`)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Clone rule</TooltipContent>
+                            </Tooltip>
+
+                            {rule.isEditable && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteRule(rule.id)}
+                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Delete rule</TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+
+          {filteredRules.length === 0 && (
+            <Card className="p-12">
+              <div className="text-center">
+                <Settings className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-4 text-lg font-medium text-gray-900">No rules found</h3>
+                <p className="mt-2 text-gray-500">
+                  {searchQuery || selectedRuleType !== 'all' 
+                    ? 'Try adjusting your search or filters'
+                    : 'Get started by creating your first pricing rule'
+                  }
+                </p>
+                <div className="mt-4 flex justify-center gap-3">
+                  <Button onClick={() => setShowCreateDialog(true)}>
+                    Create Custom Rule
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowMarkupDialog(true)}>
+                    Add Markup
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowProcessingDialog(true)}>
+                    Add Processing Fee
+                  </Button>
                 </div>
               </div>
-              <div className="flex-1 min-h-0">
-                <ProcessingFeeManagement />
-              </div>
-            </TabsContent>
-          </Tabs>
+            </Card>
+          )}
+
+          {/* Analytics Section - Shows when analytics filter is active */}
+          {showAnalytics && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Rule Analytics</CardTitle>
+                <CardDescription>Performance metrics and insights for your pricing rules</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RuleAnalytics rules={rules} />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Desktop Testing Panel - Integrated split view */}
@@ -253,7 +659,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
             />
             
             {/* Panel Header */}
-            <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-background z-10">
               <div className="flex items-center gap-2">
                 <TestTube className="h-5 w-5 text-blue-600" />
                 <h2 className="text-lg font-semibold">Rule Testing Panel</h2>
@@ -275,6 +681,94 @@ const UnifiedPricingRulesPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Create/Edit Rule Dialog */}
+      <Dialog open={showCreateDialog || !!editingRule} onOpenChange={(open) => {
+        if (!open) {
+          setShowCreateDialog(false);
+          setEditingRule(null);
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingRule ? `Edit Rule: ${editingRule.name}` : 'Create New Pricing Rule'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingRule ? 
+                'Modify the rule configuration below. Changes will take effect immediately.' :
+                'Build a new pricing rule using conditions and actions.'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <RuleBuilder
+            rule={editingRule}
+            onSave={async (ruleData) => {
+              try {
+                if (editingRule) {
+                  await updateRule({
+                    variables: {
+                      id: editingRule.id,
+                      input: ruleData
+                    }
+                  });
+                  toast.success('Rule updated successfully');
+                } else {
+                  await createRule({
+                    variables: { input: ruleData }
+                  });
+                  toast.success('Rule created successfully');
+                }
+                await refetch();
+                setShowCreateDialog(false);
+                setEditingRule(null);
+              } catch (error) {
+                toast.error('Failed to save rule');
+              }
+            }}
+            onCancel={() => {
+              setShowCreateDialog(false);
+              setEditingRule(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Markup Rule Dialog */}
+      <MarkupRuleDialog
+        open={showMarkupDialog}
+        onOpenChange={setShowMarkupDialog}
+        onSave={async (ruleData) => {
+          try {
+            await createRule({
+              variables: { input: ruleData }
+            });
+            toast.success('Markup rule created successfully');
+            await refetch();
+            setShowMarkupDialog(false);
+          } catch (error) {
+            toast.error('Failed to create markup rule');
+          }
+        }}
+      />
+
+      {/* Processing Fee Dialog */}
+      <ProcessingFeeDialog
+        open={showProcessingDialog}
+        onOpenChange={setShowProcessingDialog}
+        onSave={async (ruleData) => {
+          try {
+            await createRule({
+              variables: { input: ruleData }
+            });
+            toast.success('Processing fee rule created successfully');
+            await refetch();
+            setShowProcessingDialog(false);
+          } catch (error) {
+            toast.error('Failed to create processing fee rule');
+          }
+        }}
+      />
     </div>
   );
 };
