@@ -151,14 +151,18 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
   const handleRuleTest = async () => {
     setLoading(true);
     try {
+      // Strip __typename from conditions and actions to avoid GraphQL input type errors
+      const cleanConditions = rule.conditions.map(({ __typename, ...condition }) => condition);
+      const cleanActions = rule.actions.map(({ __typename, ...action }) => action);
+
       const result = await simulateRule({
         variables: {
           rule: {
             type: rule.type,
             name: rule.name,
             description: rule.description,
-            conditions: rule.conditions,
-            actions: rule.actions,
+            conditions: cleanConditions,
+            actions: cleanActions,
             priority: rule.priority,
             isActive: true,
           },
