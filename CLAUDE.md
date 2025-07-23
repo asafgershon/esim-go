@@ -17,6 +17,11 @@
 - Use the gerated types from __generated__ folder and use it together with `useMutation` and `useQuery` from Apollo client
 - To build the dashboard application, use `bun run build` in the `client/apps/dashboard` directory
 
+## Supabase Migration Process
+- Create supabase migration by running `supabasem migration new {migration_name}`
+- A file will be created in @server/supabase/migrations/, add the content there and run `supabase db push`
+- Run supabase commands from `/server` directory
+
 ## eSIM Go API Integration Best Practices
 
 ### Catalog API Optimization (From Jason Koolman - eSIM Go Support)

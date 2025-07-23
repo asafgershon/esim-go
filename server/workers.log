@@ -1,0 +1,2193 @@
+$ bun run --filter ./workers dev
+@esim-go/workers dev: [15:14:21 UTC] [32mINFO[39m: [36mCatalog sync worker ready[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "worker"
+@esim-go/workers dev:     correlationId: "wktfgh68j4"
+@esim-go/workers dev: [15:14:21 UTC] [32mINFO[39m: [36mStarting eSIM Go catalog sync workers[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "trpfy9bf8x"
+@esim-go/workers dev:     nodeEnv: "development"
+@esim-go/workers dev:     logLevel: "info"
+@esim-go/workers dev:     concurrency: 5
+@esim-go/workers dev: [15:14:21 UTC] [32mINFO[39m: [36mSupabase connection healthy[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SupabaseService"
+@esim-go/workers dev:     correlationId: "xzx9ityd6l"
+@esim-go/workers dev: [15:14:21 UTC] [32mINFO[39m: [36mStarting scheduler worker[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "s7bvd4bwck"
+@esim-go/workers dev: [15:14:21 UTC] [32mINFO[39m: [36mScheduler worker started successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "s7bvd4bwck"
+@esim-go/workers dev: [15:14:21 UTC] [32mINFO[39m: [36mQueue statistics[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "queue-stats"
+@esim-go/workers dev:     correlationId: "s7bvd4bwck"
+@esim-go/workers dev:     waiting: 0
+@esim-go/workers dev:     active: 0
+@esim-go/workers dev:     completed: 0
+@esim-go/workers dev:     failed: 0
+@esim-go/workers dev:     total: 0
+@esim-go/workers dev: [15:14:21 UTC] [32mINFO[39m: [36mStarting catalog sync worker[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "trpfy9bf8x"
+@esim-go/workers dev: [15:14:21 UTC] [32mINFO[39m: [36mInitial queue stats[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "trpfy9bf8x"
+@esim-go/workers dev:     waiting: 0
+@esim-go/workers dev:     active: 0
+@esim-go/workers dev:     completed: 0
+@esim-go/workers dev:     failed: 0
+@esim-go/workers dev:     total: 0
+@esim-go/workers dev: [15:14:21 UTC] [32mINFO[39m: [36mAll workers started successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "trpfy9bf8x"
+@esim-go/workers dev: [15:14:21 UTC] [32mINFO[39m: [36mHealth check server started on port 5002[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "HealthCheck"
+@esim-go/workers dev:     operationType: "health"
+@esim-go/workers dev:     correlationId: "qtlklapnwi"
+@esim-go/workers dev: [15:14:21 UTC] [32mINFO[39m: [36mFull sync not due[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "s7bvd4bwck"
+@esim-go/workers dev:     lastSyncedAt: "2025-07-22T14:07:22.209Z"
+@esim-go/workers dev:     nextSyncAt: "2025-08-21T14:07:22.207Z"
+@esim-go/workers dev:     daysSinceSync: 0
+@esim-go/workers dev:     daysUntilSync: 30
+@esim-go/workers dev: [15:14:22 UTC] [32mINFO[39m: [36mCatalog metadata updated[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "CatalogMetadataRepository"
+@esim-go/workers dev:     operationType: "metadata-update"
+@esim-go/workers dev:     correlationId: "1aYnLVB0Wf"
+@esim-go/workers dev:     syncVersion: "2025.07"
+@esim-go/workers dev:     totalBundles: 200
+@esim-go/workers dev:     apiHealthStatus: "healthy"
+@esim-go/workers dev: [15:17:09 UTC] [32mINFO[39m: [36mSync job created[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-created"
+@esim-go/workers dev:     correlationId: "g29ZKKExf5"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev:     priority: "normal"
+@esim-go/workers dev: [15:17:09 UTC] [32mINFO[39m: [36mPerformance: create-sync-job completed in 111ms[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "g29ZKKExf5"
+@esim-go/workers dev:     operation: "create-sync-job"
+@esim-go/workers dev:     duration: 111
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev: [15:17:09 UTC] [32mINFO[39m: [36mSync job started[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-started"
+@esim-go/workers dev:     correlationId: "g29ZKKExf5"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev: [15:17:09 UTC] [32mINFO[39m: [36mProcessing catalog sync job[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "worker"
+@esim-go/workers dev:     correlationId: "wktfgh68j4"
+@esim-go/workers dev:     jobId: "2"
+@esim-go/workers dev:     type: "full-sync"
+@esim-go/workers dev:     attemptsMade: 0
+@esim-go/workers dev: [15:17:09 UTC] [32mINFO[39m: [36mStarting full catalog sync[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     bundleGroups: [
+@esim-go/workers dev:       "Standard Fixed",
+@esim-go/workers dev:       "Standard - Unlimited Lite",
+@esim-go/workers dev:       "Standard - Unlimited Essential",
+@esim-go/workers dev:       "Standard - Unlimited Plus",
+@esim-go/workers dev:       "Regional Bundles"
+@esim-go/workers dev:     ]
+@esim-go/workers dev:     strategy: "bundle-groups"
+@esim-go/workers dev: [15:17:09 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     bundleGroup: "Standard Fixed"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev: [15:17:35 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 0
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:35 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 1
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:35 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 2
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:35 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 3
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:35 UTC] [32mINFO[39m: [36mAll pages fetched for bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     bundleGroup: "Standard Fixed"
+@esim-go/workers dev:     totalPages: 29
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev: [15:17:36 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 4
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:36 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 5
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:36 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 6
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:36 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 7
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:36 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 8
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:36 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 9
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 10
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 11
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 12
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 13
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     batchIndex: 14
+@esim-go/workers dev:     batchSize: 4
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:37 UTC] [32mINFO[39m: [36mBulk upsert completed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "bulk-upsert-summary"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 15
+@esim-go/workers dev: [15:17:37 UTC] [32mINFO[39m: [36mPerformance: bulk-upsert-bundles completed in 2737ms[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "-dwzd1rima"
+@esim-go/workers dev:     operation: "bulk-upsert-bundles"
+@esim-go/workers dev:     duration: 2737
+@esim-go/workers dev:     bundleCount: 1404
+@esim-go/workers dev: [15:17:37 UTC] [32mINFO[39m: [36mBundle group sync completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     bundleGroup: "Standard Fixed"
+@esim-go/workers dev:     processed: 1404
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 15
+@esim-go/workers dev: [15:17:37 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 28268ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 28268
+@esim-go/workers dev:     bundleGroup: "Standard Fixed"
+@esim-go/workers dev: [15:17:37 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     bundleGroup: "Standard - Unlimited Lite"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev: [15:17:37 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "g29ZKKExf5"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     status: "running"
+@esim-go/workers dev:     bundlesProcessed: 1404
+@esim-go/workers dev: [15:17:41 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "g29ZKKExf5"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     status: "running"
+@esim-go/workers dev:     bundlesProcessed: 1404
+@esim-go/workers dev: [15:17:41 UTC] [31mERROR[39m: [36mBundle group sync error[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     bundleGroup: "Standard - Unlimited Lite"
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "name": "ESimGoAuthError",
+@esim-go/workers dev:       "message": "access denied",
+@esim-go/workers dev:       "stack":
+@esim-go/workers dev:           ESimGoAuthError: access denied
+@esim-go/workers dev:               at new ESimGoApiError (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/types.js:7:9)
+@esim-go/workers dev:               at new ESimGoAuthError (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/types.js:25:9)
+@esim-go/workers dev:               at <anonymous> (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/client.js:91:35)
+@esim-go/workers dev:               at processTicksAndRejections (native:7:39)
+@esim-go/workers dev:               at <anonymous> (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/node_modules/axios/dist/node/axios.cjs:4280:41)
+@esim-go/workers dev:               at processTicksAndRejections (native:7:39)
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:41 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 3466ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 3466
+@esim-go/workers dev:     bundleGroup: "Standard - Unlimited Lite"
+@esim-go/workers dev: [15:17:41 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     bundleGroup: "Standard - Unlimited Essential"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev: [15:17:44 UTC] [31mERROR[39m: [36mBundle group sync error[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     bundleGroup: "Standard - Unlimited Essential"
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "name": "ESimGoAuthError",
+@esim-go/workers dev:       "message": "access denied",
+@esim-go/workers dev:       "stack":
+@esim-go/workers dev:           ESimGoAuthError: access denied
+@esim-go/workers dev:               at new ESimGoApiError (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/types.js:7:9)
+@esim-go/workers dev:               at new ESimGoAuthError (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/types.js:25:9)
+@esim-go/workers dev:               at <anonymous> (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/client.js:91:35)
+@esim-go/workers dev:               at processTicksAndRejections (native:7:39)
+@esim-go/workers dev:               at <anonymous> (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/node_modules/axios/dist/node/axios.cjs:4280:41)
+@esim-go/workers dev:               at processTicksAndRejections (native:7:39)
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:44 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 3460ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 3460
+@esim-go/workers dev:     bundleGroup: "Standard - Unlimited Essential"
+@esim-go/workers dev: [15:17:45 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     bundleGroup: "Standard - Unlimited Plus"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev: [15:17:45 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "g29ZKKExf5"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     status: "running"
+@esim-go/workers dev:     bundlesProcessed: 1404
+@esim-go/workers dev: [15:17:48 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "g29ZKKExf5"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     status: "running"
+@esim-go/workers dev:     bundlesProcessed: 1404
+@esim-go/workers dev: [15:17:48 UTC] [31mERROR[39m: [36mBundle group sync error[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     bundleGroup: "Standard - Unlimited Plus"
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "name": "ESimGoAuthError",
+@esim-go/workers dev:       "message": "access denied",
+@esim-go/workers dev:       "stack":
+@esim-go/workers dev:           ESimGoAuthError: access denied
+@esim-go/workers dev:               at new ESimGoApiError (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/types.js:7:9)
+@esim-go/workers dev:               at new ESimGoAuthError (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/types.js:25:9)
+@esim-go/workers dev:               at <anonymous> (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/client.js:91:35)
+@esim-go/workers dev:               at processTicksAndRejections (native:7:39)
+@esim-go/workers dev:               at <anonymous> (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/node_modules/axios/dist/node/axios.cjs:4280:41)
+@esim-go/workers dev:               at processTicksAndRejections (native:7:39)
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:48 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 3461ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 3461
+@esim-go/workers dev:     bundleGroup: "Standard - Unlimited Plus"
+@esim-go/workers dev: [15:17:48 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     bundleGroup: "Regional Bundles"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev: [15:17:52 UTC] [31mERROR[39m: [36mBundle group sync error[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     bundleGroup: "Regional Bundles"
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "name": "ESimGoAuthError",
+@esim-go/workers dev:       "message": "access denied",
+@esim-go/workers dev:       "stack":
+@esim-go/workers dev:           ESimGoAuthError: access denied
+@esim-go/workers dev:               at new ESimGoApiError (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/types.js:7:9)
+@esim-go/workers dev:               at new ESimGoAuthError (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/types.js:25:9)
+@esim-go/workers dev:               at <anonymous> (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/dist/client.js:91:35)
+@esim-go/workers dev:               at processTicksAndRejections (native:7:39)
+@esim-go/workers dev:               at <anonymous> (/Users/yarinsa/Code/esim-go/server/packages/esim-go-client/node_modules/axios/dist/node/axios.cjs:4280:41)
+@esim-go/workers dev:               at processTicksAndRejections (native:7:39)
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:52 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 3463ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 3463
+@esim-go/workers dev:     bundleGroup: "Regional Bundles"
+@esim-go/workers dev: [15:17:52 UTC] [32mINFO[39m: [36mFull catalog sync completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev:     bundlesAdded: 0
+@esim-go/workers dev:     bundlesUpdated: 0
+@esim-go/workers dev:     bundleGroups: [
+@esim-go/workers dev:       "Standard Fixed",
+@esim-go/workers dev:       "Standard - Unlimited Lite",
+@esim-go/workers dev:       "Standard - Unlimited Essential",
+@esim-go/workers dev:       "Standard - Unlimited Plus",
+@esim-go/workers dev:       "Regional Bundles"
+@esim-go/workers dev:     ]
+@esim-go/workers dev:     errors: 19
+@esim-go/workers dev: [15:17:52 UTC] [32mINFO[39m: [36mPerformance: full-catalog-sync completed in 42998ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "p3ykgyotdd"
+@esim-go/workers dev:     operation: "full-catalog-sync"
+@esim-go/workers dev:     duration: 42998
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev: [15:17:52 UTC] [32mINFO[39m: [36mJob completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncQueue"
+@esim-go/workers dev:     correlationId: "0tizmdolze"
+@esim-go/workers dev:     jobId: "2"
+@esim-go/workers dev:     result: {
+@esim-go/workers dev:       "success": true,
+@esim-go/workers dev:       "type": "full-sync",
+@esim-go/workers dev:       "dbJobId": "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     }
+@esim-go/workers dev:     operationType: "job-completed"
+@esim-go/workers dev: [15:17:52 UTC] [32mINFO[39m: [36mCatalog metadata updated[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "CatalogMetadataRepository"
+@esim-go/workers dev:     operationType: "metadata-update"
+@esim-go/workers dev:     correlationId: "1aYnLVB0Wf"
+@esim-go/workers dev:     syncVersion: "2025.07"
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev:     apiHealthStatus: "healthy"
+@esim-go/workers dev: [15:17:52 UTC] [32mINFO[39m: [36mPerformance: process-full-sync completed in 43111ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "wktfgh68j4"
+@esim-go/workers dev:     operation: "process-full-sync"
+@esim-go/workers dev:     duration: 43111
+@esim-go/workers dev:     jobId: "2"
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev: [15:17:52 UTC] [32mINFO[39m: [36mJob completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "worker"
+@esim-go/workers dev:     correlationId: "wktfgh68j4"
+@esim-go/workers dev:     jobId: "2"
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev:     returnValue: {
+@esim-go/workers dev:       "success": true,
+@esim-go/workers dev:       "type": "full-sync",
+@esim-go/workers dev:       "dbJobId": "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:17:52 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "g29ZKKExf5"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     status: "running"
+@esim-go/workers dev:     bundlesProcessed: 1404
+@esim-go/workers dev: [15:17:52 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "g29ZKKExf5"
+@esim-go/workers dev:     jobId: "9f3761df-4eae-4257-97fe-caf05c569e3c"
+@esim-go/workers dev:     status: "completed"
+@esim-go/workers dev:     bundlesProcessed: 1404
+@esim-go/workers dev: [15:19:23 UTC] [32mINFO[39m: [36mCatalog metadata updated[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "CatalogMetadataRepository"
+@esim-go/workers dev:     operationType: "metadata-update"
+@esim-go/workers dev:     correlationId: "1aYnLVB0Wf"
+@esim-go/workers dev:     syncVersion: "2025.07"
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev:     apiHealthStatus: "healthy"
+@esim-go/workers dev: [15:22:55 UTC] [32mINFO[39m: [36mCatalog sync worker ready[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "worker"
+@esim-go/workers dev:     correlationId: "icvnikhfl2"
+@esim-go/workers dev: [15:22:55 UTC] [32mINFO[39m: [36mStarting eSIM Go catalog sync workers[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "vgxdp094jb"
+@esim-go/workers dev:     nodeEnv: "development"
+@esim-go/workers dev:     logLevel: "info"
+@esim-go/workers dev:     concurrency: 5
+@esim-go/workers dev: [15:22:55 UTC] [32mINFO[39m: [36mSupabase connection healthy[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SupabaseService"
+@esim-go/workers dev:     correlationId: "yapmz5cl8t"
+@esim-go/workers dev: [15:22:55 UTC] [32mINFO[39m: [36mStarting catalog sync worker[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "vgxdp094jb"
+@esim-go/workers dev: [15:22:55 UTC] [32mINFO[39m: [36mHealth check server started on port 5002[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "HealthCheck"
+@esim-go/workers dev:     operationType: "health"
+@esim-go/workers dev:     correlationId: "1lmtftolyu"
+@esim-go/workers dev: [15:22:55 UTC] [32mINFO[39m: [36mInitial queue stats[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "vgxdp094jb"
+@esim-go/workers dev:     waiting: 0
+@esim-go/workers dev:     active: 0
+@esim-go/workers dev:     completed: 1
+@esim-go/workers dev:     failed: 0
+@esim-go/workers dev:     total: 1
+@esim-go/workers dev: [15:22:55 UTC] [32mINFO[39m: [36mAll workers started successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "vgxdp094jb"
+@esim-go/workers dev: [15:22:55 UTC] [32mINFO[39m: [36mStarting scheduler worker[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "1toamfgm1h"
+@esim-go/workers dev: [15:22:55 UTC] [32mINFO[39m: [36mScheduler worker started successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "1toamfgm1h"
+@esim-go/workers dev: [15:22:55 UTC] [32mINFO[39m: [36mQueue statistics[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "queue-stats"
+@esim-go/workers dev:     correlationId: "1toamfgm1h"
+@esim-go/workers dev:     waiting: 0
+@esim-go/workers dev:     active: 0
+@esim-go/workers dev:     completed: 1
+@esim-go/workers dev:     failed: 0
+@esim-go/workers dev:     total: 1
+@esim-go/workers dev: [15:22:55 UTC] [32mINFO[39m: [36mFull sync not due[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "1toamfgm1h"
+@esim-go/workers dev:     lastSyncedAt: "2025-07-22T15:17:52.168Z"
+@esim-go/workers dev:     nextSyncAt: "2025-08-21T15:17:52.167Z"
+@esim-go/workers dev:     daysSinceSync: 0
+@esim-go/workers dev:     daysUntilSync: 30
+@esim-go/workers dev: [15:22:56 UTC] [32mINFO[39m: [36mCatalog metadata updated[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "CatalogMetadataRepository"
+@esim-go/workers dev:     operationType: "metadata-update"
+@esim-go/workers dev:     correlationId: "gIW0LZrxVk"
+@esim-go/workers dev:     syncVersion: "2025.07"
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev:     apiHealthStatus: "healthy"
+@esim-go/workers dev: [15:23:01 UTC] [32mINFO[39m: [36mCatalog sync worker ready[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "worker"
+@esim-go/workers dev:     correlationId: "ibjh5yqcgd"
+@esim-go/workers dev: [15:23:01 UTC] [32mINFO[39m: [36mStarting eSIM Go catalog sync workers[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "r2p0954fku"
+@esim-go/workers dev:     nodeEnv: "development"
+@esim-go/workers dev:     logLevel: "info"
+@esim-go/workers dev:     concurrency: 5
+@esim-go/workers dev: [15:23:01 UTC] [32mINFO[39m: [36mStarting catalog sync worker[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "r2p0954fku"
+@esim-go/workers dev: [15:23:01 UTC] [32mINFO[39m: [36mInitial queue stats[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "r2p0954fku"
+@esim-go/workers dev:     waiting: 0
+@esim-go/workers dev:     active: 0
+@esim-go/workers dev:     completed: 1
+@esim-go/workers dev:     failed: 0
+@esim-go/workers dev:     total: 1
+@esim-go/workers dev: [15:23:01 UTC] [32mINFO[39m: [36mAll workers started successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "r2p0954fku"
+@esim-go/workers dev: [15:23:01 UTC] [32mINFO[39m: [36mHealth check server started on port 5002[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "HealthCheck"
+@esim-go/workers dev:     operationType: "health"
+@esim-go/workers dev:     correlationId: "4ei772xif1"
+@esim-go/workers dev: [15:23:01 UTC] [32mINFO[39m: [36mStarting scheduler worker[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "rdavlbm2ri"
+@esim-go/workers dev: [15:23:01 UTC] [32mINFO[39m: [36mScheduler worker started successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "rdavlbm2ri"
+@esim-go/workers dev: [15:23:01 UTC] [32mINFO[39m: [36mQueue statistics[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "queue-stats"
+@esim-go/workers dev:     correlationId: "rdavlbm2ri"
+@esim-go/workers dev:     waiting: 0
+@esim-go/workers dev:     active: 0
+@esim-go/workers dev:     completed: 1
+@esim-go/workers dev:     failed: 0
+@esim-go/workers dev:     total: 1
+@esim-go/workers dev: [15:23:01 UTC] [32mINFO[39m: [36mSupabase connection healthy[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SupabaseService"
+@esim-go/workers dev:     correlationId: "xdz6okweud"
+@esim-go/workers dev: [15:23:01 UTC] [32mINFO[39m: [36mFull sync not due[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "rdavlbm2ri"
+@esim-go/workers dev:     lastSyncedAt: "2025-07-22T15:17:52.168Z"
+@esim-go/workers dev:     nextSyncAt: "2025-08-21T15:17:52.167Z"
+@esim-go/workers dev:     daysSinceSync: 0
+@esim-go/workers dev:     daysUntilSync: 30
+@esim-go/workers dev: [15:23:02 UTC] [32mINFO[39m: [36mCatalog metadata updated[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "CatalogMetadataRepository"
+@esim-go/workers dev:     operationType: "metadata-update"
+@esim-go/workers dev:     correlationId: "QXUB81SkkV"
+@esim-go/workers dev:     syncVersion: "2025.07"
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev:     apiHealthStatus: "healthy"
+@esim-go/workers dev: [15:23:09 UTC] [32mINFO[39m: [36mStarting eSIM Go catalog sync workers[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "epxkc97bno"
+@esim-go/workers dev:     nodeEnv: "development"
+@esim-go/workers dev:     logLevel: "info"
+@esim-go/workers dev:     concurrency: 5
+@esim-go/workers dev: [15:23:09 UTC] [32mINFO[39m: [36mCatalog sync worker ready[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "worker"
+@esim-go/workers dev:     correlationId: "gf4e8dx9q8"
+@esim-go/workers dev: [15:23:09 UTC] [32mINFO[39m: [36mSupabase connection healthy[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SupabaseService"
+@esim-go/workers dev:     correlationId: "zud9ts1zkg"
+@esim-go/workers dev: [15:23:09 UTC] [32mINFO[39m: [36mStarting catalog sync worker[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "epxkc97bno"
+@esim-go/workers dev: [15:23:09 UTC] [32mINFO[39m: [36mInitial queue stats[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "epxkc97bno"
+@esim-go/workers dev:     waiting: 0
+@esim-go/workers dev:     active: 0
+@esim-go/workers dev:     completed: 1
+@esim-go/workers dev:     failed: 0
+@esim-go/workers dev:     total: 1
+@esim-go/workers dev: [15:23:09 UTC] [32mINFO[39m: [36mAll workers started successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "epxkc97bno"
+@esim-go/workers dev: [15:23:09 UTC] [32mINFO[39m: [36mHealth check server started on port 5002[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "HealthCheck"
+@esim-go/workers dev:     operationType: "health"
+@esim-go/workers dev:     correlationId: "w5ps5mse4x"
+@esim-go/workers dev: [15:23:09 UTC] [32mINFO[39m: [36mStarting scheduler worker[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "mrfljuhmrb"
+@esim-go/workers dev: [15:23:09 UTC] [32mINFO[39m: [36mScheduler worker started successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "mrfljuhmrb"
+@esim-go/workers dev: [15:23:09 UTC] [32mINFO[39m: [36mQueue statistics[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "queue-stats"
+@esim-go/workers dev:     correlationId: "mrfljuhmrb"
+@esim-go/workers dev:     waiting: 0
+@esim-go/workers dev:     active: 0
+@esim-go/workers dev:     completed: 1
+@esim-go/workers dev:     failed: 0
+@esim-go/workers dev:     total: 1
+@esim-go/workers dev: [15:23:09 UTC] [32mINFO[39m: [36mFull sync not due[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "mrfljuhmrb"
+@esim-go/workers dev:     lastSyncedAt: "2025-07-22T15:17:52.168Z"
+@esim-go/workers dev:     nextSyncAt: "2025-08-21T15:17:52.167Z"
+@esim-go/workers dev:     daysSinceSync: 0
+@esim-go/workers dev:     daysUntilSync: 30
+@esim-go/workers dev: [15:23:10 UTC] [32mINFO[39m: [36mCatalog metadata updated[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "CatalogMetadataRepository"
+@esim-go/workers dev:     operationType: "metadata-update"
+@esim-go/workers dev:     correlationId: "DACvwEzgIm"
+@esim-go/workers dev:     syncVersion: "2025.07"
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev:     apiHealthStatus: "healthy"
+@esim-go/workers dev: [15:24:12 UTC] [32mINFO[39m: [36mProcessing catalog sync job[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "worker"
+@esim-go/workers dev:     correlationId: "gf4e8dx9q8"
+@esim-go/workers dev:     jobId: "3"
+@esim-go/workers dev:     type: "full-sync"
+@esim-go/workers dev:     attemptsMade: 0
+@esim-go/workers dev: [15:24:12 UTC] [32mINFO[39m: [36mSync job created[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-created"
+@esim-go/workers dev:     correlationId: "ZDhi3x0wJI"
+@esim-go/workers dev:     jobId: "ae9c25b7-1467-4376-abed-20c7640ebe00"
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev:     priority: "normal"
+@esim-go/workers dev: [15:24:12 UTC] [32mINFO[39m: [36mPerformance: create-sync-job completed in 106ms[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "ZDhi3x0wJI"
+@esim-go/workers dev:     operation: "create-sync-job"
+@esim-go/workers dev:     duration: 106
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev: [15:24:12 UTC] [32mINFO[39m: [36mSync job started[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-started"
+@esim-go/workers dev:     correlationId: "ZDhi3x0wJI"
+@esim-go/workers dev:     jobId: "ae9c25b7-1467-4376-abed-20c7640ebe00"
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev: [15:24:12 UTC] [32mINFO[39m: [36mBundle groups fetched successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "bundle-groups-fetch"
+@esim-go/workers dev:     correlationId: "hj9t1xeoxh"
+@esim-go/workers dev:     groupCount: 6
+@esim-go/workers dev:     groups: [
+@esim-go/workers dev:       "Hajj Promo",
+@esim-go/workers dev:       "Standard Fixed",
+@esim-go/workers dev:       "Standard Long Duration",
+@esim-go/workers dev:       "Standard Unlimited Essential",
+@esim-go/workers dev:       "Standard Unlimited Lite",
+@esim-go/workers dev:       "Standard Unlimited Plus"
+@esim-go/workers dev:     ]
+@esim-go/workers dev: [15:24:12 UTC] [32mINFO[39m: [36mStarting full catalog sync[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "hj9t1xeoxh"
+@esim-go/workers dev:     jobId: "ae9c25b7-1467-4376-abed-20c7640ebe00"
+@esim-go/workers dev:     bundleGroups: [
+@esim-go/workers dev:       "Hajj Promo",
+@esim-go/workers dev:       "Standard Fixed",
+@esim-go/workers dev:       "Standard Long Duration",
+@esim-go/workers dev:       "Standard Unlimited Essential",
+@esim-go/workers dev:       "Standard Unlimited Lite",
+@esim-go/workers dev:       "Standard Unlimited Plus"
+@esim-go/workers dev:     ]
+@esim-go/workers dev:     strategy: "bundle-groups"
+@esim-go/workers dev: [15:24:12 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "hj9t1xeoxh"
+@esim-go/workers dev:     bundleGroup: "Hajj Promo"
+@esim-go/workers dev:     jobId: "ae9c25b7-1467-4376-abed-20c7640ebe00"
+@esim-go/workers dev: [15:24:13 UTC] [32mINFO[39m: [36mAll pages fetched for bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "hj9t1xeoxh"
+@esim-go/workers dev:     bundleGroup: "Hajj Promo"
+@esim-go/workers dev:     totalPages: 1
+@esim-go/workers dev:     totalBundles: 29
+@esim-go/workers dev: [15:24:13 UTC] [32mINFO[39m: [36mBundle group sync completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "hj9t1xeoxh"
+@esim-go/workers dev:     bundleGroup: "Hajj Promo"
+@esim-go/workers dev:     processed: 29
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 1
+@esim-go/workers dev: [15:24:13 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 866ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "hj9t1xeoxh"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 866
+@esim-go/workers dev:     bundleGroup: "Hajj Promo"
+@esim-go/workers dev: [15:24:13 UTC] [31mERROR[39m: [36mBundle group sync failed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "hj9t1xeoxh"
+@esim-go/workers dev:     group: "Hajj Promo"
+@esim-go/workers dev:     jobId: "ae9c25b7-1467-4376-abed-20c7640ebe00"
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "name": "TypeError",
+@esim-go/workers dev:       "message": "undefined is not an object (evaluating 'this.BUNDLE_GROUPS.length')",
+@esim-go/workers dev:       "stack":
+@esim-go/workers dev:           TypeError: undefined is not an object (evaluating 'this.BUNDLE_GROUPS.length')
+@esim-go/workers dev:               at <anonymous> (/Users/yarinsa/Code/esim-go/server/workers/src/services/catalog-sync.service.ts:109:78)
+@esim-go/workers dev:               at processTicksAndRejections (native:7:39)
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:13 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "hj9t1xeoxh"
+@esim-go/workers dev:     bundleGroup: "Standard Fixed"
+@esim-go/workers dev:     jobId: "ae9c25b7-1467-4376-abed-20c7640ebe00"
+@esim-go/workers dev: [15:24:13 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     batchIndex: 0
+@esim-go/workers dev:     batchSize: 29
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:13 UTC] [32mINFO[39m: [36mBulk upsert completed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "bulk-upsert-summary"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     totalBundles: 29
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 1
+@esim-go/workers dev: [15:24:13 UTC] [32mINFO[39m: [36mPerformance: bulk-upsert-bundles completed in 109ms[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     operation: "bulk-upsert-bundles"
+@esim-go/workers dev:     duration: 109
+@esim-go/workers dev:     bundleCount: 29
+@esim-go/workers dev: [15:24:38 UTC] [32mINFO[39m: [36mAll pages fetched for bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "hj9t1xeoxh"
+@esim-go/workers dev:     bundleGroup: "Standard Fixed"
+@esim-go/workers dev:     totalPages: 29
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev: [15:24:38 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     batchIndex: 0
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:38 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     batchIndex: 1
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:39 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     batchIndex: 2
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:39 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     batchIndex: 3
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:39 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     batchIndex: 4
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:39 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     batchIndex: 5
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:39 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     batchIndex: 6
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:39 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     batchIndex: 7
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:39 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     batchIndex: 8
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:40 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "9P9BmPnBHh"
+@esim-go/workers dev:     batchIndex: 9
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:24:40 UTC] [32mINFO[39m: [36mCatalog sync worker ready[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "worker"
+@esim-go/workers dev:     correlationId: "7uy209u283"
+@esim-go/workers dev: [15:24:40 UTC] [32mINFO[39m: [36mStarting eSIM Go catalog sync workers[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "l3vydxppqd"
+@esim-go/workers dev:     nodeEnv: "development"
+@esim-go/workers dev:     logLevel: "info"
+@esim-go/workers dev:     concurrency: 5
+@esim-go/workers dev: [15:24:40 UTC] [32mINFO[39m: [36mSupabase connection healthy[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SupabaseService"
+@esim-go/workers dev:     correlationId: "na7ki4tnkz"
+@esim-go/workers dev: [15:24:40 UTC] [32mINFO[39m: [36mStarting scheduler worker[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "7bzu0cys3l"
+@esim-go/workers dev: [15:24:40 UTC] [32mINFO[39m: [36mScheduler worker started successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "7bzu0cys3l"
+@esim-go/workers dev: [15:24:40 UTC] [32mINFO[39m: [36mQueue statistics[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "queue-stats"
+@esim-go/workers dev:     correlationId: "7bzu0cys3l"
+@esim-go/workers dev:     waiting: 0
+@esim-go/workers dev:     active: 1
+@esim-go/workers dev:     completed: 1
+@esim-go/workers dev:     failed: 0
+@esim-go/workers dev:     total: 2
+@esim-go/workers dev: [15:24:40 UTC] [32mINFO[39m: [36mHealth check server started on port 5002[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "HealthCheck"
+@esim-go/workers dev:     operationType: "health"
+@esim-go/workers dev:     correlationId: "ba5zj2t5nk"
+@esim-go/workers dev: [15:24:40 UTC] [32mINFO[39m: [36mStarting catalog sync worker[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "l3vydxppqd"
+@esim-go/workers dev: [15:24:40 UTC] [32mINFO[39m: [36mInitial queue stats[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "l3vydxppqd"
+@esim-go/workers dev:     waiting: 0
+@esim-go/workers dev:     active: 1
+@esim-go/workers dev:     completed: 1
+@esim-go/workers dev:     failed: 0
+@esim-go/workers dev:     total: 2
+@esim-go/workers dev: [15:24:40 UTC] [32mINFO[39m: [36mAll workers started successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "WorkerMain"
+@esim-go/workers dev:     operationType: "startup"
+@esim-go/workers dev:     correlationId: "l3vydxppqd"
+@esim-go/workers dev: [15:24:40 UTC] [32mINFO[39m: [36mFull sync not due[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "SchedulerWorker"
+@esim-go/workers dev:     operationType: "scheduler"
+@esim-go/workers dev:     correlationId: "7bzu0cys3l"
+@esim-go/workers dev:     lastSyncedAt: "2025-07-22T15:17:52.168Z"
+@esim-go/workers dev:     nextSyncAt: "2025-08-21T15:17:52.167Z"
+@esim-go/workers dev:     daysSinceSync: 0
+@esim-go/workers dev:     daysUntilSync: 30
+@esim-go/workers dev: [15:24:41 UTC] [32mINFO[39m: [36mCatalog metadata updated[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "CatalogMetadataRepository"
+@esim-go/workers dev:     operationType: "metadata-update"
+@esim-go/workers dev:     correlationId: "clp2atUaEb"
+@esim-go/workers dev:     syncVersion: "2025.07"
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev:     apiHealthStatus: "healthy"
+@esim-go/workers dev: [15:25:40 UTC] [33mWARN[39m: [36mJob stalled[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "worker"
+@esim-go/workers dev:     correlationId: "7uy209u283"
+@esim-go/workers dev:     jobId: "3"
+@esim-go/workers dev: [15:25:40 UTC] [32mINFO[39m: [36mProcessing catalog sync job[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "worker"
+@esim-go/workers dev:     correlationId: "7uy209u283"
+@esim-go/workers dev:     jobId: "3"
+@esim-go/workers dev:     type: "full-sync"
+@esim-go/workers dev:     attemptsMade: 0
+@esim-go/workers dev: [15:25:40 UTC] [32mINFO[39m: [36mSync job created[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-created"
+@esim-go/workers dev:     correlationId: "Gj1BYcCwtF"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev:     priority: "normal"
+@esim-go/workers dev: [15:25:40 UTC] [32mINFO[39m: [36mBundle groups fetched successfully[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "bundle-groups-fetch"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     groupCount: 6
+@esim-go/workers dev:     groups: [
+@esim-go/workers dev:       "Hajj Promo",
+@esim-go/workers dev:       "Standard Fixed",
+@esim-go/workers dev:       "Standard Long Duration",
+@esim-go/workers dev:       "Standard Unlimited Essential",
+@esim-go/workers dev:       "Standard Unlimited Lite",
+@esim-go/workers dev:       "Standard Unlimited Plus"
+@esim-go/workers dev:     ]
+@esim-go/workers dev: [15:25:40 UTC] [32mINFO[39m: [36mPerformance: create-sync-job completed in 112ms[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "Gj1BYcCwtF"
+@esim-go/workers dev:     operation: "create-sync-job"
+@esim-go/workers dev:     duration: 112
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev: [15:25:41 UTC] [32mINFO[39m: [36mSync job started[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-started"
+@esim-go/workers dev:     correlationId: "Gj1BYcCwtF"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev: [15:25:40 UTC] [32mINFO[39m: [36mStarting full catalog sync[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     bundleGroups: [
+@esim-go/workers dev:       "Hajj Promo",
+@esim-go/workers dev:       "Standard Fixed",
+@esim-go/workers dev:       "Standard Long Duration",
+@esim-go/workers dev:       "Standard Unlimited Essential",
+@esim-go/workers dev:       "Standard Unlimited Lite",
+@esim-go/workers dev:       "Standard Unlimited Plus"
+@esim-go/workers dev:     ]
+@esim-go/workers dev:     strategy: "bundle-groups"
+@esim-go/workers dev: [15:25:41 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Hajj Promo"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev: [15:25:41 UTC] [32mINFO[39m: [36mAll pages fetched for bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Hajj Promo"
+@esim-go/workers dev:     totalPages: 1
+@esim-go/workers dev:     totalBundles: 29
+@esim-go/workers dev: [15:25:42 UTC] [32mINFO[39m: [36mBundle group sync completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Hajj Promo"
+@esim-go/workers dev:     processed: 29
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 1
+@esim-go/workers dev: [15:25:42 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 966ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 966
+@esim-go/workers dev:     bundleGroup: "Hajj Promo"
+@esim-go/workers dev: [15:25:42 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Fixed"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev: [15:25:42 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "Gj1BYcCwtF"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     status: "running"
+@esim-go/workers dev:     bundlesProcessed: 29
+@esim-go/workers dev: [15:25:42 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 0
+@esim-go/workers dev:     batchSize: 29
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:25:42 UTC] [32mINFO[39m: [36mBulk upsert completed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "bulk-upsert-summary"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     totalBundles: 29
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 1
+@esim-go/workers dev: [15:25:42 UTC] [32mINFO[39m: [36mPerformance: bulk-upsert-bundles completed in 108ms[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     operation: "bulk-upsert-bundles"
+@esim-go/workers dev:     duration: 108
+@esim-go/workers dev:     bundleCount: 29
+@esim-go/workers dev: [15:26:11 UTC] [32mINFO[39m: [36mAll pages fetched for bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Fixed"
+@esim-go/workers dev:     totalPages: 29
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev: [15:26:11 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 0
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:11 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 1
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:11 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 2
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:11 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 3
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:11 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 4
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:12 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 5
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:12 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 6
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:12 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 7
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:12 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 8
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:12 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 9
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:12 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 10
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:13 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 11
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:13 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 12
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:13 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 13
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:13 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 14
+@esim-go/workers dev:     batchSize: 4
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:13 UTC] [32mINFO[39m: [36mBulk upsert completed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "bulk-upsert-summary"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     totalBundles: 1404
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 15
+@esim-go/workers dev: [15:26:13 UTC] [32mINFO[39m: [36mPerformance: bulk-upsert-bundles completed in 2256ms[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     operation: "bulk-upsert-bundles"
+@esim-go/workers dev:     duration: 2256
+@esim-go/workers dev:     bundleCount: 1404
+@esim-go/workers dev: [15:26:13 UTC] [32mINFO[39m: [36mBundle group sync completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Fixed"
+@esim-go/workers dev:     processed: 1404
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 15
+@esim-go/workers dev: [15:26:13 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 31328ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 31328
+@esim-go/workers dev:     bundleGroup: "Standard Fixed"
+@esim-go/workers dev: [15:26:13 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Long Duration"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev: [15:26:13 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "Gj1BYcCwtF"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     status: "running"
+@esim-go/workers dev:     bundlesProcessed: 1433
+@esim-go/workers dev: [15:26:14 UTC] [32mINFO[39m: [36mAll pages fetched for bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Long Duration"
+@esim-go/workers dev:     totalPages: 1
+@esim-go/workers dev:     totalBundles: 25
+@esim-go/workers dev: [15:26:14 UTC] [32mINFO[39m: [36mBundle group sync completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Long Duration"
+@esim-go/workers dev:     processed: 25
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 1
+@esim-go/workers dev: [15:26:14 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 1207ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 1207
+@esim-go/workers dev:     bundleGroup: "Standard Long Duration"
+@esim-go/workers dev: [15:26:14 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Essential"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev: [15:26:14 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "Gj1BYcCwtF"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     status: "running"
+@esim-go/workers dev:     bundlesProcessed: 1458
+@esim-go/workers dev: [15:26:14 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 0
+@esim-go/workers dev:     batchSize: 25
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:14 UTC] [32mINFO[39m: [36mBulk upsert completed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "bulk-upsert-summary"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     totalBundles: 25
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 1
+@esim-go/workers dev: [15:26:14 UTC] [32mINFO[39m: [36mPerformance: bulk-upsert-bundles completed in 173ms[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     operation: "bulk-upsert-bundles"
+@esim-go/workers dev:     duration: 173
+@esim-go/workers dev:     bundleCount: 25
+@esim-go/workers dev: [15:26:36 UTC] [32mINFO[39m: [36mAll pages fetched for bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Essential"
+@esim-go/workers dev:     totalPages: 25
+@esim-go/workers dev:     totalBundles: 1221
+@esim-go/workers dev: [15:26:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 0
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 1
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 2
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 3
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 4
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 5
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 6
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:37 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 7
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:38 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 8
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:38 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 9
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:38 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 10
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:38 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 11
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:38 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 12
+@esim-go/workers dev:     batchSize: 21
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:26:38 UTC] [32mINFO[39m: [36mBulk upsert completed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "bulk-upsert-summary"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     totalBundles: 1221
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 13
+@esim-go/workers dev: [15:26:38 UTC] [32mINFO[39m: [36mPerformance: bulk-upsert-bundles completed in 1533ms[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     operation: "bulk-upsert-bundles"
+@esim-go/workers dev:     duration: 1533
+@esim-go/workers dev:     bundleCount: 1221
+@esim-go/workers dev: [15:26:38 UTC] [32mINFO[39m: [36mBundle group sync completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Essential"
+@esim-go/workers dev:     processed: 1221
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 13
+@esim-go/workers dev: [15:26:38 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 23578ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 23578
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Essential"
+@esim-go/workers dev: [15:26:38 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Lite"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev: [15:26:38 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "Gj1BYcCwtF"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     status: "running"
+@esim-go/workers dev:     bundlesProcessed: 2679
+@esim-go/workers dev: [15:27:00 UTC] [32mINFO[39m: [36mAll pages fetched for bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Lite"
+@esim-go/workers dev:     totalPages: 25
+@esim-go/workers dev:     totalBundles: 1222
+@esim-go/workers dev: [15:27:01 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 0
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:01 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 1
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:01 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 2
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:01 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 3
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:01 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 4
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:01 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 5
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:01 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 6
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:01 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 7
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:02 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 8
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:02 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 9
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:02 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 10
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:02 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 11
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:02 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 12
+@esim-go/workers dev:     batchSize: 22
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:02 UTC] [32mINFO[39m: [36mBulk upsert completed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "bulk-upsert-summary"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     totalBundles: 1222
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 13
+@esim-go/workers dev: [15:27:02 UTC] [32mINFO[39m: [36mPerformance: bulk-upsert-bundles completed in 1654ms[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     operation: "bulk-upsert-bundles"
+@esim-go/workers dev:     duration: 1654
+@esim-go/workers dev:     bundleCount: 1222
+@esim-go/workers dev: [15:27:02 UTC] [32mINFO[39m: [36mBundle group sync completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Lite"
+@esim-go/workers dev:     processed: 1222
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 13
+@esim-go/workers dev: [15:27:02 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 23974ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 23974
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Lite"
+@esim-go/workers dev: [15:27:02 UTC] [32mINFO[39m: [36mSyncing bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Plus"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev: [15:27:02 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "Gj1BYcCwtF"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     status: "running"
+@esim-go/workers dev:     bundlesProcessed: 3901
+@esim-go/workers dev: [15:27:23 UTC] [32mINFO[39m: [36mAll pages fetched for bundle group[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Plus"
+@esim-go/workers dev:     totalPages: 25
+@esim-go/workers dev:     totalBundles: 1217
+@esim-go/workers dev: [15:27:23 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 0
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:23 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 1
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:23 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 2
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:24 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 3
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:24 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 4
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:24 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 5
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:24 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 6
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:24 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 7
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:24 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 8
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:24 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 9
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:24 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 10
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:24 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 11
+@esim-go/workers dev:     batchSize: 100
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:25 UTC] [31mERROR[39m: [36mBatch upsert failed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "catalog-persistence"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     batchIndex: 12
+@esim-go/workers dev:     batchSize: 17
+@esim-go/workers dev:     error: {
+@esim-go/workers dev:       "message": "Could not find the 'bundle_id' column of 'catalog_bundles' in the schema cache"
+@esim-go/workers dev:     }
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mBulk upsert completed[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "bulk-upsert-summary"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     totalBundles: 1217
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 13
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mPerformance: bulk-upsert-bundles completed in 1522ms[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "BundleRepository"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "wwJGPsWuej"
+@esim-go/workers dev:     operation: "bulk-upsert-bundles"
+@esim-go/workers dev:     duration: 1522
+@esim-go/workers dev:     bundleCount: 1217
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mBundle group sync completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Plus"
+@esim-go/workers dev:     processed: 1217
+@esim-go/workers dev:     added: 0
+@esim-go/workers dev:     updated: 0
+@esim-go/workers dev:     errors: 13
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mPerformance: sync-bundle-group completed in 22444ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     operation: "sync-bundle-group"
+@esim-go/workers dev:     duration: 22444
+@esim-go/workers dev:     bundleGroup: "Standard Unlimited Plus"
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "Gj1BYcCwtF"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     status: "running"
+@esim-go/workers dev:     bundlesProcessed: 5118
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mJob progress updated successfully[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "SyncJobRepository"
+@esim-go/workers dev:     operationType: "job-progress-updated"
+@esim-go/workers dev:     correlationId: "Gj1BYcCwtF"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     status: "completed"
+@esim-go/workers dev:     bundlesProcessed: 5118
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mFull catalog sync completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "catalog-sync"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     totalBundles: 5118
+@esim-go/workers dev:     bundlesAdded: 0
+@esim-go/workers dev:     bundlesUpdated: 0
+@esim-go/workers dev:     bundleGroups: [
+@esim-go/workers dev:       "Hajj Promo",
+@esim-go/workers dev:       "Standard Fixed",
+@esim-go/workers dev:       "Standard Long Duration",
+@esim-go/workers dev:       "Standard Unlimited Essential",
+@esim-go/workers dev:       "Standard Unlimited Lite",
+@esim-go/workers dev:       "Standard Unlimited Plus"
+@esim-go/workers dev:     ]
+@esim-go/workers dev:     errors: 56
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mPerformance: full-catalog-sync completed in 104770ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncService"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "xl405mq9z8"
+@esim-go/workers dev:     operation: "full-catalog-sync"
+@esim-go/workers dev:     duration: 104770
+@esim-go/workers dev:     jobId: "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mJob completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncQueue"
+@esim-go/workers dev:     correlationId: "c6syxwygf1"
+@esim-go/workers dev:     jobId: "3"
+@esim-go/workers dev:     result: {
+@esim-go/workers dev:       "success": true,
+@esim-go/workers dev:       "type": "full-sync",
+@esim-go/workers dev:       "dbJobId": "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     }
+@esim-go/workers dev:     operationType: "job-completed"
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mPerformance: process-full-sync completed in 104882ms[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "performance"
+@esim-go/workers dev:     correlationId: "7uy209u283"
+@esim-go/workers dev:     operation: "process-full-sync"
+@esim-go/workers dev:     duration: 104882
+@esim-go/workers dev:     jobId: "3"
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mCatalog metadata updated[39m
+@esim-go/workers dev:     service: "esim-go-server"
+@esim-go/workers dev:     component: "CatalogMetadataRepository"
+@esim-go/workers dev:     operationType: "metadata-update"
+@esim-go/workers dev:     correlationId: "clp2atUaEb"
+@esim-go/workers dev:     syncVersion: "2025.07"
+@esim-go/workers dev:     totalBundles: 5118
+@esim-go/workers dev:     apiHealthStatus: "healthy"
+@esim-go/workers dev: [15:27:25 UTC] [32mINFO[39m: [36mJob completed[39m
+@esim-go/workers dev:     service: "esim-go"
+@esim-go/workers dev:     component: "CatalogSyncWorker"
+@esim-go/workers dev:     operationType: "worker"
+@esim-go/workers dev:     correlationId: "7uy209u283"
+@esim-go/workers dev:     jobId: "3"
+@esim-go/workers dev:     jobType: "full-sync"
+@esim-go/workers dev:     returnValue: {
+@esim-go/workers dev:       "success": true,
+@esim-go/workers dev:       "type": "full-sync",
+@esim-go/workers dev:       "dbJobId": "94675f71-b1b9-4e82-a6a0-9ff9cb65a2f5"
+@esim-go/workers dev:     }
+error: script "dev:workers" was terminated by signal SIGTERM (Polite quit request)

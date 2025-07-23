@@ -4,6 +4,7 @@ import type { Context } from "../context/types";
 import {
   mapBundle,
   mapDataPlan,
+  mapDatabaseBundleToDataPlan,
   mapESIM,
   mapOrder,
 } from "../schemas/transformations";
@@ -28,8 +29,8 @@ export const esimResolvers: Partial<Resolvers> = {
           offset,
         });
 
-        // Map plans directly from API (filtering now handled in datasource)
-        const filteredPlans = (response.bundles || []).map((plan) => mapDataPlan(plan));
+        // Map plans from database using the correct transformation
+        const filteredPlans = (response.bundles || []).map((bundle) => mapDatabaseBundleToDataPlan(bundle));
         
         // Calculate pagination metadata
         const totalCount = response.totalCount || 0;

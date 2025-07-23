@@ -50,8 +50,9 @@ export function transformBundleToDatabase(bundle: CatalogueResponseInner): Catal
   // Validate input bundle
   const validatedBundle = ESimGoBundleSchema.parse(bundle);
   
-  // Extract country names and regions from country objects
-  const countryNames = validatedBundle.countries?.map(country => country.name).filter(Boolean) || [];
+  // Extract country ISO codes and regions from country objects
+  // Store ISO codes for consistent country identification
+  const countryIsoCodes = validatedBundle.countries?.map(country => country.iso).filter(Boolean) || [];
   const regions = [...new Set(validatedBundle.countries?.map(country => country.region).filter(Boolean) || [])];
   
   // Transform to database format
@@ -64,7 +65,7 @@ export function transformBundleToDatabase(bundle: CatalogueResponseInner): Catal
     unlimited: validatedBundle.unlimited || false,
     price_cents: normalizePriceToCents(validatedBundle.price),
     currency: 'USD',
-    countries: countryNames,
+    countries: countryIsoCodes,
     regions: regions,
     metadata: {
       originalBundle: bundle,

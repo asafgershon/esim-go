@@ -159,8 +159,16 @@ export const usePricingData = () => {
 
   // Lazy load bundles for a country when expanded
   const expandCountry = async (countryId: string) => {
-    const country = countriesData?.countries?.find((c: Country) => c.iso === countryId);
-    if (!country) return;
+    // countryId could be either:
+    // 1. Country name (e.g., "Aland Islands") from old data
+    // 2. ISO code (e.g., "AX") from new data after transformation update
+    const country = countriesData?.countries?.find((c: Country) => 
+      c.name === countryId || 
+      c.iso === countryId ||
+      c.iso?.toLowerCase() === countryId.toLowerCase()
+    );
+    // If we can't find the country in the countries list, still proceed
+    // as the countryId might be a valid country name or ISO from the catalog
 
     try {
       // Fetch all bundles for the country and filter for unlimited ones
@@ -176,15 +184,55 @@ export const usePricingData = () => {
           if (!plan.countries || !Array.isArray(plan.countries)) {
             return false;
           }
-          // Match by country name or ISO code
-          return plan.countries.some((countryName: string) => 
-            countryName === countryId || 
-            countryName.toLowerCase() === countryId.toLowerCase() ||
-            countryName === country.name // Match by full country name if available
-          );
+          
+          // Debug: Check the structure of countries array
+          if (plan.countries.length > 0 && typeof plan.countries[0] !== 'string') {
+            console.warn('⚠️ Countries array contains non-string values:', {
+              bundleName: plan.name,
+              firstCountry: plan.countries[0],
+              type: typeof plan.countries[0]
+            });
+          }
+          
+          // Match by country name (countryId is actually the country name)
+          return plan.countries.some((countryItem: any) => {
+            // Countries come as objects with { name, iso, region, etc }
+            if (!countryItem) return false;
+            
+            // Get the country name from the object
+            const countryName = countryItem.name || '';
+            const countryIso = countryItem.iso || '';
+            
+            if (!countryName || typeof countryName !== 'string') {
+              return false;
+            }
+            
+            // Check if the country matches by name or ISO
+            // Handle both old data (country names) and new data (ISO codes)
+            return countryName === countryId || 
+              countryName.toLowerCase() === countryId.toLowerCase() ||
+              countryIso === countryId ||
+              countryIso.toLowerCase() === countryId.toLowerCase() ||
+              // Also check if countryId is an ISO code that matches the bundle's country name
+              (country && countryName === country.name) ||
+              // Or if countryId is a name that matches the bundle's ISO
+              (country && country.iso && countryIso === country.iso);
+          });
         });
         
         console.log(`🔍 Filtered ${countryBundles.length} bundles for country ${countryId} out of ${allBundlesResult.data.dataPlans.items.length} total`);
+        
+        // Debug: Log sample bundle structure to understand the data format
+        if (countryBundles.length > 0) {
+          console.log('📋 Sample bundle structure:', {
+            firstBundle: countryBundles[0],
+            fields: Object.keys(countryBundles[0]),
+            dataAmount: countryBundles[0].dataAmount,
+            isUnlimited: countryBundles[0].isUnlimited,
+            countries: countryBundles[0].countries,
+            firstCountry: countryBundles[0].countries?.[0]
+          });
+        }
         
         // Then filter for unlimited bundles (dataAmount === -1 or isUnlimited === true)
         const unlimitedBundles = countryBundles.filter(
@@ -228,7 +276,9 @@ export const usePricingData = () => {
         });
 
         // Calculate pricing for this country using rule-based engine
-        const pricingResults = await calculateCountryPricing(countryId, country.region, durations);
+        // Use a default region if country is not found in the countries list
+        const regionId = country?.region || 'global';
+        const pricingResults = await calculateCountryPricing(countryId, regionId, durations);
 
         if (pricingResults && pricingResults.length > 0) {
           // Create a map of duration -> pricing data for quick lookup
@@ -244,7 +294,7 @@ export const usePricingData = () => {
             // Transform rule-based result to bundle format
             const transformedResult = {
               bundleName: `Bundle ${duration}d`,
-              countryName: country.name,
+              countryName: country?.name || countryId,
               duration: duration,
               cost: result.pricing?.baseCost || 0,
               costPlus: result.pricing?.markup || 0,

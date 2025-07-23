@@ -1,6 +1,5 @@
 import { ESIMGoDataSource } from "./esim-go-base";
 import { GraphQLError } from "graphql";
-import { CacheHealthService } from "../../services/cache-health.service";
 import { createLogger, withPerformanceLogging } from "../../lib/logger";
 
 /**
@@ -8,7 +7,6 @@ import { createLogger, withPerformanceLogging } from "../../lib/logger";
  * Handles real-time pricing calculations using the /orders/calculate endpoint
  */
 export class PricingDataSource extends ESIMGoDataSource {
-  private cacheHealth: CacheHealthService;
   private logger = createLogger({ 
     component: 'PricingDataSource',
     operationType: 'pricing-operations'
@@ -19,7 +17,6 @@ export class PricingDataSource extends ESIMGoDataSource {
 
   constructor(config?: any) {
     super(config);
-    this.cacheHealth = new CacheHealthService(this.cache);
   }
 
   /**
@@ -176,15 +173,14 @@ export class PricingDataSource extends ESIMGoDataSource {
           };
 
           // Cache the result
-          const cacheSetResult = await this.cacheHealth.safeSet(
-            cacheKey, 
-            JSON.stringify(pricingData), 
-            { ttl: this.PRICING_CACHE_TTL }
-          );
-
-          if (!cacheSetResult.success) {
-            this.logger.warn('Failed to cache pricing data', { 
-              error: cacheSetResult.error?.message, 
+          try {
+            await this.cache.set(
+              cacheKey, 
+              JSON.stringify(pricingData), 
+              { ttl: this.PRICING_CACHE_TTL }
+            );
+          } catch (error) {
+            this.logger.warn('Failed to cache pricing data', error as Error, { 
               cacheKey 
             });
           }

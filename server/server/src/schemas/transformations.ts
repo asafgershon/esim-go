@@ -3,6 +3,7 @@ import type {
   ESIMGoDataPlan
 } from "../datasources/esim-go/types";
 import type { DataPlan } from "../types";
+import { convertCentsToDollars, convertBytesToMB } from '../repositories/catalog/bundle-transform.schema';
 
 // Input validation schemas
 const ESIMGoDataPlanSchema = z.object({
@@ -101,6 +102,39 @@ export function mapDataPlan(plan: ESIMGoDataPlan, dbPlan?: DataPlan): DataPlan {
     availableQuantity: validatedPlan.availableQuantity || null,
     // Store raw dataAmount for field resolver to access
     _rawDataAmount: validatedPlan.dataAmount || 0,
+  };
+}
+
+/**
+ * Map database catalog bundle to GraphQL DataPlan type
+ * This handles the new database format after catalog sync
+ */
+export function mapDatabaseBundleToDataPlan(dbBundle: any): DataPlan {
+  return {
+    id: dbBundle.id || dbBundle.esim_go_name,
+    name: dbBundle.esim_go_name || 'Unknown Bundle',
+    description: dbBundle.description || '',
+    region: (dbBundle.regions && Array.isArray(dbBundle.regions) && dbBundle.regions[0]) || 'Unknown',
+    countries: (dbBundle.countries || []).map((countryName: string) => ({
+      name: countryName,
+      region: 'Unknown', // We don't have region info for individual countries in DB
+      iso: countryName // Using country name as ISO for now
+    })),
+    duration: dbBundle.duration || 0,
+    price: convertCentsToDollars(dbBundle.price_cents),
+    currency: dbBundle.currency || "USD",
+    isUnlimited: dbBundle.unlimited || false,
+    bundleGroup: dbBundle.bundle_group,
+    features: [
+      dbBundle.unlimited ? "Unlimited Data" : `${convertBytesToMB(dbBundle.data_amount) || 0} MB`,
+      `${dbBundle.duration || 0} Days`,
+      "High Speed",
+      "24/7 Support", 
+      "Instant Activation",
+    ],
+    availableQuantity: null,
+    // Store raw dataAmount for field resolver to access
+    _rawDataAmount: convertBytesToMB(dbBundle.data_amount) || 0,
   };
 }
 

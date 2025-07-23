@@ -356,10 +356,11 @@ export class BundleRepository extends BaseSupabaseRepository {
         }
 
         // Convert to array and sort by country name
+        // Note: countryId here is actually the ISO code from the database
         const result = Array.from(countryBundleCount.entries())
-          .map(([countryId, bundleCount]) => ({
-            countryId,
-            countryName: countryId, // For now, use countryId as name - can be enhanced with country mapping
+          .map(([countryIso, bundleCount]) => ({
+            countryId: countryIso, // Using ISO code as the ID
+            countryName: countryIso, // For now, use ISO code as name - frontend will map to full names
             bundleCount
           }))
           .sort((a, b) => a.countryName.localeCompare(b.countryName));

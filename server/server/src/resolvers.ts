@@ -2171,51 +2171,39 @@ export const resolvers: Resolvers = {
           operationType: 'catalog-sync-manual'
         });
 
-        // Import CatalogSyncService dynamically
-        const { CatalogSyncService } = await import('./services/catalog-sync.service');
+        // Import CatalogSyncServiceV2 dynamically
+        const { CatalogSyncServiceV2 } = await import('./services/catalog-sync-v2.service');
         
-        // Get catalogueDataSource from context
-        const catalogueDataSource = context.dataSources.catalogue;
+        // Create sync service instance with API key
+        const catalogSyncService = new CatalogSyncServiceV2(
+          process.env.ESIM_GO_API_KEY!,
+          process.env.ESIM_GO_BASE_URL
+        );
         
-        // Create sync service instance
-        const catalogSyncService = new CatalogSyncService(catalogueDataSource, context.redis);
-        
-        // Trigger sync (returns void)
-        await catalogSyncService.syncFullCatalog();
+        // Trigger sync (returns jobId)
+        const syncResult = await catalogSyncService.triggerFullSync(context.auth.user?.id);
         
         const duration = Date.now() - startTime;
         
         // Try to get metadata from cache to get bundle count
         let totalBundles = 0;
         try {
-          // Import CacheHealthService to use the same cache access pattern
-          const { CacheHealthService } = await import('./services/cache-health.service');
-          const cacheHealth = new CacheHealthService(context.redis);
+          // Add a small delay to ensure metadata has been written
+          await new Promise(resolve => setTimeout(resolve, 500));
           
-          try {
-            // Add a small delay to ensure metadata has been written
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            const metadataResult = await cacheHealth.safeGet('esim-go:catalog:metadata');
-            if (metadataResult.success && metadataResult.data) {
-              const metadata = JSON.parse(metadataResult.data);
-              totalBundles = metadata.totalBundles || 0;
-              logger.info('Successfully retrieved sync metadata', {
-                totalBundles,
-                bundleGroups: metadata.bundleGroups?.length || 0,
-                operationType: 'catalog-sync-manual'
-              });
-            } else {
-              logger.warn('Metadata not found or invalid after sync', {
-                success: metadataResult.success,
-                hasData: !!metadataResult.data,
-                error: metadataResult.error?.message,
-                operationType: 'catalog-sync-manual'
-              });
-            }
-          } finally {
-            // Clean up cache health service to prevent resource leaks
-            cacheHealth.stopHealthMonitoring();
+          const metadataJson = await context.redis.get('esim-go:catalog:metadata');
+          if (metadataJson) {
+            const metadata = JSON.parse(metadataJson);
+            totalBundles = metadata.totalBundles || 0;
+            logger.info('Successfully retrieved sync metadata', {
+              totalBundles,
+              bundleGroups: metadata.bundleGroups?.length || 0,
+              operationType: 'catalog-sync-manual'
+            });
+          } else {
+            logger.warn('Metadata not found in cache after sync', {
+              operationType: 'catalog-sync-manual'
+            });
           }
         } catch (metadataError) {
           logger.warn('Failed to get metadata after sync', metadataError as Error, {

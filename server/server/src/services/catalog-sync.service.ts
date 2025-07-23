@@ -4,7 +4,6 @@ import { CatalogueDataSource } from '../datasources/esim-go/catalogue-datasource
 import { type ESIMGoDataPlan } from '../datasources/esim-go/types';
 import { createDistributedLock, type LockResult } from '../lib/distributed-lock';
 import { createLogger, withPerformanceLogging } from '../lib/logger';
-import { CacheHealthService } from './cache-health.service';
 
 const env = cleanEnv(process.env, {
   ESIM_GO_API_KEY: str({ desc: "The API key for the eSIM Go API" }),
@@ -14,7 +13,7 @@ export class CatalogSyncService {
   private catalogueDataSource: CatalogueDataSource;
   private syncInterval: NodeJS.Timeout | null = null;
   private syncLock = createDistributedLock('catalog-sync');
-  private cacheHealth: CacheHealthService;
+  private cache: KeyValueCache<string>;
   private logger = createLogger({ 
     component: 'CatalogSyncService',
     operationType: 'catalog-sync'
@@ -54,7 +53,7 @@ export class CatalogSyncService {
 
   constructor(catalogueDataSource: CatalogueDataSource, cache: KeyValueCache<string>) {
     this.catalogueDataSource = catalogueDataSource;
-    this.cacheHealth = new CacheHealthService(cache);
+    this.cache = cache;
   }
 
   /**
