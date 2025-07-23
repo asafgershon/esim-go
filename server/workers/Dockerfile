@@ -11,13 +11,16 @@ COPY server/package.json ./
 COPY server/turbo.json ./
 COPY server/bun.lock ./
 
-# Copy packages that workers depend on
+# Copy packages directory
 COPY server/packages ./packages
+
+# Copy server workspace (only what workers need)
+COPY server/server/package.json ./server/package.json
 COPY server/server/src/database.types.ts ./server/src/database.types.ts
 COPY server/server/src/repositories ./server/src/repositories
 COPY server/server/src/lib/logger.ts ./server/src/lib/logger.ts
 
-# Copy workers package
+# Copy workers workspace
 COPY server/workers ./workers
 
 # Install all dependencies

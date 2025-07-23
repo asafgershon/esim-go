@@ -10,7 +10,7 @@ import {
   GetTripsQuery,
   Trip
 } from '@/__generated__/graphql';
-import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_DATA_PLANS, GET_TRIPS } from '../lib/graphql/queries';
+import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRIES, GET_DATA_PLANS, GET_TRIPS, GET_COUNTRY_BUNDLES } from '../lib/graphql/queries';
 import { 
   calculateAveragePricePerDay, 
   buildBatchPricingInput, 
@@ -53,6 +53,7 @@ export const usePricingData = () => {
     }
   });
   const [getCountryDataPlans] = useLazyQuery(GET_DATA_PLANS);
+  const [getCountryBundles] = useLazyQuery(GET_COUNTRY_BUNDLES);
   const { calculateBatchPrices } = usePricingWithRules();
 
   // Generate country groups from actual data
@@ -167,13 +168,14 @@ export const usePricingData = () => {
       c.iso === countryId ||
       c.iso?.toLowerCase() === countryId.toLowerCase()
     );
-    // If we can't find the country in the countries list, still proceed
-    // as the countryId might be a valid country name or ISO from the catalog
 
     try {
-      // Fetch all bundles for the country and filter for unlimited ones
-      console.log(`🔍 Fetching all bundles for country: ${countryId}`);
-      const allBundlesResult = await fetchCountryDataPlans(countryId);
+      // Use the dedicated countryBundles query which already returns filtered and calculated data
+      console.log(`🔍 Fetching bundles for country: ${countryId}`);
+      
+      const countryBundlesResult = await getCountryBundles({
+        variables: { countryId }
+      });
       
       const allPlans: any[] = [];
       
