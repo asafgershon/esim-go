@@ -74,7 +74,6 @@ import { toast } from 'sonner';
 // Import components
 import { RuleBuilder } from '../../components/pricing/rule-builder';
 import { RuleTestingPanel } from '../../components/pricing/rule-testing-panel';
-import { RuleAnalytics } from '../../components/pricing/rule-analytics';
 import { MarkupRuleDrawer } from '../../components/pricing/markup-rule-drawer';
 import { ProcessingFeeDrawer } from '../../components/pricing/processing-fee-drawer';
 
@@ -104,9 +103,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRuleType, setSelectedRuleType] = useState<string>('all');
   const [selectedRuleTypes, setSelectedRuleTypes] = useState<string[]>([]);
-  const [showInactiveRules, setShowInactiveRules] = useState(false);
   const [showSystemRules, setShowSystemRules] = useState(true);
-  const [showAnalytics, setShowAnalytics] = useState(false);
   const [typeFilterOpen, setTypeFilterOpen] = useState(false);
   
   // Dialog states
@@ -142,10 +139,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
     const matchesSearch = rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          rule.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = selectedRuleTypes.length === 0 || selectedRuleTypes.includes(rule.type);
-    const matchesActiveFilter = showInactiveRules || rule.isActive;
     const matchesSystemFilter = showSystemRules || rule.isEditable;
     
-    return matchesSearch && matchesType && matchesActiveFilter && matchesSystemFilter;
+    return matchesSearch && matchesType && matchesSystemFilter;
   });
 
   // Rule type configurations
@@ -469,24 +465,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
               </Popover>
 
               <Button
-                variant={showAnalytics ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowAnalytics(!showAnalytics)}
-                className={showAnalytics ? "" : "border-dashed"}
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Analytics
-              </Button>
-              <Button
-                variant={showInactiveRules ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowInactiveRules(!showInactiveRules)}
-                className={showInactiveRules ? "" : "border-dashed"}
-              >
-                <Pause className="h-4 w-4 mr-2" />
-                Show Inactive
-              </Button>
-              <Button
                 variant={!showSystemRules ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowSystemRules(!showSystemRules)}
@@ -680,18 +658,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
             </Card>
           )}
 
-          {/* Analytics Section - Shows when analytics filter is active */}
-          {showAnalytics && (
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Rule Analytics</CardTitle>
-                <CardDescription>Performance metrics and insights for your pricing rules</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RuleAnalytics rules={rules} />
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Desktop Testing Panel - Integrated split view */}
