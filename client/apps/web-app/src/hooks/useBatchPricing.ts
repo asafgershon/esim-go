@@ -23,7 +23,7 @@ export function useBatchPricing({ regionId, countryId, maxDays = 30 }: UseBatchP
     useLazyQuery<CalculatePricesBatchQuery>(CALCULATE_PRICES_BATCH);
   
   const [pricingCache, setPricingCache] = useState<Map<number, PricingData>>(new Map());
-  const isRequestingRef = useRef(false);
+  const [isRequesting, setIsRequesting] = useState(false);
   const lastRequestKeyRef = useRef<string>('');
 
   // Fetch all prices when parameters change
@@ -33,11 +33,11 @@ export function useBatchPricing({ regionId, countryId, maxDays = 30 }: UseBatchP
     // Only trigger when we have a region/country
     if ((regionId || countryId)) {
       // Avoid duplicate requests for the same parameters
-      if (isRequestingRef.current || batchLoading || lastRequestKeyRef.current === requestKey) {
+      if (isRequesting || batchLoading || lastRequestKeyRef.current === requestKey) {
         return;
       }
       
-      isRequestingRef.current = true;
+      setIsRequesting(true);
       lastRequestKeyRef.current = requestKey;
       
       // Clear existing cache when parameters change
@@ -97,12 +97,12 @@ export function useBatchPricing({ regionId, countryId, maxDays = 30 }: UseBatchP
 
   // Check if data is ready
   const isReady = useMemo(() => {
-    return pricingCache.size > 0 && !batchLoading && !isRequestingRef.current;
+    return pricingCache.size > 0 && !batchLoading;
   }, [pricingCache.size, batchLoading]);
 
   return {
     getPricing,
-    loading: batchLoading || isRequestingRef.current,
+    loading: batchLoading,
     error,
     isReady,
     pricingCache

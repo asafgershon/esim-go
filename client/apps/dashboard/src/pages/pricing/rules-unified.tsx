@@ -74,7 +74,7 @@ import { toast } from 'sonner';
 // Import components
 import { RuleBuilder } from '../../components/pricing/rule-builder';
 import { SplitView } from '../../components/common/SplitView';
-import { RuleTestPanelPlaceholder } from '../../components/pricing/rule-test-panel-placeholder';
+import { SingleRuleTestPanel } from '../../components/pricing/single-rule-test-panel';
 import { MarkupRuleDrawer } from '../../components/pricing/markup-rule-drawer';
 import { ProcessingFeeDrawer } from '../../components/pricing/processing-fee-drawer';
 
@@ -248,10 +248,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
   }
 
   // Desktop view
-  const mainContent = (
-    <div className="flex flex-col space-y-4 p-4">
+  return (
     <div className="h-full flex flex-col">
-      {/* Header with testing toggle */}
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           {/* Quick add buttons */}
@@ -276,28 +275,35 @@ const UnifiedPricingRulesPage: React.FC = () => {
             className="flex items-center gap-2"
           >
             <CreditCard className="h-4 w-4" />
-            Add Processing Fee
+            Add Processing Fee  
           </Button>
         </div>
       </div>
 
       {/* Main content with split view */}
-      <div className="flex-1 flex gap-4 min-h-0">
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col space-y-4">
-
-          {/* Filters */}
-          <div className="flex items-center justify-between gap-4">
-            {/* Search on the left */}
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search rules..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+      <div className="flex-1 min-h-0">
+        <SplitView
+          direction="horizontal"
+          autoSaveId="pricing-rules-split"
+          panels={[
+            {
+              id: 'main-content',
+              defaultSize: selectedRuleForTesting ? 70 : 100,
+              minSize: 50,
+              content: (
+                <div className="flex flex-col space-y-4 p-4">
+                  {/* Filters */}
+                  <div className="flex items-center justify-between gap-4">
+                    {/* Search on the left */}
+                    <div className="relative w-64">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Search rules..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
 
             {/* Quick Filters on the right */}
             <div className="flex items-center gap-3">
@@ -393,7 +399,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="relative">
-                              <div className={`p-2 rounded-full bg-${typeConfig.color}-100`}>
+                              <div className="p-2 rounded-full bg-gray-100">
                                 <Icon className={`h-4 w-4 text-${typeConfig.color}-600`} />
                               </div>
                               {!rule.isEditable && (
@@ -418,7 +424,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={`bg-${typeConfig.color}-50 text-${typeConfig.color}-700`}>
+                          <Badge variant="outline" className="bg-gray-50 text-gray-700">
                             {typeConfig.label}
                           </Badge>
                         </TableCell>
@@ -604,92 +610,41 @@ const UnifiedPricingRulesPage: React.FC = () => {
               </div>
             </Card>
           )}
-
-    </div>
-  );
-
-  const testPanel = selectedRuleForTesting ? (
-    <RuleTestPanelPlaceholder selectedRule={selectedRuleForTesting} />
-  ) : null;
-
-  const testPanelHeader = selectedRuleForTesting ? (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <TestTube className="h-4 w-4" />
-        <span className="font-medium">Rule Testing</span>
-      </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setSelectedRuleForTesting(null)}
-        className="h-6 w-6 p-0"
-      >
-        <X className="h-3 w-3" />
-      </Button>
-    </div>
-  ) : null;
-
-  const panels = [
-    {
-      id: 'main-content',
-      defaultSize: selectedRuleForTesting ? 70 : 100,
-      minSize: 50,
-      content: mainContent,
-    },
-    ...(selectedRuleForTesting
-      ? [
-          {
-            id: 'test-panel',
-            defaultSize: 30,
-            minSize: 25,
-            maxSize: 50,
-            content: testPanel,
-            header: testPanelHeader,
-          },
-        ]
-      : []),
-  ];
-
-  return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          {/* Quick add buttons */}
-          <Button
-            onClick={() => setShowCreateDialog(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Custom Rule
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowMarkupDialog(true)}
-            className="flex items-center gap-2"
-          >
-            <DollarSign className="h-4 w-4" />
-            Add Markup
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowProcessingDialog(true)}
-            className="flex items-center gap-2"
-          >
-            <CreditCard className="h-4 w-4" />
-            Add Processing Fee
-          </Button>
-        </div>
-      </div>
-
-      {/* Main content with split view */}
-      <div className="flex-1 min-h-0">
-        <SplitView
-          direction="horizontal"
-          autoSaveId="pricing-rules-split"
-          panels={panels}
+                </div>
+              ),
+            },
+            ...(selectedRuleForTesting ? [
+              {
+                id: 'test-panel',
+                defaultSize: 30,
+                minSize: 25,
+                maxSize: 50,
+                content: (
+                  <SingleRuleTestPanel rule={selectedRuleForTesting} />
+                ),
+                header: (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <TestTube className="h-4 w-4" />
+                      <span className="font-medium">Rule Testing</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedRuleForTesting(null)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ),
+              }
+            ] : []),
+          ]}
         />
       </div>
+    </div>
+  );
 
       {/* Create/Edit Rule Dialog */}
       <Dialog open={showCreateDialog || !!editingRule} onOpenChange={(open) => {
