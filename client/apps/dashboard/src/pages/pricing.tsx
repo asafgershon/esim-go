@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Tooltip, TooltipTrigger, TooltipContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui';
-import { Calculator, DollarSign, Table, CreditCard, RefreshCw, Layers, Plane } from 'lucide-react';
+import { Calculator, RefreshCw, Layers, Settings } from 'lucide-react';
 import { useMutation, useQuery } from '@apollo/client';
 import { toast } from 'sonner';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -131,15 +131,10 @@ const PricingPage: React.FC = () => {
       icon: <Layers className="h-5 w-5" />,
       description: 'View and manage pricing configurations across all countries and bundles'
     },
-    '/pricing/markup': {
-      title: 'Markup Pricing',
-      icon: <DollarSign className="h-5 w-5" />,
-      description: 'Update fixed markup amounts for each bundle group and duration'
-    },
-    '/pricing/processing-fee': {
-      title: 'Processing Fee',
-      icon: <CreditCard className="h-5 w-5" />,
-      description: 'Configure processing fees and payment-related charges'
+    '/pricing/rules': {
+      title: 'Rules Management',
+      icon: <Settings className="h-5 w-5" />,
+      description: 'Comprehensive pricing rules engine with markup configuration and processing fees'
     },
     '/pricing/simulator': {
       title: 'Simulator Pricing',
@@ -206,26 +201,15 @@ const PricingPage: React.FC = () => {
               Summary
             </Link>
             <Link
-              to="/pricing/markup"
+              to="/pricing/rules"
               className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                currentPath === '/pricing/markup'
+                currentPath === '/pricing/rules'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <DollarSign className="h-4 w-4" />
-              Markup Pricing
-            </Link>
-            <Link
-              to="/pricing/processing-fee"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                currentPath === '/pricing/processing-fee'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <CreditCard className="h-4 w-4" />
-              Processing Fee
+              <Settings className="h-4 w-4" />
+              Rules
             </Link>
             <Link
               to="/pricing/simulator"
@@ -253,16 +237,10 @@ const PricingPage: React.FC = () => {
                   <span>Summary</span>
                 </div>
               </SelectItem>
-              <SelectItem value="/pricing/markup">
+              <SelectItem value="/pricing/rules">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  <span>Markup Pricing</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="/pricing/processing-fee">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  <span>Processing Fee</span>
+                  <Settings className="h-4 w-4" />
+                  <span>Rules</span>
                 </div>
               </SelectItem>
               <SelectItem value="/pricing/simulator">

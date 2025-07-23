@@ -15,9 +15,8 @@ import { CatalogPage } from '@/pages/catalog'
 import { TripsPage } from '@/pages/trips'
 import PricingPage from '@/pages/pricing'
 import { PricingSummaryPage } from '@/pages/pricing/summary'
-import { PricingMarkupPage } from '@/pages/pricing/markup'
 import { PricingSimulatorPage } from '@/pages/pricing/simulator'
-import { PricingProcessingFeePage } from '@/pages/pricing/processing-fee'
+import UnifiedPricingRulesPage from '@/pages/pricing/rules-unified'
 import { apolloClient } from '@/lib/apollo-client'
 
 
@@ -49,9 +48,8 @@ function App() {
                   <Route path="pricing" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><PricingPage /></ProtectedRoute></ErrorBoundary>}>
                     <Route index element={<Navigate to="summary" replace />} />
                     <Route path="summary" element={<PricingSummaryPage />} />
-                    <Route path="markup" element={<PricingMarkupPage />} />
                     <Route path="simulator" element={<PricingSimulatorPage />} />
-                    <Route path="processing-fee" element={<PricingProcessingFeePage />} />
+                    <Route path="rules" element={<UnifiedPricingRulesPage />} />
                   </Route>
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
