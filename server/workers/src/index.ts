@@ -79,5 +79,42 @@ async function start() {
   }
 }
 
-// Start the workers
-start();
+// Check if manual sync is requested
+const args = process.argv.slice(2);
+if (args.includes('--sync') || args.includes('sync')) {
+  logger.info('Manual sync requested, triggering catalog sync');
+  
+  (async () => {
+    try {
+      // Check Supabase connection
+      const supabaseHealthy = await checkSupabaseConnection();
+      if (!supabaseHealthy) {
+        throw new Error('Supabase connection failed');
+      }
+      
+      // Add a manual sync job
+      const job = await catalogSyncQueueManager.addFullSyncJob('manual');
+      logger.info('Manual sync job created', { jobId: job.id });
+      
+      // Give it a moment to be picked up
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Check job status
+      const stats = await catalogSyncQueueManager.getQueueStats();
+      logger.info('Queue stats after manual sync', stats);
+      
+      // Exit after creating the job
+      process.exit(0);
+    } catch (error) {
+      logger.error('Failed to trigger manual sync', error as Error);
+      process.exit(1);
+    }
+  })();
+} else if (args.includes('--clean') || args.includes('clean')) {
+  logger.info('Cleaning up old jobs');
+  await catalogSyncQueueManager.cleanOldJobs();
+  process.exit(0);
+} else {
+  // Start the workers normally
+  start();
+}

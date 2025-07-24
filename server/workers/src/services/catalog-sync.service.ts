@@ -1,28 +1,30 @@
-import { ESimGoClient } from '@esim-go/client';
-import { createLogger, withPerformanceLogging } from '@esim-go/utils';
-import { config } from '../config/index.js';
-import { 
-  bundleRepository, 
-  syncJobRepository, 
-  catalogMetadataRepository 
-} from './supabase.service.js';
-import type { CatalogueResponseInner } from '@esim-go/client';
+import type { CatalogueResponseInner } from "@esim-go/client";
+import { ESimGoClient } from "@esim-go/client";
+import { createLogger, withPerformanceLogging } from "@esim-go/utils";
+import { config } from "../config/index.js";
+import { transformAndValidateCatalogBundle } from "../transformations/catalog-bundle.transformer.js";
+import { BundleDatabaseService } from "./bundle-database.service.js";
+import {
+  catalogMetadataRepository,
+  syncJobRepository,
+} from "./supabase.service.js";
 
-const logger = createLogger({ 
-  component: 'CatalogSyncService',
-  operationType: 'catalog-sync' 
+const logger = createLogger({
+  component: "CatalogSyncService",
+  operationType: "catalog-sync",
 });
 
 export class CatalogSyncService {
   private client: ESimGoClient;
-  
+  private bundleDatabase: BundleDatabaseService;
+
   constructor() {
     this.client = new ESimGoClient({
       apiKey: config.esimGo.apiKey,
       baseUrl: config.esimGo.baseUrl,
       retryAttempts: config.esimGo.retryAttempts,
-      logger,
     });
+    this.bundleDatabase = new BundleDatabaseService();
   }
 
   /**
@@ -30,29 +32,33 @@ export class CatalogSyncService {
    */
   private async getBundleGroups(): Promise<string[]> {
     try {
-      logger.debug('Fetching bundle groups from eSIM Go API');
+      logger.debug("Fetching bundle groups from eSIM Go API");
       const response = await this.client.getOrganizationGroups();
-      
-      const groups = response.data.map(group => group.name);
-      logger.info('Bundle groups fetched successfully', {
+
+      const groups = response.data.map((group) => group.name);
+      logger.info("Bundle groups fetched successfully", {
         groupCount: groups.length,
         groups,
-        operationType: 'bundle-groups-fetch'
+        operationType: "bundle-groups-fetch",
       });
-      
+
       return groups;
     } catch (error) {
-      logger.error('Failed to fetch bundle groups from API, using fallback', error as Error, {
-        operationType: 'bundle-groups-fetch'
-      });
-      
+      logger.error(
+        "Failed to fetch bundle groups from API, using fallback",
+        error as Error,
+        {
+          operationType: "bundle-groups-fetch",
+        }
+      );
+
       // Fallback to hardcoded groups if API fails
       return [
-        'Standard Fixed',
-        'Standard - Unlimited Lite',
-        'Standard - Unlimited Essential',
-        'Standard - Unlimited Plus',
-        'Regional Bundles'
+        "Standard Fixed",
+        "Standard - Unlimited Lite",
+        "Standard - Unlimited Essential",
+        "Standard - Unlimited Plus",
+        "Regional Bundles",
       ];
     }
   }
@@ -63,15 +69,15 @@ export class CatalogSyncService {
   async performFullSync(jobId: string): Promise<void> {
     return withPerformanceLogging(
       logger,
-      'full-catalog-sync',
+      "full-catalog-sync",
       async () => {
         // Fetch bundle groups dynamically from API
         const bundleGroups = await this.getBundleGroups();
-        
-        logger.info('Starting full catalog sync', {
+
+        logger.info("Starting full catalog sync", {
           jobId,
           bundleGroups,
-          strategy: 'bundle-groups'
+          strategy: "bundle-groups",
         });
 
         const results = {
@@ -85,19 +91,17 @@ export class CatalogSyncService {
         // Update job status to running
         await syncJobRepository.startJob(jobId);
 
-        let isPartialSync = false;
-
         try {
           // Sync each bundle group
           for (const group of bundleGroups) {
             try {
               const groupResults = await this.syncBundleGroup(group, jobId);
-              
+
               results.totalBundles += groupResults.processed;
               results.bundlesAdded += groupResults.added;
               results.bundlesUpdated += groupResults.updated;
               results.bundleGroups.push(group);
-              
+
               if (groupResults.errors.length > 0) {
                 results.errors.push(...groupResults.errors);
               }
@@ -110,32 +114,39 @@ export class CatalogSyncService {
                 metadata: {
                   progress: `Completed ${results.bundleGroups.length}/${bundleGroups.length} groups`,
                   currentGroup: group,
-                  syncStatus: results.bundleGroups.length === bundleGroups.length ? 'complete' : 'partial',
+                  syncStatus:
+                    results.bundleGroups.length === bundleGroups.length
+                      ? "complete"
+                      : "partial",
                   completedGroups: results.bundleGroups,
-                  remainingGroups: bundleGroups.slice(results.bundleGroups.length),
+                  remainingGroups: bundleGroups.slice(
+                    results.bundleGroups.length
+                  ),
                 },
               });
 
-              logger.info('Bundle group completed', {
+              logger.info("Bundle group completed", {
                 group,
                 jobId,
                 progress: `${results.bundleGroups.length}/${bundleGroups.length}`,
-                totalBundles: results.totalBundles
+                totalBundles: results.totalBundles,
               });
-
             } catch (error) {
-              const errorMsg = `Failed to sync bundle group ${group}: ${(error as Error).message}`;
-              logger.error('Bundle group sync failed', error as Error, { 
-                group, 
-                jobId 
+              const errorMsg = `Failed to sync bundle group ${group}: ${
+                (error as Error).message
+              }`;
+              logger.error("Bundle group sync failed", error as Error, {
+                group,
+                jobId,
               });
               results.errors.push(errorMsg);
-              isPartialSync = true; // Mark as partial if any group fails
             }
           }
 
           // Determine if sync is complete or partial
-          const isCompleteSync = results.bundleGroups.length === bundleGroups.length && results.errors.length === 0;
+          const isCompleteSync =
+            results.bundleGroups.length === bundleGroups.length &&
+            results.errors.length === 0;
 
           // Record sync in metadata (full or partial)
           if (isCompleteSync) {
@@ -144,7 +155,7 @@ export class CatalogSyncService {
               bundleGroups: results.bundleGroups,
               metadata: {
                 syncedAt: new Date().toISOString(),
-                syncStatus: 'complete',
+                syncStatus: "complete",
                 errors: results.errors,
               },
             });
@@ -155,9 +166,11 @@ export class CatalogSyncService {
               bundleGroups: results.bundleGroups,
               metadata: {
                 syncedAt: new Date().toISOString(),
-                syncStatus: 'partial',
+                syncStatus: "partial",
                 completedGroups: results.bundleGroups,
-                failedGroups: bundleGroups.filter(g => !results.bundleGroups.includes(g)),
+                failedGroups: bundleGroups.filter(
+                  (g) => !results.bundleGroups.includes(g)
+                ),
                 errors: results.errors,
               },
             });
@@ -170,23 +183,28 @@ export class CatalogSyncService {
             bundlesUpdated: results.bundlesUpdated,
             metadata: {
               bundleGroups: results.bundleGroups,
-              syncStatus: isCompleteSync ? 'complete' : 'partial',
+              syncStatus: isCompleteSync ? "complete" : "partial",
               errors: results.errors,
               completedAt: new Date().toISOString(),
             },
           });
 
-          logger.info(isCompleteSync ? 'Full catalog sync completed' : 'Partial catalog sync completed', {
-            jobId,
-            totalBundles: results.totalBundles,
-            bundlesAdded: results.bundlesAdded,
-            bundlesUpdated: results.bundlesUpdated,
-            bundleGroups: results.bundleGroups,
-            completedGroups: results.bundleGroups.length,
-            totalGroups: bundleGroups.length,
-            syncStatus: isCompleteSync ? 'complete' : 'partial',
-            errors: results.errors.length,
-          });
+          logger.info(
+            isCompleteSync
+              ? "Full catalog sync completed"
+              : "Partial catalog sync completed",
+            {
+              jobId,
+              totalBundles: results.totalBundles,
+              bundlesAdded: results.bundlesAdded,
+              bundlesUpdated: results.bundlesUpdated,
+              bundleGroups: results.bundleGroups,
+              completedGroups: results.bundleGroups.length,
+              totalGroups: bundleGroups.length,
+              syncStatus: isCompleteSync ? "complete" : "partial",
+              errors: results.errors.length,
+            }
+          );
         } catch (error) {
           // Fail the job
           await syncJobRepository.failJob(jobId, error as Error);
@@ -201,7 +219,7 @@ export class CatalogSyncService {
    * Sync a specific bundle group
    */
   async syncBundleGroup(
-    bundleGroup: string, 
+    bundleGroup: string,
     jobId?: string
   ): Promise<{
     processed: number;
@@ -211,9 +229,9 @@ export class CatalogSyncService {
   }> {
     return withPerformanceLogging(
       logger,
-      'sync-bundle-group',
+      "sync-bundle-group",
       async () => {
-        logger.info('Syncing bundle group', { bundleGroup, jobId });
+        logger.info("Syncing bundle group", { bundleGroup, jobId });
 
         const errors: string[] = [];
         let totalProcessed = 0;
@@ -227,39 +245,54 @@ export class CatalogSyncService {
           const perPage = 50; // Max per page to avoid 401 errors
 
           while (hasMore) {
-            logger.debug('Fetching page for bundle group', { 
-              bundleGroup, 
-              page, 
-              perPage 
+            logger.debug("Fetching page for bundle group", {
+              bundleGroup,
+              page,
+              perPage,
             });
 
             const response = await this.client.getCatalogueWithRetry({
               group: bundleGroup,
               perPage: perPage,
-              page: page
+              page: page,
             });
 
             if (response.data && response.data.length > 0) {
-              // Save this page immediately instead of accumulating in memory
-              const upsertResult = await bundleRepository.bulkUpsert(response.data);
-              
-              totalProcessed += response.data.length;
-              totalAdded += upsertResult.added;
-              totalUpdated += upsertResult.updated;
-              errors.push(...upsertResult.errors);
-              
-              logger.info('Page saved to database', {
+              // Transform bundles using the new transformer
+              const validBundles = response.data.map((bundle) =>
+                transformAndValidateCatalogBundle(bundle, "USD")
+              );
+
+              // Log transformation errors
+              if (!validBundles) {
+                errors.push(
+                  `Transform error for ${response.data[0].name}: ${response.data[0].name}`
+                );
+              }
+
+              // Save transformed bundles
+              if (validBundles) {
+                const upsertResult = await this.bundleDatabase.bulkUpsert(
+                  validBundles.filter((bundle) => bundle !== null)
+                );
+
+                totalProcessed += response.data.length;
+                totalAdded += upsertResult.added;
+                totalUpdated += upsertResult.updated;
+                errors.push(...upsertResult.errors);
+              }
+
+              logger.info("Page saved to database", {
                 bundleGroup,
                 page,
                 bundlesThisPage: response.data.length,
-                addedThisPage: upsertResult.added,
-                updatedThisPage: upsertResult.updated,
-                errorsThisPage: upsertResult.errors.length,
+                validBundlesThisPage: validBundles ? 1 : 0,
+                transformErrorsThisPage: validBundles ? 0 : 1,
                 totalProcessed,
                 totalAdded,
-                totalUpdated
+                totalUpdated,
               });
-              
+
               // If we got fewer bundles than perPage, we've reached the end
               if (response.data.length < perPage) {
                 hasMore = false;
@@ -272,7 +305,7 @@ export class CatalogSyncService {
             }
           }
 
-          logger.info('Bundle group sync completed', {
+          logger.info("Bundle group sync completed", {
             bundleGroup,
             totalPages: page - (hasMore ? 1 : 0),
             processed: totalProcessed,
@@ -288,10 +321,14 @@ export class CatalogSyncService {
             errors: errors,
           };
         } catch (error) {
-          const errorMsg = `Failed to sync bundle group ${bundleGroup}: ${(error as Error).message}`;
+          const errorMsg = `Failed to sync bundle group ${bundleGroup}: ${
+            (error as Error).message
+          }`;
           errors.push(errorMsg);
-          logger.error('Bundle group sync error', error as Error, { bundleGroup });
-          
+          logger.error("Bundle group sync error", error as Error, {
+            bundleGroup,
+          });
+
           return {
             processed: 0,
             added: 0,
@@ -307,21 +344,18 @@ export class CatalogSyncService {
   /**
    * Sync bundles for a specific country
    */
-  async syncCountryBundles(
-    countryId: string,
-    jobId: string
-  ): Promise<void> {
+  async syncCountryBundles(countryId: string, jobId: string): Promise<void> {
     return withPerformanceLogging(
       logger,
-      'sync-country-bundles',
+      "sync-country-bundles",
       async () => {
-        logger.info('Starting country bundle sync', { countryId, jobId });
+        logger.info("Starting country bundle sync", { countryId, jobId });
 
         await syncJobRepository.startJob(jobId);
 
         try {
           const bundles: CatalogueResponseInner[] = [];
-          
+
           // Fetch bundles for the specific country
           const response = await this.client.getCatalogueWithRetry({
             countries: countryId,
@@ -332,8 +366,24 @@ export class CatalogSyncService {
             bundles.push(...response.data);
           }
 
-          // Upsert bundles
-          const upsertResult = await bundleRepository.bulkUpsert(bundles);
+          // Transform and upsert bundles
+          const validBundles = bundles.map((bundle) =>
+            transformAndValidateCatalogBundle(bundle, "USD")
+          ).filter((bundle) => bundle !== null);
+
+          const allErrors: string[] = validBundles
+            .filter((bundle) => bundle !== null)
+            .map(
+              (bundle) =>
+                `Transform error for ${bundle?.esim_go_name}: ${bundle?.esim_go_name}`
+            );
+
+          let upsertResult = { added: 0, updated: 0, errors: [] as string[] };
+
+          if (validBundles.length > 0) {
+            upsertResult = await this.bundleDatabase.bulkUpsert(validBundles);
+            allErrors.push(...upsertResult.errors);
+          }
 
           await syncJobRepository.completeJob(jobId, {
             bundlesProcessed: bundles.length,
@@ -341,11 +391,11 @@ export class CatalogSyncService {
             bundlesUpdated: upsertResult.updated,
             metadata: {
               countryId,
-              errors: upsertResult.errors,
+              errors: allErrors,
             },
           });
 
-          logger.info('Country bundle sync completed', {
+          logger.info("Country bundle sync completed", {
             countryId,
             jobId,
             processed: bundles.length,
@@ -367,7 +417,7 @@ export class CatalogSyncService {
   async checkApiHealth(): Promise<void> {
     try {
       const startTime = Date.now();
-      
+
       // Try to fetch a small set of bundles
       const response = await this.client.getCatalogueWithRetry({
         perPage: 1,
@@ -376,19 +426,19 @@ export class CatalogSyncService {
       const responseTime = Date.now() - startTime;
 
       if (response.data) {
-        await catalogMetadataRepository.updateApiHealth('healthy', {
+        await catalogMetadataRepository.updateApiHealth("healthy", {
           responseTime,
           checkedAt: new Date().toISOString(),
         });
       } else {
-        await catalogMetadataRepository.updateApiHealth('degraded', {
+        await catalogMetadataRepository.updateApiHealth("degraded", {
           responseTime,
           checkedAt: new Date().toISOString(),
-          reason: 'Empty response',
+          reason: "Empty response",
         });
       }
     } catch (error) {
-      await catalogMetadataRepository.updateApiHealth('down', {
+      await catalogMetadataRepository.updateApiHealth("down", {
         error: (error as Error).message,
         checkedAt: new Date().toISOString(),
       });
@@ -404,7 +454,7 @@ export class CatalogSyncService {
     );
 
     if (cancelledCount > 0) {
-      logger.warn('Cancelled stuck jobs', {
+      logger.warn("Cancelled stuck jobs", {
         count: cancelledCount,
         threshold: config.worker.stuckJobThreshold,
       });
@@ -420,7 +470,7 @@ export class CatalogSyncService {
     );
 
     if (deletedCount > 0) {
-      logger.info('Cleaned up old jobs', {
+      logger.info("Cleaned up old jobs", {
         count: deletedCount,
         daysToKeep: config.worker.cleanupOldJobsDays,
       });

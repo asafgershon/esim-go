@@ -1,36 +1,23 @@
 // Extended types specific to the rules engine
-import type { 
-  RuleType, 
-  ConditionOperator, 
-  ActionType,
-  RuleCondition,
-  RuleAction,
+import type {
   PricingRule as BasePricingRule,
-  PricingRuleCalculation as BasePricingRuleCalculation
-} from './types';
+  PricingRuleCalculation as BasePricingRuleCalculation,
+  Bundle,
+  RuleAction,
+} from "./generated/types";
 
-export * from './types';
+export * from "./generated/types";
 
 // Extended PricingRule interface with Date objects instead of strings
-export interface PricingRule extends Omit<BasePricingRule, 'validFrom' | 'validUntil' | 'createdAt' | 'updatedAt'> {
+export interface PricingRule
+  extends Omit<
+    BasePricingRule,
+    "validFrom" | "validUntil" | "createdAt" | "updatedAt"
+  > {
   validFrom?: Date;
   validUntil?: Date;
   createdAt: Date;
   updatedAt: Date;
-}
-
-// Bundle interface for pricing calculations
-export interface Bundle {
-  id: string;
-  name: string;
-  group: string;
-  duration: number;
-  cost: number;
-  countryId: string;
-  countryName: string;
-  region?: string;
-  isUnlimited: boolean;
-  dataAmount: string;
 }
 
 // Pricing context for rule evaluation
@@ -39,7 +26,7 @@ export interface PricingContext {
   availableBundles: Bundle[];
   // The duration the customer requested
   requestedDuration: number;
-  
+
   // User information
   user?: {
     id: string;
@@ -48,11 +35,11 @@ export interface PricingContext {
     purchaseCount?: number;
     segment?: string;
   };
-  
+
   // Payment and timing
   paymentMethod: string;
   currentDate: Date;
-  
+
   // These fields will be populated after bundle selection
   bundle?: Bundle; // Selected bundle
   country?: string; // Same as bundle.countryId
@@ -62,13 +49,14 @@ export interface PricingContext {
 }
 
 // Extended pricing calculation result
-export interface PricingCalculation extends Omit<BasePricingRuleCalculation, 'selectedBundle'> {
+export interface PricingCalculation
+  extends Omit<BasePricingRuleCalculation, "selectedBundle"> {
   // Bundle selection information
   selectedBundle: {
     id: string;
     name: string;
     duration: number;
-    reason: 'exact_match' | 'next_available' | 'best_value';
+    reason: "exact_match" | "next_available" | "best_value";
   };
   // Metadata that can include additional calculation details
   metadata?: {

@@ -4,7 +4,7 @@ import { config } from '../config/index.js';
 import { CatalogSyncService } from '../services/catalog-sync.service.js';
 import { syncJobRepository } from '../services/supabase.service.js';
 import type { CatalogSyncJobData } from '../queues/catalog-sync.queue.js';
-import IORedis from 'ioredis';
+import { Redis } from 'ioredis';
 
 const logger = createLogger({ 
   component: 'CatalogSyncWorker',
@@ -15,7 +15,7 @@ const logger = createLogger({
 const catalogSyncService = new CatalogSyncService();
 
 // Redis connection for the worker
-const connection = new IORedis({
+const connection = new Redis({
   host: config.redis.host,
   port: config.redis.port,
   password: config.redis.password,
@@ -120,10 +120,8 @@ export const catalogSyncWorker = new Worker<CatalogSyncJobData>(
     concurrency: config.worker.concurrency,
     
     // Worker settings
-    settings: {
-      stalledInterval: 30000, // 30 seconds
-      maxStalledCount: 3,
-    },
+    stalledInterval: 30000, // 30 seconds
+    maxStalledCount: 3,
   }
 );
 

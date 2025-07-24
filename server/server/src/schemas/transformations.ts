@@ -2,7 +2,7 @@ import { z } from "zod";
 import type {
   ESIMGoDataPlan
 } from "../datasources/esim-go/types";
-import { convertCentsToDollars, convertBytesToMB } from '../repositories/catalog/bundle-transform.schema';
+import { convertCentsToDollars, convertBytesToMB } from '../utils/bundle-display.utils';
 
 // Input validation schemas
 const ESIMGoDataPlanSchema = z.object({

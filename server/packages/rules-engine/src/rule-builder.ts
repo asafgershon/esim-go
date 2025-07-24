@@ -1,13 +1,11 @@
-import { 
-  type RuleType, 
-  type ConditionOperator, 
-  type ActionType,
-  type RuleCondition,
-  type RuleAction,
-  type CreatePricingRuleInput,
-  RuleType as RuleTypeEnum,
+import {
+  ActionType as ActionTypeEnum,
   ConditionOperator as ConditionOperatorEnum,
-  ActionType as ActionTypeEnum
+  type CreatePricingRuleInput,
+  type RuleAction,
+  type RuleCondition,
+  type RuleType,
+  RuleType as RuleTypeEnum
 } from './generated/types';
 
 export class RuleBuilder {

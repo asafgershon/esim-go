@@ -1,6 +1,3 @@
-# eSIM Go GraphQL Schema
-# Main schema file for the eSIM Go platform
-
 type Query {
   # Basic hello query for testing
   hello: String!
@@ -14,7 +11,6 @@ type Query {
   myESIMs: [ESIM!]! @auth
   esimDetails(id: ID!): ESIM @auth
 
-
   # Order queries
   myOrders(filter: OrderFilter): [Order!]! @auth
   orderDetails(id: ID!): Order @auth
@@ -24,51 +20,268 @@ type Query {
   trips: [Trip!]!
 
   # Calculate price - Public access, sensitive fields protected at field level
-  calculatePrice(numOfDays: Int!, countryId: String!, paymentMethod: PaymentMethod, regionId: String): PricingBreakdown!
-  
+  calculatePrice(
+    numOfDays: Int!
+    countryId: String!
+    paymentMethod: PaymentMethod
+    regionId: String
+  ): PricingBreakdown!
+
   # Batch calculate prices for multiple bundles
   calculatePrices(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
-  
+
   # Main bundles resolver with optional filtering
-  bundles(countryId: String, regionId: String): [CountryBundle!]!
-  
-  # Countries with aggregated bundle data
-  bundlesCountries(includeBundles: Boolean = false): [BundlesByCountry!]!
-  
-  # Regions with aggregated bundle data
-  bundlesRegions: [BundlesByRegion!]!
-  
-  
+  bundle(id: String!): Bundle!
+  # Search bundles with filtering and pagination
+  bundles(filter: BundleFilter, pagination: PaginationInput): BundleConnection!
+
+  bundlesByCountry(countryId: String): [BundlesByCountry!]!
+  bundlesByRegion(regionId: String): [BundlesByRegion!]!
+  bundlesByGroup(groupId: String): [BundlesByGroup!]!
+
+  bundlesForCountry(countryCode: String!): BundlesForCountry
+  bundlesForRegion(region: String!): BundlesForRegion
+  bundlesForGroup(group: String!): BundlesForGroup
+
   activePricingRules: [PricingRule!]!
   conflictingPricingRules(ruleId: ID!): [PricingRule!]!
-  calculateBatchPricing(requests: [CalculatePriceInput!]!): [PricingRuleCalculation!]! @auth(role: "ADMIN")
+  calculateBatchPricing(
+    requests: [CalculatePriceInput!]!
+  ): [PricingRuleCalculation!]! @auth(role: "ADMIN")
   calculatePriceWithRules(input: CalculatePriceInput!): PricingRuleCalculation!
-  simulatePricingRule(rule: CreatePricingRuleInput!, testContext: TestPricingContext!): PricingRuleCalculation!
-  
+  simulatePricingRule(
+    rule: CreatePricingRuleInput!
+    testContext: TestPricingContext!
+  ): PricingRuleCalculation!
+
   # Processing fee configurations
-  currentProcessingFeeConfiguration: ProcessingFeeConfiguration @auth(role: "ADMIN")
-  processingFeeConfigurations(limit: Int = 10, offset: Int = 0, includeInactive: Boolean = false): [ProcessingFeeConfiguration!]! @auth(role: "ADMIN")
-  processingFeeConfiguration(id: ID!): ProcessingFeeConfiguration @auth(role: "ADMIN")
-    
+  currentProcessingFeeConfiguration: ProcessingFeeConfiguration
+    @auth(role: "ADMIN")
+  processingFeeConfigurations(
+    limit: Int = 10
+    offset: Int = 0
+    includeInactive: Boolean = false
+  ): [ProcessingFeeConfiguration!]! @auth(role: "ADMIN")
+  processingFeeConfiguration(id: ID!): ProcessingFeeConfiguration
+    @auth(role: "ADMIN")
+
   # Bundle groups
   bundleGroups: [String!]! @auth(role: "ADMIN")
-  
+
   # Pricing filters
   pricingFilters: PricingFilters!
-  
+
   # Bundle data amount aggregation
   bundleDataAggregation: BundleDataAggregation!
-  
+
   # High demand countries
   highDemandCountries: [String!]! @auth(role: "ADMIN")
-  
-  
+
   # Catalog sync history
-  catalogSyncHistory(params: SyncHistoryParams): CatalogSyncHistoryConnection! @auth(role: "ADMIN")
-  
+  catalogSyncHistory(params: SyncHistoryParams): CatalogSyncHistoryConnection!
+    @auth(role: "ADMIN")
+
   # Catalog bundles queries (from new catalog system)
-  catalogBundles(criteria: SearchCatalogCriteria): CatalogBundleConnection! @auth(role: "ADMIN")
-  availableBundleGroups: [String!]! @auth(role: "ADMIN")
+  catalogBundles(criteria: SearchCatalogCriteria): CatalogBundleConnection!
+    @auth(role: "ADMIN")
+  availableBundleGroups: [String!]! @auth(role: "ADMIN") # Filter options
+  bundleFilterOptions: BundleFilterOptions!
+}
+
+type BundleConnection {
+  nodes: [Bundle!]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type BundlesForCountry {
+  """
+  Country information
+  """
+  country: Country!
+
+  """
+  All bundles available for this country
+  """
+  bundles: [Bundle!]!
+
+  """
+  Total number of bundles
+  """
+  bundleCount: Int!
+
+  """
+  Price range
+  """
+  pricingRange: PriceRange!
+
+  """
+  Groups available in this country
+  """
+  groups: [String!]!
+
+  """
+  Regions that include this country
+  """
+  regions: [String!]!
+
+  """
+  Whether unlimited bundles are available
+  """
+  hasUnlimited: Boolean!
+}
+
+type BundlesForRegion {
+  """
+  Region name
+  """
+  region: String!
+
+  """
+  All bundles available for this region
+  """
+  bundles: [Bundle!]!
+
+  """
+  Total number of bundles
+  """
+  bundleCount: Int!
+
+  """
+  Price range
+  """
+  pricingRange: PriceRange!
+
+  """
+  Countries in this region
+  """
+  countries: [String!]!
+
+  """
+  Groups available in this region
+  """
+  groups: [String!]!
+
+  """
+  Whether unlimited bundles are available
+  """
+  hasUnlimited: Boolean!
+}
+
+type BundlesForGroup {
+  """
+  Group name
+  """
+  group: String!
+
+  """
+  All bundles in this group
+  """
+  bundles: [Bundle!]!
+
+  """
+  Total number of bundles
+  """
+  bundleCount: Int!
+
+  """
+  Price range
+  """
+  pricingRange: PriceRange!
+
+  """
+  Countries covered by this group
+  """
+  countries: [String!]!
+
+  """
+  Regions covered by this group
+  """
+  regions: [String!]!
+
+  """
+  Whether unlimited bundles are available
+  """
+  hasUnlimited: Boolean!
+}
+
+type PriceRange {
+  """
+  Minimum price
+  """
+  min: Float!
+
+  """
+  Maximum price
+  """
+  max: Float!
+
+  """
+  Average price (optional)
+  """
+  avg: Float
+
+  """
+  Currency code
+  """
+  currency: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type FilterOption {
+  value: String!
+  label: String!
+}
+
+type BundleFilterOptions {
+  groups: [FilterOption!]!
+  countries: [FilterOption!]!
+  regions: [FilterOption!]!
+}
+
+input BundleFilter {
+  countries: [String!]
+  groups: [String!]
+  region: String
+  isUnlimited: Boolean
+  validityInDays: IntRange
+  priceRange: FloatRange
+}
+
+input IntRange {
+  min: Int
+  max: Int
+}
+
+input FloatRange {
+  min: Float
+  max: Float
+}
+
+input PaginationInput {
+  limit: Int = 50
+  offset: Int = 0
+}
+
+type BundleFilterOptions {
+  """
+  Available groups
+  """
+  groups: [FilterOption!]!
+
+  """
+  Available countries
+  """
+  countries: [FilterOption!]!
+
+  """
+  Available regions
+  """
+  regions: [FilterOption!]!
 }
 
 type Mutation {
@@ -86,30 +299,36 @@ type Mutation {
 
   # User Management
   updateUserRole(userId: ID!, role: String!): User @auth(role: "ADMIN")
-  inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse @auth(role: "ADMIN")
+  inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse
+    @auth(role: "ADMIN")
   deleteUser(userId: ID!): DeleteUserResponse @auth(role: "ADMIN")
 
   # Trip Management
   createTrip(input: CreateTripInput!): CreateTripResponse @auth(role: "ADMIN")
   updateTrip(input: UpdateTripInput!): UpdateTripResponse @auth(role: "ADMIN")
   deleteTrip(id: ID!): DeleteTripResponse @auth(role: "ADMIN")
-  
+
   # Pricing configuration management
-  updatePricingConfiguration(input: UpdatePricingConfigurationInput!): UpdatePricingConfigurationResponse @auth(role: "ADMIN")
-  
+  updatePricingConfiguration(
+    input: UpdatePricingConfigurationInput!
+  ): UpdatePricingConfigurationResponse @auth(role: "ADMIN")
+
   # Package Assignment
-  assignPackageToUser(userId: ID!, planId: ID!): AssignPackageResponse @auth(role: "ADMIN")
+  assignPackageToUser(userId: ID!, planId: ID!): AssignPackageResponse
+    @auth(role: "ADMIN")
 
   # Catalog sync operations
   syncCatalog(force: Boolean = false): SyncCatalogResponse @auth(role: "ADMIN")
   testCatalogSync: SyncCatalogResponse @auth(role: "ADMIN")
-  
+
   # High demand countries management
-  toggleHighDemandCountry(countryId: String!): ToggleHighDemandResponse @auth(role: "ADMIN")
-  
+  toggleHighDemandCountry(countryId: String!): ToggleHighDemandResponse
+    @auth(role: "ADMIN")
+
   # Catalog sync operations (enhanced)
-  triggerCatalogSync(params: TriggerSyncParams!): TriggerSyncResponse @auth(role: "ADMIN")
-  
+  triggerCatalogSync(params: TriggerSyncParams!): TriggerSyncResponse
+    @auth(role: "ADMIN")
+
   # eSIM operations
   purchaseESIM(planId: ID!, input: PurchaseESIMInput!): PurchaseESIMResponse
     @auth
@@ -123,9 +342,97 @@ type Mutation {
 type Subscription {
   # Real-time eSIM status updates
   esimStatusUpdated(esimId: ID!): ESIMStatusUpdate! @auth
-  
+
   # Catalog sync progress (admin only)
   catalogSyncProgress: CatalogSyncProgressUpdate! @auth(role: "ADMIN")
+}
+
+interface Bundle {
+  # Identification
+  name: String!
+  description: String
+  groups: [String!]!
+
+  # Duration and data
+  validityInDays: Int!
+  dataAmountMB: Int # null for unlimited
+  dataAmountReadable: String! # "5GB", "Unlimited", etc.
+  isUnlimited: Boolean!
+
+  # Coverage
+  countries: [String!]! # ISO country codes
+  region: String
+
+  # Network capabilities
+  speed: [String!]! # ["3G", "4G", "5G"]
+  # Base pricing (before any rules/markups)
+  basePrice: Float!
+  currency: String!
+}
+
+type CatalogBundle implements Bundle {
+  # Primary key
+  esimGoName: ID! 
+
+  # Bundle interface fields
+  description: String
+  groups: [String!]!
+  validityInDays: Int!
+  dataAmountMB: Int
+  dataAmountReadable: String!
+  isUnlimited: Boolean!
+  countries: [String!]!
+  region: String
+  speed: [String!]!
+  basePrice: Float! # Maps to 'price' column in DB
+  currency: String!
+
+  # Timestamps
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  syncedAt: DateTime!
+}
+
+# Customer-facing bundle with pricing calculations
+type CustomerBundle implements Bundle {
+  id: ID!
+
+  name: String!
+  description: String
+  groups: [String!]!
+  validityInDays: Int!
+  dataAmountMB: Int
+  dataAmountReadable: String!
+  isUnlimited: Boolean!
+  countries: [String!]!
+  region: String
+  speed: [String!]!
+  basePrice: Float!
+  currency: String!
+
+  # Calculated pricing with breakdown
+  pricing: PricingBreakdown!
+}
+
+type BundlesByCountry {
+  country: Country!
+  bundles(limit: Int = 3, offset: Int): [Bundle!]!
+  pricingRange: PricingRange
+  bundleCount: Int!
+}
+
+type BundlesByRegion {
+  region: String!
+  bundles(limit: Int = 3, offset: Int): [Bundle!]!
+  bundleCount: Int!
+  pricingRange: PricingRange
+}
+
+type BundlesByGroup {
+  group: String!
+  bundles(limit: Int = 3, offset: Int): [Bundle!]!
+  bundleCount: Int!
+  pricingRange: PricingRange
 }
 
 # User Types
@@ -147,6 +454,7 @@ type Country {
   nameHebrew: String
   region: String!
   flag: String
+  isHighDemand: Boolean @auth(role: "ADMIN")
 }
 
 type Trip {
@@ -289,7 +597,6 @@ type AssignPackageResponse {
   error: String
   assignment: PackageAssignment
 }
-
 
 type PageInfo {
   limit: Int!
@@ -531,9 +838,7 @@ extend type Mutation {
   processCheckoutPayment(
     input: ProcessCheckoutPaymentInput!
   ): ProcessCheckoutPaymentResponse!
-  validateOrder(
-    input: ValidateOrderInput!
-  ): ValidateOrderResponse!
+  validateOrder(input: ValidateOrderInput!): ValidateOrderResponse!
 }
 
 # Pricing Types
@@ -543,53 +848,28 @@ type PricingBreakdown {
   country: Country!
   duration: Int!
   currency: String!
-  
+
   # Public pricing fields (what users pay)
   totalCost: Float! # Subtotal before discounts
   discountValue: Float! # Total discount amount
   priceAfterDiscount: Float! # Final price users pay
-  
   # Admin-only business sensitive fields
   cost: Float! @auth(role: "ADMIN") # Base cost from supplier
   costPlus: Float! @auth(role: "ADMIN") # Cost + markup
   discountRate: Float! @auth(role: "ADMIN") # Discount percentage
-  processingRate: Float! @auth(role: "ADMIN") # Processing fee percentage  
+  processingRate: Float! @auth(role: "ADMIN") # Processing fee percentage
   processingCost: Float! @auth(role: "ADMIN") # Processing fee amount
   finalRevenue: Float! @auth(role: "ADMIN") # Revenue after processing
   netProfit: Float! @auth(role: "ADMIN") # Final profit
   discountPerDay: Float! @auth(role: "ADMIN") # Per-day discount rate
-  
   # Rule-based pricing breakdown - Admin only
   appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
   discounts: [DiscountApplication!] @auth(role: "ADMIN") # Detailed discount breakdown (nullable)
 }
 
-# Configuration level enum to indicate pricing override level
-enum ConfigurationLevel {
-  GLOBAL
-  REGION
-  COUNTRY
-  BUNDLE
-}
-
-# Bundles by Country Types - simplified country data
-type BundlesByCountry {
-  country: Country!
-  bundleCount: Int!
-  pricingRange: PricingRange
-  bundles: [CountryBundle!]
-}
-
 type PricingRange {
   min: Float!
   max: Float!
-}
-
-# Bundles by Region Types - aggregated region data
-type BundlesByRegion {
-  region: String!
-  bundleCount: Int!
-  countryCount: Int!
 }
 
 # Individual bundles for a specific country
@@ -604,7 +884,7 @@ type CountryBundle {
   isUnlimited: Boolean!
   data: Float
   group: String
-  
+
   # Rule-based pricing breakdown - Admin only
   appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
 }
@@ -621,18 +901,17 @@ type PricingConfiguration {
   id: ID!
   name: String!
   description: String!
-  
+
   # Bundle filters (null = applies to all)
   countryId: String
   regionId: String
   duration: Int
   bundleGroup: String
-  
+
   # Configuration values
   discountRate: Float! # Discount percentage (default: 0%)
   markupAmount: Float # Fixed markup amount in USD (null = use global markup)
   discountPerDay: Float # Discount rate per unused day (0.10 = 10% per day)
-  
   # Metadata
   isActive: Boolean!
   createdBy: String!
@@ -644,18 +923,17 @@ input UpdatePricingConfigurationInput {
   id: ID # If provided, update existing; if null, create new
   name: String!
   description: String!
-  
+
   # Bundle filters
   countryId: String
   regionId: String
   duration: Int
   bundleGroup: String
-  
+
   # Configuration values
   discountRate: Float!
   markupAmount: Float # Fixed markup amount in USD (null = use global markup)
   discountPerDay: Float # Discount rate per unused day (0.10 = 10% per day)
-  
   isActive: Boolean!
 }
 
@@ -682,35 +960,32 @@ enum PaymentMethod {
 type ProcessingFeeConfiguration {
   id: ID!
   # Main processing fees (percentages)
-  israeliCardsRate: Float!           # עמלות סליקה עסקאות ש"ח בכרטיסים שהונפקו בישראל
-  foreignCardsRate: Float!           # עמלות סליקה כרטיסים שהונפקו בחו"ל  
-  premiumDinersRate: Float!          # תוספת דיינרס
-  premiumAmexRate: Float!            # תוספת אמקס
-  bitPaymentRate: Float!             # תוספת ביט
-  
+  israeliCardsRate: Float! # עמלות סליקה עסקאות ש"ח בכרטיסים שהונפקו בישראל
+  foreignCardsRate: Float! # עמלות סליקה כרטיסים שהונפקו בחו"ל
+  premiumDinersRate: Float! # תוספת דיינרס
+  premiumAmexRate: Float! # תוספת אמקס
+  bitPaymentRate: Float! # תוספת ביט
   # Fixed fees (amounts in ILS)
-  fixedFeeNIS: Float!                # עמלה קבועה לעסקה בש"ח
-  fixedFeeForeign: Float!            # עמלה קבועה לעסקה במט"ח
-  monthlyFixedCost: Float!           # עלות חודשית קבועה
-  bankWithdrawalFee: Float!          # עלות משיכה לחשבון הבנק
-  monthlyMinimumFee: Float!          # עמלת מינימום חודשית
-  setupCost: Float!                  # עלות הקמה
-  
+  fixedFeeNIS: Float! # עמלה קבועה לעסקה בש"ח
+  fixedFeeForeign: Float! # עמלה קבועה לעסקה במט"ח
+  monthlyFixedCost: Float! # עלות חודשית קבועה
+  bankWithdrawalFee: Float! # עלות משיכה לחשבון הבנק
+  monthlyMinimumFee: Float! # עמלת מינימום חודשית
+  setupCost: Float! # עלות הקמה
   # Additional services (amounts in ILS)
-  threeDSecureFee: Float!            # 3DSecure
-  chargebackFee: Float!              # עמלת הכחשות עסקה
-  cancellationFee: Float!            # עמלת ביטול עסקה
-  invoiceServiceFee: Float!          # שירותי חשבוניות
-  appleGooglePayFee: Float!          # Apple/Google Pay
-  
+  threeDSecureFee: Float! # 3DSecure
+  chargebackFee: Float! # עמלת הכחשות עסקה
+  cancellationFee: Float! # עמלת ביטול עסקה
+  invoiceServiceFee: Float! # שירותי חשבוניות
+  appleGooglePayFee: Float! # Apple/Google Pay
   # Metadata
-  isActive: Boolean!                 # Whether this configuration is currently active
-  effectiveFrom: DateTime!           # When this configuration becomes effective
-  effectiveTo: DateTime              # When this configuration expires (null for current)
+  isActive: Boolean! # Whether this configuration is currently active
+  effectiveFrom: DateTime! # When this configuration becomes effective
+  effectiveTo: DateTime # When this configuration expires (null for current)
   createdAt: DateTime!
   updatedAt: DateTime!
-  createdBy: String!                 # User who created this configuration
-  notes: String                      # Optional notes about this configuration
+  createdBy: String! # User who created this configuration
+  notes: String # Optional notes about this configuration
 }
 
 # Input for creating/updating processing fee configuration
@@ -736,7 +1011,6 @@ input ProcessingFeeConfigurationInput {
   notes: String
 }
 
-
 # Order Validation Types
 input ValidateOrderInput {
   bundleName: String!
@@ -761,7 +1035,6 @@ type ToggleHighDemandResponse {
   isHighDemand: Boolean!
   error: String
 }
-
 
 # Pricing Filters Types
 type PricingFilters {
@@ -889,23 +1162,6 @@ input SearchCatalogCriteria {
   search: String
   limit: Int = 50
   offset: Int = 0
-}
-
-type CatalogBundle {
-  id: ID!
-  esimGoName: String!
-  group: String!
-  description: String!
-  duration: Int!
-  data: Int! # -1 for unlimited
-  unlimited: Boolean!
-  priceCents: Int!
-  currency: String!
-  countries: [Country!]!
-  regions: [String!]!
-  syncedAt: String!
-  createdAt: String!
-  updatedAt: String!
 }
 
 type CatalogBundleConnection {

@@ -1,7 +1,5 @@
 import { GraphQLError } from "graphql";
-import {
-  supabaseAdmin
-} from "./context/supabase-auth";
+import { supabaseAdmin } from "./context/supabase-auth";
 import type { Context } from "./context/types";
 import { createLogger } from "./lib/logger";
 import { authResolvers } from "./resolvers/auth-resolvers";
@@ -13,6 +11,7 @@ import { pricingRulesResolvers } from "./resolvers/pricing-rules-resolvers";
 import { tripsResolvers } from "./resolvers/trips-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import type { Resolvers } from "./types";
+import { bundlesResolvers } from "./resolvers/bundles.resolvers";
 
 const logger = createLogger({ component: "resolvers" });
 
@@ -35,18 +34,26 @@ export const resolvers: Resolvers = {
 
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Query!,
-    
+
     // Catalog resolvers are merged from catalog-resolvers.ts
-    ...catalogResolvers.Query!,
+    // ...catalogResolvers.Query!,
+
+    // Bundle resolvers
+    // ...bundlesResolvers.Query!,
+
+    // Countries resolvers
     countries: async (_, __, context: Context) => {
       try {
         // Get countries with bundle data instead of basic countries
-        const bundleCountries = await context.repositories.bundles.getBundlesByCountryAggregation();
-        
+        const bundleCountries =
+          await context.repositories.bundles.getBundlesByCountryAggregation();
+
         // Get full country data for mapping
         const allCountries = await context.dataSources.countries.getCountries();
-        const countryMap = new Map(allCountries.map((country: any) => [country.iso, country]));
-        
+        const countryMap = new Map(
+          allCountries.map((country: any) => [country.iso, country])
+        );
+
         // Map bundle countries to full country data
         const result = [];
         for (const bundleCountry of bundleCountries) {
@@ -109,8 +116,6 @@ export const resolvers: Resolvers = {
       }
     },
     // trips resolver moved to tripsResolvers
-
-
   },
   // Field resolvers for User type
   User: {
@@ -164,20 +169,14 @@ export const resolvers: Resolvers = {
     ...tripsResolvers.Mutation!,
     ...pricingRulesResolvers.Mutation!,
 
-
-
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Mutation!,
-    
+
     // Catalog resolvers are merged from catalog-resolvers.ts
     ...catalogResolvers.Mutation!,
-    
+
     // Auth resolvers are merged from auth-resolvers.ts
     ...authResolvers.Mutation!,
-
-
-
-
 
     // High demand countries management
     toggleHighDemandCountry: async (_, { countryId }, context: Context) => {
@@ -230,8 +229,6 @@ export const resolvers: Resolvers = {
         };
       }
     },
-
-
   },
 
   // Field Resolvers
@@ -241,16 +238,22 @@ export const resolvers: Resolvers = {
   Country: {
     name: (parent) => parent.name,
     nameHebrew: async (parent, _, context: Context) => {
-      const country = await context.dataSources.countries.getCountryByCode(parent.iso);
+      const country = await context.dataSources.countries.getCountryByCode(
+        parent.iso
+      );
       return country?.hebrewName || parent.name;
     },
     region: async (parent, _, context: Context) => {
-      const country = await context.dataSources.countries.getCountryByCode(parent.iso);
+      const country = await context.dataSources.countries.getCountryByCode(
+        parent.iso
+      );
       return country?.region || parent.region;
     },
     flag: async (parent, _, context: Context) => {
-      const country = await context.dataSources.countries.getCountryByCode(parent.iso);
-      return country?.flag || '';
+      const country = await context.dataSources.countries.getCountryByCode(
+        parent.iso
+      );
+      return country?.flag || "";
     },
     iso: (parent) => parent.iso,
   },
@@ -263,6 +266,15 @@ export const resolvers: Resolvers = {
 
     // Catalog subscriptions are merged from catalog-resolvers.ts
     ...catalogResolvers.Subscription!,
-
   },
+  ...bundlesResolvers.Bundle!,
+  ...bundlesResolvers.CustomerBundle,
+  ...bundlesResolvers.CountryBundle,
+  ...bundlesResolvers.BundlesByRegion,
+  ...bundlesResolvers.BundlesByGroup,
+  ...bundlesResolvers.BundlesByCountry,
+  ...bundlesResolvers.BundlesForCountry,
+  ...bundlesResolvers.BundlesForRegion,
+  ...bundlesResolvers.BundlesForGroup,
+  ...bundlesResolvers.BundlesForRegion,
 };

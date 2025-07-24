@@ -1,5 +1,5 @@
 import { Queue, QueueEvents } from 'bullmq';
-import IORedis from 'ioredis';
+import { Redis } from 'ioredis';
 import { config } from '../config/index.js';
 import { createLogger } from '@esim-go/utils';
 
@@ -37,7 +37,7 @@ export type CatalogSyncJobData =
   | BundleSyncJobData;
 
 // Redis connection
-const connection = new IORedis({
+const connection = new Redis({
   host: config.redis.host,
   port: config.redis.port,
   password: config.redis.password,

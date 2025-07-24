@@ -6,7 +6,7 @@ import type { Database } from '../database.types';
 
 type TableName = keyof Database['public']['Tables'];
 export class BaseSupabaseRepository<
-  Row extends { id: string },
+  Row extends { id?: string },
   Insert extends object,
   Update extends object,
 > {

@@ -19,9 +19,7 @@ export const workerApiService = {
     logger.info('Triggering full catalog sync', { userId });
     
     // Check if there's already an active full sync
-    const hasActive = await syncJobRepository.hasActiveJob({
-      jobType: 'full-sync',
-    });
+    const hasActive = await syncJobRepository.hasActiveJob('full-sync');
 
     if (hasActive) {
       throw new Error('A full sync is already in progress');
@@ -43,10 +41,7 @@ export const workerApiService = {
     logger.info('Triggering bundle group sync', { bundleGroup, userId });
     
     // Check if there's already an active sync for this group
-    const hasActive = await syncJobRepository.hasActiveJob({
-      jobType: 'group-sync',
-      bundleGroup,
-    });
+    const hasActive = await syncJobRepository.hasActiveJob('group-sync');
 
     if (hasActive) {
       throw new Error(`A sync for bundle group ${bundleGroup} is already in progress`);
@@ -69,10 +64,7 @@ export const workerApiService = {
     logger.info('Triggering country sync', { countryId, userId });
     
     // Check if there's already an active sync for this country
-    const hasActive = await syncJobRepository.hasActiveJob({
-      jobType: 'country-sync',
-      countryId,
-    });
+    const hasActive = await syncJobRepository.hasActiveJob('country-sync');
 
     if (hasActive) {
       throw new Error(`A sync for country ${countryId} is already in progress`);
@@ -101,7 +93,7 @@ export const workerApiService = {
     return {
       queue: queueStats,
       sync: syncStats,
-      activeJobs: activeJobs.map(job => ({
+      activeJobs: activeJobs.map((job: any) => ({
         id: job.id,
         type: job.job_type,
         status: job.status,
@@ -120,12 +112,7 @@ export const workerApiService = {
     limit?: number;
     offset?: number;
   }) {
-    return syncJobRepository.getJobHistory({
-      status: params.status as any,
-      jobType: params.jobType as any,
-      limit: params.limit,
-      offset: params.offset,
-    });
+    return syncJobRepository.getJobHistory(params.limit);
   },
 
   /**

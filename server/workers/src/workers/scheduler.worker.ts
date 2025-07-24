@@ -21,7 +21,7 @@ const schedulerTasks = {
    */
   async checkAndScheduleSync(): Promise<void> {
     try {
-      const isDue = await catalogMetadataRepository.isSyncDue();
+      const isDue = await catalogMetadataRepository.isSyncDue(168); // 7 days = 168 hours
       
       if (isDue) {
         logger.info('Full sync is due, scheduling job');
@@ -29,10 +29,9 @@ const schedulerTasks = {
       } else {
         const stats = await catalogMetadataRepository.getSyncStats();
         logger.info('Full sync not due', {
-          lastSyncedAt: stats.lastSyncedAt,
-          nextSyncAt: stats.nextSyncAt,
-          daysSinceSync: stats.daysSinceSync,
-          daysUntilSync: stats.daysUntilSync,
+          lastFullSync: stats.last_full_sync,
+          totalBundles: stats.total_bundles,
+          apiHealthStatus: stats.api_health_status,
         });
       }
     } catch (error) {
