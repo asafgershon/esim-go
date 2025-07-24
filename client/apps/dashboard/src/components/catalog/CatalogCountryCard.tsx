@@ -1,4 +1,4 @@
-import { CatalogBundle } from "@/__generated__/graphql";
+import { CatalogBundle, PricingRange } from "@/__generated__/graphql";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import React from "react";
 
@@ -13,7 +13,7 @@ interface CatalogCountryCardProps {
   onToggle: () => void;
   summary?: {
     count: number;
-    range: string;
+    range: PricingRange;
     status: "pending" | "loaded";
   };
 }
@@ -26,6 +26,17 @@ export const CatalogCountryCard: React.FC<CatalogCountryCardProps> = ({
   onToggle,
   summary,
 }) => {
+  const formatPriceRange = (range: PricingRange): string => {
+    const currency = range.currency || "USD";
+    const symbol = currency === "USD" ? "$" : currency;
+    
+    if (range.min === range.max) {
+      return `${symbol}${range.min.toFixed(2)}`;
+    }
+    
+    return `${symbol}${range.min.toFixed(2)} - ${symbol}${range.max.toFixed(2)}`;
+  };
+
   const getCountryFlag = (countryCode: string): string => {
     // Simple mapping for common countries - can be expanded
     const flags: Record<string, string> = {
@@ -81,7 +92,7 @@ export const CatalogCountryCard: React.FC<CatalogCountryCardProps> = ({
               </h3>
               <p className="text-sm text-muted-foreground">
                 {summary
-                  ? `${summary.count} bundles • ${summary.range}`
+                  ? `${summary.count} bundles • ${formatPriceRange(summary.range)}`
                   : "Loading..."}
               </p>
             </div>

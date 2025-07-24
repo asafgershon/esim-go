@@ -266,23 +266,45 @@ export function CatalogSplitView({
   const getCountrySummary = (country: DisplayCountryData) => {
     const bundles = countryBundles[country.iso];
 
+    // If bundles haven't been loaded yet, use the backend pricing range
     if (!bundles) {
       return {
         count: country.bundleCount || 0,
-        range: "Not loaded",
+        range: country.pricingRange || {
+          min: 0,
+          max: 0,
+          currency: "USD",
+        },
         status: "pending" as const,
       };
     }
 
+    // Once bundles are loaded, we can use the backend pricing range if available
+    // or calculate it from the loaded bundles
     const count = bundles.length;
+    
+    // Prefer the backend pricing range if available
+    if (country.pricingRange) {
+      return {
+        count,
+        range: country.pricingRange,
+        status: "loaded" as const,
+      };
+    }
+
+    // Fallback to calculating from bundles (this shouldn't happen if backend provides pricingRange)
     const prices = bundles
-      .map((bundle) => bundle.priceCents || 0)
+      .map((bundle) => bundle.basePrice || 0)
       .filter((price) => price > 0);
 
     if (prices.length === 0) {
       return {
         count,
-        range: "No pricing data",
+        range: {
+          min: 0,
+          max: 0,
+          currency: "USD",
+        },
         status: "loaded" as const,
       };
     }
@@ -292,10 +314,11 @@ export function CatalogSplitView({
 
     return {
       count,
-      range:
-        minPrice === maxPrice
-          ? `$${minPrice.toFixed(2)}`
-          : `$${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`,
+      range: {
+        min: minPrice,
+        max: maxPrice,
+        currency: "USD",
+      },
       status: "loaded" as const,
     };
   };

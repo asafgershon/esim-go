@@ -27,15 +27,13 @@ type User = {
 };
 
 type CatalogBundle = {
-  id: string;
   esimGoName: string;
   description: string;
-  regions: string[];
-  duration: number;
-  priceCents: number;
+  region: string | null;
+  validityInDays: number;
+  basePrice: number;
   currency: string;
-  unlimited: boolean;
-  bundleGroup?: string;
+  isUnlimited: boolean;
 };
 
 interface AssignESimModalProps {
@@ -185,9 +183,9 @@ export function AssignESimModal({ user, open, onOpenChange }: AssignESimModalPro
               ) : (
                 plans.map((plan) => (
                   <div
-                    key={plan.id}
+                    key={plan.esimGoName}
                     className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                      selectedPlan?.id === plan.id
+                      selectedPlan?.esimGoName === plan.esimGoName
                         ? "border-primary bg-primary/5 shadow-sm"
                         : "hover:bg-muted/50"
                     }`}
@@ -200,13 +198,15 @@ export function AssignESimModal({ user, open, onOpenChange }: AssignESimModalPro
                           {plan.description}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
+                          {plan.region && (
+                            <span className="text-xs bg-secondary px-2 py-1 rounded">
+                              {plan.region}
+                            </span>
+                          )}
                           <span className="text-xs bg-secondary px-2 py-1 rounded">
-                            {plan.regions[0]}
+                            {plan.validityInDays} days
                           </span>
-                          <span className="text-xs bg-secondary px-2 py-1 rounded">
-                            {plan.duration} days
-                          </span>
-                          {plan.unlimited && (
+                          {plan.isUnlimited && (
                             <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                               Unlimited
                             </span>
@@ -215,9 +215,9 @@ export function AssignESimModal({ user, open, onOpenChange }: AssignESimModalPro
                       </div>
                       <div className="text-right ml-4">
                         <p className="text-sm font-semibold">
-                          ${(plan.priceCents / 100).toFixed(2)}
+                          ${plan.basePrice.toFixed(2)}
                         </p>
-                        {selectedPlan?.id === plan.id && (
+                        {selectedPlan?.esimGoName === plan.esimGoName && (
                           <CheckCircle className="h-4 w-4 text-primary ml-auto mt-1" />
                         )}
                       </div>
@@ -243,7 +243,7 @@ export function AssignESimModal({ user, open, onOpenChange }: AssignESimModalPro
                   Package "{selectedPlan.esimGoName}" will be assigned to {user.email}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  {selectedPlan.regions[0]} • {selectedPlan.duration} days • ${(selectedPlan.priceCents / 100).toFixed(2)}
+                  {selectedPlan.region || 'Global'} • {selectedPlan.validityInDays} days • ${selectedPlan.basePrice.toFixed(2)}
                 </div>
               </div>
             ) : (

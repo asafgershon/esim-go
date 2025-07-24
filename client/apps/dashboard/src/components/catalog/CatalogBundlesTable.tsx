@@ -1,4 +1,4 @@
-import { CatalogBundle, Country } from "@/__generated__/graphql";
+import { CatalogBundle, Country, PricingRange } from "@/__generated__/graphql";
 import { ScrollArea } from "@workspace/ui";
 import { Badge } from "@workspace/ui/components/badge";
 import { Clock, Package, Wifi, WifiOff } from "lucide-react";
@@ -10,6 +10,7 @@ import { DisplayRegionData } from "./CatalogRegionCard";
 export interface DisplayCountryData extends Country {
   bundles?: CatalogBundle[];
   bundleCount?: number;
+  pricingRange?: PricingRange;
 }
 
 interface CatalogBundlesTableProps {

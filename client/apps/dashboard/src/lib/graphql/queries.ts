@@ -310,27 +310,18 @@ export const INVITE_ADMIN_USER = gql(`
   }
 `)
 
+
 export const GET_CATALOG_BUNDLES = gql(`
   query GetCatalogBundles($criteria: SearchCatalogCriteria) {
     catalogBundles(criteria: $criteria) {
       bundles {
-        id
         esimGoName
-        group
         description
-        duration
-        data
-        unlimited
-        priceCents
+        region
+        validityInDays
+        basePrice
         currency
-        countries {
-          iso
-          name
-        }
-        regions
-        syncedAt
-        createdAt
-        updatedAt
+        isUnlimited
       }
       totalCount
     }
@@ -576,8 +567,8 @@ export const GET_PROCESSING_FEE_CONFIGURATIONS = gql(`
 
 
 export const GET_BUNDLES_BY_COUNTRY = gql(`
-  query GetBundlesByCountry($includeBundles: Boolean = false) {
-    bundlesCountries(includeBundles: $includeBundles) {
+  query GetBundlesByCountry {
+    bundlesByCountry {
       country {
         iso
         name
@@ -590,34 +581,13 @@ export const GET_BUNDLES_BY_COUNTRY = gql(`
         min
         max
       }
-      bundles @include(if: $includeBundles) {
-          name
-          id
-        country {
-          iso
-          name
-        }
-        duration
-        pricingBreakdown {
-          cost
-          costPlus
-          totalCost
-          discountRate
-          discountValue
-        discountPerDay
-        }
-        currency
-        isUnlimited
-        data
-        group
-      }
     }
   }
 `)
 
 export const GET_COUNTRIES_WITH_BUNDLES = gql(`
   query GetCountriesWithBundles {
-    bundlesCountries(includeBundles: true) {
+    bundlesByCountry {
       country {
         iso
         name
@@ -627,26 +597,18 @@ export const GET_COUNTRIES_WITH_BUNDLES = gql(`
         min
         max
       }
-      bundles {
-        id
-        name
-        country {
-          iso
+      bundles(limit: 5) {
+        ... on CatalogBundle {
+          esimGoName
           name
+          groups
+          validityInDays
+          dataAmountReadable
+          isUnlimited
+          countries
+          basePrice
+          currency
         }
-        pricingBreakdown {
-          cost
-          costPlus
-          totalCost
-          discountRate
-          discountValue
-        }
-        duration
-        currency
-        isUnlimited
-        data
-        id
-        group
       }
     }
   }
@@ -654,65 +616,61 @@ export const GET_COUNTRIES_WITH_BUNDLES = gql(`
 
 export const GET_BUNDLES_BY_REGION = gql(`
   query GetBundlesByRegion {
-    bundlesRegions {
+    bundlesByRegion {
       region
       bundleCount
-      countryCount
     }
   }
 `)
 
 export const GET_REGION_BUNDLES = gql(`
-  query GetRegionBundles($regionId: String!) {
-    bundles(regionId: $regionId) {
-      id
-      name
-      country {
-        iso
-        name
+  query GetRegionBundles($region: String!) {
+    bundlesForRegion(region: $region) {
+      region
+      bundleCount
+      bundles {
+        ... on CatalogBundle {
+          esimGoName
+          name
+          description
+          groups
+          validityInDays
+          dataAmountMB
+          dataAmountReadable
+          isUnlimited
+          countries
+          region
+          basePrice
+          currency
+        }
       }
-      duration
-      pricingBreakdown {
-        cost
-        costPlus
-        totalCost
-        discountRate
-        discountValue
-      }
-      currency
-      group
-      isUnlimited
-      data
     }
   }
 `)
 
 export const GET_COUNTRY_BUNDLES = gql(`
   query GetCountryBundles($countryId: String!) {
-    countryBundles: bundles(countryId: $countryId) {
-      id
-      name
-      pricingBreakdown {
-        cost
-        costPlus
-        totalCost
-        discountRate
-        discountValue
-      }
+    bundlesForCountry(countryCode: $countryId) {
       country {
         iso
         name
       }
-      duration
-      currency
-      isUnlimited
-      data
-      group
-      appliedRules {
-        id
-        name
-        type
-        impact
+      bundleCount
+      bundles {
+        ... on CatalogBundle {
+          esimGoName
+          name
+          description
+          groups
+          validityInDays
+          dataAmountMB
+          dataAmountReadable
+          isUnlimited
+          countries
+          region
+          basePrice
+          currency
+        }
       }
     }
   }
