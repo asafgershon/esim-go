@@ -58,6 +58,7 @@
         "@esim-go/client": "workspace:*",
         "@esim-go/rules-engine": "workspace:*",
         "@esim-go/utils": "workspace:*",
+        "@graphql-tools/merge": "^9.1.1",
         "@keyv/redis": "^4.6.0",
         "@supabase/supabase-js": "^2.47.10",
         "@types/cors": "^2.8.19",

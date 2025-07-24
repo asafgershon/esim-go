@@ -2,6 +2,7 @@ import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import { makeExecutableSchema } from "@graphql-tools/schema";
+import { mergeTypeDefs } from "@graphql-tools/merge";
 import cors from "cors";
 import { cleanEnv, port, str } from "envalid";
 import express from "express";
@@ -47,13 +48,18 @@ import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
 
-const typeDefs = `
-${authDirectiveTypeDefs}
-${readFileSync(join(__dirname, "../schema.graphql"), "utf-8")}
-`;
+// Load and merge schemas
+const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
+const rulesEngineSchema = readFileSync(join(__dirname, "../../packages/rules-engine/schema.graphql"), "utf-8");
+
+const typeDefs = mergeTypeDefs([
+  authDirectiveTypeDefs,
+  mainSchema,
+  rulesEngineSchema
+]);
 
 const env = cleanEnv(process.env, {
-  PORT: port({ default: 4000 }),
+  PORT: port({ default: 5001 }),
   CORS_ORIGINS: str({ default: "http://localhost:3000" }),
   ESIM_GO_API_KEY: str({ desc: "eSIM Go API key for V2 sync service" }),
 });

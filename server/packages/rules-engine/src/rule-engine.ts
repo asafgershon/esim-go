@@ -3,9 +3,10 @@ import type {
   AppliedRule,
   CreatePricingRuleInput,
   PricingRuleCalculation,
-} from "./types";
-import { ActionType, RuleType } from "./types";
-import type { PricingRule, Bundle, PricingContext } from "./rules-engine-types";
+} from "./generated/types";
+import { ActionType, RuleType } from "./generated/types";
+import type { PricingRule } from "./generated/types";
+import type { Bundle, PricingContext } from "./rules-engine-types";
 import { ActionExecutor, type PricingState } from "./actions";
 import { ConditionEvaluator } from "./conditions";
 import {
@@ -72,7 +73,6 @@ export class PricingRuleEngine {
     const input = rule as CreatePricingRuleInput;
     const now = new Date();
     return {
-      __typename: "PricingRule" as const,
       id: `rule-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
       type: input.type,
       name: input.name,
@@ -82,11 +82,11 @@ export class PricingRuleEngine {
       priority: input.priority,
       isActive: input.isActive ?? true,
       isEditable: true,
-      validFrom: input.validFrom ? new Date(input.validFrom) : undefined,
-      validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
+      validFrom: input.validFrom || null,
+      validUntil: input.validUntil || null,
       createdBy: "system",
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     };
   }
 
@@ -450,10 +450,6 @@ export class PricingRuleEngine {
         id: context.bundle?.id || "",
         name: context.bundle?.name || "",
         duration: context.bundle?.duration || 0,
-        reason:
-          context.bundle?.duration === context.requestedDuration
-            ? "exact_match"
-            : "next_available",
       },
       metadata: {
         discountPerUnusedDay: state.discountPerUnusedDay,
