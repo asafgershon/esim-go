@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config({path: join(__dirname, '../.env')});
+console.log(process.env.ESIM_GO_API_KEY)
+
+
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
@@ -47,6 +52,7 @@ import { PricingRulesRepository } from "./repositories/pricing-rules.repository"
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
+import { configDotenv } from "dotenv";
 
 // Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");

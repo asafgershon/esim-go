@@ -1,18 +1,17 @@
+import type { Country } from "@esim-go/client";
+import type { Bundle } from "@esim-go/rules-engine";
 import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import { PricingEngineService } from "../services/pricing-engine.service";
 import type {
-  Resolvers,
-  CalculatePriceInput,
-  CountryBundle,
-  CatalogBundle,
   BundlesByCountry,
   BundlesByRegion,
+  CalculatePriceInput,
+  CountryBundle,
   PricingBreakdown,
+  Resolvers
 } from "../types";
-import type { Bundle } from "@esim-go/rules-engine";
-import type { Country } from "@esim-go/client";
 
 const logger = createLogger({
   component: "CatalogResolvers",

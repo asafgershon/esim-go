@@ -54,25 +54,11 @@ type Query {
     testContext: TestPricingContext!
   ): PricingRuleCalculation!
 
-  # Processing fee configurations
-  currentProcessingFeeConfiguration: ProcessingFeeConfiguration
-    @auth(role: "ADMIN")
-  processingFeeConfigurations(
-    limit: Int = 10
-    offset: Int = 0
-    includeInactive: Boolean = false
-  ): [ProcessingFeeConfiguration!]! @auth(role: "ADMIN")
-  processingFeeConfiguration(id: ID!): ProcessingFeeConfiguration
-    @auth(role: "ADMIN")
-
   # Bundle groups
   bundleGroups: [String!]! @auth(role: "ADMIN")
 
   # Pricing filters
   pricingFilters: PricingFilters!
-
-  # Bundle data amount aggregation
-  bundleDataAggregation: BundleDataAggregation!
 
   # High demand countries
   highDemandCountries: [String!]! @auth(role: "ADMIN")
@@ -372,8 +358,8 @@ interface Bundle {
 
 type CatalogBundle implements Bundle {
   # Primary key
-  esimGoName: ID! 
-
+  esimGoName: ID!
+  name: String!
   # Bundle interface fields
   description: String
   groups: [String!]!

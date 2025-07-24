@@ -2,11 +2,11 @@ import { GraphQLError } from "graphql";
 import { createLogger } from "../lib/logger";
 import { BundleRepository } from "../repositories/catalog/bundle.repository";
 import type {
-    Bundle,
-    CatalogBundle,
-    Country,
-    CustomerBundle,
-    Resolvers,
+  Bundle,
+  CatalogBundle,
+  Country,
+  CustomerBundle,
+  Resolvers,
 } from "../types";
 
 const logger = createLogger({ component: "BundleResolvers" });
@@ -447,13 +447,15 @@ export const bundlesResolvers: BundleResolvers = {
 
           if (data && data.length > 0) {
             const bundles = (data[0]?.bundles as Bundle[]) || [];
-            return bundles.slice(offset || 0, (offset || 0) + (limit || 0)).map((bundle) => ({
-              __typename: "CatalogBundle",
-              ...transformJsonBundle(bundle),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              syncedAt: new Date().toISOString(),
-            }));
+            return bundles
+              .slice(offset || 0, (offset || 0) + (limit || 0))
+              .map((bundle) => ({
+                __typename: "CatalogBundle",
+                ...transformJsonBundle(bundle),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                syncedAt: new Date().toISOString(),
+              }));
           }
         }
 
@@ -464,11 +466,22 @@ export const bundlesResolvers: BundleResolvers = {
       }
     },
   },
+  Bundle: {
+    __resolveType: (obj) => {
+      if ((obj as CatalogBundle).esimGoName) {
+        return "CatalogBundle";
+      }
+      if ((obj as CustomerBundle).pricing) {
+        return "CustomerBundle";
+      }
+      return "CatalogBundle";
+    },
+  },
 };
 
 // ========== Helper Functions ==========
 
-function transformJsonBundle(jsonBundle: any) {
+export function transformJsonBundle(jsonBundle: any) {
   return {
     esimGoName: jsonBundle.esim_go_name,
     name: jsonBundle.name || jsonBundle.esim_go_name,

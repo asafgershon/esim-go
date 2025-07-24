@@ -3,7 +3,7 @@ import { supabaseAdmin } from "./context/supabase-auth";
 import type { Context } from "./context/types";
 import { createLogger } from "./lib/logger";
 import { authResolvers } from "./resolvers/auth-resolvers";
-import { catalogResolvers } from "./resolvers/catalog-resolvers";
+import { bundlesResolvers } from "./resolvers/bundles.resolvers";
 import { checkoutResolvers } from "./resolvers/checkout-resolvers";
 import { esimResolvers } from "./resolvers/esim-resolvers";
 import { ordersResolvers } from "./resolvers/orders-resolvers";
@@ -11,7 +11,6 @@ import { pricingRulesResolvers } from "./resolvers/pricing-rules-resolvers";
 import { tripsResolvers } from "./resolvers/trips-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import type { Resolvers } from "./types";
-import { bundlesResolvers } from "./resolvers/bundles.resolvers";
 
 const logger = createLogger({ component: "resolvers" });
 
@@ -35,18 +34,15 @@ export const resolvers: Resolvers = {
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Query!,
 
-    // Catalog resolvers are merged from catalog-resolvers.ts
-    // ...catalogResolvers.Query!,
-
     // Bundle resolvers
-    // ...bundlesResolvers.Query!,
+    ...bundlesResolvers.Query!,
 
     // Countries resolvers
     countries: async (_, __, context: Context) => {
       try {
         // Get countries with bundle data instead of basic countries
         const bundleCountries =
-          await context.repositories.bundles.getBundlesByCountryAggregation();
+          await context.repositories.bundles.byCountries();
 
         // Get full country data for mapping
         const allCountries = await context.dataSources.countries.getCountries();
@@ -173,7 +169,7 @@ export const resolvers: Resolvers = {
     ...esimResolvers.Mutation!,
 
     // Catalog resolvers are merged from catalog-resolvers.ts
-    ...catalogResolvers.Mutation!,
+    // ...catalogResolvers.Mutation!,
 
     // Auth resolvers are merged from auth-resolvers.ts
     ...authResolvers.Mutation!,
@@ -258,23 +254,23 @@ export const resolvers: Resolvers = {
     iso: (parent) => parent.iso,
   },
   CountryBundle: {
-    ...catalogResolvers.CountryBundle!,
+    // ...catalogResolvers.CountryBundle!,
   },
   Subscription: {
     // eSIM subscriptions are merged from esim-resolvers.ts
     ...esimResolvers.Subscription!,
 
     // Catalog subscriptions are merged from catalog-resolvers.ts
-    ...catalogResolvers.Subscription!,
+    // ...catalogResolvers.Subscription!,
   },
-  ...bundlesResolvers.Bundle!,
-  ...bundlesResolvers.CustomerBundle,
-  ...bundlesResolvers.CountryBundle,
-  ...bundlesResolvers.BundlesByRegion,
-  ...bundlesResolvers.BundlesByGroup,
-  ...bundlesResolvers.BundlesByCountry,
-  ...bundlesResolvers.BundlesForCountry,
-  ...bundlesResolvers.BundlesForRegion,
-  ...bundlesResolvers.BundlesForGroup,
-  ...bundlesResolvers.BundlesForRegion,
+  // Bundle field resolvers
+  BundlesByCountry: {
+    ...bundlesResolvers.BundlesByCountry,
+  },
+  BundlesByRegion: {
+    ...bundlesResolvers.BundlesByRegion,
+  },
+  BundlesByGroup: {
+    ...bundlesResolvers.BundlesByGroup,
+  },
 };

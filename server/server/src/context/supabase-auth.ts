@@ -3,6 +3,9 @@ import { cleanEnv, str } from "envalid";
 import type { IncomingMessage } from "node:http";
 import type { User } from "../types";
 import type { Database } from "../database.types";
+import dotenv from 'dotenv';
+import { join } from "node:path";
+dotenv.config({path: join(__dirname, '../../.env')});
 
 const env = cleanEnv(process.env, {
   SUPABASE_URL: str(),
