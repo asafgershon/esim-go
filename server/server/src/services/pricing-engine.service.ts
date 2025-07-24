@@ -1,8 +1,6 @@
-import { PricingRuleEngine } from '../rules-engine/rule-engine';
+import { PricingRuleEngine, Bundle, PricingContext, PricingRuleCalculation } from '@esim-go/rules-engine';
 import { PricingRulesRepository } from '../repositories/pricing-rules.repository';
 import { DefaultRulesService } from './default-rules.service';
-import type { Bundle, PricingContext } from '../rules-engine/types';
-import type { PricingRuleCalculation } from '../types';
 import { createLogger, withPerformanceLogging } from '../lib/logger';
 import type { SupabaseClient } from '@supabase/supabase-js';
 

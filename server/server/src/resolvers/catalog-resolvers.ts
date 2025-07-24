@@ -11,7 +11,7 @@ import type {
   BundlesByRegion,
   PricingBreakdown,
 } from "../types";
-import type { Bundle } from "../rules-engine/types";
+import type { Bundle } from "@esim-go/rules-engine";
 import type { Country } from "@esim-go/client";
 
 const logger = createLogger({

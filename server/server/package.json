@@ -37,6 +37,7 @@
     "@apollo/server": "^4.12.2",
     "@apollo/utils.keyvadapter": "^4.0.1",
     "@esim-go/client": "workspace:*",
+    "@esim-go/rules-engine": "workspace:*",
     "@esim-go/utils": "workspace:*",
     "@keyv/redis": "^4.6.0",
     "@supabase/supabase-js": "^2.47.10",

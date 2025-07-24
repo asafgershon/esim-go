@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { Context } from '../context/types';
 import { createLogger } from '../lib/logger';
-import { PricingRuleEngine } from '../rules-engine/rule-engine';
+import { PricingRuleEngine } from '@esim-go/rules-engine';
 import { PricingEngineService } from '../services/pricing-engine.service';
 import type {
   MutationResolvers,

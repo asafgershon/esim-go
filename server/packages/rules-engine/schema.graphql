@@ -1,0 +1,127 @@
+extend type Query {
+  rules(filter: PricingRuleFilter): [PricingRule!]!
+  rule(id: ID!): PricingRule
+  activeRules: [PricingRule!]!
+  conflictingRules(ruleId: ID!): [PricingRule!]!
+  calculateBatchPricing(
+    requests: [CalculatePriceInput!]!
+  ): [PricingRuleCalculation!]! @auth(role: "ADMIN")
+}
+
+extend type Mutation {
+  # Pricing Rules Engine
+  createPricingRule(input: CreatePricingRuleInput!): PricingRule!
+  updatePricingRule(id: ID!, input: UpdatePricingRuleInput!): PricingRule!
+  deletePricingRule(id: ID!): Boolean!
+  togglePricingRule(id: ID!): PricingRule!
+  clonePricingRule(id: ID!, newName: String!): PricingRule!
+  reorderPricingRules(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
+}
+
+input PricingRuleFilter {
+  type: RuleType
+  isActive: Boolean
+  isEditable: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input RuleConditionInput {
+  field: String!
+  operator: ConditionOperator!
+  value: JSON!
+  type: String
+}
+
+input RuleActionInput {
+  type: ActionType!
+  value: Float!
+  metadata: JSON
+}
+
+input CreatePricingRuleInput {
+  type: RuleType!
+  name: String!
+  description: String
+  conditions: [RuleConditionInput!]!
+  actions: [RuleActionInput!]!
+  priority: Int!
+  isActive: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input UpdatePricingRuleInput {
+  name: String
+  description: String
+  conditions: [RuleConditionInput!]
+  actions: [RuleActionInput!]
+  priority: Int
+  isActive: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input PricingRulePriorityUpdate {
+  id: ID!
+  priority: Int!
+}
+
+type PricingRule {
+  id: ID!
+  type: RuleType!
+  name: String!
+  description: String
+
+  # Rule definition
+  conditions: [RuleCondition!]!
+  actions: [RuleAction!]!
+
+  # Metadata
+  priority: Int!
+  isActive: Boolean!
+  isEditable: Boolean!
+  validFrom: String
+  validUntil: String
+
+  # Audit
+  createdBy: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type AppliedRule {
+  id: ID!
+  name: String!
+  type: RuleType!
+  impact: Float!
+}
+
+type PricingRuleCalculation {
+  baseCost: Float!
+  markup: Float!
+  subtotal: Float!
+
+  # Discounts breakdown
+  discounts: [DiscountApplication!]!
+  totalDiscount: Float!
+  priceAfterDiscount: Float!
+
+  # Processing fees
+  processingFee: Float!
+  processingRate: Float!
+
+  # Final results
+  finalPrice: Float!
+  finalRevenue: Float! # What you get after payment (finalPrice - processingFee - baseCost)
+  revenueAfterProcessing: Float! # Bottom line (finalPrice - processingFee)
+  profit: Float!
+
+  # Recommendations
+  maxRecommendedPrice: Float! # baseCost + $1.50
+  maxDiscountPercentage: Float! # Maximum discount % while maintaining minimum profit
+  # Applied rules
+  appliedRules: [AppliedRule!]!
+
+  selectedBundle: CountryBundle!
+}
