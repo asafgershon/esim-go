@@ -1,5 +1,5 @@
 import { RuleBuilder } from './rule-builder';
-import { RuleType } from './types';
+import { RuleType } from './generated/types';
 
 // Example rules that match your use cases
 

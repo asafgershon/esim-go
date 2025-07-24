@@ -1,4 +1,4 @@
-import type { RuleCondition } from '../types';
+import type { RuleCondition } from '../generated/types';
 import type { PricingContext } from '../rules-engine-types';
 import { BaseConditionEvaluator } from './base';
 

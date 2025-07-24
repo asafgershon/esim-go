@@ -1,4 +1,4 @@
-import type { DiscountApplication } from './types';
+import { DiscountApplication } from "./generated/types";
 
 export enum PricingStepType {
   BUNDLE_SELECTION = 'BUNDLE_SELECTION',

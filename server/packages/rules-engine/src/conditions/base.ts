@@ -1,4 +1,4 @@
-import type { ConditionOperator, RuleCondition } from '../types';
+import type { ConditionOperator, RuleCondition } from '../generated/types';
 import type { PricingContext } from '../rules-engine-types';
 
 export abstract class BaseConditionEvaluator {

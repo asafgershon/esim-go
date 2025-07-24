@@ -1,4 +1,4 @@
-import type { RuleAction } from '../types';
+import type { RuleAction } from '../generated/types';
 import { BaseActionExecutor, type ActionResult, type PricingState } from './base';
 
 export class ProcessingActionExecutor extends BaseActionExecutor {

@@ -1,4 +1,4 @@
-import type { ActionType, RuleAction } from '../types';
+import type { ActionType, RuleAction } from '../generated/types';
 
 export interface ActionResult {
   type: ActionType;

@@ -8,7 +8,7 @@ import {
   RuleType as RuleTypeEnum,
   ConditionOperator as ConditionOperatorEnum,
   ActionType as ActionTypeEnum
-} from './types';
+} from './generated/types';
 
 export class RuleBuilder {
   private rule: Partial<CreatePricingRuleInput> = {
