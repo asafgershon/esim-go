@@ -1,29 +1,53 @@
-extend type Query {
-  rules(filter: PricingRuleFilter): [PricingRule!]!
-  rule(id: ID!): PricingRule
-  activeRules: [PricingRule!]!
-  conflictingRules(ruleId: ID!): [PricingRule!]!
-  calculateBatchPricing(
-    requests: [CalculatePriceInput!]!
-  ): [PricingRuleCalculation!]! @auth(role: "ADMIN")
+# Pricing Rules Engine Types
+enum RuleType {
+  SYSTEM_MARKUP
+  SYSTEM_PROCESSING
+  SYSTEM_MINIMUM_PRICE
+  BUSINESS_DISCOUNT
+  BUSINESS_MINIMUM_PROFIT
+  PROMOTION
+  SEGMENT
 }
 
-extend type Mutation {
-  # Pricing Rules Engine
-  createPricingRule(input: CreatePricingRuleInput!): PricingRule!
-  updatePricingRule(id: ID!, input: UpdatePricingRuleInput!): PricingRule!
-  deletePricingRule(id: ID!): Boolean!
-  togglePricingRule(id: ID!): PricingRule!
-  clonePricingRule(id: ID!, newName: String!): PricingRule!
-  reorderPricingRules(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
+enum ConditionOperator {
+  EQUALS
+  NOT_EQUALS
+  GREATER_THAN
+  LESS_THAN
+  BETWEEN
+  IN
+  NOT_IN
+  EXISTS
+  NOT_EXISTS
 }
 
-input PricingRuleFilter {
-  type: RuleType
-  isActive: Boolean
-  isEditable: Boolean
-  validFrom: String
-  validUntil: String
+enum ActionType {
+  APPLY_DISCOUNT_PERCENTAGE
+  APPLY_FIXED_DISCOUNT
+  SET_MINIMUM_PRICE
+  SET_MINIMUM_PROFIT
+  ADD_MARKUP
+  SET_PROCESSING_RATE
+  SET_DISCOUNT_PER_UNUSED_DAY
+}
+
+type RuleCondition {
+  field: String!
+  operator: ConditionOperator!
+  value: JSON!
+  type: String
+}
+
+type RuleAction {
+  type: ActionType!
+  value: Float!
+  metadata: JSON
+}
+
+type DiscountApplication {
+  ruleName: String!
+  amount: Float!
+  type: String! # 'percentage' or 'fixed'
 }
 
 input RuleConditionInput {
@@ -39,32 +63,12 @@ input RuleActionInput {
   metadata: JSON
 }
 
-input CreatePricingRuleInput {
-  type: RuleType!
-  name: String!
-  description: String
-  conditions: [RuleConditionInput!]!
-  actions: [RuleActionInput!]!
-  priority: Int!
+input PricingRuleFilter {
+  type: RuleType
   isActive: Boolean
+  isEditable: Boolean
   validFrom: String
   validUntil: String
-}
-
-input UpdatePricingRuleInput {
-  name: String
-  description: String
-  conditions: [RuleConditionInput!]
-  actions: [RuleActionInput!]
-  priority: Int
-  isActive: Boolean
-  validFrom: String
-  validUntil: String
-}
-
-input PricingRulePriorityUpdate {
-  id: ID!
-  priority: Int!
 }
 
 type PricingRule {
@@ -124,4 +128,51 @@ type PricingRuleCalculation {
   appliedRules: [AppliedRule!]!
 
   selectedBundle: CountryBundle!
+}
+
+input CreatePricingRuleInput {
+  type: RuleType!
+  name: String!
+  description: String
+  conditions: [RuleConditionInput!]!
+  actions: [RuleActionInput!]!
+  priority: Int!
+  isActive: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input UpdatePricingRuleInput {
+  name: String
+  description: String
+  conditions: [RuleConditionInput!]
+  actions: [RuleActionInput!]
+  priority: Int
+  isActive: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input PricingRulePriorityUpdate {
+  id: ID!
+  priority: Int!
+}
+
+# GraphQL Query Extensions
+extend type Query {
+  # Pricing Rules Engine
+  pricingRules(filter: PricingRuleFilter): [PricingRule!]!
+  pricingRule(id: ID!): PricingRule
+}
+
+# GraphQL Mutation Extensions  
+extend type Mutation {
+  # Pricing Rules Engine
+  createPricingRule(input: CreatePricingRuleInput!): PricingRule!
+  updatePricingRule(id: ID!, input: UpdatePricingRuleInput!): PricingRule!
+  deletePricingRule(id: ID!): Boolean!
+  togglePricingRule(id: ID!): PricingRule!
+  updatePricingRulePriorities(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
+  clonePricingRule(id: ID!, newName: String!): PricingRule!
+  reorderPricingRules(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
 }
