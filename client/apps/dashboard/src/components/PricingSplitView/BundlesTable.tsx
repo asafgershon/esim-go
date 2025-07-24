@@ -1,9 +1,8 @@
-import React from "react";
+import { CountryBundle } from "@/__generated__/graphql";
 import { ScrollArea } from "@workspace/ui";
 import { Package } from "lucide-react";
-import { ConfigurationLevelIndicator } from "../configuration-level-indicator";
+import React from "react";
 import { BundlesByCountryWithBundles } from "./types";
-import { CountryBundle } from "@/__generated__/graphql";
 
 interface BundlesTableProps {
   country: BundlesByCountryWithBundles;
@@ -12,14 +11,14 @@ interface BundlesTableProps {
   onBundleSelect: (bundle: CountryBundle) => void;
 }
 
-export const BundlesTable: React.FC<BundlesTableProps> = ({ 
-  country, 
+export const BundlesTable: React.FC<BundlesTableProps> = ({
+  country,
   loadingCountries,
   selectedBundle,
-  onBundleSelect
+  onBundleSelect,
 }) => {
-  const isCountryLoading = loadingCountries.has(country.countryId);
-  
+  const isCountryLoading = loadingCountries.has(country.country.iso);
+
   if (isCountryLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -41,7 +40,9 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
     );
   }
 
-  const sortedBundles = [...country.bundles].sort((a, b) => (a.duration || 0) - (b.duration || 0));
+  const sortedBundles = [...country.bundles].sort(
+    (a, b) => (a.duration || 0) - (b.duration || 0)
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -49,9 +50,15 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
         <div className="space-y-1 p-2">
           {sortedBundles.map((bundle, index) => (
             <div
-              key={bundle.bundleName ? `${bundle.bundleName}-${bundle.duration}` : `bundle-${index}`}
+              key={
+                bundle.name
+                  ? `${bundle.name}-${bundle.duration}`
+                  : `bundle-${index}`
+              }
               className={`border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                selectedBundle === bundle ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                selectedBundle === bundle
+                  ? "ring-2 ring-blue-500 bg-blue-50"
+                  : ""
               }`}
               onClick={() => onBundleSelect(bundle)}
             >
@@ -59,46 +66,35 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
                     <div>
-                      <h4 className="font-medium">{bundle.bundleName || 'Unknown Bundle'}</h4>
+                      <h4 className="font-medium">
+                        {bundle.name || "Unknown Bundle"}
+                      </h4>
                       <p className="text-sm text-gray-500">
-                        {bundle.duration || 0} day{(bundle.duration || 0) !== 1 ? 's' : ''} • 
-                        {bundle.dataAmount && ` ${bundle.dataAmount} • `}
-                        {bundle.bundleGroup && (
+                        {bundle.duration || 0} day
+                        {(bundle.duration || 0) !== 1 ? "s" : ""} •
+                        {bundle.data && ` ${bundle.data} • `}
+                        {bundle.group && (
                           <span className="inline-flex items-center">
                             <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full mr-2">
-                              {bundle.bundleGroup}
+                              {bundle.group}
                             </span>
                           </span>
                         )}
                         <span className="inline-flex items-center gap-1">
-                          Cost: ${(bundle.cost || 0).toFixed(2)}
-                          {bundle.configurationLevel && (
-                            <ConfigurationLevelIndicator 
-                              level={bundle.configurationLevel} 
-                              size="xs" 
-                              showTooltip 
-                            />
-                          )}
+                          Cost: $
+                          {(bundle.pricingBreakdown?.cost || 0).toFixed(2)}
                         </span>
                       </p>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="text-right">
                   <div className="text-lg font-semibold text-blue-600">
-                    ${(bundle.cost || 0).toFixed(2)}
+                    ${(bundle.pricingBreakdown?.cost || 0).toFixed(2)}
                   </div>
                 </div>
               </div>
-              
-              {bundle.hasCustomDiscount && (
-                <div className="mt-2 pt-2 border-t">
-                  <div className="text-xs text-orange-600">
-                    Custom pricing configuration applied
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>

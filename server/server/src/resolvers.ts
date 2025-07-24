@@ -238,7 +238,25 @@ export const resolvers: Resolvers = {
   Order: {
     ...ordersResolvers.Order!,
   },
-
+  Country: {
+    name: (parent) => parent.name,
+    nameHebrew: async (parent, _, context: Context) => {
+      const country = await context.dataSources.countries.getCountryByCode(parent.iso);
+      return country?.hebrewName || parent.name;
+    },
+    region: async (parent, _, context: Context) => {
+      const country = await context.dataSources.countries.getCountryByCode(parent.iso);
+      return country?.region || parent.region;
+    },
+    flag: async (parent, _, context: Context) => {
+      const country = await context.dataSources.countries.getCountryByCode(parent.iso);
+      return country?.flag || '';
+    },
+    iso: (parent) => parent.iso,
+  },
+  CountryBundle: {
+    ...catalogResolvers.CountryBundle!,
+  },
   Subscription: {
     // eSIM subscriptions are merged from esim-resolvers.ts
     ...esimResolvers.Subscription!,

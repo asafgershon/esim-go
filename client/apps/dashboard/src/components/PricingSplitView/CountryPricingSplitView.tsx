@@ -93,15 +93,15 @@ export function CountryPricingSplitView({
     // Apply high demand filter
     if (showHighDemandOnly) {
       filtered = filtered.filter(country => 
-        isHighDemandCountry(country.countryId)
+        isHighDemandCountry(country.country.iso)
       );
     }
     
     // Apply search filter
     if (searchQuery.trim()) {
       const searchResults = countryFuse.search(searchQuery);
-      const searchedIds = new Set(searchResults.map(result => result.item.countryId));
-      filtered = filtered.filter(country => searchedIds.has(country.countryId));
+      const searchedIds = new Set(searchResults.map(result => result.item.country.iso));
+      filtered = filtered.filter(country => searchedIds.has(country.country.iso));
     }
     
     return filtered;
@@ -128,7 +128,7 @@ export function CountryPricingSplitView({
     // Filter by bundle groups
     if (bundleFilters.bundleGroups.size > 0) {
       filtered = filtered.filter(bundle => 
-        bundle.bundleGroup && bundleFilters.bundleGroups.has(bundle.bundleGroup)
+        bundle.group && bundleFilters.bundleGroups.has(bundle.group)
       );
     }
 
@@ -174,7 +174,7 @@ export function CountryPricingSplitView({
   // Get selected country data with filtered bundles
   const selectedCountryData = useMemo(() => {
     if (!selectedCountry) return null;
-    const country = filteredBundlesByCountry.find(country => country.countryId === selectedCountry);
+    const country = filteredBundlesByCountry.find(country => country.country.iso === selectedCountry);
     if (!country || !country.bundles) return country;
 
     // Apply bundle filters
@@ -189,7 +189,7 @@ export function CountryPricingSplitView({
 
   // Handle country selection
   const handleCountrySelect = useCallback(async (countryId: string) => {
-    const country = filteredBundlesByCountry.find(c => c.countryId === countryId);
+    const country = filteredBundlesByCountry.find(c => c.country.iso === countryId);
     if (!country) return;
 
     setSelectedCountry(countryId);
@@ -203,7 +203,7 @@ export function CountryPricingSplitView({
         await onExpandCountry(countryId);
       } catch (error) {
         console.error("Error loading bundles for country:", countryId, error);
-        toast.error(`Failed to load bundles for ${country.countryName}. Please try again.`);
+        toast.error(`Failed to load bundles for ${country.country.name}. Please try again.`);
       } finally {
         setLoadingCountries(prev => {
           const next = new Set(prev);
@@ -244,7 +244,7 @@ export function CountryPricingSplitView({
 
     const bundles = country.bundles;
     const count = bundles.length;
-    const prices = bundles.map(bundle => bundle.priceAfterDiscount || 0).filter(price => price > 0);
+    const prices = bundles.map(bundle => bundle.pricingBreakdown?.cost || 0).filter(price => price > 0);
     
     if (prices.length === 0) {
       return {
@@ -276,7 +276,7 @@ export function CountryPricingSplitView({
       // Clear trip selection when switching to countries
       setSelectedTrip(null);
       if (!selectedCountry && filteredBundlesByCountry.length > 0) {
-        setSelectedCountry(filteredBundlesByCountry[0].countryId);
+        setSelectedCountry(filteredBundlesByCountry[0].country.iso);
       }
     }
   }, [showTrips, filteredBundlesByCountry, filteredTrips, selectedCountry, selectedTrip]);
@@ -402,20 +402,20 @@ export function CountryPricingSplitView({
                     ) : (
                       filteredBundlesByCountry.map((country) => {
                         const summary = getCountrySummary(country);
-                        const isSelected = selectedCountry === country.countryId;
-                        const isCountryLoading = loadingCountries.has(country.countryId);
+                        const isSelected = selectedCountry === country.country.iso;
+                        const isCountryLoading = loadingCountries.has(country.country.iso);
                         
                         return (
-                          <List.Item key={country.countryId} asChild>
+                          <List.Item key={country.country.iso} asChild>
                             <CountryCard
                               country={country}
                               isSelected={isSelected}
                               isLoading={isCountryLoading}
-                              isHighDemand={isHighDemandCountry(country.countryId)}
-                              onSelect={() => handleCountrySelect(country.countryId)}
+                              isHighDemand={isHighDemandCountry(country.country.iso)}
+                              onSelect={() => handleCountrySelect(country.country.iso)}
                               onToggleHighDemand={(e) => {
                                 e.stopPropagation();
-                                toggleCountryHighDemand(country.countryId);
+                                toggleCountryHighDemand(country.country.iso);
                               }}
                               toggleLoading={toggleLoading}
                               summary={summary}
@@ -630,20 +630,20 @@ export function CountryPricingSplitView({
                 ) : (
                   filteredBundlesByCountry.map((country) => {
                     const summary = getCountrySummary(country);
-                    const isSelected = selectedCountry === country.countryId;
-                    const isCountryLoading = loadingCountries.has(country.countryId);
+                    const isSelected = selectedCountry === country.country.iso;
+                    const isCountryLoading = loadingCountries.has(country.country.iso);
                     
                     return (
-                      <List.Item key={country.countryId} asChild>
+                      <List.Item key={country.country.iso} asChild>
                         <CountryCard
                           country={country}
                           isSelected={isSelected}
                           isLoading={isCountryLoading}
-                          isHighDemand={isHighDemandCountry(country.countryId)}
-                          onSelect={() => handleCountrySelect(country.countryId)}
+                          isHighDemand={isHighDemandCountry(country.country.iso)}
+                          onSelect={() => handleCountrySelect(country.country.iso)}
                           onToggleHighDemand={(e) => {
                             e.stopPropagation();
-                            toggleCountryHighDemand(country.countryId);
+                            toggleCountryHighDemand(country.country.iso);
                           }}
                           toggleLoading={toggleLoading}
                           summary={summary}
@@ -663,7 +663,7 @@ export function CountryPricingSplitView({
         <SheetContent side="bottom" className="fixed bottom-0 left-0 right-0 max-h-[85vh] z-50 bg-background border-t rounded-t-lg">
           <SheetHeader className="px-6 pt-6 pb-4">
             <SheetTitle className="text-left">
-              {selectedCountryData?.countryName || "Country Bundles"}
+              {selectedCountryData?.country.name || "Country Bundles"}
             </SheetTitle>
             <SheetDescription className="text-left">
               Available eSIM bundles and pricing

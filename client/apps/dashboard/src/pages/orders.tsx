@@ -236,7 +236,7 @@ const getColumns = (handleOrderClick: (orderId: string) => void): ColumnDef<Orde
             {order.user && (
               <>
                 <DropdownMenuItem
-                  onClick={() => navigator.clipboard.writeText(order.user.email)}
+                  onClick={() => navigator.clipboard.writeText(order.user?.email || '')}
                 >
                   Copy customer email
                 </DropdownMenuItem>

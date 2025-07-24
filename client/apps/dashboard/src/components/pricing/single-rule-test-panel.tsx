@@ -34,55 +34,16 @@ import {
 import { useLazyQuery, useQuery } from '@apollo/client';
 import { toast } from 'sonner';
 import { SIMULATE_PRICING_RULE, GET_COUNTRY_BUNDLES, GET_COUNTRIES } from '../../lib/graphql/queries';
+import { Country, CountryBundle, PricingRule } from '@/__generated__/graphql';
 
-interface PricingRule {
-  id: string;
-  type: string;
-  name: string;
-  description: string;
-  conditions: any[];
-  actions: any[];
-  priority: number;
-  isActive: boolean;
-  isEditable: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+
 
 interface SingleRuleTestPanelProps {
   rule: PricingRule;
 }
 
-interface Bundle {
-  bundleName: string;
-  countryName: string;
-  countryId: string;
-  duration: number;
-  cost: number;
-  costPlus: number;
-  totalCost: number;
-  discountRate: number;
-  discountValue: number;
-  priceAfterDiscount: number;
-  processingRate: number;
-  processingCost: number;
-  finalRevenue: number;
-  currency: string;
-  pricePerDay: number;
-  hasCustomDiscount: boolean;
-  planId: string;
-  isUnlimited: boolean;
-  dataAmount: string;
-  bundleGroup: string;
-}
 
-interface Country {
-  iso: string;
-  name: string;
-  nameHebrew: string;
-  region: string;
-  flag: string;
-}
+
 
 interface TestContext {
   bundleId: string;
@@ -122,7 +83,7 @@ interface TestResult {
 
 export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }) => {
   const [selectedCountryId, setSelectedCountryId] = useState<string>('US');
-  const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null);
+  const [selectedBundle, setSelectedBundle] = useState<CountryBundle | null>(null);
   const [testContext, setTestContext] = useState<TestContext>(() => {
     return {
       bundleId: '',
@@ -178,21 +139,22 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
 
 
   const countries: Country[] = countriesData?.countries || [];
-  const bundles: Bundle[] = bundlesData?.countryBundles || [];
+  const bundles: CountryBundle[] = bundlesData?.countryBundles || [];
   
   // Update test context when bundle selection changes
   useEffect(() => {
     if (selectedBundle) {
       setTestContext(prev => ({
         ...prev,
-        bundleId: selectedBundle.planId,
-        bundleName: selectedBundle.bundleName,
-        bundleGroup: selectedBundle.bundleGroup,
+        bundleId: selectedBundle.id,
+        bundleName: selectedBundle.name,
+        bundleGroup: selectedBundle.group || '',
         duration: selectedBundle.duration,
-        cost: selectedBundle.cost,
-        countryId: selectedBundle.countryId,
-        regionId: getRegionForCountry(selectedBundle.countryId),
+        cost: selectedBundle.price || 0,
+        countryId: selectedBundle.country.iso,
+        regionId: getRegionForCountry(selectedBundle.country.iso),
         requestedDuration: selectedBundle.duration,
+        paymentMethod: 'FOREIGN_CAD',
       }));
     }
   }, [selectedBundle]);
@@ -388,9 +350,9 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                   <div className="space-y-2">
                     <Label>Bundle</Label>
                     <Select 
-                      value={selectedBundle?.planId || ''} 
+                      value={selectedBundle?.id || ''} 
                       onValueChange={(value) => {
-                        const bundle = bundles.find(b => b.planId === value);
+                        const bundle = bundles.find(b => b.id === value);
                         setSelectedBundle(bundle || null);
                       }}
                       disabled={bundlesLoading || !selectedCountryId}
@@ -406,8 +368,8 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                       </SelectTrigger>
                       <SelectContent>
                         {bundles.map((bundle) => (
-                          <SelectItem key={bundle.planId} value={bundle.planId}>
-                            {bundle.bundleName} - {bundle.duration}d - ${bundle.cost.toFixed(2)}
+                          <SelectItem key={bundle.id} value={bundle.id}>
+                            {bundle.name} - {bundle.duration}d - ${bundle.pricingBreakdown?.cost.toFixed(2)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -420,10 +382,10 @@ export const SingleRuleTestPanel: React.FC<SingleRuleTestPanelProps> = ({ rule }
                   <div className="bg-blue-50 p-3 rounded-lg space-y-2">
                     <div className="text-sm font-medium text-blue-900">Selected Bundle Details</div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div><span className="text-blue-700">Group:</span> {selectedBundle.bundleGroup}</div>
+                      <div><span className="text-blue-700">Group:</span> {selectedBundle.group}</div>
                       <div><span className="text-blue-700">Duration:</span> {selectedBundle.duration} days</div>
-                      <div><span className="text-blue-700">Base Cost:</span> ${selectedBundle.cost.toFixed(2)}</div>
-                      <div><span className="text-blue-700">Data:</span> {selectedBundle.isUnlimited ? 'Unlimited' : selectedBundle.dataAmount}</div>
+                      <div><span className="text-blue-700">Base Cost:</span> ${selectedBundle.pricingBreakdown?.cost.toFixed(2)}</div>
+                      <div><span className="text-blue-700">Data:</span> {selectedBundle.isUnlimited ? 'Unlimited' : selectedBundle.data?.toString()}</div>
                     </div>
                   </div>
                 )}

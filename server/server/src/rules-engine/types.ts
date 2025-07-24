@@ -9,7 +9,7 @@ import type {
   PaymentMethod
 } from '../types';
 
-export { RuleType, ConditionOperator, ActionType };
+export type { RuleType, ConditionOperator, ActionType };
 
 export interface PricingRule extends Omit<GraphQLPricingRule, 'validFrom' | 'validUntil' | 'createdAt' | 'updatedAt'> {
   validFrom?: Date;
@@ -26,8 +26,7 @@ export interface Bundle {
   cost: number;
   countryId: string;
   countryName: string;
-  regionId: string;
-  regionName: string;
+  region?: string;
   isUnlimited: boolean;
   dataAmount: string;
 }

@@ -16,8 +16,6 @@ const logger = createLogger({
   operationType: 'graphql-resolver'
 });
 
-// Singleton instance of pricing engine service
-let pricingEngineService: PricingEngineService | null = null;
 
 const getPricingEngineService = (context: Context): PricingEngineService => {
   return PricingEngineService.getInstance(context.services.db);
@@ -119,8 +117,9 @@ export const pricingRulesQueries: QueryResolvers = {
       
       // Get bundle information from catalog
       const bundles = await context.dataSources.catalogue.searchPlans({
-        country: input.countryId,
-        duration: input.numOfDays
+        countries: [input.countryId],
+        minDuration: input.numOfDays,
+        maxDuration: input.numOfDays,
       });
       
       if (!bundles.bundles || bundles.bundles.length === 0) {
@@ -132,25 +131,18 @@ export const pricingRulesQueries: QueryResolvers = {
       // Use the first matching bundle
       const bundle = bundles.bundles[0];
       
-      // Extract region information from bundle
-      const regions = bundle?.regions || [];
-      const regionId = regions.length > 0 ? regions[0] : 'global';
-      const regionName = regions.length > 0 ? regions[0] : 'Global';
-      
       // Create pricing context for the rule engine
       const pricingContext = PricingEngineService.createContext({
         availableBundles: [{
-          id: bundle?.id || '',
-          name: bundle?.esim_go_name || 'Bundle',
-          cost: bundle?.price_cents || 0,
+          id: bundle?.name || '',
+          name: bundle?.name || 'Bundle',
+          cost: bundle?.price || 0,
           duration: input.numOfDays,
           countryId: input.countryId,
           countryName: input.countryId, // Will be resolved later
-          regionId: regionId,
-          regionName: regionName,
-          group: bundle?.bundle_group || 'Standard Fixed',
-          isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-          dataAmount: (bundle?.data_amount || 0).toString()
+          group: bundle?.groups?.[0] || 'Standard Fixed',
+          isUnlimited: bundle?.unlimited || bundle?.dataAmount === -1,
+          dataAmount: (bundle?.dataAmount || 0).toString()
         }],
         requestedDuration: input.numOfDays,
         paymentMethod: input.paymentMethod || 'ISRAELI_CARD'

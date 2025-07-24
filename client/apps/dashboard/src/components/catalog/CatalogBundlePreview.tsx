@@ -1,20 +1,17 @@
-import React from "react";
+import { CatalogBundle } from "@/__generated__/graphql";
 import { Badge } from "@workspace/ui/components/badge";
-import { 
-  Clock, 
-  DollarSign, 
-  Wifi, 
-  WifiOff, 
-  Package,
-  TrendingUp,
-  Calculator
+import {
+  Clock,
+  DollarSign,
+  Wifi,
+  WifiOff
 } from "lucide-react";
-import { CountryBundle } from "@/__generated__/graphql";
+import React from "react";
 
 
 
 interface CatalogBundlePreviewProps {
-  bundle: CountryBundle;
+  bundle: CatalogBundle;
 }
 
 export const CatalogBundlePreview: React.FC<CatalogBundlePreviewProps> = ({ bundle }) => {
@@ -25,18 +22,14 @@ export const CatalogBundlePreview: React.FC<CatalogBundlePreviewProps> = ({ bund
     }).format(price);
   };
 
-  const formatPercentage = (rate: number) => {
-    return `${Math.round(rate * 100)}%`;
-  };
-
   return (
     <div className="p-6 space-y-6">
       {/* Bundle Header */}
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">{bundle.bundleName}</h3>
+        <h3 className="text-lg font-semibold">{bundle.esimGoName}</h3>
         <div className="flex items-center gap-2">
-          {bundle.bundleGroup && (
-            <Badge variant="outline">{bundle.bundleGroup}</Badge>
+          {bundle.group && (
+            <Badge variant="outline">{bundle.group}</Badge>
           )}
         </div>
       </div>
@@ -55,12 +48,12 @@ export const CatalogBundlePreview: React.FC<CatalogBundlePreviewProps> = ({ bund
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Data</p>
             <div className="flex items-center gap-2">
-              {bundle.isUnlimited ? (
+              {bundle.unlimited ? (
                 <Wifi className="h-4 w-4 text-muted-foreground" />
               ) : (
                 <WifiOff className="h-4 w-4 text-muted-foreground" />
               )}
-              <span className="font-medium">{bundle.dataAmount || 'Unknown'}</span>
+              <span className="font-medium">{bundle.data?.toString() || 'Unknown'}</span>
             </div>
           </div>
         </div>
@@ -76,15 +69,15 @@ export const CatalogBundlePreview: React.FC<CatalogBundlePreviewProps> = ({ bund
             <div className="flex items-center justify-between">
               <span className="font-medium">Base Price</span>
               <span className="font-semibold text-lg">
-                {formatPrice(bundle.cost || 0, bundle.currency)}
+                {formatPrice(bundle.priceCents || 0, bundle.currency)}
               </span>
             </div>
             
-            {bundle.cost && bundle.duration && bundle.pricePerDay && (
+            {bundle.priceCents && bundle.duration && bundle.priceCents && (
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>Per Day</span>
                 
-                <span>{formatPrice(bundle.pricePerDay) || formatPrice(bundle.cost / bundle.duration, bundle.currency)}</span>
+                <span>{formatPrice(bundle.priceCents / bundle.duration, bundle.currency)}</span>
               </div>
             )}
           </div>
@@ -92,8 +85,8 @@ export const CatalogBundlePreview: React.FC<CatalogBundlePreviewProps> = ({ bund
 
         {/* Additional Info */}
         <div className="text-xs text-muted-foreground space-y-1">
-          <p>Country: {bundle.countryName} ({bundle.countryId})</p>
-          {bundle.planId && <p>Plan ID: {bundle.planId}</p>}
+          <p>Countries: {bundle.countries.map(c => c.name).join(', ')}</p>
+          {bundle.id && <p>Plan ID: {bundle.id}</p>}
         </div>
       </div>
     </div>

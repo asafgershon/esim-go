@@ -7,6 +7,7 @@ import { useQuery } from '@apollo/client'
 import { GET_USERS } from '@/lib/graphql/queries'
 import { formatDistanceToNow } from 'date-fns'
 import { Package, Users } from 'lucide-react'
+import { GetUsersQuery } from '@/__generated__/graphql'
 
 interface RecentUser {
   id: string
@@ -24,7 +25,7 @@ export function HomePage() {
   const [bundlesSoldToday, setBundlesSoldToday] = useState(0)
   
   // Use GraphQL query instead of direct database access
-  const { data: usersData, loading: usersLoading } = useQuery(GET_USERS)
+  const { data: usersData, loading: usersLoading } = useQuery<GetUsersQuery>(GET_USERS)
   
   useEffect(() => {
     // Just fetch orders count for now

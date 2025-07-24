@@ -1,32 +1,33 @@
-import React, { useState } from 'react';
+import { ActionType, ConditionOperator, CreatePricingRuleInput, RuleCondition, RuleType } from '@/__generated__/graphql';
 import {
+  Button,
+  Card,
+  CardContent,
+  Input,
+  Label,
+  RadioGroup,
+  RadioGroupItem,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Separator,
   Sheet,
   SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
-  Button,
-  Input,
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Textarea,
-  RadioGroup,
-  RadioGroupItem,
-  Card,
-  CardContent,
-  Separator,
 } from '@workspace/ui';
 import { DollarSign, Info } from 'lucide-react';
+import { useState } from 'react';
 
 interface MarkupRuleDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (ruleData: any) => Promise<void>;
+  onSave: (ruleData: CreatePricingRuleInput) => Promise<void>;
 }
 
 export function MarkupRuleDrawer({ open, onOpenChange, onSave }: MarkupRuleDrawerProps) {
@@ -44,41 +45,46 @@ export function MarkupRuleDrawer({ open, onOpenChange, onSave }: MarkupRuleDrawe
 
     setLoading(true);
     try {
-      const conditions = [];
+      const conditions: RuleCondition[] = [];
       
       // Add scope conditions
       if (scope === 'country' && scopeValue) {
         conditions.push({
-          type: 'COUNTRY',
-          operator: 'EQUALS',
-          value: scopeValue
+          type: 'country',
+          operator: ConditionOperator.Equals,
+          value: scopeValue,
+          field: 'iso'
         });
       } else if (scope === 'region' && scopeValue) {
         conditions.push({
-          type: 'REGION',
-          operator: 'EQUALS',
-          value: scopeValue
+          type: 'region',
+          operator: ConditionOperator.Equals,
+          value: scopeValue,
+          field: 'regionId'
         });
       } else if (scope === 'bundle' && scopeValue) {
         conditions.push({
-          type: 'BUNDLE_GROUP',
-          operator: 'EQUALS',
-          value: scopeValue
+          type: 'bundle_group',
+          operator: ConditionOperator.Equals,
+          value: scopeValue,
+          field: 'group'
         });
       }
 
       const ruleData = {
-        type: 'SYSTEM_MARKUP',
+        type: RuleType.SystemMarkup,
         name: ruleName,
         description: description || `${markupType === 'percentage' ? markupValue + '%' : '$' + markupValue} markup${scope !== 'all' ? ` for ${scope} ${scopeValue}` : ''}`,
         conditions,
         actions: [{
-          type: markupType === 'percentage' ? 'ADD_PERCENTAGE_MARKUP' : 'ADD_FIXED_MARKUP',
+          type: markupType === 'percentage' ? ActionType.AddMarkup : ActionType.AddMarkup,
           value: parseFloat(markupValue)
         }],
         priority: parseInt(priority),
-        isActive: true
-      };
+        isActive: true,
+        validFrom: new Date().toISOString(),
+        validUntil: null,
+      } satisfies CreatePricingRuleInput;
 
       await onSave(ruleData);
       

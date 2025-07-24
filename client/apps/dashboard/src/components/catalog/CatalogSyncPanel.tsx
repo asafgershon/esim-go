@@ -1,5 +1,26 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useSubscription, gql } from '@apollo/client';
+import { CatalogSyncJob, CatalogSyncProgressSubscription, CatalogSyncProgressSubscriptionVariables, CatalogSyncProgressUpdate } from '@/__generated__/graphql';
+import { gql, useSubscription } from '@apollo/client';
+import { Badge } from '@workspace/ui/components/badge';
+import { Button } from '@workspace/ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
+import { Progress } from '@workspace/ui/components/progress';
+import { ScrollArea } from '@workspace/ui/components/scroll-area';
+import { Skeleton } from '@workspace/ui/components/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@workspace/ui/components/tooltip';
+import {
+  AlertCircle,
+  ArrowUp,
+  CheckCircle,
+  Clock,
+  Package,
+  Plus,
+  RefreshCw,
+  Wifi,
+  WifiOff,
+  X,
+  XCircle
+} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 const CATALOG_SYNC_PROGRESS_SUBSCRIPTION = gql`
   subscription CatalogSyncProgress {
@@ -22,63 +43,10 @@ const CATALOG_SYNC_PROGRESS_SUBSCRIPTION = gql`
   }
 `;
 
-interface CatalogSyncProgressUpdate {
-  jobId: string;
-  jobType: 'FULL_SYNC' | 'GROUP_SYNC';
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
-  bundleGroup?: string;
-  countryId?: string;
-  bundlesProcessed: number;
-  bundlesAdded: number;
-  bundlesUpdated: number;
-  totalBundles?: number;
-  progress: number;
-  message?: string;
-  errorMessage?: string;
-  startedAt: string;
-  updatedAt: string;
-}
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
-import { Button } from '@workspace/ui/components/button';
-import { Badge } from '@workspace/ui/components/badge';
-import { ScrollArea } from '@workspace/ui/components/scroll-area';
-import { Skeleton } from '@workspace/ui/components/skeleton';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@workspace/ui/components/tooltip';
-import { Progress } from '@workspace/ui/components/progress';
-import { 
-  X, 
-  RefreshCw, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
-  Clock,
-  Package,
-  Plus,
-  ArrowUp,
-  Wifi,
-  WifiOff
-} from 'lucide-react';
 
-interface SyncJob {
-  id: string;
-  jobType: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-  priority: 'high' | 'normal' | 'low';
-  bundleGroup?: string;
-  countryId?: string;
-  bundlesProcessed?: number;
-  bundlesAdded?: number;
-  bundlesUpdated?: number;
-  errorMessage?: string;
-  metadata?: Record<string, any>;
-  createdAt: string;
-  startedAt?: string;
-  completedAt?: string;
-  updatedAt: string;
-}
 
 interface CatalogSyncPanelProps {
-  syncHistory: SyncJob[];
+  syncHistory: CatalogSyncJob[];
   loading: boolean;
   onClose: () => void;
   onSync: () => void;
@@ -96,7 +64,7 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
   const [wsConnected, setWsConnected] = useState(false);
   
   // Subscribe to real-time catalog sync progress
-  const { data: syncProgressData, error: syncError } = useSubscription(CATALOG_SYNC_PROGRESS_SUBSCRIPTION, {
+  const { data: _syncProgressData, error: _syncError } = useSubscription<CatalogSyncProgressSubscription, CatalogSyncProgressSubscriptionVariables>(CATALOG_SYNC_PROGRESS_SUBSCRIPTION, {
     onSubscriptionData: ({ subscriptionData }) => {
       if (subscriptionData.data?.catalogSyncProgress) {
         setLiveSyncProgress(subscriptionData.data.catalogSyncProgress);
@@ -142,6 +110,7 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
       COMPLETED: 'default',
       FAILED: 'destructive',
       PROCESSING: 'secondary',
+      CANCELLED: 'outline',
       PENDING: 'outline'
     };
     
@@ -151,7 +120,7 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
       </Badge>
     );
   };
-  const getStatusIcon = (status: SyncJob['status']) => {
+  const getStatusIcon = (status: CatalogSyncJob['status']) => {
     switch (status) {
       case 'completed':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -168,8 +137,8 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
     }
   };
   
-  const getStatusBadge = (status: SyncJob['status']) => {
-    const variants: Record<SyncJob['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  const getStatusBadge = (status: CatalogSyncJob['status']) => {
+    const variants: Record<CatalogSyncJob['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
       completed: 'default',
       failed: 'destructive',
       running: 'secondary',
@@ -184,7 +153,7 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
     );
   };
   
-  const getPriorityIcon = (priority: SyncJob['priority']) => {
+  const getPriorityIcon = (priority: CatalogSyncJob['priority']) => {
     if (priority === 'high') {
       return <ArrowUp className="h-3 w-3 text-red-500" />;
     }
@@ -390,9 +359,9 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
                     {getStatusBadge(job.status)}
                   </div>
                   
-                  {job.bundleGroup && (
+                  {job.group && (
                     <Badge variant="outline" className="text-xs">
-                      {job.bundleGroup}
+                      {job.group}
                     </Badge>
                   )}
                   
@@ -410,13 +379,13 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
                           <span>{job.bundlesProcessed} processed</span>
                         </div>
                       )}
-                      {job.bundlesAdded !== undefined && job.bundlesAdded > 0 && (
+                      {job.bundlesAdded !== undefined && job.bundlesAdded !== null && job.bundlesAdded > 0 && (
                         <div className="flex items-center gap-1">
                           <Plus className="h-3 w-3 text-green-500" />
                           <span>{job.bundlesAdded} added</span>
                         </div>
                       )}
-                      {job.bundlesUpdated !== undefined && job.bundlesUpdated > 0 && (
+                      {job.bundlesUpdated !== undefined && job.bundlesUpdated !== null && job.bundlesUpdated > 0 && (
                         <div className="flex items-center gap-1">
                           <RefreshCw className="h-3 w-3 text-blue-500" />
                           <span>{job.bundlesUpdated} updated</span>
@@ -427,7 +396,7 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
                   
                   {job.startedAt && (
                     <p className="text-xs text-muted-foreground">
-                      Duration: {formatDuration(job.startedAt, job.completedAt)}
+                      Duration: {formatDuration(job.startedAt || '', job.completedAt || '')}
                     </p>
                   )}
                   

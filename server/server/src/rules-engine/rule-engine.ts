@@ -1,28 +1,27 @@
-import type { 
-  PricingRule, 
-  PricingRuleCalculation,
+import { createLogger } from "../lib/logger";
+import type {
   AppliedRule,
-  DiscountApplication,
-  CreatePricingRuleInput
-} from '../types';
-import { RuleType, ActionType } from '../types';
-import type { PricingContext } from './types';
-import { 
+  CreatePricingRuleInput,
+  PricingRule,
+  PricingRuleCalculation,
+} from "../types";
+import { ActionType, RuleType } from "../types";
+import { ActionExecutor, type PricingState } from "./actions";
+import { ConditionEvaluator } from "./conditions";
+import {
   PricingStepType,
-  type PricingStep,
   type BundleSelectionStep,
+  type CompletedStep,
+  type FinalCalculationStep,
   type InitializationStep,
-  type RuleEvaluationStep,
+  type PricingStep,
+  type ProfitValidationStep,
   type RuleApplicationStep,
+  type RuleEvaluationStep,
   type SubtotalCalculationStep,
   type UnusedDaysCalculationStep,
-  type FinalCalculationStep,
-  type ProfitValidationStep,
-  type CompletedStep
-} from './pricing-steps';
-import { ConditionEvaluator } from './conditions';
-import { ActionExecutor, type PricingState } from './actions';
-import { createLogger } from '../lib/logger';
+} from "./pricing-steps";
+import type { Bundle, PricingContext } from "./types";
 
 export class PricingRuleEngine {
   private rules: PricingRule[] = [];
@@ -30,9 +29,9 @@ export class PricingRuleEngine {
   private businessRules: PricingRule[] = [];
   private conditionEvaluator: ConditionEvaluator;
   private actionExecutor: ActionExecutor;
-  private logger = createLogger({ 
-    component: 'PricingRuleEngine',
-    operationType: 'rule-evaluation'
+  private logger = createLogger({
+    component: "PricingRuleEngine",
+    operationType: "rule-evaluation",
   });
 
   constructor() {
@@ -49,12 +48,12 @@ export class PricingRuleEngine {
   }
 
   addRules(rules: (PricingRule | CreatePricingRuleInput)[]): this {
-    rules.forEach(rule => this.addRule(rule));
+    rules.forEach((rule) => this.addRule(rule));
     return this;
   }
 
   addSystemRules(rules: (PricingRule | CreatePricingRuleInput)[]): this {
-    rules.forEach(rule => {
+    rules.forEach((rule) => {
       // Convert CreatePricingRuleInput to PricingRule if needed
       const pricingRule: PricingRule = this.ensurePricingRule(rule);
       pricingRule.isEditable = false;
@@ -63,16 +62,18 @@ export class PricingRuleEngine {
     return this;
   }
 
-  private ensurePricingRule(rule: PricingRule | CreatePricingRuleInput): PricingRule {
-    if ('id' in rule && 'createdAt' in rule) {
+  private ensurePricingRule(
+    rule: PricingRule | CreatePricingRuleInput
+  ): PricingRule {
+    if ("id" in rule && "createdAt" in rule) {
       return rule as PricingRule;
     }
-    
+
     // Convert CreatePricingRuleInput to PricingRule
     const input = rule as CreatePricingRuleInput;
     const now = new Date().toISOString();
     return {
-      __typename: 'PricingRule' as const,
+      __typename: "PricingRule" as const,
       id: `rule-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: input.type,
       name: input.name,
@@ -84,16 +85,18 @@ export class PricingRuleEngine {
       isEditable: true,
       validFrom: input.validFrom || null,
       validUntil: input.validUntil || null,
-      createdBy: 'system',
+      createdBy: "system",
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
   }
 
-  async *calculatePriceSteps(context: PricingContext): AsyncGenerator<PricingStep, PricingRuleCalculation, undefined> {
+  async *calculatePriceSteps(
+    context: PricingContext
+  ): AsyncGenerator<PricingStep, PricingRuleCalculation, undefined> {
     // First, select the optimal bundle
     const selectedBundle = this.selectOptimalBundle(context);
-    
+
     // Yield bundle selection step
     yield {
       type: PricingStepType.BUNDLE_SELECTION,
@@ -101,41 +104,44 @@ export class PricingRuleEngine {
       message: `Selected ${selectedBundle.duration}-day bundle for ${context.requestedDuration}-day request`,
       data: {
         requestedDuration: context.requestedDuration,
-        availableBundles: context.availableBundles.map(b => ({
+        availableBundles: context.availableBundles.map((b) => ({
           id: b.id,
           name: b.name,
           duration: b.duration,
-          cost: b.cost
+          cost: b.cost,
         })),
         selectedBundle: {
           id: selectedBundle.id,
           name: selectedBundle.name,
           duration: selectedBundle.duration,
-          reason: selectedBundle.duration === context.requestedDuration ? 'exact_match' : 'next_available'
+          reason:
+            selectedBundle.duration === context.requestedDuration
+              ? "exact_match"
+              : "next_available",
         },
-        unusedDays: selectedBundle.duration - context.requestedDuration
-      }
+        unusedDays: selectedBundle.duration - context.requestedDuration,
+      },
     } as BundleSelectionStep;
-    
+
     // Update context with selected bundle
     context.bundle = selectedBundle;
     context.country = selectedBundle.countryId;
-    context.region = selectedBundle.regionId;
+    context.region = selectedBundle.region;
     context.bundleGroup = selectedBundle.group;
     context.duration = selectedBundle.duration;
 
     if (!context.bundle) {
-      throw new Error('No bundle found for context');
+      throw new Error("No bundle found for context");
     }
-    
-    this.logger.info('Starting price calculation with selected bundle', {
+
+    this.logger.info("Starting price calculation with selected bundle", {
       bundleId: selectedBundle.id,
       countryId: selectedBundle.countryId,
       duration: selectedBundle.duration,
       requestedDuration: context.requestedDuration,
-      operationType: 'price-calculation'
+      operationType: "price-calculation",
     });
-    
+
     // Validate that required system rules are configured
     this.validateRequiredSystemRules();
 
@@ -148,8 +154,8 @@ export class PricingRuleEngine {
         baseCost: context.bundle.cost,
         bundleId: context.bundle.id,
         duration: context.bundle.duration,
-        country: context.bundle.countryId
-      }
+        country: context.bundle.countryId,
+      },
     } as InitializationStep;
 
     // Initialize pricing state - no hardcoded defaults, must come from rules
@@ -160,7 +166,7 @@ export class PricingRuleEngine {
       discounts: [],
       processingRate: 0, // Will be set by system rules
       discountPerUnusedDay: 0, // Will be set by system rules
-      unusedDays: this.calculateUnusedDays(context)
+      unusedDays: this.calculateUnusedDays(context),
     };
 
     const appliedRules: AppliedRule[] = [];
@@ -168,7 +174,7 @@ export class PricingRuleEngine {
     // Apply system rules first (markup, processing fees)
     for (const rule of this.systemRules) {
       const matches = this.evaluateRule(rule, context);
-      
+
       // Yield evaluation step
       yield {
         type: PricingStepType.SYSTEM_RULE_EVALUATION,
@@ -177,16 +183,16 @@ export class PricingRuleEngine {
         data: {
           rule,
           matched: matches,
-          reason: matches ? 'All conditions met' : 'Conditions not met'
-        }
+          reason: matches ? "All conditions met" : "Conditions not met",
+        },
       } as RuleEvaluationStep;
-      
+
       if (matches) {
         const previousMarkup = state.markup;
         const previousRate = state.processingRate;
-        
+
         this.applyRule(rule, state, appliedRules);
-        
+
         // Yield application step
         yield {
           type: PricingStepType.SYSTEM_RULE_APPLICATION,
@@ -194,35 +200,37 @@ export class PricingRuleEngine {
           message: `Applied system rule: ${rule.name}`,
           data: {
             rule,
-            impact: state.markup - previousMarkup || (state.processingRate - previousRate) * 100,
+            impact:
+              state.markup - previousMarkup ||
+              (state.processingRate - previousRate) * 100,
             newState: {
               markup: state.markup,
-              processingRate: state.processingRate
-            }
-          }
+              processingRate: state.processingRate,
+            },
+          },
         } as RuleApplicationStep;
       }
     }
 
     // Recalculate subtotal after markup
     state.subtotal = state.baseCost + state.markup;
-    
+
     // Yield subtotal calculation
     yield {
       type: PricingStepType.SUBTOTAL_CALCULATION,
       timestamp: new Date(),
-      message: 'Calculated subtotal after markup',
+      message: "Calculated subtotal after markup",
       data: {
         baseCost: state.baseCost,
         markup: state.markup,
-        subtotal: state.subtotal
-      }
+        subtotal: state.subtotal,
+      },
     } as SubtotalCalculationStep;
 
     // Apply business rules (discounts, promotions)
     for (const rule of this.businessRules) {
       const matches = this.evaluateRule(rule, context);
-      
+
       // Yield evaluation step
       yield {
         type: PricingStepType.BUSINESS_RULE_EVALUATION,
@@ -231,20 +239,20 @@ export class PricingRuleEngine {
         data: {
           rule,
           matched: matches,
-          reason: matches ? 'All conditions met' : 'Conditions not met'
-        }
+          reason: matches ? "All conditions met" : "Conditions not met",
+        },
       } as RuleEvaluationStep;
-      
+
       if (matches) {
         const previousDiscounts = [...state.discounts];
-        
+
         this.applyRule(rule, state, appliedRules);
-        
+
         // Find new discounts
-        const newDiscounts = state.discounts.filter(d => 
-          !previousDiscounts.some(pd => pd.ruleName === d.ruleName)
+        const newDiscounts = state.discounts.filter(
+          (d) => !previousDiscounts.some((pd) => pd.ruleName === d.ruleName)
         );
-        
+
         // Yield application step
         yield {
           type: PricingStepType.BUSINESS_RULE_APPLICATION,
@@ -254,23 +262,23 @@ export class PricingRuleEngine {
             rule,
             impact: newDiscounts.reduce((sum, d) => sum + d.amount, 0),
             newState: {
-              discounts: state.discounts
-            }
-          }
+              discounts: state.discounts,
+            },
+          },
         } as RuleApplicationStep;
       }
     }
 
     // Apply unused days discount if applicable using markup-based formula
-    if ((state.unusedDays  || 0) > 0) {
+    if ((state.unusedDays || 0) > 0) {
       try {
         // Calculate dynamic discount per day based on markup differences
         // Get available durations from context bundles
         const availableDurations = context.availableBundles
-          .map(b => b.duration)
+          .map((b) => b.duration)
           .filter((value, index, self) => self.indexOf(value) === index) // unique durations
           .sort((a, b) => a - b);
-        
+
         const discountPerDay = await this.calculateUnusedDayDiscount(
           state.markup,
           context.bundle!.duration,
@@ -278,43 +286,51 @@ export class PricingRuleEngine {
           context.bundle!.group,
           availableDurations
         );
-        
+
         if (discountPerDay > 0) {
-          const unusedDaysDiscount = discountPerDay * state.unusedDays;
-          
+          const unusedDaysDiscount = discountPerDay * (state.unusedDays || 0);
+
           yield {
             type: PricingStepType.UNUSED_DAYS_CALCULATION,
             timestamp: new Date(),
-            message: `Calculating unused days discount using markup formula (${state.unusedDays} days @ $${discountPerDay.toFixed(2)}/day)`,
+            message: `Calculating unused days discount using markup formula (${
+              state.unusedDays
+            } days @ $${discountPerDay.toFixed(2)}/day)`,
             data: {
               unusedDays: state.unusedDays,
               discountPerDay: discountPerDay,
               totalDiscount: unusedDaysDiscount,
-              calculationMethod: 'markup-based'
-            }
+              calculationMethod: "markup-based",
+            },
           } as UnusedDaysCalculationStep;
-          
+
           state.discounts.push({
-            ruleName: 'Unused Days Discount (Markup-Based)',
+            ruleName: "Unused Days Discount (Markup-Based)",
             amount: unusedDaysDiscount,
-            type: 'fixed'
+            type: "fixed",
           });
         }
       } catch (error) {
         // Fallback to simple percentage if markup calculation fails
-        this.logger.warn('Markup-based discount calculation failed, using fallback', {
-          error: (error as Error).message,
-          unusedDays: state.unusedDays,
-          operationType: 'unused-days-discount'
-        });
-        
+        this.logger.warn(
+          "Markup-based discount calculation failed, using fallback",
+          {
+            error: (error as Error).message,
+            unusedDays: state.unusedDays,
+            operationType: "unused-days-discount",
+          }
+        );
+
         // No fallback rate - if markup calculation fails, no discount is applied
-        this.logger.warn('No unused days discount applied - markup calculation failed and no fallback configured', {
-          unusedDays: state.unusedDays,
-          operationType: 'unused-days-discount'
-        });
+        this.logger.warn(
+          "No unused days discount applied - markup calculation failed and no fallback configured",
+          {
+            unusedDays: state.unusedDays,
+            operationType: "unused-days-discount",
+          }
+        );
         // Skip the unused days discount if no valid calculation method available
-        
+
         yield {
           type: PricingStepType.UNUSED_DAYS_CALCULATION,
           timestamp: new Date(),
@@ -323,8 +339,8 @@ export class PricingRuleEngine {
             unusedDays: state.unusedDays,
             discountPerDay: 0,
             totalDiscount: 0,
-            calculationMethod: 'none-failed'
-          }
+            calculationMethod: "none-failed",
+          },
         } as UnusedDaysCalculationStep;
       }
     }
@@ -333,10 +349,13 @@ export class PricingRuleEngine {
     const totalDiscount = state.discounts.reduce((sum, d) => sum + d.amount, 0);
     // Use minimum price from system rules or 0 if not configured
     const minimumPrice = this.getMinimumPrice();
-    const priceAfterDiscount = Math.max(minimumPrice, state.subtotal - totalDiscount);
+    const priceAfterDiscount = Math.max(
+      minimumPrice,
+      state.subtotal - totalDiscount
+    );
     const processingFee = priceAfterDiscount * state.processingRate;
     const finalPrice = priceAfterDiscount + processingFee;
-    
+
     // Revenue calculations as per requirements:
     // - Final revenue should be what we get (final payment - cost)
     // - Revenue after processing is the bottom line (what we actually receive)
@@ -348,51 +367,63 @@ export class PricingRuleEngine {
     yield {
       type: PricingStepType.FINAL_CALCULATION,
       timestamp: new Date(),
-      message: 'Calculating final price',
+      message: "Calculating final price",
       data: {
         totalDiscount,
         priceAfterDiscount,
         processingFee,
         finalPrice,
-        profit
-      }
+        profit,
+      },
     } as FinalCalculationStep;
 
     // Calculate recommendations - minimum profit margin should come from business rules
     const MINIMUM_PROFIT_MARGIN = this.getMinimumProfitMargin() || 0;
     const maxRecommendedPrice = state.baseCost + MINIMUM_PROFIT_MARGIN;
-    
+
     // Calculate max discount percentage while maintaining minimum profit
     // To maintain $1.50 minimum profit after processing fees:
     // Required revenue after processing = baseCost + $1.50
-    // Required price after discount = (baseCost + $1.50) / (1 - processingRate) 
+    // Required price after discount = (baseCost + $1.50) / (1 - processingRate)
     // Note: We use (1 - processingRate) because processing fee is deducted from price after discount
-    const requiredRevenueAfterProcessing = state.baseCost + MINIMUM_PROFIT_MARGIN;
-    const requiredPriceAfterDiscount = requiredRevenueAfterProcessing / (1 - state.processingRate);
-    const maxDiscountAmount = Math.max(0, state.subtotal - requiredPriceAfterDiscount);
-    const maxDiscountPercentage = state.subtotal > 0 ? (maxDiscountAmount / state.subtotal) * 100 : 0;
+    const requiredRevenueAfterProcessing =
+      state.baseCost + MINIMUM_PROFIT_MARGIN;
+    const requiredPriceAfterDiscount =
+      requiredRevenueAfterProcessing / (1 - state.processingRate);
+    const maxDiscountAmount = Math.max(
+      0,
+      state.subtotal - requiredPriceAfterDiscount
+    );
+    const maxDiscountPercentage =
+      state.subtotal > 0 ? (maxDiscountAmount / state.subtotal) * 100 : 0;
 
     // Validate minimum profit margin
     const isProfitValid = profit >= MINIMUM_PROFIT_MARGIN;
-    
+
     yield {
       type: PricingStepType.PROFIT_VALIDATION,
       timestamp: new Date(),
-      message: isProfitValid ? 'Profit margin validated' : 'Warning: Low profit margin',
+      message: isProfitValid
+        ? "Profit margin validated"
+        : "Warning: Low profit margin",
       data: {
         profit,
         minimumRequired: MINIMUM_PROFIT_MARGIN,
         isValid: isProfitValid,
-        warning: isProfitValid ? undefined : `Profit ${profit.toFixed(2)} is below minimum ${MINIMUM_PROFIT_MARGIN}`
-      }
+        warning: isProfitValid
+          ? undefined
+          : `Profit ${profit.toFixed(
+              2
+            )} is below minimum ${MINIMUM_PROFIT_MARGIN}`,
+      },
     } as ProfitValidationStep;
 
     if (!isProfitValid) {
-      this.logger.warn('Calculated price below minimum profit margin', {
+      this.logger.warn("Calculated price below minimum profit margin", {
         profit,
         minimumRequired: MINIMUM_PROFIT_MARGIN,
         finalPrice,
-        operationType: 'profit-validation'
+        operationType: "profit-validation",
       });
     }
 
@@ -400,10 +431,10 @@ export class PricingRuleEngine {
       baseCost: state.baseCost,
       markup: state.markup,
       subtotal: state.subtotal,
-      discounts: state.discounts.map(d => ({
+      discounts: state.discounts.map((d) => ({
         ruleName: d.ruleName,
         amount: d.amount,
-        type: d.type
+        type: d.type,
       })),
       totalDiscount,
       priceAfterDiscount,
@@ -417,66 +448,75 @@ export class PricingRuleEngine {
       maxDiscountPercentage,
       appliedRules,
       selectedBundle: {
-        bundleId: context.bundle!.id,
-        bundleName: context.bundle!.name,
-        duration: context.bundle!.duration,
-        reason: context.bundle!.duration === context.requestedDuration ? 'exact_match' : 'next_available'
+        id: context.bundle?.id || "",
+        name: context.bundle?.name || "",
+        duration: context.bundle?.duration || 0,
+        reason:
+          context.bundle?.duration === context.requestedDuration
+            ? "exact_match"
+            : "next_available",
       },
       metadata: {
         discountPerUnusedDay: state.discountPerUnusedDay,
-        unusedDays: state.unusedDays
-      }
+        unusedDays: state.unusedDays,
+      },
     };
 
     // Yield completed step
     yield {
       type: PricingStepType.COMPLETED,
       timestamp: new Date(),
-      message: 'Price calculation completed',
+      message: "Price calculation completed",
       data: {
         finalPrice,
-        appliedRulesCount: appliedRules.length
-      }
+        appliedRulesCount: appliedRules.length,
+      },
     } as CompletedStep;
 
-    this.logger.info('Price calculation completed', {
+    this.logger.info("Price calculation completed", {
       finalPrice,
       profit,
       appliedRulesCount: appliedRules.length,
-      operationType: 'price-calculation'
+      operationType: "price-calculation",
     });
 
     return result;
   }
-  
+
   // Convenience method that collects all steps and returns final result
-  async calculatePrice(context: PricingContext): Promise<PricingRuleCalculation> {
+  async calculatePrice(
+    context: PricingContext
+  ): Promise<PricingRuleCalculation> {
     // Use the generator to consume all steps and get the final result
     const generator = this.calculatePriceSteps(context);
     let iterResult = await generator.next();
-    
+
     // Consume all steps until the generator is done
     while (!iterResult.done) {
       iterResult = await generator.next();
     }
-    
+
     // The final return value contains the pricing calculation result
     if (!iterResult.value) {
-      throw new Error('Failed to calculate price - no result returned from pricing engine');
+      throw new Error(
+        "Failed to calculate price - no result returned from pricing engine"
+      );
     }
-    
+
     return iterResult.value;
   }
-  
+
   // Stream pricing steps for real-time updates
-  async *streamPricing(context: PricingContext): AsyncGenerator<PricingStep | PricingRuleCalculation> {
+  async *streamPricing(
+    context: PricingContext
+  ): AsyncGenerator<PricingStep | PricingRuleCalculation> {
     let finalResult: PricingRuleCalculation;
-    
+
     // Yield each step as it happens
     for await (const step of this.calculatePriceSteps(context)) {
       yield step;
     }
-    
+
     // Get the final result
     const generator = this.calculatePriceSteps(context);
     let next = await generator.next();
@@ -484,7 +524,7 @@ export class PricingRuleEngine {
       next = await generator.next();
     }
     finalResult = next.value;
-    
+
     // Yield the final calculation
     yield finalResult;
   }
@@ -514,7 +554,11 @@ export class PricingRuleEngine {
     return true;
   }
 
-  private applyRule(rule: PricingRule, state: PricingState, appliedRules: AppliedRule[]): void {
+  private applyRule(
+    rule: PricingRule,
+    state: PricingState,
+    appliedRules: AppliedRule[]
+  ): void {
     let totalImpact = 0;
 
     for (const action of rule.actions) {
@@ -526,21 +570,23 @@ export class PricingRuleEngine {
       id: rule.id,
       name: rule.name,
       type: rule.type,
-      impact: totalImpact
+      impact: totalImpact,
     });
 
-    this.logger.debug('Applied pricing rule', {
+    this.logger.debug("Applied pricing rule", {
       ruleId: rule.id,
       ruleName: rule.name,
       impact: totalImpact,
-      operationType: 'rule-application'
+      operationType: "rule-application",
     });
   }
 
   private categorizeRule(rule: PricingRule): void {
-    if (rule.type === RuleType.SystemMarkup || 
-        rule.type === RuleType.SystemProcessing || 
-        rule.type === RuleType.SystemMinimumPrice) {
+    if (
+      rule.type === RuleType.SystemMarkup ||
+      rule.type === RuleType.SystemProcessing ||
+      rule.type === RuleType.SystemMinimumPrice
+    ) {
       this.systemRules.push(rule);
     } else {
       this.businessRules.push(rule);
@@ -549,159 +595,195 @@ export class PricingRuleEngine {
 
   private sortRules(): void {
     // Sort by priority (higher priority first)
-    const sortByPriority = (a: PricingRule, b: PricingRule) => b.priority - a.priority;
-    
+    const sortByPriority = (a: PricingRule, b: PricingRule) =>
+      b.priority - a.priority;
+
     this.systemRules.sort(sortByPriority);
     this.businessRules.sort(sortByPriority);
     this.rules.sort(sortByPriority);
   }
 
   private calculateUnusedDays(context: PricingContext): number {
-    if (!context.requestedDuration || context.requestedDuration >= context.bundle.duration) {
+    if (
+      !context.requestedDuration ||
+      context.requestedDuration >= context.bundle.duration
+    ) {
       return 0;
     }
     return context.bundle.duration - context.requestedDuration;
   }
-  
+
   // Validate that required system rules are configured
   private validateRequiredSystemRules(): void {
-    const hasProcessingRule = this.systemRules.some(rule => 
-      rule.type === RuleType.SystemProcessing && 
-      rule.isActive &&
-      rule.actions.some(a => a.type === ActionType.SetProcessingRate)
+    const hasProcessingRule = this.systemRules.some(
+      (rule) =>
+        rule.type === RuleType.SystemProcessing &&
+        rule.isActive &&
+        rule.actions.some((a) => a.type === ActionType.SetProcessingRate)
     );
-    
+
     if (!hasProcessingRule) {
-      throw new Error('No active processing rate rule configured. System requires at least one SYSTEM_PROCESSING rule with SET_PROCESSING_RATE action.');
+      throw new Error(
+        "No active processing rate rule configured. System requires at least one SYSTEM_PROCESSING rule with SET_PROCESSING_RATE action."
+      );
     }
-    
+
     // Note: Markup rules are optional as they may be country/bundle specific
   }
-  
+
   // Get minimum profit margin from business rules or return 0 if not configured
   private getMinimumProfitMargin(): number {
-    const profitRule = this.businessRules.find(rule => 
-      rule.type === RuleType.BusinessMinimumProfit &&
-      rule.isActive &&
-      rule.actions.some(a => a.type === ActionType.SetMinimumProfit)
+    const profitRule = this.businessRules.find(
+      (rule) =>
+        rule.type === RuleType.BusinessMinimumProfit &&
+        rule.isActive &&
+        rule.actions.some((a) => a.type === ActionType.SetMinimumProfit)
     );
-    
+
     if (profitRule) {
-      const profitAction = profitRule.actions.find(a => a.type === ActionType.SetMinimumProfit);
+      const profitAction = profitRule.actions.find(
+        (a) => a.type === ActionType.SetMinimumProfit
+      );
       return profitAction ? profitAction.value : 0;
     }
-    
+
     return 0; // No minimum profit configured
   }
-  
+
   // Get minimum price from system rules or return 0 if not configured
   private getMinimumPrice(): number {
-    const priceRule = this.systemRules.find(rule => 
-      rule.type === RuleType.SystemMinimumPrice &&
-      rule.isActive &&
-      rule.actions.some(a => a.type === ActionType.SetMinimumPrice)
+    const priceRule = this.systemRules.find(
+      (rule) =>
+        rule.type === RuleType.SystemMinimumPrice &&
+        rule.isActive &&
+        rule.actions.some((a) => a.type === ActionType.SetMinimumPrice)
     );
-    
+
     if (priceRule) {
-      const priceAction = priceRule.actions.find(a => a.type === ActionType.SetMinimumPrice);
+      const priceAction = priceRule.actions.find(
+        (a) => a.type === ActionType.SetMinimumPrice
+      );
       return priceAction ? priceAction.value : 0;
     }
-    
+
     return 0; // No minimum price configured
   }
-  
+
   // Calculate discount per unused day based on markup difference formula
   async calculateUnusedDayDiscount(
-    selectedBundleMarkup: number, 
+    selectedBundleMarkup: number,
     selectedBundleDuration: number,
     requestedDuration: number,
     bundleGroup: string,
     availableDurations: number[]
   ): Promise<number> {
     // Find the previous duration bundle (e.g., for 13 days request with 15 day bundle, find 10 day bundle)
-    const previousDuration = this.findPreviousDuration(requestedDuration, availableDurations);
+    const previousDuration = this.findPreviousDuration(
+      requestedDuration,
+      availableDurations
+    );
     if (!previousDuration) return 0;
-    
+
     // Get markup for previous duration bundle
-    const previousMarkup = await this.getMarkupForDuration(bundleGroup, previousDuration);
+    const previousMarkup = await this.getMarkupForDuration(
+      bundleGroup,
+      previousDuration
+    );
     if (!previousMarkup) return 0;
-    
+
     // Formula: (selectedBundleMarkup - previousBundleMarkup) / daysDifference
     const markupDifference = selectedBundleMarkup - previousMarkup;
     const daysDifference = selectedBundleDuration - previousDuration;
-    
+
     if (daysDifference <= 0) return 0;
-    
+
     return markupDifference / daysDifference;
   }
-  
+
   private selectOptimalBundle(context: PricingContext): Bundle {
     const { availableBundles, requestedDuration } = context;
-    
+
     if (!availableBundles || availableBundles.length === 0) {
-      throw new Error('No bundles available for pricing calculation');
+      throw new Error("No bundles available for pricing calculation");
     }
-    
+
     // 1. Try exact match first
-    const exactMatch = availableBundles.find(b => b.duration === requestedDuration);
+    const exactMatch = availableBundles.find(
+      (b) => b.duration === requestedDuration
+    );
     if (exactMatch) {
-      this.logger.info('Found exact duration match', {
+      this.logger.info("Found exact duration match", {
         bundleId: exactMatch.id,
         duration: exactMatch.duration,
         requestedDuration,
-        operationType: 'bundle-selection'
+        operationType: "bundle-selection",
       });
       return exactMatch;
     }
-    
+
     // 2. Find eligible bundles (duration >= requested)
     const eligibleBundles = availableBundles
-      .filter(b => b.duration >= requestedDuration)
+      .filter((b) => b.duration >= requestedDuration)
       .sort((a, b) => a.duration - b.duration);
-    
+
     if (eligibleBundles.length === 0) {
-      throw new Error(`No bundles available for ${requestedDuration} days or longer`);
+      throw new Error(
+        `No bundles available for ${requestedDuration} days or longer`
+      );
     }
-    
+
     // 3. Return the smallest eligible bundle (next available)
     const selectedBundle = eligibleBundles[0];
-    this.logger.info('Selected next available bundle', {
+    this.logger.info("Selected next available bundle", {
       bundleId: selectedBundle.id,
       bundleDuration: selectedBundle.duration,
       requestedDuration,
       unusedDays: selectedBundle.duration - requestedDuration,
-      operationType: 'bundle-selection'
+      operationType: "bundle-selection",
     });
-    
+
     return selectedBundle;
   }
-  
-  private findPreviousDuration(requestedDuration: number, availableDurations: number[]): number | null {
+
+  private findPreviousDuration(
+    requestedDuration: number,
+    availableDurations: number[]
+  ): number | null {
     // Sort durations in ascending order
     const sortedDurations = [...availableDurations].sort((a, b) => a - b);
-    
+
     // Find the largest duration that is less than or equal to requested duration
     for (let i = sortedDurations.length - 1; i >= 0; i--) {
       if (sortedDurations[i] <= requestedDuration) {
         return sortedDurations[i];
       }
     }
-    
+
     return null;
   }
-  
-  private async getMarkupForDuration(bundleGroup: string, duration: number): Promise<number | null> {
+
+  private async getMarkupForDuration(
+    bundleGroup: string,
+    duration: number
+  ): Promise<number | null> {
     // Find system markup rule for this bundle group and duration
-    const markupRule = this.systemRules.find(rule => 
-      rule.type === 'SYSTEM_MARKUP' &&
-      rule.conditions.some(c => c.field === 'bundleGroup' && c.value === bundleGroup) &&
-      rule.conditions.some(c => c.field === 'duration' && c.value === duration)
+    const markupRule = this.systemRules.find(
+      (rule) =>
+        rule.type === "SYSTEM_MARKUP" &&
+        rule.conditions.some(
+          (c) => c.field === "bundleGroup" && c.value === bundleGroup
+        ) &&
+        rule.conditions.some(
+          (c) => c.field === "duration" && c.value === duration
+        )
     );
-    
+
     if (!markupRule) return null;
-    
+
     // Extract markup value from actions
-    const markupAction = markupRule.actions.find(a => a.type === 'ADD_MARKUP');
+    const markupAction = markupRule.actions.find(
+      (a) => a.type === "ADD_MARKUP"
+    );
     return markupAction ? markupAction.value : null;
   }
 
@@ -726,11 +808,11 @@ export class PricingRuleEngine {
 
   removeRule(ruleId: string): boolean {
     const initialLength = this.rules.length;
-    
-    this.rules = this.rules.filter(r => r.id !== ruleId);
-    this.systemRules = this.systemRules.filter(r => r.id !== ruleId);
-    this.businessRules = this.businessRules.filter(r => r.id !== ruleId);
-    
+
+    this.rules = this.rules.filter((r) => r.id !== ruleId);
+    this.systemRules = this.systemRules.filter((r) => r.id !== ruleId);
+    this.businessRules = this.businessRules.filter((r) => r.id !== ruleId);
+
     return this.rules.length < initialLength;
   }
 
@@ -739,23 +821,23 @@ export class PricingRuleEngine {
     const errors: string[] = [];
 
     if (!rule.name) {
-      errors.push('Rule name is required');
+      errors.push("Rule name is required");
     }
 
     if (!rule.type) {
-      errors.push('Rule type is required');
+      errors.push("Rule type is required");
     }
 
     if (!rule.conditions || rule.conditions.length === 0) {
-      errors.push('At least one condition is required');
+      errors.push("At least one condition is required");
     }
 
     if (!rule.actions || rule.actions.length === 0) {
-      errors.push('At least one action is required');
+      errors.push("At least one action is required");
     }
 
     if (rule.priority < 0 || rule.priority > 1000) {
-      errors.push('Priority must be between 0 and 1000');
+      errors.push("Priority must be between 0 and 1000");
     }
 
     return errors;
@@ -768,8 +850,10 @@ export class PricingRuleEngine {
       if (existingRule.id === newRule.id) continue;
 
       // Check for exact same conditions with different actions
-      if (this.haveSameConditions(newRule, existingRule) && 
-          this.haveDifferentActions(newRule, existingRule)) {
+      if (
+        this.haveSameConditions(newRule, existingRule) &&
+        this.haveDifferentActions(newRule, existingRule)
+      ) {
         conflicts.push(existingRule);
       }
     }
@@ -780,23 +864,24 @@ export class PricingRuleEngine {
   private haveSameConditions(rule1: PricingRule, rule2: PricingRule): boolean {
     if (rule1.conditions.length !== rule2.conditions.length) return false;
 
-    return rule1.conditions.every(c1 => 
-      rule2.conditions.some(c2 => 
-        c1.field === c2.field && 
-        c1.operator === c2.operator && 
-        JSON.stringify(c1.value) === JSON.stringify(c2.value)
+    return rule1.conditions.every((c1) =>
+      rule2.conditions.some(
+        (c2) =>
+          c1.field === c2.field &&
+          c1.operator === c2.operator &&
+          JSON.stringify(c1.value) === JSON.stringify(c2.value)
       )
     );
   }
 
-  private haveDifferentActions(rule1: PricingRule, rule2: PricingRule): boolean {
+  private haveDifferentActions(
+    rule1: PricingRule,
+    rule2: PricingRule
+  ): boolean {
     if (rule1.actions.length !== rule2.actions.length) return true;
 
-    return !rule1.actions.every(a1 => 
-      rule2.actions.some(a2 => 
-        a1.type === a2.type && 
-        a1.value === a2.value
-      )
+    return !rule1.actions.every((a1) =>
+      rule2.actions.some((a2) => a1.type === a2.type && a1.value === a2.value)
     );
   }
 }

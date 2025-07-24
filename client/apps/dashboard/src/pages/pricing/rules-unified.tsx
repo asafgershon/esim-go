@@ -1,111 +1,109 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useMutation, useQuery } from "@apollo/client";
 import {
+  Badge,
   Button,
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  Badge,
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  Input,
   Popover,
   PopoverContent,
   PopoverTrigger,
+  Separator,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  Separator,
-} from '@workspace/ui';
-import { 
-  Settings, 
-  Target, 
-  CreditCard,
-  Plus,
-  TestTube,
-  X,
-  Search,
-  Filter,
-  FilterIcon,
-  Check,
-  DollarSign,
-  Zap,
-  TrendingUp,
+} from "@workspace/ui";
+import {
   BarChart3,
-  Edit,
-  Copy,
-  Trash2,
-  Play,
-  Pause,
+  Check,
   CheckCircle,
-  AlertCircle,
-} from 'lucide-react';
-import { useQuery, useMutation } from '@apollo/client';
-import { 
-  GET_PRICING_RULES,
+  Copy,
+  CreditCard,
+  DollarSign,
+  Edit,
+  FilterIcon,
+  Pause,
+  Play,
+  Plus,
+  Search,
+  Settings,
+  Target,
+  TestTube,
+  Trash2,
+  TrendingUp,
+  X,
+  Zap,
+} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  CLONE_PRICING_RULE,
   CREATE_PRICING_RULE,
-  UPDATE_PRICING_RULE,
   DELETE_PRICING_RULE,
+  GET_PRICING_RULES,
   TOGGLE_PRICING_RULE,
-  CLONE_PRICING_RULE
-} from '../../lib/graphql/queries';
-import { toast } from 'sonner';
+  UPDATE_PRICING_RULE,
+} from "../../lib/graphql/queries";
 
 // Import components
-import { RuleBuilder } from '../../components/pricing/rule-builder';
-import { SplitView } from '../../components/common/SplitView';
-import { SingleRuleTestPanel } from '../../components/pricing/single-rule-test-panel';
-import { MarkupRuleDrawer } from '../../components/pricing/markup-rule-drawer';
-import { ProcessingFeeDrawer } from '../../components/pricing/processing-fee-drawer';
+import { SplitView } from "../../components/common/SplitView";
+import { MarkupRuleDrawer } from "../../components/pricing/markup-rule-drawer";
+import { ProcessingFeeDrawer } from "../../components/pricing/processing-fee-drawer";
+import { RuleBuilder } from "../../components/pricing/rule-builder";
+import { SingleRuleTestPanel } from "../../components/pricing/single-rule-test-panel";
+import { CreatePricingRuleMutation, TogglePricingRuleMutation, DeletePricingRuleMutation, UpdatePricingRuleMutation, TogglePricingRuleMutationVariables, DeletePricingRuleMutationVariables, UpdatePricingRuleMutationVariables, CreatePricingRuleMutationVariables, PricingRule } from "@/__generated__/graphql";
 
-interface PricingRule {
-  id: string;
-  type: string;
-  name: string;
-  description: string;
-  conditions: any[];
-  actions: any[];
-  priority: number;
-  isActive: boolean;
-  isEditable: boolean;
-  validFrom?: string;
-  validUntil?: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-}
+
+// Rule type configurations
+const ruleTypes = [
+  {
+    value: "SYSTEM_MARKUP",
+    label: "Markup",
+    icon: DollarSign,
+    color: "green",
+  },
+  {
+    value: "SYSTEM_PROCESSING",
+    label: "Processing",
+    icon: CreditCard,
+    color: "purple",
+  },
+  {
+    value: "BUSINESS_DISCOUNT",
+    label: "Discount",
+    icon: TrendingUp,
+    color: "blue",
+  },
+  {
+    value: "PROMOTION",
+    label: "Promotion",
+    icon: BarChart3,
+    color: "orange",
+  },
+  { value: "SEGMENT", label: "Segment", icon: Target, color: "pink" },
+];
 
 const UnifiedPricingRulesPage: React.FC = () => {
-  const [selectedRuleForTesting, setSelectedRuleForTesting] = useState<PricingRule | null>(null);
+  const [selectedRuleForTesting, setSelectedRuleForTesting] =
+    useState<PricingRule | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // Filter states
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRuleType, setSelectedRuleType] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedRuleTypes, setSelectedRuleTypes] = useState<string[]>([]);
   const [showSystemRules, setShowSystemRules] = useState(true);
   const [typeFilterOpen, setTypeFilterOpen] = useState(false);
-  
+
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showMarkupDialog, setShowMarkupDialog] = useState(false);
@@ -117,52 +115,55 @@ const UnifiedPricingRulesPage: React.FC = () => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024);
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // GraphQL queries and mutations
-  const { data: rulesData, loading, error, refetch } = useQuery(GET_PRICING_RULES);
-  const [createRule] = useMutation(CREATE_PRICING_RULE);
-  const [updateRule] = useMutation(UPDATE_PRICING_RULE);
-  const [deleteRule] = useMutation(DELETE_PRICING_RULE);
-  const [toggleRule] = useMutation(TOGGLE_PRICING_RULE);
+  const {
+    data: rulesData,
+    loading,
+    error,
+    refetch,
+  } = useQuery(GET_PRICING_RULES);
+  const [createRule] = useMutation<CreatePricingRuleMutation, CreatePricingRuleMutationVariables> (CREATE_PRICING_RULE);
+  const [updateRule] = useMutation<UpdatePricingRuleMutation, UpdatePricingRuleMutationVariables>(UPDATE_PRICING_RULE);
+  const [deleteRule] = useMutation<DeletePricingRuleMutation, DeletePricingRuleMutationVariables>(DELETE_PRICING_RULE);
+  const [toggleRule] = useMutation<TogglePricingRuleMutation, TogglePricingRuleMutationVariables>(TOGGLE_PRICING_RULE);
   const [cloneRule] = useMutation(CLONE_PRICING_RULE);
 
   const rules = rulesData?.pricingRules || [];
 
   // Filter rules based on search and filters
   const filteredRules = rules.filter((rule: PricingRule) => {
-    const matchesSearch = rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         rule.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedRuleTypes.length === 0 || selectedRuleTypes.includes(rule.type);
+    const matchesSearch =
+      rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rule.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType =
+      selectedRuleTypes.length === 0 || selectedRuleTypes.includes(rule.type);
     const matchesSystemFilter = showSystemRules || rule.isEditable;
-    
+
     return matchesSearch && matchesType && matchesSystemFilter;
   });
 
-  // Rule type configurations
-  const ruleTypes = [
-    { value: 'SYSTEM_MARKUP', label: 'Markup', icon: DollarSign, color: 'green' },
-    { value: 'SYSTEM_PROCESSING', label: 'Processing', icon: CreditCard, color: 'purple' },
-    { value: 'BUSINESS_DISCOUNT', label: 'Discount', icon: TrendingUp, color: 'blue' },
-    { value: 'PROMOTION', label: 'Promotion', icon: BarChart3, color: 'orange' },
-    { value: 'SEGMENT', label: 'Segment', icon: Target, color: 'pink' },
-  ];
-
   const toggleRuleType = (type: string) => {
-    setSelectedRuleTypes(prev => 
-      prev.includes(type) 
-        ? prev.filter(t => t !== type)
-        : [...prev, type]
+    setSelectedRuleTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
   };
 
   const getRuleTypeConfig = (type: string) => {
-    return ruleTypes.find(rt => rt.value === type) || { value: type, label: type, icon: Settings, color: 'gray' };
+    return (
+      ruleTypes.find((rt) => rt.value === type) || {
+        value: type,
+        label: type,
+        icon: Settings,
+        color: "gray",
+      }
+    );
   };
 
   // Toggle testing panel
@@ -172,9 +173,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
     try {
       await toggleRule({ variables: { id: ruleId } });
       await refetch();
-      toast.success('Rule status updated');
+      toast.success("Rule status updated");
     } catch (error) {
-      toast.error('Failed to update rule status');
+      toast.error("Failed to update rule status");
     }
   };
 
@@ -182,9 +183,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
     try {
       await cloneRule({ variables: { id: ruleId, newName } });
       await refetch();
-      toast.success('Rule cloned successfully');
+      toast.success("Rule cloned successfully");
     } catch (error) {
-      toast.error('Failed to clone rule');
+      toast.error("Failed to clone rule");
     }
   };
 
@@ -192,22 +193,22 @@ const UnifiedPricingRulesPage: React.FC = () => {
     try {
       await deleteRule({ variables: { id: ruleId } });
       await refetch();
-      toast.success('Rule deleted successfully');
+      toast.success("Rule deleted successfully");
     } catch (error) {
-      toast.error('Failed to delete rule');
+      toast.error("Failed to delete rule");
     }
   };
 
   const getRulePriorityColor = (priority: number) => {
-    if (priority >= 90) return 'bg-red-100 text-red-800';
-    if (priority >= 50) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-green-100 text-green-800';
+    if (priority >= 90) return "bg-red-100 text-red-800";
+    if (priority >= 50) return "bg-yellow-100 text-yellow-800";
+    return "bg-green-100 text-green-800";
   };
 
   const getRulePriorityLabel = (priority: number) => {
-    if (priority >= 90) return 'High';
-    if (priority >= 50) return 'Medium';
-    return 'Low';
+    if (priority >= 90) return "High";
+    if (priority >= 50) return "Medium";
+    return "Low";
   };
 
   if (loading) {
@@ -222,8 +223,12 @@ const UnifiedPricingRulesPage: React.FC = () => {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">Failed to load pricing rules: {error.message}</p>
-        <Button onClick={() => refetch()} className="mt-2">Try Again</Button>
+        <p className="text-red-800">
+          Failed to load pricing rules: {error.message}
+        </p>
+        <Button onClick={() => refetch()} className="mt-2">
+          Try Again
+        </Button>
       </div>
     );
   }
@@ -240,9 +245,10 @@ const UnifiedPricingRulesPage: React.FC = () => {
         {/* Mobile content - simplified view */}
         <div className="space-y-4">
           {/* Add this implementation based on mobile needs */}
-          <p className="text-sm text-gray-600">Mobile view implementation needed</p>
+          <p className="text-sm text-gray-600">
+            Mobile view implementation needed
+          </p>
         </div>
-
       </div>
     );
   }
@@ -275,7 +281,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
             className="flex items-center gap-2"
           >
             <CreditCard className="h-4 w-4" />
-            Add Processing Fee  
+            Add Processing Fee
           </Button>
         </div>
       </div>
@@ -287,7 +293,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
           autoSaveId="pricing-rules-split"
           panels={[
             {
-              id: 'main-content',
+              id: "main-content",
               defaultSize: selectedRuleForTesting ? 70 : 100,
               minSize: 50,
               content: (
@@ -305,362 +311,459 @@ const UnifiedPricingRulesPage: React.FC = () => {
                       />
                     </div>
 
-            {/* Quick Filters on the right */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-600">Quick filters:</span>
-              
-              {/* Type Filter Popover */}
-              <Popover open={typeFilterOpen} onOpenChange={setTypeFilterOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={selectedRuleTypes.length > 0 ? "default" : "outline"}
-                    size="sm"
-                    className={selectedRuleTypes.length === 0 ? "border-dashed" : ""}
-                  >
-                    <FilterIcon className="h-4 w-4 mr-2" />
-                    Type
-                    {selectedRuleTypes.length > 0 && (
-                      <Badge variant="secondary" className="ml-2 h-5 px-1">
-                        {selectedRuleTypes.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-3" align="start">
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium mb-2">Filter by Rule Type</div>
-                    {ruleTypes.map((type) => {
-                      const Icon = type.icon;
-                      const isSelected = selectedRuleTypes.includes(type.value);
-                      return (
-                        <button
-                          key={type.value}
-                          onClick={() => toggleRuleType(type.value)}
-                          className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Icon className={`h-4 w-4 text-${type.color}-600`} />
-                            <span>{type.label}</span>
-                          </div>
-                          {isSelected && <Check className="h-4 w-4 text-primary" />}
-                        </button>
-                      );
-                    })}
-                    {selectedRuleTypes.length > 0 && (
-                      <>
-                        <Separator className="my-2" />
-                        <button
-                          onClick={() => setSelectedRuleTypes([])}
-                          className="w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                        >
-                          Clear filters
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                    {/* Quick Filters on the right */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-gray-600">
+                        Quick filters:
+                      </span>
 
-              <Button
-                variant={!showSystemRules ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowSystemRules(!showSystemRules)}
-                className={!showSystemRules ? "" : "border-dashed"}
-              >
-                <Target className="h-4 w-4 mr-2" />
-                Hide System Rules
-              </Button>
-            </div>
-          </div>
-
-          {/* Rules Table */}
-          <Card className="flex-1 flex flex-col">
-            <div className="flex-1 overflow-auto">
-              <Table>
-                <TableHeader className="sticky top-0 bg-background z-10">
-                  <TableRow>
-                    <TableHead>Rule</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Conditions</TableHead>
-                    <TableHead>Actions</TableHead>
-                    <TableHead>Modified</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRules.map((rule: PricingRule) => {
-                    const typeConfig = getRuleTypeConfig(rule.type);
-                    const Icon = typeConfig.icon;
-
-                    return (
-                      <TableRow key={rule.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <div className="p-2 rounded-full bg-gray-100">
-                                <Icon className={`h-4 w-4 text-${typeConfig.color}-600`} />
-                              </div>
-                              {!rule.isEditable && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="absolute -top-1 -right-1 h-2 w-2 bg-blue-600 rounded-full border border-white" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    System rule - Cannot be edited or deleted
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-900">{rule.name}</div>
-                              {rule.description && (
-                                <div className="text-sm text-gray-500 truncate max-w-xs">
-                                  {rule.description}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="bg-gray-50 text-gray-700">
-                            {typeConfig.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Badge 
-                                variant="outline" 
-                                className={getRulePriorityColor(rule.priority)}
+                      {/* Type Filter Popover */}
+                      <Popover
+                        open={typeFilterOpen}
+                        onOpenChange={setTypeFilterOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={
+                              selectedRuleTypes.length > 0
+                                ? "default"
+                                : "outline"
+                            }
+                            size="sm"
+                            className={
+                              selectedRuleTypes.length === 0
+                                ? "border-dashed"
+                                : ""
+                            }
+                          >
+                            <FilterIcon className="h-4 w-4 mr-2" />
+                            Type
+                            {selectedRuleTypes.length > 0 && (
+                              <Badge
+                                variant="secondary"
+                                className="ml-2 h-5 px-1"
                               >
-                                {rule.priority} - {getRulePriorityLabel(rule.priority)}
+                                {selectedRuleTypes.length}
                               </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Higher priority rules are evaluated first
-                            </TooltipContent>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-3" align="start">
+                          <div className="space-y-2">
+                            <div className="text-sm font-medium mb-2">
+                              Filter by Rule Type
+                            </div>
+                            {ruleTypes.map((type) => {
+                              const Icon = type.icon;
+                              const isSelected = selectedRuleTypes.includes(
+                                type.value
+                              );
+                              return (
+                                <button
+                                  key={type.value}
+                                  onClick={() => toggleRuleType(type.value)}
+                                  className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Icon
+                                      className={`h-4 w-4 text-${type.color}-600`}
+                                    />
+                                    <span>{type.label}</span>
+                                  </div>
+                                  {isSelected && (
+                                    <Check className="h-4 w-4 text-primary" />
+                                  )}
+                                </button>
+                              );
+                            })}
+                            {selectedRuleTypes.length > 0 && (
+                              <>
+                                <Separator className="my-2" />
+                                <button
+                                  onClick={() => setSelectedRuleTypes([])}
+                                  className="w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                >
+                                  Clear filters
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+
+                      <Button
+                        variant={!showSystemRules ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowSystemRules(!showSystemRules)}
+                        className={!showSystemRules ? "" : "border-dashed"}
+                      >
+                        <Target className="h-4 w-4 mr-2" />
+                        Hide System Rules
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Rules Table */}
+                  <Card className="flex-1 flex flex-col">
+                    <div className="flex-1 overflow-auto">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-background z-10">
+                          <TableRow>
+                            <TableHead>Rule</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Priority</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Conditions</TableHead>
+                            <TableHead>Actions</TableHead>
+                            <TableHead>Modified</TableHead>
+                            <TableHead className="w-[100px]">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredRules.map((rule: PricingRule) => {
+                            const typeConfig = getRuleTypeConfig(rule.type);
+                            const Icon = typeConfig.icon;
+
+                            return (
+                              <TableRow key={rule.id}>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                      <div className="p-2 rounded-full bg-gray-100">
+                                        <Icon
+                                          className={`h-4 w-4 text-${typeConfig.color}-600`}
+                                        />
+                                      </div>
+                                      {!rule.isEditable && (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <div className="absolute -top-1 -right-1 h-2 w-2 bg-blue-600 rounded-full border border-white" />
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            System rule - Cannot be edited or
+                                            deleted
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <div className="font-medium text-gray-900">
+                                        {rule.name}
+                                      </div>
+                                      {rule.description && (
+                                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                                          {rule.description}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-gray-50 text-gray-700"
+                                  >
+                                    {typeConfig.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Badge
+                                        variant="outline"
+                                        className={getRulePriorityColor(
+                                          rule.priority
+                                        )}
+                                      >
+                                        {rule.priority} -{" "}
+                                        {getRulePriorityLabel(rule.priority)}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      Higher priority rules are evaluated first
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className={`h-2 w-2 rounded-full ${
+                                        rule.isActive
+                                          ? "bg-green-500"
+                                          : "bg-gray-400"
+                                      }`}
+                                    />
+                                    <span className="text-sm">
+                                      {rule.isActive ? "Active" : "Inactive"}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm text-gray-600">
+                                    {rule.conditions.length} condition
+                                    {rule.conditions.length !== 1 ? "s" : ""}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm text-gray-600">
+                                    {rule.actions.length} action
+                                    {rule.actions.length !== 1 ? "s" : ""}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm text-gray-500">
+                                    {new Date(
+                                      rule.updatedAt
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            handleToggleRule(rule.id)
+                                          }
+                                          className="h-8 w-8 p-0"
+                                        >
+                                          {rule.isActive ? (
+                                            <Pause className="h-4 w-4 text-orange-600" />
+                                          ) : (
+                                            <Play className="h-4 w-4 text-green-600" />
+                                          )}
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {rule.isActive
+                                          ? "Deactivate rule"
+                                          : "Activate rule"}
+                                      </TooltipContent>
+                                    </Tooltip>
+
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            setSelectedRuleForTesting(rule)
+                                          }
+                                          className="h-8 w-8 p-0"
+                                        >
+                                          <TestTube className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Test rule</TooltipContent>
+                                    </Tooltip>
+
+                                    {rule.isEditable && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setEditingRule(rule)}
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <Edit className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          Edit rule
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
+
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            handleCloneRule(
+                                              rule.id,
+                                              `${rule.name} (Copy)`
+                                            )
+                                          }
+                                          className="h-8 w-8 p-0"
+                                        >
+                                          <Copy className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        Clone rule
+                                      </TooltipContent>
+                                    </Tooltip>
+
+                                    {rule.isEditable && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                              handleDeleteRule(rule.id)
+                                            }
+                                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          Delete rule
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Sticky Stats Footer */}
+                    <div className="sticky bottom-0 bg-background border-t px-4 py-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-6">
                           <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${rule.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
-                            <span className="text-sm">{rule.isActive ? 'Active' : 'Inactive'}</span>
+                            <Settings className="h-4 w-4 text-gray-400" />
+                            <span className="text-gray-600">Total:</span>
+                            <span className="font-medium text-gray-900">
+                              {rules.length}
+                            </span>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-gray-600">
-                            {rule.conditions.length} condition{rule.conditions.length !== 1 ? 's' : ''}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-gray-600">
-                            {rule.actions.length} action{rule.actions.length !== 1 ? 's' : ''}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-gray-500">
-                            {new Date(rule.updatedAt).toLocaleDateString()}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleToggleRule(rule.id)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  {rule.isActive ? 
-                                    <Pause className="h-4 w-4 text-orange-600" /> : 
-                                    <Play className="h-4 w-4 text-green-600" />
-                                  }
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {rule.isActive ? 'Deactivate rule' : 'Activate rule'}
-                              </TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setSelectedRuleForTesting(rule)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <TestTube className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Test rule</TooltipContent>
-                            </Tooltip>
-
-                            {rule.isEditable && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setEditingRule(rule)}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Edit rule</TooltipContent>
-                              </Tooltip>
-                            )}
-
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleCloneRule(rule.id, `${rule.name} (Copy)`)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Copy className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Clone rule</TooltipContent>
-                            </Tooltip>
-
-                            {rule.isEditable && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteRule(rule.id)}
-                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Delete rule</TooltipContent>
-                              </Tooltip>
-                            )}
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span className="text-gray-600">Active:</span>
+                            <span className="font-medium text-green-600">
+                              {
+                                rules.filter((r: PricingRule) => r.isActive)
+                                  .length
+                              }
+                            </span>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-            
-            {/* Sticky Stats Footer */}
-            <div className="sticky bottom-0 bg-background border-t px-4 py-3">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2">
-                    <Settings className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-600">Total:</span>
-                    <span className="font-medium text-gray-900">{rules.length}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span className="text-gray-600">Active:</span>
-                    <span className="font-medium text-green-600">{rules.filter((r: PricingRule) => r.isActive).length}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Target className="h-4 w-4 text-blue-500" />
-                    <span className="text-gray-600">System:</span>
-                    <span className="font-medium text-blue-600">{rules.filter((r: PricingRule) => !r.isEditable).length}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-purple-500" />
-                    <span className="text-gray-600">Custom:</span>
-                    <span className="font-medium text-purple-600">{rules.filter((r: PricingRule) => r.isEditable).length}</span>
-                  </div>
-                </div>
-                <div className="text-gray-500">
-                  Showing {filteredRules.length} of {rules.length} rules
-                </div>
-              </div>
-            </div>
-          </Card>
+                          <div className="flex items-center gap-2">
+                            <Target className="h-4 w-4 text-blue-500" />
+                            <span className="text-gray-600">System:</span>
+                            <span className="font-medium text-blue-600">
+                              {
+                                rules.filter((r: PricingRule) => !r.isEditable)
+                                  .length
+                              }
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-purple-500" />
+                            <span className="text-gray-600">Custom:</span>
+                            <span className="font-medium text-purple-600">
+                              {
+                                rules.filter((r: PricingRule) => r.isEditable)
+                                  .length
+                              }
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-gray-500">
+                          Showing {filteredRules.length} of {rules.length} rules
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
 
-          {filteredRules.length === 0 && (
-            <Card className="p-12">
-              <div className="text-center">
-                <Settings className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-4 text-lg font-medium text-gray-900">No rules found</h3>
-                <p className="mt-2 text-gray-500">
-                  {searchQuery || selectedRuleTypes.length > 0
-                    ? 'Try adjusting your search or filters'
-                    : 'Get started by creating your first pricing rule'
-                  }
-                </p>
-                <div className="mt-4 flex justify-center gap-3">
-                  <Button onClick={() => setShowCreateDialog(true)}>
-                    Create Custom Rule
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowMarkupDialog(true)}>
-                    Add Markup
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowProcessingDialog(true)}>
-                    Add Processing Fee
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          )}
+                  {filteredRules.length === 0 && (
+                    <Card className="p-12">
+                      <div className="text-center">
+                        <Settings className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-4 text-lg font-medium text-gray-900">
+                          No rules found
+                        </h3>
+                        <p className="mt-2 text-gray-500">
+                          {searchQuery || selectedRuleTypes.length > 0
+                            ? "Try adjusting your search or filters"
+                            : "Get started by creating your first pricing rule"}
+                        </p>
+                        <div className="mt-4 flex justify-center gap-3">
+                          <Button onClick={() => setShowCreateDialog(true)}>
+                            Create Custom Rule
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowMarkupDialog(true)}
+                          >
+                            Add Markup
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowProcessingDialog(true)}
+                          >
+                            Add Processing Fee
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
                 </div>
               ),
             },
-            ...(selectedRuleForTesting ? [
-              {
-                id: 'test-panel',
-                defaultSize: 30,
-                minSize: 25,
-                maxSize: 50,
-                content: (
-                  <SingleRuleTestPanel rule={selectedRuleForTesting} />
-                ),
-                header: (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <TestTube className="h-4 w-4" />
-                      <span className="font-medium">Rule Testing</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedRuleForTesting(null)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ),
-              }
-            ] : []),
+            ...(selectedRuleForTesting
+              ? [
+                  {
+                    id: "test-panel",
+                    defaultSize: 30,
+                    minSize: 25,
+                    maxSize: 50,
+                    content: (
+                      <SingleRuleTestPanel rule={selectedRuleForTesting} />
+                    ),
+                    header: (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <TestTube className="h-4 w-4" />
+                          <span className="font-medium">Rule Testing</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedRuleForTesting(null)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ),
+                  },
+                ]
+              : []),
           ]}
         />
       </div>
-      
+
       {/* Create/Edit Rule Dialog */}
-      <Dialog open={showCreateDialog || !!editingRule} onOpenChange={(open) => {
-        if (!open) {
-          setShowCreateDialog(false);
-          setEditingRule(null);
-        }
-      }}>
+      <Dialog
+        open={showCreateDialog || !!editingRule}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowCreateDialog(false);
+            setEditingRule(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingRule ? `Edit Rule: ${editingRule.name}` : 'Create New Pricing Rule'}
+              {editingRule
+                ? `Edit Rule: ${editingRule.name}`
+                : "Create New Pricing Rule"}
             </DialogTitle>
             <DialogDescription>
-              {editingRule ? 
-                'Modify the rule configuration below. Changes will take effect immediately.' :
-                'Build a new pricing rule using conditions and actions.'
-              }
+              {editingRule
+                ? "Modify the rule configuration below. Changes will take effect immediately."
+                : "Build a new pricing rule using conditions and actions."}
             </DialogDescription>
           </DialogHeader>
           <RuleBuilder
@@ -671,21 +774,21 @@ const UnifiedPricingRulesPage: React.FC = () => {
                   await updateRule({
                     variables: {
                       id: editingRule.id,
-                      input: ruleData
-                    }
+                      input: ruleData,
+                    },
                   });
-                  toast.success('Rule updated successfully');
+                  toast.success("Rule updated successfully");
                 } else {
                   await createRule({
-                    variables: { input: ruleData }
+                    variables: { input: ruleData },
                   });
-                  toast.success('Rule created successfully');
+                  toast.success("Rule created successfully");
                 }
                 await refetch();
                 setShowCreateDialog(false);
                 setEditingRule(null);
               } catch (error) {
-                toast.error('Failed to save rule');
+                toast.error("Failed to save rule");
               }
             }}
             onCancel={() => {
@@ -703,13 +806,13 @@ const UnifiedPricingRulesPage: React.FC = () => {
         onSave={async (ruleData) => {
           try {
             await createRule({
-              variables: { input: ruleData }
+              variables: { input: ruleData },
             });
-            toast.success('Markup rule created successfully');
+            toast.success("Markup rule created successfully");
             await refetch();
             setShowMarkupDialog(false);
           } catch (error) {
-            toast.error('Failed to create markup rule');
+            toast.error("Failed to create markup rule");
           }
         }}
       />
@@ -721,13 +824,13 @@ const UnifiedPricingRulesPage: React.FC = () => {
         onSave={async (ruleData) => {
           try {
             await createRule({
-              variables: { input: ruleData }
+              variables: { input: ruleData },
             });
-            toast.success('Processing fee rule created successfully');
+            toast.success("Processing fee rule created successfully");
             await refetch();
             setShowProcessingDialog(false);
           } catch (error) {
-            toast.error('Failed to create processing fee rule');
+            toast.error("Failed to create processing fee rule");
           }
         }}
       />

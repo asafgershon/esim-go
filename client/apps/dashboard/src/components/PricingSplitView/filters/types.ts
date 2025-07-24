@@ -19,12 +19,6 @@ export interface DataType {
   isUnlimited: boolean;
 }
 
-export interface PricingFilters {
-  bundleGroups: string[];
-  durations: DurationRange[];
-  dataTypes: DataType[];
-}
-
 export interface FilterProps {
   onFiltersChange: (filters: FilterState) => void;
   selectedFilters: FilterState;

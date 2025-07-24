@@ -1,46 +1,58 @@
-import React, { useState } from 'react';
 import {
+  ActionType,
+  ConditionOperator,
+  CreatePricingRuleInput,
+  RuleActionInput,
+  RuleConditionInput,
+  RuleType,
+} from "@/__generated__/graphql";
+import {
+  Button,
+  Card,
+  CardContent,
+  Input,
+  Label,
+  RadioGroup,
+  RadioGroupItem,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Separator,
   Sheet,
   SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
-  Button,
-  Input,
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Textarea,
-  RadioGroup,
-  RadioGroupItem,
-  Card,
-  CardContent,
-  Separator,
   Switch,
-} from '@workspace/ui';
-import { CreditCard, Info } from 'lucide-react';
+  Textarea,
+} from "@workspace/ui";
+import { CreditCard, Info } from "lucide-react";
+import { useState } from "react";
 
 interface ProcessingFeeDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (ruleData: any) => Promise<void>;
+  onSave: (ruleData: CreatePricingRuleInput) => Promise<void>;
 }
 
-export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFeeDrawerProps) {
+export function ProcessingFeeDrawer({
+  open,
+  onOpenChange,
+  onSave,
+}: ProcessingFeeDrawerProps) {
   const [loading, setLoading] = useState(false);
-  const [ruleName, setRuleName] = useState('');
-  const [description, setDescription] = useState('');
-  const [feeType, setFeeType] = useState<'percentage' | 'fixed'>('percentage');
-  const [feeValue, setFeeValue] = useState('');
-  const [minFee, setMinFee] = useState('');
-  const [maxFee, setMaxFee] = useState('');
-  const [applyToMethod, setApplyToMethod] = useState<'all' | 'specific'>('all');
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [priority, setPriority] = useState('50');
+  const [ruleName, setRuleName] = useState("");
+  const [description, setDescription] = useState("");
+  const [feeType, setFeeType] = useState<"percentage" | "fixed">("percentage");
+  const [feeValue, setFeeValue] = useState("");
+  const [minFee, setMinFee] = useState("");
+  const [maxFee, setMaxFee] = useState("");
+  const [applyToMethod, setApplyToMethod] = useState<"all" | "specific">("all");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [priority, setPriority] = useState("50");
   const [includeMinMax, setIncludeMinMax] = useState(false);
 
   const handleSubmit = async () => {
@@ -48,60 +60,66 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
 
     setLoading(true);
     try {
-      const conditions = [];
-      
+      const conditions: RuleConditionInput[] = [];
+
       // Add payment method condition if specific
-      if (applyToMethod === 'specific' && paymentMethod) {
+      if (applyToMethod === "specific" && paymentMethod) {
         conditions.push({
-          type: 'PAYMENT_METHOD',
-          operator: 'EQUALS',
-          value: paymentMethod
+          type: "payment_method",
+          operator: ConditionOperator.Equals,
+          value: paymentMethod,
+          field: "payment_method",
         });
       }
 
-      const actions = [{
-        type: feeType === 'percentage' ? 'ADD_PERCENTAGE_FEE' : 'ADD_FIXED_FEE',
-        value: parseFloat(feeValue)
-      }];
+      const actions: RuleActionInput[] = [
+        {
+          type:
+            feeType === "percentage"
+              ? ActionType.AddMarkup
+              : ActionType.AddMarkup,
+          value: parseFloat(feeValue),
+        },
+      ];
 
       // Add min/max constraints if enabled
-      if (includeMinMax && feeType === 'percentage') {
+      if (includeMinMax && feeType === "percentage") {
         if (minFee) {
           actions.push({
-            type: 'SET_MINIMUM_FEE',
-            value: parseFloat(minFee)
-          });
-        }
-        if (maxFee) {
-          actions.push({
-            type: 'SET_MAXIMUM_FEE',
-            value: parseFloat(maxFee)
+            type: ActionType.SetMinimumPrice,
+            value: parseFloat(minFee),
           });
         }
       }
 
-      const ruleData = {
-        type: 'SYSTEM_PROCESSING',
+      const ruleData: CreatePricingRuleInput = {
+        type: RuleType.SystemProcessing,
         name: ruleName,
-        description: description || `${feeType === 'percentage' ? feeValue + '%' : '$' + feeValue} processing fee${applyToMethod === 'specific' ? ` for ${paymentMethod}` : ''}`,
+        description:
+          description ||
+          `${
+            feeType === "percentage" ? feeValue + "%" : "$" + feeValue
+          } processing fee${
+            applyToMethod === "specific" ? ` for ${paymentMethod}` : ""
+          }`,
         conditions,
         actions,
         priority: parseInt(priority),
-        isActive: true
+        isActive: true,
       };
 
       await onSave(ruleData);
-      
+
       // Reset form
-      setRuleName('');
-      setDescription('');
-      setFeeValue('');
-      setMinFee('');
-      setMaxFee('');
-      setPaymentMethod('');
-      setFeeType('percentage');
-      setApplyToMethod('all');
-      setPriority('50');
+      setRuleName("");
+      setDescription("");
+      setFeeValue("");
+      setMinFee("");
+      setMaxFee("");
+      setPaymentMethod("");
+      setFeeType("percentage");
+      setApplyToMethod("all");
+      setPriority("50");
       setIncludeMinMax(false);
     } catch (error) {
       // Error handled by parent
@@ -112,14 +130,18 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto">
+      <SheetContent
+        side="right"
+        className="w-full sm:w-[540px] overflow-y-auto"
+      >
         <SheetHeader className="px-6">
           <SheetTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-purple-600" />
             Add Processing Fee Rule
           </SheetTitle>
           <SheetDescription>
-            Create a processing fee rule for transactions. This fee is typically used to cover payment processing costs.
+            Create a processing fee rule for transactions. This fee is typically
+            used to cover payment processing costs.
           </SheetDescription>
         </SheetHeader>
 
@@ -135,7 +157,7 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
                 onChange={(e) => setRuleName(e.target.value)}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="description">Description (optional)</Label>
               <Textarea
@@ -153,40 +175,54 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
           {/* Fee Configuration */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Fee Configuration</h3>
-            
+
             <div className="space-y-2">
               <Label>Fee Type</Label>
-              <RadioGroup value={feeType} onValueChange={(value: 'percentage' | 'fixed') => setFeeType(value)}>
+              <RadioGroup
+                value={feeType}
+                onValueChange={(value: "percentage" | "fixed") =>
+                  setFeeType(value)
+                }
+              >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="percentage" id="percentage" />
-                  <Label htmlFor="percentage" className="font-normal">Percentage (%)</Label>
+                  <Label htmlFor="percentage" className="font-normal">
+                    Percentage (%)
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="fixed" id="fixed" />
-                  <Label htmlFor="fixed" className="font-normal">Fixed Amount ($)</Label>
+                  <Label htmlFor="fixed" className="font-normal">
+                    Fixed Amount ($)
+                  </Label>
                 </div>
               </RadioGroup>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="fee-value">
-                Fee Value {feeType === 'percentage' ? '(%)' : '($)'}
+                Fee Value {feeType === "percentage" ? "(%)" : "($)"}
               </Label>
               <Input
                 id="fee-value"
                 type="number"
                 step="0.01"
-                placeholder={feeType === 'percentage' ? "e.g., 2.9" : "e.g., 0.30"}
+                placeholder={
+                  feeType === "percentage" ? "e.g., 2.9" : "e.g., 0.30"
+                }
                 value={feeValue}
                 onChange={(e) => setFeeValue(e.target.value)}
               />
             </div>
 
             {/* Min/Max for percentage fees */}
-            {feeType === 'percentage' && (
+            {feeType === "percentage" && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="min-max-toggle" className="text-sm font-medium">
+                  <Label
+                    htmlFor="min-max-toggle"
+                    className="text-sm font-medium"
+                  >
                     Set minimum/maximum fee limits
                   </Label>
                   <Switch
@@ -195,7 +231,7 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
                     onCheckedChange={setIncludeMinMax}
                   />
                 </div>
-                
+
                 {includeMinMax && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -231,22 +267,31 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
           {/* Payment Method Configuration */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Apply To</h3>
-            
+
             <div className="space-y-2">
               <Label>Payment Methods</Label>
-              <RadioGroup value={applyToMethod} onValueChange={(value: 'all' | 'specific') => setApplyToMethod(value)}>
+              <RadioGroup
+                value={applyToMethod}
+                onValueChange={(value: "all" | "specific") =>
+                  setApplyToMethod(value)
+                }
+              >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="all" id="all-methods" />
-                  <Label htmlFor="all-methods" className="font-normal">All Payment Methods</Label>
+                  <Label htmlFor="all-methods" className="font-normal">
+                    All Payment Methods
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="specific" id="specific-method" />
-                  <Label htmlFor="specific-method" className="font-normal">Specific Payment Method</Label>
+                  <Label htmlFor="specific-method" className="font-normal">
+                    Specific Payment Method
+                  </Label>
                 </div>
               </RadioGroup>
             </div>
 
-            {applyToMethod === 'specific' && (
+            {applyToMethod === "specific" && (
               <div className="space-y-2">
                 <Label htmlFor="payment-method">Payment Method</Label>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
@@ -283,7 +328,9 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
                   <SelectItem value="10">Low (10)</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Higher priority rules are evaluated first</p>
+              <p className="text-xs text-muted-foreground">
+                Higher priority rules are evaluated first
+              </p>
             </div>
           </div>
 
@@ -295,15 +342,23 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
                 <div className="space-y-1 text-sm">
                   <p className="font-medium text-purple-900">Rule Preview</p>
                   <p className="text-purple-700">
-                    This rule will add a {feeType === 'percentage' ? `${feeValue || '0'}%` : `$${feeValue || '0'}`} processing fee
-                    {applyToMethod === 'specific' ? ` for ${paymentMethod || '...'} payments` : ' to all payment methods'}
-                    {includeMinMax && feeType === 'percentage' && (minFee || maxFee) && (
-                      <span>
-                        {minFee && ` (minimum $${minFee})`}
-                        {minFee && maxFee && ','}
-                        {maxFee && ` (maximum $${maxFee})`}
-                      </span>
-                    )}
+                    This rule will add a{" "}
+                    {feeType === "percentage"
+                      ? `${feeValue || "0"}%`
+                      : `$${feeValue || "0"}`}{" "}
+                    processing fee
+                    {applyToMethod === "specific"
+                      ? ` for ${paymentMethod || "..."} payments`
+                      : " to all payment methods"}
+                    {includeMinMax &&
+                      feeType === "percentage" &&
+                      (minFee || maxFee) && (
+                        <span>
+                          {minFee && ` (minimum $${minFee})`}
+                          {minFee && maxFee && ","}
+                          {maxFee && ` (maximum $${maxFee})`}
+                        </span>
+                      )}
                   </p>
                 </div>
               </div>
@@ -315,11 +370,16 @@ export function ProcessingFeeDrawer({ open, onOpenChange, onSave }: ProcessingFe
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={loading || !ruleName || !feeValue || (applyToMethod === 'specific' && !paymentMethod)}
+          <Button
+            onClick={handleSubmit}
+            disabled={
+              loading ||
+              !ruleName ||
+              !feeValue ||
+              (applyToMethod === "specific" && !paymentMethod)
+            }
           >
-            {loading ? 'Creating...' : 'Create Processing Fee'}
+            {loading ? "Creating..." : "Create Processing Fee"}
           </Button>
         </SheetFooter>
       </SheetContent>

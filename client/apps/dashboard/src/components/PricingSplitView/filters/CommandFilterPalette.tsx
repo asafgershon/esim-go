@@ -1,11 +1,40 @@
-import React, { useState, useMemo } from 'react';
-import { Button, Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, Popover, PopoverContent, PopoverTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@workspace/ui';
-import { Badge } from '@workspace/ui';
-import { Check, ChevronRight, Filter, Package2, Clock, Database, TrendingUp, X, Search, Sparkles } from 'lucide-react';
-import { cn } from '@workspace/ui';
-import { usePricingFilters } from './usePricingFilters';
-import type { FilterState } from './types';
-import Fuse from 'fuse.js';
+import {
+  Badge,
+  Button,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@workspace/ui";
+import Fuse from "fuse.js";
+import {
+  Check,
+  ChevronRight,
+  Clock,
+  Database,
+  Filter,
+  Package2,
+  Search,
+  Sparkles,
+  TrendingUp,
+  X,
+} from "lucide-react";
+import React, { useMemo, useState } from "react";
+import type { FilterState } from "./types";
+import { usePricingFilters } from "./usePricingFilters";
 
 interface CommandFilterPaletteProps {
   selectedFilters: FilterState;
@@ -18,7 +47,7 @@ interface CommandFilterPaletteProps {
   hasBundlesSelected?: boolean;
 }
 
-type FilterCategory = 'bundleGroups' | 'durations' | 'dataTypes' | 'highDemand';
+type FilterCategory = "groups" | "durations" | "dataTypes" | "highDemand";
 
 interface FilterCategoryConfig {
   key: FilterCategory;
@@ -34,17 +63,16 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
   onHighDemandToggle,
   totalBundles,
   filteredBundles,
-  totalCountries,
-  hasBundlesSelected
+  hasBundlesSelected,
 }) => {
   const [open, setOpen] = useState(false);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
-  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
-  const [dropdownSearchQuery, setDropdownSearchQuery] = useState('');
-  const { filters, loading } = usePricingFilters();
+  const [globalSearchQuery, setGlobalSearchQuery] = useState("");
+  const [dropdownSearchQuery, setDropdownSearchQuery] = useState("");
+  const { filters } = usePricingFilters();
 
   // Calculate active filter count
-  const activeFilterCount = 
+  const activeFilterCount =
     selectedFilters.bundleGroups.size +
     selectedFilters.durations.size +
     selectedFilters.dataTypes.size +
@@ -53,46 +81,54 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
   // Filter categories configuration
   const filterCategories: FilterCategoryConfig[] = [
     {
-      key: 'bundleGroups',
-      label: 'Bundle Group',
+      key: "groups",
+      label: "Bundle Group",
       icon: Package2,
-      options: filters?.bundleGroups.map(group => ({ label: group, value: group })) || []
+      options:
+        filters?.groups.map((group) => ({
+          label: group,
+          value: group,
+        })) || [],
     },
     {
-      key: 'durations',
-      label: 'Duration',
+      key: "durations",
+      label: "Duration",
       icon: Clock,
-      options: filters?.durations.map(d => ({ label: d.label, value: d.value })) || []
+      options:
+        filters?.durations.map((d) => ({ label: d.label, value: d.value })) ||
+        [],
     },
     {
-      key: 'dataTypes',
-      label: 'Data Type',
+      key: "dataTypes",
+      label: "Data Type",
       icon: Database,
-      options: filters?.dataTypes.map(d => ({ label: d.label, value: d.value })) || []
+      options:
+        filters?.dataTypes.map((d) => ({ label: d.label, value: d.value })) ||
+        [],
     },
     {
-      key: 'highDemand',
-      label: 'High Demand',
-      icon: TrendingUp
-    }
+      key: "highDemand",
+      label: "High Demand",
+      icon: TrendingUp,
+    },
   ];
 
   const handleFilterChange = (category: FilterCategory, value: string) => {
-    if (category === 'highDemand') {
+    if (category === "highDemand") {
       onHighDemandToggle?.();
       return;
     }
 
-    const currentSet = new Set(selectedFilters[category]);
+    const currentSet = new Set(selectedFilters[category as keyof FilterState]);
     if (currentSet.has(value)) {
       currentSet.delete(value);
     } else {
       currentSet.add(value);
     }
-    
+
     onFiltersChange({
       ...selectedFilters,
-      [category]: currentSet
+      [category]: currentSet,
     });
   };
 
@@ -100,27 +136,27 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
     onFiltersChange({
       bundleGroups: new Set(),
       durations: new Set(),
-      dataTypes: new Set()
+      dataTypes: new Set(),
     });
     if (showHighDemandOnly) {
       onHighDemandToggle?.();
     }
-    setDropdownSearchQuery('');
+    setDropdownSearchQuery("");
     setOpen(false);
   };
 
   const getSelectedCount = (category: FilterCategory): number => {
-    if (category === 'highDemand') {
+    if (category === "highDemand") {
       return showHighDemandOnly ? 1 : 0;
     }
-    return selectedFilters[category].size;
+    return selectedFilters[category as keyof FilterState]?.size || 0;
   };
 
   const isSelected = (category: FilterCategory, value: string): boolean => {
-    if (category === 'highDemand') {
+    if (category === "highDemand") {
       return showHighDemandOnly || false;
     }
-    return selectedFilters[category].has(value);
+    return selectedFilters[category as keyof FilterState]?.has(value) || false;
   };
 
   // Create search index for global search using Fuse.js
@@ -137,57 +173,59 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
     }> = [];
 
     // Add bundle groups
-    filters.bundleGroups.forEach(group => {
+    filters.groups.forEach((group) => {
       searchData.push({
-        category: 'bundleGroups',
-        categoryLabel: 'Bundle Group',
+        category: "groups",
+        categoryLabel: "Bundle Group",
         value: group,
         label: group,
         icon: Package2,
-        searchText: `${group} bundle group package`
+        searchText: `${group} bundle group package`,
       });
     });
 
     // Add durations
-    filters.durations.forEach(duration => {
+    filters.durations.forEach((duration) => {
       searchData.push({
-        category: 'durations',
-        categoryLabel: 'Duration',
+        category: "durations",
+        categoryLabel: "Duration",
         value: duration.value,
         label: duration.label,
         icon: Clock,
-        searchText: `${duration.label} ${duration.value} duration time period days`
+        searchText: `${duration.label} ${duration.value} duration time period days`,
       });
     });
 
     // Add data types
-    filters.dataTypes.forEach(dataType => {
+    filters.dataTypes.forEach((dataType) => {
       searchData.push({
-        category: 'dataTypes',
-        categoryLabel: 'Data Type',
+        category: "dataTypes",
+        categoryLabel: "Data Type",
         value: dataType.value,
         label: dataType.label,
         icon: Database,
-        searchText: `${dataType.label} ${dataType.value} data type ${dataType.isUnlimited ? 'unlimited' : 'limited'}`
+        searchText: `${dataType.label} ${dataType.value} data type ${
+          dataType.isUnlimited ? "unlimited" : "limited"
+        }`,
       });
     });
 
     // Add high demand
     searchData.push({
-      category: 'highDemand',
-      categoryLabel: 'High Demand',
-      value: 'highDemand',
-      label: 'High Demand',
+      category: "highDemand",
+      categoryLabel: "High Demand",
+      value: "highDemand",
+      label: "High Demand",
       icon: TrendingUp,
-      searchText: 'high demand trending popular'
+      searchText: "high demand trending popular",
     });
 
     return new Fuse(searchData, {
-      keys: ['label', 'categoryLabel', 'searchText'],
+      keys: ["label", "categoryLabel", "searchText"],
       threshold: 0.4,
       includeScore: true,
       minMatchCharLength: 1,
-      shouldSort: true
+      shouldSort: true,
     });
   }, [filters]);
 
@@ -198,19 +236,25 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
     }
 
     const fuseResults = globalSearchIndex.search(globalSearchQuery);
-    return fuseResults.map(result => ({
+    return fuseResults.map((result) => ({
       ...result.item,
-      selected: result.item.category === 'highDemand' 
-        ? (showHighDemandOnly || false)
-        : selectedFilters[result.item.category].has(result.item.value),
-      score: result.score
+      selected:
+        result.item.category === "highDemand"
+          ? showHighDemandOnly || false
+          : selectedFilters[result.item.category as keyof FilterState]?.has(result.item.value) || false,
+      score: result.score,
     }));
-  }, [globalSearchIndex, globalSearchQuery, selectedFilters, showHighDemandOnly]);
+  }, [
+    globalSearchIndex,
+    globalSearchQuery,
+    selectedFilters,
+    showHighDemandOnly,
+  ]);
 
   // Create Fuse.js index for dropdown categories and options
   const dropdownSearchIndex = useMemo(() => {
     const searchData: Array<{
-      type: 'category' | 'option';
+      type: "category" | "option";
       category: FilterCategory;
       categoryLabel: string;
       value?: string;
@@ -218,34 +262,34 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
       icon: React.ComponentType<{ className?: string }>;
     }> = [];
 
-    filterCategories.forEach(category => {
+    filterCategories.forEach((category) => {
       // Add the category itself
       searchData.push({
-        type: 'category',
+        type: "category",
         category: category.key,
         categoryLabel: category.label,
         label: category.label,
-        icon: category.icon
+        icon: category.icon,
       });
 
       // Add category options
-      category.options?.forEach(option => {
+      category.options?.forEach((option) => {
         searchData.push({
-          type: 'option',
+          type: "option",
           category: category.key,
           categoryLabel: category.label,
           value: option.value,
           label: option.label,
-          icon: category.icon
+          icon: category.icon,
         });
       });
     });
 
     return new Fuse(searchData, {
-      keys: ['label', 'categoryLabel'],
+      keys: ["label", "categoryLabel"],
       threshold: 0.3,
       includeScore: true,
-      minMatchCharLength: 1
+      minMatchCharLength: 1,
     });
   }, [filterCategories]);
 
@@ -257,13 +301,13 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
 
     const searchResults = dropdownSearchIndex.search(dropdownSearchQuery);
     const categoriesWithResults = new Set<FilterCategory>();
-    
+
     // Collect all categories that have matches
-    searchResults.forEach(result => {
+    searchResults.forEach((result) => {
       categoriesWithResults.add(result.item.category);
     });
 
-    return filterCategories.filter(category => 
+    return filterCategories.filter((category) =>
       categoriesWithResults.has(category.key)
     );
   }, [filterCategories, dropdownSearchQuery, dropdownSearchIndex]);
@@ -272,12 +316,11 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-        
           {/* Bundle Group filters */}
-          {Array.from(selectedFilters.bundleGroups).map(group => (
-            <Badge 
-              key={group} 
-              variant="secondary" 
+          {Array.from(selectedFilters.bundleGroups).map((group) => (
+            <Badge
+              key={group}
+              variant="secondary"
               className="h-7 px-3 gap-2 text-xs bg-blue-50 border-blue-200 hover:bg-blue-100"
             >
               <Package2 className="h-3 w-3 text-blue-600" />
@@ -291,21 +334,26 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                 </PopoverTrigger>
                 <PopoverContent className="w-64 p-0" align="start">
                   <Command className="rounded-lg border-none shadow-md">
-                    <CommandInput placeholder="Search bundle groups..." className="border-none focus:ring-0" />
+                    <CommandInput
+                      placeholder="Search bundle groups..."
+                      className="border-none focus:ring-0"
+                    />
                     <CommandList className="max-h-48">
                       <CommandEmpty>No bundle groups found.</CommandEmpty>
                       <CommandGroup>
-                        {filters?.bundleGroups.map(bundleGroup => (
+                        {filters?.groups.map((bundleGroup) => (
                           <CommandItem
                             key={bundleGroup}
                             onSelect={() => {
                               // Remove old value and add new one
-                              const newSet = new Set(selectedFilters.bundleGroups);
+                              const newSet = new Set(
+                                selectedFilters.bundleGroups
+                              );
                               newSet.delete(group);
                               newSet.add(bundleGroup);
                               onFiltersChange({
                                 ...selectedFilters,
-                                bundleGroups: newSet
+                                bundleGroups: newSet,
                               });
                             }}
                             className="flex items-center gap-2"
@@ -322,22 +370,24 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                   </Command>
                 </PopoverContent>
               </Popover>
-              <button 
-                onClick={() => handleFilterChange('bundleGroups', group)}
+              <button
+                onClick={() => handleFilterChange("groups", group)}
                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5 transition-colors"
               >
                 <X className="h-2.5 w-2.5 text-blue-600" />
               </button>
             </Badge>
           ))}
-        
+
           {/* Duration filters */}
-          {Array.from(selectedFilters.durations).map(duration => {
-            const durationLabel = filters?.durations.find(d => d.value === duration)?.label || duration;
+          {Array.from(selectedFilters.durations).map((duration) => {
+            const durationLabel =
+              filters?.durations.find((d) => d.value === duration)?.label ||
+              duration;
             return (
-              <Badge 
-                key={duration} 
-                variant="secondary" 
+              <Badge
+                key={duration}
+                variant="secondary"
                 className="h-7 px-3 gap-2 text-xs bg-green-50 border-green-200 hover:bg-green-100"
               >
                 <Clock className="h-3 w-3 text-green-600" />
@@ -351,28 +401,35 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                   </PopoverTrigger>
                   <PopoverContent className="w-64 p-0" align="start">
                     <Command className="rounded-lg border-none shadow-md">
-                      <CommandInput placeholder="Search durations..." className="border-none focus:ring-0" />
+                      <CommandInput
+                        placeholder="Search durations..."
+                        className="border-none focus:ring-0"
+                      />
                       <CommandList className="max-h-48">
                         <CommandEmpty>No durations found.</CommandEmpty>
                         <CommandGroup>
-                          {filters?.durations.map(durationOption => (
+                          {filters?.durations.map((durationOption) => (
                             <CommandItem
                               key={durationOption.value}
                               onSelect={() => {
                                 // Remove old value and add new one
-                                const newSet = new Set(selectedFilters.durations);
+                                const newSet = new Set(
+                                  selectedFilters.durations
+                                );
                                 newSet.delete(duration);
                                 newSet.add(durationOption.value);
                                 onFiltersChange({
                                   ...selectedFilters,
-                                  durations: newSet
+                                  durations: newSet,
                                 });
                               }}
                               className="flex items-center gap-2"
                             >
                               <Clock className="h-4 w-4 text-green-600" />
                               {durationOption.label}
-                              {selectedFilters.durations.has(durationOption.value) && (
+                              {selectedFilters.durations.has(
+                                durationOption.value
+                              ) && (
                                 <Check className="h-4 w-4 ml-auto text-green-600" />
                               )}
                             </CommandItem>
@@ -382,8 +439,8 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <button 
-                  onClick={() => handleFilterChange('durations', duration)}
+                <button
+                  onClick={() => handleFilterChange("durations", duration)}
                   className="ml-1 hover:bg-green-200 rounded-full p-0.5 transition-colors"
                 >
                   <X className="h-2.5 w-2.5 text-green-600" />
@@ -391,14 +448,16 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
               </Badge>
             );
           })}
-        
+
           {/* Data Type filters */}
-          {Array.from(selectedFilters.dataTypes).map(dataType => {
-            const dataTypeLabel = filters?.dataTypes.find(d => d.value === dataType)?.label || dataType;
+          {Array.from(selectedFilters.dataTypes).map((dataType) => {
+            const dataTypeLabel =
+              filters?.dataTypes.find((d) => d.value === dataType)?.label ||
+              dataType;
             return (
-              <Badge 
-                key={dataType} 
-                variant="secondary" 
+              <Badge
+                key={dataType}
+                variant="secondary"
                 className="h-7 px-3 gap-2 text-xs bg-purple-50 border-purple-200 hover:bg-purple-100"
               >
                 <Database className="h-3 w-3 text-purple-600" />
@@ -412,28 +471,35 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                   </PopoverTrigger>
                   <PopoverContent className="w-64 p-0" align="start">
                     <Command className="rounded-lg border-none shadow-md">
-                      <CommandInput placeholder="Search data types..." className="border-none focus:ring-0" />
+                      <CommandInput
+                        placeholder="Search data types..."
+                        className="border-none focus:ring-0"
+                      />
                       <CommandList className="max-h-48">
                         <CommandEmpty>No data types found.</CommandEmpty>
                         <CommandGroup>
-                          {filters?.dataTypes.map(dataTypeOption => (
+                          {filters?.dataTypes.map((dataTypeOption) => (
                             <CommandItem
                               key={dataTypeOption.value}
                               onSelect={() => {
                                 // Remove old value and add new one
-                                const newSet = new Set(selectedFilters.dataTypes);
+                                const newSet = new Set(
+                                  selectedFilters.dataTypes
+                                );
                                 newSet.delete(dataType);
                                 newSet.add(dataTypeOption.value);
                                 onFiltersChange({
                                   ...selectedFilters,
-                                  dataTypes: newSet
+                                  dataTypes: newSet,
                                 });
                               }}
                               className="flex items-center gap-2"
                             >
                               <Database className="h-4 w-4 text-purple-600" />
                               {dataTypeOption.label}
-                              {selectedFilters.dataTypes.has(dataTypeOption.value) && (
+                              {selectedFilters.dataTypes.has(
+                                dataTypeOption.value
+                              ) && (
                                 <Check className="h-4 w-4 ml-auto text-purple-600" />
                               )}
                             </CommandItem>
@@ -443,8 +509,8 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <button 
-                  onClick={() => handleFilterChange('dataTypes', dataType)}
+                <button
+                  onClick={() => handleFilterChange("dataTypes", dataType)}
                   className="ml-1 hover:bg-purple-200 rounded-full p-0.5 transition-colors"
                 >
                   <X className="h-2.5 w-2.5 text-purple-600" />
@@ -455,19 +521,19 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
 
           {/* Global AI-like Filter button - Hidden until AI features are implemented */}
           {false && (
-            <Popover 
-              open={globalSearchOpen} 
+            <Popover
+              open={globalSearchOpen}
               onOpenChange={(isOpen) => {
                 setGlobalSearchOpen(isOpen);
                 if (!isOpen) {
-                  setGlobalSearchQuery('');
+                  setGlobalSearchQuery("");
                 }
               }}
             >
               <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="h-7 px-2.5 gap-2 border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800"
                 >
                   <Sparkles className="h-3 w-3" />
@@ -486,13 +552,18 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                     />
                   </div>
                   <CommandList className="max-h-64">
-                    {globalSearchResults.length === 0 && globalSearchQuery.length >= 1 ? (
-                      <CommandEmpty>No filters found matching "{globalSearchQuery}".</CommandEmpty>
+                    {globalSearchResults.length === 0 &&
+                    globalSearchQuery.length >= 1 ? (
+                      <CommandEmpty>
+                        No filters found matching "{globalSearchQuery}".
+                      </CommandEmpty>
                     ) : globalSearchQuery.length < 1 ? (
                       <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                         <Sparkles className="h-6 w-6 mx-auto mb-2 opacity-50" />
                         <p>Start typing to search across all filters</p>
-                        <p className="text-xs mt-1 opacity-70">Bundle groups, durations, data types, and more</p>
+                        <p className="text-xs mt-1 opacity-70">
+                          Bundle groups, durations, data types, and more
+                        </p>
                       </div>
                     ) : (
                       <CommandGroup>
@@ -502,20 +573,27 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                             <CommandItem
                               key={`${result.category}-${result.value}-${index}`}
                               onSelect={() => {
-                                if (result.category === 'highDemand') {
+                                if (result.category === "highDemand") {
                                   onHighDemandToggle?.();
                                 } else {
-                                  handleFilterChange(result.category, result.value);
+                                  handleFilterChange(
+                                    result.category,
+                                    result.value
+                                  );
                                 }
                                 setGlobalSearchOpen(false);
-                                setGlobalSearchQuery('');
+                                setGlobalSearchQuery("");
                               }}
                               className="flex items-center gap-3 px-3 py-2"
                             >
                               <Icon className="h-4 w-4 text-muted-foreground" />
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium">{result.label}</div>
-                                <div className="text-xs text-muted-foreground">{result.categoryLabel}</div>
+                                <div className="text-sm font-medium">
+                                  {result.label}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {result.categoryLabel}
+                                </div>
                               </div>
                               {result.selected && (
                                 <Check className="h-4 w-4 text-primary" />
@@ -537,8 +615,8 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
             size="sm"
             onClick={onHighDemandToggle}
             className={`h-7 px-3 gap-2 ${
-              showHighDemandOnly 
-                ? "bg-primary text-primary-foreground" 
+              showHighDemandOnly
+                ? "bg-primary text-primary-foreground"
                 : "border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800"
             }`}
           >
@@ -547,19 +625,19 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
           </Button>
 
           {/* Add Filter button */}
-          <DropdownMenu 
-            open={open} 
+          <DropdownMenu
+            open={open}
             onOpenChange={(isOpen) => {
               setOpen(isOpen);
               if (!isOpen) {
-                setDropdownSearchQuery('');
+                setDropdownSearchQuery("");
               }
             }}
           >
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="h-7 w-7 p-0 border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800"
               >
                 <Filter className="h-3 w-3" />
@@ -578,48 +656,56 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                 </div>
               </div>
               <DropdownMenuGroup>
-                {filteredDropdownCategories.length === 0 && dropdownSearchQuery.length >= 1 ? (
+                {filteredDropdownCategories.length === 0 &&
+                dropdownSearchQuery.length >= 1 ? (
                   <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                     No filters found matching "{dropdownSearchQuery}".
                   </div>
                 ) : dropdownSearchQuery.length >= 1 ? (
                   // Flat structure when searching - show all matching options directly
                   (() => {
-                    const searchResults = dropdownSearchIndex.search(dropdownSearchQuery);
+                    const searchResults =
+                      dropdownSearchIndex.search(dropdownSearchQuery);
                     const flatResults: Array<{
                       category: FilterCategory;
                       categoryLabel: string;
                       value?: string;
                       label: string;
                       icon: React.ComponentType<{ className?: string }>;
-                      type: 'category' | 'option';
+                      type: "category" | "option";
                     }> = [];
 
-                    searchResults.forEach(result => {
-                      if (result.item.type === 'option') {
+                    searchResults.forEach((result) => {
+                      if (result.item.type === "option") {
                         flatResults.push(result.item);
-                      } else if (result.item.type === 'category' && result.item.category === 'highDemand') {
+                      } else if (
+                        result.item.type === "category" &&
+                        result.item.category === "highDemand"
+                      ) {
                         flatResults.push(result.item);
                       }
                     });
 
                     return flatResults.map((item, index) => {
                       const Icon = item.icon;
-                      const isHighDemand = item.category === 'highDemand';
-                      const isOptionSelected = !isHighDemand && item.value 
-                        ? isSelected(item.category, item.value)
-                        : showHighDemandOnly;
+                      const isHighDemand = item.category === "highDemand";
+                      const isOptionSelected =
+                        !isHighDemand && item.value
+                          ? isSelected(item.category, item.value)
+                          : showHighDemandOnly;
 
                       return (
                         <DropdownMenuItem
-                          key={`${item.category}-${item.value || 'category'}-${index}`}
+                          key={`${item.category}-${
+                            item.value || "category"
+                          }-${index}`}
                           onClick={() => {
                             if (isHighDemand) {
                               onHighDemandToggle?.();
                             } else if (item.value) {
                               handleFilterChange(item.category, item.value);
                             }
-                            setDropdownSearchQuery('');
+                            setDropdownSearchQuery("");
                             setOpen(false);
                           }}
                           className="flex items-center gap-2"
@@ -628,7 +714,9 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <span className="text-sm">{item.label}</span>
                             <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
-                            <span className="text-xs text-muted-foreground">{item.categoryLabel}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {item.categoryLabel}
+                            </span>
                           </div>
                           {isOptionSelected && (
                             <Check className="h-4 w-4 text-primary" />
@@ -642,14 +730,14 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                   filteredDropdownCategories.map((category) => {
                     const selectedCount = getSelectedCount(category.key);
                     const Icon = category.icon;
-                    
-                    if (category.key === 'highDemand') {
+
+                    if (category.key === "highDemand") {
                       return (
                         <DropdownMenuItem
                           key={category.key}
                           onClick={() => {
                             onHighDemandToggle?.();
-                            setDropdownSearchQuery('');
+                            setDropdownSearchQuery("");
                             setOpen(false);
                           }}
                           className="flex items-center justify-between cursor-pointer"
@@ -659,14 +747,17 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                             <span className="text-sm">{category.label}</span>
                           </div>
                           {selectedCount > 0 && (
-                            <Badge variant="secondary" className="h-5 px-2 text-xs">
+                            <Badge
+                              variant="secondary"
+                              className="h-5 px-2 text-xs"
+                            >
                               {selectedCount}
                             </Badge>
                           )}
                         </DropdownMenuItem>
                       );
                     }
-                    
+
                     return (
                       <DropdownMenuSub key={category.key}>
                         <DropdownMenuSubTrigger className="flex items-center justify-between">
@@ -675,7 +766,10 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                             <span className="text-sm">{category.label}</span>
                           </div>
                           {selectedCount > 0 && (
-                            <Badge variant="secondary" className="h-5 px-2 text-xs mr-2">
+                            <Badge
+                              variant="secondary"
+                              className="h-5 px-2 text-xs mr-2"
+                            >
                               {selectedCount}
                             </Badge>
                           )}
@@ -686,7 +780,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                               key={option.value}
                               onClick={() => {
                                 handleFilterChange(category.key, option.value);
-                                setDropdownSearchQuery('');
+                                setDropdownSearchQuery("");
                                 setOpen(false);
                               }}
                               className="flex items-center gap-2"
@@ -722,10 +816,9 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
         {/* Results count */}
         {hasBundlesSelected && (
           <div className="text-sm text-muted-foreground">
-            {filteredBundles === totalBundles 
-              ? `${totalBundles} bundle${totalBundles !== 1 ? 's' : ''}`
-              : `${filteredBundles} of ${totalBundles} bundles`
-            }
+            {filteredBundles === totalBundles
+              ? `${totalBundles} bundle${totalBundles !== 1 ? "s" : ""}`
+              : `${filteredBundles} of ${totalBundles} bundles`}
           </div>
         )}
       </div>

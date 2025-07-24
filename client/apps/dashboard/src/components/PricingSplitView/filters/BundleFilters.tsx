@@ -103,7 +103,7 @@ export const BundleFilters: React.FC<BundleFiltersProps> = ({
         
         <FilterDropdown
           title="Bundle Group"
-          options={filters.bundleGroups}
+          options={filters.groups}
           selected={selectedFilters.bundleGroups}
           onSelectionChange={(values) => handleFilterChange('bundleGroups', values)}
           placeholder="All Groups"

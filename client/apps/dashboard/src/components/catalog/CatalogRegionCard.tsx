@@ -11,14 +11,14 @@ import {
 } from "@workspace/ui";
 import { Globe, MapPin } from "lucide-react";
 
-interface RegionData {
+export interface DisplayRegionData {
   regionName: string;
   countryCount: number;
   bundleCount: number;
 }
 
 interface CatalogRegionCardProps {
-  region: RegionData;
+  region: DisplayRegionData;
   isSelected: boolean;
   isLoading?: boolean;
   onSelect: () => void;

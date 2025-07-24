@@ -598,20 +598,15 @@ export const GET_BUNDLES_BY_COUNTRY = gql(`
           name
         }
         duration
-        cost
-        costPlus
-        totalCost
-        discountRate
-        discountValue
-        priceAfterDiscount
-        processingRate
-        processingCost
-        finalRevenue
-        netProfit
-        currency
-        pricePerDay
-        hasCustomDiscount
+        pricingBreakdown {
+          cost
+          costPlus
+          totalCost
+          discountRate
+          discountValue
         discountPerDay
+        }
+        currency
         isUnlimited
         data
         group
@@ -639,21 +634,15 @@ export const GET_COUNTRIES_WITH_BUNDLES = gql(`
           iso
           name
         }
+        pricingBreakdown {
+          cost
+          costPlus
+          totalCost
+          discountRate
+          discountValue
+        }
         duration
-        cost
-        costPlus
-        totalCost
-        discountRate
-        discountValue
-        priceAfterDiscount
-        processingRate
-        processingCost
-        finalRevenue
-        netProfit
         currency
-        pricePerDay
-        hasCustomDiscount
-        discountPerDay
         isUnlimited
         data
         id
@@ -683,18 +672,14 @@ export const GET_REGION_BUNDLES = gql(`
         name
       }
       duration
-      cost
-      costPlus
-      totalCost
-      discountRate
-      discountValue
-      priceAfterDiscount
-      processingRate
-      processingCost
-      finalRevenue
+      pricingBreakdown {
+        cost
+        costPlus
+        totalCost
+        discountRate
+        discountValue
+      }
       currency
-      pricePerDay
-      hasCustomDiscount
       group
       isUnlimited
       data
@@ -728,11 +713,6 @@ export const GET_COUNTRY_BUNDLES = gql(`
         name
         type
         impact
-      }
-      discounts {
-        ruleName
-        amount
-        type
       }
     }
   }

@@ -1,53 +1,37 @@
-import React from "react";
+import { CatalogBundle, Country } from "@/__generated__/graphql";
 import { ScrollArea } from "@workspace/ui";
-import { Package, Clock, DollarSign, Wifi, WifiOff } from "lucide-react";
 import { Badge } from "@workspace/ui/components/badge";
+import { Clock, Package, Wifi, WifiOff } from "lucide-react";
+import React from "react";
+import { DisplayRegionData } from "./CatalogRegionCard";
 
-interface CountryBundle {
-  bundleName: string;
-  countryName: string;
-  countryId: string;
-  duration: number;
-  cost: number;
-  costPlus: number;
-  totalCost: number;
-  discountRate: number;
-  discountValue: number;
-  priceAfterDiscount: number;
-  processingRate: number;
-  processingCost: number;
-  finalRevenue: number;
-  currency: string;
-  pricePerDay: number;
-  hasCustomDiscount: boolean;
-  bundleGroup?: string;
-  isUnlimited?: boolean;
-  dataAmount?: string;
-  planId?: string;
-}
 
-interface CountryData {
-  countryName: string;
-  countryId: string;
-  bundles?: CountryBundle[];
+
+export interface DisplayCountryData extends Country {
+  bundles?: CatalogBundle[];
   bundleCount?: number;
 }
 
 interface CatalogBundlesTableProps {
-  country: CountryData;
+  country: DisplayCountryData | null;
+  region: DisplayRegionData | null;
   loadingCountries: Set<string>;
-  selectedBundle: CountryBundle | null;
-  onBundleSelect: (bundle: CountryBundle) => void;
+  selectedBundle: CatalogBundle | null;
+  onBundleSelect: (bundle: CatalogBundle) => void;
 }
 
-export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({ 
-  country, 
+export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
+  country,
   loadingCountries,
   selectedBundle,
-  onBundleSelect
+  onBundleSelect,
 }) => {
-  const isCountryLoading = loadingCountries.has(country.countryId);
-  
+  if (!country) {
+    return null;
+  }
+
+  const isCountryLoading = loadingCountries.has(country.iso);
+
   if (isCountryLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -69,12 +53,14 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
     );
   }
 
-  const sortedBundles = [...country.bundles].sort((a, b) => (a.duration || 0) - (b.duration || 0));
+  const sortedBundles = [...country.bundles].sort(
+    (a, b) => (a.duration || 0) - (b.duration || 0)
+  );
 
   const formatPrice = (price: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
     }).format(price);
   };
 
@@ -84,9 +70,11 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
         <div className="space-y-1 p-2">
           {sortedBundles.map((bundle, index) => (
             <div
-              key={bundle.planId || `${bundle.bundleName}-${index}`}
+              key={bundle.id || `${bundle.id}-${index}`}
               className={`border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                selectedBundle?.planId === bundle.planId ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                selectedBundle?.id === bundle.id
+                  ? "ring-2 ring-blue-500 bg-blue-50"
+                  : ""
               }`}
               onClick={() => onBundleSelect(bundle)}
             >
@@ -94,14 +82,17 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
                     <div>
-                      <h4 className="font-medium">{bundle.bundleName || 'Unknown Bundle'}</h4>
+                      <h4 className="font-medium">
+                        {bundle.esimGoName || "Unknown Bundle"}
+                      </h4>
                       <p className="text-sm text-gray-500">
-                        {bundle.duration || 0} day{(bundle.duration || 0) !== 1 ? 's' : ''} • 
-                        {bundle.dataAmount && ` ${bundle.dataAmount}`}
-                        {bundle.bundleGroup && (
+                        {bundle.duration || 0} day
+                        {(bundle.duration || 0) !== 1 ? "s" : ""} •
+                        {bundle.data && ` ${bundle.data}`}
+                        {bundle.group && (
                           <span className="inline-flex items-center ml-2">
                             <Badge variant="outline" className="text-xs">
-                              {bundle.bundleGroup}
+                              {bundle.group}
                             </Badge>
                           </span>
                         )}
@@ -109,32 +100,35 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="text-right">
                   <div className="text-lg font-semibold">
-                    {formatPrice(bundle.cost || 0, bundle.currency || 'USD')}
+                    {formatPrice(bundle.priceCents || 0, bundle.currency || "USD")}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {formatPrice((bundle.cost || 0) / (bundle.duration || 1), bundle.currency || 'USD')}/day
+                    {formatPrice(
+                      (bundle.priceCents || 0) / (bundle.duration || 1),
+                      bundle.currency || "USD"
+                    )}
+                    /day
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-2 flex items-center gap-4 text-xs text-gray-600">
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   <span>{bundle.duration} days</span>
                 </div>
-                
+
                 <div className="flex items-center gap-1">
-                  {bundle.isUnlimited ? (
+                  {bundle.unlimited ? (
                     <Wifi className="h-3 w-3" />
                   ) : (
                     <WifiOff className="h-3 w-3" />
                   )}
-                  <span>{bundle.dataAmount || 'Unknown'}</span>
+                  <span>{bundle.data?.toString() || "Unknown"}</span>
                 </div>
-                
               </div>
             </div>
           ))}

@@ -24,7 +24,7 @@ type Query {
   trips: [Trip!]!
 
   # Calculate price - Public access, sensitive fields protected at field level
-  calculatePrice(numOfDays: Int!, countryId: String!, paymentMethod: PaymentMethod): PricingBreakdown!
+  calculatePrice(numOfDays: Int!, countryId: String!, paymentMethod: PaymentMethod, regionId: String): PricingBreakdown!
   
   # Batch calculate prices for multiple bundles
   calculatePrices(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
@@ -617,26 +617,8 @@ type CountryBundle {
   data: Float
   group: String
   
-  # Pricing fields - Public
-  totalCost: Float! # Subtotal before discounts
-  discountValue: Float! # Total discount amount
-  priceAfterDiscount: Float! # Final price users pay
-  
-  # Admin-only business sensitive fields
-  cost: Float! @auth(role: "ADMIN") # Base cost from supplier
-  costPlus: Float! @auth(role: "ADMIN") # Cost + markup
-  discountRate: Float! @auth(role: "ADMIN") # Discount percentage
-  processingRate: Float! @auth(role: "ADMIN") # Processing fee percentage
-  processingCost: Float! @auth(role: "ADMIN") # Processing fee amount
-  finalRevenue: Float! @auth(role: "ADMIN") # Revenue after processing
-  netProfit: Float! @auth(role: "ADMIN") # Final profit
-  pricePerDay: Float! @auth(role: "ADMIN") # Daily rate
-  hasCustomDiscount: Boolean! @auth(role: "ADMIN") # Whether discount rules apply
-  discountPerDay: Float! @auth(role: "ADMIN") # Unused day discount rate
-  
   # Rule-based pricing breakdown - Admin only
   appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
-  discounts: [DiscountApplication!] @auth(role: "ADMIN") # Detailed discount breakdown (nullable)
 }
 
 # Batch pricing input

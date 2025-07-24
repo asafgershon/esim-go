@@ -2,11 +2,21 @@ import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import { PricingEngineService } from "../services/pricing-engine.service";
-import type { Resolvers, CalculatePriceInput } from "../types";
+import type {
+  Resolvers,
+  CalculatePriceInput,
+  CountryBundle,
+  CatalogBundle,
+  BundlesByCountry,
+  BundlesByRegion,
+  PricingBreakdown,
+} from "../types";
+import type { Bundle } from "../rules-engine/types";
+import type { Country } from "@esim-go/client";
 
-const logger = createLogger({ 
-  component: 'CatalogResolvers',
-  operationType: 'resolver'
+const logger = createLogger({
+  component: "CatalogResolvers",
+  operationType: "resolver",
 });
 
 // Helper function to get pricing engine service
@@ -16,45 +26,8 @@ const getPricingEngineService = (context: Context): PricingEngineService => {
 
 // Helper function to map payment method enum
 const mapPaymentMethodEnum = (paymentMethod: any) => {
-  return paymentMethod || 'ISRAELI_CARD';
+  return paymentMethod || "ISRAELI_CARD";
 };
-
-// Helper function to calculate pricing for a single bundle
-const calculateBundlePricing = async (bundle: any, context: Context, paymentMethod = 'ISRAELI_CARD') => {
-  const engineService = getPricingEngineService(context);
-  
-  // Extract region information from bundle
-  // Use the first region if available, otherwise fall back to 'global'
-  const regions = bundle?.regions || [];
-  const regionId = regions.length > 0 ? regions[0] : 'global';
-  const regionName = regions.length > 0 ? regions[0] : 'Global';
-  
-  // Map bundle for pricing engine
-  const availableBundles = [{
-    id: bundle?.esim_go_name || `${bundle.countryId}-${bundle?.duration}d`,
-    name: bundle?.esim_go_name || '',
-    cost: ((bundle?.price_cents || 0) / 100),
-    duration: bundle?.duration || 1,
-    countryId: bundle.countryId,
-    countryName: bundle.countryName,
-    regionId: regionId,
-    regionName: regionName,
-    group: bundle?.bundle_group || 'Standard Fixed',
-    isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-    dataAmount: bundle?.data_amount?.toString() || '0'
-  }];
-
-  // Create pricing context using bundle's own duration as requestedDuration
-  const pricingContext = PricingEngineService.createContext({
-    availableBundles,
-    requestedDuration: bundle?.duration || 1,
-    paymentMethod
-  });
-
-  // Calculate price using rule engine
-  return await engineService.calculatePrice(pricingContext);
-};
-
 export const catalogResolvers: Partial<Resolvers> = {
   Query: {
     // Pricing filters - returns all available filter options dynamically
@@ -65,17 +38,29 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Get all filter data from repository methods
-        const bundleGroups = await context.repositories.bundles.getAvailableBundleGroups();
-        const dataTypeAggregation = await context.repositories.bundles.getBundlesByDataTypeAggregation();
-        const durationAggregation = await context.repositories.bundles.getBundlesByDurationAggregation();
-        
-        let durations: { label: string; value: string; minDays: number; maxDays: number }[] = [];
-        let dataTypes: { label: string; value: string; isUnlimited: boolean }[] = [];
+        const groups =
+          await context.repositories.bundles.getAvailableBundleGroups();
+        const dataTypeAggregation =
+          await context.repositories.bundles.getBundlesByDataTypeAggregation();
+        const durationAggregation =
+          await context.repositories.bundles.getBundlesByDurationAggregation();
+
+        let durations: {
+          label: string;
+          value: string;
+          minDays: number;
+          maxDays: number;
+        }[] = [];
+        let dataTypes: {
+          label: string;
+          value: string;
+          isUnlimited: boolean;
+        }[] = [];
 
         // Extract durations from repository aggregation data
         if (durationAggregation && durationAggregation.length > 0) {
           // Use actual durations from DB aggregation
-          durations = durationAggregation.map(dur => ({
+          durations = durationAggregation.map((dur) => ({
             label: dur.label,
             value: dur.duration.toString(),
             minDays: dur.duration,
@@ -83,10 +68,13 @@ export const catalogResolvers: Partial<Resolvers> = {
           }));
         } else {
           // Fallback to static durations if DB aggregation data is not available
-          logger.warn("Bundle duration aggregation not available, using fallback durations", {
-            operationType: "pricing-filters-duration-fallback",
-          });
-          
+          logger.warn(
+            "Bundle duration aggregation not available, using fallback durations",
+            {
+              operationType: "pricing-filters-duration-fallback",
+            }
+          );
+
           durations = [
             { label: "1-7 days", value: "short", minDays: 1, maxDays: 7 },
             { label: "8-30 days", value: "medium", minDays: 8, maxDays: 30 },
@@ -97,17 +85,20 @@ export const catalogResolvers: Partial<Resolvers> = {
         // Extract data types from repository aggregation data
         if (dataTypeAggregation && dataTypeAggregation.length > 0) {
           // Use actual data types from DB aggregation
-          dataTypes = dataTypeAggregation.map(type => ({
+          dataTypes = dataTypeAggregation.map((type) => ({
             label: type.label,
             value: type.dataType,
             isUnlimited: type.isUnlimited,
           }));
         } else {
           // Fallback to static data types if DB aggregation data is not available
-          logger.warn("Bundle data type aggregation not available, using fallback data types", {
-            operationType: "pricing-filters-datatype-fallback",
-          });
-          
+          logger.warn(
+            "Bundle data type aggregation not available, using fallback data types",
+            {
+              operationType: "pricing-filters-datatype-fallback",
+            }
+          );
+
           dataTypes = [
             { label: "Unlimited", value: "unlimited", isUnlimited: true },
             { label: "Limited", value: "limited", isUnlimited: false },
@@ -115,14 +106,14 @@ export const catalogResolvers: Partial<Resolvers> = {
         }
 
         logger.info("Pricing filters fetched successfully", {
-          bundleGroupCount: bundleGroups.length,
+          bundleGroupCount: groups.length,
           durationCount: durations.length,
           dataTypeCount: dataTypes.length,
           operationType: "pricing-filters-fetch",
         });
 
         return {
-          bundleGroups,
+          groups,
           durations,
           dataTypes,
         };
@@ -146,33 +137,39 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         // Get aggregation data directly from the catalogue datasource
         const bundleAggregation =
-          await context.dataSources.catalogue.getBundleDataAggregation();
+          await context.repositories.bundles.getBundlesByDataTypeAggregation();
 
         logger.info("Successfully fetched bundle data aggregation", {
-          total: bundleAggregation.total,
-          unlimited: bundleAggregation.unlimited,
-          byDurationCount: bundleAggregation.byDuration?.length || 0,
-          byBundleGroupCount: bundleAggregation.byBundleGroup?.length || 0,
+          total: bundleAggregation.length,
+          unlimited:
+            bundleAggregation.find((item) => item.dataType === "unlimited")
+              ?.bundleCount || 0,
+          byDurationCount:
+            bundleAggregation.find((item) => item.dataType === "duration")
+              ?.bundleCount || 0,
           operationType: "bundle-data-aggregation-fetch",
         });
 
         return {
-          ...bundleAggregation,
-          byDataAmount: [],
-          byDuration: (bundleAggregation.byDuration || []).map(duration => ({
-            duration: duration.duration,
-            count: duration.count,
-            category: `${duration.duration} days`,
-            percentage: 0
+          byDataAmount: bundleAggregation.map((item) => ({
+            dataAmount: item.dataType === "unlimited" ? -1 : item.dataType,
+            count: item.bundleCount,
+            percentage: 0,
           })),
-          byBundleGroup: (bundleAggregation.byBundleGroup || []).map(group => ({
-            bundleGroup: group.bundleGroup,
-            count: group.count,
-            averageDataAmount: 0,
-            limited: 0,
-            total: group.count,
-            unlimited: 0
-          }))
+          byGroup: [],
+          lastUpdated: new Date().toISOString(),
+          total: bundleAggregation.reduce(
+            (acc, item) => acc + item.bundleCount,
+            0
+          ),
+          unlimited:
+            bundleAggregation.find((item) => item.dataType === "unlimited")
+              ?.bundleCount || 0,
+          byDuration: bundleAggregation.map((item) => ({
+            duration: item.label,
+            count: item.bundleCount,
+            percentage: 0,
+          })),
         };
       } catch (error) {
         logger.error("Error fetching bundle data aggregation", error as Error, {
@@ -187,12 +184,7 @@ export const catalogResolvers: Partial<Resolvers> = {
     // Catalog sync history resolver
     catalogSyncHistory: async (_, { params = {} }, context: Context) => {
       try {
-        const {
-          limit = 50,
-          offset = 0,
-          status,
-          type,
-        } = params || {};
+        const { limit = 50, offset = 0, status, type } = params || {};
 
         logger.info("Fetching catalog sync history", {
           limit,
@@ -203,12 +195,13 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Use repository to get sync history
-        const { jobs: data, totalCount: count } = await context.repositories.syncJob.getJobHistory({
-          status: status as any,
-          jobType: type as any,
-          limit: limit || 50,
-          offset: offset || 0,
-        });
+        const { jobs: data, totalCount: count } =
+          await context.repositories.syncJob.getJobHistory({
+            status: status as any,
+            jobType: type as any,
+            limit: limit || 50,
+            offset: offset || 0,
+          });
 
         // Transform data to match frontend expectations
         const jobs = (data || []).map((job) => ({
@@ -222,7 +215,8 @@ export const catalogResolvers: Partial<Resolvers> = {
           bundlesProcessed: job.bundles_processed || 0, // Use correct column name
           bundlesAdded: job.bundles_added || 0, // Use correct column name
           bundlesUpdated: job.bundles_updated || 0, // Use correct column name
-          startedAt: job.started_at || job.created_at || new Date().toISOString(), // Use created_at as fallback if started_at is null
+          startedAt:
+            job.started_at || job.created_at || new Date().toISOString(), // Use created_at as fallback if started_at is null
           completedAt: job.completed_at,
           duration: 0, // Duration not available in database schema
           errorMessage: job.error_message,
@@ -239,11 +233,11 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         return {
           jobs: jobs as any,
-          totalCount: count || 0
+          totalCount: count || 0,
         };
       } catch (error) {
-        logger.error('Failed to fetch catalog sync history', error as Error, {
-          operationType: 'catalog-sync-history'
+        logger.error("Failed to fetch catalog sync history", error as Error, {
+          operationType: "catalog-sync-history",
         });
         throw error;
       }
@@ -273,15 +267,16 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Use bundle repository to search bundles
-        const { bundles: data, totalCount: count } = await context.repositories.bundles.searchBundles({
-          countries: countries as any,
-          bundleGroups: bundleGroups as any,
-          minDuration: minDuration as any,
-          maxDuration: maxDuration as any,
-          unlimited: unlimited as any,
-          limit: limit || 50,
-          offset: offset || 0,
-        });
+        const { bundles: data, totalCount: count } =
+          await context.repositories.bundles.searchBundles({
+            countries: countries as any,
+            bundleGroups: bundleGroups as any,
+            minDuration: minDuration as any,
+            maxDuration: maxDuration as any,
+            unlimited: unlimited as any,
+            limit: limit || 50,
+            offset: offset || 0,
+          });
 
         // Transform data
         const bundles = (data || []).map((bundle) => ({
@@ -320,7 +315,8 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Use bundle repository to get available bundle groups
-        const bundleGroups = await context.repositories.bundles.getAvailableBundleGroups();
+        const bundleGroups =
+          await context.repositories.bundles.getAvailableBundleGroups();
 
         logger.info("Available bundle groups fetched successfully", {
           groupCount: bundleGroups.length,
@@ -351,8 +347,9 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         if (countryId) {
           // Get country-specific bundles from bundle repository
-          const countryBundles = await context.repositories.bundles.getBundlesByCountry(countryId);
-          
+          const countryBundles =
+            await context.repositories.bundles.getBundlesByCountry(countryId);
+
           logger.info("Country bundles fetched successfully", {
             countryId,
             bundleCount: countryBundles.length,
@@ -360,28 +357,31 @@ export const catalogResolvers: Partial<Resolvers> = {
           });
 
           // Map to CountryBundle format - field resolvers will handle pricing calculations
-          return countryBundles.map((bundle) => ({
-            bundleName: bundle?.esim_go_name || 'Bundle',
-            countryName: countryId,
-            countryId: countryId,
-            duration: bundle?.duration || 0,
-            currency: 'USD',
-            configurationLevel: 'GLOBAL' as any,
-            planId: bundle?.esim_go_name || 'bundle',
-            isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-            dataAmount: bundle?.data_amount?.toString() || '0',
-            bundleGroup: bundle?.bundle_group || 'Standard Fixed',
-            // Include raw bundle data for field resolvers
-            price_cents: bundle?.price_cents,
-            unlimited: bundle?.unlimited,
-            data_amount: bundle?.data_amount,
-            bundle_group: bundle?.bundle_group,
-            esim_go_name: bundle?.esim_go_name
-          }));
+          return countryBundles.map(
+            (bundle) =>
+              ({
+                id: bundle?.id,
+                name: bundle?.esim_go_name || "Bundle",
+                country: {
+                  iso: countryId,
+                  name: countryId,
+                  region: "",
+                },
+                duration: bundle?.duration || 0,
+                currency: "USD",
+                isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+                data: bundle?.data_amount || 0,
+                group: bundle?.bundle_group || "Standard Fixed",
+                price: bundle?.price_cents || 0,
+              } satisfies CountryBundle)
+          );
         } else if (regionId) {
-          // Get region-specific bundles from bundle repository  
-          const regionBundles = await context.repositories.bundles.getBundlesByRegion?.(regionId) || [];
-          
+          // Get region-specific bundles from bundle repository
+          const regionBundles =
+            (await context.repositories.bundles.getBundlesByRegion?.(
+              regionId
+            )) || [];
+
           logger.info("Region bundles fetched successfully", {
             regionId,
             bundleCount: regionBundles.length,
@@ -390,28 +390,31 @@ export const catalogResolvers: Partial<Resolvers> = {
 
           // Map to CountryBundle format - field resolvers will handle pricing calculations
           return regionBundles.map((bundle: any) => ({
-            bundleName: bundle?.esim_go_name || 'Bundle',
+            bundleName: bundle?.esim_go_name || "Bundle",
             countryName: regionId,
             countryId: regionId,
             duration: bundle?.duration || 0,
-            currency: 'USD',
-            configurationLevel: 'GLOBAL' as any,
-            planId: bundle?.esim_go_name || 'bundle',
+            currency: "USD",
+            configurationLevel: "GLOBAL" as any,
+            planId: bundle?.esim_go_name || "bundle",
             isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-            dataAmount: bundle?.data_amount?.toString() || '0',
-            bundleGroup: bundle?.bundle_group || 'Standard Fixed',
+            dataAmount: bundle?.data_amount?.toString() || "0",
+            bundleGroup: bundle?.bundle_group || "Standard Fixed",
             // Include raw bundle data for field resolvers
             price_cents: bundle?.price_cents,
             unlimited: bundle?.unlimited,
             data_amount: bundle?.data_amount,
             bundle_group: bundle?.bundle_group,
-            esim_go_name: bundle?.esim_go_name
+            esim_go_name: bundle?.esim_go_name,
           }));
         } else {
           // Return empty array or all bundles - depends on business logic
-          logger.info("No filtering parameters provided, returning empty array", {
-            operationType: "bundles-fetch",
-          });
+          logger.info(
+            "No filtering parameters provided, returning empty array",
+            {
+              operationType: "bundles-fetch",
+            }
+          );
           return [];
         }
       } catch (error) {
@@ -427,7 +430,11 @@ export const catalogResolvers: Partial<Resolvers> = {
     },
 
     // Countries with aggregated bundle data
-    bundlesCountries: async (_, { includeBundles = false }, context: Context) => {
+    bundlesCountries: async (
+      _,
+      { includeBundles = false },
+      context: Context
+    ) => {
       try {
         logger.info("Fetching bundles by country aggregation", {
           includeBundles,
@@ -435,20 +442,30 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Get country aggregation data from bundle repository
-        const countryAggregation = await context.repositories.bundles.getBundlesByCountryAggregation();
-        
+        const countryAggregation =
+          await context.repositories.bundles.getBundlesByCountryAggregation();
+
         // Get country names mapping
         const countries = await context.dataSources.countries.getCountries();
-        const countryMap = new Map(countries.map((country: any) => [country.iso, country.name || country.country]));
+        const countryMap = new Map(
+          countries.map((country) => [country.iso, country])
+        );
 
         // Transform to match GraphQL schema
-        const bundlesCountries = countryAggregation.map((item: any) => ({
-          countryId: item.countryId,
-          countryName: countryMap.get(item.countryId) || item.countryId,
-          bundleCount: item.bundleCount,
-          pricingRange: item.pricingRange,
-          bundles: null // Will be populated by field resolver if requested
-        }));
+        const bundlesCountries: BundlesByCountry[] = countryAggregation.map(
+          (item) => ({
+            countryId: item.countryId,
+            country: {
+              iso: item.countryId,
+              name: countryMap.get(item.countryId)?.country || item.countryId,
+              region: "",
+            },
+            __typename: "BundlesByCountry",
+            countryName: countryMap.get(item.countryId) || item.countryId,
+            bundleCount: item.bundleCount,
+            pricingRange: item.priceRange,
+          })
+        );
 
         logger.info("Bundles by country aggregation fetched successfully", {
           countryCount: bundlesCountries.length,
@@ -475,14 +492,20 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Get region aggregation data from bundle repository
-        const regionAggregation = await context.repositories.bundles.getBundlesByRegionAggregation();
+        const regionAggregation =
+          await context.repositories.bundles.getBundlesByRegionAggregation();
 
         // Transform to match GraphQL schema
-        const bundlesRegions = regionAggregation.map((item: any) => ({
-          regionName: item.regionName,
-          bundleCount: item.bundleCount,
-          countryCount: item.countryCount,
-        }));
+        const bundlesRegions: BundlesByRegion[] = regionAggregation.map(
+          (item) => ({
+            regionId: item.regionName,
+            region: item.regionName,
+            __typename: "BundlesByRegion",
+            regionName: item.regionName,
+            bundleCount: item.bundleCount,
+            countryCount: item.countryCount,
+          })
+        );
 
         logger.info("Bundles by region aggregation fetched successfully", {
           regionCount: bundlesRegions.length,
@@ -503,7 +526,7 @@ export const catalogResolvers: Partial<Resolvers> = {
     // Calculate price for a single request
     calculatePrice: async (
       _,
-      { numOfDays, countryId, paymentMethod },
+      { numOfDays, countryId, paymentMethod, regionId },
       context: Context
     ) => {
       try {
@@ -512,80 +535,84 @@ export const catalogResolvers: Partial<Resolvers> = {
           numOfDays,
           operationType: "calculate-price",
         });
-
         // Use the pricing engine service instead of old pricing service
         const engineService = getPricingEngineService(context);
-        
-        // Get bundle information from catalog
-        // Use getBundlesByCountry which properly handles country filtering
-        const countryBundles = await context.repositories.bundles.getBundlesByCountry(
-          countryId.toUpperCase()
-        );
-        
-        if (!countryBundles || countryBundles.length === 0) {
-          throw new GraphQLError(`No bundles found for country: ${countryId}`, {
-            extensions: { code: 'NO_BUNDLES_FOUND' }
-          });
+
+        let bundles:
+          | Awaited<
+              ReturnType<typeof context.repositories.bundles.getBundlesByRegion>
+            >
+          | Awaited<
+              ReturnType<
+                typeof context.repositories.bundles.getBundlesByCountry
+              >
+            > = [];
+
+        if (regionId) {
+          bundles = await context.repositories.bundles.getBundlesByRegion(
+            regionId
+          );
+        } else if (countryId) {
+          bundles = await context.repositories.bundles.getBundlesByCountry(
+            countryId
+          );
         }
-        
-        // Get country name for response
-        const countries = await context.dataSources.countries.getCountries();
-        const country = countries.find(c => c.iso.toLowerCase() === countryId.toLowerCase());
-        
-        // Validate bundle data structure
-        if (!countryBundles.some((b: any) => b && b.esim_go_name)){
-          throw new GraphQLError(`Invalid bundle data for country: ${countryId}`, {
-            extensions: { code: 'INVALID_BUNDLES' }
+
+        if (!bundles || bundles.length === 0) {
+          throw new GraphQLError(`No bundles found for country: ${countryId}`, {
+            extensions: { code: "NO_BUNDLES_FOUND" },
           });
         }
 
         // Map all available bundles for the pricing engine
-        const availableBundles = countryBundles.map(bundle => {
-          // Extract region information from bundle
-          const regions = bundle?.regions || [];
-          const regionId = regions.length > 0 ? regions[0] : 'global';
-          const regionName = regions.length > 0 ? regions[0] : 'Global';
-          
+        const availableBundles = bundles.map((bundle) => {
           return {
-            id: bundle?.esim_go_name || `${countryId}-${bundle?.duration || numOfDays}d`,
-            name: bundle?.esim_go_name || '',
-            cost: ((bundle?.price_cents || 0) / 100),
+            id:
+              bundle?.esim_go_name ||
+              `${countryId}-${bundle?.duration || numOfDays}d`,
+            name: bundle?.esim_go_name || "",
+            cost: (bundle?.price_cents || 0) / 100,
             duration: bundle?.duration || numOfDays,
             countryId: countryId,
-            countryName: country?.country || countryId,
-            regionId: regionId,
-            regionName: regionName,
-            group: bundle?.bundle_group || 'Standard Fixed',
+            countryName: countryId,
+
+            group: bundle?.bundle_group || "Standard Fixed",
             isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-            dataAmount: bundle?.data_amount?.toString() || '0'
-          };
+            dataAmount: bundle?.data_amount?.toString() || "0",
+          } satisfies Bundle;
         });
-        
+
         // Create pricing context for the rule engine - let engine select optimal bundle
         const pricingContext = PricingEngineService.createContext({
           availableBundles,
           requestedDuration: numOfDays,
-          paymentMethod: mapPaymentMethodEnum(paymentMethod)
+          paymentMethod: mapPaymentMethodEnum(paymentMethod),
         });
-        
+
         // Calculate price using rule engine (includes bundle selection)
         const calculation = await engineService.calculatePrice(pricingContext);
-        
-        const countryName = country?.country || countryId;
-        
+
         logger.info("Single price calculated successfully", {
           countryId,
-          countryName,
+          regionId,
           finalPrice: calculation.finalPrice,
           operationType: "calculate-price",
         });
 
         // Map rule engine result to GraphQL schema
         return {
-          bundleName: calculation.selectedBundle?.bundleName || `${numOfDays} Day Bundle`,
-          countryName,
+          __typename: "PricingBreakdown",
+          bundle: {
+            __typename: "CountryBundle",
+            id: calculation.selectedBundle?.bundleId || "",
+          } as CountryBundle,
+          country: {
+            iso: countryId,
+            name: countryId,
+            region: "",
+          } satisfies Country,
           duration: numOfDays,
-          currency: 'USD',
+          currency: "USD",
           // Public fields
           totalCost: calculation.subtotal,
           discountValue: calculation.totalDiscount,
@@ -594,22 +621,24 @@ export const catalogResolvers: Partial<Resolvers> = {
           cost: calculation.baseCost,
           costPlus: calculation.baseCost + calculation.markup,
           discountRate: calculation.discounts.reduce((sum, d) => {
-            return sum + (d.type === 'percentage' ? d.amount : 0);
+            return sum + (d.type === "percentage" ? d.amount : 0);
           }, 0),
           processingRate: calculation.processingRate,
           processingCost: calculation.processingFee,
           finalRevenue: calculation.finalRevenue,
           netProfit: calculation.profit,
           discountPerDay: calculation.metadata?.discountPerUnusedDay || 0,
-          // Cache the full calculation for field resolvers (appliedRules, discounts)
-          _pricingCalculation: calculation
-        };
+        } satisfies PricingBreakdown;
       } catch (error) {
-        logger.error('Error calculating price with rule engine', error as Error, {
-          countryId,
-          duration: numOfDays,
-          operationType: 'calculate-price'
-        });
+        logger.error(
+          "Error calculating price with rule engine",
+          error as Error,
+          {
+            countryId,
+            duration: numOfDays,
+            operationType: "calculate-price",
+          }
+        );
         throw error;
       }
     },
@@ -623,83 +652,99 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         const engineService = getPricingEngineService(context);
-        
+
         // Get countries map for name lookup
         const countries = await context.dataSources.countries.getCountries();
-        const countryMap = new Map(countries.map(c => [c.iso, c.country]));
-        
+        const countryMap = new Map(countries.map((c) => [c.iso, c.country]));
+
         const results = await Promise.all(
           inputs.map(async (input: CalculatePriceInput) => {
             try {
               // Get bundle information from catalog using the same method as single calculatePrice
-              const countryBundles = await context.repositories.bundles.getBundlesByCountry(
-                input.countryId.toUpperCase()
-              );
-              
+              const countryBundles =
+                await context.repositories.bundles.getBundlesByCountry(
+                  input.countryId.toUpperCase()
+                );
+
               if (!countryBundles || countryBundles.length === 0) {
-                throw new GraphQLError(`No bundles found for country: ${input.countryId}`, {
-                  extensions: { code: 'NO_BUNDLES_FOUND' }
-                });
+                throw new GraphQLError(
+                  `No bundles found for country: ${input.countryId}`,
+                  {
+                    extensions: { code: "NO_BUNDLES_FOUND" },
+                  }
+                );
               }
-              
+
               // Map all available bundles for the pricing engine
-              const availableBundles = countryBundles.map(bundle => {
-                // Extract region information from bundle
-                const regions = bundle?.regions || [];
-                const regionId = regions.length > 0 ? regions[0] : 'global';
-                const regionName = regions.length > 0 ? regions[0] : 'Global';
-                
-                return {
-                  id: bundle?.esim_go_name || `${input.countryId}-${bundle?.duration || input.numOfDays}d`,
-                  name: bundle?.esim_go_name || '',
-                  cost: ((bundle?.price_cents || 0) / 100),
-                  duration: bundle?.duration || input.numOfDays,
-                  countryId: input.countryId,
-                  countryName: countryMap.get(input.countryId) || input.countryId,
-                  regionId: regionId,
-                  regionName: regionName,
-                  group: bundle?.bundle_group || 'Standard Fixed',
-                  isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-                  dataAmount: bundle?.data_amount?.toString() || '0'
-                };
-              });
-              
+              const availableBundles: Bundle[] = countryBundles.map(
+                (bundle) => {
+                  return {
+                    id:
+                      bundle?.esim_go_name ||
+                      `${input.countryId}-${
+                        bundle?.duration || input.numOfDays
+                      }d`,
+                    name: bundle?.esim_go_name || "",
+                    cost: (bundle?.price_cents || 0) / 100,
+                    duration: bundle?.duration || input.numOfDays,
+                    countryId: input.countryId,
+                    countryName:
+                      countryMap.get(input.countryId) || input.countryId,
+                    group: bundle?.bundle_group || "Standard Fixed",
+                    isUnlimited:
+                      bundle?.unlimited || bundle?.data_amount === -1,
+                    dataAmount: bundle?.data_amount?.toString() || "0",
+                  };
+                }
+              );
+
               // Create pricing context for the rule engine - let engine select optimal bundle
               const pricingContext = PricingEngineService.createContext({
                 availableBundles,
                 requestedDuration: input.numOfDays,
-                paymentMethod: mapPaymentMethodEnum(input.paymentMethod)
+                paymentMethod: mapPaymentMethodEnum(input.paymentMethod),
               });
-              
+
               // Calculate price using rule engine (includes bundle selection)
-              const calculation = await engineService.calculatePrice(pricingContext);
-              
+              const calculation = await engineService.calculatePrice(
+                pricingContext
+              );
+
               // Map rule engine result to existing GraphQL schema
               return {
-                bundleName: calculation.selectedBundle?.bundleName || `${input.numOfDays} Day Bundle`,
+                bundleName:
+                  calculation.selectedBundle?.bundleName ||
+                  `${input.numOfDays} Day Bundle`,
                 countryName: countryMap.get(input.countryId) || input.countryId,
                 duration: input.numOfDays,
                 cost: calculation.baseCost,
                 costPlus: calculation.baseCost + calculation.markup,
                 totalCost: calculation.subtotal,
-                discountRate: calculation.totalDiscount > 0 ? (calculation.totalDiscount / calculation.subtotal) : 0,
+                discountRate:
+                  calculation.totalDiscount > 0
+                    ? calculation.totalDiscount / calculation.subtotal
+                    : 0,
                 discountValue: calculation.totalDiscount,
                 priceAfterDiscount: calculation.priceAfterDiscount,
                 processingRate: calculation.processingRate,
                 processingCost: calculation.processingFee,
                 finalRevenue: calculation.finalRevenue,
                 netProfit: calculation.profit,
-                currency: 'USD',
+                currency: "USD",
                 discountPerDay: calculation.metadata?.discountPerUnusedDay || 0,
                 // Cache the full calculation for field resolvers (appliedRules, discounts)
-                _pricingCalculation: calculation
+                _pricingCalculation: calculation,
               };
             } catch (error) {
-              logger.error(`Error calculating pricing for ${input.countryId} ${input.numOfDays}d`, error as Error, {
-                countryId: input.countryId,
-                duration: input.numOfDays,
-                operationType: 'calculate-prices-batch'
-              });
+              logger.error(
+                `Error calculating pricing for ${input.countryId} ${input.numOfDays}d`,
+                error as Error,
+                {
+                  countryId: input.countryId,
+                  duration: input.numOfDays,
+                  operationType: "calculate-prices-batch",
+                }
+              );
               // Return a fallback pricing breakdown
               return {
                 bundleName: `${input.numOfDays} Day Bundle`,
@@ -715,8 +760,8 @@ export const catalogResolvers: Partial<Resolvers> = {
                 processingCost: 0,
                 finalRevenue: 0,
                 netProfit: 0,
-                currency: 'USD',
-                discountPerDay: 0
+                currency: "USD",
+                discountPerDay: 0,
               };
             }
           })
@@ -724,12 +769,15 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         // Simple deduplication fix - remove nearly identical results
         const uniqueResults = results.filter((result, index, array) => {
-          return array.findIndex(r => 
-            r.countryName === result.countryName &&
-            r.duration === result.duration &&
-            Math.abs(r.totalCost - result.totalCost) < 0.01 && // Same total cost (within 1 cent)
-            Math.abs(r.finalRevenue - result.finalRevenue) < 0.01 // Same final revenue
-          ) === index;
+          return (
+            array.findIndex(
+              (r) =>
+                r.countryName === result.countryName &&
+                r.duration === result.duration &&
+                Math.abs(r.totalCost - result.totalCost) < 0.01 && // Same total cost (within 1 cent)
+                Math.abs(r.finalRevenue - result.finalRevenue) < 0.01 // Same final revenue
+            ) === index
+          );
         });
 
         logger.info("Batch prices calculated successfully", {
@@ -740,9 +788,9 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         return uniqueResults;
       } catch (error) {
-        logger.error('Error calculating batch prices', error as Error, {
+        logger.error("Error calculating batch prices", error as Error, {
           requestCount: inputs.length,
-          operationType: 'calculate-prices-batch'
+          operationType: "calculate-prices-batch",
         });
         throw error;
       }
@@ -756,7 +804,8 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Use catalogue datasource to get organization groups
-        const bundleGroups = await context.repositories.bundles.getAvailableBundleGroups();
+        const bundleGroups =
+          await context.repositories.bundles.getAvailableBundleGroups();
 
         logger.info("Bundle groups fetched successfully (legacy)", {
           groupCount: bundleGroups.length,
@@ -768,18 +817,18 @@ export const catalogResolvers: Partial<Resolvers> = {
         logger.error("Failed to fetch bundle groups (legacy)", error as Error, {
           operationType: "bundle-groups-legacy",
         });
-        
+
         // Fallback to hardcoded groups as per original implementation
         logger.warn("Falling back to hardcoded bundle groups", {
           operationType: "bundle-groups-fallback",
         });
-        
+
         return [
           "Standard Fixed",
-          "Standard - Unlimited Lite", 
+          "Standard - Unlimited Lite",
           "Standard - Unlimited Essential",
           "Standard - Unlimited Plus",
-          "Regional Bundles"
+          "Regional Bundles",
         ];
       }
     },
@@ -792,7 +841,8 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Use high demand country repository to get all high demand countries
-        const highDemandCountries = await context.repositories.highDemandCountries.getAllHighDemandCountries();
+        const highDemandCountries =
+          await context.repositories.highDemandCountries.getAllHighDemandCountries();
 
         logger.info("High demand countries fetched successfully", {
           countryCount: highDemandCountries.length,
@@ -948,7 +998,7 @@ export const catalogResolvers: Partial<Resolvers> = {
         // Update the database job with the BullMQ job ID
         await context.repositories.syncJob.updateJobProgress(syncJob.id, {
           metadata: {
-            ...(syncJob.metadata as any || {}),
+            ...((syncJob.metadata as any) || {}),
             bullmqJobId: bullmqJob.id,
           },
         });
@@ -1071,252 +1121,42 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   CountryBundle: {
-    // Field resolver for cost (base cost from supplier, enhanced by pricing engine)
-    cost: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.baseCost;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation; // Cache for other fields
-        return calculation.baseCost;
-      } catch (error) {
-        logger.error('Error calculating base cost', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-cost-field-resolver'
-        });
-        return ((parent?.price_cents || 0) / 100);
-      }
-    },
-
-    // Field resolver for costPlus (cost + markup)
-    costPlus: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.baseCost + parent._pricingCalculation.markup;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.baseCost + calculation.markup;
-      } catch (error) {
-        logger.error('Error calculating cost plus markup', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-costPlus-field-resolver'
-        });
-        return ((parent?.price_cents || 0) / 100);
-      }
-    },
-
-    // Field resolver for totalCost (subtotal before discounts)
-    totalCost: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.subtotal;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.subtotal;
-      } catch (error) {
-        logger.error('Error calculating total cost', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-totalCost-field-resolver'
-        });
-        return ((parent?.price_cents || 0) / 100);
-      }
-    },
-
-    // Field resolver for discountRate (discount percentage)
-    discountRate: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.totalDiscount > 0 ? 
-            (parent._pricingCalculation.totalDiscount / parent._pricingCalculation.subtotal) : 0;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.totalDiscount > 0 ? (calculation.totalDiscount / calculation.subtotal) : 0;
-      } catch (error) {
-        logger.error('Error calculating discount rate', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-discountRate-field-resolver'
-        });
-        return 0;
-      }
-    },
-
-    // Field resolver for discountValue (total discount amount)
-    discountValue: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.totalDiscount;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.totalDiscount;
-      } catch (error) {
-        logger.error('Error calculating discount value', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-discountValue-field-resolver'
-        });
-        return 0;
-      }
-    },
-
-    // Field resolver for priceAfterDiscount (final price users pay)
-    priceAfterDiscount: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.priceAfterDiscount;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.priceAfterDiscount;
-      } catch (error) {
-        logger.error('Error calculating price after discount', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-priceAfterDiscount-field-resolver'
-        });
-        return ((parent?.price_cents || 0) / 100);
-      }
-    },
-
-    // Field resolver for processingRate (processing fee percentage)
-    processingRate: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.processingRate;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.processingRate;
-      } catch (error) {
-        logger.error('Error calculating processing rate', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-processingRate-field-resolver'
-        });
-        return 0;
-      }
-    },
-
-    // Field resolver for processingCost (processing fee amount)
-    processingCost: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.processingFee;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.processingFee;
-      } catch (error) {
-        logger.error('Error calculating processing cost', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-processingCost-field-resolver'
-        });
-        return 0;
-      }
-    },
-
-    // Field resolver for finalRevenue (revenue after processing)
-    finalRevenue: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.finalRevenue;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.finalRevenue;
-      } catch (error) {
-        logger.error('Error calculating final revenue', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-finalRevenue-field-resolver'
-        });
-        return ((parent?.price_cents || 0) / 100);
-      }
-    },
-
-    // Field resolver for netProfit (final profit)
-    netProfit: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.profit;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.profit;
-      } catch (error) {
-        logger.error('Error calculating net profit', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-netProfit-field-resolver'
-        });
-        return 0;
-      }
-    },
-
-    // Field resolver for pricePerDay (daily rate)
-    pricePerDay: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.priceAfterDiscount / (parent.duration || 1);
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.priceAfterDiscount / (parent.duration || 1);
-      } catch (error) {
-        logger.error('Error calculating price per day', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-pricePerDay-field-resolver'
-        });
-        return (parent.price_cents ? parent.price_cents / (parent.duration || 1) : 0) / 100;
-      }
-    },
-
-    // Field resolver for hasCustomDiscount (whether discount rules apply)
-    hasCustomDiscount: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.discounts.length > 0;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.discounts.length > 0;
-      } catch (error) {
-        logger.error('Error checking custom discount', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-hasCustomDiscount-field-resolver'
-        });
-        return false;
-      }
-    },
-
-    // Field resolver for discountPerDay (unused day discount rate)
-    discountPerDay: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.metadata?.discountPerUnusedDay || 0;
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.metadata?.discountPerUnusedDay || 0;
-      } catch (error) {
-        logger.error('Error calculating discount per day', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-discountPerDay-field-resolver'
-        });
-        return 0;
-      }
+    pricingBreakdown: async (parent: any, _, context: Context) => {
+      const engineService = getPricingEngineService(context);
+      // TODO: calculate pricing
+      const calculation = await engineService.calculatePrice(
+        PricingEngineService.createContext({
+          availableBundles: parent.bundles,
+          requestedDuration: parent.duration,
+          user: parent.user,
+          paymentMethod: parent.paymentMethod,
+        })
+      );
+      return {
+        bundle: parent.bundle,
+        country: parent.country,
+        currency: parent.currency,
+        duration: parent.duration,
+        cost: calculation.baseCost,
+        costPlus: calculation.baseCost + calculation.markup,
+        discountRate: calculation.discounts.reduce(
+          (acc, discount) => acc + discount.amount,
+          0
+        ),
+        discountValue: calculation.totalDiscount,
+        priceAfterDiscount: calculation.priceAfterDiscount,
+        processingRate: calculation.processingRate,
+        processingFee: calculation.processingFee,
+        discountPerDay: calculation.metadata?.discountPerUnusedDay || 0,
+        finalRevenue: calculation.finalRevenue,
+        netProfit: calculation.profit,
+        processingCost: calculation.processingFee,
+        totalCost: calculation.baseCost + calculation.markup,
+        finalPrice: calculation.finalPrice,
+        appliedRules: calculation.appliedRules,
+        discounts: calculation.discounts,
+        __typename: "PricingBreakdown",
+      };
     },
 
     // Field resolver for appliedRules (rules that affected the pricing)
@@ -1325,33 +1165,23 @@ export const catalogResolvers: Partial<Resolvers> = {
         if (parent._pricingCalculation) {
           return parent._pricingCalculation.appliedRules || [];
         }
-        
-        const calculation = await calculateBundlePricing(parent, context);
+
+        const calculation = await getPricingEngineService(
+          context
+        ).calculatePrice(
+          PricingEngineService.createContext({
+            availableBundles: parent.bundles,
+            requestedDuration: parent.duration,
+            user: parent.user,
+            paymentMethod: parent.paymentMethod,
+          })
+        );
         parent._pricingCalculation = calculation;
         return calculation.appliedRules || [];
       } catch (error) {
-        logger.error('Error getting applied rules for bundle', error as Error, {
+        logger.error("Error getting applied rules for bundle", error as Error, {
           bundleName: parent.bundleName,
-          operationType: 'countryBundle-appliedRules-field-resolver'
-        });
-        return [];
-      }
-    },
-
-    // Field resolver for discounts (detailed discount breakdown)
-    discounts: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.discounts || [];
-        }
-        
-        const calculation = await calculateBundlePricing(parent, context);
-        parent._pricingCalculation = calculation;
-        return calculation.discounts || [];
-      } catch (error) {
-        logger.error('Error getting discount breakdown for bundle', error as Error, {
-          bundleName: parent.bundleName,
-          operationType: 'countryBundle-discounts-field-resolver'
+          operationType: "countryBundle-appliedRules-field-resolver",
         });
         return [];
       }
@@ -1365,17 +1195,17 @@ export const catalogResolvers: Partial<Resolvers> = {
         if (parent._pricingCalculation) {
           return parent._pricingCalculation.appliedRules || [];
         }
-        
+
         // If no cached calculation, return empty array
-        logger.info('No pricing calculation available for appliedRules', {
+        logger.info("No pricing calculation available for appliedRules", {
           bundleName: parent.bundleName,
-          operationType: 'pricingBreakdown-appliedRules-field-resolver'
+          operationType: "pricingBreakdown-appliedRules-field-resolver",
         });
         return [];
       } catch (error) {
-        logger.error('Error getting applied rules', error as Error, {
+        logger.error("Error getting applied rules", error as Error, {
           bundleName: parent.bundleName,
-          operationType: 'pricingBreakdown-appliedRules-field-resolver'
+          operationType: "pricingBreakdown-appliedRules-field-resolver",
         });
         return [];
       }
@@ -1387,17 +1217,17 @@ export const catalogResolvers: Partial<Resolvers> = {
         if (parent._pricingCalculation) {
           return parent._pricingCalculation.discounts || [];
         }
-        
+
         // If no cached calculation, return empty array
-        logger.info('No pricing calculation available for discounts', {
+        logger.info("No pricing calculation available for discounts", {
           bundleName: parent.bundleName,
-          operationType: 'pricingBreakdown-discounts-field-resolver'
+          operationType: "pricingBreakdown-discounts-field-resolver",
         });
         return [];
       } catch (error) {
-        logger.error('Error getting discount breakdown', error as Error, {
+        logger.error("Error getting discount breakdown", error as Error, {
           bundleName: parent.bundleName,
-          operationType: 'pricingBreakdown-discounts-field-resolver'
+          operationType: "pricingBreakdown-discounts-field-resolver",
         });
         return [];
       }
@@ -1418,8 +1248,11 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Get bundles for this country
-        const countryBundles = await context.repositories.bundles.getBundlesByCountry(parent.countryId);
-        
+        const countryBundles =
+          await context.repositories.bundles.getBundlesByCountry(
+            parent.countryId
+          );
+
         if (!countryBundles || countryBundles.length === 0) {
           logger.warn("No bundles found for country in field resolver", {
             countryId: parent.countryId,
@@ -1429,23 +1262,22 @@ export const catalogResolvers: Partial<Resolvers> = {
         }
 
         // Map to CountryBundle format - field resolvers will handle pricing calculations
-        const bundles = countryBundles.map((bundle: any) => ({
-          bundleName: bundle?.esim_go_name || 'Bundle',
-          countryName: parent.countryName,
-          countryId: parent.countryId,
-          duration: bundle?.duration || 0,
-          currency: 'USD',
-          configurationLevel: 'GLOBAL' as any,
-          planId: bundle?.esim_go_name || 'bundle',
-          isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-          dataAmount: bundle?.data_amount?.toString() || '0',
-          bundleGroup: bundle?.bundle_group || 'Standard Fixed',
-          // Include raw bundle data for field resolvers
-          price_cents: bundle?.price_cents,
-          unlimited: bundle?.unlimited,
-          data_amount: bundle?.data_amount,
-          bundle_group: bundle?.bundle_group
-        }));
+        const bundles = countryBundles.map((bundle) => {
+          const countryBundle: CountryBundle = {
+            id: bundle?.id,
+            name: bundle?.esim_go_name || "Bundle",
+            country: parent.country,
+            duration: bundle?.duration || 0,
+            __typename: "CountryBundle",
+            currency: "USD",
+            group: bundle?.bundle_group || "Standard Fixed",
+            isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
+            data: bundle?.data_amount || 0,
+            pricingBreakdown: undefined,
+            appliedRules: undefined,
+          };
+          return countryBundle;
+        });
 
         logger.info("Bundles prepared for field resolvers", {
           countryId: parent.countryId,
@@ -1455,10 +1287,14 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         return bundles;
       } catch (error) {
-        logger.error("Failed to prepare bundles for field resolvers", error as Error, {
-          countryId: parent.countryId,
-          operationType: "bundles-countries-field-resolver",
-        });
+        logger.error(
+          "Failed to prepare bundles for field resolvers",
+          error as Error,
+          {
+            countryId: parent.countryId,
+            operationType: "bundles-countries-field-resolver",
+          }
+        );
         return [];
       }
     },
@@ -1481,4 +1317,4 @@ export const catalogResolvers: Partial<Resolvers> = {
       },
     },
   },
-}; 
+};

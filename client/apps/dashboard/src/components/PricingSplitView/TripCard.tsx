@@ -1,6 +1,4 @@
-import React from "react";
 import {
-  Button,
   Card,
   CardDescription,
   CardHeader,
@@ -10,7 +8,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@workspace/ui";
-import { Plane, MapPin } from "lucide-react";
+import { MapPin, Plane } from "lucide-react";
+import React from "react";
 import { Trip } from "../../__generated__/graphql";
 
 interface TripCardProps {
@@ -25,11 +24,11 @@ export const TripCard: React.FC<TripCardProps> = ({
   onSelect,
 }) => {
   return (
-    <Card 
+    <Card
       className={`group hover:shadow-md transition-all cursor-pointer ${
-        isSelected 
-          ? 'lg:ring-2 lg:ring-blue-500 lg:border-blue-500 lg:bg-blue-50' 
-          : 'hover:border-gray-300'
+        isSelected
+          ? "lg:ring-2 lg:ring-blue-500 lg:border-blue-500 lg:bg-blue-50"
+          : "hover:border-gray-300"
       }`}
       onClick={onSelect}
     >
@@ -45,21 +44,25 @@ export const TripCard: React.FC<TripCardProps> = ({
               </TooltipTrigger>
               <TooltipContent>
                 <p>Trip: {trip.name}</p>
-                <p>Region: {trip.regionId}</p>
+                <p>Region: {trip.region}</p>
                 {trip.description && <p>Description: {trip.description}</p>}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </CardTitle>
-        
+
         <CardDescription className="text-sm">
           <div className="flex items-center gap-1 mb-1">
             <MapPin className="h-3 w-3" />
             <span>{trip.countries.length} countries</span>
           </div>
           <div className="text-xs text-gray-500">
-            {trip.countries.slice(0, 3).map(country => country.name).join(', ')}
-            {trip.countries.length > 3 && ` + ${trip.countries.length - 3} more`}
+            {trip.countries
+              .slice(0, 3)
+              .map((country) => country.name)
+              .join(", ")}
+            {trip.countries.length > 3 &&
+              ` + ${trip.countries.length - 3} more`}
           </div>
         </CardDescription>
       </CardHeader>

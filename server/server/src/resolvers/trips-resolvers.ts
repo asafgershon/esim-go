@@ -21,8 +21,12 @@ export const tripsResolvers: Resolvers = {
             name: trip.name,
             description: trip.description,
             regionId: trip.region_id,
-            countryIds: countryIds as any,
-            countries: [],
+            countries: countryIds.map(id => ({
+              iso: id,
+            } as any)),
+            region: trip.region_id,
+            countryIds: countryIds,
+            __typename: "Trip",
             createdAt: trip.created_at || new Date().toISOString(),
             updatedAt: trip.updated_at || new Date().toISOString(),
             createdBy: trip.created_by,
@@ -85,6 +89,7 @@ export const tripsResolvers: Resolvers = {
             regionId: trip.region_id,
             countryIds: Array.isArray(trip.country_ids) ? trip.country_ids : [] as any,
             countries: [],
+            region: trip.region_id,
             createdAt: trip.created_at || new Date().toISOString(),
             updatedAt: trip.updated_at || new Date().toISOString(),
             createdBy: trip.created_by,
@@ -158,6 +163,8 @@ export const tripsResolvers: Resolvers = {
             createdAt: trip.created_at || new Date().toISOString(),
             updatedAt: trip.updated_at || new Date().toISOString(),
             createdBy: trip.created_by,
+            region: trip.region_id,
+            __typename: "Trip",
           },
         };
       } catch (error) {

@@ -1,7 +1,7 @@
 import { PricingRuleEngine } from '../rules-engine/rule-engine';
 import { PricingRulesRepository } from '../repositories/pricing-rules.repository';
 import { DefaultRulesService } from './default-rules.service';
-import type { PricingContext } from '../rules-engine/types';
+import type { Bundle, PricingContext } from '../rules-engine/types';
 import type { PricingRuleCalculation } from '../types';
 import { createLogger, withPerformanceLogging } from '../lib/logger';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -285,25 +285,12 @@ export class PricingEngineService {
       await this.loadRules();
     }
   }
-
   /**
    * Create a pricing context from common inputs
    * Helper method for GraphQL resolvers
    */
   static createContext(params: {
-    availableBundles: Array<{
-      id: string;
-      name: string;
-      cost: number;
-      duration: number;
-      countryId: string;
-      countryName: string;
-      regionId: string;
-      regionName: string;
-      group: string;
-      isUnlimited: boolean;
-      dataAmount: string;
-    }>;
+      availableBundles: Array<Bundle>;
     requestedDuration: number;
     user?: {
       id: string;
@@ -323,3 +310,4 @@ export class PricingEngineService {
     };
   }
 }
+
