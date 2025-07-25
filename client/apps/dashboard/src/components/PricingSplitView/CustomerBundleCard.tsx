@@ -89,22 +89,50 @@ export const CustomerBundleCard: React.FC<CustomerBundleCardProps> = ({
 
         {/* Pricing Section */}
         <div className="text-right space-y-1">
-          <div className="text-xs text-gray-500 uppercase tracking-wider">
-            Base Cost
-          </div>
-          <div className="text-xl font-semibold text-gray-900">
-            ${bundle.basePrice.toFixed(2)}
-          </div>
-          <div className="text-xs text-gray-500">
-            {bundle.currency}
-          </div>
-          
-          {/* Placeholder for future pricing */}
-          <div className="pt-2 mt-2 border-t border-gray-100">
-            <div className="text-xs text-gray-400">
-              Final price pending
-            </div>
-          </div>
+          {bundle.pricingBreakdown ? (
+            <>
+              <div className="text-xs text-gray-500 uppercase tracking-wider">
+                Customer Price
+              </div>
+              <div className="text-xl font-semibold text-gray-900">
+                ${bundle.pricingBreakdown.priceAfterDiscount.toFixed(2)}
+              </div>
+              <div className="text-xs text-gray-500">
+                {bundle.pricingBreakdown.currency}
+              </div>
+              
+              {/* Profit Information */}
+              <div className="pt-2 mt-2 border-t border-gray-100">
+                <div className="text-xs text-gray-600">
+                  Profit: ${bundle.pricingBreakdown.netProfit.toFixed(2)}
+                </div>
+                <div className={`text-xs font-medium ${
+                  bundle.pricingBreakdown.netProfit > 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {((bundle.pricingBreakdown.netProfit / bundle.pricingBreakdown.priceAfterDiscount) * 100).toFixed(1)}% margin
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-xs text-gray-500 uppercase tracking-wider">
+                Base Cost
+              </div>
+              <div className="text-xl font-semibold text-gray-900">
+                ${bundle.basePrice.toFixed(2)}
+              </div>
+              <div className="text-xs text-gray-500">
+                {bundle.currency}
+              </div>
+              
+              {/* Placeholder for pricing */}
+              <div className="pt-2 mt-2 border-t border-gray-100">
+                <div className="text-xs text-gray-400">
+                  Calculating...
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
