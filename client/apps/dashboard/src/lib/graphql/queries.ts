@@ -343,8 +343,188 @@ export const ASSIGN_PACKAGE_TO_USER = gql(`
   }
 `);
 
-// TODO: Old pricing queries removed during system upgrade
-// These will be replaced with new pipeline-based pricing queries
+// Admin Pricing Queries - Full access to all pricing data
+export const CALCULATE_ADMIN_PRICE = gql(`
+  query CalculateAdminPrice($numOfDays: Int!, $countryId: String!, $paymentMethod: PaymentMethod, $regionId: String) {
+    calculatePrice(numOfDays: $numOfDays, countryId: $countryId, paymentMethod: $paymentMethod, regionId: $regionId) {
+      bundle {
+        id
+        name
+        country {
+          iso
+          name
+        }
+        duration
+        isUnlimited
+        data
+        group
+        appliedRules {
+          name
+          type
+          impact
+        }
+      }
+      country {
+        iso
+        name
+        nameHebrew
+        region
+        flag
+      }
+      duration
+      currency
+      # Public pricing fields
+      totalCost
+      discountValue
+      priceAfterDiscount
+      # Admin-only business sensitive fields
+      cost
+      costPlus
+      discountRate
+      processingRate
+      processingCost
+      finalRevenue
+      netProfit
+      discountPerDay
+      # Rule-based pricing breakdown
+      appliedRules {
+        name
+        type
+        impact
+      }
+      discounts {
+        type
+        amount
+      }
+      # Pipeline metadata
+      unusedDays
+      selectedReason
+      # Additional pricing engine fields
+      totalCostBeforeProcessing
+    }
+  }
+`);
+
+export const CALCULATE_BATCH_ADMIN_PRICING = gql(`
+  query CalculateBatchAdminPricing($requests: [CalculatePriceInput!]!) {
+    calculateBatchPricing(requests: $requests) {
+      bundle {
+        id
+        name
+        country {
+          iso
+          name
+        }
+        duration
+        isUnlimited
+        data
+        group
+        appliedRules {
+          name
+          type
+          impact
+        }
+      }
+      country {
+        iso
+        name
+        nameHebrew
+        region
+        flag
+      }
+      duration
+      currency
+      # Public pricing fields
+      totalCost
+      discountValue
+      priceAfterDiscount
+      # Admin-only business sensitive fields
+      cost
+      costPlus
+      discountRate
+      processingRate
+      processingCost
+      finalRevenue
+      netProfit
+      discountPerDay
+      # Rule-based pricing breakdown
+      appliedRules {
+        name
+        type
+        impact
+      }
+      discounts {
+        type
+        amount
+      }
+      # Pipeline metadata
+      unusedDays
+      selectedReason
+      # Additional pricing engine fields
+      totalCostBeforeProcessing
+    }
+  }
+`);
+
+export const SIMULATE_PRICING = gql(`
+  query SimulatePricing($numOfDays: Int!, $countryId: String!, $paymentMethod: PaymentMethod) {
+    calculatePrice(numOfDays: $numOfDays, countryId: $countryId, paymentMethod: $paymentMethod) {
+      bundle {
+        id
+        name
+        duration
+        isUnlimited
+        data
+        group
+      }
+      country {
+        iso
+        name
+        region
+      }
+      duration
+      currency
+      # Full pricing breakdown for simulation
+      totalCost
+      discountValue
+      priceAfterDiscount
+      cost
+      costPlus
+      discountRate
+      processingRate
+      processingCost
+      finalRevenue
+      netProfit
+      discountPerDay
+      appliedRules {
+        name
+        type
+        impact
+      }
+      discounts {
+        type
+        amount
+      }
+      unusedDays
+      selectedReason
+      totalCostBeforeProcessing
+    }
+  }
+`);
+
+// WebSocket subscription for pricing pipeline progress
+export const PRICING_PIPELINE_PROGRESS = gql(`
+  subscription PricingPipelineProgress($correlationId: String!) {
+    pricingPipelineProgress(correlationId: $correlationId) {
+      correlationId
+      name
+      timestamp
+      state
+      appliedRules
+      debug
+    }
+  }
+`);
 
 export const DELETE_USER = gql(`
   mutation DeleteUser($userId: ID!) {

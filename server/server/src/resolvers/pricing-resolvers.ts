@@ -59,10 +59,8 @@ function mapEngineToPricingBreakdown(
       __typename: 'CountryBundle',
       id: selectedBundle?.name || '',
       name: selectedBundle?.name || '',
-      description: selectedBundle?.description || '',
-      validityInDays: selectedBundle?.validityInDays || input.numOfDays,
-      dataAmountMB: selectedBundle?.dataAmountMB || null,
-      dataAmountReadable: selectedBundle?.dataAmountReadable || 'Unknown',
+      duration: selectedBundle?.validityInDays || input.numOfDays,
+      data: selectedBundle?.dataAmountMB || null,
       isUnlimited: selectedBundle?.isUnlimited || false,
       currency: selectedBundle?.currency || 'USD',
       country: {
@@ -70,15 +68,15 @@ function mapEngineToPricingBreakdown(
         name: input.countryId, // Will be resolved by country resolver
         region: selectedBundle?.region || ''
       } as Country
-    } as CountryBundle,
+    },
     
     country: {
       iso: input.countryId,
       name: input.countryId,
       region: selectedBundle?.region || ''
-    } as Country,
+    },
     
-    duration: input.numOfDays,
+    duration: input.numOfDays || 0,
     currency: selectedBundle?.currency || 'USD',
     
     // Public pricing fields (what users pay)
@@ -129,26 +127,27 @@ async function convertToPricingEngineInput(
   correlationId?: string
 ): Promise<PricingEngineInput> {
   // Get available bundles from catalog
-  const catalogResponse = await context.dataSources.catalogue.searchPlans({
-    countries: [input.countryId],
-    minDuration: 1, // Get all available durations
+  const catalogResponse = await context.repositories.bundles.search({
+    countries: [input.countryId || ''],
+    maxValidityInDays: input.numOfDays,
+    minValidityInDays: 1, // Get all available durations
   });
 
-  if (!catalogResponse.bundles || catalogResponse.bundles.length === 0) {
+  if (!catalogResponse.data || catalogResponse.data.length === 0) {
     throw new GraphQLError('No bundles found for the specified country', {
       extensions: { code: 'NO_BUNDLES_FOUND', countryId: input.countryId }
     });
   }
 
   // Map catalog bundles to pricing engine Bundle format
-  const availableBundles: Bundle[] = catalogResponse.bundles.map(bundle => ({
-    name: bundle.name || 'Unknown Bundle',
+  const availableBundles: Bundle[] = catalogResponse.data.map(bundle => ({
+    name: bundle.esim_go_name || 'Unknown Bundle',
     description: bundle.description || '',
     groups: bundle.groups || [],
-    validityInDays: bundle.duration || input.numOfDays,
-    dataAmountMB: bundle.dataAmount || null,
-    dataAmountReadable: bundle.dataAmountReadable || 'Unknown',
-    isUnlimited: bundle.unlimited || false,
+    validityInDays: bundle.validity_in_days || input.numOfDays,
+    dataAmountMB: bundle.data_amount_mb || null,
+    dataAmountReadable: bundle.data_amount_readable || 'Unknown',
+    isUnlimited: bundle.is_unlimited || false,
     countries: [input.countryId],
     region: bundle.region || '',
     speed: [],
@@ -164,20 +163,20 @@ async function convertToPricingEngineInput(
     },
     payment: {
       method: mapPaymentMethodEnum(input.paymentMethod),
-      promo: input.promo
+      promo: input.promo || undefined
     },
     rules: [], // Will be loaded by PricingEngineService
     request: {
       duration: input.numOfDays,
       paymentMethod: mapPaymentMethodEnum(input.paymentMethod),
-      promo: input.promo,
-      countryISO: input.countryId,
-      region: input.regionId,
+      promo: input.promo || undefined,
+      countryISO: input.countryId || undefined,
+      region: input.regionId || undefined,
       dataType: 'DEFAULT' as any
     },
     steps: [],
     unusedDays: 0,
-    country: input.countryId,
+    country: input.countryId || '',
     region: input.regionId || '',
     group: '',
     dataType: 'DEFAULT' as any,

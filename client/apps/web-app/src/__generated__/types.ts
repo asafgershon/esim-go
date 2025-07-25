@@ -901,7 +901,10 @@ export type PricingBreakdown = {
   priceAfterDiscount: Scalars['Float']['output'];
   processingCost: Scalars['Float']['output'];
   processingRate: Scalars['Float']['output'];
+  selectedReason?: Maybe<Scalars['String']['output']>;
   totalCost: Scalars['Float']['output'];
+  totalCostBeforeProcessing?: Maybe<Scalars['Float']['output']>;
+  unusedDays?: Maybe<Scalars['Int']['output']>;
 };
 
 export type PricingConfiguration = {
@@ -927,6 +930,16 @@ export type PricingFilters = {
   dataTypes: Array<DataType>;
   durations: Array<DurationRange>;
   groups: Array<Scalars['String']['output']>;
+};
+
+export type PricingPipelineStepUpdate = {
+  __typename?: 'PricingPipelineStepUpdate';
+  appliedRules?: Maybe<Array<Scalars['String']['output']>>;
+  correlationId: Scalars['String']['output'];
+  debug?: Maybe<Scalars['JSON']['output']>;
+  name: Scalars['String']['output'];
+  state?: Maybe<Scalars['JSON']['output']>;
+  timestamp: Scalars['String']['output'];
 };
 
 export type PricingRange = {
@@ -1068,7 +1081,6 @@ export type PurchaseEsimResponse = {
 export type Query = {
   __typename?: 'Query';
   activePricingRules: Array<PricingRule>;
-  availableBundleGroups: Array<Scalars['String']['output']>;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
   bundles: BundleConnection;
@@ -1078,9 +1090,9 @@ export type Query = {
   bundlesForCountry?: Maybe<BundlesForCountry>;
   bundlesForGroup?: Maybe<BundlesForGroup>;
   bundlesForRegion?: Maybe<BundlesForRegion>;
-  calculateBatchPricing: Array<PricingRuleCalculation>;
+  calculateBatchPricing: Array<PricingBreakdown>;
   calculatePrice: PricingBreakdown;
-  calculatePriceWithRules: PricingRuleCalculation;
+  calculatePriceWithRules: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
@@ -1099,7 +1111,7 @@ export type Query = {
   pricingFilters: PricingFilters;
   pricingRule?: Maybe<PricingRule>;
   pricingRules: Array<PricingRule>;
-  simulatePricingRule: PricingRuleCalculation;
+  simulatePricingRule: PricingBreakdown;
   trips: Array<Trip>;
   users: Array<User>;
 };
@@ -1322,11 +1334,17 @@ export type Subscription = {
   __typename?: 'Subscription';
   catalogSyncProgress: CatalogSyncProgressUpdate;
   esimStatusUpdated: EsimStatusUpdate;
+  pricingPipelineProgress: PricingPipelineStepUpdate;
 };
 
 
 export type SubscriptionEsimStatusUpdatedArgs = {
   esimId: Scalars['ID']['input'];
+};
+
+
+export type SubscriptionPricingPipelineProgressArgs = {
+  correlationId: Scalars['String']['input'];
 };
 
 export type SyncHistoryParams = {
@@ -1614,19 +1632,20 @@ export type GetTripsQuery = { __typename?: 'Query', trips: Array<{ __typename?: 
 
 export type CalculatePriceQueryVariables = Exact<{
   numOfDays: Scalars['Int']['input'];
-  regionId: Scalars['String']['input'];
   countryId: Scalars['String']['input'];
+  paymentMethod?: InputMaybe<PaymentMethod>;
+  regionId?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type CalculatePriceQuery = { __typename?: 'Query', calculatePrice: { __typename?: 'PricingBreakdown', duration: number, currency: string, totalCost: number, discountValue: number, priceAfterDiscount: number, bundle: { __typename?: 'CountryBundle', name: string }, country: { __typename?: 'Country', name: string } } };
+export type CalculatePriceQuery = { __typename?: 'Query', calculatePrice: { __typename?: 'PricingBreakdown', duration: number, currency: string, totalCost: number, discountValue: number, priceAfterDiscount: number, bundle: { __typename?: 'CountryBundle', id: string, name: string, duration: number, isUnlimited: boolean, data?: number | null, group?: string | null, country: { __typename?: 'Country', iso: any, name: string } }, country: { __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region?: string | null, flag?: string | null } } };
 
 export type CalculatePricesBatchQueryVariables = Exact<{
   inputs: Array<CalculatePriceInput> | CalculatePriceInput;
 }>;
 
 
-export type CalculatePricesBatchQuery = { __typename?: 'Query', calculatePrices: Array<{ __typename?: 'PricingBreakdown', duration: number, currency: string, totalCost: number, discountValue: number, priceAfterDiscount: number, bundle: { __typename?: 'CountryBundle', name: string }, country: { __typename?: 'Country', name: string } }> };
+export type CalculatePricesBatchQuery = { __typename?: 'Query', calculatePrices: Array<{ __typename?: 'PricingBreakdown', duration: number, currency: string, totalCost: number, discountValue: number, priceAfterDiscount: number, bundle: { __typename?: 'CountryBundle', id: string, name: string, duration: number, isUnlimited: boolean, data?: number | null, group?: string | null, country: { __typename?: 'Country', iso: any, name: string } }, country: { __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region?: string | null, flag?: string | null } }> };
 
 export type GetMyEsiMsQueryVariables = Exact<{ [key: string]: never; }>;
 

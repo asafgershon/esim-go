@@ -162,16 +162,30 @@ export const GET_TRIPS = gql`
 `;
 
 export const CALCULATE_PRICE = gql`
-  query CalculatePrice($numOfDays: Int!, $regionId: String!, $countryId: String!) {
-    calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId) {
+  query CalculatePrice($numOfDays: Int!, $countryId: String!, $paymentMethod: PaymentMethod, $regionId: String) {
+    calculatePrice(numOfDays: $numOfDays, countryId: $countryId, paymentMethod: $paymentMethod, regionId: $regionId) {
       bundle {
+        id
         name
+        country {
+          iso
+          name
+        }
+        duration
+        isUnlimited
+        data
+        group
       }
       country {
+        iso
         name
+        nameHebrew
+        region
+        flag
       }
       duration
       currency
+      # Public pricing fields (what users pay)
       totalCost
       discountValue
       priceAfterDiscount
@@ -183,13 +197,27 @@ export const CALCULATE_PRICES_BATCH = gql`
   query CalculatePricesBatch($inputs: [CalculatePriceInput!]!) {
     calculatePrices(inputs: $inputs) {
       bundle {
+        id
         name
+        country {
+          iso
+          name
+        }
+        duration
+        isUnlimited
+        data
+        group
       }
       country {
+        iso
         name
+        nameHebrew
+        region
+        flag
       }
       duration
       currency
+      # Public pricing fields (what users pay)
       totalCost
       discountValue
       priceAfterDiscount

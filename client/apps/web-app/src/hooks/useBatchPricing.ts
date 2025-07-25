@@ -1,24 +1,50 @@
 import { useLazyQuery } from '@apollo/client';
 import { CALCULATE_PRICES_BATCH } from '@/lib/graphql/mutations';
-import { CalculatePricesBatchQuery } from '@/__generated__/graphql';
+import { CalculatePricesBatchQuery, PaymentMethod } from '@/__generated__/types';
 import { useEffect, useMemo, useState } from 'react';
 
 interface UseBatchPricingParams {
   regionId?: string;
   countryId?: string;
+  paymentMethod?: PaymentMethod;
   maxDays?: number;
 }
 
 interface PricingData {
+  // Basic pricing info
   dailyPrice: number;
   totalPrice: number; // Final price after discount (what users pay)
   originalPrice: number; // Price before discount (totalCost)
   discountAmount: number; // Discount value
   hasDiscount: boolean;
   days: number;
+  currency: string;
+  
+  // Bundle information
+  bundle: {
+    id: string;
+    name: string;
+    duration: number;
+    isUnlimited: boolean;
+    data?: number | null;
+    group?: string | null;
+    country: {
+      iso: string;
+      name: string;
+    };
+  };
+  
+  // Country information
+  country: {
+    iso: string;
+    name: string;
+    nameHebrew?: string | null;
+    region?: string | null;
+    flag?: string | null;
+  };
 }
 
-export function useBatchPricing({ regionId, countryId, maxDays = 30 }: UseBatchPricingParams) {
+export function useBatchPricing({ regionId, countryId, paymentMethod, maxDays = 30 }: UseBatchPricingParams) {
   const [calculatePricesBatch, { data: batchData, loading: batchLoading, error }] = 
     useLazyQuery<CalculatePricesBatchQuery>(CALCULATE_PRICES_BATCH);
   
@@ -26,46 +52,71 @@ export function useBatchPricing({ regionId, countryId, maxDays = 30 }: UseBatchP
 
   // Fetch all prices when parameters change
   useEffect(() => {
-    // Only trigger when we have a region/country
-    if (regionId || countryId) {
+    // Only trigger when we have a countryId (now required)
+    if (countryId) {
       // Clear existing cache when parameters change
       setPricingCache(new Map());
       
       // Create inputs for all days from 1 to maxDays
       const inputs = Array.from({ length: maxDays }, (_, i) => ({
         numOfDays: i + 1,
-        regionId: regionId || "",
-        countryId: countryId ? countryId.toUpperCase() : ""
+        countryId: countryId.toUpperCase(),
+        paymentMethod,
       }));
 
       calculatePricesBatch({
         variables: { inputs }
       });
     } else {
-      // Reset when no region/country
+      // Reset when no country
       setPricingCache(new Map());
     }
-  }, [regionId, countryId, maxDays, calculatePricesBatch]);
+  }, [regionId, countryId, paymentMethod, maxDays, calculatePricesBatch]);
 
   // Process batch data into cache
   useEffect(() => {
     if (batchData?.calculatePrices) {
       const newCache = new Map<number, PricingData>();
       
-      batchData.calculatePrices.forEach((price) => {
-        const originalPrice = price.totalCost;
-        const discountAmount = price.discountValue;
-        const totalPrice = price.priceAfterDiscount;
-        const dailyPrice = totalPrice / price.duration;
+      batchData.calculatePrices.forEach((result) => {
+        const originalPrice = result.totalCost;
+        const discountAmount = result.discountValue;
+        const totalPrice = result.priceAfterDiscount;
+        const dailyPrice = totalPrice / result.duration;
         const hasDiscount = discountAmount > 0;
 
-        newCache.set(price.duration, {
+        newCache.set(result.duration, {
+          // Basic pricing info
           dailyPrice,
           totalPrice,
           originalPrice,
           discountAmount,
           hasDiscount,
-          days: price.duration,
+          days: result.duration,
+          currency: result.currency,
+          
+          // Bundle information
+          bundle: {
+            id: result.bundle.id,
+            name: result.bundle.name,
+            duration: result.bundle.duration,
+            isUnlimited: result.bundle.isUnlimited,
+            data: result.bundle.data,
+            group: result.bundle.group,
+            country: {
+              iso: result.bundle.country.iso,
+              name: result.bundle.country.name,
+            },
+          },
+          
+          // Country information
+          country: {
+            iso: result.country.iso,
+            name: result.country.name,
+            nameHebrew: result.country.nameHebrew,
+            region: result.country.region,
+            flag: result.country.flag,
+          },
         });
       });
       
