@@ -70,6 +70,48 @@ export class ESIMsDataSource extends ESIMGoDataSource {
   }
 
   /**
+   * Get eSIM installation details including QR code
+   */
+  async getESIMInstallDetails(iccid: string): Promise<{
+    iccid: string;
+    qrCode?: string;
+    matchingId?: string;
+    smdpAddress?: string;
+    activationCode?: string;
+    activationUrl?: string;
+    instructions?: string;
+  } | null> {
+    try {
+      // eSIM Go returns QR code data in the main eSIM response
+      const esim = await this.getESIM(iccid);
+      
+      if (!esim) {
+        return null;
+      }
+
+      // The QR code is included in the response
+      return {
+        iccid: esim.iccid,
+        qrCode: esim.qrCode,
+        // For eSIM Go, we'll need to generate the LPA string if not provided
+        // This is a placeholder - actual implementation depends on eSIM Go API response
+        matchingId: undefined,
+        smdpAddress: undefined,
+        activationCode: undefined,
+        activationUrl: undefined,
+        instructions: undefined
+      };
+    } catch (error) {
+      throw new GraphQLError('Failed to get eSIM installation details', {
+        extensions: {
+          code: 'ESIM_DETAILS_ERROR',
+          originalError: error,
+        },
+      });
+    }
+  }
+
+  /**
    * Update eSIM details or perform actions
    */
   async updateESIM(

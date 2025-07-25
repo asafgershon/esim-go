@@ -1,14 +1,13 @@
 import crypto from "crypto";
 import { GraphQLError } from "graphql";
 import jwt from "jsonwebtoken";
-import QRCode from "qrcode";
 import { z } from "zod";
 import type { Context } from "../context/types";
 import type { Database } from "../database.types";
 import { createLogger } from "../lib/logger";
 import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.repository";
 import { createPaymentService } from "../services/payment";
-import type { Bundle, EsimStatus, OrderStatus, Resolvers } from "../types";
+import type { EsimStatus, OrderStatus, PaymentMethod, Resolvers } from "../types";
 import type { PricingEngineInput } from "@esim-go/rules-engine";
 
 // ===============================================
@@ -329,7 +328,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           group: 'Standard Fixed',
           dataType: 'DEFAULT' as any,
           metadata: {
-            correlationId: `checkout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+            correlationId: `checkout-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
           }
         };
 
@@ -613,7 +612,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
     // Process checkout payment
     processCheckoutPayment: async (_, { input }, context: Context) => {
       try {
-        const { token, paymentMethodId, savePaymentMethod } = input;
+        const { token, paymentMethodId } = input;
         console.log(
           "Processing checkout payment for token:",
           token.substring(0, 20) + "..."
@@ -640,7 +639,6 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
         // Parse JSON fields
         const steps = CheckoutSessionStepsSchema.parse(session.steps || {});
-        const pricing = session.pricing;
         const planSnapshot = PlanSnapshotSchema.parse(session.plan_snapshot);
 
         // Check if session is expired
@@ -683,7 +681,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         // Create order record first (before payment processing)
         const orderId = `order_${Date.now()}_${Math.random()
           .toString(36)
-          .substr(2, 9)}`;
+          .substring(2, 11)}`;
 
         // Create payment service and process payment
         const paymentService = createPaymentService("mock");
@@ -882,7 +880,6 @@ async function simulateWebhookProcessing(
       const steps = CheckoutSessionStepsSchema.parse(
         originalSession.steps || {}
       );
-      const pricing = originalSession.pricing;
       const planSnapshot = PlanSnapshotSchema.parse(
         originalSession.plan_snapshot
       );
@@ -932,7 +929,7 @@ async function simulateWebhookProcessing(
         group: 'Standard Fixed',
         dataType: 'DEFAULT' as any,
         metadata: {
-          correlationId: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          correlationId: `webhook-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
         }
       };
 
@@ -1052,28 +1049,39 @@ async function provisionESIM(
     }
 
     const esim = esimResponse.esims[0];
-    if (!esim.iccid || !esim.smdpAddress || !esim.matchingId) {
-      throw new Error("Incomplete eSIM data returned from API");
+    if (!esim || !esim.iccid) {
+      throw new Error("No eSIM ICCID returned from API");
     }
 
-    logger.info("eSIM provisioned successfully", {
+    logger.info("eSIM created with bundle applied", {
       iccid: esim.iccid,
+      bundle: esim.bundle,
       operationType: "esim-provisioning"
     });
 
-    // Generate QR code from LPA string
-    const lpaString = `LPA:1$${esim.smdpAddress}$${esim.matchingId}`;
-    const qrCode = await QRCode.toDataURL(lpaString);
+    // Step 2: Get eSIM details including QR code from eSIM Go
+    // The apply bundle response doesn't include QR code details, so we need to fetch them
+    const esimDetails = await context.dataSources.esims.getESIMInstallDetails(esim.iccid);
+    
+    if (!esimDetails) {
+      throw new Error("Failed to get eSIM installation details");
+    }
+
+    logger.info("eSIM details retrieved", {
+      iccid: esim.iccid,
+      hasQR: !!esimDetails.qrCode,
+      operationType: "esim-details-fetch"
+    });
 
     return {
       iccid: esim.iccid,
-      qrCode,
-      matchingId: esim.matchingId,
-      smdpAddress: esim.smdpAddress,
-      activationCode: esim.matchingId, // Usually same as matching ID
-      activationUrl: null, // Not provided by API
-      instructions: generateDefaultInstructions(),
-      status: "ASSIGNED",
+      qrCode: esimDetails.qrCode || "",
+      matchingId: esimDetails.matchingId || "",
+      smdpAddress: esimDetails.smdpAddress || "",
+      activationCode: esimDetails.activationCode || esimDetails.matchingId || "",
+      activationUrl: esimDetails.activationUrl || null,
+      instructions: esimDetails.instructions || generateDefaultInstructions(),
+      status: esim.status || "ASSIGNED",
       esimGoOrderRef: customerReference // Using customer reference as order ref for now
     };
   } catch (error) {
