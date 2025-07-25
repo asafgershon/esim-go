@@ -1,7 +1,7 @@
 import { Bundle, PaymentMethod, GetPaymentMethodsQuery } from "@/__generated__/graphql";
 import { ScrollArea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Badge } from "@workspace/ui";
 import { Package, CreditCard, Smartphone } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, createElement } from "react";
 import { BundlesByCountryWithBundles } from "./types";
 import { CustomerBundleCard } from "./CustomerBundleCard";
 import { useLazyQuery, useQuery } from "@apollo/client";
@@ -50,7 +50,7 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
       const requests = uniqueDurations.map(days => ({
         numOfDays: days,
         countryId: country.country.iso.toUpperCase(),
-        paymentMethod: 'ISRAELI_CARD' // Default payment method
+        paymentMethod: selectedPaymentMethod
       }));
       
       try {
@@ -83,7 +83,7 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
     };
     
     calculatePricing();
-  }, [country.bundles, country.country.iso, calculateBatchPricing]);
+  }, [country.bundles, country.country.iso, selectedPaymentMethod, calculateBatchPricing]);
 
   if (isCountryLoading) {
     return (
@@ -122,8 +122,64 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
     (a, b) => (a.validityInDays || 0) - (b.validityInDays || 0)
   );
 
+  const paymentMethods = paymentMethodsData?.paymentMethods || [];
+  const currentPaymentMethod = paymentMethods.find(pm => pm.value === selectedPaymentMethod);
+
   return (
     <div className="flex flex-col h-full">
+      {/* Payment Method Selector */}
+      {paymentMethods.length > 0 && (
+        <div className="p-4 border-b bg-gray-50">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-gray-900">Payment Method Impact</h3>
+              <p className="text-xs text-gray-500 mt-0.5">See how processing fees affect your profits</p>
+            </div>
+            <Select
+              value={selectedPaymentMethod}
+              onValueChange={(value) => setSelectedPaymentMethod(value as PaymentMethod)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select payment method" />
+              </SelectTrigger>
+              <SelectContent>
+                {paymentMethods.filter(method => method.isActive).map((method) => {
+                  const Icon = method.icon ? iconMap[method.icon] || CreditCard : CreditCard;
+                  return (
+                    <SelectItem key={method.value} value={method.value}>
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4" />
+                        <span>{method.label}</span>
+                        <Badge variant="outline" className="ml-auto text-xs">
+                          {(method.processingRate * 100).toFixed(1)}%
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Current Payment Method Info */}
+          {currentPaymentMethod && (
+            <div className="mt-3 p-2 bg-white rounded-md border">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  {currentPaymentMethod.icon && (
+                    <span className="text-gray-500">
+                      {createElement(iconMap[currentPaymentMethod.icon] || CreditCard, { className: "h-4 w-4" })}
+                    </span>
+                  )}
+                  <span className="text-gray-700">{currentPaymentMethod.label}</span>
+                </div>
+                <span className="text-gray-500">{currentPaymentMethod.description}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      
       <ScrollArea className="flex-1" showOnHover={true}>
         <div className="space-y-2 p-2">
           {sortedBundles.map((bundle, index) => (
