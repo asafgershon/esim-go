@@ -12,6 +12,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { PricingPipelineStream } from './pricing-pipeline-stream';
+import { PricingRulesSummary } from './pricing-rules-summary';
 
 interface PricingData {
   // Basic pricing info
@@ -246,6 +247,19 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
                     Net profit of {formatCurrency(data.netProfit, data.currency)} is below the minimum requirement of $1.50
                   </AlertDescription>
                 </Alert>
+              )}
+
+              {/* Rules Impact Summary */}
+              {pipelineSteps.length > 0 && (
+                <div className="mt-4">
+                  <PricingRulesSummary
+                    pipelineSteps={pipelineSteps}
+                    isStreaming={isStreaming}
+                    finalPrice={data.totalPrice}
+                    originalPrice={data.originalPrice}
+                    currency={data.currency}
+                  />
+                </div>
               )}
             </div>
           )}
