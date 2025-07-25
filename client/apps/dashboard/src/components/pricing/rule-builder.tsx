@@ -4,7 +4,7 @@ import {
   PricingRule,
   RuleAction,
   RuleCondition,
-  RuleType,
+  RuleCategory,
 } from "@/__generated__/graphql";
 import {
   Badge,
@@ -32,6 +32,7 @@ import {
   AlertTriangle,
   BarChart3,
   CheckCircle,
+  DollarSign,
   Plus,
   Target,
   Trash2,
@@ -55,7 +56,7 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
   onCancel,
 }) => {
   const [ruleData, setRuleData] = useState<Omit<PricingRule, "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt">>({
-    type: RuleType.BusinessDiscount,
+    category: RuleCategory.Discount,
     name: "",
     description: "",
     conditions: [{ field: "", operator: ConditionOperator.Equals, value: "" }],
@@ -68,42 +69,35 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  // Rule type configurations
-  const ruleTypes = [
+  // Rule category configurations
+  const ruleCategories = [
     {
-      value: "BUSINESS_DISCOUNT",
-      label: "Business Discount",
+      value: "DISCOUNT",
+      label: "Discount",
       icon: TrendingUp,
       color: "green",
-      description: "Apply discounts based on business conditions",
+      description: "Apply discounts to pricing",
     },
     {
-      value: "PROMOTION",
-      label: "Promotional Rule",
-      icon: BarChart3,
-      color: "orange",
-      description: "Time-limited promotional pricing",
-    },
-    {
-      value: "SEGMENT",
-      label: "Customer Segment",
-      icon: Users,
-      color: "pink",
-      description: "Pricing based on customer segments",
-    },
-    {
-      value: "SYSTEM_MARKUP",
-      label: "System Markup",
+      value: "CONSTRAINT",
+      label: "Constraint",
       icon: Target,
-      color: "blue",
-      description: "System-level markup rules",
+      color: "orange",
+      description: "Set pricing constraints and limits",
     },
     {
-      value: "SYSTEM_PROCESSING",
-      label: "System Processing",
+      value: "FEE",
+      label: "Fee",
+      icon: DollarSign,
+      color: "blue",
+      description: "Add processing fees and charges",
+    },
+    {
+      value: "BUNDLE_ADJUSTMENT",
+      label: "Bundle Adjustment",
       icon: Zap,
       color: "purple",
-      description: "Processing fee configurations",
+      description: "Adjust bundle selection and pricing",
     },
   ];
 
@@ -153,11 +147,10 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
     }
   };
 
-  // Available actions based on rule type
-  const getActionsForRuleType = (ruleType: string) => {
-    switch (ruleType) {
-      case "BUSINESS_DISCOUNT":
-      case "PROMOTION":
+  // Available actions based on rule category
+  const getActionsForRuleCategory = (category: string) => {
+    switch (category) {
+      case "DISCOUNT":
         return [
           {
             value: "APPLY_DISCOUNT_PERCENTAGE",
@@ -175,24 +168,28 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
             unit: "%/day",
           },
         ];
-      case "SYSTEM_MARKUP":
-        return [{ value: "ADD_MARKUP", label: "Add Markup Amount", unit: "$" }];
-      case "SYSTEM_PROCESSING":
+      case "CONSTRAINT":
+        return [
+          { value: "SET_MINIMUM_PRICE", label: "Set Minimum Price", unit: "$" },
+          { value: "SET_MINIMUM_PROFIT", label: "Set Minimum Profit", unit: "$" },
+        ];
+      case "FEE":
         return [
           {
             value: "SET_PROCESSING_RATE",
             label: "Set Processing Rate",
             unit: "%",
           },
+          { value: "ADD_MARKUP", label: "Add Markup Amount", unit: "$" },
         ];
-      case "SEGMENT":
+      case "BUNDLE_ADJUSTMENT":
         return [
+          { value: "ADD_MARKUP", label: "Add Bundle Markup", unit: "$" },
           {
             value: "APPLY_DISCOUNT_PERCENTAGE",
-            label: "Apply Segment Discount",
+            label: "Apply Bundle Discount",
             unit: "%",
           },
-          { value: "ADD_MARKUP", label: "Add Segment Markup", unit: "$" },
         ];
       default:
         return [];
@@ -203,7 +200,7 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
   useEffect(() => {
     if (rule) {
       setRuleData({
-        type: rule.type,
+        category: rule.category,
         name: rule.name,
         description: rule.description || "",
         conditions:
@@ -321,8 +318,8 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
     }));
   };
 
-  const selectedRuleType = ruleTypes.find((rt) => rt.value === ruleData.type);
-  const RuleIcon = selectedRuleType?.icon || Target;
+  const selectedRuleCategory = ruleCategories.find((rc) => rc.value === ruleData.category);
+  const RuleIcon = selectedRuleCategory?.icon || Target;
 
   return (
     <div className="space-y-6">
@@ -360,7 +357,7 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <RuleIcon
-                  className={`h-5 w-5 text-${selectedRuleType?.color}-600`}
+                  className={`h-5 w-5 text-${selectedRuleCategory?.color}-600`}
                 />
                 Rule Information
               </CardTitle>
@@ -368,27 +365,27 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="rule-type">Rule Type</Label>
+                  <Label htmlFor="rule-category">Rule Category</Label>
                   <Select
-                    value={ruleData.type}
+                    value={ruleData.category}
                     onValueChange={(value) =>
-                      setRuleData((prev) => ({ ...prev, type: value as RuleType }))
+                      setRuleData((prev) => ({ ...prev, category: value as RuleCategory }))
                     }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {ruleTypes.map((type) => {
-                        const Icon = type.icon;
+                      {ruleCategories.map((category) => {
+                        const Icon = category.icon;
                         return (
-                          <SelectItem key={type.value} value={type.value}>
+                          <SelectItem key={category.value} value={category.value}>
                             <div className="flex items-center gap-2">
                               <Icon className="h-4 w-4" />
                               <div>
-                                <div className="font-medium">{type.label}</div>
+                                <div className="font-medium">{category.label}</div>
                                 <div className="text-xs text-gray-500">
-                                  {type.description}
+                                  {category.description}
                                 </div>
                               </div>
                             </div>
@@ -616,7 +613,7 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                           <SelectValue placeholder="Select action" />
                         </SelectTrigger>
                         <SelectContent>
-                          {getActionsForRuleType(ruleData.type).map(
+                          {getActionsForRuleCategory(ruleData.category).map(
                             (actionType) => (
                               <SelectItem
                                 key={actionType.value}
@@ -656,7 +653,7 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                             <span className="text-sm text-gray-500">
                               {
-                                getActionsForRuleType(ruleData.type).find(
+                                getActionsForRuleCategory(ruleData.category).find(
                                   (a) => a.value === action.type
                                 )?.unit
                               }
@@ -733,7 +730,7 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <RuleIcon
-                          className={`h-4 w-4 text-${selectedRuleType?.color}-600`}
+                          className={`h-4 w-4 text-${selectedRuleCategory?.color}-600`}
                         />
                         <span className="font-medium">
                           {ruleData.name || "Untitled Rule"}
@@ -745,8 +742,8 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                         </Badge>
                       </div>
                       <p className="text-sm text-gray-600">
-                        Priority: {ruleData.priority} | Type:{" "}
-                        {selectedRuleType?.label}
+                        Priority: {ruleData.priority} | Category:{" "}
+                        {selectedRuleCategory?.label}
                       </p>
                       <p className="text-sm text-gray-600">
                         {ruleData.conditions.length} condition(s),{" "}

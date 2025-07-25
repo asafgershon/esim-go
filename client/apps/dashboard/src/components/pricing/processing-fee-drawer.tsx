@@ -4,7 +4,7 @@ import {
   CreatePricingRuleInput,
   RuleActionInput,
   RuleConditionInput,
-  RuleType,
+  RuleCategory,
 } from "@/__generated__/graphql";
 import {
   Button,
@@ -93,7 +93,7 @@ export function ProcessingFeeDrawer({
       }
 
       const ruleData: CreatePricingRuleInput = {
-        type: RuleType.SystemProcessing,
+        category: RuleCategory.Fee,
         name: ruleName,
         description:
           description ||

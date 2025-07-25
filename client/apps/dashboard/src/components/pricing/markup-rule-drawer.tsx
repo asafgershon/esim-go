@@ -1,4 +1,4 @@
-import { ActionType, ConditionOperator, CreatePricingRuleInput, RuleCondition, RuleType } from '@/__generated__/graphql';
+import { ActionType, ConditionOperator, CreatePricingRuleInput, RuleCondition, RuleCategory } from '@/__generated__/graphql';
 import {
   Button,
   Card,
@@ -72,7 +72,7 @@ export function MarkupRuleDrawer({ open, onOpenChange, onSave }: MarkupRuleDrawe
       }
 
       const ruleData = {
-        type: RuleType.SystemMarkup,
+        category: RuleCategory.Fee,
         name: ruleName,
         description: description || `${markupType === 'percentage' ? markupValue + '%' : '$' + markupValue} markup${scope !== 'all' ? ` for ${scope} ${scopeValue}` : ''}`,
         conditions,

@@ -64,33 +64,32 @@ import { SingleRuleTestPanel } from "../../components/pricing/single-rule-test-p
 import { CreatePricingRuleMutation, TogglePricingRuleMutation, DeletePricingRuleMutation, UpdatePricingRuleMutation, TogglePricingRuleMutationVariables, DeletePricingRuleMutationVariables, UpdatePricingRuleMutationVariables, CreatePricingRuleMutationVariables, PricingRule } from "@/__generated__/graphql";
 
 
-// Rule type configurations
-const ruleTypes = [
+// Rule category configurations
+const ruleCategories = [
   {
-    value: "SYSTEM_MARKUP",
-    label: "Markup",
-    icon: DollarSign,
+    value: "DISCOUNT",
+    label: "Discount",
+    icon: TrendingUp,
     color: "green",
   },
   {
-    value: "SYSTEM_PROCESSING",
-    label: "Processing",
-    icon: CreditCard,
-    color: "purple",
+    value: "CONSTRAINT",
+    label: "Constraint",
+    icon: Target,
+    color: "orange",
   },
   {
-    value: "BUSINESS_DISCOUNT",
-    label: "Discount",
-    icon: TrendingUp,
+    value: "FEE",
+    label: "Fee",
+    icon: DollarSign,
     color: "blue",
   },
   {
-    value: "PROMOTION",
-    label: "Promotion",
-    icon: BarChart3,
-    color: "orange",
+    value: "BUNDLE_ADJUSTMENT",
+    label: "Bundle Adjustment",
+    icon: Zap,
+    color: "purple",
   },
-  { value: "SEGMENT", label: "Segment", icon: Target, color: "pink" },
 ];
 
 const UnifiedPricingRulesPage: React.FC = () => {
@@ -100,7 +99,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRuleTypes, setSelectedRuleTypes] = useState<string[]>([]);
+  const [selectedRuleCategories, setSelectedRuleCategories] = useState<string[]>([]);
   const [showSystemRules, setShowSystemRules] = useState(true);
   const [typeFilterOpen, setTypeFilterOpen] = useState(false);
 
@@ -142,24 +141,24 @@ const UnifiedPricingRulesPage: React.FC = () => {
     const matchesSearch =
       rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       rule.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType =
-      selectedRuleTypes.length === 0 || selectedRuleTypes.includes(rule.type);
+    const matchesCategory =
+      selectedRuleCategories.length === 0 || selectedRuleCategories.includes(rule.category);
     const matchesSystemFilter = showSystemRules || rule.isEditable;
 
-    return matchesSearch && matchesType && matchesSystemFilter;
+    return matchesSearch && matchesCategory && matchesSystemFilter;
   });
 
-  const toggleRuleType = (type: string) => {
-    setSelectedRuleTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+  const toggleRuleCategory = (category: string) => {
+    setSelectedRuleCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
     );
   };
 
-  const getRuleTypeConfig = (type: string) => {
+  const getRuleCategoryConfig = (category: string) => {
     return (
-      ruleTypes.find((rt) => rt.value === type) || {
-        value: type,
-        label: type,
+      ruleCategories.find((rc) => rc.value === category) || {
+        value: category,
+        label: category,
         icon: Settings,
         color: "gray",
       }
@@ -325,25 +324,25 @@ const UnifiedPricingRulesPage: React.FC = () => {
                         <PopoverTrigger asChild>
                           <Button
                             variant={
-                              selectedRuleTypes.length > 0
+                              selectedRuleCategories.length > 0
                                 ? "default"
                                 : "outline"
                             }
                             size="sm"
                             className={
-                              selectedRuleTypes.length === 0
+                              selectedRuleCategories.length === 0
                                 ? "border-dashed"
                                 : ""
                             }
                           >
                             <FilterIcon className="h-4 w-4 mr-2" />
                             Type
-                            {selectedRuleTypes.length > 0 && (
+                            {selectedRuleCategories.length > 0 && (
                               <Badge
                                 variant="secondary"
                                 className="ml-2 h-5 px-1"
                               >
-                                {selectedRuleTypes.length}
+                                {selectedRuleCategories.length}
                               </Badge>
                             )}
                           </Button>
@@ -351,24 +350,24 @@ const UnifiedPricingRulesPage: React.FC = () => {
                         <PopoverContent className="w-64 p-3" align="start">
                           <div className="space-y-2">
                             <div className="text-sm font-medium mb-2">
-                              Filter by Rule Type
+                              Filter by Category
                             </div>
-                            {ruleTypes.map((type) => {
-                              const Icon = type.icon;
-                              const isSelected = selectedRuleTypes.includes(
-                                type.value
+                            {ruleCategories.map((category) => {
+                              const Icon = category.icon;
+                              const isSelected = selectedRuleCategories.includes(
+                                category.value
                               );
                               return (
                                 <button
-                                  key={type.value}
-                                  onClick={() => toggleRuleType(type.value)}
+                                  key={category.value}
+                                  onClick={() => toggleRuleCategory(category.value)}
                                   className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
                                 >
                                   <div className="flex items-center gap-2">
                                     <Icon
-                                      className={`h-4 w-4 text-${type.color}-600`}
+                                      className={`h-4 w-4 text-${category.color}-600`}
                                     />
-                                    <span>{type.label}</span>
+                                    <span>{category.label}</span>
                                   </div>
                                   {isSelected && (
                                     <Check className="h-4 w-4 text-primary" />
@@ -376,11 +375,11 @@ const UnifiedPricingRulesPage: React.FC = () => {
                                 </button>
                               );
                             })}
-                            {selectedRuleTypes.length > 0 && (
+                            {selectedRuleCategories.length > 0 && (
                               <>
                                 <Separator className="my-2" />
                                 <button
-                                  onClick={() => setSelectedRuleTypes([])}
+                                  onClick={() => setSelectedRuleCategories([])}
                                   className="w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
                                 >
                                   Clear filters
@@ -421,8 +420,8 @@ const UnifiedPricingRulesPage: React.FC = () => {
                         </TableHeader>
                         <TableBody>
                           {filteredRules.map((rule: PricingRule) => {
-                            const typeConfig = getRuleTypeConfig(rule.type);
-                            const Icon = typeConfig.icon;
+                            const categoryConfig = getRuleCategoryConfig(rule.category);
+                            const Icon = categoryConfig.icon;
 
                             return (
                               <TableRow key={rule.id}>
@@ -431,7 +430,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
                                     <div className="relative">
                                       <div className="p-2 rounded-full bg-gray-100">
                                         <Icon
-                                          className={`h-4 w-4 text-${typeConfig.color}-600`}
+                                          className={`h-4 w-4 text-${categoryConfig.color}-600`}
                                         />
                                       </div>
                                       {!rule.isEditable && (
@@ -463,7 +462,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
                                     variant="outline"
                                     className="bg-gray-50 text-gray-700"
                                   >
-                                    {typeConfig.label}
+                                    {categoryConfig.label}
                                   </Badge>
                                 </TableCell>
                                 <TableCell>
@@ -683,7 +682,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
                           No rules found
                         </h3>
                         <p className="mt-2 text-gray-500">
-                          {searchQuery || selectedRuleTypes.length > 0
+                          {searchQuery || selectedRuleCategories.length > 0
                             ? "Try adjusting your search or filters"
                             : "Get started by creating your first pricing rule"}
                         </p>

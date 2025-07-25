@@ -19,7 +19,7 @@ export const GET_PRICING_RULES = gql(`
   query GetPricingRules($filter: PricingRuleFilter) {
     pricingRules(filter: $filter) {
       id
-      type
+      category
       name
       description
       conditions {
@@ -49,7 +49,7 @@ export const CREATE_PRICING_RULE = gql(`
   mutation CreatePricingRule($input: CreatePricingRuleInput!) {
     createPricingRule(input: $input) {
       id
-      type
+      category
       name
       description
       conditions {
@@ -79,7 +79,7 @@ export const UPDATE_PRICING_RULE = gql(`
   mutation UpdatePricingRule($id: ID!, $input: UpdatePricingRuleInput!) {
     updatePricingRule(id: $id, input: $input) {
       id
-      type
+      category
       name
       description
       conditions {
@@ -125,7 +125,7 @@ export const CLONE_PRICING_RULE = gql(`
     clonePricingRule(id: $id, newName: $newName) {
       id
       name
-      type
+      category
       description
       conditions {
         field
@@ -374,7 +374,7 @@ export const CALCULATE_ADMIN_PRICE = gql(`
         group
         appliedRules {
           name
-          type
+          category
           impact
         }
       }
@@ -403,7 +403,7 @@ export const CALCULATE_ADMIN_PRICE = gql(`
       # Rule-based pricing breakdown
       appliedRules {
         name
-        type
+        category
         impact
       }
       discounts {
@@ -435,7 +435,7 @@ export const CALCULATE_BATCH_ADMIN_PRICING = gql(`
         group
         appliedRules {
           name
-          type
+          category
           impact
         }
       }
@@ -464,7 +464,7 @@ export const CALCULATE_BATCH_ADMIN_PRICING = gql(`
       # Rule-based pricing breakdown
       appliedRules {
         name
-        type
+        category
         impact
       }
       discounts {
@@ -512,7 +512,7 @@ export const SIMULATE_PRICING = gql(`
       discountPerDay
       appliedRules {
         name
-        type
+        category
         impact
       }
       discounts {

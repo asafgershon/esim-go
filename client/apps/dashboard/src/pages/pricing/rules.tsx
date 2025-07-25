@@ -46,7 +46,8 @@ import {
   Settings,
   BarChart3,
   Zap,
-  Target
+  Target,
+  DollarSign
 } from 'lucide-react';
 import { useQuery, useMutation } from '@apollo/client';
 import { toast } from 'sonner';
@@ -79,7 +80,7 @@ interface PricingRule {
 }
 
 const RulesPage: React.FC = () => {
-  const [selectedRuleType, setSelectedRuleType] = useState<string>('all');
+  const [selectedRuleCategory, setSelectedRuleCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingRule, setEditingRule] = useState<PricingRule | null>(null);
@@ -93,7 +94,7 @@ const RulesPage: React.FC = () => {
   // GraphQL queries and mutations
   const { data: rulesData, loading, error, refetch } = useQuery(GET_PRICING_RULES, {
     variables: {
-      filter: selectedRuleType !== 'all' ? { type: selectedRuleType } : undefined
+      filter: selectedRuleCategory !== 'all' ? { category: selectedRuleCategory } : undefined
     }
   });
 
@@ -109,32 +110,31 @@ const RulesPage: React.FC = () => {
   const filteredRules = rules.filter((rule: PricingRule) => {
     const matchesSearch = rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          rule.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedRuleType === 'all' || rule.type === selectedRuleType;
+    const matchesCategory = selectedRuleCategory === 'all' || rule.category === selectedRuleCategory;
     const matchesActiveFilter = showInactiveRules || rule.isActive;
     const matchesSystemFilter = showSystemRules || rule.isEditable;
     
-    return matchesSearch && matchesType && matchesActiveFilter && matchesSystemFilter;
+    return matchesSearch && matchesCategory && matchesActiveFilter && matchesSystemFilter;
   });
 
-  // Group rules by type for better organization
-  const rulesByType = filteredRules.reduce((acc: any, rule: PricingRule) => {
-    if (!acc[rule.type]) acc[rule.type] = [];
-    acc[rule.type].push(rule);
+  // Group rules by category for better organization
+  const rulesByCategory = filteredRules.reduce((acc: any, rule: PricingRule) => {
+    if (!acc[rule.category]) acc[rule.category] = [];
+    acc[rule.category].push(rule);
     return acc;
   }, {});
 
-  // Rule type configurations
-  const ruleTypes = [
+  // Rule category configurations
+  const ruleCategories = [
     { value: 'all', label: 'All Rules', icon: Settings, color: 'gray' },
-    { value: 'SYSTEM_MARKUP', label: 'System Markup', icon: Target, color: 'blue' },
-    { value: 'SYSTEM_PROCESSING', label: 'System Processing', icon: Zap, color: 'purple' },
-    { value: 'BUSINESS_DISCOUNT', label: 'Business Discount', icon: TrendingUp, color: 'green' },
-    { value: 'PROMOTION', label: 'Promotion', icon: BarChart3, color: 'orange' },
-    { value: 'SEGMENT', label: 'Customer Segment', icon: Target, color: 'pink' },
+    { value: 'DISCOUNT', label: 'Discount', icon: TrendingUp, color: 'green' },
+    { value: 'CONSTRAINT', label: 'Constraint', icon: Target, color: 'orange' },
+    { value: 'FEE', label: 'Fee', icon: DollarSign, color: 'blue' },
+    { value: 'BUNDLE_ADJUSTMENT', label: 'Bundle Adjustment', icon: Zap, color: 'purple' },
   ];
 
-  const getRuleTypeConfig = (type: string) => {
-    return ruleTypes.find(rt => rt.value === type) || ruleTypes[0];
+  const getRuleCategoryConfig = (category: string) => {
+    return ruleCategories.find(rc => rc.value === category) || ruleCategories[0];
   };
 
   const handleToggleRule = async (ruleId: string) => {
@@ -271,18 +271,18 @@ const RulesPage: React.FC = () => {
                   className="pl-10"
                 />
               </div>
-              <Select value={selectedRuleType} onValueChange={setSelectedRuleType}>
+              <Select value={selectedRuleCategory} onValueChange={setSelectedRuleCategory}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Filter by type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ruleTypes.map((type) => {
-                    const Icon = type.icon;
+                  {ruleCategories.map((category) => {
+                    const Icon = category.icon;
                     return (
-                      <SelectItem key={type.value} value={type.value}>
+                      <SelectItem key={category.value} value={category.value}>
                         <div className="flex items-center gap-2">
                           <Icon className="h-4 w-4" />
-                          {type.label}
+                          {category.label}
                         </div>
                       </SelectItem>
                     );
@@ -348,15 +348,15 @@ const RulesPage: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {filteredRules.map((rule: PricingRule) => {
-                  const typeConfig = getRuleTypeConfig(rule.type);
-                  const Icon = typeConfig.icon;
+                  const categoryConfig = getRuleCategoryConfig(rule.category);
+                  const Icon = categoryConfig.icon;
 
                   return (
                     <TableRow key={rule.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-full bg-${typeConfig.color}-100`}>
-                            <Icon className={`h-4 w-4 text-${typeConfig.color}-600`} />
+                          <div className={`p-2 rounded-full bg-${categoryConfig.color}-100`}>
+                            <Icon className={`h-4 w-4 text-${categoryConfig.color}-600`} />
                           </div>
                           <div>
                             <div className="font-medium text-gray-900">{rule.name}</div>
@@ -369,8 +369,8 @@ const RulesPage: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={`bg-${typeConfig.color}-50 text-${typeConfig.color}-700`}>
-                          {typeConfig.label}
+                        <Badge variant="outline" className={`bg-${categoryConfig.color}-50 text-${categoryConfig.color}-700`}>
+                          {categoryConfig.label}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -491,7 +491,7 @@ const RulesPage: React.FC = () => {
                 <Settings className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-4 text-lg font-medium text-gray-900">No rules found</h3>
                 <p className="mt-2 text-gray-500">
-                  {searchQuery || selectedRuleType !== 'all' 
+                  {searchQuery || selectedRuleCategory !== 'all' 
                     ? 'Try adjusting your search or filters'
                     : 'Get started by creating your first pricing rule'
                   }

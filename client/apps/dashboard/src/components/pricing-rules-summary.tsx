@@ -36,7 +36,7 @@ interface RuleStatistics {
   appliedRules: Array<{
     name: string;
     impact: number;
-    type: string;
+    category: string;
   }>;
   evaluationTime: number;
 }
@@ -82,13 +82,13 @@ export const PricingRulesSummary: React.FC<PricingRulesSummaryProps> = ({
           // Try to get rule name from state or use rule ID
           const ruleName = step.state?.rule?.name || `Rule ${ruleId}`;
           const impact = step.state?.impact || 0;
-          const ruleType = step.name.replace('APPLY_', ''); // DISCOUNTS, CONSTRAINTS, FEES
+          const ruleCategory = step.name.replace('APPLY_', ''); // DISCOUNTS, CONSTRAINTS, FEES
           
           stats.totalImpact += impact;
           stats.appliedRules.push({
             name: ruleName,
             impact: impact,
-            type: ruleType,
+            category: ruleCategory,
           });
         });
       }
@@ -201,7 +201,7 @@ export const PricingRulesSummary: React.FC<PricingRulesSummaryProps> = ({
                         <div className="text-sm font-medium">{rule.name}</div>
                         <div className="text-xs text-muted-foreground">
                           <Badge variant="outline" className="text-xs">
-                            {rule.type}
+                            {rule.category}
                           </Badge>
                         </div>
                       </div>
