@@ -27,7 +27,7 @@ export const CatalogCountryCard: React.FC<CatalogCountryCardProps> = ({
   summary,
 }) => {
   const formatPriceRange = (range: PricingRange): string => {
-    const currency = range.currency || "USD";
+    const currency = "USD";
     const symbol = currency === "USD" ? "$" : currency;
     
     if (range.min === range.max) {

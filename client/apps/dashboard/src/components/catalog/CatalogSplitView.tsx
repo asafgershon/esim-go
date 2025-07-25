@@ -25,8 +25,6 @@ interface CatalogSplitViewProps {
   countriesData: BundlesByCountry[];
   regionsData: BundlesByRegion[];
   bundleGroups: { group: string }[];
-  onLoadCountryBundles: (countryId: string) => Promise<CatalogBundle[]>;
-  onLoadRegionBundles?: (region: string) => Promise<CatalogBundle[]>;
   onSync: () => void;
   syncLoading: boolean;
   showSyncPanel: boolean;
@@ -40,8 +38,6 @@ export function CatalogSplitView({
   countriesData = [],
   regionsData = [],
   bundleGroups = [],
-  onLoadCountryBundles,
-  onLoadRegionBundles,
   onSync,
   syncLoading,
   showSyncPanel,
@@ -55,17 +51,8 @@ export function CatalogSplitView({
   const [selectedBundle, setSelectedBundle] = useState<CatalogBundle | null>(
     null
   );
-  const [loadingCountries, setLoadingCountries] = useState<Set<string>>(
-    new Set()
-  );
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBundleGroup, setSelectedBundleGroup] = useState<string>("all");
-  const [countryBundles, setCountryBundles] = useState<
-    Record<string, CatalogBundle[]>
-  >({});
-  const [regionBundles, setRegionBundles] = useState<
-    Record<string, CatalogBundle[]>
-  >({});
   const [showRegions, setShowRegions] = useState(false);
 
   // Configure Fuse.js for country search
@@ -103,24 +90,13 @@ export function CatalogSplitView({
       filtered = filtered.filter((country) => searchedIds.has(country.country.iso));
     }
 
-    // Apply bundle group filter if bundles are loaded
-    if (selectedBundleGroup !== "all") {
-      filtered = filtered.filter((country) => {
-        const bundles = countryBundles[country.country.iso];
-        if (!bundles) return true; // Show countries that haven't been loaded yet
-        return bundles.some((bundle) =>
-          bundle.groups.includes(selectedBundleGroup)
-        );
-      });
-    }
+    // Note: Bundle group filtering is now handled in the table component
 
     return filtered;
   }, [
     countriesData,
     searchQuery,
-    selectedBundleGroup,
     countryFuse,
-    countryBundles,
   ]);
 
   // Get selected country data with filtered bundles
@@ -129,184 +105,42 @@ export function CatalogSplitView({
     const country = filteredCountriesData.find(
       (country) => country.country.iso === selectedCountry
     );
-    if (!country) return null;
+    return country || null;
+  }, [selectedCountry, filteredCountriesData]);
 
-    const bundles = countryBundles[country.country.iso];
-    if (!bundles) return { ...country, bundles: [] };
-
-    // Apply bundle group filter
-    const filteredBundles =
-      selectedBundleGroup === "all"
-        ? bundles
-        : bundles.filter((bundle) =>
-            bundle.groups.includes(selectedBundleGroup)
-          );
-
-    return {
-      ...country,
-      bundles: filteredBundles,
-      bundleCount: filteredBundles.length,
-    };
-  }, [
-    selectedCountry,
-    filteredCountriesData,
-    countryBundles,
-    selectedBundleGroup,
-  ]);
-
-  // Get selected region data with loaded bundles
+  // Get selected region data
   const selectedRegionData = useMemo(() => {
     if (!selectedRegion) return null;
-    const region = regionsData.find((r) => r.region === selectedRegion);
-    if (!region) return null;
-
-    const bundles = regionBundles[selectedRegion];
-    if (!bundles)
-      return region;
-    // Apply bundle group filter
-    const filteredBundles =
-      selectedBundleGroup === "all"
-        ? bundles
-        : bundles.filter((bundle) =>
-            bundle.groups.includes(selectedBundleGroup)
-          );
-
-    return {
-      ...region,
-      bundles: filteredBundles,
-      bundleCount: filteredBundles.length,
-    };
-  }, [selectedRegion, regionsData, regionBundles, selectedBundleGroup]);
+    return regionsData.find((r) => r.region === selectedRegion) || null;
+  }, [selectedRegion, regionsData]);
 
   // Handle country selection
   const handleCountrySelect = useCallback(
-    async (countryId: string) => {
-      const country = filteredCountriesData.find((c) => c.country.iso === countryId);
-      if (!country) return;
-
+    (countryId: string) => {
       setSelectedCountry(countryId);
       setSelectedRegion(null); // Clear region selection
       setSelectedBundle(null); // Clear selected bundle when changing country
-
-      // If country doesn't have bundles loaded, load them
-      if (!countryBundles[countryId]) {
-        setLoadingCountries((prev) => new Set(prev).add(countryId));
-
-        try {
-          const bundles = await onLoadCountryBundles(countryId);
-          setCountryBundles((prev) => ({
-            ...prev,
-            [countryId]: bundles,
-          }));
-        } catch (error) {
-          console.error("Error loading bundles for country:", countryId, error);
-          toast.error(
-            `Failed to load bundles for ${country.country.name}. Please try again.`
-          );
-        } finally {
-          setLoadingCountries((prev) => {
-            const next = new Set(prev);
-            next.delete(countryId);
-            return next;
-          });
-        }
-      }
     },
-    [filteredCountriesData, countryBundles, onLoadCountryBundles]
+    []
   );
 
   // Handle region selection
   const handleRegionSelect = useCallback(
-    async (regionName: string) => {
-      const region = regionsData.find((r) => r.region === regionName);
-      if (!region) return;
-
+    (regionName: string) => {
       setSelectedRegion(regionName);
       setSelectedCountry(null); // Clear country selection
       setSelectedBundle(null); // Clear selected bundle
-
-      // If region doesn't have bundles loaded, load them
-      if (!regionBundles[regionName] && onLoadRegionBundles) {
-        setLoadingCountries((prev) => new Set(prev).add(regionName)); // Reuse loading state
-
-        try {
-          const bundles = await onLoadRegionBundles(regionName);
-          setRegionBundles((prev) => ({
-            ...prev,
-            [regionName]: bundles,
-          }));
-        } catch (error) {
-          console.error("Error loading bundles for region:", regionName, error);
-          toast.error(
-            `Failed to load bundles for ${regionName}. Please try again.`
-          );
-        } finally {
-          setLoadingCountries((prev) => {
-            const next = new Set(prev);
-            next.delete(regionName);
-            return next;
-          });
-        }
-      }
     },
-    [regionsData, regionBundles, onLoadRegionBundles]
+    []
   );
 
   // Get summary info for a country
   const getCountrySummary = (country: BundlesByCountry) => {
-    const bundles = countryBundles[country.country.iso];
-
-    // If bundles haven't been loaded yet, use the backend pricing range
-    if (!bundles) {
-      return {
-        count: country.bundleCount || 0,
-        range: country.pricingRange || {
-          min: 0,
-          max: 0,
-          currency: "USD",
-        },
-        status: "pending" as const,
-      };
-    }
-
-    // Once bundles are loaded, we can use the backend pricing range if available
-    // or calculate it from the loaded bundles
-    const count = bundles.length;
-
-    // Prefer the backend pricing range if available
-    if (country.pricingRange) {
-      return {
-        count,
-        range: country.pricingRange,
-        status: "loaded" as const,
-      };
-    }
-
-    // Fallback to calculating from bundles (this shouldn't happen if backend provides pricingRange)
-    const prices = bundles
-      .map((bundle) => bundle.basePrice || 0)
-      .filter((price) => price > 0);
-
-    if (prices.length === 0) {
-      return {
-        count,
-        range: {
-          min: 0,
-          max: 0,
-          currency: "USD",
-        },
-        status: "loaded" as const,
-      };
-    }
-
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-
     return {
-      count,
-      range: {
-        min: minPrice,
-        max: maxPrice,
+      count: country.bundleCount || 0,
+      range: country.pricingRange || {
+        min: 0,
+        max: 0,
         currency: "USD",
       },
       status: "loaded" as const,
@@ -464,9 +298,6 @@ export function CatalogSplitView({
                     ) : (
                       regionsData.map((region) => {
                         const isSelected = selectedRegion === region.region;
-                        const isRegionLoading = loadingCountries.has(
-                          region.region
-                        );
                         const summary = {
                           count: region.bundleCount,
                           range: region.region,
@@ -478,7 +309,7 @@ export function CatalogSplitView({
                             <CatalogRegionCard
                               region={region}
                               isSelected={isSelected}
-                              isLoading={isRegionLoading}
+                              isLoading={false}
                               onSelect={() =>
                                 handleRegionSelect(region.region)
                               }
@@ -508,20 +339,16 @@ export function CatalogSplitView({
                     filteredCountriesData.map((country) => {
                       const summary = getCountrySummary(country);
                       const isSelected = selectedCountry === country.country.iso;
-                      const isCountryLoading = loadingCountries.has(
-                        country.country.iso
-                      );
-                      const bundles = countryBundles[country.country.iso];
 
                       return (
                         <List.Item key={country.country.iso} asChild>
                           <CatalogCountryCard
                             country={country.country.iso}
                             countryName={country.country.name}
-                            bundleCount={bundles?.length || country.bundleCount}
-                            bundles={bundles}
+                            bundleCount={country.bundleCount}
+                            bundles={[]}
                             isExpanded={false}
-                            isLoading={isCountryLoading}
+                            isLoading={false}
                             isSelected={isSelected}
                             onToggle={() => handleCountrySelect(country.country.iso)}
                             summary={summary}
@@ -548,22 +375,21 @@ export function CatalogSplitView({
               {/* Bundles Header */}
               <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
                 <h3 className="text-sm font-medium text-gray-700">
-                  Bundles (
-                  {(selectedCountryData || selectedRegionData)?.bundleCount ||
-                    0}
-                  )
+                  Bundles
+                  {selectedCountryData && ` (${selectedCountryData.bundleCount || 0})`}
+                  {selectedRegionData && ` (${selectedRegionData.bundleCount || 0})`}
                 </h3>
               </div>
 
               <motion.div className="flex-1 flex flex-col min-h-0" layout>
-                {selectedCountryData || selectedRegionData ? (
+                {selectedCountry || selectedRegion ? (
                   <div className="flex-1 min-h-0">
                     <CatalogBundlesTable
-                      country={selectedCountryData}
-                      region={selectedRegionData}
-                      loadingCountries={loadingCountries}
+                      countryId={selectedCountry}
+                      regionName={selectedRegion}
                       selectedBundle={selectedBundle}
                       onBundleSelect={setSelectedBundle}
+                      bundleGroupFilter={selectedBundleGroup}
                     />
                   </div>
                 ) : (

@@ -1,34 +1,82 @@
 import {
   Bundle,
   BundlesForCountry,
-  BundlesForRegion
+  BundlesForRegion,
+  GetCountryBundlesQuery,
+  GetCountryBundlesQueryVariables,
+  GetRegionBundlesQuery,
+  GetRegionBundlesQueryVariables,
+  CatalogBundle,
 } from "@/__generated__/graphql";
 import { ScrollArea } from "@workspace/ui";
 import { Badge } from "@workspace/ui/components/badge";
 import { Clock, Package, Wifi, WifiOff } from "lucide-react";
-import React from "react";
+import React, { useEffect } from "react";
+import { useLazyQuery } from "@apollo/client";
+import { GET_COUNTRY_BUNDLES, GET_REGION_BUNDLES } from "@/lib/graphql/queries";
 
 interface CatalogBundlesTableProps {
-  country: BundlesForCountry;
-  region: BundlesForRegion | null;
-  loadingCountries: Set<string>;
-  selectedBundle: Bundle | null;
-  onBundleSelect: (bundle: Bundle) => void;
+  countryId?: string | null;
+  regionName?: string | null;
+  selectedBundle: CatalogBundle | null;
+  onBundleSelect: (bundle: CatalogBundle) => void;
+  bundleGroupFilter?: string;
 }
 
 export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
-  country,
-  loadingCountries,
+  countryId,
+  regionName,
   selectedBundle,
   onBundleSelect,
+  bundleGroupFilter = "all",
 }) => {
-  if (!country) {
+  // Lazy queries for loading bundles
+  const [getCountryBundles, { data: countryData, loading: countryLoading }] = useLazyQuery<
+    GetCountryBundlesQuery,
+    GetCountryBundlesQueryVariables
+  >(GET_COUNTRY_BUNDLES);
+  
+  const [getRegionBundles, { data: regionData, loading: regionLoading }] = useLazyQuery<
+    GetRegionBundlesQuery,
+    GetRegionBundlesQueryVariables
+  >(GET_REGION_BUNDLES);
+
+  // Load bundles when country/region changes
+  useEffect(() => {
+    if (countryId) {
+      getCountryBundles({ variables: { countryId } });
+    } else if (regionName) {
+      getRegionBundles({ variables: { region: regionName } });
+    }
+  }, [countryId, regionName, getCountryBundles, getRegionBundles]);
+
+  // Determine which bundles to show
+  const bundles = React.useMemo(() => {
+    let allBundles: CatalogBundle[] = [];
+    
+    if (countryData?.bundlesForCountry?.bundles) {
+      allBundles = countryData.bundlesForCountry.bundles as CatalogBundle[];
+    } else if (regionData?.bundlesForRegion?.bundles) {
+      allBundles = regionData.bundlesForRegion.bundles as CatalogBundle[];
+    }
+
+    // Apply bundle group filter
+    if (bundleGroupFilter !== "all") {
+      return allBundles.filter(bundle => 
+        bundle.groups.includes(bundleGroupFilter)
+      );
+    }
+
+    return allBundles;
+  }, [countryData, regionData, bundleGroupFilter]);
+
+  const isLoading = countryLoading || regionLoading;
+
+  if (!countryId && !regionName) {
     return null;
   }
 
-  const isCountryLoading = loadingCountries.has(country.country.iso);
-
-  if (isCountryLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -37,13 +85,18 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
     );
   }
 
-  if (!country.bundles || country.bundles.length === 0) {
+  if (!bundles || bundles.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center text-gray-500">
           <Package className="h-12 w-12 mx-auto text-gray-300 mb-4" />
           <p className="text-lg">No bundles available</p>
-          <p className="text-sm">This country has no catalog data available</p>
+          <p className="text-sm">
+            {bundleGroupFilter !== "all" 
+              ? `No bundles found for group: ${bundleGroupFilter}`
+              : "This location has no catalog data available"
+            }
+          </p>
         </div>
       </div>
     );
@@ -60,7 +113,7 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1" showOnHover={true}>
         <div className="space-y-1 p-2">
-          {country.bundles.map((bundle, index) => (
+          {bundles.map((bundle, index) => (
             <div
               key={bundle.name || `${bundle.name}-${index}`}
               className={`border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
@@ -80,11 +133,11 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
                       <p className="text-sm text-gray-500">
                         {bundle.validityInDays || 0} day
                         {(bundle.validityInDays || 0) !== 1 ? "s" : ""} •
-                        {bundle.dataAmountMB && ` ${bundle.dataAmountMB}`}
-                        {bundle.groups && (
+                        {bundle.dataAmountReadable}
+                        {bundle.groups && bundle.groups.length > 0 && (
                           <span className="inline-flex items-center ml-2">
                             <Badge variant="outline" className="text-xs">
-                              {bundle.groups}
+                              {bundle.groups[0]}
                             </Badge>
                           </span>
                         )}
@@ -113,7 +166,7 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
               <div className="mt-2 flex items-center gap-4 text-xs text-gray-600">
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  <span>{bundle.duration} days</span>
+                  <span>{bundle.validityInDays} days</span>
                 </div>
 
                 <div className="flex items-center gap-1">

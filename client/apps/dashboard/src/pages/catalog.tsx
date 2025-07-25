@@ -3,7 +3,6 @@ import {
   GetBundlesByGroupQueryVariables,
   SyncJobType,
   type BundleFilter,
-  type CatalogBundle,
   type GetBundlesByCountryQuery,
   type GetBundlesByCountryQueryVariables,
   type GetBundlesByRegionQuery,
@@ -12,8 +11,6 @@ import {
   type GetBundlesQueryVariables,
   type GetCatalogSyncHistoryQuery,
   type GetCatalogSyncHistoryQueryVariables,
-  type GetCountryBundlesQuery,
-  type GetCountryBundlesQueryVariables,
   type PaginationInput,
   type TriggerCatalogSyncMutation,
   type TriggerCatalogSyncMutationVariables,
@@ -30,11 +27,9 @@ import {
   GET_BUNDLES_BY_REGION,
   GET_BUNDLES_BY_GROUP,
   GET_CATALOG_SYNC_HISTORY,
-  GET_COUNTRY_BUNDLES,
-  GET_REGION_BUNDLES,
   TRIGGER_CATALOG_SYNC,
 } from "@/lib/graphql/queries";
-import { gql, useLazyQuery, useMutation, useQuery } from "@apollo/client";
+import { gql, useMutation, useQuery } from "@apollo/client";
 import { Database } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -195,57 +190,6 @@ function CatalogPageContent() {
     },
   });
 
-  // Lazy queries for loading country and region bundles
-  const [getCountryBundlesLazy] = useLazyQuery<
-    GetCountryBundlesQuery,
-    GetCountryBundlesQueryVariables
-  >(GET_COUNTRY_BUNDLES);
-  const [getRegionBundlesLazy] = useLazyQuery<
-    GetBundlesByRegionQuery,
-    GetBundlesByRegionQueryVariables
-  >(GET_REGION_BUNDLES);
-
-  const loadCountryBundles = async (
-    countryId: string
-  ): Promise<CatalogBundle[]> => {
-    try {
-      // Use the GET_COUNTRY_BUNDLES query to fetch bundles for the country
-      const { data } = await getCountryBundlesLazy({
-        variables: { countryId },
-      });
-
-      if (!data?.bundlesForCountry?.bundles) {
-        return [];
-      }
-
-      // Return the bundles as CatalogBundle[]
-      return data.bundlesForCountry.bundles as CatalogBundle[];
-    } catch (error) {
-      toast.error(`Failed to load bundles for country ${countryId}`);
-      throw error;
-    }
-  };
-
-  const loadRegionBundles = async (
-    regionName: string
-  ): Promise<CatalogBundle[]> => {
-    try {
-      // Use the GET_REGION_BUNDLES query to fetch bundles for the region
-      const { data } = await getRegionBundlesLazy({
-        variables: {},
-      });
-
-      if (!data?.bundlesByRegion) {
-        return [];
-      }
-
-      // Return the bundles as CatalogBundle[]
-      return data.bundlesByRegion.bundles;
-    } catch (error) {
-      toast.error(`Failed to load bundles for region ${regionName}`);
-      throw error;
-    }
-  };
 
   const handleSyncClick = async () => {
     // Check for running sync jobs
@@ -320,8 +264,6 @@ function CatalogPageContent() {
             countriesData={countriesData}
             regionsData={regionsDataArray}
             bundleGroups={bundleGroupsData?.bundlesByGroup || []}
-            onLoadCountryBundles={loadCountryBundles}
-            onLoadRegionBundles={loadRegionBundles}
             onSync={handleSyncClick}
             syncLoading={syncLoading}
             showSyncPanel={showSyncPanel}
