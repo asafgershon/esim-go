@@ -187,6 +187,50 @@ async function convertToPricingEngineInput(
   };
 }
 
+// Payment method configurations - single source of truth
+const PAYMENT_METHODS_CONFIG = [
+  {
+    value: 'ISRAELI_CARD' as PaymentMethod,
+    label: 'Israeli Card',
+    description: '1.4% processing fee',
+    processingRate: 0.014,
+    icon: 'credit-card',
+    isActive: true
+  },
+  {
+    value: 'FOREIGN_CARD' as PaymentMethod,
+    label: 'Foreign Card',
+    description: '3.9% processing fee',
+    processingRate: 0.039,
+    icon: 'credit-card',
+    isActive: true
+  },
+  {
+    value: 'BIT' as PaymentMethod,
+    label: 'Bit Payment',
+    description: '0.7% processing fee',
+    processingRate: 0.007,
+    icon: 'smartphone',
+    isActive: true
+  },
+  {
+    value: 'AMEX' as PaymentMethod,
+    label: 'American Express',
+    description: '5.7% processing fee',
+    processingRate: 0.057,
+    icon: 'credit-card',
+    isActive: true
+  },
+  {
+    value: 'DINERS' as PaymentMethod,
+    label: 'Diners Club',
+    description: '6.4% processing fee',
+    processingRate: 0.064,
+    icon: 'credit-card',
+    isActive: true
+  }
+];
+
 // Unified pricing resolvers
 export const pricingQueries: QueryResolvers = {
   /**
@@ -438,6 +482,21 @@ export const pricingQueries: QueryResolvers = {
         extensions: { code: 'RULE_SIMULATION_FAILED' }
       });
     }
+  },
+
+  /**
+   * Get available payment methods with their processing rates
+   * This is the single source of truth for payment method configurations
+   */
+  paymentMethods: async (_, __, context: Context) => {
+    logger.info('Fetching payment methods', {
+      operationType: 'get-payment-methods',
+      hasAuth: !!context.auth
+    });
+    
+    // Return the configured payment methods
+    // In the future, this will be fetched from the rules system
+    return PAYMENT_METHODS_CONFIG;
   }
 };
 

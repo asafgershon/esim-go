@@ -24,6 +24,7 @@ import { TripRepository } from "../repositories/trip.repository";
 import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CatalogSyncServiceV2 } from "../services";
+import type { ESimGoClient } from "@esim-go/client";
 
 export type Context = {
   auth: SupabaseAuthContext;
@@ -31,6 +32,7 @@ export type Context = {
     db: SupabaseClient;
     redis: Redis;
     syncs: CatalogSyncServiceV2;
+    esimGoClient: ESimGoClient;
     pubsub?: RedisPubSub;
   };
   repositories: {

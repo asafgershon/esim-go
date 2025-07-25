@@ -51,6 +51,7 @@ import { TripRepository } from "./repositories/trip.repository";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
+import { ESimGoClient } from "@esim-go/client";
 
 // Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
@@ -87,6 +88,14 @@ async function startServer() {
     
     // Initialize PubSub for WebSocket subscriptions
     const pubsub = await getPubSub(redis);
+
+    // Initialize eSIM Go client
+    console.log("Initializing eSIM Go client...");
+    const esimGoClient = new ESimGoClient({
+      apiKey: env.ESIM_GO_API_KEY,
+      baseUrl: 'https://api.esim-go.com/v2.5',
+      retryAttempts: 3,
+    });
 
     // Initialize repositories
     const checkoutSessionRepository = new CheckoutSessionRepository();
@@ -132,6 +141,7 @@ async function startServer() {
               pubsub,
               db: supabaseAdmin,
               syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
+              esimGoClient,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -308,6 +318,7 @@ async function startServer() {
               redis,
               pubsub,
               syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
+              esimGoClient,
               db: supabaseAdmin,
             },
             repositories: {

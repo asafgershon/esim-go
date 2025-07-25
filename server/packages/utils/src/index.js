@@ -17,3 +17,4 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./logger"), exports);
 __exportStar(require("./retry"), exports);
 __exportStar(require("./types"), exports);
+__exportStar(require("./deep-keys"), exports);

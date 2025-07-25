@@ -1,11 +1,11 @@
-import { Bundle } from "@/__generated__/graphql";
-import { ScrollArea } from "@workspace/ui";
-import { Package } from "lucide-react";
+import { Bundle, PaymentMethod, GetPaymentMethodsQuery } from "@/__generated__/graphql";
+import { ScrollArea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Badge } from "@workspace/ui";
+import { Package, CreditCard, Smartphone } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { BundlesByCountryWithBundles } from "./types";
 import { CustomerBundleCard } from "./CustomerBundleCard";
-import { useLazyQuery } from "@apollo/client";
-import { CALCULATE_BATCH_ADMIN_PRICING } from "../../lib/graphql/queries";
+import { useLazyQuery, useQuery } from "@apollo/client";
+import { CALCULATE_BATCH_ADMIN_PRICING, GET_PAYMENT_METHODS } from "../../lib/graphql/queries";
 
 interface BundlesTableProps {
   country: BundlesByCountryWithBundles;
@@ -13,6 +13,12 @@ interface BundlesTableProps {
   selectedBundle: Bundle | null;
   onBundleSelect: (bundle: Bundle) => void;
 }
+
+// Icon mapping for payment methods
+const iconMap: Record<string, React.ComponentType<any>> = {
+  'credit-card': CreditCard,
+  'smartphone': Smartphone,
+};
 
 export const BundlesTable: React.FC<BundlesTableProps> = ({
   country,
@@ -23,8 +29,10 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
   const isCountryLoading = loadingCountries.has(country.country.iso);
   const [bundlesWithPricing, setBundlesWithPricing] = useState<Bundle[]>([]);
   const [pricingLoading, setPricingLoading] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>(PaymentMethod.IsraeliCard);
   
   const [calculateBatchPricing] = useLazyQuery(CALCULATE_BATCH_ADMIN_PRICING);
+  const { data: paymentMethodsData } = useQuery<GetPaymentMethodsQuery>(GET_PAYMENT_METHODS);
 
   // Calculate pricing when bundles are loaded
   useEffect(() => {

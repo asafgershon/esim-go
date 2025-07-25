@@ -59,6 +59,9 @@ type Query {
 
   # High demand countries
   highDemandCountries: [String!]! @auth(role: "ADMIN")
+  
+  # Payment methods with processing rates
+  paymentMethods: [PaymentMethodInfo!]!
 
   # Catalog sync history
   catalogSyncHistory(params: SyncHistoryParams): CatalogSyncHistoryConnection!
@@ -956,6 +959,16 @@ enum PaymentMethod {
   BIT
   AMEX
   DINERS
+}
+
+# Payment method information with processing rates
+type PaymentMethodInfo {
+  value: PaymentMethod!
+  label: String!
+  description: String!
+  processingRate: Float!
+  icon: String # Icon identifier for UI
+  isActive: Boolean!
 }
 
 # Processing Fee Configuration Types

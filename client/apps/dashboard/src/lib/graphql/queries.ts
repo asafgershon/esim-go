@@ -1,5 +1,19 @@
 import { gql } from "@apollo/client";
 
+// Payment Methods Query
+export const GET_PAYMENT_METHODS = gql(`
+  query GetPaymentMethods {
+    paymentMethods {
+      value
+      label
+      description
+      processingRate
+      icon
+      isActive
+    }
+  }
+`);
+
 // Pricing Rules Queries
 export const GET_PRICING_RULES = gql(`
   query GetPricingRules($filter: PricingRuleFilter) {
