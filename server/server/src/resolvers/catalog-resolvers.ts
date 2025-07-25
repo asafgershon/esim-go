@@ -863,5 +863,35 @@ export const catalogResolvers: Partial<Resolvers> = {
         ]);
       },
     },
+
+    // Pricing pipeline progress subscription
+    pricingPipelineProgress: {
+      subscribe: async (_, { correlationId }, context: Context) => {
+        if (!context.services.pubsub) {
+          throw new GraphQLError("PubSub service not available", {
+            extensions: { code: "SERVICE_UNAVAILABLE" },
+          });
+        }
+
+        logger.info("Client subscribed to pricing pipeline progress", {
+          correlationId,
+          userId: context.auth?.user?.id,
+          operationType: "pricing-pipeline-subscription",
+        });
+
+        const { PubSubEvents } = await import("../context/pubsub");
+        const { withFilter } = await import("graphql-subscriptions");
+        
+        return withFilter(
+          () => context.services.pubsub!.asyncIterator([
+            PubSubEvents.PRICING_PIPELINE_STEP,
+          ]),
+          (payload, variables) => {
+            // Filter by correlationId to ensure users only get their own pricing updates
+            return payload.correlationId === variables.correlationId;
+          }
+        )(_, { correlationId }, context);
+      },
+    },
   },
 };

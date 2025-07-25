@@ -92,6 +92,7 @@ export enum PubSubEvents {
   
   // Pricing events
   PRICING_RULES_UPDATED = 'PRICING_RULES_UPDATED',
+  PRICING_PIPELINE_STEP = 'PRICING_PIPELINE_STEP',
 }
 
 // Helper function to publish events with logging

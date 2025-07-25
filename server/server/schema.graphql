@@ -67,7 +67,6 @@ type Query {
   # Catalog bundles queries (from new catalog system)
   catalogBundles(criteria: SearchCatalogCriteria): CatalogBundleConnection!
     @auth(role: "ADMIN")
-  availableBundleGroups: [String!]! @auth(role: "ADMIN") # Filter options
   bundleFilterOptions: BundleFilterOptions!
 }
 
@@ -325,6 +324,9 @@ type Subscription {
 
   # Catalog sync progress (admin only)
   catalogSyncProgress: CatalogSyncProgressUpdate! @auth(role: "ADMIN")
+
+  # Pricing pipeline progress (authenticated users only)
+  pricingPipelineProgress(correlationId: String!): PricingPipelineStepUpdate! @auth
 }
 
 interface Bundle {
@@ -730,6 +732,14 @@ type CatalogSyncProgressUpdate {
   updatedAt: String!
 }
 
+type PricingPipelineStepUpdate {
+  correlationId: String!
+  name: String!
+  timestamp: String!
+  state: JSON
+  appliedRules: [String!]
+  debug: JSON
+}
 
 # Basic checkout session type (enhanced)
 type CheckoutSession {
