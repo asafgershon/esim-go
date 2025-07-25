@@ -4,6 +4,7 @@ import { config } from '../config/index.js';
 import { CatalogSyncService } from '../services/catalog-sync.service.js';
 import { syncJobRepository } from '../services/supabase.service.js';
 import type { CatalogSyncJobData } from '../queues/catalog-sync.queue.js';
+import { SyncJobType } from '../generated/types.js';
 import { Redis } from 'ioredis';
 
 const logger = createLogger({ 
@@ -23,7 +24,7 @@ const connection = new Redis({
 });
 
 // Process job based on type
-async function processJob(job: Job<any>): Promise<any> {
+async function processJob(job: Job<CatalogSyncJobData>): Promise<any> {
   const { type } = job.data;
 
   logger.info('Processing catalog sync job', {
@@ -32,26 +33,16 @@ async function processJob(job: Job<any>): Promise<any> {
     attemptsMade: job.attemptsMade,
   });
 
-  const transformJobType = (type: string) => {
+  const transformJobType = (type: SyncJobType) => {
     switch (type) {
-      // Handle lowercase hyphenated format (original)
-      case 'full-sync':
+      case SyncJobType.FullSync:
         return 'FULL_SYNC';
-      case 'group-sync':
+      case SyncJobType.GroupSync:
         return 'GROUP_SYNC';
-      case 'country-sync':
+      case SyncJobType.CountrySync:
         return 'COUNTRY_SYNC';
-      case 'bundle-sync':
-        return 'BUNDLE_SYNC';
-      // Handle uppercase underscore format (from GraphQL enum)
-      case 'FULL_SYNC':
-        return 'FULL_SYNC';
-      case 'GROUP_SYNC':
-        return 'GROUP_SYNC';
-      case 'COUNTRY_SYNC':
-        return 'COUNTRY_SYNC';
-      case 'BUNDLE_SYNC':
-        return 'BUNDLE_SYNC';
+      case SyncJobType.MetadataSync:
+        return 'METADATA_SYNC';
       default:
         throw new Error(`Unknown job type: ${type}`);
     }
@@ -61,8 +52,8 @@ async function processJob(job: Job<any>): Promise<any> {
   const dbJob = await syncJobRepository.createJob({
     jobType: transformJobType(type),
     priority: job.opts.priority === 1 ? 'high' : 'normal',
-    bundleGroup: (type === 'group-sync' || type === 'GROUP_SYNC') ? job.data.bundleGroup : undefined,
-    countryId: (type === 'country-sync' || type === 'COUNTRY_SYNC') ? job.data.countryId : undefined,
+    bundleGroup: type === SyncJobType.GroupSync ? job.data.bundleGroup : undefined,
+    countryId: type === SyncJobType.CountrySync ? job.data.countryId : undefined,
     metadata: {
       bullmqJobId: job.id,
       ...job.data.metadata,
@@ -71,8 +62,7 @@ async function processJob(job: Job<any>): Promise<any> {
 
   try {
     switch (type) {
-      case 'full-sync':
-      case 'FULL_SYNC':
+      case SyncJobType.FullSync:
         await catalogSyncService.performFullSync(dbJob.id);
         return { 
           success: true, 
@@ -80,8 +70,7 @@ async function processJob(job: Job<any>): Promise<any> {
           dbJobId: dbJob.id,
         };
 
-      case 'group-sync':
-      case 'GROUP_SYNC':
+      case SyncJobType.GroupSync:
         const groupResult = await catalogSyncService.syncBundleGroup(
           job.data.bundleGroup,
           dbJob.id
@@ -102,8 +91,7 @@ async function processJob(job: Job<any>): Promise<any> {
           dbJobId: dbJob.id,
         };
 
-      case 'country-sync':
-      case 'COUNTRY_SYNC':
+      case SyncJobType.CountrySync:
         await catalogSyncService.syncCountryBundles(
           job.data.countryId,
           dbJob.id
@@ -115,10 +103,9 @@ async function processJob(job: Job<any>): Promise<any> {
           dbJobId: dbJob.id,
         };
 
-      case 'bundle-sync':
-      case 'BUNDLE_SYNC':
-        // Implement single bundle sync if needed
-        throw new Error('Bundle sync not implemented yet');
+      case SyncJobType.MetadataSync:
+        // Implement metadata sync if needed
+        throw new Error('Metadata sync not implemented yet');
 
       default:
         throw new Error(`Unknown job type: ${type}`);
@@ -131,7 +118,7 @@ async function processJob(job: Job<any>): Promise<any> {
 }
 
 // Create the worker
-export const catalogSyncWorker = new Worker<any>(
+export const catalogSyncWorker = new Worker<CatalogSyncJobData>(
   'catalog-sync',
   async (job) => {
     return withPerformanceLogging(

@@ -2,30 +2,31 @@ import { Queue, QueueEvents } from 'bullmq';
 import { Redis } from 'ioredis';
 import { config } from '../config/index.js';
 import { createLogger } from '@esim-go/utils';
+import { SyncJobType } from '../generated/types.js';
 
 const logger = createLogger({ component: 'CatalogSyncQueue' });
 
-// Job data types
+// Job data types (using generated GraphQL enum)
 export interface FullSyncJobData {
-  type: 'full-sync';
+  type: SyncJobType.FullSync;
   triggeredBy: 'scheduled' | 'manual' | 'api';
   metadata?: Record<string, any>;
 }
 
 export interface GroupSyncJobData {
-  type: 'group-sync';
+  type: SyncJobType.GroupSync;
   bundleGroup: string;
   metadata?: Record<string, any>;
 }
 
 export interface CountrySyncJobData {
-  type: 'country-sync';
+  type: SyncJobType.CountrySync;
   countryId: string;
   metadata?: Record<string, any>;
 }
 
 export interface BundleSyncJobData {
-  type: 'bundle-sync';
+  type: SyncJobType.MetadataSync; // Note: Using MetadataSync as there's no BundleSync in schema
   bundleId: string;
   metadata?: Record<string, any>;
 }
@@ -62,9 +63,9 @@ export const catalogSyncQueueManager = {
    */
   async addFullSyncJob(triggeredBy: 'scheduled' | 'manual' | 'api' = 'manual') {
     const job = await catalogSyncQueue.add(
-      'full-sync',
+      'FULL_SYNC',
       {
-        type: 'full-sync',
+        type: SyncJobType.FullSync,
         triggeredBy,
         metadata: {
           timestamp: new Date().toISOString(),
@@ -89,9 +90,9 @@ export const catalogSyncQueueManager = {
    */
   async addGroupSyncJob(bundleGroup: string) {
     const job = await catalogSyncQueue.add(
-      'group-sync',
+      'GROUP_SYNC',
       {
-        type: 'group-sync',
+        type: SyncJobType.GroupSync,
         bundleGroup,
         metadata: {
           timestamp: new Date().toISOString(),
@@ -116,9 +117,9 @@ export const catalogSyncQueueManager = {
    */
   async addCountrySyncJob(countryId: string) {
     const job = await catalogSyncQueue.add(
-      'country-sync',
+      'COUNTRY_SYNC',
       {
-        type: 'country-sync',
+        type: SyncJobType.CountrySync,
         countryId,
         metadata: {
           timestamp: new Date().toISOString(),

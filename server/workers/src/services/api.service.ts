@@ -1,6 +1,7 @@
 import { catalogSyncQueueManager } from '../queues/catalog-sync.queue.js';
 import { syncJobRepository, catalogMetadataRepository } from './supabase.service.js';
 import { createLogger } from '@esim-go/utils';
+import { SyncJobType } from '../generated/types.js';
 
 const logger = createLogger({ 
   component: 'WorkerApiService',
@@ -19,7 +20,7 @@ export const workerApiService = {
     logger.info('Triggering full catalog sync', { userId });
     
     // Check if there's already an active full sync
-    const hasActive = await syncJobRepository.hasActiveJob('full-sync');
+    const hasActive = await syncJobRepository.hasActiveJob(SyncJobType.FullSync);
 
     if (hasActive) {
       throw new Error('A full sync is already in progress');
@@ -41,7 +42,7 @@ export const workerApiService = {
     logger.info('Triggering bundle group sync', { bundleGroup, userId });
     
     // Check if there's already an active sync for this group
-    const hasActive = await syncJobRepository.hasActiveJob('group-sync');
+    const hasActive = await syncJobRepository.hasActiveJob(SyncJobType.GroupSync);
 
     if (hasActive) {
       throw new Error(`A sync for bundle group ${bundleGroup} is already in progress`);
@@ -64,7 +65,7 @@ export const workerApiService = {
     logger.info('Triggering country sync', { countryId, userId });
     
     // Check if there's already an active sync for this country
-    const hasActive = await syncJobRepository.hasActiveJob('country-sync');
+    const hasActive = await syncJobRepository.hasActiveJob(SyncJobType.CountrySync);
 
     if (hasActive) {
       throw new Error(`A sync for country ${countryId} is already in progress`);
