@@ -1,6 +1,7 @@
 import { CreateCheckoutSessionInput } from "@/__generated__/graphql";
 import { CheckoutContainer } from "@/components/checkout/checkout-container";
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 interface CheckoutHandlerProps {
   searchParams: {
@@ -9,6 +10,12 @@ interface CheckoutHandlerProps {
     countryId?: string;
     regionId?: string;
   };
+}
+
+// Helper function to handle server-side redirects cleanly
+function performRedirect(url: string): never {
+  console.log(`Redirecting to: ${url}`);
+  redirect(url);
 }
 
 async function createCheckoutSession(numOfDays: number, regionId?: string, countryId?: string) {
@@ -79,6 +86,14 @@ export default async function CheckoutHandler({ searchParams }: CheckoutHandlerP
       );
       
       if (result.success && result.session?.token) {
+        // Log successful session creation
+        console.log('Checkout session created successfully:', {
+          token: result.session.token.substring(0, 20) + '...',
+          numOfDays,
+          countryId,
+          regionId
+        });
+        
         // Use server-side redirect instead of client component
         const params = new URLSearchParams({
           token: result.session.token,
@@ -86,13 +101,21 @@ export default async function CheckoutHandler({ searchParams }: CheckoutHandlerP
           ...(countryId && { countryId }),
           ...(regionId && { regionId }),
         });
-        redirect(`/checkout?${params.toString()}`);
+        
+        // This will throw a NEXT_REDIRECT error internally, which is expected
+        performRedirect(`/checkout?${params.toString()}`);
       } else {
         throw new Error(result.error || 'Failed to create checkout session');
       }
     } catch (error) {
+      // Check if this is a Next.js redirect (which is expected and successful)
+      if (isRedirectError(error)) {
+        // This is a successful redirect, re-throw it to let Next.js handle it
+        throw error;
+      }
+      
+      // This is a real error, handle it
       console.error('Server-side session creation failed:', error);
-      // Show error message instead of falling back to client-side
       return (
         <div className="p-8 text-center">
           <h2 className="text-2xl font-bold mb-4 text-red-600">Session Creation Failed</h2>

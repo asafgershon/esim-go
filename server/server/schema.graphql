@@ -1004,6 +1004,7 @@ input CreatePricingRuleInput {
 }
 
 input UpdatePricingRuleInput {
+  category: RuleCategory
   name: String
   description: String
   conditions: [RuleConditionInput!]

@@ -117,25 +117,39 @@ export const pricingRulesMutations: MutationResolvers = {
     });
     
     try {
-      const rule = await context.repositories.pricingRules.createRule(input);
-      
-      // Reload rules in the engine
-      const engine = getPricingEngineService(context);
-      await engine.reloadRules();
+      const userId = context.auth?.user?.id;
+      const rule = await context.repositories.pricingRules.createRule(input, userId);
       
       logger.info('Pricing rule created successfully', { 
         id: rule.id,
         name: rule.name 
       });
       
+      // Reload rules in the engine (try-catch to not fail the whole operation)
+      try {
+        const engine = getPricingEngineService(context);
+        await engine.reloadRules();
+        logger.info('Pricing engine rules reloaded');
+      } catch (engineError) {
+        logger.warn('Failed to reload pricing engine rules', engineError as Error, {
+          ruleId: rule.id
+        });
+        // Don't fail the whole operation if engine reload fails
+      }
+      
       return rule;
     } catch (error) {
       logger.error('Failed to create pricing rule', error as Error, {
         name: input.name,
-        category: input.category
+        category: input.category,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined
       });
       throw new GraphQLError('Failed to create pricing rule', {
-        extensions: { code: 'INTERNAL_SERVER_ERROR' }
+        extensions: { 
+          code: 'INTERNAL_SERVER_ERROR',
+          originalError: error instanceof Error ? error.message : String(error)
+        }
       });
     }
   },
@@ -197,6 +211,78 @@ export const pricingRulesMutations: MutationResolvers = {
     } catch (error) {
       logger.error('Failed to delete pricing rule', error as Error, { id });
       throw new GraphQLError('Failed to delete pricing rule', {
+        extensions: { code: 'INTERNAL_SERVER_ERROR' }
+      });
+    }
+  },
+
+  togglePricingRule: async (
+    _parent,
+    { id },
+    context,
+    _info
+  ): Promise<PricingRule> => {
+    logger.info('Toggling pricing rule active status', { id });
+    
+    try {
+      const rule = await context.repositories.pricingRules.toggleActive(id);
+      
+      // Reload rules in the engine
+      try {
+        const engine = getPricingEngineService(context);
+        await engine.reloadRules();
+        logger.info('Pricing engine rules reloaded');
+      } catch (engineError) {
+        logger.warn('Failed to reload pricing engine rules', engineError as Error, {
+          ruleId: rule.id
+        });
+      }
+      
+      logger.info('Pricing rule toggled successfully', { 
+        id: rule.id,
+        isActive: rule.isActive 
+      });
+      
+      return rule;
+    } catch (error) {
+      logger.error('Failed to toggle pricing rule', error as Error, { id });
+      throw new GraphQLError('Failed to toggle pricing rule', {
+        extensions: { code: 'INTERNAL_SERVER_ERROR' }
+      });
+    }
+  },
+
+  clonePricingRule: async (
+    _parent,
+    { id, newName },
+    context,
+    _info
+  ): Promise<PricingRule> => {
+    logger.info('Cloning pricing rule', { id, newName });
+    
+    try {
+      const rule = await context.repositories.pricingRules.cloneRule(id, newName);
+      
+      // Reload rules in the engine
+      try {
+        const engine = getPricingEngineService(context);
+        await engine.reloadRules();
+        logger.info('Pricing engine rules reloaded');
+      } catch (engineError) {
+        logger.warn('Failed to reload pricing engine rules', engineError as Error, {
+          ruleId: rule.id
+        });
+      }
+      
+      logger.info('Pricing rule cloned successfully', { 
+        id: rule.id,
+        name: rule.name 
+      });
+      
+      return rule;
+    } catch (error) {
+      logger.error('Failed to clone pricing rule', error as Error, { id, newName });
+      throw new GraphQLError('Failed to clone pricing rule', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' }
       });
     }
