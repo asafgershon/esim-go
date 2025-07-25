@@ -33,7 +33,8 @@ export {
   type PricingEngine as IPricingEngine,
   type PricingEngineInput,
   type PricingEngineOutput,
-  type PricingEngineState
+  type PricingEngineState,
+  type PipelineStep
 } from './rules-engine-types';
 
 // Pricing steps types

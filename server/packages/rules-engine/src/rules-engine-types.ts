@@ -22,6 +22,14 @@ interface PaymentContext {
   promo?: string;
 }
 
+export interface PipelineStep {
+  name: string;
+  timestamp: Date;
+  state: Partial<PricingEngineState>;
+  appliedRules?: string[]; // Rule IDs applied in this step
+  debug?: any; // Optional debug information
+}
+
 export interface PricingEngineState {
   // Context
   bundles: Bundle[];
@@ -40,7 +48,7 @@ export interface PricingEngineState {
     dataType?: DataType;
   };
 
-  steps: string[];
+  steps: PipelineStep[];
 
   // Response
   unusedDays: number;
@@ -65,7 +73,6 @@ export type PricingEngineInput = Omit<
 
 export type PricingEngineOutput = PricingEngineState & {
   appliedRules: PricingRule[];
-  steps: string[];
 };
 
 export interface PricingEngine {
