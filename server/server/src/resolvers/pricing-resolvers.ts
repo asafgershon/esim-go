@@ -57,42 +57,42 @@ function mapEngineToPricingBreakdown(
     // Bundle Information - Public
     bundle: {
       __typename: 'CountryBundle',
-      id: selectedBundle?.name || '',
-      name: selectedBundle?.name || '',
-      duration: selectedBundle?.validityInDays || input.numOfDays,
+      id: selectedBundle?.name || `bundle_${input.countryId}_${input.numOfDays}d`,
+      name: selectedBundle?.name || `${input.numOfDays} Day Plan`,
+      duration: selectedBundle?.validityInDays || input.numOfDays || 1,
       data: selectedBundle?.dataAmountMB || null,
       isUnlimited: selectedBundle?.isUnlimited || false,
       currency: selectedBundle?.currency || 'USD',
       country: {
-        iso: input.countryId,
-        name: input.countryId, // Will be resolved by country resolver
+        iso: input.countryId || '',
+        name: input.countryId || '', // Will be resolved by country resolver
         region: selectedBundle?.region || ''
       } as Country
     },
     
     country: {
-      iso: input.countryId,
-      name: input.countryId,
+      iso: input.countryId || '',
+      name: input.countryId || '',
       region: selectedBundle?.region || ''
     },
     
-    duration: input.numOfDays || 0,
+    duration: input.numOfDays || 1,
     currency: selectedBundle?.currency || 'USD',
     
     // Public pricing fields (what users pay)
-    totalCost: pricing.costPlus, // Subtotal before discounts
-    discountValue: pricing.discountValue, // Total discount amount
-    priceAfterDiscount: pricing.priceAfterDiscount, // Final price users pay
+    totalCost: pricing?.costPlus || 0, // Subtotal before discounts
+    discountValue: pricing?.discountValue || 0, // Total discount amount
+    priceAfterDiscount: pricing?.priceAfterDiscount || 0, // Final price users pay
     
     // Admin-only business sensitive fields (auto-hidden by @auth directive)
-    cost: pricing.cost, // Base cost from supplier
-    costPlus: pricing.costPlus, // Cost + markup
-    discountRate: pricing.discountRate, // Discount percentage
-    processingRate: pricing.processingRate, // Processing fee percentage
-    processingCost: pricing.processingCost, // Processing fee amount
-    finalRevenue: pricing.finalRevenue, // Revenue after processing
-    netProfit: pricing.netProfit, // Final profit
-    discountPerDay: pricing.discountPerDay, // Per-day discount rate
+    cost: pricing?.cost || 0, // Base cost from supplier
+    costPlus: pricing?.costPlus || 0, // Cost + markup
+    discountRate: pricing?.discountRate || 0, // Discount percentage
+    processingRate: pricing?.processingRate || 0, // Processing fee percentage
+    processingCost: pricing?.processingCost || 0, // Processing fee amount
+    finalRevenue: pricing?.finalRevenue || 0, // Revenue after processing
+    netProfit: pricing?.netProfit || 0, // Final profit
+    discountPerDay: pricing?.discountPerDay || 0, // Per-day discount rate
     
     // Rule-based pricing breakdown - Admin only
     appliedRules: engineOutput.appliedRules?.map(rule => ({
@@ -113,7 +113,7 @@ function mapEngineToPricingBreakdown(
     selectedReason,
     
     // Additional pricing engine fields - Admin only
-    totalCostBeforeProcessing: pricing.priceAfterDiscount // Price before processing fees
+    totalCostBeforeProcessing: pricing?.priceAfterDiscount || 0 // Price before processing fees
   } as PricingBreakdown;
 }
 
