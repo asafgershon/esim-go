@@ -53,12 +53,12 @@ export function useTrips() {
 
   // Transform GraphQL trips to enhanced trips
   const trips: EnhancedTrip[] = data?.trips?.map((trip: GraphQLTrip) => {
-    const regionKey = trip.regionId.toLowerCase();
+    const regionKey = trip.region.toLowerCase();
     const icon = tripIcons[regionKey] || tripIcons.default;
     const basePrice = basePrices[regionKey] || basePrices.default;
     
     return {
-      id: trip.regionId,
+      id: trip.region,
       name: trip.name,
       nameHebrew: trip.description.split(' - ')[0] || trip.name, // Extract Hebrew name from description
       icon,

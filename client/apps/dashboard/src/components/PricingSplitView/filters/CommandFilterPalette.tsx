@@ -625,35 +625,22 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
             <span className="text-xs font-medium">High Demand</span>
           </Button>
 
-          {/* Data Type Quick Filter Buttons */}
-          {filters?.dataTypes.map((dataType) => {
-            const isSelected = selectedFilters.dataTypes.has(dataType.value);
-            return (
-              <Button
-                key={dataType.value}
-                variant={isSelected ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleFilterChange("dataTypes", dataType.value)}
-                className={`h-7 px-3 gap-2 ${
-                  isSelected
-                    ? "bg-primary text-primary-foreground"
-                    : "border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800"
-                }`}
-              >
-                {dataType.isUnlimited ? (
-                  <Infinity className="h-3 w-3" />
-                ) : (
-                  <Database className="h-3 w-3" />
-                )}
-                <span className="text-xs font-medium">{dataType.label}</span>
-                {!dataType.isUnlimited && dataType.minDataMB !== undefined && dataType.maxDataMB !== undefined && (
-                  <span className="text-xs text-gray-500">
-                    ({dataType.minDataMB < 1024 ? `${dataType.minDataMB}MB` : `${(dataType.minDataMB / 1024).toFixed(1)}GB`} - {dataType.maxDataMB < 1024 ? `${dataType.maxDataMB}MB` : `${(dataType.maxDataMB / 1024).toFixed(1)}GB`})
-                  </span>
-                )}
-              </Button>
-            );
-          })}
+          {/* Unlimited Data Quick Filter Button */}
+          {filters?.dataTypes.find(dt => dt.isUnlimited) && (
+            <Button
+              variant={selectedFilters.dataTypes.has("unlimited") ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleFilterChange("dataTypes", "unlimited")}
+              className={`h-7 px-3 gap-2 ${
+                selectedFilters.dataTypes.has("unlimited")
+                  ? "bg-primary text-primary-foreground"
+                  : "border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              <Infinity className="h-3 w-3" />
+              <span className="text-xs font-medium">Unlimited</span>
+            </Button>
+          )}
 
           {/* Add Filter button */}
           <DropdownMenu

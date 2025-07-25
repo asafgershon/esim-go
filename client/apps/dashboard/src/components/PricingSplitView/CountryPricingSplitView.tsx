@@ -46,7 +46,7 @@ export function CountryPricingSplitView({
   const [bundleFilters, setBundleFilters] = useState<FilterState>({
     bundleGroups: new Set(),
     durations: new Set(),
-    dataTypes: new Set(),
+    dataTypes: new Set(["unlimited"]), // Set unlimited as default
   });
 
   // High demand countries functionality
