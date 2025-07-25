@@ -11,18 +11,7 @@ import type {
 
 const logger = createLogger({ component: "BundleResolvers" });
 
-type BundleResolvers = Resolvers["Bundle"] &
-  Resolvers &
-  Resolvers["BundlesByCountry"] &
-  Resolvers["BundlesForCountry"] &
-  Resolvers["BundlesByRegion"] &
-  Resolvers["BundlesForRegion"] &
-  Resolvers["BundlesForGroup"] &
-  Resolvers["BundlesByGroup"] &
-  Resolvers["CatalogBundle"] &
-  Resolvers["CustomerBundle"];
-
-export const bundlesResolvers: BundleResolvers = {
+export const bundlesResolvers: Partial<Resolvers> = {
   Query: {
     // ========== Bundle Queries ==========
 
@@ -198,14 +187,16 @@ export const bundlesResolvers: BundleResolvers = {
             iso: countryCode,
           } as Country,
           bundles:
-            result.bundles?.map((bundle: any) => ({
-              __typename: "CatalogBundle",
-              ...transformJsonBundle(bundle),
-              // Add default timestamps for JSON bundles
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              syncedAt: new Date().toISOString(),
-            })) || [],
+            (Array.isArray(result.bundles) 
+              ? result.bundles.map((bundle: any) => ({
+                  __typename: "CatalogBundle",
+                  ...transformJsonBundle(bundle),
+                  // Add default timestamps for JSON bundles
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                  syncedAt: new Date().toISOString(),
+                }))
+              : []),
           bundleCount: Number(result.bundle_count),
           pricingRange: {
             min: Number(result.min_price),
@@ -247,13 +238,15 @@ export const bundlesResolvers: BundleResolvers = {
         return {
           region: result.region,
           bundles:
-            result.bundles?.map((bundle) => ({
-              __typename: "CatalogBundle",
-              ...transformJsonBundle(bundle),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              syncedAt: new Date().toISOString(),
-            })) || [],
+            (Array.isArray(result.bundles)
+              ? result.bundles.map((bundle: any) => ({
+                  __typename: "CatalogBundle",
+                  ...transformJsonBundle(bundle),
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                  syncedAt: new Date().toISOString(),
+                }))
+              : []),
           bundleCount: Number(result.bundle_count),
           pricingRange: {
             min: Number(result.min_price),
@@ -276,6 +269,7 @@ export const bundlesResolvers: BundleResolvers = {
       try {
         const data = await context.repositories.bundles.byGroup(group);
         const defualtResult = {
+          group: group,
           bundleCount: 0,
           pricingRange: { min: 0, max: 0, avg: 0, currency: "USD" },
           groups: [],
@@ -292,13 +286,15 @@ export const bundlesResolvers: BundleResolvers = {
         return {
           group: result.group_name,
           bundles:
-            result.bundles?.map((bundle) => ({
-              __typename: "CatalogBundle",
-              ...transformJsonBundle(bundle),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              syncedAt: new Date().toISOString(),
-            })) || [],
+            (Array.isArray(result.bundles)
+              ? result.bundles.map((bundle: any) => ({
+                  __typename: "CatalogBundle",
+                  ...transformJsonBundle(bundle),
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                  syncedAt: new Date().toISOString(),
+                }))
+              : []),
           bundleCount: Number(result.bundle_count),
           pricingRange: {
             min: Number(result.min_price),
@@ -476,32 +472,6 @@ export const bundlesResolvers: BundleResolvers = {
         return "CustomerBundle";
       }
       return "CatalogBundle";
-    },
-  },
-  
-  CatalogBundle: {
-    // Field resolver for pricingBreakdown - not implemented yet
-    pricingBreakdown: async (parent, args, context) => {
-      logger.warn("pricingBreakdown field resolver called but not implemented yet", {
-        bundleName: parent.name,
-        paymentMethod: args.paymentMethod,
-      });
-      throw new GraphQLError("pricingBreakdown calculation not implemented yet", {
-        extensions: { code: "NOT_IMPLEMENTED" },
-      });
-    },
-  },
-  
-  CustomerBundle: {
-    // Field resolver for pricingBreakdown - not implemented yet
-    pricingBreakdown: async (parent, args, context) => {
-      logger.warn("pricingBreakdown field resolver called but not implemented yet", {
-        bundleId: parent.id,
-        paymentMethod: args.paymentMethod,
-      });
-      throw new GraphQLError("pricingBreakdown calculation not implemented yet", {
-        extensions: { code: "NOT_IMPLEMENTED" },
-      });
     },
   },
 };

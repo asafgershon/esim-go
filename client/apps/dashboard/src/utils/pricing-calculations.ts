@@ -6,9 +6,11 @@ import { CountryBundle } from '@/__generated__/graphql';
 export const calculateAveragePricePerDay = (bundles: CountryBundle[]): number => {
   if (bundles.length === 0) return 0;
   
-  const totalPricePerDay = bundles.reduce((sum, bundle) => 
-    sum + (bundle.pricePerDay || 0), 0
-  );
+  const totalPricePerDay = bundles.reduce((sum, bundle) => {
+    // Calculate price per day from price and duration
+    const pricePerDay = (bundle.price && bundle.duration) ? bundle.price / bundle.duration : 0;
+    return sum + pricePerDay;
+  }, 0);
   
   return totalPricePerDay / bundles.length;
 };

@@ -300,9 +300,6 @@ type Mutation {
   assignPackageToUser(userId: ID!, planId: ID!): AssignPackageResponse
     @auth(role: "ADMIN")
 
-  # Catalog sync operations
-  syncCatalog(force: Boolean = false): SyncCatalogResponse @auth(role: "ADMIN")
-  testCatalogSync: SyncCatalogResponse @auth(role: "ADMIN")
 
   # High demand countries management
   toggleHighDemandCountry(countryId: String!): ToggleHighDemandResponse
@@ -726,15 +723,6 @@ type CatalogSyncProgressUpdate {
   updatedAt: String!
 }
 
-# Catalog sync response
-type SyncCatalogResponse {
-  success: Boolean!
-  message: String
-  error: String
-  syncedBundles: Int
-  syncDuration: Int
-  syncedAt: String
-}
 
 # Basic checkout session type (enhanced)
 type CheckoutSession {

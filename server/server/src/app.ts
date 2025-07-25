@@ -1,7 +1,6 @@
-import dotenv from 'dotenv';
-dotenv.config({path: join(__dirname, '../.env')});
-console.log(process.env.ESIM_GO_API_KEY)
+import dotenv from "dotenv";
 
+dotenv.config({ path: join(__dirname, "../.env") });
 
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
@@ -55,12 +54,16 @@ import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
 
 // Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
-const rulesEngineSchema = readFileSync(join(__dirname, "../../packages/rules-engine/schema.graphql"), "utf-8");
+
+const rulesEngineSchema = readFileSync(
+  join(__dirname, "../../packages/rules-engine/schema.graphql"),
+  "utf-8"
+);
 
 const typeDefs = mergeTypeDefs([
   authDirectiveTypeDefs,
   mainSchema,
-  rulesEngineSchema
+  rulesEngineSchema,
 ]);
 
 const env = cleanEnv(process.env, {
@@ -70,14 +73,18 @@ const env = cleanEnv(process.env, {
 });
 
 async function startServer() {
+  
   try {
+    console.log("Creating executable schema...");
     // Create the schema
     const executableSchema = makeExecutableSchema({ typeDefs, resolvers });
+    console.log("Applying auth directive transformer...");
     const schemaWithDirectives = authDirectiveTransformer(executableSchema);
-
+    
+    console.log("Getting Redis connection...");
     // Redis is now configured at Apollo Server level for caching
     const redis = await getRedis();
-
+    
     // Initialize PubSub for WebSocket subscriptions
     const pubsub = await getPubSub(redis);
 
@@ -91,6 +98,7 @@ async function startServer() {
     const syncJobRepository = new SyncJobRepository();
     const pricingRulesRepository = new PricingRulesRepository();
     const bundleRepository = new BundleRepository();
+
     // Create an Express app and HTTP server
     const app = express();
     const httpServer = createServer(app);
@@ -151,12 +159,12 @@ async function startServer() {
       },
       wsServer
     );
-
     // Set up ApolloServer
+    console.log("Creating ApolloServer instance...");
     const server = new ApolloServer({
       schema: schemaWithDirectives,
       introspection: true,
-      cache: redis,
+      // cache: redis,
       plugins: [
         // Proper shutdown for the HTTP server
         ApolloServerPluginDrainHttpServer({ httpServer }),
@@ -201,8 +209,11 @@ async function startServer() {
         return formattedError;
       },
     });
+    console.log("ApolloServer created successfully");
+    console.log("Starting server");
 
     await server.start();
+    console.log("Server started successfully");
 
     // Set up our Express middleware to handle CORS, body parsing
     app.use(
@@ -360,33 +371,6 @@ startServer().catch((error) => {
   });
   process.exit(1);
 });
-
-// Add memory monitoring and crash prevention
-let memoryWarningLogged = false;
-
-setInterval(() => {
-  const usage = process.memoryUsage();
-  const memoryMB = usage.rss / 1024 / 1024;
-
-  // Log memory usage every 5 minutes
-  if (Date.now() % (5 * 60 * 1000) < 30000) {
-  }
-
-  // Warn if memory usage is high (>500MB)
-  if (memoryMB > 500 && !memoryWarningLogged) {
-    logger.warn("High memory usage detected", {
-      memoryMB: memoryMB.toFixed(2),
-      threshold: 500,
-      operationType: "memory-warning",
-    });
-    memoryWarningLogged = true;
-  }
-
-  // Reset warning flag if memory drops
-  if (memoryMB < 300) {
-    memoryWarningLogged = false;
-  }
-}, 30000); // Check every 30 seconds
 
 // Handle uncaught exceptions gracefully
 process.on("uncaughtException", (error) => {

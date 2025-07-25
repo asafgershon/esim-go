@@ -4,6 +4,7 @@ import type { Context } from "./context/types";
 import { createLogger } from "./lib/logger";
 import { authResolvers } from "./resolvers/auth-resolvers";
 import { bundlesResolvers } from "./resolvers/bundles.resolvers";
+import { catalogResolvers } from "./resolvers/catalog-resolvers";
 import { checkoutResolvers } from "./resolvers/checkout-resolvers";
 import { esimResolvers } from "./resolvers/esim-resolvers";
 import { ordersResolvers } from "./resolvers/orders-resolvers";
@@ -37,6 +38,9 @@ export const resolvers: Resolvers = {
 
     // Bundle resolvers
     ...bundlesResolvers.Query!,
+    
+    // Catalog resolvers
+    ...catalogResolvers.Query!,
 
     // Countries resolvers
     countries: async (_, __, context: Context) => {
@@ -170,7 +174,7 @@ export const resolvers: Resolvers = {
     ...esimResolvers.Mutation!,
 
     // Catalog resolvers are merged from catalog-resolvers.ts
-    // ...catalogResolvers.Mutation!,
+    ...catalogResolvers.Mutation!,
 
     // Auth resolvers are merged from auth-resolvers.ts
     ...authResolvers.Mutation!,
@@ -254,14 +258,17 @@ export const resolvers: Resolvers = {
     iso: (parent) => parent.iso,
   },
   CountryBundle: {
-    // ...catalogResolvers.CountryBundle!,
+    ...catalogResolvers.CountryBundle!,
+  },
+  PricingBreakdown: {
+    ...catalogResolvers.PricingBreakdown!,
   },
   Subscription: {
     // eSIM subscriptions are merged from esim-resolvers.ts
     ...esimResolvers.Subscription!,
 
     // Catalog subscriptions are merged from catalog-resolvers.ts
-    // ...catalogResolvers.Subscription!,
+    ...catalogResolvers.Subscription!,
   },
   // Bundle field resolvers
   BundlesByCountry: {
@@ -272,5 +279,8 @@ export const resolvers: Resolvers = {
   },
   BundlesByGroup: {
     ...bundlesResolvers.BundlesByGroup,
+  },
+  Bundle: {
+    ...bundlesResolvers.Bundle!,
   },
 };

@@ -59,6 +59,7 @@ export const usePricingData = () => {
       // Convert the bundlesCountries data to CountryGroupData format
       const groups: CountryGroupData[] = bundlesCountriesData.bundlesCountries.map((country: BundlesByCountry) => ({
         ...country,
+        countryId: country.country.iso, // Add this field for compatibility
         bundles: undefined, // Bundles will be loaded on expand
       }));
       
@@ -141,8 +142,27 @@ export const usePricingData = () => {
         variables: { countryId }
       });
       
-      if (countryBundlesResult.data?.countryBundles) {
-        const bundles = countryBundlesResult.data.countryBundles;
+      if (countryBundlesResult.data?.bundlesForCountry) {
+        // The query returns bundlesForCountry with nested bundles array
+        const bundlesData = countryBundlesResult.data.bundlesForCountry;
+        const catalogBundles = bundlesData.bundles;
+        
+        // For now, temporarily map CatalogBundle to CountryBundle format
+        // This allows the UI to display basic data until we implement full transformation
+        const bundles = catalogBundles.map((bundle: any) => ({
+          __typename: 'CountryBundle',
+          id: bundle.esimGoName || bundle.name,
+          name: bundle.name,
+          country: bundlesData.country,
+          duration: bundle.validityInDays,
+          price: bundle.basePrice,
+          currency: bundle.currency,
+          isUnlimited: bundle.isUnlimited,
+          data: bundle.dataAmountMB,
+          group: bundle.groups?.[0] || 'Standard Fixed',
+          pricingBreakdown: null, // Will be fetched separately
+          appliedRules: null
+        }));
         
         console.log(`✅ Fetched ${bundles.length} bundles for ${countryId}`);
         
@@ -151,7 +171,7 @@ export const usePricingData = () => {
         
         // Update the country group with the fetched bundles directly from backend
         setCountryGroups(prev => prev.map(group => 
-          group.countryId === countryId 
+          group.country.iso === countryId 
             ? { 
                 ...group, 
                 bundles,
@@ -165,7 +185,7 @@ export const usePricingData = () => {
         console.warn(`⚠️ No bundles found for country ${countryId}`);
         // Still update the country group to show empty state
         setCountryGroups(prev => prev.map(group => 
-          group.countryId === countryId 
+          group.country.iso === countryId 
             ? { 
                 ...group, 
                 bundles: [],
