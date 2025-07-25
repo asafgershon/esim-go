@@ -5,25 +5,74 @@ import type {
   Bundle,
   RuleAction,
   PaymentMethod,
+  DataType,
+  PricingBreakdown,
 } from "./generated/types";
 
 export * from "./generated/types";
 
 
-export interface NewPricingContext {
+// NEW organized context
+interface UserContext {
+  id: string;
+  segment: string;
+}
+
+interface PaymentContext {
+  method: PaymentMethod;
+  promo?: string;
+}
+
+export interface PricingEngineState {
+  // Context
   bundles: Bundle[];
-  costumer: never; // TODO: create costumer type
-  payment: never; // TODO: create payment context
+  costumer: UserContext;
+  payment: PaymentContext;
   rules: PricingRule[];
+
+  // Request
   request: {
     duration: number;
     paymentMethod: PaymentMethod;
+    promo?: string;
     countryISO?: string;
     region?: string;
     group?: string;
-  }
+    dataType?: DataType;
+  },
+
+  steps: string[];
+
+  // Response
+  unusedDays: number;
+  country: string;
+  region: string;
+  group: string;
+  dataType: DataType;
+  selectedBundle: Bundle;
+  pricing: PricingBreakdown
 }
 
+export type PricingEngineInput = Omit<PricingEngineState, "selectedBundle" | 'pricing'>;
+
+export type PricingEngineOutput = PricingEngineState & {
+  appliedRules: PricingRule[];
+  steps: string[];
+}
+
+export interface PricingEngine {
+  /**
+   * Calculate pricing for a given request
+   */
+  calculatePrice(request: PricingEngineInput): Promise<PricingEngineOutput>;
+  
+  /**
+   * Calculate pricing for multiple items in a single call
+   */
+  calculateBulkPrices(requests: PricingEngineInput[]): Promise<PricingEngineOutput[]>;
+}
+
+//  ------ OLD CONTEXT ------
 // Pricing context for rule evaluation
 export interface PricingContext {
   // Available bundles to choose from
