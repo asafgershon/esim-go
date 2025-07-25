@@ -1,4 +1,4 @@
-import { CountryBundle } from "@/__generated__/graphql";
+import { Bundle, Country } from "@/__generated__/graphql";
 import {
   Badge,
   Button,
@@ -38,13 +38,15 @@ import { toast } from "sonner";
 import { ConfigurationLevelIndicator } from "../configuration-level-indicator";
 
 interface PricingPreviewPanelProps {
-  bundle: CountryBundle;
+  bundle: Bundle;
+  country: Country;
   onClose: () => void;
   onConfigurationSaved?: () => void;
 }
 
 export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   bundle,
+  country,
   onClose,
   onConfigurationSaved,
 }) => {
@@ -62,9 +64,9 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   const [showDiscountTooltip, setShowDiscountTooltip] = useState(false);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get actual values from bundle
-  const discountRate = bundle.pricingBreakdown?.discountRate || 0;
-  const discountPerDay = bundle.pricingBreakdown?.discountPerDay || 0.1;
+  // Get actual values from bundle (placeholder until pricingBreakdown is implemented)
+  const discountRate = 0; // bundle.pricingBreakdown?.discountRate || 0;
+  const discountPerDay = 0.1; // bundle.pricingBreakdown?.discountPerDay || 0.1;
 
   // Payment method configuration
   const paymentMethods = [
@@ -91,9 +93,9 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
 
   // Calculate maximum allowed discount to maintain minimum profit margin
   const maxAllowedDiscount = useMemo(() => {
-    const baseCost = bundle.pricingBreakdown?.cost || 0; // Fixed: use bundle.cost instead of catalogPrice
+    const baseCost = bundle.basePrice || 0; // Use basePrice until pricingBreakdown is implemented
     const minimumAllowedPrice = baseCost + 1.5; // cost + $1.50 maximum profit
-    const markupAmount = bundle.pricingBreakdown?.costPlus || 10; // Use actual markup instead of hardcoded value
+    const markupAmount = 10; // Default markup until pricingBreakdown is implemented
     const totalCostWithMarkup = baseCost + markupAmount;
 
     if (totalCostWithMarkup <= minimumAllowedPrice) {
@@ -103,7 +105,7 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
     const maxDiscount =
       ((totalCostWithMarkup - minimumAllowedPrice) / totalCostWithMarkup) * 100;
     return Math.floor(maxDiscount * 10) / 10; // Round down to 1 decimal place
-  }, [bundle.pricingBreakdown?.cost, bundle.pricingBreakdown?.costPlus]);
+  }, [bundle.basePrice]);
 
   // Show tooltip when invalid discount is attempted
   const showInvalidDiscountTooltip = useCallback(() => {
@@ -150,20 +152,17 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
     [maxAllowedDiscount, showInvalidDiscountTooltip]
   );
 
-  // Use actual pricing values from bundle
-  const cost = bundle.pricingBreakdown?.cost || 0; // eSIM Go cost
-  const costPlus = bundle.pricingBreakdown?.costPlus || 0; // Our markup
-  const totalCost = bundle.pricingBreakdown?.totalCost || cost + costPlus; // Our selling price before discount
-  const discountValue = bundle.pricingBreakdown?.discountValue || 0;
-  const priceAfterDiscount = bundle.pricingBreakdown?.priceAfterDiscount || 0; // Customer pays this
+  // Use placeholder pricing values until pricingBreakdown is implemented
+  const cost = bundle.basePrice || 0; // eSIM Go cost
+  const costPlus = 10; // Default markup
+  const totalCost = cost + costPlus; // Our selling price before discount
+  const discountValue = totalCost * discountRate;
+  const priceAfterDiscount = totalCost - discountValue; // Customer pays this
 
-  // Use pre-calculated values from bundle (updated for selected payment method)
-  const processingCost =
-    bundle.pricingBreakdown?.processingCost ||
-    priceAfterDiscount * processingRate;
+  // Calculate processing and profit
+  const processingCost = priceAfterDiscount * processingRate;
   const revenueAfterProcessing = priceAfterDiscount - processingCost;
-  const netProfit =
-    bundle.pricingBreakdown?.netProfit || revenueAfterProcessing - cost; // Use pre-calculated if available
+  const netProfit = revenueAfterProcessing - cost;
 
   // Handler for saving markup changes
   const handleSaveMarkup = () => {
@@ -184,7 +183,7 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
       // TODO: Update to use new rule-based pricing system
       // This should create or update a pricing rule instead of using the old configuration system
       toast.info(
-        `Saving discount of ${customDiscount}% for ${bundle.country.name} - Update needed for new pricing system`
+        `Saving discount of ${customDiscount}% for ${country.name} - Update needed for new pricing system`
       );
 
       // Placeholder for new rule-based pricing update
@@ -259,8 +258,8 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
             <div>
               <h4 className="font-medium text-sm">{bundle.name}</h4>
               <p className="text-xs text-gray-600 mt-1">
-                {bundle.country.name} • {bundle.duration} days
-                {bundle.data && ` • ${bundle.data}`}
+                {country.name} • {bundle.validityInDays} days
+                {bundle.isUnlimited ? ' • Unlimited' : bundle.dataAmountReadable && ` • ${bundle.dataAmountReadable}`}
               </p>
             </div>
           </div>

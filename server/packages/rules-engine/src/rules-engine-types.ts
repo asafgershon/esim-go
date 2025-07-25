@@ -1,6 +1,6 @@
 // Extended types specific to the rules engine
 import type {
-  PricingRule as BasePricingRule,
+  PricingRule,
   PricingRuleCalculation as BasePricingRuleCalculation,
   Bundle,
   RuleAction,
@@ -8,16 +8,13 @@ import type {
 
 export * from "./generated/types";
 
-// Extended PricingRule interface with Date objects instead of strings
-export interface PricingRule
-  extends Omit<
-    BasePricingRule,
-    "validFrom" | "validUntil" | "createdAt" | "updatedAt"
-  > {
-  validFrom?: Date;
-  validUntil?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+
+export interface NewPricingContext {
+  bundles: Bundle[];
+  costumer: never; // TODO: create costumer type
+  payment: never; // TODO: create payment context
+  rules: PricingRule[];
+
 }
 
 // Pricing context for rule evaluation
