@@ -1,34 +1,24 @@
 import { createLogger } from "@esim-go/utils";
 import type {
-  PricingRuleCalculation,
-} from "./generated/types";
-import type { PricingContext } from "./rules-engine-types";
+  PricingEngineInput,
+  PricingEngineOutput,
+} from "./rules-engine-types";
 
-export interface PricingEngineInput {
-  // Define the input structure based on your requirements
-  context: PricingContext;
-}
-
-export interface PricingEngineOutput {
-  // Define the output structure based on your requirements
-  calculation: PricingRuleCalculation;
-}
+// Module-level logger for stateless operation
+const logger = createLogger({
+  component: "PricingEngine",
+  operationType: "price-calculation",
+});
 
 export class PricingEngine {
-  private logger = createLogger({
-    component: "PricingEngine",
-    operationType: "price-calculation",
-  });
-
-  constructor() {
-    this.logger.info("PricingEngine initialized");
-  }
-
   /**
    * Calculate pricing for a given request
    */
   async calculatePrice(request: PricingEngineInput): Promise<PricingEngineOutput> {
-    this.logger.info("Starting price calculation", {
+    const correlationId = request.metadata.correlationId;
+    
+    logger.info("Starting price calculation", {
+      correlationId,
       operationType: "price-calculation",
     });
 
@@ -40,12 +30,45 @@ export class PricingEngine {
    * Calculate pricing for multiple items in a single call
    */
   async calculateBulkPrices(requests: PricingEngineInput[]): Promise<PricingEngineOutput[]> {
-    this.logger.info("Starting bulk price calculation", {
+    logger.info("Starting bulk price calculation", {
       requestCount: requests.length,
       operationType: "bulk-price-calculation",
     });
 
-    // TODO: Implement bulk pricing calculation logic
-    throw new Error("PricingEngine.calculateBulkPrices() is not yet implemented");
+    const results: PricingEngineOutput[] = [];
+    
+    // Process each request sequentially to avoid overwhelming the system
+    for (let i = 0; i < requests.length; i++) {
+      const request = requests[i];
+      const correlationId = request.metadata.correlationId;
+      
+      try {
+        const result = await this.calculatePrice(request);
+        results.push(result);
+        
+        logger.debug(`Bulk calculation progress: ${i + 1}/${requests.length}`, {
+          correlationId,
+          contextIndex: i,
+          operationType: "bulk-price-calculation",
+        });
+      } catch (error) {
+        logger.error(`Failed to calculate price for request ${i}`, error, {
+          correlationId,
+          contextIndex: i,
+          operationType: "bulk-price-calculation",
+        });
+        throw new Error(
+          `Bulk pricing failed at index ${i}: ${(error as Error).message}`
+        );
+      }
+    }
+
+    logger.info("Bulk price calculation completed", {
+      requestCount: requests.length,
+      successCount: results.length,
+      operationType: "bulk-price-calculation",
+    });
+
+    return results;
   }
 }

@@ -11,7 +11,6 @@ import type {
 
 export * from "./generated/types";
 
-
 // NEW organized context
 interface UserContext {
   id: string;
@@ -39,7 +38,7 @@ export interface PricingEngineState {
     region?: string;
     group?: string;
     dataType?: DataType;
-  },
+  };
 
   steps: string[];
 
@@ -50,26 +49,37 @@ export interface PricingEngineState {
   group: string;
   dataType: DataType;
   selectedBundle: Bundle;
-  pricing: PricingBreakdown
+  pricing: PricingBreakdown;
+
+  // Metadata
+  metadata: {
+    correlationId: string;
+    [key: string]: any;
+  };
 }
 
-export type PricingEngineInput = Omit<PricingEngineState, "selectedBundle" | 'pricing'>;
+export type PricingEngineInput = Omit<
+  PricingEngineState,
+  "selectedBundle" | "pricing"
+>;
 
 export type PricingEngineOutput = PricingEngineState & {
   appliedRules: PricingRule[];
   steps: string[];
-}
+};
 
 export interface PricingEngine {
   /**
    * Calculate pricing for a given request
    */
   calculatePrice(request: PricingEngineInput): Promise<PricingEngineOutput>;
-  
+
   /**
    * Calculate pricing for multiple items in a single call
    */
-  calculateBulkPrices(requests: PricingEngineInput[]): Promise<PricingEngineOutput[]>;
+  calculateBulkPrices(
+    requests: PricingEngineInput[]
+  ): Promise<PricingEngineOutput[]>;
 }
 
 //  ------ OLD CONTEXT ------

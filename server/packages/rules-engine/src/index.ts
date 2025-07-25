@@ -1,5 +1,5 @@
 // Main exports
-export { PricingEngine, type PricingEngineInput, type PricingEngineOutput } from './pricing-engine';
+export { PricingEngine } from './pricing-engine';
 // Keep old export for backward compatibility
 export { PricingEngine as PricingRuleEngine } from './pricing-engine';
 export { RuleBuilder } from './rule-builder';
@@ -30,7 +30,10 @@ export {
   RuleEvaluationResult,
   RuleValidationError,
   RuleConflict,
-  type PricingEngine as IPricingEngine
+  type PricingEngine as IPricingEngine,
+  type PricingEngineInput,
+  type PricingEngineOutput,
+  type PricingEngineState
 } from './rules-engine-types';
 
 // Pricing steps types
