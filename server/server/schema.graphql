@@ -351,6 +351,11 @@ interface Bundle {
   # Base pricing (before any rules/markups)
   basePrice: Float!
   currency: String!
+  
+  # Calculated pricing (only computed when requested)
+  pricingBreakdown(
+    paymentMethod: PaymentMethod
+  ): PricingBreakdown
 }
 
 type CatalogBundle implements Bundle {

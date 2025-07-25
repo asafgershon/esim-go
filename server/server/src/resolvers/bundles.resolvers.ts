@@ -478,6 +478,32 @@ export const bundlesResolvers: BundleResolvers = {
       return "CatalogBundle";
     },
   },
+  
+  CatalogBundle: {
+    // Field resolver for pricingBreakdown - not implemented yet
+    pricingBreakdown: async (parent, args, context) => {
+      logger.warn("pricingBreakdown field resolver called but not implemented yet", {
+        bundleName: parent.name,
+        paymentMethod: args.paymentMethod,
+      });
+      throw new GraphQLError("pricingBreakdown calculation not implemented yet", {
+        extensions: { code: "NOT_IMPLEMENTED" },
+      });
+    },
+  },
+  
+  CustomerBundle: {
+    // Field resolver for pricingBreakdown - not implemented yet
+    pricingBreakdown: async (parent, args, context) => {
+      logger.warn("pricingBreakdown field resolver called but not implemented yet", {
+        bundleId: parent.id,
+        paymentMethod: args.paymentMethod,
+      });
+      throw new GraphQLError("pricingBreakdown calculation not implemented yet", {
+        extensions: { code: "NOT_IMPLEMENTED" },
+      });
+    },
+  },
 };
 
 // ========== Helper Functions ==========
