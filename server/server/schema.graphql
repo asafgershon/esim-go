@@ -47,12 +47,12 @@ type Query {
   conflictingPricingRules(ruleId: ID!): [PricingRule!]!
   calculateBatchPricing(
     requests: [CalculatePriceInput!]!
-  ): [PricingRuleCalculation!]! @auth(role: "ADMIN")
-  calculatePriceWithRules(input: CalculatePriceInput!): PricingRuleCalculation!
+  ): [PricingBreakdown!]! @auth(role: "ADMIN")
+  calculatePriceWithRules(input: CalculatePriceInput!): PricingBreakdown!
   simulatePricingRule(
     rule: CreatePricingRuleInput!
     testContext: TestPricingContext!
-  ): PricingRuleCalculation!
+  ): PricingBreakdown!
 
   # Pricing filters
   pricingFilters: PricingFilters!
@@ -858,6 +858,13 @@ type PricingBreakdown {
   # Rule-based pricing breakdown - Admin only
   appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
   discounts: [DiscountApplication!] @auth(role: "ADMIN") # Detailed discount breakdown (nullable)
+  
+  # Pipeline metadata - Admin only
+  unusedDays: Int @auth(role: "ADMIN") # Days not used from selected bundle
+  selectedReason: String @auth(role: "ADMIN") # Bundle selection reason (exact_match, next_available, etc.)
+  
+  # Additional pricing engine fields - Admin only
+  totalCostBeforeProcessing: Float @auth(role: "ADMIN") # Price before processing fees
 }
 
 type PricingRange {

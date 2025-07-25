@@ -9,6 +9,7 @@ import { checkoutResolvers } from "./resolvers/checkout-resolvers";
 import { esimResolvers } from "./resolvers/esim-resolvers";
 import { ordersResolvers } from "./resolvers/orders-resolvers";
 import { pricingRulesResolvers } from "./resolvers/pricing-rules-resolvers";
+import { pricingResolvers } from "./resolvers/pricing-resolvers";
 import { tripsResolvers } from "./resolvers/trips-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import type { Resolvers } from "./types";
@@ -32,6 +33,9 @@ export const resolvers: Resolvers = {
 
     // Pricing rules resolvers are merged from pricing-rules-resolvers.ts
     ...pricingRulesResolvers.Query!,
+
+    // Unified pricing resolvers (calculatePrice, calculatePrices, etc.)
+    ...pricingResolvers.Query!,
 
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Query!,
