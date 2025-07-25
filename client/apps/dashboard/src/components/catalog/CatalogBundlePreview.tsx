@@ -26,11 +26,12 @@ export const CatalogBundlePreview: React.FC<CatalogBundlePreviewProps> = ({ bund
     <div className="p-6 space-y-6">
       {/* Bundle Header */}
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">{bundle.esimGoName}</h3>
-        <div className="flex items-center gap-2">
-          {bundle.group && (
-            <Badge variant="outline">{bundle.group}</Badge>
-          )}
+        <h3 className="text-lg font-semibold">{bundle.name}</h3>
+        <p className="text-sm text-muted-foreground">{bundle.esimGoName}</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          {bundle.groups && bundle.groups.map((group, index) => (
+            <Badge key={index} variant="outline">{group}</Badge>
+          ))}
         </div>
       </div>
 
@@ -41,19 +42,19 @@ export const CatalogBundlePreview: React.FC<CatalogBundlePreviewProps> = ({ bund
             <p className="text-sm text-muted-foreground">Duration</p>
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{bundle.duration} days</span>
+              <span className="font-medium">{bundle.validityInDays} days</span>
             </div>
           </div>
           
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Data</p>
             <div className="flex items-center gap-2">
-              {bundle.unlimited ? (
+              {bundle.isUnlimited ? (
                 <Wifi className="h-4 w-4 text-muted-foreground" />
               ) : (
                 <WifiOff className="h-4 w-4 text-muted-foreground" />
               )}
-              <span className="font-medium">{bundle.data?.toString() || 'Unknown'}</span>
+              <span className="font-medium">{bundle.dataAmountReadable}</span>
             </div>
           </div>
         </div>
@@ -69,24 +70,64 @@ export const CatalogBundlePreview: React.FC<CatalogBundlePreviewProps> = ({ bund
             <div className="flex items-center justify-between">
               <span className="font-medium">Base Price</span>
               <span className="font-semibold text-lg">
-                {formatPrice(bundle.priceCents || 0, bundle.currency)}
+                {formatPrice(bundle.basePrice || 0, bundle.currency)}
               </span>
             </div>
             
-            {bundle.priceCents && bundle.duration && bundle.priceCents && (
+            {bundle.basePrice && bundle.validityInDays && (
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>Per Day</span>
                 
-                <span>{formatPrice(bundle.priceCents / bundle.duration, bundle.currency)}</span>
+                <span>{formatPrice(bundle.basePrice / bundle.validityInDays, bundle.currency)}</span>
               </div>
             )}
           </div>
         </div>
 
         {/* Additional Info */}
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p>Countries: {bundle.countries.map(c => c.name).join(', ')}</p>
-          {bundle.id && <p>Plan ID: {bundle.id}</p>}
+        <div className="space-y-3">
+          {bundle.description && (
+            <div>
+              <h4 className="font-medium text-sm mb-1">Description</h4>
+              <p className="text-sm text-muted-foreground">{bundle.description}</p>
+            </div>
+          )}
+          
+          <div className="text-sm text-muted-foreground space-y-1">
+            {/* Countries or Region info */}
+            {bundle.countries && bundle.countries.length > 0 ? (
+              <>
+                <p><span className="font-medium">Countries:</span> {bundle.countries.length} {bundle.countries.length === 1 ? 'country' : 'countries'}</p>
+                <p className="text-xs">{bundle.countries.join(', ')}</p>
+              </>
+            ) : bundle.region ? (
+              <p><span className="font-medium">Coverage:</span> {bundle.region} region</p>
+            ) : (
+              <p><span className="font-medium">Coverage:</span> Check bundle details for coverage information</p>
+            )}
+            
+            {/* Additional region info if both exist */}
+            {bundle.region && bundle.countries && bundle.countries.length > 0 && (
+              <p><span className="font-medium">Region:</span> {bundle.region}</p>
+            )}
+            
+            {/* Data amount in MB if different from readable */}
+            {bundle.dataAmountMB && !bundle.isUnlimited && (
+              <p><span className="font-medium">Data:</span> {bundle.dataAmountMB} MB</p>
+            )}
+            
+            {/* Speed info */}
+            {bundle.speed && bundle.speed.length > 0 && (
+              <p><span className="font-medium">Speed:</span> {bundle.speed.join(', ')}</p>
+            )}
+          </div>
+          
+          <div className="text-xs text-muted-foreground pt-2 border-t">
+            <p>Plan ID: {bundle.esimGoName}</p>
+            {bundle.syncedAt && (
+              <p>Last synced: {new Date(bundle.syncedAt).toLocaleDateString()}</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
