@@ -127,9 +127,11 @@ export function CountryPricingSplitView({
 
     // Filter by bundle groups
     if (bundleFilters.bundleGroups.size > 0) {
-      filtered = filtered.filter(bundle => 
-        bundle.groups && bundle.groups.some(g => bundleFilters.bundleGroups.has(g))
-      );
+      filtered = filtered.filter(bundle => {
+        // Check if bundle has groups and if any group matches the filter
+        if (!bundle.groups || bundle.groups.length === 0) return false;
+        return bundle.groups.some(g => bundleFilters.bundleGroups.has(g));
+      });
     }
 
     // Filter by durations
@@ -276,10 +278,13 @@ export function CountryPricingSplitView({
       // Clear trip selection when switching to countries
       setSelectedTrip(null);
       if (!selectedCountry && filteredBundlesByCountry.length > 0) {
-        setSelectedCountry(filteredBundlesByCountry[0].country.iso);
+        const firstCountryId = filteredBundlesByCountry[0].country.iso;
+        setSelectedCountry(firstCountryId);
+        // Auto-load the first country's data
+        handleCountrySelect(firstCountryId);
       }
     }
-  }, [showTrips, filteredBundlesByCountry, filteredTrips, selectedCountry, selectedTrip]);
+  }, [showTrips, filteredBundlesByCountry, filteredTrips, selectedCountry, selectedTrip, handleCountrySelect]);
 
   // Handle trip selection
   const handleTripSelect = useCallback((tripId: string) => {
