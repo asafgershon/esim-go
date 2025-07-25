@@ -1,45 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui';
 import { Calculator, Layers, Settings } from 'lucide-react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { usePricingData } from '../hooks/usePricingData';
 
 
 
 
 
 const PricingPage: React.FC = () => {
-  const { countryGroups, tripsData, loading, error, expandCountry } = usePricingData();
   const location = useLocation();
   const navigate = useNavigate();
-  const [showTrips, setShowTrips] = useState(false);
-
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-gray-600">Loading pricing data from eSIM Go API...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Pricing Management</h1>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-2 text-red-600 hover:text-red-800"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // Tab configuration with titles, icons, descriptions, and routes
   const tabConfig = {
@@ -158,15 +128,7 @@ const PricingPage: React.FC = () => {
 
       {/* Flexible Content Area */}
       <div className="flex-1 min-h-0">
-        <Outlet context={{ 
-          countryGroups, 
-          tripsData,
-          expandCountry, 
-          loading, 
-          error,
-          showTrips,
-          setShowTrips 
-        }} />
+        <Outlet />
       </div>
     </div>
   );

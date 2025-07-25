@@ -1,10 +1,10 @@
-import { BundlesByCountry, CountryBundle, Trip } from "../../__generated__/graphql";
+import { Bundle, BundlesByCountry, Trip } from "../../__generated__/graphql";
 
 
 
 export interface BundlesByCountryWithBundles extends BundlesByCountry {
-  bundles?: CountryBundle[];
-  originalBundles?: CountryBundle[]; // For tracking unfiltered bundles
+  bundles?: Bundle[];
+  originalBundles?: Bundle[]; // For tracking unfiltered bundles
 }
 
 export interface CountryPricingSplitViewProps {

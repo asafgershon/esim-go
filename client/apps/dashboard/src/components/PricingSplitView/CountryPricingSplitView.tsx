@@ -1,4 +1,4 @@
-import { CountryBundle } from "@/__generated__/graphql";
+import { Bundle } from "@/__generated__/graphql";
 import {
   Button,
   List,
@@ -38,7 +38,7 @@ export function CountryPricingSplitView({
 }: CountryPricingSplitViewProps) {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<string | null>(null);
-  const [selectedBundle, setSelectedBundle] = useState<CountryBundle | null>(null);
+  const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null);
   const [loadingCountries, setLoadingCountries] = useState<Set<string>>(new Set());
   const [showHighDemandOnly, setShowHighDemandOnly] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
@@ -122,20 +122,20 @@ export function CountryPricingSplitView({
   }, [tripsData, searchQuery, tripFuse]);
 
   // Helper function to filter bundles based on selected filters
-  const filterBundles = useCallback((bundles: CountryBundle[]) => {
+  const filterBundles = useCallback((bundles: Bundle[]) => {
     let filtered = bundles;
 
     // Filter by bundle groups
     if (bundleFilters.bundleGroups.size > 0) {
       filtered = filtered.filter(bundle => 
-        bundle.group && bundleFilters.bundleGroups.has(bundle.group)
+        bundle.groups && bundle.groups.some(g => bundleFilters.bundleGroups.has(g))
       );
     }
 
     // Filter by durations
     if (bundleFilters.durations.size > 0) {
       filtered = filtered.filter(bundle => {
-        const duration = bundle.duration;
+        const duration = bundle.validityInDays;
         return Array.from(bundleFilters.durations).some(filterValue => {
           switch (filterValue) {
             case 'short':
@@ -244,7 +244,7 @@ export function CountryPricingSplitView({
 
     const bundles = country.bundles;
     const count = bundles.length;
-    const prices = bundles.map(bundle => bundle.pricingBreakdown?.cost || 0).filter(price => price > 0);
+    const prices = bundles.map(bundle => bundle.basePrice || 0).filter(price => price > 0);
     
     if (prices.length === 0) {
       return {

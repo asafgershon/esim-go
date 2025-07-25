@@ -1,29 +1,92 @@
-import { CountryBundle, Trip } from '@/__generated__/graphql';
-import React from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { BundlesByCountryWithBundles, CountryPricingSplitView } from '../../components/country-pricing-split-view';
-
-interface OutletContext {
-  countryGroups: BundlesByCountryWithBundles[];
-  tripsData: Trip[];
-  expandCountry: (countryId: string) => Promise<void>;
-  handleBundleClick?: (bundle: CountryBundle) => void;
-  loading: boolean;
-  error: string | null;
-  showTrips: boolean;
-  setShowTrips: (show: boolean) => void;
-}
+import { Bundle, BundlesByCountry, GetBundlesByCountryQuery, GetCountryBundlesQuery, GetTripsQuery } from '@/__generated__/graphql';
+import { useLazyQuery, useQuery } from '@apollo/client';
+import React, { useState } from 'react';
+import { BundlesByCountryWithBundles, CountryPricingSplitView } from '../../components/PricingSplitView';
+import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRY_BUNDLES, GET_TRIPS } from '../../lib/graphql/queries';
 
 export const PricingSummaryPage: React.FC = () => {
-  const { countryGroups, tripsData, expandCountry, showTrips, setShowTrips } = useOutletContext<OutletContext>();
+  const [showTrips, setShowTrips] = useState(false);
+  const [countryGroups, setCountryGroups] = useState<BundlesByCountryWithBundles[]>([]);
+  
+  // Fetch countries with bundle aggregations
+  const { loading: bundlesLoading, error: bundlesError } = useQuery<GetBundlesByCountryQuery>(
+    GET_BUNDLES_BY_COUNTRY,
+    {
+      onCompleted: (data) => {
+        if (data?.bundlesByCountry) {
+          // Convert to the expected format with countryId for compatibility
+          const groups: BundlesByCountryWithBundles[] = data.bundlesByCountry.map((country: BundlesByCountry) => ({
+            ...country,
+            countryId: country.country.iso, // Add for compatibility
+            bundles: undefined, // Will be loaded on expand
+          }));
+          setCountryGroups(groups);
+        }
+      }
+    }
+  );
+
+  // Fetch trips data
+  const { data: tripsData } = useQuery<GetTripsQuery>(GET_TRIPS);
+  
+  // Lazy query for fetching country bundles on demand
+  const [getCountryBundles] = useLazyQuery<GetCountryBundlesQuery>(GET_COUNTRY_BUNDLES);
+
+  // Handle expanding a country to load its bundles
+  const expandCountry = async (countryId: string) => {
+    try {
+      const result = await getCountryBundles({
+        variables: { countryId }
+      });
+      
+      if (result.data?.bundlesForCountry) {
+        const bundlesData = result.data.bundlesForCountry;
+        const catalogBundles = bundlesData.bundles;
+        
+        // Use bundles directly without transformation
+        const bundles: Bundle[] = catalogBundles;
+        
+        // Update the country group with fetched bundles
+        setCountryGroups(prev => prev.map(group => 
+          group.country.iso === countryId 
+            ? { ...group, bundles }
+            : group
+        ));
+      }
+    } catch (error) {
+      console.error('Error fetching bundles for country:', countryId, error);
+    }
+  };
+
+  if (bundlesLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2 text-gray-600">Loading pricing data...</span>
+      </div>
+    );
+  }
+
+  if (bundlesError) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-800">Failed to load pricing data</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-2 text-red-600 hover:text-red-800"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">
-
       <div className="flex-1 min-h-0">
         <CountryPricingSplitView 
           bundlesByCountry={countryGroups}
-          tripsData={tripsData}
+          tripsData={tripsData?.trips || []}
           onExpandCountry={expandCountry}
           showTrips={showTrips}
           onToggleTrips={setShowTrips}

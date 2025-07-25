@@ -1,4 +1,4 @@
-import { CountryBundle } from "@/__generated__/graphql";
+import { Bundle } from "@/__generated__/graphql";
 import { ScrollArea } from "@workspace/ui";
 import { Package } from "lucide-react";
 import React from "react";
@@ -7,8 +7,8 @@ import { BundlesByCountryWithBundles } from "./types";
 interface BundlesTableProps {
   country: BundlesByCountryWithBundles;
   loadingCountries: Set<string>;
-  selectedBundle: CountryBundle | null;
-  onBundleSelect: (bundle: CountryBundle) => void;
+  selectedBundle: Bundle | null;
+  onBundleSelect: (bundle: Bundle) => void;
 }
 
 export const BundlesTable: React.FC<BundlesTableProps> = ({
