@@ -201,9 +201,38 @@ export const checkoutResolvers: Partial<Resolvers> = {
           searchParams.regions = [regionId];
         }
 
+        // Debug: Log the search parameters being used
+        console.log("Bundle search parameters:", JSON.stringify(searchParams, null, 2));
+
+        // Debug: Check what countries are available in the database
+        try {
+          const availableCountries = await context.repositories.bundles.getCountries();
+          console.log("Available countries in database:", availableCountries.slice(0, 20));
+          console.log("Total countries available:", availableCountries.length);
+          
+          // Check if UZ specifically exists
+          const hasUZ = availableCountries.includes('UZ');
+          console.log("Database contains UZ bundles:", hasUZ);
+        } catch (error) {
+          console.error("Error checking available countries:", error);
+        }
+
         // Fetch ALL available bundles for the country/region to allow optimal selection
         // Don't filter by duration - let the pricing engine select the best bundle
         const bundleResults = await context.repositories.bundles.search(searchParams);
+
+        // Debug: Log the search results
+        console.log("Bundle search results:", {
+          dataLength: bundleResults?.data?.length || 0,
+          count: bundleResults?.count || 0,
+          hasNextPage: bundleResults?.hasNextPage,
+          firstFewBundles: bundleResults?.data?.slice(0, 3).map(b => ({
+            name: b.esim_go_name,
+            countries: b.countries,
+            validity: b.validity_in_days,
+            price: b.price
+          }))
+        });
 
         // STRICT VALIDATION - fail if no bundles available
         if (!bundleResults?.data || bundleResults.data.length === 0) {

@@ -107,6 +107,7 @@ export class BundleRepository extends BaseSupabaseRepository<
     }
 
     if (countries?.length) {
+      console.log("Bundle repository: Searching for countries:", countries);
       query = query.contains("countries", countries);
     }
 
@@ -162,6 +163,18 @@ export class BundleRepository extends BaseSupabaseRepository<
       this.logger.error("Failed to search bundles", error, { criteria });
       throw error;
     }
+
+    // Debug logging
+    console.log("Bundle repository search completed:", {
+      criteriaCountries: criteria.countries,
+      resultCount: data?.length || 0,
+      totalCount: count || 0,
+      sampleBundles: data?.slice(0, 2).map(b => ({
+        name: b.esim_go_name,
+        countries: b.countries,
+        region: b.region
+      }))
+    });
 
     return {
       data: data || [],
