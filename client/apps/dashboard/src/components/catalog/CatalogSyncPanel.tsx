@@ -61,14 +61,14 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
   syncLoading
 }) => {
   const [liveSyncProgress, setLiveSyncProgress] = useState<CatalogSyncProgressUpdate | null>(null);
-  const [wsConnected, setWsConnected] = useState(false);
+  const [wsConnected, setWsConnected] = useState(true);
   
   // Subscribe to real-time catalog sync progress
   const { data: _syncProgressData, error: _syncError } = useSubscription<CatalogSyncProgressSubscription, CatalogSyncProgressSubscriptionVariables>(CATALOG_SYNC_PROGRESS_SUBSCRIPTION, {
     onSubscriptionData: ({ subscriptionData }) => {
       if (subscriptionData.data?.catalogSyncProgress) {
         setLiveSyncProgress(subscriptionData.data.catalogSyncProgress);
-        setWsConnected(true);
+        setWsConnected(true); // Confirm connection is working when data arrives
       }
     },
     onSubscriptionComplete: () => {
