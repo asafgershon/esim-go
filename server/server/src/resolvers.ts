@@ -46,6 +46,9 @@ export const resolvers: Resolvers = {
     // Catalog resolvers
     ...catalogResolvers.Query!,
 
+    // Checkout resolvers (getCheckoutSession, etc.)
+    ...checkoutResolvers.Query!,
+
     // Countries resolvers
     countries: async (_, __, context: Context) => {
       try {
