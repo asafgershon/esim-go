@@ -161,11 +161,13 @@ async function startServer() {
     );
     // Set up ApolloServer
     console.log("Creating ApolloServer instance...");
-    const server = new ApolloServer({
-      schema: schemaWithDirectives,
-      introspection: true,
-      // cache: redis,
-      plugins: [
+    let server;
+    try {
+      server = new ApolloServer({
+        schema: schemaWithDirectives,
+        introspection: true,
+        cache: redis,
+        plugins: [
         // Proper shutdown for the HTTP server
         ApolloServerPluginDrainHttpServer({ httpServer }),
         // Proper shutdown for the WebSocket server
@@ -208,7 +210,11 @@ async function startServer() {
         });
         return formattedError;
       },
-    });
+      });
+    } catch (error) {
+      console.error("Error creating ApolloServer:", error);
+      throw error;
+    }
     console.log("ApolloServer created successfully");
     console.log("Starting server");
 

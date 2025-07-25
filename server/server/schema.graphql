@@ -371,6 +371,11 @@ type CatalogBundle implements Bundle {
   speed: [String!]!
   basePrice: Float! # Maps to 'price' column in DB
   currency: String!
+  
+  # Calculated pricing (from Bundle interface)
+  pricingBreakdown(
+    paymentMethod: PaymentMethod
+  ): PricingBreakdown
 
   # Timestamps
   createdAt: DateTime!
@@ -395,8 +400,10 @@ type CustomerBundle implements Bundle {
   basePrice: Float!
   currency: String!
 
-  # Calculated pricing with breakdown
-  pricing: PricingBreakdown!
+  # Calculated pricing (from Bundle interface)
+  pricingBreakdown(
+    paymentMethod: PaymentMethod
+  ): PricingBreakdown
 }
 
 type BundlesByCountry {
