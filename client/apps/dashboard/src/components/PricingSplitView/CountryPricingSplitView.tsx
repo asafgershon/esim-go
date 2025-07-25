@@ -1,4 +1,4 @@
-import { Bundle } from "@/__generated__/graphql";
+import { Bundle, GetPaymentMethodsQuery } from "@/__generated__/graphql";
 import {
   Button,
   List,
@@ -18,6 +18,8 @@ import Fuse from "fuse.js";
 import { MapPin, Package, Plane, X } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { Panel, PanelGroup } from "react-resizable-panels";
+import { useQuery } from "@apollo/client";
+import { GET_PAYMENT_METHODS } from "../../lib/graphql/queries";
 import { toast } from "sonner";
 import { useHighDemandCountries } from "../../hooks/useHighDemandCountries";
 import { ResizeHandle } from "../resize-handle";
@@ -56,6 +58,9 @@ export function CountryPricingSplitView({
     toggleLoading,
     loading: highDemandLoading,
   } = useHighDemandCountries();
+
+  // Fetch payment methods
+  const { data: paymentMethodsData } = useQuery<GetPaymentMethodsQuery>(GET_PAYMENT_METHODS);
 
   // Configure Fuse.js for country search
   const countryFuse = useMemo(() => {
@@ -539,6 +544,7 @@ export function CountryPricingSplitView({
                       <PricingPreviewPanel 
                       bundle={selectedBundle} 
                       country={selectedCountryData.country}
+                      paymentMethods={paymentMethodsData?.paymentMethods || []}
                       onClose={() => setSelectedBundle(null)}
                       onConfigurationSaved={() => {
                         // Refetch bundle data when configuration is saved

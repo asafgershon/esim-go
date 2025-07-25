@@ -1,4 +1,4 @@
-import { Bundle, Country } from "@/__generated__/graphql";
+import { Bundle, Country, PaymentMethodInfo } from "@/__generated__/graphql";
 import {
   Badge,
   Button,
@@ -40,6 +40,7 @@ import { ConfigurationLevelIndicator } from "../configuration-level-indicator";
 interface PricingPreviewPanelProps {
   bundle: Bundle;
   country: Country;
+  paymentMethods?: PaymentMethodInfo[];
   onClose: () => void;
   onConfigurationSaved?: () => void;
 }
@@ -47,6 +48,7 @@ interface PricingPreviewPanelProps {
 export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   bundle,
   country,
+  paymentMethods = [],
   onClose,
   onConfigurationSaved,
 }) => {
@@ -68,28 +70,35 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   const discountRate = 0; // bundle.pricingBreakdown?.discountRate || 0;
   const discountPerDay = 0.1; // bundle.pricingBreakdown?.discountPerDay || 0.1;
 
-  // Payment method configuration
-  const paymentMethods = [
-    {
-      value: "ISRAELI_CARD",
-      label: "Israeli Card",
-      rate: 0.014,
-      icon: CreditCard,
-    },
-    {
-      value: "FOREIGN_CARD",
-      label: "Foreign Card",
-      rate: 0.045,
-      icon: CreditCard,
-    },
-    { value: "BIT", label: "Bit Payment", rate: 0.007, icon: Smartphone },
-    { value: "AMEX", label: "American Express", rate: 0.057, icon: CreditCard },
-    { value: "DINERS", label: "Diners Club", rate: 0.064, icon: CreditCard },
-  ];
+  // Payment method configuration - use passed data if available, otherwise fallback to defaults
+  const paymentMethodsConfig = paymentMethods.length > 0 
+    ? paymentMethods.map(pm => ({
+        value: pm.value,
+        label: pm.label,
+        rate: pm.processingRate,
+        icon: pm.icon === 'smartphone' ? Smartphone : CreditCard,
+      }))
+    : [
+        {
+          value: "ISRAELI_CARD",
+          label: "Israeli Card",
+          rate: 0.014,
+          icon: CreditCard,
+        },
+        {
+          value: "FOREIGN_CARD",
+          label: "Foreign Card",
+          rate: 0.045,
+          icon: CreditCard,
+        },
+        { value: "BIT", label: "Bit Payment", rate: 0.007, icon: Smartphone },
+        { value: "AMEX", label: "American Express", rate: 0.057, icon: CreditCard },
+        { value: "DINERS", label: "Diners Club", rate: 0.064, icon: CreditCard },
+      ];
 
   const currentPaymentMethod =
-    paymentMethods.find((pm) => pm.value === selectedPaymentMethod) ||
-    paymentMethods[0];
+    paymentMethodsConfig.find((pm) => pm.value === selectedPaymentMethod) ||
+    paymentMethodsConfig[0];
 
   // Calculate maximum allowed discount to maintain minimum profit margin
   const maxAllowedDiscount = useMemo(() => {
@@ -446,7 +455,7 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
                       <CommandEmpty>No payment method found.</CommandEmpty>
                       <CommandList>
                         <CommandGroup>
-                          {paymentMethods.map((method) => {
+                          {paymentMethodsConfig.map((method) => {
                             const Icon = method.icon;
                             return (
                               <CommandItem
