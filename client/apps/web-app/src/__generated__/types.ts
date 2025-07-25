@@ -220,9 +220,11 @@ export type BundlesForRegion = {
 };
 
 export type CalculatePriceInput = {
-  countryId: Scalars['String']['input'];
+  countryId?: InputMaybe<Scalars['String']['input']>;
   numOfDays: Scalars['Int']['input'];
   paymentMethod?: InputMaybe<PaymentMethod>;
+  promo?: InputMaybe<Scalars['String']['input']>;
+  regionId?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CatalogBundle = Bundle & {
@@ -378,9 +380,9 @@ export type CountryBundle = {
 };
 
 export type CreateCheckoutSessionInput = {
-  countryId: Scalars['String']['input'];
+  countryId?: InputMaybe<Scalars['String']['input']>;
   numOfDays: Scalars['Int']['input'];
-  regionId: Scalars['String']['input'];
+  regionId?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateCheckoutSessionResponse = {
@@ -871,6 +873,16 @@ export enum PaymentMethod {
   IsraeliCard = 'ISRAELI_CARD'
 }
 
+export type PaymentMethodInfo = {
+  __typename?: 'PaymentMethodInfo';
+  description: Scalars['String']['output'];
+  icon?: Maybe<Scalars['String']['output']>;
+  isActive: Scalars['Boolean']['output'];
+  label: Scalars['String']['output'];
+  processingRate: Scalars['Float']['output'];
+  value: PaymentMethod;
+};
+
 export type PriceRange = {
   __typename?: 'PriceRange';
   /** Average price (optional) */
@@ -1108,6 +1120,7 @@ export type Query = {
   myOrders: Array<Order>;
   orderDetails?: Maybe<Order>;
   orders: Array<Order>;
+  paymentMethods: Array<PaymentMethodInfo>;
   pricingFilters: PricingFilters;
   pricingRule?: Maybe<PricingRule>;
   pricingRules: Array<PricingRule>;

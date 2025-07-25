@@ -764,8 +764,8 @@ type CheckoutSession {
 # Input for creating a checkout session
 input CreateCheckoutSessionInput {
   numOfDays: Int!
-  regionId: String!
-  countryId: String!
+  regionId: String
+  countryId: String
 }
 
 # Response types
