@@ -25,26 +25,26 @@ interface CatalogSplitViewProps {
   countriesData: BundlesByCountry[];
   regionsData: BundlesByRegion[];
   bundleGroups: { group: string }[];
-  onSync: () => void;
-  syncLoading: boolean;
   showSyncPanel: boolean;
   onToggleSyncPanel: (show: boolean) => void;
   syncHistory: any[];
   syncHistoryLoading: boolean;
   loading: boolean;
+  onSync: () => void;
+  syncLoading: boolean;
 }
 
 export function CatalogSplitView({
   countriesData = [],
   regionsData = [],
   bundleGroups = [],
-  onSync,
-  syncLoading,
   showSyncPanel,
   onToggleSyncPanel,
   syncHistory,
   syncHistoryLoading,
   loading = false,
+  onSync,
+  syncLoading,
 }: CatalogSplitViewProps) {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
@@ -201,17 +201,6 @@ export function CatalogSplitView({
           </div>
         )}
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            onClick={onSync}
-            disabled={syncLoading}
-            size="sm"
-            variant="ghost"
-          >
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${syncLoading ? "animate-spin" : ""}`}
-            />
-            Trigger Sync
-          </Button>
           <Button
             variant="ghost"
             size="sm"

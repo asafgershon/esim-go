@@ -264,13 +264,13 @@ function CatalogPageContent() {
             countriesData={countriesData}
             regionsData={regionsDataArray}
             bundleGroups={bundleGroupsData?.bundlesByGroup || []}
-            onSync={handleSyncClick}
-            syncLoading={syncLoading}
             showSyncPanel={showSyncPanel}
             onToggleSyncPanel={setShowSyncPanel}
             syncHistory={syncHistoryData?.catalogSyncHistory?.jobs || []}
             syncHistoryLoading={syncHistoryLoading}
             loading={catalogLoading || regionsLoading}
+            onSync={handleSyncClick}
+            syncLoading={syncLoading}
           />
         </div>
       </PageLayout.Content>
