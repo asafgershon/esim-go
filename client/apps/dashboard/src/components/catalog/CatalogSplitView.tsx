@@ -1,4 +1,4 @@
-import { BundlesByCountry, BundlesByRegion, CatalogBundle } from "@/__generated__/graphql";
+import { BundlesByCountry, BundlesByRegion, BundlesForRegion, CatalogBundle } from "@/__generated__/graphql";
 import {
   Button,
   List,
@@ -162,11 +162,7 @@ export function CatalogSplitView({
 
     const bundles = regionBundles[selectedRegion];
     if (!bundles)
-      return {
-        ...region,
-        bundleCount: region.bundleCount,
-      } satisfies BundlesForRegion;
-
+      return region;
     // Apply bundle group filter
     const filteredBundles =
       selectedBundleGroup === "all"

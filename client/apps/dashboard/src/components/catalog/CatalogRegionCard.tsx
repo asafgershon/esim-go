@@ -10,11 +10,11 @@ import {
   TooltipTrigger,
 } from "@workspace/ui";
 import { Globe, MapPin } from "lucide-react";
-import { BundlesForRegion } from "@/__generated__/graphql";
+import { BundlesForRegion, BundlesByRegion } from "@/__generated__/graphql";
 
 
 interface CatalogRegionCardProps {
-  region: BundlesForRegion;
+  region: BundlesForRegion | BundlesByRegion;
   isSelected: boolean;
   isLoading?: boolean;
   onSelect: () => void;
@@ -57,12 +57,12 @@ export const CatalogRegionCard: React.FC<CatalogRegionCardProps> = ({
               <TooltipTrigger asChild>
                 <span className="flex items-center gap-2 cursor-default">
                   <Globe className="h-4 w-4" />
-                  {formatRegionName(region.regionName)}
+                  {formatRegionName(region.region)}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Region: {formatRegionName(region.regionName)}</p>
-                <p>{region.countryCount} countries</p>
+                <p>Region: {formatRegionName(region.region)}</p>
+                {'countries' in region && <p>{region.countries.length} countries</p>}
                 <p>{region.bundleCount} bundles</p>
               </TooltipContent>
             </Tooltip>
@@ -73,10 +73,12 @@ export const CatalogRegionCard: React.FC<CatalogRegionCardProps> = ({
         </CardTitle>
         
         <CardDescription className="text-sm">
-          <div className="flex items-center gap-1 mb-1">
-            <MapPin className="h-3 w-3" />
-            <span>{region.countryCount} countries</span>
-          </div>
+          {'countries' in region && (
+            <div className="flex items-center gap-1 mb-1">
+              <MapPin className="h-3 w-3" />
+              <span>{region.countries.length} countries</span>
+            </div>
+          )}
           <div className="text-xs text-gray-500">
             {summary ? `${summary.count} bundles • ${summary.range}` : `${region.bundleCount} bundles`}
           </div>
