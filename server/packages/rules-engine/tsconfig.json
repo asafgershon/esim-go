@@ -5,6 +5,7 @@
     "lib": ["ES2022"],
     "declaration": true,
     "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -21,6 +22,9 @@
       "@esim-go/utils": ["../utils/src"]
     }
   },
+  "references": [
+    { "path": "../utils" }
+  ],
   "include": [
     "src/**/*"
   ],
