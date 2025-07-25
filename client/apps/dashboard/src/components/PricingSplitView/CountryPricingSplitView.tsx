@@ -538,6 +538,7 @@ export function CountryPricingSplitView({
                     <div className="flex-1 flex flex-col">
                       <PricingPreviewPanel 
                       bundle={selectedBundle} 
+                      country={selectedCountryData.country}
                       onClose={() => setSelectedBundle(null)}
                       onConfigurationSaved={() => {
                         // Refetch bundle data when configuration is saved
