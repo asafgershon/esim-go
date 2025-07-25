@@ -1,6 +1,6 @@
 import { CreateCheckoutSessionInput } from "@/__generated__/graphql";
 import { CheckoutContainer } from "@/components/checkout/checkout-container";
-import { CheckoutRedirect } from "@/components/checkout/checkout-redirect";
+import { redirect } from "next/navigation";
 
 interface CheckoutHandlerProps {
   searchParams: {
@@ -79,15 +79,14 @@ export default async function CheckoutHandler({ searchParams }: CheckoutHandlerP
       );
       
       if (result.success && result.session?.token) {
-        // Return the redirect component instead of using server-side redirect
-        return (
-          <CheckoutRedirect
-            token={result.session.token}
-            numOfDays={numOfDays || '7'}
-            countryId={countryId}
-            regionId={regionId}
-          />
-        );
+        // Use server-side redirect instead of client component
+        const params = new URLSearchParams({
+          token: result.session.token,
+          numOfDays: numOfDays || '7',
+          ...(countryId && { countryId }),
+          ...(regionId && { regionId }),
+        });
+        redirect(`/checkout?${params.toString()}`);
       } else {
         throw new Error(result.error || 'Failed to create checkout session');
       }
