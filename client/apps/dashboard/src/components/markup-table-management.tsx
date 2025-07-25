@@ -390,9 +390,9 @@ export const MarkupTableManagement: React.FC = () => {
   });
 
   // Get available bundle groups (must be after groupedMarkupConfig is defined)
-  const availableBundleGroups = bundleGroupsData?.bundleGroups
+  const availableBundleGroups = bundleGroupsData?.pricingFilters?.groups
     ? getAvailableBundleGroups(
-        bundleGroupsData.bundleGroups,
+        bundleGroupsData.pricingFilters.groups.map(group => ({ group })),
         Object.keys(groupedMarkupConfig)
       )
     : [];

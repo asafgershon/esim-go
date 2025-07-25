@@ -25,17 +25,22 @@ import {
   Clock,
   Globe,
   CreditCard,
+  Package,
 } from 'lucide-react';
 import { Country, PaymentMethod } from '@/__generated__/graphql';
+import { useQuery } from '@apollo/client';
+import { GET_BUNDLE_GROUPS } from '../lib/graphql/queries';
 
 interface PricingSimulatorPanelProps {
   countries: Country[];
   selectedCountry: string;
   numOfDays: number;
   paymentMethod: PaymentMethod;
+  selectedGroups: string[];
   onCountryChange: (country: string) => void;
   onDaysChange: (days: number) => void;
   onPaymentMethodChange: (method: PaymentMethod) => void;
+  onGroupsChange: (groups: string[]) => void;
   onSimulate: () => void;
   loading: boolean;
 }
@@ -53,12 +58,16 @@ export const PricingSimulatorPanel: React.FC<PricingSimulatorPanelProps> = ({
   selectedCountry,
   numOfDays,
   paymentMethod,
+  selectedGroups,
   onCountryChange,
   onDaysChange,
   onPaymentMethodChange,
+  onGroupsChange,
   onSimulate,
   loading,
 }) => {
+  // Fetch available bundle groups
+  const { data: bundleGroupsData, loading: loadingBundleGroups } = useQuery(GET_BUNDLE_GROUPS);
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
@@ -125,6 +134,47 @@ export const PricingSimulatorPanel: React.FC<PricingSimulatorPanelProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Bundle Groups */}
+          <div className="space-y-2">
+            <Label htmlFor="groups">Bundle Groups (Optional)</Label>
+            <Select 
+              value={selectedGroups.length === 1 ? selectedGroups[0] : ''} 
+              onValueChange={(value) => {
+                if (value === 'all') {
+                  onGroupsChange([]);
+                } else if (value) {
+                  onGroupsChange([value]);
+                }
+              }}
+            >
+              <SelectTrigger id="groups">
+                <SelectValue placeholder="All bundle groups" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    <span>All Groups</span>
+                  </div>
+                </SelectItem>
+                {bundleGroupsData?.pricingFilters?.groups?.map((group: string) => (
+                  <SelectItem key={group} value={group}>
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      <span>{group}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedGroups.length > 0 && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Package className="h-3 w-3" />
+                <span>Filtering by: {selectedGroups.join(', ')}</span>
+              </div>
+            )}
           </div>
 
           {/* Simulate Button */}

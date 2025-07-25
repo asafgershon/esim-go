@@ -7,6 +7,7 @@ interface PricingSimulatorParams {
   numOfDays: number;
   countryId: string;
   paymentMethod?: PaymentMethod;
+  groups?: string[];
 }
 
 interface PricingSimulatorData {
@@ -221,6 +222,7 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
           numOfDays: params.numOfDays,
           countryId: params.countryId.toUpperCase(),
           paymentMethod: params.paymentMethod,
+          groups: params.groups,
         },
         context: {
           headers: {

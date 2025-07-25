@@ -1,7 +1,8 @@
 import { useQuery } from '@apollo/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { ME } from '@/lib/graphql/mutations';
 import type { User } from '@/lib/types';
+import { parseGraphQLError, ErrorType } from '@/lib/error-types';
 
 export interface AuthState {
   user: User | null;
@@ -89,24 +90,53 @@ export const useAuth = () => {
     }
   }, [data, loading, error, hasAuthToken]);
 
-  const signOut = () => {
+  const signOut = useCallback(() => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('rememberLogin');
+    localStorage.removeItem('lastPhoneNumber');
     setAuthState({
       user: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
     });
-  };
+    
+    // Reload the page to clear any cached data
+    window.location.href = '/';
+  }, []);
 
-  const refreshAuth = () => {
+  const refreshAuth = useCallback(() => {
     refetch();
-  };
+  }, [refetch]);
+
+  const clearError = useCallback(() => {
+    setAuthState(prev => ({ ...prev, error: null }));
+  }, []);
+
+  // Helper to check if current session is valid
+  const isSessionValid = useCallback(() => {
+    const token = localStorage.getItem('authToken');
+    return !!(token && authState.isAuthenticated && !authState.error);
+  }, [authState.isAuthenticated, authState.error]);
+
+  // Helper to get parsed auth error
+  const getAuthError = useCallback(() => {
+    if (!authState.error) return null;
+    
+    return parseGraphQLError({
+      message: authState.error,
+      graphQLErrors: error?.graphQLErrors || [],
+      networkError: error?.networkError || null,
+    });
+  }, [authState.error, error]);
 
   return {
     ...authState,
     signOut,
     refreshAuth,
+    clearError,
+    isSessionValid,
+    getAuthError,
   };
 }; 

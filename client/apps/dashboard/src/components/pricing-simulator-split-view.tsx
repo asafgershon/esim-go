@@ -15,6 +15,7 @@ export const PricingSimulatorSplitView: React.FC<PricingSimulatorSplitViewProps>
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [numOfDays, setNumOfDays] = useState<number>(7);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.IsraeliCard);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   
   const {
     simulate,
@@ -37,6 +38,7 @@ export const PricingSimulatorSplitView: React.FC<PricingSimulatorSplitViewProps>
       numOfDays,
       countryId: selectedCountry,
       paymentMethod,
+      groups: selectedGroups.length > 0 ? selectedGroups : undefined,
     });
   };
 
@@ -52,9 +54,11 @@ export const PricingSimulatorSplitView: React.FC<PricingSimulatorSplitViewProps>
           selectedCountry={selectedCountry}
           numOfDays={numOfDays}
           paymentMethod={paymentMethod}
+          selectedGroups={selectedGroups}
           onCountryChange={setSelectedCountry}
           onDaysChange={setNumOfDays}
           onPaymentMethodChange={setPaymentMethod}
+          onGroupsChange={setSelectedGroups}
           onSimulate={handleSimulate}
           loading={loading}
         />

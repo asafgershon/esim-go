@@ -113,8 +113,8 @@ export class PricingRulesRepository extends BaseSupabaseRepository<
       priority: input.priority,
       is_active: input.isActive ?? true,
       is_editable: true, // New rules are always editable
-      valid_from: input.validFrom || null,
-      valid_until: input.validUntil || null,
+      valid_from: input.validFrom && input.validFrom.trim() ? input.validFrom : null,
+      valid_until: input.validUntil && input.validUntil.trim() ? input.validUntil : null,
       created_by: userId || "e8b56c19-1834-4650-8c15-f25403a018f8", // Use provided user ID or fallback
     };
 
@@ -178,8 +178,8 @@ export class PricingRulesRepository extends BaseSupabaseRepository<
     if (input.priority !== undefined) update.priority = input.priority || 0;
     if (input.isActive !== undefined)
       update.is_active = input.isActive || false;
-    if (input.validFrom !== undefined) update.valid_from = input.validFrom;
-    if (input.validUntil !== undefined) update.valid_until = input.validUntil;
+    if (input.validFrom !== undefined) update.valid_from = input.validFrom && input.validFrom.trim() ? input.validFrom : null;
+    if (input.validUntil !== undefined) update.valid_until = input.validUntil && input.validUntil.trim() ? input.validUntil : null;
 
     const { data, error } = await this.supabase
       .from("pricing_rules")

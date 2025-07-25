@@ -481,8 +481,8 @@ export const CALCULATE_BATCH_ADMIN_PRICING = gql(`
 `);
 
 export const SIMULATE_PRICING = gql(`
-  query SimulatePricing($numOfDays: Int!, $countryId: String!, $paymentMethod: PaymentMethod) {
-    calculatePrice(numOfDays: $numOfDays, countryId: $countryId, paymentMethod: $paymentMethod) {
+  query SimulatePricing($numOfDays: Int!, $countryId: String!, $paymentMethod: PaymentMethod, $groups: [String!]) {
+    calculatePrice(numOfDays: $numOfDays, countryId: $countryId, paymentMethod: $paymentMethod, groups: $groups) {
       bundle {
         id
         name
@@ -683,8 +683,8 @@ export const GET_COUNTRY_BUNDLES = gql(`
 
 export const GET_BUNDLE_GROUPS = gql(`
   query GetBundleGroups {
-    bundlesByGroup {
-      group
+    pricingFilters {
+      groups
     }
   }
 `);

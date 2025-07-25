@@ -252,7 +252,29 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
     setValidationErrors(errors);
 
     if (errors.length === 0) {
-      onSave(ruleData);
+      // Clean the data to remove __typename fields before sending to GraphQL
+      const cleanRuleData = {
+        category: ruleData.category,
+        name: ruleData.name,
+        description: ruleData.description,
+        conditions: ruleData.conditions.map(condition => ({
+          field: condition.field,
+          operator: condition.operator,
+          value: condition.value,
+          type: condition.type
+        })),
+        actions: ruleData.actions.map(action => ({
+          type: action.type,
+          value: action.value,
+          metadata: action.metadata
+        })),
+        priority: ruleData.priority,
+        isActive: ruleData.isActive,
+        validFrom: ruleData.validFrom,
+        validUntil: ruleData.validUntil,
+      };
+      
+      onSave(cleanRuleData);
     } else {
       toast.error("Please fix validation errors before saving");
     }

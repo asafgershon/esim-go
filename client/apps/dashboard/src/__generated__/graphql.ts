@@ -223,6 +223,7 @@ export type BundlesForRegion = {
 
 export type CalculatePriceInput = {
   countryId?: InputMaybe<Scalars['String']['input']>;
+  groups?: InputMaybe<Array<Scalars['String']['input']>>;
   numOfDays: Scalars['Int']['input'];
   paymentMethod?: InputMaybe<PaymentMethod>;
   promo?: InputMaybe<Scalars['String']['input']>;
@@ -1180,6 +1181,7 @@ export type QueryCalculateBatchPricingArgs = {
 
 export type QueryCalculatePriceArgs = {
   countryId: Scalars['String']['input'];
+  groups?: InputMaybe<Array<Scalars['String']['input']>>;
   numOfDays: Scalars['Int']['input'];
   paymentMethod?: InputMaybe<PaymentMethod>;
   regionId?: InputMaybe<Scalars['String']['input']>;
@@ -1472,6 +1474,7 @@ export type UpdatePricingConfigurationResponse = {
 
 export type UpdatePricingRuleInput = {
   actions?: InputMaybe<Array<RuleActionInput>>;
+  category?: InputMaybe<RuleCategory>;
   conditions?: InputMaybe<Array<RuleConditionInput>>;
   description?: InputMaybe<Scalars['String']['input']>;
   isActive?: InputMaybe<Scalars['Boolean']['input']>;

@@ -3,7 +3,7 @@
 import { EsimExperienceSelector } from "@/components/esim-experience-selector";
 import { EsimSkeleton } from "@/components/esim-skeleton";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { LoginModal } from "@/components/login-modal";
+import { EnhancedLoginModal } from "@/components/enhanced-login-modal";
 import { useAuth } from "@/hooks/useAuth";
 import { Button, Card } from "@workspace/ui";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
@@ -67,7 +67,7 @@ export default function Home() {
                 </Button>
               </div>
             ) : (
-              <LoginModal redirectTo="/profile" />
+              <EnhancedLoginModal redirectTo="/profile" />
             )}
           </div>
         </div>
