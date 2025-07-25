@@ -7,7 +7,7 @@ import type { Database } from "../database.types";
 import { createLogger } from "../lib/logger";
 import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.repository";
 import { createPaymentService } from "../services/payment";
-import type { EsimStatus, OrderStatus, PaymentMethod, Resolvers } from "../types";
+import { PaymentMethod, type EsimStatus, type OrderStatus, type Resolvers } from "../types";
 import type { PricingEngineInput } from "@esim-go/rules-engine";
 
 // ===============================================

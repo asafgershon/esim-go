@@ -50,6 +50,7 @@ async function createCheckoutSession(numOfDays: number, regionId?: string, count
     const data = await response.json();
     
     if (data.errors) {
+      console.error('GraphQL errors:', data.errors);
       throw new Error(data.errors[0]?.message || 'GraphQL error');
     }
 
@@ -97,6 +98,7 @@ export default async function CheckoutHandler({ searchParams }: CheckoutHandlerP
         <div className="p-8 text-center">
           <h2 className="text-2xl font-bold mb-4 text-red-600">Session Creation Failed</h2>
           <p className="text-red-500 mb-4">Unable to create checkout session. Please try again.</p>
+          <p className="text-sm text-gray-600 mb-2">Error: {error instanceof Error ? error.message : 'Unknown error'}</p>
           <p className="text-sm text-gray-600">Refresh the page to retry.</p>
         </div>
       );
