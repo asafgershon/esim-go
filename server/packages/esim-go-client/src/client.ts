@@ -3,6 +3,7 @@ import {
   CatalogueApi,
   ESIMsApi,
   OrganisationApi,
+  OrdersApi,
   Configuration,
   type CatalogueResponseInner,
   type BundleGroup,
@@ -85,6 +86,7 @@ export class ESimGoClient {
   private catalogueApi: CatalogueApi;
   private esimsApi: ESIMsApi;
   private organisationApi: OrganisationApi;
+  private _ordersApi: OrdersApi;
   private logger?: SimpleLogger;
   private config: ESimGoClientConfig;
 
@@ -165,6 +167,12 @@ export class ESimGoClient {
     this.catalogueApi = new CatalogueApi(configuration, undefined, this.axiosInstance);
     this.esimsApi = new ESIMsApi(configuration, undefined, this.axiosInstance);
     this.organisationApi = new OrganisationApi(configuration, undefined, this.axiosInstance);
+    this._ordersApi = new OrdersApi(configuration, undefined, this.axiosInstance);
+  }
+
+  // Public getters for API clients
+  get ordersApi(): OrdersApi {
+    return this._ordersApi;
   }
 
   // Enhanced catalog methods with retry logic

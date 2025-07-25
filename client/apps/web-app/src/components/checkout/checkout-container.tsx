@@ -11,7 +11,6 @@ import { OrderDetailsSection } from "./order-details-section";
 import { PaymentSection } from "./payment-section";
 import { LoginSection } from "./login-section";
 import { DeliveryMethodSection } from "./delivery-method-section";
-import { ValidationStatus } from "./validation-status";
 import { CheckoutSkeleton } from "./checkout-skeleton";
 import { CheckoutStepType } from "@/__generated__/graphql";
 
@@ -73,8 +72,15 @@ export function CheckoutContainer() {
         setValidationError(null);
         
         try {
-          const planSnapshot = session.planSnapshot as { name: string };
-          const bundleName = planSnapshot.name;
+          console.log("Session planSnapshot:", session.planSnapshot);
+          
+          const planSnapshot = session.planSnapshot as { name?: string };
+          const bundleName = planSnapshot?.name;
+          
+          if (!bundleName) {
+            throw new Error("Bundle name not found in plan snapshot");
+          }
+          
           const quantity = 1; // Always 1 for now
           const customerReference = session.orderId;
           
@@ -256,11 +262,9 @@ export function CheckoutContainer() {
         {/* Left Column - Order Details */}
         <div className="space-y-6">
           <OrderDetailsSection
-            numOfDays={numOfDays as number}
-            countryId={countryId as string}
-            tripId={regionId as string}
-            totalPrice={0} // Let usePricing hook handle pricing calculation
+            session={session}
             sectionNumber={1}
+            validationStatus={validationStatus}
           />
           <DeliveryMethodSection
             sectionNumber={2}
@@ -273,13 +277,6 @@ export function CheckoutContainer() {
         {/* Right Column - Payment & Login */}
         <div className="space-y-6">
           <LoginSection sectionNumber={3} />
-          
-          {/* Order Validation Status */}
-          <ValidationStatus 
-            status={validationStatus}
-            error={validationError}
-            loading={validationLoading}
-          />
           
           <PaymentSection
             sectionNumber={4}

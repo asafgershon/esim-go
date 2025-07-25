@@ -9,27 +9,60 @@ const CountUp = lazy(() => import("react-countup"));
 interface OrderDetailsSectionProps {
   session: GetCheckoutSessionQuery['getCheckoutSession']['session'] | null | undefined;
   sectionNumber?: number;
+  validationStatus?: "pending" | "valid" | "invalid" | null;
 }
 
 export function OrderDetailsSection({
   session,
   sectionNumber,
+  validationStatus,
 }: OrderDetailsSectionProps) {
   // Extract session data (already parsed JSON objects, not strings)
   const planSnapshot = session?.planSnapshot || null;
   const pricing = session?.pricing || null;
 
+  // Validation status indicator component
+  const ValidationIndicator = () => {
+    if (validationStatus === "pending") {
+      return (
+        <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" />
+      );
+    }
+    if (validationStatus === "valid") {
+      return (
+        <div className="rounded-full h-5 w-5 bg-green-500 flex items-center justify-center">
+          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      );
+    }
+    if (validationStatus === "invalid") {
+      return (
+        <div className="rounded-full h-5 w-5 bg-red-500 flex items-center justify-center">
+          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+      );
+    }
+    return null;
+  };
+
   // If no session data, show loading state
   if (!session || !planSnapshot) {
     return (
       <Card className="p-6" dir="rtl">
-        <div className="flex items-center gap-3 mb-4">
-          {sectionNumber && (
-            <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
-              {sectionNumber}
-            </div>
-          )}
-          <h2 className="text-xl font-semibold">פרטי הזמנה</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            {sectionNumber && (
+              <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
+                {sectionNumber}
+              </div>
+            )}
+            <h2 className="text-xl font-semibold">פרטי הזמנה</h2>
+          </div>
+          <ValidationIndicator />
         </div>
         <div className="text-center py-8 text-muted-foreground">
           <p>טוען פרטי הזמנה...</p>
@@ -56,13 +89,16 @@ export function OrderDetailsSection({
 
   return (
     <Card className="p-6" dir="rtl">
-      <div className="flex items-center gap-3 mb-4">
-        {sectionNumber && (
-          <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
-            {sectionNumber}
-          </div>
-        )}
-        <h2 className="text-xl font-semibold">פרטי הזמנה</h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          {sectionNumber && (
+            <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
+              {sectionNumber}
+            </div>
+          )}
+          <h2 className="text-xl font-semibold">פרטי הזמנה</h2>
+        </div>
+        <ValidationIndicator />
       </div>
       
       <div className="space-y-4">

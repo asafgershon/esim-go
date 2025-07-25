@@ -9,6 +9,7 @@ import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.rep
 import { createPaymentService } from "../services/payment";
 import { PaymentMethod, type EsimStatus, type OrderStatus, type Resolvers } from "../types";
 import type { PricingEngineInput } from "@esim-go/rules-engine";
+import { BundleOrderTypeEnum, OrderRequestTypeEnum } from "@esim-go/client";
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS
@@ -823,23 +824,68 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
     // Validate order before purchase (eSIM Go recommended flow)
     validateOrder: async (_, { input }, context: Context) => {
+      // Extract parameters outside try block so they're available in catch block
+      const { bundleName, quantity, customerReference } = input;
+      
       try {
-        const { bundleName, quantity, customerReference } = input;
-        console.log("Validating order:", {
+        logger.info("validateOrder resolver called", {
+          input,
+          operationType: "order-validation"
+        });
+        
+        
+        logger.info("Extracted parameters", {
           bundleName,
+          bundleNameType: typeof bundleName,
           quantity,
           customerReference,
+          operationType: "order-validation"
+        });
+        
+        if (!bundleName) {
+          throw new Error("bundleName is required but was not provided");
+        }
+
+        // Use the eSIM Go client to validate the order
+        const orderRequest = {
+          type: OrderRequestTypeEnum.VALIDATE,
+          order: [{
+            type: BundleOrderTypeEnum.BUNDLE,
+            item: bundleName,
+            quantity: quantity,
+          }]
+        };
+        
+        logger.info("Calling eSIM Go API", {
+          orderRequest,
+          operationType: "order-validation"
+        });
+        
+        const response = await context.services.esimGoClient.ordersApi.ordersPost({
+          orderRequest
+        });
+        
+        logger.info("eSIM Go API response", {
+          responseData: response.data,
+          operationType: "order-validation"
         });
 
-        // Use the eSIM Go API to validate the order
-        const validationResult = await context.dataSources.orders.validateOrder(
-          bundleName,
-          quantity,
-          customerReference || undefined
-        );
+        const validationResult = {
+          isValid: response.data.valid || false,
+          bundleDetails: response.data.order?.[0] || null,
+          totalPrice: response.data.total || null,
+          currency: response.data.currency || 'USD',
+          error: response.data.valid ? null : response.data.message,
+          errorCode: response.data.valid ? null : 'VALIDATION_FAILED'
+        };
 
         if (!validationResult.isValid) {
-          console.log("Order validation failed:", validationResult.error);
+          logger.warn("Order validation failed", {
+            bundleName,
+            error: validationResult.error,
+            errorCode: validationResult.errorCode,
+            operationType: "order-validation"
+          });
           return {
             success: true, // API call succeeded
             isValid: false,
@@ -851,7 +897,12 @@ export const checkoutResolvers: Partial<Resolvers> = {
           };
         }
 
-        console.log("Order validation succeeded");
+        logger.info("Order validation succeeded", {
+          bundleName,
+          totalPrice: validationResult.totalPrice,
+          currency: validationResult.currency,
+          operationType: "order-validation"
+        });
         return {
           success: true,
           isValid: true,
@@ -862,7 +913,12 @@ export const checkoutResolvers: Partial<Resolvers> = {
           errorCode: null,
         };
       } catch (error: any) {
-        console.error("Error in validateOrder:", error);
+        logger.error("Error in validateOrder", error, {
+          bundleName,
+          quantity,
+          customerReference,
+          operationType: "order-validation"
+        });
         return {
           success: false,
           isValid: false,
