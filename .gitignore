@@ -16,3 +16,4 @@ dist/
 # Generated files
 server/packages/esim-go-client/dist/
 server/packages/utils/dist/
+*.tsbuildinfo

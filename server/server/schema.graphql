@@ -892,8 +892,10 @@ type CountryBundle {
 # Batch pricing input
 input CalculatePriceInput {
   numOfDays: Int!
-  countryId: String!
+  countryId: String
+  regionId: String
   paymentMethod: PaymentMethod
+  promo: String
 }
 
 # Pricing Configuration Types (Legacy - to be migrated to rules)

@@ -56,19 +56,22 @@ export class CatalogueDataSourceV2 {
 
         try {
           // First, try to get from persistent storage
-          const result = await this.bundleRepository.searchBundles(criteria);
+          const result = await this.bundleRepository.search(criteria);
           
-          if (result.bundles.length > 0) {
+          if (result.data.length > 0) {
             this.logger.info('Found plans in persistent storage', {
-              count: result.bundles.length,
-              totalCount: result.totalCount,
+              count: result.data.length,
+              totalCount: result.count,
             });
-            return result;
+            return {
+              bundles: result.data,
+              totalCount: result.count
+            };
           }
 
           // If no results and we have specific search criteria, 
           // check if we need to sync this country
-          if (criteria.country && result.bundles.length === 0) {
+          if (criteria.country && result.data.length === 0) {
             this.logger.warn('No bundles found for country, may need sync', {
               country: criteria.country,
             });
@@ -82,7 +85,10 @@ export class CatalogueDataSourceV2 {
             });
           }
 
-          return result;
+          return {
+            bundles: result.data,
+            totalCount: result.count
+          };
         } catch (error) {
           this.logger.error('Failed to search plans', error as Error, { criteria });
           throw error;

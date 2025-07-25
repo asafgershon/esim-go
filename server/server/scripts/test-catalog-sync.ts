@@ -41,11 +41,11 @@ async function testCatalogSync() {
     
     // Test 5: Search bundles
     console.log('\n🔎 Searching for bundles...');
-    const searchResult = await syncService.searchBundles({
+    const searchResult = await syncService.search({
       limit: 10,
     });
-    console.log(`Found ${searchResult.totalCount} total bundles`);
-    console.log(`Returned ${searchResult.bundles.length} bundles`);
+    console.log(`Found ${searchResult.count} total bundles`);
+    console.log(`Returned ${searchResult.data.length} bundles`);
     
     // Test 6: Get organization bundle groups
     console.log('\n📦 Getting organization bundle groups...');

@@ -138,13 +138,13 @@ async function runCatalogSync() {
     // Search for some bundles
     if (countries.length > 0) {
       logger.info('\n🔍 Searching for bundles...');
-      const searchResults = await syncService.searchBundles({
+      const searchResults = await syncService.search({
         countries: [countries[0]],
         limit: 5
       });
-      console.log(`Found ${searchResults.totalCount} bundles for ${countries[0]}`);
-      searchResults.bundles.forEach(bundle => {
-        console.log(`- ${bundle.name}: ${bundle.duration} days, ${bundle.data_amount}MB, $${bundle.price}`);
+      console.log(`Found ${searchResults.count} bundles for ${countries[0]}`);
+      searchResults.data.forEach(bundle => {
+        console.log(`- ${bundle.name}: ${bundle.validity_in_days} days, ${bundle.data_amount_mb}MB, $${bundle.price}`);
       });
     }
 

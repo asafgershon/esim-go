@@ -150,31 +150,33 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Use bundle repository to search bundles
-        const { bundles: data, totalCount: count } =
-          await context.repositories.bundles.searchBundles({
+        const searchResult = await context.repositories.bundles.search({
             countries: countries as any,
-            bundleGroups: bundleGroups as any,
-            minDuration: minDuration as any,
-            maxDuration: maxDuration as any,
-            unlimited: unlimited as any,
+            groups: bundleGroups as any,
+            minValidityInDays: minDuration as any,
+            maxValidityInDays: maxDuration as any,
+            isUnlimited: unlimited as any,
             limit: limit || 50,
             offset: offset || 0,
           });
+        
+        const data = searchResult.data;
+        const count = searchResult.count;
 
         // Transform data
         const bundles = (data || []).map((bundle) => ({
-          id: bundle.id,
+          id: bundle.esim_go_name,  // Use esim_go_name as id
           esimGoName: bundle.esim_go_name,
-          bundleGroup: bundle.bundle_group || "",
+          bundleGroup: bundle.groups?.[0] || "",  // groups is an array
           description: bundle.description || "",
-          duration: bundle.duration,
-          dataAmount: bundle.data_amount,
-          unlimited: bundle.unlimited,
-          priceCents: bundle.price_cents,
+          duration: bundle.validity_in_days,
+          dataAmount: bundle.data_amount_mb,
+          unlimited: bundle.is_unlimited,
+          priceCents: Math.round((bundle.price || 0) * 100),  // Convert to cents
           currency: bundle.currency,
           countries: bundle.countries || [],
-          regions: bundle.regions || [],
-          syncedAt: bundle.synced_at,
+          regions: bundle.region ? [bundle.region] : [],  // region is singular
+          syncedAt: bundle.updated_at,  // Using updated_at as there's no last_synced field
           createdAt: bundle.created_at,
           updatedAt: bundle.updated_at,
         }));

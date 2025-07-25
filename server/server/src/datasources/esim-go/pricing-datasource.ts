@@ -66,12 +66,12 @@ export class PricingDataSource extends ESIMGoDataSource {
           });
 
           // Search for bundles in the specific country
-          const searchResult = await this.bundleRepository.searchBundles({
+          const searchResult = await this.bundleRepository.search({
             countries: [countryCode],
             limit: 100 // Get a reasonable number to find the bundle
           });
           
-          if (searchResult.bundles.length === 0) {
+          if (searchResult.data.length === 0) {
             this.logger.error('No bundles found for country in database', undefined, {
               countryCode,
               bundleName,
@@ -82,19 +82,19 @@ export class PricingDataSource extends ESIMGoDataSource {
 
           this.logger.info('Database bundles retrieved', {
             countryCode,
-            totalBundles: searchResult.bundles.length,
+            totalBundles: searchResult.data.length,
             searchingFor: bundleName,
             operationType: 'database-response'
           });
 
           // Find the specific bundle in the database results
-          const bundle = searchResult.bundles.find(b => b.bundle_name === bundleName || b.name === bundleName);
+          const bundle = searchResult.data.find(b => b.bundle_name === bundleName || b.name === bundleName);
           
           if (!bundle) {
             this.logger.warn('Bundle search details', {
               bundleName,
               countryCode,
-              availableNames: searchResult.bundles.map(b => b.bundle_name || b.name),
+              availableNames: searchResult.data.map(b => b.bundle_name || b.name),
               operationType: 'bundle-search-debug'
             });
             

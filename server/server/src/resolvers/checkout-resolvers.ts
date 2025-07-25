@@ -9,7 +9,7 @@ import { createLogger } from "../lib/logger";
 import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.repository";
 import { createDeliveryService } from "../services/delivery";
 import { createPaymentService } from "../services/payment";
-import type { EsimStatus, OrderStatus, Resolvers } from "../types";
+import type { Bundle, EsimStatus, OrderStatus, Resolvers } from "../types";
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS
@@ -187,14 +187,14 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
         // Fetch ALL available bundles for the country/region to allow optimal selection
         // Don't filter by duration - let the pricing engine select the best bundle
-        const bundleResults = await context.dataSources.catalogue.searchPlans({
-          country: countryId,
-          region: regionId,
-          // No duration filter - engine needs all options to select optimal bundle
+        const bundleResults = await context.repositories.bundles.search({
+          countries: [countryId],
+          regions: [regionId],
+          minValidityInDays: 1,
         });
 
         // STRICT VALIDATION - fail if no bundles available
-        if (!bundleResults?.bundles || bundleResults.bundles.length === 0) {
+        if (!bundleResults?.data || bundleResults.data.length === 0) {
           throw new Error(
             `No bundles available for country: ${countryId}${
               regionId ? `, region: ${regionId}` : ""
@@ -203,19 +203,19 @@ export const checkoutResolvers: Partial<Resolvers> = {
         }
 
         // Debug: Log bundle durations to understand what's available
-        const bundleDurations = bundleResults.bundles
-          .map((b) => b.duration)
+        const bundleDurations = bundleResults.data
+          .map((b) => b.validity_in_days)
           .sort((a, b) => (a || 0) - (b || 0));
         console.log(
-          `Found ${bundleResults.bundles.length} bundles for ${countryId} with durations:`,
+          `Found ${bundleResults.data.length} bundles for ${countryId} with durations:`,
           bundleDurations
         );
         console.log(`Requested duration: ${numOfDays} days`);
 
         // Validate and transform bundle data - fail if any required data missing
-        const validatedBundles = bundleResults.bundles.map((bundle, index) => {
+        const validatedBundles = bundleResults.data.map((bundle, index) => {
           // Get price from price_cents field (stored in cents)
-          const bundlePrice = bundle.price_cents ? bundle.price_cents / 100 : 0;
+          const bundlePrice = bundle.price ? bundle.price : 0;
           if (!bundlePrice || bundlePrice <= 0) {
             throw new Error(
               `Bundle ${index} (${
@@ -223,16 +223,16 @@ export const checkoutResolvers: Partial<Resolvers> = {
               }): Invalid or missing price: ${bundlePrice}`
             );
           }
-          if (!bundle.duration || bundle.duration <= 0) {
+          if (!bundle.validity_in_days || bundle.validity_in_days <= 0) {
             throw new Error(
               `Bundle ${index} (${
                 bundle.esim_go_name || "unknown"
-              }): Invalid or missing duration: ${bundle.duration}`
+              }): Invalid or missing duration: ${bundle.validity_in_days}`
             );
           }
           if (!bundle.esim_go_name) {
             throw new Error(
-              `Bundle ${index}: Missing bundle name (esim_go_name)`
+              `Bundle ${index}: Missing bundle name (name)`
             );
           }
 
@@ -253,17 +253,17 @@ export const checkoutResolvers: Partial<Resolvers> = {
           }
 
           return {
-            id: bundle.id || bundle.esim_go_name,
+            id:  bundle.esim_go_name,
             name: bundle.esim_go_name,
             cost: bundlePrice,
-            duration: bundle.duration,
+            duration: bundle.validity_in_days,
             countryId: primaryCountry,
             countryName: primaryCountry, // We don't have country names in bundle data
             regionId: regionId || "",
             regionName: "Unknown",
-            group: bundle.bundle_group || "Standard Fixed",
-            isUnlimited: bundle.unlimited || false,
-            dataAmount: bundle.data_amount ? `${bundle.data_amount}GB` : "0GB",
+            group: bundle.groups?.[0] || "Standard Fixed",
+            isUnlimited: bundle.is_unlimited || false,
+            dataAmount: bundle.data_amount_mb ? `${bundle.data_amount_mb}GB` : "0GB",
           };
         });
 
@@ -286,7 +286,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
         // Create pricing context with validated data
         const pricingContext = PricingEngineService.createContext({
-          availableBundles: validatedBundles,
+          availableBundles: validatedBundles as Bundle[],
           requestedDuration: numOfDays,
           user: context.auth?.user
             ? {
@@ -326,14 +326,14 @@ export const checkoutResolvers: Partial<Resolvers> = {
         if (!pricingResult) {
           throw new Error("Pricing calculation failed - no result returned");
         }
-        if (!pricingResult.finalPrice || pricingResult.finalPrice <= 0) {
+        if (!pricingResult.pricing.priceAfterDiscount || pricingResult.pricing.priceAfterDiscount <= 0) {
           throw new Error(
-            `Invalid final price calculated: ${pricingResult.finalPrice}`
+            `Invalid final price calculated: ${pricingResult.pricing.priceAfterDiscount}`
           );
         }
-        if (!pricingResult.baseCost || pricingResult.baseCost <= 0) {
+        if (!pricingResult.pricing.cost || pricingResult.pricing.cost <= 0) {
           throw new Error(
-            `Invalid base cost calculated: ${pricingResult.baseCost}`
+            `Invalid base cost calculated: ${pricingResult.pricing.cost}`
           );
         }
 
@@ -364,7 +364,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           id: selectedBundle.id,
           name: selectedBundle.name,
           duration: selectedBundle.duration,
-          price: pricingResult.finalPrice,
+          price: pricingResult.pricing.priceAfterDiscount,
           currency: "USD",
           countries: [countryId],
           bundleGroup: selectedBundle.group,

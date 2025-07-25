@@ -141,6 +141,7 @@ async function startServer() {
               trips: tripRepository,
               highDemandCountries: highDemandCountryRepository,
               syncJob: syncJobRepository,
+              bundles: bundleRepository,
               pricingRules: pricingRulesRepository,
             },
             dataSources: {

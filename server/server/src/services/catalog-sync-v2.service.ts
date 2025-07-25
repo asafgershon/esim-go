@@ -267,18 +267,21 @@ export class CatalogSyncServiceV2 {
         });
         
         try {
-          const result = await this.bundleRepository.searchBundles(criteria);
+          const result = await this.bundleRepository.search(criteria);
           
           this.logger.info('Bundle search completed', {
-            resultCount: result.bundles.length,
-            totalCount: result.totalCount,
+            resultCount: result.data.length,
+            totalCount: result.count,
             countries: criteria.countries,
             minDuration: criteria.minDuration,
             maxDuration: criteria.maxDuration,
             bundleGroups: criteria.bundleGroups,
           });
           
-          return result;
+          return {
+            bundles: result.data,
+            totalCount: result.count
+          };
         } catch (error) {
           this.logger.error('Failed to search bundles', error as Error, { criteria });
           throw error;
