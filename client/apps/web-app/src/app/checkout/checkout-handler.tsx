@@ -10,7 +10,7 @@ interface CheckoutHandlerProps {
   };
 }
 
-async function createCheckoutSession(numOfDays: number, regionId: string, countryId: string) {
+async function createCheckoutSession(numOfDays: number, regionId?: string, countryId?: string) {
   const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://localhost:5001/graphql';
   
   const mutation = `
@@ -26,6 +26,15 @@ async function createCheckoutSession(numOfDays: number, regionId: string, countr
   `;
 
   try {
+    // Build input object with only defined values
+    const input: any = { numOfDays };
+    if (regionId) {
+      input.regionId = regionId;
+    }
+    if (countryId) {
+      input.countryId = countryId;
+    }
+
     const response = await fetch(GRAPHQL_ENDPOINT, {
       method: 'POST',
       headers: {
@@ -33,13 +42,7 @@ async function createCheckoutSession(numOfDays: number, regionId: string, countr
       },
       body: JSON.stringify({
         query: mutation,
-        variables: {
-          input: {
-            numOfDays,
-            regionId,
-            countryId,
-          },
-        },
+        variables: { input },
       }),
     });
 
@@ -69,8 +72,8 @@ export default async function CheckoutHandler({ searchParams }: CheckoutHandlerP
     try {
       const result = await createCheckoutSession(
         parseInt(numOfDays) || 7,
-        regionId || '',
-        countryId || ''
+        regionId,
+        countryId
       );
       
       if (result.success && result.session?.token) {

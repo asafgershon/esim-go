@@ -7,7 +7,6 @@ import type { Context } from "../context/types";
 import type { Database } from "../database.types";
 import { createLogger } from "../lib/logger";
 import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.repository";
-import { createDeliveryService } from "../services/delivery";
 import { createPaymentService } from "../services/payment";
 import type { Bundle, EsimStatus, OrderStatus, Resolvers } from "../types";
 import type { PricingEngineInput } from "@esim-go/rules-engine";
@@ -182,17 +181,30 @@ export const checkoutResolvers: Partial<Resolvers> = {
         if (!numOfDays || numOfDays <= 0) {
           throw new Error(`Invalid requested duration: ${numOfDays}`);
         }
-        if (!countryId) {
-          throw new Error("Country ID is required for checkout");
+        
+        // Ensure we have at least one location criteria
+        if (!countryId && !regionId) {
+          throw new Error("Either countryId or regionId is required for checkout");
+        }
+
+        // Build search parameters based on what's provided
+        const searchParams: any = {
+          minValidityInDays: 1,
+        };
+
+        // Only add countries if countryId is provided
+        if (countryId) {
+          searchParams.countries = [countryId];
+        }
+
+        // Only add regions if regionId is provided  
+        if (regionId) {
+          searchParams.regions = [regionId];
         }
 
         // Fetch ALL available bundles for the country/region to allow optimal selection
         // Don't filter by duration - let the pricing engine select the best bundle
-        const bundleResults = await context.repositories.bundles.search({
-          countries: [countryId],
-          regions: [regionId],
-          minValidityInDays: 1,
-        });
+        const bundleResults = await context.repositories.bundles.search(searchParams);
 
         // STRICT VALIDATION - fail if no bundles available
         if (!bundleResults?.data || bundleResults.data.length === 0) {
@@ -303,12 +315,12 @@ export const checkoutResolvers: Partial<Resolvers> = {
             segment: 'default'
           },
           payment: {
-            method: 'ISRAELI_CARD'
+            method: PaymentMethod.IsraeliCard
           },
           rules: [], // Will be loaded by pricing engine
           request: {
             duration: numOfDays,
-            paymentMethod: 'ISRAELI_CARD'
+            paymentMethod: PaymentMethod.IsraeliCard
           },
           steps: [],
           unusedDays: 0,
@@ -349,9 +361,9 @@ export const checkoutResolvers: Partial<Resolvers> = {
         if (!pricingResult) {
           throw new Error("Pricing calculation failed - no result returned");
         }
-        if (!pricingResult.pricing.finalPrice || pricingResult.pricing.finalPrice <= 0) {
+        if (!pricingResult.pricing.priceAfterDiscount || pricingResult.pricing.priceAfterDiscount <= 0) {
           throw new Error(
-            `Invalid final price calculated: ${pricingResult.pricing.finalPrice}`
+            `Invalid final price calculated: ${pricingResult.pricing.priceAfterDiscount}`
           );
         }
         if (!pricingResult.selectedBundle) {
@@ -375,7 +387,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           id: selectedBundle.id,
           name: selectedBundle.name,
           duration: selectedBundle.duration,
-          price: pricingResult.pricing.finalPrice,
+          price: pricingResult.pricing.priceAfterDiscount,
           currency: "USD",
           countries: [countryId],
           bundleGroup: selectedBundle.group,
@@ -932,7 +944,7 @@ async function simulateWebhookProcessing(
         await context.repositories.orders.createOrderWithPricing(
           {
             user_id: steps.authentication.userId,
-            total_price: detailedPricing.pricing.finalPrice,
+            total_price: detailedPricing.pricing.priceAfterDiscount,
             reference: orderId, // This becomes the order reference
             status: "COMPLETED" as OrderStatus,
             plan_data: planSnapshot, // Store plan info in JSONB field
@@ -960,39 +972,7 @@ async function simulateWebhookProcessing(
       console.log("eSIM record created:", esimRecord.id);
 
       // Step 4: Deliver eSIM QR code to customer
-      const deliveryService = createDeliveryService();
-      const deliveryMethod = steps.delivery;
-
-      // if (deliveryMethod?.completed) {
-      //   try {
-      //     const deliveryResult = await deliveryService.deliverESIM(
-      //       {
-      //         esimId: esimRecord.id,
-      //         iccid: esimData.iccid,
-      //         qrCode: esimData.qrCode,
-      //         activationCode: esimData.activationCode,
-      //         activationUrl: esimData.activationUrl,
-      //         instructions: esimData.instructions,
-      //         planName: planSnapshot.name,
-      //         customerName: "Customer", // TODO: Get actual customer name from user profile
-      //         orderReference: orderId,
-      //       },
-      //       {
-      //         type: (deliveryMethod.method || "EMAIL") as  unknown as DeliveryMethod,
-      //         email: deliveryMethod.email,
-      //         phoneNumber: deliveryMethod.phoneNumber,
-      //       }
-      //     );
-
-      //     console.log("eSIM delivery result:", deliveryResult);
-
-      //     if (!deliveryResult.success) {
-      //       console.error("Failed to deliver eSIM:", deliveryResult.error);
-      //     }
-      //   } catch (error) {
-      //     console.error("Error delivering eSIM:", error);
-      //   }
-      // }
+      // TODO: Implement delivery service when ready
 
       // Step 5: Update checkout session to completed
       const completedSteps = {

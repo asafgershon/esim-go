@@ -37,6 +37,7 @@ import {
 import { Country, PaymentMethod } from '@/__generated__/graphql';
 import { usePricingSimulator } from '../hooks/usePricingSimulator';
 import { PricingPipelineStream } from './pricing-pipeline-stream';
+import { PricingRulesSummary } from './pricing-rules-summary';
 
 interface PricingSimulatorContentProps {
   countries: Country[];
@@ -202,13 +203,22 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
         </CardContent>
       </Card>
 
-      {/* Pipeline Steps (when streaming) */}
+      {/* Pipeline and Rules Analysis */}
       {(isStreaming || pipelineSteps.length > 0) && (
-        <PricingPipelineStream
-          steps={pipelineSteps}
-          isStreaming={isStreaming}
-          wsConnected={wsConnected}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <PricingPipelineStream
+            steps={pipelineSteps}
+            isStreaming={isStreaming}
+            wsConnected={wsConnected}
+          />
+          <PricingRulesSummary
+            pipelineSteps={pipelineSteps}
+            isStreaming={isStreaming}
+            finalPrice={data?.totalPrice}
+            originalPrice={data?.originalPrice}
+            currency={data?.currency}
+          />
+        </div>
       )}
 
       {/* Error Display */}
