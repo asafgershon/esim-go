@@ -57,11 +57,15 @@ export function useBatchPricing({ regionId, countryId, paymentMethod, maxDays = 
       // Clear existing cache when parameters change
       setPricingCache(new Map());
       
+      // Web-app configuration: Only request 'Unlimited Plus' bundles
+      const WEB_APP_BUNDLE_GROUPS = ['Unlimited Plus'];
+      
       // Create inputs for all days from 1 to maxDays
       const inputs = Array.from({ length: maxDays }, (_, i) => ({
         numOfDays: i + 1,
         countryId: countryId.toUpperCase(),
         paymentMethod,
+        groups: WEB_APP_BUNDLE_GROUPS,
       }));
 
       calculatePricesBatch({

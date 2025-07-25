@@ -1,19 +1,18 @@
+import type {
+  Bundle,
+  PricingEngineInput,
+  PricingEngineOutput
+} from '@esim-go/rules-engine';
 import { GraphQLError } from 'graphql';
 import type { Context } from '../context/types';
 import { createLogger } from '../lib/logger';
 import { PricingEngineService } from '../services/pricing-engine.service';
-import type { 
-  PricingEngineInput, 
-  PricingEngineOutput, 
-  Bundle 
-} from '@esim-go/rules-engine';
 import type {
-  QueryResolvers,
   CalculatePriceInput,
-  PricingBreakdown,
-  CountryBundle,
   Country,
-  PaymentMethod
+  PaymentMethod,
+  PricingBreakdown,
+  QueryResolvers
 } from '../types';
 
 const logger = createLogger({ 
@@ -149,11 +148,12 @@ async function convertToPricingEngineInput(
   context: Context,
   correlationId?: string
 ): Promise<PricingEngineInput> {
-  // Get available bundles from catalog
+  // Get available bundles from catalog with optional group filtering
   const catalogResponse = await context.repositories.bundles.search({
     countries: [input.countryId || ''],
     maxValidityInDays: input.numOfDays,
     minValidityInDays: 1, // Get all available durations
+    groups: input.groups, // Use groups from request (if provided)
   });
 
   if (!catalogResponse.data || catalogResponse.data.length === 0) {
@@ -261,7 +261,7 @@ export const pricingQueries: QueryResolvers = {
    */
   calculatePrice: async (
     _,
-    { numOfDays, countryId, paymentMethod, regionId },
+    { numOfDays, countryId, paymentMethod, regionId, groups },
     context: Context
   ): Promise<PricingBreakdown> => {
     const correlationId = getCorrelationId(context);
@@ -279,7 +279,8 @@ export const pricingQueries: QueryResolvers = {
         numOfDays,
         countryId,
         paymentMethod,
-        regionId
+        regionId,
+        groups
       };
 
       const engineInput = await convertToPricingEngineInput(input, context, correlationId);
@@ -307,8 +308,17 @@ export const pricingQueries: QueryResolvers = {
         correlationId,
         operationType: 'calculate-price-public'
       });
+      
+      // Preserve specific error codes and messages for better debugging
+      if (error instanceof GraphQLError) {
+        throw error;
+      }
+      
       throw new GraphQLError('Failed to calculate price', {
-        extensions: { code: 'CALCULATION_FAILED' }
+        extensions: { 
+          code: 'CALCULATION_FAILED',
+          originalError: error instanceof Error ? error.message : String(error)
+        }
       });
     }
   },

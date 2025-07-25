@@ -16,53 +16,77 @@ export type Database = {
     Tables: {
       catalog_bundles: {
         Row: {
+          bundle_group: string | null
           countries: string[] | null
           created_at: string | null
           currency: string | null
+          data_amount: number | null
           data_amount_mb: number | null
           data_amount_readable: string | null
           description: string | null
+          duration: number | null
           esim_go_name: string
           groups: string[] | null
+          id: string
           is_unlimited: boolean | null
+          metadata: Json | null
           price: number | null
+          price_cents: number | null
           region: string | null
+          regions: Json | null
           speed: string[] | null
           synced_at: string | null
+          unlimited: boolean | null
           updated_at: string | null
           validity_in_days: number | null
         }
         Insert: {
+          bundle_group?: string | null
           countries?: string[] | null
           created_at?: string | null
           currency?: string | null
+          data_amount?: number | null
           data_amount_mb?: number | null
           data_amount_readable?: string | null
           description?: string | null
+          duration?: number | null
           esim_go_name: string
           groups?: string[] | null
+          id?: string
           is_unlimited?: boolean | null
+          metadata?: Json | null
           price?: number | null
+          price_cents?: number | null
           region?: string | null
+          regions?: Json | null
           speed?: string[] | null
           synced_at?: string | null
+          unlimited?: boolean | null
           updated_at?: string | null
           validity_in_days?: number | null
         }
         Update: {
+          bundle_group?: string | null
           countries?: string[] | null
           created_at?: string | null
           currency?: string | null
+          data_amount?: number | null
           data_amount_mb?: number | null
           data_amount_readable?: string | null
           description?: string | null
+          duration?: number | null
           esim_go_name?: string
           groups?: string[] | null
+          id?: string
           is_unlimited?: boolean | null
+          metadata?: Json | null
           price?: number | null
+          price_cents?: number | null
           region?: string | null
+          regions?: Json | null
           speed?: string[] | null
           synced_at?: string | null
+          unlimited?: boolean | null
           updated_at?: string | null
           validity_in_days?: number | null
         }
@@ -486,6 +510,7 @@ export type Database = {
       pricing_rules: {
         Row: {
           actions: Json
+          category: string
           conditions: Json
           created_at: string
           created_by: string
@@ -495,13 +520,13 @@ export type Database = {
           is_editable: boolean
           name: string
           priority: number
-          type: string
           updated_at: string
           valid_from: string | null
           valid_until: string | null
         }
         Insert: {
           actions?: Json
+          category: string
           conditions?: Json
           created_at?: string
           created_by: string
@@ -511,13 +536,13 @@ export type Database = {
           is_editable?: boolean
           name: string
           priority?: number
-          type: string
           updated_at?: string
           valid_from?: string | null
           valid_until?: string | null
         }
         Update: {
           actions?: Json
+          category?: string
           conditions?: Json
           created_at?: string
           created_by?: string
@@ -527,7 +552,6 @@ export type Database = {
           is_editable?: boolean
           name?: string
           priority?: number
-          type?: string
           updated_at?: string
           valid_from?: string | null
           valid_until?: string | null
@@ -697,143 +721,6 @@ export type Database = {
           region: string | null
           speed: string[] | null
           validity_in_days: number | null
-        }
-        Relationships: []
-      }
-      bundles_by_group: {
-        Row: {
-          countries: string[] | null
-          currency: string | null
-          data_amount_mb: number | null
-          data_amount_readable: string | null
-          description: string | null
-          esim_go_name: string | null
-          group_name: string | null
-          is_unlimited: boolean | null
-          price: number | null
-          region: string | null
-          speed: string[] | null
-          validity_in_days: number | null
-        }
-        Relationships: []
-      }
-      bundles_by_region: {
-        Row: {
-          countries: string[] | null
-          created_at: string | null
-          currency: string | null
-          data_amount_mb: number | null
-          data_amount_readable: string | null
-          description: string | null
-          esim_go_name: string | null
-          groups: string[] | null
-          is_unlimited: boolean | null
-          price: number | null
-          region: string | null
-          speed: string[] | null
-          synced_at: string | null
-          updated_at: string | null
-          validity_in_days: number | null
-        }
-        Insert: {
-          countries?: string[] | null
-          created_at?: string | null
-          currency?: string | null
-          data_amount_mb?: number | null
-          data_amount_readable?: string | null
-          description?: string | null
-          esim_go_name?: string | null
-          groups?: string[] | null
-          is_unlimited?: boolean | null
-          price?: number | null
-          region?: string | null
-          speed?: string[] | null
-          synced_at?: string | null
-          updated_at?: string | null
-          validity_in_days?: number | null
-        }
-        Update: {
-          countries?: string[] | null
-          created_at?: string | null
-          currency?: string | null
-          data_amount_mb?: number | null
-          data_amount_readable?: string | null
-          description?: string | null
-          esim_go_name?: string | null
-          groups?: string[] | null
-          is_unlimited?: boolean | null
-          price?: number | null
-          region?: string | null
-          speed?: string[] | null
-          synced_at?: string | null
-          updated_at?: string | null
-          validity_in_days?: number | null
-        }
-        Relationships: []
-      }
-      bundles_by_region_with_global: {
-        Row: {
-          countries: string[] | null
-          currency: string | null
-          data_amount_mb: number | null
-          data_amount_readable: string | null
-          description: string | null
-          esim_go_name: string | null
-          groups: string[] | null
-          is_unlimited: boolean | null
-          price: number | null
-          region: string | null
-          speed: string[] | null
-          validity_in_days: number | null
-        }
-        Insert: {
-          countries?: string[] | null
-          currency?: string | null
-          data_amount_mb?: number | null
-          data_amount_readable?: string | null
-          description?: string | null
-          esim_go_name?: string | null
-          groups?: string[] | null
-          is_unlimited?: boolean | null
-          price?: number | null
-          region?: never
-          speed?: string[] | null
-          validity_in_days?: number | null
-        }
-        Update: {
-          countries?: string[] | null
-          currency?: string | null
-          data_amount_mb?: number | null
-          data_amount_readable?: string | null
-          description?: string | null
-          esim_go_name?: string | null
-          groups?: string[] | null
-          is_unlimited?: boolean | null
-          price?: number | null
-          region?: never
-          speed?: string[] | null
-          validity_in_days?: number | null
-        }
-        Relationships: []
-      }
-      region_summary: {
-        Row: {
-          avg_price: number | null
-          bundle_count: number | null
-          countries: string[] | null
-          country_count: number | null
-          group_count: number | null
-          groups: string[] | null
-          has_unlimited: boolean | null
-          long_term_count: number | null
-          max_price: number | null
-          max_validity: number | null
-          median_price: number | null
-          min_price: number | null
-          min_validity: number | null
-          region: string | null
-          unique_bundles: number | null
-          unlimited_count: number | null
         }
         Relationships: []
       }

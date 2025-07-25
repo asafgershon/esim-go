@@ -25,6 +25,7 @@ type Query {
     countryId: String!
     paymentMethod: PaymentMethod
     regionId: String
+    groups: [String!]
   ): PricingBreakdown!
 
   # Batch calculate prices for multiple bundles
@@ -1032,6 +1033,7 @@ input CalculatePriceInput {
   regionId: String
   paymentMethod: PaymentMethod
   promo: String
+  groups: [String!]
 }
 
 # Pricing Configuration Types (Legacy - to be migrated to rules)

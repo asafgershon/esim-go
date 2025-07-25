@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
-import { ArrowLeft, Download, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, CheckCircle, Smartphone, Wifi, Share2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@workspace/ui";
 import { Card } from "@workspace/ui";
@@ -11,13 +11,23 @@ import { Skeleton } from "@workspace/ui/components/skeleton";
 import { OrderDetails } from "@/lib/graphql/checkout";
 import Image from "next/image";
 import { Esim } from "@/__generated__/graphql";
+import { useEffect, useState } from "react";
 export default function OrderPage() {
   const { orderId } = useParams();
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(true);
   
   const { data, loading, error, refetch } = useQuery(OrderDetails, {
     variables: { id: orderId },
     skip: !orderId,
   });
+
+  // Hide success animation after 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSuccessAnimation(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (loading) {
     return (
@@ -125,6 +135,23 @@ export default function OrderPage() {
       </header>
 
       <div className="container mx-auto px-4 py-6 max-w-2xl">
+        {/* Success Banner */}
+        {showSuccessAnimation && (
+          <Card className="p-6 mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+            <div className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="rounded-full bg-green-100 p-3">
+                  <CheckCircle className="h-8 w-8 text-green-600 animate-pulse" />
+                </div>
+              </div>
+              <h2 className="text-xl font-bold text-green-800 mb-2">🎉 ההזמנה הושלמה בהצלחה!</h2>
+              <p className="text-green-700">
+                כרטיס ה-eSIM שלך מוכן לשימוש. סרוק את קוד ה-QR להתחיל.
+              </p>
+            </div>
+          </Card>
+        )}
+
         {/* Order Info */}
         <Card className="p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -141,28 +168,54 @@ export default function OrderPage() {
           </div>
         </Card>
 
-        {/* QR Code */}
+        {/* QR Code & Installation */}
         {primaryEsim && (
           <Card className="p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4 text-center">קוד QR להפעלה</h3>
-            <div className="flex justify-center mb-4">
-              <div className="bg-white p-4 rounded-lg border">
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Smartphone className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">קוד QR להפעלה</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                סרוק את הקוד להתקנת כרטיס ה-eSIM במכשיר שלך
+              </p>
+            </div>
+            
+            <div className="flex justify-center mb-6">
+              <div className="bg-white p-4 rounded-lg border shadow-sm">
                 <Image 
                   src={primaryEsim.qrCode} 
-                  alt="QR Code"
+                  alt="QR Code for eSIM activation"
                   width={256}
                   height={256}
                   className="w-64 h-64"
                 />
               </div>
             </div>
-            <div className="text-center space-y-2">
-              <p className="text-sm text-muted-foreground">
-                ICCID: {primaryEsim.iccid}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                סטטוס eSIM: {getStatusText(primaryEsim.status)}
-              </p>
+            
+            {/* Installation Instructions */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-blue-100 dark:bg-blue-800 p-2 mt-1">
+                  <Wifi className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+                    הוראות התקנה
+                  </h4>
+                  <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                    <li>1. פתח הגדרות → סלולר/נתונים סלולריים</li>
+                    <li>2. לחץ על "הוסף eSIM" או "הוסף תוכנית סלולרית"</li>
+                    <li>3. סרוק את קוד ה-QR עם המצלמה</li>
+                    <li>4. עקוב אחר ההנחיות במסך להשלמת ההתקנה</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+            
+            <div className="text-center space-y-2 text-sm text-muted-foreground">
+              <p>ICCID: {primaryEsim.iccid}</p>
+              <p>סטטוס eSIM: {getStatusText(primaryEsim.status)}</p>
             </div>
           </Card>
         )}
@@ -193,7 +246,46 @@ export default function OrderPage() {
 
         {/* Actions */}
         <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4">פעולות נוספות</h3>
           <div className="space-y-3">
+            {primaryEsim && (
+              <Button 
+                className="w-full" 
+                onClick={() => {
+                  // Create a downloadable link for the QR code
+                  const link = document.createElement('a');
+                  link.href = primaryEsim.qrCode;
+                  link.download = `eSIM-QR-${order.reference}.png`;
+                  link.click();
+                }}
+              >
+                <Download className="h-4 w-4 ml-2" />
+                הורדת קוד QR
+              </Button>
+            )}
+            
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => {
+                // Share the order details
+                if (navigator.share && primaryEsim) {
+                  navigator.share({
+                    title: `eSIM - הזמנה #${order.reference}`,
+                    text: `כרטיס ה-eSIM שלך מוכן! ICCID: ${primaryEsim.iccid}`,
+                    url: window.location.href
+                  });
+                } else {
+                  // Fallback: copy to clipboard
+                  navigator.clipboard.writeText(window.location.href);
+                  // You could add a toast notification here
+                }
+              }}
+            >
+              <Share2 className="h-4 w-4 ml-2" />
+              שיתוף פרטי ההזמנה
+            </Button>
+            
             <Button 
               className="w-full" 
               variant="outline"
@@ -202,6 +294,7 @@ export default function OrderPage() {
               <Download className="h-4 w-4 ml-2" />
               הדפסת פרטי ההזמנה
             </Button>
+            
             <Button 
               className="w-full" 
               variant="outline"

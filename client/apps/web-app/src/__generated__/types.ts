@@ -36,10 +36,10 @@ export type ActivateEsimResponse = {
 
 export type AppliedRule = {
   __typename?: 'AppliedRule';
+  category: RuleCategory;
   id: Scalars['ID']['output'];
   impact: Scalars['Float']['output'];
   name: Scalars['String']['output'];
-  type: RuleType;
 };
 
 export type AssignPackageResponse = {
@@ -221,6 +221,7 @@ export type BundlesForRegion = {
 
 export type CalculatePriceInput = {
   countryId?: InputMaybe<Scalars['String']['input']>;
+  groups?: InputMaybe<Array<Scalars['String']['input']>>;
   numOfDays: Scalars['Int']['input'];
   paymentMethod?: InputMaybe<PaymentMethod>;
   promo?: InputMaybe<Scalars['String']['input']>;
@@ -394,12 +395,12 @@ export type CreateCheckoutSessionResponse = {
 
 export type CreatePricingRuleInput = {
   actions: Array<RuleActionInput>;
+  category: RuleCategory;
   conditions: Array<RuleConditionInput>;
   description?: InputMaybe<Scalars['String']['input']>;
   isActive?: InputMaybe<Scalars['Boolean']['input']>;
   name: Scalars['String']['input'];
   priority: Scalars['Int']['input'];
-  type: RuleType;
   validFrom?: InputMaybe<Scalars['String']['input']>;
   validUntil?: InputMaybe<Scalars['String']['input']>;
 };
@@ -963,6 +964,7 @@ export type PricingRange = {
 export type PricingRule = {
   __typename?: 'PricingRule';
   actions: Array<RuleAction>;
+  category: RuleCategory;
   conditions: Array<RuleCondition>;
   createdAt: Scalars['String']['output'];
   createdBy: Scalars['String']['output'];
@@ -972,7 +974,6 @@ export type PricingRule = {
   isEditable: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   priority: Scalars['Int']['output'];
-  type: RuleType;
   updatedAt: Scalars['String']['output'];
   validFrom?: Maybe<Scalars['String']['output']>;
   validUntil?: Maybe<Scalars['String']['output']>;
@@ -999,9 +1000,9 @@ export type PricingRuleCalculation = {
 };
 
 export type PricingRuleFilter = {
+  category?: InputMaybe<RuleCategory>;
   isActive?: InputMaybe<Scalars['Boolean']['input']>;
   isEditable?: InputMaybe<Scalars['Boolean']['input']>;
-  type?: InputMaybe<RuleType>;
   validFrom?: InputMaybe<Scalars['String']['input']>;
   validUntil?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1178,6 +1179,7 @@ export type QueryCalculateBatchPricingArgs = {
 
 export type QueryCalculatePriceArgs = {
   countryId: Scalars['String']['input'];
+  groups?: InputMaybe<Array<Scalars['String']['input']>>;
   numOfDays: Scalars['Int']['input'];
   paymentMethod?: InputMaybe<PaymentMethod>;
   regionId?: InputMaybe<Scalars['String']['input']>;
@@ -1262,6 +1264,13 @@ export type RuleActionInput = {
   value: Scalars['Float']['input'];
 };
 
+export enum RuleCategory {
+  BundleAdjustment = 'BUNDLE_ADJUSTMENT',
+  Constraint = 'CONSTRAINT',
+  Discount = 'DISCOUNT',
+  Fee = 'FEE'
+}
+
 export type RuleCondition = {
   __typename?: 'RuleCondition';
   field: Scalars['String']['output'];
@@ -1276,16 +1285,6 @@ export type RuleConditionInput = {
   type?: InputMaybe<Scalars['String']['input']>;
   value: Scalars['JSON']['input'];
 };
-
-export enum RuleType {
-  BusinessDiscount = 'BUSINESS_DISCOUNT',
-  BusinessMinimumProfit = 'BUSINESS_MINIMUM_PROFIT',
-  Promotion = 'PROMOTION',
-  Segment = 'SEGMENT',
-  SystemMarkup = 'SYSTEM_MARKUP',
-  SystemMinimumPrice = 'SYSTEM_MINIMUM_PRICE',
-  SystemProcessing = 'SYSTEM_PROCESSING'
-}
 
 export type SearchCatalogCriteria = {
   bundleGroups?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -1648,6 +1647,7 @@ export type CalculatePriceQueryVariables = Exact<{
   countryId: Scalars['String']['input'];
   paymentMethod?: InputMaybe<PaymentMethod>;
   regionId?: InputMaybe<Scalars['String']['input']>;
+  groups?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
 }>;
 
 

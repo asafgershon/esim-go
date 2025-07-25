@@ -162,8 +162,8 @@ export const GET_TRIPS = gql`
 `;
 
 export const CALCULATE_PRICE = gql`
-  query CalculatePrice($numOfDays: Int!, $countryId: String!, $paymentMethod: PaymentMethod, $regionId: String) {
-    calculatePrice(numOfDays: $numOfDays, countryId: $countryId, paymentMethod: $paymentMethod, regionId: $regionId) {
+  query CalculatePrice($numOfDays: Int!, $countryId: String!, $paymentMethod: PaymentMethod, $regionId: String, $groups: [String!]) {
+    calculatePrice(numOfDays: $numOfDays, countryId: $countryId, paymentMethod: $paymentMethod, regionId: $regionId, groups: $groups) {
       bundle {
         id
         name
