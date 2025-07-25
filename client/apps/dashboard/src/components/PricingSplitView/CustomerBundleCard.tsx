@@ -111,12 +111,6 @@ export const CustomerBundleCard: React.FC<CustomerBundleCardProps> = ({
                 }`}>
                   {((bundle.pricingBreakdown.netProfit / bundle.pricingBreakdown.priceAfterDiscount) * 100).toFixed(1)}% margin
                 </div>
-                {/* Processing Fee Info */}
-                {bundle.pricingBreakdown.processingCost && bundle.pricingBreakdown.processingCost > 0 && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    Processing: -${bundle.pricingBreakdown.processingCost.toFixed(2)}
-                  </div>
-                )}
               </div>
             </>
           ) : (
