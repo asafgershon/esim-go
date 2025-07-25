@@ -5,13 +5,6 @@ import { useQuery, useMutation } from "@apollo/client";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -330,6 +323,7 @@ export function UsersPage() {
   return (
     <PageLayout.Container>
       <PageLayout.Header
+        title="Users Management"
         subtitle="Users"
         description="Manage and view all platform users"
         icon={<Users className="h-6 w-6" />}
@@ -337,46 +331,36 @@ export function UsersPage() {
       />
       
       <PageLayout.Content>
-        <Card>
-          <CardHeader>
-            <CardTitle>All Users</CardTitle>
-            <CardDescription>
-              A list of all users registered on the platform
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center space-x-4">
-                    <Skeleton className="h-12 w-12 rounded-full" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-[250px]" />
-                      <Skeleton className="h-4 w-[200px]" />
-                    </div>
-                  </div>
-                ))}
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center space-x-4">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-[250px]" />
+                  <Skeleton className="h-4 w-[200px]" />
+                </div>
               </div>
-            ) : error ? (
-              <div className="text-center">
-                <p className="text-sm text-destructive">
-                  Error loading users: {error.message}
-                </p>
-              </div>
-            ) : (
-              <AdvancedDataTable 
-                columns={columns} 
-                data={users} 
-                searchKey="email"
-                searchPlaceholder="Search users..."
-                enableSorting={true}
-                enableFiltering={true}
-                enablePagination={true}
-                initialPageSize={10}
-              />
-            )}
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center">
+            <p className="text-sm text-destructive">
+              Error loading users: {error.message}
+            </p>
+          </div>
+        ) : (
+          <AdvancedDataTable 
+            columns={columns} 
+            data={users} 
+            searchKey="email"
+            searchPlaceholder="Search users..."
+            enableSorting={true}
+            enableFiltering={true}
+            enablePagination={true}
+            initialPageSize={10}
+          />
+        )}
         
         <UserDetailsDrawer 
           user={selectedUser}

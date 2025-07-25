@@ -1,13 +1,6 @@
 import { GET_ORDERS } from "@/lib/graphql/queries";
 import { useQuery } from "@apollo/client";
 import { Badge } from "@workspace/ui/components/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { AdvancedDataTable } from "@workspace/ui/components/advanced-data-table";
 import { ColumnDef } from "@tanstack/react-table";
@@ -275,51 +268,42 @@ export function OrdersPage() {
   return (
     <PageLayout.Container>
       <PageLayout.Header
+        title="Orders Management"
         subtitle="Orders"
         description="Manage and view all platform orders"
         icon={<Package className="h-6 w-6" />}
       />
       
       <PageLayout.Content>
-        <Card>
-          <CardHeader>
-            <CardTitle>All Orders</CardTitle>
-            <CardDescription>
-              A list of all orders placed on the platform
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center space-x-4">
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-[200px]" />
-                      <Skeleton className="h-4 w-[150px]" />
-                    </div>
-                  </div>
-                ))}
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center space-x-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-[200px]" />
+                  <Skeleton className="h-4 w-[150px]" />
+                </div>
               </div>
-            ) : error ? (
-              <div className="text-center">
-                <p className="text-sm text-destructive">
-                  Error loading orders: {error.message}
-                </p>
-              </div>
-            ) : (
-              <AdvancedDataTable 
-                columns={getColumns(handleOrderClick)} 
-                data={searchableOrders} 
-                searchKey="searchableText"
-                searchPlaceholder="Search orders or customers..."
-                enableSorting={true}
-                enableFiltering={true}
-                enablePagination={true}
-                initialPageSize={10}
-              />
-            )}
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center">
+            <p className="text-sm text-destructive">
+              Error loading orders: {error.message}
+            </p>
+          </div>
+        ) : (
+          <AdvancedDataTable 
+            columns={getColumns(handleOrderClick)} 
+            data={searchableOrders} 
+            searchKey="searchableText"
+            searchPlaceholder="Search orders or customers..."
+            enableSorting={true}
+            enableFiltering={true}
+            enablePagination={true}
+            initialPageSize={10}
+          />
+        )}
 
         {/* <OrderDetailsDrawer
           orderId={selectedOrderId}
