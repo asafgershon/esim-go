@@ -232,7 +232,10 @@ export const resolvers: Resolvers = {
     ...ordersResolvers.Order!,
   },
   Country: {
-    name: (parent) => parent.name,
+    name: async (parent, _, context: Context) => {
+      const country = await context.dataSources.countries.getCountryByCode(parent.iso);
+      return country?.country || parent.name || '';
+    },
     nameHebrew: async (parent, _, context: Context) => {
       const country = await context.dataSources.countries.getCountryByCode(
         parent.iso

@@ -54,9 +54,6 @@ type Query {
     testContext: TestPricingContext!
   ): PricingRuleCalculation!
 
-  # Bundle groups
-  bundleGroups: [String!]! @auth(role: "ADMIN")
-
   # Pricing filters
   pricingFilters: PricingFilters!
 
@@ -438,7 +435,7 @@ type Country {
   iso: ISOCountryCode! # ISO 3166-1 alpha-2 code
   name: String! # English name
   nameHebrew: String
-  region: String!
+  region: String
   flag: String
   isHighDemand: Boolean @auth(role: "ADMIN")
 }

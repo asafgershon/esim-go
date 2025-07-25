@@ -10,15 +10,11 @@ import {
   TooltipTrigger,
 } from "@workspace/ui";
 import { Globe, MapPin } from "lucide-react";
+import { BundlesForRegion } from "@/__generated__/graphql";
 
-export interface DisplayRegionData {
-  regionName: string;
-  countryCount: number;
-  bundleCount: number;
-}
 
 interface CatalogRegionCardProps {
-  region: DisplayRegionData;
+  region: BundlesForRegion;
   isSelected: boolean;
   isLoading?: boolean;
   onSelect: () => void;

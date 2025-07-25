@@ -1,4 +1,6 @@
 import {
+  GetBundlesByGroupQuery,
+  GetBundlesByGroupQueryVariables,
   SyncJobType,
   type BundleFilter,
   type CatalogBundle,
@@ -14,7 +16,7 @@ import {
   type GetCountryBundlesQueryVariables,
   type PaginationInput,
   type TriggerCatalogSyncMutation,
-  type TriggerCatalogSyncMutationVariables
+  type TriggerCatalogSyncMutationVariables,
 } from "@/__generated__/graphql";
 import { CatalogSplitView } from "@/components/catalog/CatalogSplitView";
 import { PageLayout } from "@/components/common/PageLayout";
@@ -24,9 +26,9 @@ import {
   type ConflictingJob,
 } from "@/components/SyncConflictModal";
 import {
-  GET_AVAILABLE_BUNDLE_GROUPS,
   GET_BUNDLES_BY_COUNTRY,
   GET_BUNDLES_BY_REGION,
+  GET_BUNDLES_BY_GROUP,
   GET_CATALOG_SYNC_HISTORY,
   GET_COUNTRY_BUNDLES,
   GET_REGION_BUNDLES,
@@ -138,10 +140,14 @@ function CatalogPageContent() {
   } = useQuery<GetBundlesByCountryQuery, GetBundlesByCountryQueryVariables>(
     GET_BUNDLES_BY_COUNTRY
   );
-  const { data: regionsData, loading: regionsLoading } = useQuery(
-    GET_BUNDLES_BY_REGION
-  );
-  const { data: bundleGroupsData } = useQuery(GET_AVAILABLE_BUNDLE_GROUPS);
+  const { data: regionsData, loading: regionsLoading } = useQuery<
+    GetBundlesByRegionQuery,
+    GetBundlesByRegionQueryVariables
+  >(GET_BUNDLES_BY_REGION);
+  const { data: bundleGroupsData } = useQuery<
+    GetBundlesByGroupQuery,
+    GetBundlesByGroupQueryVariables
+  >(GET_BUNDLES_BY_GROUP);
   const {
     data: syncHistoryData,
     loading: syncHistoryLoading,
@@ -226,7 +232,7 @@ function CatalogPageContent() {
     try {
       // Use the GET_REGION_BUNDLES query to fetch bundles for the region
       const { data } = await getRegionBundlesLazy({
-        variables: {  },
+        variables: {},
       });
 
       if (!data?.bundlesByRegion) {
@@ -234,7 +240,7 @@ function CatalogPageContent() {
       }
 
       // Return the bundles as CatalogBundle[]
-      return data.bundlesByRegion.bundles
+      return data.bundlesByRegion.bundles;
     } catch (error) {
       toast.error(`Failed to load bundles for region ${regionName}`);
       throw error;
@@ -295,29 +301,9 @@ function CatalogPageContent() {
     await performSync(true);
   };
 
-  const bundleGroups = bundleGroupsData?.availableBundleGroups || [];
-
-  // Map bundlesByCountry to DisplayCountryData format
-  const countriesData = (catalogData?.bundlesByCountry || []).map(
-    (item) => ({
-      iso: item.country.iso,
-      name: item.country.name,
-      nameHebrew: item.country.nameHebrew,
-      region: item.country.region,
-      flag: item.country.flag,
-      bundleCount: item.bundleCount,
-      pricingRange: item.pricingRange, // Include pricing range from backend
-    })
-  );
-
-  // Map bundlesByRegion to DisplayRegionData format
-  const regionsDataArray = (regionsData?.bundlesByRegion || []).map(
-    (item: any) => ({
-      regionName: item.region,
-      countryCount: 0, // This field is not available in the new schema
-      bundleCount: item.bundleCount,
-    })
-  );
+  // Pass the data directly - it already has the correct structure from GraphQL
+  const countriesData = catalogData?.bundlesByCountry || [];
+  const regionsDataArray = regionsData?.bundlesByRegion || [];
 
   return (
     <PageLayout.Container>
@@ -333,7 +319,7 @@ function CatalogPageContent() {
           <CatalogSplitView
             countriesData={countriesData}
             regionsData={regionsDataArray}
-            bundleGroups={bundleGroups}
+            bundleGroups={bundleGroupsData?.bundlesByGroup || []}
             onLoadCountryBundles={loadCountryBundles}
             onLoadRegionBundles={loadRegionBundles}
             onSync={handleSyncClick}

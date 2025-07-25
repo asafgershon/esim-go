@@ -21,6 +21,7 @@
   - This ensures type safety and prevents runtime errors from field name mismatches
 - Use the generated types from __generated__ folder and use it together with `useMutation` and `useQuery` from Apollo client
 - To build the dashboard application, use `bun run build` in the `client/apps/dashboard` directory
+- Never modify generated files.
 
 ## Supabase Migration Process
 - Create supabase migration by running `supabasem migration new {migration_name}`

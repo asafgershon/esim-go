@@ -1,4 +1,4 @@
-import { BundlesByCountry, BundlesByRegion, CatalogBundle } from "@/__generated__/graphql";
+import { BundlesForCountry, BundlesForRegion, CatalogBundle } from "@/__generated__/graphql";
 import {
   Button,
   List,
@@ -8,7 +8,6 @@ import {
   TooltipTrigger,
 } from "@workspace/ui";
 import { AnimatePresence, motion } from "framer-motion";
-import Fuse from "fuse.js";
 import { Database, Globe, Package, RefreshCw, X } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { Panel, PanelGroup } from "react-resizable-panels";
@@ -22,8 +21,8 @@ import { CatalogRegionCard } from "./CatalogRegionCard";
 import { CatalogSyncPanel } from "./CatalogSyncPanel";
 
 interface CatalogSplitViewProps {
-  countriesData: BundlesByCountry[];
-  regionsData: BundlesByRegion[];
+  countriesData: BundlesForCountry[];
+  regionsData: BundlesForRegion[];
   bundleGroups: { group: string }[];
   onLoadCountryBundles: (countryId: string) => Promise<CatalogBundle[]>;
   onLoadRegionBundles?: (region: string) => Promise<CatalogBundle[]>;
@@ -34,9 +33,14 @@ interface CatalogSplitViewProps {
   syncHistory: any[];
   syncHistoryLoading: boolean;
   loading: boolean;
+  // New props for backend filtering
+  onSearch?: (query: string) => void;
+  onFilterByGroup?: (group: string | null) => void;
+  searchQuery?: string;
+  selectedBundleGroup?: string;
 }
 
-export function CatalogSplitView({
+export function CatalogSplitViewRefactored({
   countriesData = [],
   regionsData = [],
   bundleGroups = [],
@@ -49,150 +53,58 @@ export function CatalogSplitView({
   syncHistory,
   syncHistoryLoading,
   loading = false,
+  onSearch,
+  onFilterByGroup,
+  searchQuery = "",
+  selectedBundleGroup = "all",
 }: CatalogSplitViewProps) {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const [selectedBundle, setSelectedBundle] = useState<CatalogBundle | null>(
-    null
-  );
-  const [loadingCountries, setLoadingCountries] = useState<Set<string>>(
-    new Set()
-  );
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBundleGroup, setSelectedBundleGroup] = useState<string>("all");
-  const [countryBundles, setCountryBundles] = useState<
-    Record<string, CatalogBundle[]>
-  >({});
-  const [regionBundles, setRegionBundles] = useState<
-    Record<string, CatalogBundle[]>
-  >({});
+  const [selectedBundle, setSelectedBundle] = useState<CatalogBundle | null>(null);
+  const [loadingCountries, setLoadingCountries] = useState<Set<string>>(new Set());
+  const [countryBundles, setCountryBundles] = useState<Record<string, CatalogBundle[]>>({});
+  const [regionBundles, setRegionBundles] = useState<Record<string, CatalogBundle[]>>({});
   const [showRegions, setShowRegions] = useState(false);
 
-  // Configure Fuse.js for country search
-  const countryFuse = useMemo(() => {
-    const fuseOptions = {
-      keys: ["countryName", "countryId"],
-      threshold: 0.3,
-      includeScore: true,
-    };
-
-    return new Fuse(countriesData, fuseOptions);
-  }, [countriesData]);
-
-  // Configure Fuse.js for region search
-  const regionFuse = useMemo(() => {
-    const fuseOptions = {
-      keys: ["regionName"],
-      threshold: 0.3,
-      includeScore: true,
-    };
-
-    return new Fuse(regionsData, fuseOptions);
-  }, [regionsData]);
-
-  // Filter countries by search query and bundle group
-  const filteredCountriesData = useMemo(() => {
-    let filtered = countriesData;
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const searchResults = countryFuse.search(searchQuery);
-      const searchedIds = new Set(
-        searchResults.map((result) => result.item.country.iso)
-      );
-      filtered = filtered.filter((country) => searchedIds.has(country.country.iso));
-    }
-
-    // Apply bundle group filter if bundles are loaded
-    if (selectedBundleGroup !== "all") {
-      filtered = filtered.filter((country) => {
-        const bundles = countryBundles[country.country.iso];
-        if (!bundles) return true; // Show countries that haven't been loaded yet
-        return bundles.some((bundle) =>
-          bundle.groups.includes(selectedBundleGroup)
-        );
-      });
-    }
-
-    return filtered;
-  }, [
-    countriesData,
-    searchQuery,
-    selectedBundleGroup,
-    countryFuse,
-    countryBundles,
-  ]);
-
-  // Get selected country data with filtered bundles
+  // Get selected country data
   const selectedCountryData = useMemo(() => {
     if (!selectedCountry) return null;
-    const country = filteredCountriesData.find(
-      (country) => country.country.iso === selectedCountry
-    );
+    const country = countriesData.find((c) => c.country.iso === selectedCountry);
     if (!country) return null;
 
-    const bundles = countryBundles[country.country.iso];
-    if (!bundles) return { ...country, bundles: [] };
-
-    // Apply bundle group filter
-    const filteredBundles =
-      selectedBundleGroup === "all"
-        ? bundles
-        : bundles.filter((bundle) =>
-            bundle.groups.includes(selectedBundleGroup)
-          );
-
+    const bundles = countryBundles[selectedCountry];
     return {
       ...country,
-      bundles: filteredBundles,
-      bundleCount: filteredBundles.length,
+      bundles: bundles || [],
+      bundleCount: bundles?.length || country.bundleCount,
     };
-  }, [
-    selectedCountry,
-    filteredCountriesData,
-    countryBundles,
-    selectedBundleGroup,
-  ]);
+  }, [selectedCountry, countriesData, countryBundles]);
 
-  // Get selected region data with loaded bundles
+  // Get selected region data
   const selectedRegionData = useMemo(() => {
     if (!selectedRegion) return null;
     const region = regionsData.find((r) => r.region === selectedRegion);
     if (!region) return null;
 
     const bundles = regionBundles[selectedRegion];
-    if (!bundles)
-      return {
-        ...region,
-        bundleCount: region.bundleCount,
-      } satisfies BundlesForRegion;
-
-    // Apply bundle group filter
-    const filteredBundles =
-      selectedBundleGroup === "all"
-        ? bundles
-        : bundles.filter((bundle) =>
-            bundle.groups.includes(selectedBundleGroup)
-          );
-
     return {
       ...region,
-      bundles: filteredBundles,
-      bundleCount: filteredBundles.length,
+      bundles: bundles || [],
+      bundleCount: bundles?.length || region.bundleCount,
     };
-  }, [selectedRegion, regionsData, regionBundles, selectedBundleGroup]);
+  }, [selectedRegion, regionsData, regionBundles]);
 
   // Handle country selection
   const handleCountrySelect = useCallback(
     async (countryId: string) => {
-      const country = filteredCountriesData.find((c) => c.country.iso === countryId);
+      const country = countriesData.find((c) => c.country.iso === countryId);
       if (!country) return;
 
       setSelectedCountry(countryId);
-      setSelectedRegion(null); // Clear region selection
-      setSelectedBundle(null); // Clear selected bundle when changing country
+      setSelectedRegion(null);
+      setSelectedBundle(null);
 
-      // If country doesn't have bundles loaded, load them
+      // Load bundles if not already loaded
       if (!countryBundles[countryId]) {
         setLoadingCountries((prev) => new Set(prev).add(countryId));
 
@@ -204,9 +116,7 @@ export function CatalogSplitView({
           }));
         } catch (error) {
           console.error("Error loading bundles for country:", countryId, error);
-          toast.error(
-            `Failed to load bundles for ${country.country.name}. Please try again.`
-          );
+          toast.error(`Failed to load bundles for ${country.country.name}. Please try again.`);
         } finally {
           setLoadingCountries((prev) => {
             const next = new Set(prev);
@@ -216,7 +126,7 @@ export function CatalogSplitView({
         }
       }
     },
-    [filteredCountriesData, countryBundles, onLoadCountryBundles]
+    [countriesData, countryBundles, onLoadCountryBundles]
   );
 
   // Handle region selection
@@ -226,12 +136,12 @@ export function CatalogSplitView({
       if (!region) return;
 
       setSelectedRegion(regionName);
-      setSelectedCountry(null); // Clear country selection
-      setSelectedBundle(null); // Clear selected bundle
+      setSelectedCountry(null);
+      setSelectedBundle(null);
 
-      // If region doesn't have bundles loaded, load them
+      // Load bundles if not already loaded
       if (!regionBundles[regionName] && onLoadRegionBundles) {
-        setLoadingCountries((prev) => new Set(prev).add(regionName)); // Reuse loading state
+        setLoadingCountries((prev) => new Set(prev).add(regionName));
 
         try {
           const bundles = await onLoadRegionBundles(regionName);
@@ -241,9 +151,7 @@ export function CatalogSplitView({
           }));
         } catch (error) {
           console.error("Error loading bundles for region:", regionName, error);
-          toast.error(
-            `Failed to load bundles for ${regionName}. Please try again.`
-          );
+          toast.error(`Failed to load bundles for ${regionName}. Please try again.`);
         } finally {
           setLoadingCountries((prev) => {
             const next = new Set(prev);
@@ -256,91 +164,21 @@ export function CatalogSplitView({
     [regionsData, regionBundles, onLoadRegionBundles]
   );
 
-  // Get summary info for a country
-  const getCountrySummary = (country: BundlesByCountry) => {
-    const bundles = countryBundles[country.country.iso];
-
-    // If bundles haven't been loaded yet, use the backend pricing range
-    if (!bundles) {
-      return {
-        count: country.bundleCount || 0,
-        range: country.pricingRange || {
-          min: 0,
-          max: 0,
-          currency: "USD",
-        },
-        status: "pending" as const,
-      };
-    }
-
-    // Once bundles are loaded, we can use the backend pricing range if available
-    // or calculate it from the loaded bundles
-    const count = bundles.length;
-
-    // Prefer the backend pricing range if available
-    if (country.pricingRange) {
-      return {
-        count,
-        range: country.pricingRange,
-        status: "loaded" as const,
-      };
-    }
-
-    // Fallback to calculating from bundles (this shouldn't happen if backend provides pricingRange)
-    const prices = bundles
-      .map((bundle) => bundle.basePrice || 0)
-      .filter((price) => price > 0);
-
-    if (prices.length === 0) {
-      return {
-        count,
-        range: {
-          min: 0,
-          max: 0,
-          currency: "USD",
-        },
-        status: "loaded" as const,
-      };
-    }
-
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-
-    return {
-      count,
-      range: {
-        min: minPrice,
-        max: maxPrice,
-        currency: "USD",
-      },
-      status: "loaded" as const,
-    };
-  };
-
-  // Set default selection based on current view
+  // Set default selection
   React.useEffect(() => {
     if (showRegions) {
-      // Clear country selection when switching to regions
       setSelectedCountry(null);
       if (!selectedRegion && regionsData.length > 0) {
         setSelectedRegion(regionsData[0].region);
       }
     } else {
-      // Clear region selection when switching to countries
       setSelectedRegion(null);
-      if (!selectedCountry && filteredCountriesData.length > 0) {
-        setSelectedCountry(filteredCountriesData[0].country.iso);
-        handleCountrySelect(filteredCountriesData[0].country.iso);
+      if (!selectedCountry && countriesData.length > 0) {
+        setSelectedCountry(countriesData[0].country.iso);
+        handleCountrySelect(countriesData[0].country.iso);
       }
     }
-  }, [
-    showRegions,
-    filteredCountriesData,
-    regionsData,
-    selectedCountry,
-    selectedRegion,
-    handleCountrySelect,
-  ]);
+  }, [showRegions, countriesData, regionsData, selectedCountry, selectedRegion, handleCountrySelect]);
 
   const bundleGroupOptions = [
     { label: "All Groups", value: "all" },
@@ -350,6 +188,19 @@ export function CatalogSplitView({
     })),
   ];
 
+  const handleBundleGroupChange = (values: string[]) => {
+    const newGroup = values.length === 0 ? "all" : values[0];
+    if (onFilterByGroup) {
+      onFilterByGroup(newGroup === "all" ? null : newGroup);
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    if (onSearch) {
+      onSearch(value);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Filter Bar */}
@@ -357,12 +208,8 @@ export function CatalogSplitView({
         <FilterDropdown
           title="Bundle Group"
           options={bundleGroupOptions}
-          selected={
-            new Set(selectedBundleGroup === "all" ? [] : [selectedBundleGroup])
-          }
-          onSelectionChange={(values) => {
-            setSelectedBundleGroup(values.length === 0 ? "all" : values[0]);
-          }}
+          selected={new Set(selectedBundleGroup === "all" ? [] : [selectedBundleGroup])}
+          onSelectionChange={handleBundleGroupChange}
           placeholder="All Groups"
         />
         {selectedBundleGroup !== "all" && (
@@ -371,23 +218,14 @@ export function CatalogSplitView({
           </div>
         )}
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            onClick={onSync}
-            disabled={syncLoading}
-            size="sm"
-            variant="ghost"
-          >
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${syncLoading ? "animate-spin" : ""}`}
-            />
+          <Button onClick={onSync} disabled={syncLoading} size="sm" variant="ghost">
+            <RefreshCw className={`mr-2 h-4 w-4 ${syncLoading ? "animate-spin" : ""}`} />
             Trigger Sync
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className={`${
-              showSyncPanel ? "bg-accent text-accent-foreground" : ""
-            }`}
+            className={`${showSyncPanel ? "bg-accent text-accent-foreground" : ""}`}
             onClick={() => onToggleSyncPanel(!showSyncPanel)}
           >
             <RefreshCw className="h-4 w-4" />
@@ -397,31 +235,19 @@ export function CatalogSplitView({
 
       {/* Main Content with Resizable Panels */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <PanelGroup
-          direction="horizontal"
-          className="flex h-full"
-          autoSaveId="catalog-layout"
-        >
+        <PanelGroup direction="horizontal" className="flex h-full" autoSaveId="catalog-layout">
           {/* Countries Panel */}
-          <Panel
-            defaultSize={25}
-            minSize={15}
-            maxSize={40}
-            id="countries-panel"
-            order={1}
-          >
+          <Panel defaultSize={25} minSize={15} maxSize={40} id="countries-panel" order={1}>
             <List.Container
               className="h-full"
-              itemCount={
-                showRegions ? regionsData.length : filteredCountriesData.length
-              }
+              itemCount={showRegions ? regionsData.length : countriesData.length}
             >
               <List.Header>
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-medium text-gray-700">
                     {showRegions
                       ? `Regions (${regionsData.length})`
-                      : `Countries (${filteredCountriesData.length})`}
+                      : `Countries (${countriesData.length})`}
                   </h3>
                   <TooltipProvider>
                     <Tooltip>
@@ -439,9 +265,7 @@ export function CatalogSplitView({
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {showRegions
-                          ? "Switch to countries view"
-                          : "Switch to regions view"}
+                        {showRegions ? "Switch to countries view" : "Switch to regions view"}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -449,10 +273,8 @@ export function CatalogSplitView({
               </List.Header>
               <List.Search
                 value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder={
-                  showRegions ? "Search regions..." : "Search countries..."
-                }
+                onChange={handleSearchChange}
+                placeholder={showRegions ? "Search regions..." : "Search countries..."}
               />
               <List.Content spacing="normal" padding={true}>
                 <div className="space-y-2">
@@ -460,20 +282,16 @@ export function CatalogSplitView({
                     // Regions view
                     regionsData.length === 0 ? (
                       <List.Empty
-                        icon={
-                          <Globe className="h-12 w-12 mx-auto text-gray-300" />
-                        }
+                        icon={<Globe className="h-12 w-12 mx-auto text-gray-300" />}
                         message="No regions data available. Load countries to see regional groupings."
                       />
                     ) : (
                       regionsData.map((region) => {
                         const isSelected = selectedRegion === region.region;
-                        const isRegionLoading = loadingCountries.has(
-                          region.region
-                        );
+                        const isRegionLoading = loadingCountries.has(region.region);
                         const summary = {
                           count: region.bundleCount,
-                          range: region.region,
+                          range: `${region.countries.length} countries`,
                           status: "loaded" as const,
                         };
 
@@ -483,9 +301,7 @@ export function CatalogSplitView({
                               region={region}
                               isSelected={isSelected}
                               isLoading={isRegionLoading}
-                              onSelect={() =>
-                                handleRegionSelect(region.region)
-                              }
+                              onSelect={() => handleRegionSelect(region.region)}
                               summary={summary}
                             />
                           </List.Item>
@@ -495,11 +311,9 @@ export function CatalogSplitView({
                   ) : // Countries view
                   loading ? (
                     <List.Loading />
-                  ) : filteredCountriesData.length === 0 ? (
+                  ) : countriesData.length === 0 ? (
                     <List.Empty
-                      icon={
-                        <Database className="h-12 w-12 mx-auto text-gray-300" />
-                      }
+                      icon={<Database className="h-12 w-12 mx-auto text-gray-300" />}
                       message={
                         searchQuery
                           ? `No countries found matching "${searchQuery}"`
@@ -509,13 +323,21 @@ export function CatalogSplitView({
                       }
                     />
                   ) : (
-                    filteredCountriesData.map((country) => {
-                      const summary = getCountrySummary(country);
+                    countriesData.map((country) => {
                       const isSelected = selectedCountry === country.country.iso;
-                      const isCountryLoading = loadingCountries.has(
-                        country.country.iso
-                      );
+                      const isCountryLoading = loadingCountries.has(country.country.iso);
                       const bundles = countryBundles[country.country.iso];
+
+                      // Use backend-provided pricing range
+                      const summary = {
+                        count: bundles?.length || country.bundleCount,
+                        range: country.pricingRange || {
+                          min: 0,
+                          max: 0,
+                          currency: "USD",
+                        },
+                        status: bundles ? ("loaded" as const) : ("pending" as const),
+                      };
 
                       return (
                         <List.Item key={country.country.iso} asChild>
@@ -553,9 +375,7 @@ export function CatalogSplitView({
               <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
                 <h3 className="text-sm font-medium text-gray-700">
                   Bundles (
-                  {(selectedCountryData || selectedRegionData)?.bundleCount ||
-                    0}
-                  )
+                  {(selectedCountryData || selectedRegionData)?.bundleCount || 0})
                 </h3>
               </div>
 
@@ -576,12 +396,10 @@ export function CatalogSplitView({
                       <div className="mb-4">
                         <Package className="h-12 w-12 mx-auto text-gray-300" />
                       </div>
-                      <p className="text-lg">
-                        Select a {showRegions ? "Region" : "Country"}
-                      </p>
+                      <p className="text-lg">Select a {showRegions ? "Region" : "Country"}</p>
                       <p className="text-sm">
-                        Click on a {showRegions ? "region" : "country"} from the
-                        list to view its bundles
+                        Click on a {showRegions ? "region" : "country"} from the list to view its
+                        bundles
                       </p>
                     </div>
                   </div>
@@ -594,13 +412,7 @@ export function CatalogSplitView({
           {(selectedBundle || showSyncPanel) && (
             <>
               <ResizeHandle />
-              <Panel
-                defaultSize={25}
-                minSize={20}
-                maxSize={40}
-                id="preview-panel"
-                order={3}
-              >
+              <Panel defaultSize={25} minSize={20} maxSize={40} id="preview-panel" order={3}>
                 <AnimatePresence mode="wait">
                   {showSyncPanel ? (
                     <motion.div
@@ -632,9 +444,7 @@ export function CatalogSplitView({
                         {/* Preview Header */}
                         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
                           <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-medium text-gray-700">
-                              Bundle Details
-                            </h3>
+                            <h3 className="text-sm font-medium text-gray-700">Bundle Details</h3>
                             <Button
                               variant="ghost"
                               size="sm"

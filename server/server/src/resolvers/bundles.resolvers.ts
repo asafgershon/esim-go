@@ -101,6 +101,7 @@ export const bundlesResolvers: BundleResolvers = {
         return data.map((country) => ({
           country: {
             iso: country.country_code,
+            __typename: "Country",
           } as Country,
           bundleCount: Number(country.bundle_count),
           pricingRange: {

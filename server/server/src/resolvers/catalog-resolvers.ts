@@ -307,33 +307,6 @@ export const catalogResolvers: Partial<Resolvers> = {
       }
     },
 
-    availableBundleGroups: async (_, __, context: Context) => {
-      try {
-        logger.info("Fetching available bundle groups", {
-          operationType: "available-bundle-groups",
-        });
-
-        // Use bundle repository to get available bundle groups
-        const bundleGroups =
-          await context.repositories.bundles.getAvailableBundleGroups();
-
-        logger.info("Available bundle groups fetched successfully", {
-          groupCount: bundleGroups.length,
-          operationType: "available-bundle-groups",
-        });
-
-        return bundleGroups;
-      } catch (error) {
-        logger.error(
-          "Failed to fetch available bundle groups",
-          error as Error,
-          {
-            operationType: "available-bundle-groups",
-          }
-        );
-        throw error;
-      }
-    },
 
     // Main bundles resolver with optional filtering
     bundles: async (_, { countryId, regionId }, context: Context) => {

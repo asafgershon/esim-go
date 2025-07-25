@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client'
+import { gql } from "@apollo/client";
 
 // Pricing Rules Queries
 export const GET_PRICING_RULES = gql(`
@@ -29,7 +29,7 @@ export const GET_PRICING_RULES = gql(`
       updatedAt
     }
   }
-`)
+`);
 
 export const CREATE_PRICING_RULE = gql(`
   mutation CreatePricingRule($input: CreatePricingRuleInput!) {
@@ -59,7 +59,7 @@ export const CREATE_PRICING_RULE = gql(`
       updatedAt
     }
   }
-`)
+`);
 
 export const UPDATE_PRICING_RULE = gql(`
   mutation UpdatePricingRule($id: ID!, $input: UpdatePricingRuleInput!) {
@@ -89,13 +89,13 @@ export const UPDATE_PRICING_RULE = gql(`
       updatedAt
     }
   }
-`)
+`);
 
 export const DELETE_PRICING_RULE = gql(`
   mutation DeletePricingRule($id: ID!) {
     deletePricingRule(id: $id)
   }
-`)
+`);
 
 export const TOGGLE_PRICING_RULE = gql(`
   mutation TogglePricingRule($id: ID!) {
@@ -104,7 +104,7 @@ export const TOGGLE_PRICING_RULE = gql(`
       isActive
     }
   }
-`)
+`);
 
 export const CLONE_PRICING_RULE = gql(`
   mutation ClonePricingRule($id: ID!, $newName: String!) {
@@ -129,9 +129,7 @@ export const CLONE_PRICING_RULE = gql(`
       isEditable
     }
   }
-`)
-
-
+`);
 
 export const GET_TRIPS = gql(`
   query GetTrips {
@@ -156,7 +154,7 @@ export const GET_TRIPS = gql(`
       }
     }
   }
-`)
+`);
 
 export const CREATE_TRIP = gql(`
   mutation CreateTrip($input: CreateTripInput!) {
@@ -185,7 +183,7 @@ export const CREATE_TRIP = gql(`
       }
     }
   }
-`)
+`);
 
 export const UPDATE_TRIP = gql(`
   mutation UpdateTrip($input: UpdateTripInput!) {
@@ -217,7 +215,7 @@ export const UPDATE_TRIP = gql(`
       }
     }
   }
-`)
+`);
 
 export const DELETE_TRIP = gql(`
   mutation DeleteTrip($id: ID!) {
@@ -226,7 +224,7 @@ export const DELETE_TRIP = gql(`
       error
     }
   }
-`)
+`);
 
 export const GET_USERS = gql(`
   query GetUsers {
@@ -242,8 +240,7 @@ export const GET_USERS = gql(`
       orderCount
     }
   }
-`)
-
+`);
 
 export const GET_ORDERS = gql(`
   query GetOrders {
@@ -267,7 +264,7 @@ export const GET_ORDERS = gql(`
       }
     }
   }
-`)
+`);
 
 export const GET_USER_ORDERS = gql(`
   query GetUserOrders($userId: ID!) {
@@ -283,7 +280,7 @@ export const GET_USER_ORDERS = gql(`
       bundleName
     }
   }
-`)
+`);
 
 export const UPDATE_USER_ROLE = gql(`
   mutation UpdateUserRole($userId: ID!, $role: String!) {
@@ -298,7 +295,7 @@ export const UPDATE_USER_ROLE = gql(`
       updatedAt
     }
   }
-`)
+`);
 
 export const INVITE_ADMIN_USER = gql(`
   mutation InviteAdminUser($input: InviteAdminUserInput!) {
@@ -308,8 +305,7 @@ export const INVITE_ADMIN_USER = gql(`
       invitedEmail
     }
   }
-`)
-
+`);
 
 export const GET_CATALOG_BUNDLES = gql(`
   query GetCatalogBundles($criteria: SearchCatalogCriteria) {
@@ -326,7 +322,7 @@ export const GET_CATALOG_BUNDLES = gql(`
       totalCount
     }
   }
-`)
+`);
 
 export const ASSIGN_PACKAGE_TO_USER = gql(`
   mutation AssignPackageToUser($userId: ID!, $planId: ID!) {
@@ -345,7 +341,7 @@ export const ASSIGN_PACKAGE_TO_USER = gql(`
       }
     }
   }
-`)
+`);
 
 export const CALCULATE_PRICING = gql(`
   query CalculatePricing($numOfDays: Int!, $countryId: String!, $paymentMethod: PaymentMethod) {
@@ -363,7 +359,7 @@ export const CALCULATE_PRICING = gql(`
       discountPerDay
     }
   }
-`)
+`);
 
 export const CALCULATE_BATCH_PRICING = gql(`
   query CalculateBatchPricing($inputs: [CalculatePriceInput!]!) {
@@ -382,7 +378,7 @@ export const CALCULATE_BATCH_PRICING = gql(`
       discountPerDay
     }
   }
-`)
+`);
 
 // Enhanced rule-based pricing queries
 export const CALCULATE_PRICE_WITH_RULES = gql(`
@@ -414,7 +410,7 @@ export const CALCULATE_PRICE_WITH_RULES = gql(`
       }
     }
   }
-`)
+`);
 
 export const CALCULATE_BATCH_PRICING_WITH_RULES = gql(`
   query CalculateBatchPricingWithRules($requests: [CalculatePriceInput!]!) {
@@ -445,7 +441,7 @@ export const CALCULATE_BATCH_PRICING_WITH_RULES = gql(`
       }
     }
   }
-`)
+`);
 
 export const SIMULATE_PRICING_RULE = gql(`
   query SimulatePricingRule($rule: CreatePricingRuleInput!, $testContext: TestPricingContext!) {
@@ -476,7 +472,7 @@ export const SIMULATE_PRICING_RULE = gql(`
       }
     }
   }
-`)
+`);
 
 export const DELETE_USER = gql(`
   mutation DeleteUser($userId: ID!) {
@@ -485,7 +481,7 @@ export const DELETE_USER = gql(`
       error
     }
   }
-`)
+`);
 
 export const GET_COUNTRIES = gql(`
   query GetCountries {
@@ -497,74 +493,7 @@ export const GET_COUNTRIES = gql(`
       flag
     }
   }
-`)
-
-
-
-export const GET_CURRENT_PROCESSING_FEE_CONFIGURATION = gql(`
-  query GetCurrentProcessingFeeConfiguration {
-    currentProcessingFeeConfiguration {
-      id
-      israeliCardsRate
-      foreignCardsRate
-      premiumDinersRate
-      premiumAmexRate
-      bitPaymentRate
-      fixedFeeNIS
-      fixedFeeForeign
-      monthlyFixedCost
-      bankWithdrawalFee
-      monthlyMinimumFee
-      setupCost
-      threeDSecureFee
-      chargebackFee
-      cancellationFee
-      invoiceServiceFee
-      appleGooglePayFee
-      isActive
-      effectiveFrom
-      effectiveTo
-      createdAt
-      updatedAt
-      createdBy
-      notes
-    }
-  }
-`)
-
-export const GET_PROCESSING_FEE_CONFIGURATIONS = gql(`
-  query GetProcessingFeeConfigurations($limit: Int = 10, $offset: Int = 0, $includeInactive: Boolean = false) {
-    processingFeeConfigurations(limit: $limit, offset: $offset, includeInactive: $includeInactive) {
-      id
-      israeliCardsRate
-      foreignCardsRate
-      premiumDinersRate
-      premiumAmexRate
-      bitPaymentRate
-      fixedFeeNIS
-      fixedFeeForeign
-      monthlyFixedCost
-      bankWithdrawalFee
-      monthlyMinimumFee
-      setupCost
-      threeDSecureFee
-      chargebackFee
-      cancellationFee
-      invoiceServiceFee
-      appleGooglePayFee
-      isActive
-      effectiveFrom
-      effectiveTo
-      createdAt
-      updatedAt
-      createdBy
-      notes
-    }
-  }
-`)
-
-
-
+`);
 
 export const GET_BUNDLES_BY_COUNTRY = gql(`
   query GetBundlesByCountry {
@@ -583,7 +512,7 @@ export const GET_BUNDLES_BY_COUNTRY = gql(`
       }
     }
   }
-`)
+`);
 
 export const GET_COUNTRIES_WITH_BUNDLES = gql(`
   query GetCountriesWithBundles {
@@ -612,7 +541,7 @@ export const GET_COUNTRIES_WITH_BUNDLES = gql(`
       }
     }
   }
-`)
+`);
 
 export const GET_BUNDLES_BY_REGION = gql(`
   query GetBundlesByRegion {
@@ -621,7 +550,16 @@ export const GET_BUNDLES_BY_REGION = gql(`
       bundleCount
     }
   }
-`)
+`);
+
+export const GET_BUNDLES_BY_GROUP = gql(`
+  query GetBundlesByGroup {
+    bundlesByGroup {
+      group
+      bundleCount
+    }
+  }
+`);
 
 export const GET_REGION_BUNDLES = gql(`
   query GetRegionBundles($region: String!) {
@@ -646,7 +584,7 @@ export const GET_REGION_BUNDLES = gql(`
       }
     }
   }
-`)
+`);
 
 export const GET_COUNTRY_BUNDLES = gql(`
   query GetCountryBundles($countryId: String!) {
@@ -674,7 +612,7 @@ export const GET_COUNTRY_BUNDLES = gql(`
       }
     }
   }
-`)
+`);
 
 export const SYNC_CATALOG = gql(`
   mutation SyncCatalog($force: Boolean = false) {
@@ -687,13 +625,15 @@ export const SYNC_CATALOG = gql(`
       syncedAt
     }
   }
-`)
+`);
 
 export const GET_BUNDLE_GROUPS = gql(`
   query GetBundleGroups {
-    bundleGroups
+    bundlesByGroup {
+      group
+    }
   }
-`)
+`);
 
 export const GET_PRICING_FILTERS = gql(`
   query GetPricingFilters {
@@ -712,14 +652,14 @@ export const GET_PRICING_FILTERS = gql(`
       }
     }
   }
-`)
+`);
 
 // High Demand Countries Queries
 export const GET_HIGH_DEMAND_COUNTRIES = gql(`
   query GetHighDemandCountries {
     highDemandCountries
   }
-`)
+`);
 
 export const TOGGLE_HIGH_DEMAND_COUNTRY = gql(`
   mutation ToggleHighDemandCountry($countryId: String!) {
@@ -730,36 +670,9 @@ export const TOGGLE_HIGH_DEMAND_COUNTRY = gql(`
       error
     }
   }
-`)
+`);
 
-export const GET_BUNDLE_DATA_AGGREGATION = gql(`
-  query GetBundleDataAggregation {
-    bundleDataAggregation {
-      total
-      unlimited
-      byDataAmount {
-        dataAmount
-        count
-        percentage
-      }
-      byDuration {
-        duration
-        count
-        percentage
-        category
-      }
-      byGroup {
-        group
-        total
-        unlimited
-        limited
-        averageDataAmount
-      }
-      lastUpdated
-    }
-  }
-`)
-
+export const GET_BUNDLE_DATA_AGGREGATION = ``;
 
 export const GET_CATALOG_SYNC_HISTORY = gql(`
   query GetCatalogSyncHistory($params: SyncHistoryParams) {
@@ -784,7 +697,7 @@ export const GET_CATALOG_SYNC_HISTORY = gql(`
       totalCount
     }
   }
-`)
+`);
 
 export const TRIGGER_CATALOG_SYNC = gql(`
   mutation TriggerCatalogSync($params: TriggerSyncParams!) {
@@ -802,10 +715,4 @@ export const TRIGGER_CATALOG_SYNC = gql(`
       }
     }
   }
-`)
-
-export const GET_AVAILABLE_BUNDLE_GROUPS = gql(`
-  query GetAvailableBundleGroups {
-    availableBundleGroups
-  }
-`)
+`);

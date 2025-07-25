@@ -1,24 +1,19 @@
-import { CatalogBundle, Country, PricingRange } from "@/__generated__/graphql";
+import {
+  Bundle,
+  BundlesForCountry,
+  BundlesForRegion
+} from "@/__generated__/graphql";
 import { ScrollArea } from "@workspace/ui";
 import { Badge } from "@workspace/ui/components/badge";
 import { Clock, Package, Wifi, WifiOff } from "lucide-react";
 import React from "react";
-import { DisplayRegionData } from "./CatalogRegionCard";
-
-
-
-export interface DisplayCountryData extends Country {
-  bundles?: CatalogBundle[];
-  bundleCount?: number;
-  pricingRange?: PricingRange;
-}
 
 interface CatalogBundlesTableProps {
-  country: DisplayCountryData | null;
-  region: DisplayRegionData | null;
+  country: BundlesForCountry;
+  region: BundlesForRegion | null;
   loadingCountries: Set<string>;
-  selectedBundle: CatalogBundle | null;
-  onBundleSelect: (bundle: CatalogBundle) => void;
+  selectedBundle: Bundle | null;
+  onBundleSelect: (bundle: Bundle) => void;
 }
 
 export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
@@ -31,7 +26,7 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
     return null;
   }
 
-  const isCountryLoading = loadingCountries.has(country.iso);
+  const isCountryLoading = loadingCountries.has(country.country.iso);
 
   if (isCountryLoading) {
     return (
@@ -54,10 +49,6 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
     );
   }
 
-  const sortedBundles = [...country.bundles].sort(
-    (a, b) => (a.duration || 0) - (b.duration || 0)
-  );
-
   const formatPrice = (price: number, currency: string) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -69,11 +60,11 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1" showOnHover={true}>
         <div className="space-y-1 p-2">
-          {sortedBundles.map((bundle, index) => (
+          {country.bundles.map((bundle, index) => (
             <div
-              key={bundle.id || `${bundle.id}-${index}`}
+              key={bundle.name || `${bundle.name}-${index}`}
               className={`border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                selectedBundle?.id === bundle.id
+                selectedBundle?.name === bundle.name
                   ? "ring-2 ring-blue-500 bg-blue-50"
                   : ""
               }`}
@@ -84,16 +75,16 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
                   <div className="flex items-center gap-3">
                     <div>
                       <h4 className="font-medium">
-                        {bundle.esimGoName || "Unknown Bundle"}
+                        {bundle.name || "Unknown Bundle"}
                       </h4>
                       <p className="text-sm text-gray-500">
-                        {bundle.duration || 0} day
-                        {(bundle.duration || 0) !== 1 ? "s" : ""} •
-                        {bundle.data && ` ${bundle.data}`}
-                        {bundle.group && (
+                        {bundle.validityInDays || 0} day
+                        {(bundle.validityInDays || 0) !== 1 ? "s" : ""} •
+                        {bundle.dataAmountMB && ` ${bundle.dataAmountMB}`}
+                        {bundle.groups && (
                           <span className="inline-flex items-center ml-2">
                             <Badge variant="outline" className="text-xs">
-                              {bundle.group}
+                              {bundle.groups}
                             </Badge>
                           </span>
                         )}
@@ -104,11 +95,14 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
 
                 <div className="text-right">
                   <div className="text-lg font-semibold">
-                    {formatPrice(bundle.priceCents || 0, bundle.currency || "USD")}
+                    {formatPrice(
+                      bundle.basePrice || 0,
+                      bundle.currency || "USD"
+                    )}
                   </div>
                   <div className="text-sm text-gray-500">
                     {formatPrice(
-                      (bundle.priceCents || 0) / (bundle.duration || 1),
+                      (bundle.basePrice || 0) / (bundle.validityInDays || 1),
                       bundle.currency || "USD"
                     )}
                     /day
@@ -123,12 +117,12 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1">
-                  {bundle.unlimited ? (
+                  {bundle.isUnlimited ? (
                     <Wifi className="h-3 w-3" />
                   ) : (
                     <WifiOff className="h-3 w-3" />
                   )}
-                  <span>{bundle.data?.toString() || "Unknown"}</span>
+                  <span>{bundle.dataAmountReadable}</span>
                 </div>
               </div>
             </div>
