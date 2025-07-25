@@ -260,19 +260,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Color Test Section */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">Hilo ESIM</h1>
-          <p className="text-emerald text-2xl font-hebrew">אינטרנט ללא הגבלה בחו״ל</p>
-          <p className="text-accent text-2xl font-hebrew">אינטרנט ללא הגבלה בחו״ל</p>
-          <div className="mt-4 space-y-2">
-            <div className="bg-primary text-primary-foreground p-4 rounded">Primary Color</div>
-            <div className="bg-secondary text-secondary-foreground p-4 rounded">Secondary Color</div>
-            <div className="bg-accent text-accent-foreground p-4 rounded">Accent/Emerald Color</div>
-          </div>
-        </div>
-      </div>
 
       {/* Footer */}
       <footer className="container mx-auto px-4 py-8 mt-16 border-t">
