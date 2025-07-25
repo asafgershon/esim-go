@@ -143,17 +143,6 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
             </div>
           )}
 
-          {/* Pipeline Stream (shown during streaming or when steps exist) */}
-          {(isStreaming || pipelineSteps.length > 0) && (
-            <div className="space-y-4">
-              <PricingPipelineStream
-                steps={pipelineSteps}
-                isStreaming={isStreaming}
-                wsConnected={wsConnected}
-              />
-            </div>
-          )}
-
           {/* Results */}
           {data && (
             <div className="space-y-4">
@@ -258,6 +247,18 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
                   </AlertDescription>
                 </Alert>
               )}
+            </div>
+          )}
+
+          {/* Pipeline Stream (shown at the end - reasoning/thinking process) */}
+          {(isStreaming || pipelineSteps.length > 0) && (
+            <div className="mt-6 pt-6 border-t">
+              <h4 className="font-medium text-sm mb-4">Pricing Engine Reasoning</h4>
+              <PricingPipelineStream
+                steps={pipelineSteps}
+                isStreaming={isStreaming}
+                wsConnected={wsConnected}
+              />
             </div>
           )}
         </div>

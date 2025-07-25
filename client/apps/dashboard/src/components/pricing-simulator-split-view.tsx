@@ -43,8 +43,8 @@ export const PricingSimulatorSplitView: React.FC<PricingSimulatorSplitViewProps>
   const panels = [
     {
       id: 'simulator',
-      defaultSize: 35,
-      minSize: 300,
+      defaultSize: 30,
+      minSize: 200,
       maxSize: 500,
       content: (
         <PricingSimulatorPanel
@@ -62,7 +62,7 @@ export const PricingSimulatorSplitView: React.FC<PricingSimulatorSplitViewProps>
     },
     {
       id: 'results',
-      defaultSize: 65,
+      defaultSize: 70,
       minSize: 400,
       content: (
         <PricingResultsPanel

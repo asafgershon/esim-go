@@ -1,3 +1,4 @@
+import { CreateCheckoutSessionInput } from "@/__generated__/graphql";
 import { CheckoutContainer } from "@/components/checkout/checkout-container";
 import { CheckoutRedirect } from "@/components/checkout/checkout-redirect";
 
@@ -27,7 +28,7 @@ async function createCheckoutSession(numOfDays: number, regionId?: string, count
 
   try {
     // Build input object with only defined values
-    const input: any = { numOfDays };
+    const input: CreateCheckoutSessionInput = { numOfDays };
     if (regionId) {
       input.regionId = regionId;
     }
