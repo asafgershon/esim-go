@@ -611,15 +611,31 @@ export const catalogResolvers: Partial<Resolvers> = {
         const { PubSubEvents } = await import("../context/pubsub");
         const { withFilter } = await import("graphql-subscriptions");
         
-        return withFilter(
+        // Create the async iterator with the filter
+        const iterator = withFilter(
           () => context.services.pubsub!.asyncIterator([
             PubSubEvents.PRICING_PIPELINE_STEP,
           ]),
           (payload, variables) => {
+            // Log for debugging
+            logger.debug("Filtering pricing pipeline event", {
+              payloadCorrelationId: payload.correlationId,
+              requestedCorrelationId: variables.correlationId,
+              match: payload.correlationId === variables.correlationId,
+              operationType: "pricing-pipeline-filter"
+            });
+            
             // Filter by correlationId to ensure users only get their own pricing updates
             return payload.correlationId === variables.correlationId;
           }
-        )(_, { correlationId }, context);
+        );
+        
+        // Return the iterator result
+        return iterator(_, { correlationId }, context);
+      },
+      resolve: (payload) => {
+        // The payload itself is the pricing pipeline step data
+        return payload;
       },
     },
   },

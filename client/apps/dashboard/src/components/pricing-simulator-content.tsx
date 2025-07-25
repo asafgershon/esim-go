@@ -36,6 +36,7 @@ import {
 
 import { Country, PaymentMethod } from '@/__generated__/graphql';
 import { usePricingSimulator } from '../hooks/usePricingSimulator';
+import { PricingPipelineStream } from './pricing-pipeline-stream';
 
 interface PricingSimulatorContentProps {
   countries: Country[];
@@ -63,6 +64,7 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
     error,
     pipelineSteps,
     isStreaming,
+    wsConnected,
     comparePaymentMethods,
     analyzeProfitability,
   } = usePricingSimulator();
@@ -201,31 +203,12 @@ export const PricingSimulatorContent: React.FC<PricingSimulatorContentProps> = (
       </Card>
 
       {/* Pipeline Steps (when streaming) */}
-      {isStreaming && pipelineSteps.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 animate-pulse" />
-              Pricing Pipeline Progress
-            </CardTitle>
-            <CardDescription>
-              Real-time processing steps
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {pipelineSteps.map((step, index) => (
-                <div key={index} className="flex items-center gap-3 p-2 rounded-md bg-muted/30">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="font-medium">{step.name}</span>
-                  <span className="text-sm text-muted-foreground ml-auto">
-                    {new Date(step.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {(isStreaming || pipelineSteps.length > 0) && (
+        <PricingPipelineStream
+          steps={pipelineSteps}
+          isStreaming={isStreaming}
+          wsConnected={wsConnected}
+        />
       )}
 
       {/* Error Display */}

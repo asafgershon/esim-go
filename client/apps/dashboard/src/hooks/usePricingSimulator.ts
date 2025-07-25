@@ -89,6 +89,7 @@ interface UsePricingSimulatorReturn {
   // Pipeline streaming
   pipelineSteps: PipelineStep[];
   isStreaming: boolean;
+  wsConnected: boolean;
   
   // Analysis helpers
   comparePaymentMethods: (params: Omit<PricingSimulatorParams, 'paymentMethod'>) => Promise<{
@@ -112,6 +113,7 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
   const [correlationId, setCorrelationId] = useState<string | null>(null);
   const [pipelineSteps, setPipelineSteps] = useState<PipelineStep[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [wsConnected, setWsConnected] = useState(true);
 
   // Subscribe to pipeline progress when streaming
   const { data: progressData } = useSubscription<PricingPipelineProgressSubscription>(
@@ -123,11 +125,13 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
         if (data.data?.pricingPipelineProgress) {
           const step = data.data.pricingPipelineProgress;
           setPipelineSteps(prev => [...prev, step]);
+          setWsConnected(true); // Confirm connection is working
         }
       },
       onError: (error) => {
         console.error('Pipeline streaming error:', error);
         setIsStreaming(false);
+        setWsConnected(false);
       },
       onComplete: () => {
         setIsStreaming(false);
@@ -220,7 +224,7 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
         },
         context: {
           headers: {
-            'X-Correlation-ID': newCorrelationId,
+            'x-correlation-id': newCorrelationId,
           },
         },
       });
@@ -366,6 +370,7 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
     error: simulationError,
     pipelineSteps,
     isStreaming,
+    wsConnected,
     comparePaymentMethods,
     analyzeProfitability,
   };

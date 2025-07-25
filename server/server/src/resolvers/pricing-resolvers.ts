@@ -36,6 +36,29 @@ const generateCorrelationId = (): string => {
   return `pricing-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
+// Helper function to get correlation ID from context or generate new one
+const getCorrelationId = (context: Context): string => {
+  // Check for correlation ID in request headers
+  const headerCorrelationId = context.req?.headers?.['x-correlation-id'] || 
+                             context.req?.get?.('x-correlation-id');
+  
+  if (headerCorrelationId) {
+    logger.debug('Using client-provided correlation ID', {
+      correlationId: headerCorrelationId,
+      operationType: 'correlation-id'
+    });
+    return headerCorrelationId;
+  }
+  
+  // Generate new one if not provided
+  const newCorrelationId = generateCorrelationId();
+  logger.debug('Generated new correlation ID', {
+    correlationId: newCorrelationId,
+    operationType: 'correlation-id'
+  });
+  return newCorrelationId;
+};
+
 /**
  * Core function that maps PricingEngineOutput to PricingBreakdown
  * This is the single source of truth for pricing data transformation
@@ -241,7 +264,7 @@ export const pricingQueries: QueryResolvers = {
     { numOfDays, countryId, paymentMethod, regionId },
     context: Context
   ): Promise<PricingBreakdown> => {
-    const correlationId = generateCorrelationId();
+    const correlationId = getCorrelationId(context);
     
     try {
       logger.info('Calculating single price (public)', {
@@ -262,8 +285,9 @@ export const pricingQueries: QueryResolvers = {
       const engineInput = await convertToPricingEngineInput(input, context, correlationId);
       const engineService = getPricingEngineService(context);
       
-      // Use non-streaming calculation for public API
-      const result = await engineService.calculatePrice(engineInput, false);
+      // Enable streaming if client provided correlation ID (for dashboard simulator)
+      const enableStreaming = !!context.req?.headers?.['x-correlation-id'];
+      const result = await engineService.calculatePrice(engineInput, enableStreaming);
       
       const pricingBreakdown = mapEngineToPricingBreakdown(result, input);
 
@@ -297,7 +321,7 @@ export const pricingQueries: QueryResolvers = {
     { inputs },
     context: Context
   ): Promise<PricingBreakdown[]> => {
-    const correlationId = generateCorrelationId();
+    const correlationId = getCorrelationId(context);
     
     try {
       logger.info('Calculating batch prices (public)', {
@@ -344,7 +368,7 @@ export const pricingQueries: QueryResolvers = {
     { input },
     context: Context
   ): Promise<PricingBreakdown> => {
-    const correlationId = generateCorrelationId();
+    const correlationId = getCorrelationId(context);
     
     try {
       logger.info('Calculating single price with rules (admin)', {
@@ -393,7 +417,7 @@ export const pricingQueries: QueryResolvers = {
     { requests },
     context: Context
   ): Promise<PricingBreakdown[]> => {
-    const correlationId = generateCorrelationId();
+    const correlationId = getCorrelationId(context);
     
     try {
       logger.info('Calculating batch pricing with rules (admin)', {
@@ -440,7 +464,7 @@ export const pricingQueries: QueryResolvers = {
     { rule, testContext },
     context: Context
   ): Promise<PricingBreakdown> => {
-    const correlationId = generateCorrelationId();
+    const correlationId = getCorrelationId(context);
     
     try {
       logger.info('Simulating pricing rule (admin)', {

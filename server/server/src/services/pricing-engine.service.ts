@@ -109,6 +109,13 @@ export class PricingEngineService {
         
         try {
           for await (const step of generator) {
+            // Log step for debugging
+            this.logger.debug('Publishing pricing pipeline step', {
+              correlationId: input.metadata.correlationId,
+              stepName: step.name,
+              operationType: 'pricing-pipeline-publish'
+            });
+            
             // Publish step to PubSub for real-time streaming
             await publishEvent(this.pubsub, PubSubEvents.PRICING_PIPELINE_STEP, {
               correlationId: input.metadata.correlationId,
