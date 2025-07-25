@@ -10,7 +10,8 @@ import type {
   CalculatePriceInput,
   CountryBundle,
   PricingBreakdown,
-  Resolvers
+  Resolvers,
+  SyncJobType
 } from "../types";
 
 const logger = createLogger({
@@ -125,61 +126,6 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
       }
     },
-
-    // Bundle data amount aggregation - gets real-time aggregated data from database
-    bundleDataAggregation: async (_, __, context: Context) => {
-      // This will be protected by @auth(role: "ADMIN") directive
-      try {
-        logger.info("Fetching bundle data aggregation from database", {
-          operationType: "bundle-data-aggregation-fetch",
-        });
-
-        // Get aggregation data directly from the catalogue datasource
-        const bundleAggregation =
-          await context.repositories.bundles.getBundlesByDataTypeAggregation();
-
-        logger.info("Successfully fetched bundle data aggregation", {
-          total: bundleAggregation.length,
-          unlimited:
-            bundleAggregation.find((item) => item.dataType === "unlimited")
-              ?.bundleCount || 0,
-          byDurationCount:
-            bundleAggregation.find((item) => item.dataType === "duration")
-              ?.bundleCount || 0,
-          operationType: "bundle-data-aggregation-fetch",
-        });
-
-        return {
-          byDataAmount: bundleAggregation.map((item) => ({
-            dataAmount: item.dataType === "unlimited" ? -1 : item.dataType,
-            count: item.bundleCount,
-            percentage: 0,
-          })),
-          byGroup: [],
-          lastUpdated: new Date().toISOString(),
-          total: bundleAggregation.reduce(
-            (acc, item) => acc + item.bundleCount,
-            0
-          ),
-          unlimited:
-            bundleAggregation.find((item) => item.dataType === "unlimited")
-              ?.bundleCount || 0,
-          byDuration: bundleAggregation.map((item) => ({
-            duration: item.label,
-            count: item.bundleCount,
-            percentage: 0,
-          })),
-        };
-      } catch (error) {
-        logger.error("Error fetching bundle data aggregation", error as Error, {
-          operationType: "bundle-data-aggregation-fetch",
-        });
-        throw new GraphQLError("Failed to fetch bundle data aggregation", {
-          extensions: { code: "INTERNAL_ERROR" },
-        });
-      }
-    },
-
     // Catalog sync history resolver
     catalogSyncHistory: async (_, { params = {} }, context: Context) => {
       try {
@@ -202,26 +148,27 @@ export const catalogResolvers: Partial<Resolvers> = {
             offset: offset || 0,
           });
 
-        // Transform data to match frontend expectations
+        // Transform data to match GraphQL schema
         const jobs = (data || []).map((job) => ({
           id: job.id,
-          jobType: job.job_type || "FULL_SYNC", // Use correct column name job_type
-          type: job.job_type || "FULL_SYNC", // Use correct column name job_type
-          status: (job.status || "pending").toLowerCase(), // Frontend expects lowercase status
-          priority: job.priority || "normal", // Use actual priority from DB
-          bundleGroup: job.bundle_group,
+          jobType: job.job_type,
+          type: job.job_type as SyncJobType,
+          status: job.status,
+          priority: job.priority,
+          group: job.bundle_group, // Schema expects 'group' not 'bundleGroup'
           countryId: job.country_id,
-          bundlesProcessed: job.bundles_processed || 0, // Use correct column name
-          bundlesAdded: job.bundles_added || 0, // Use correct column name
-          bundlesUpdated: job.bundles_updated || 0, // Use correct column name
-          startedAt:
-            job.started_at || job.created_at || new Date().toISOString(), // Use created_at as fallback if started_at is null
+          bundlesProcessed: job.bundles_processed,
+          bundlesAdded: job.bundles_added,
+          bundlesUpdated: job.bundles_updated,
+          startedAt: job.started_at || job.created_at,
           completedAt: job.completed_at,
-          duration: 0, // Duration not available in database schema
+          duration: job.completed_at && job.started_at 
+            ? new Date(job.completed_at).getTime() - new Date(job.started_at).getTime()
+            : null,
           errorMessage: job.error_message,
           metadata: job.metadata,
-          createdAt: job.created_at || new Date().toISOString(),
-          updatedAt: job.updated_at || new Date().toISOString(),
+          createdAt: job.created_at,
+          updatedAt: job.updated_at,
         }));
 
         logger.info("Catalog sync history fetched successfully", {
@@ -306,101 +253,6 @@ export const catalogResolvers: Partial<Resolvers> = {
         throw error;
       }
     },
-
-
-    // Main bundles resolver with optional filtering
-    bundles: async (_, { countryId, regionId }, context: Context) => {
-      try {
-        logger.info("Fetching bundles with filtering", {
-          countryId,
-          regionId,
-          operationType: "bundles-fetch",
-        });
-
-        if (countryId) {
-          // Get country-specific bundles from bundle repository
-          const countryBundles =
-            await context.repositories.bundles.getBundlesByCountry(countryId);
-
-          logger.info("Country bundles fetched successfully", {
-            countryId,
-            bundleCount: countryBundles.length,
-            operationType: "bundles-fetch",
-          });
-
-          // Map to CountryBundle format - field resolvers will handle pricing calculations
-          return countryBundles.map(
-            (bundle) =>
-              ({
-                id: bundle?.id,
-                name: bundle?.esim_go_name || "Bundle",
-                country: {
-                  iso: countryId,
-                  name: countryId,
-                  region: "",
-                },
-                duration: bundle?.duration || 0,
-                currency: "USD",
-                isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-                data: bundle?.data_amount || 0,
-                group: bundle?.bundle_group || "Standard Fixed",
-                price: bundle?.price_cents || 0,
-              } satisfies CountryBundle)
-          );
-        } else if (regionId) {
-          // Get region-specific bundles from bundle repository
-          const regionBundles =
-            (await context.repositories.bundles.getBundlesByRegion?.(
-              regionId
-            )) || [];
-
-          logger.info("Region bundles fetched successfully", {
-            regionId,
-            bundleCount: regionBundles.length,
-            operationType: "bundles-fetch",
-          });
-
-          // Map to CountryBundle format - field resolvers will handle pricing calculations
-          return regionBundles.map((bundle: any) => ({
-            bundleName: bundle?.esim_go_name || "Bundle",
-            countryName: regionId,
-            countryId: regionId,
-            duration: bundle?.duration || 0,
-            currency: "USD",
-            configurationLevel: "GLOBAL" as any,
-            planId: bundle?.esim_go_name || "bundle",
-            isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-            dataAmount: bundle?.data_amount?.toString() || "0",
-            bundleGroup: bundle?.bundle_group || "Standard Fixed",
-            // Include raw bundle data for field resolvers
-            price_cents: bundle?.price_cents,
-            unlimited: bundle?.unlimited,
-            data_amount: bundle?.data_amount,
-            bundle_group: bundle?.bundle_group,
-            esim_go_name: bundle?.esim_go_name,
-          }));
-        } else {
-          // Return empty array or all bundles - depends on business logic
-          logger.info(
-            "No filtering parameters provided, returning empty array",
-            {
-              operationType: "bundles-fetch",
-            }
-          );
-          return [];
-        }
-      } catch (error) {
-        logger.error("Failed to fetch bundles", error as Error, {
-          countryId,
-          regionId,
-          operationType: "bundles-fetch",
-        });
-        throw new GraphQLError("Failed to fetch bundles", {
-          extensions: { code: "INTERNAL_ERROR" },
-        });
-      }
-    },
-
     // Countries with aggregated bundle data
     bundlesCountries: async (
       _,

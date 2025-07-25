@@ -11,6 +11,7 @@ import { pricingRulesResolvers } from "./resolvers/pricing-rules-resolvers";
 import { tripsResolvers } from "./resolvers/trips-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import type { Resolvers } from "./types";
+import * as countriesList from "countries-list";
 
 const logger = createLogger({ component: "resolvers" });
 
@@ -53,7 +54,7 @@ export const resolvers: Resolvers = {
         // Map bundle countries to full country data
         const result = [];
         for (const bundleCountry of bundleCountries) {
-          const countryData = countryMap.get(bundleCountry.countryId);
+          const countryData = countryMap.get(bundleCountry.country_code);
           if (countryData) {
             result.push({
               iso: countryData.iso,
@@ -233,8 +234,8 @@ export const resolvers: Resolvers = {
   },
   Country: {
     name: async (parent, _, context: Context) => {
-      const country = await context.dataSources.countries.getCountryByCode(parent.iso);
-      return country?.country || parent.name || '';
+      const country = countriesList.getCountryData(parent.iso);
+      return country?.name || parent.name || '';
     },
     nameHebrew: async (parent, _, context: Context) => {
       const country = await context.dataSources.countries.getCountryByCode(
@@ -242,17 +243,13 @@ export const resolvers: Resolvers = {
       );
       return country?.hebrewName || parent.name;
     },
-    region: async (parent, _, context: Context) => {
-      const country = await context.dataSources.countries.getCountryByCode(
-        parent.iso
-      );
-      return country?.region || parent.region;
+    region: async (parent) => {
+      const region = countriesList.getCountryData(parent.iso).continent;
+      return region || parent.region;
     },
-    flag: async (parent, _, context: Context) => {
-      const country = await context.dataSources.countries.getCountryByCode(
-        parent.iso
-      );
-      return country?.flag || "";
+    flag: async (parent) => {
+      const country = countriesList.getEmojiFlag(parent.iso);
+      return country || "";
     },
     iso: (parent) => parent.iso,
   },

@@ -6,8 +6,8 @@ console.log(process.env.ESIM_GO_API_KEY)
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
-import { makeExecutableSchema } from "@graphql-tools/schema";
 import { mergeTypeDefs } from "@graphql-tools/merge";
+import { makeExecutableSchema } from "@graphql-tools/schema";
 import cors from "cors";
 import { cleanEnv, port, str } from "envalid";
 import express from "express";
@@ -47,12 +47,11 @@ import {
   SyncJobRepository,
   UserRepository,
 } from "./repositories";
-import { TripRepository } from "./repositories/trip.repository";
 import { PricingRulesRepository } from "./repositories/pricing-rules.repository";
+import { TripRepository } from "./repositories/trip.repository";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
-import { configDotenv } from "dotenv";
 
 // Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
