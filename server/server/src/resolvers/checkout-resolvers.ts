@@ -10,6 +10,7 @@ import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.rep
 import { createDeliveryService } from "../services/delivery";
 import { createPaymentService } from "../services/payment";
 import type { Bundle, EsimStatus, OrderStatus, Resolvers } from "../types";
+import type { PricingEngineInput } from "@esim-go/rules-engine";
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS
@@ -284,24 +285,46 @@ export const checkoutResolvers: Partial<Resolvers> = {
           validatedBundles.map((b) => `${b.name}: ${b.duration}d`)
         );
 
-        // Create pricing context with validated data
-        const pricingContext = PricingEngineService.createContext({
-          availableBundles: validatedBundles as Bundle[],
-          requestedDuration: numOfDays,
-          user: context.auth?.user
-            ? {
-                id: context.auth.user.id,
-                isNew: false,
-                isFirstPurchase: false,
-              }
-            : undefined,
-          paymentMethod: "ISRAELI_CARD",
-        });
+        // Create pricing input with validated data
+        const pricingInput: PricingEngineInput = {
+          bundles: validatedBundles.map(bundle => ({
+            name: bundle.name,
+            basePrice: bundle.cost,
+            validityInDays: bundle.duration,
+            countries: [bundle.countryId],
+            currency: 'USD',
+            dataAmountReadable: bundle.dataAmount,
+            groups: [bundle.group],
+            isUnlimited: bundle.isUnlimited,
+            speed: ['4G', '5G']
+          })),
+          costumer: {
+            id: context.auth?.user?.id || 'anonymous',
+            segment: 'default'
+          },
+          payment: {
+            method: 'ISRAELI_CARD'
+          },
+          rules: [], // Will be loaded by pricing engine
+          request: {
+            duration: numOfDays,
+            paymentMethod: 'ISRAELI_CARD'
+          },
+          steps: [],
+          unusedDays: 0,
+          country: countryId,
+          region: regionId || '',
+          group: 'Standard Fixed',
+          dataType: 'DEFAULT' as any,
+          metadata: {
+            correlationId: `checkout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          }
+        };
 
         // Calculate pricing with the engine
         let pricingResult;
         try {
-          pricingResult = await pricingEngine.calculatePrice(pricingContext);
+          pricingResult = await pricingEngine.calculatePrice(pricingInput);
         } catch (error) {
           // If no bundles are available for the requested duration, provide helpful info
           if (
@@ -326,37 +349,25 @@ export const checkoutResolvers: Partial<Resolvers> = {
         if (!pricingResult) {
           throw new Error("Pricing calculation failed - no result returned");
         }
-        if (!pricingResult.pricing.priceAfterDiscount || pricingResult.pricing.priceAfterDiscount <= 0) {
+        if (!pricingResult.pricing.finalPrice || pricingResult.pricing.finalPrice <= 0) {
           throw new Error(
-            `Invalid final price calculated: ${pricingResult.pricing.priceAfterDiscount}`
+            `Invalid final price calculated: ${pricingResult.pricing.finalPrice}`
           );
         }
-        if (!pricingResult.pricing.cost || pricingResult.pricing.cost <= 0) {
-          throw new Error(
-            `Invalid base cost calculated: ${pricingResult.pricing.cost}`
-          );
+        if (!pricingResult.selectedBundle) {
+          throw new Error("No bundle selected by pricing engine");
         }
 
-        // The pricing engine should have selected a bundle - we need to determine which one
-        // For now, we'll find the bundle that matches the duration or find the optimal one
-        let selectedBundle = validatedBundles.find(
-          (b) => b.duration === numOfDays
+        // Use the bundle selected by the pricing engine
+        const selectedBundleName = pricingResult.selectedBundle.name;
+        const selectedBundle = validatedBundles.find(
+          (b) => b.name === selectedBundleName
         );
-        if (!selectedBundle) {
-          // Find the bundle with the smallest duration that's >= requested duration
-          selectedBundle = validatedBundles
-            .filter((b) => b.duration >= numOfDays)
-            .sort((a, b) => a.duration - b.duration)[0];
-        }
-        if (!selectedBundle) {
-          // Fallback to the bundle with the longest duration
-          selectedBundle = validatedBundles.sort(
-            (a, b) => b.duration - a.duration
-          )[0];
-        }
 
         if (!selectedBundle) {
-          throw new Error("No suitable bundle could be selected");
+          throw new Error(
+            `Pricing engine selected bundle '${selectedBundleName}' not found in validated bundles`
+          );
         }
 
         // Construct plan data from selected bundle and pricing result
@@ -364,7 +375,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           id: selectedBundle.id,
           name: selectedBundle.name,
           duration: selectedBundle.duration,
-          price: pricingResult.pricing.priceAfterDiscount,
+          price: pricingResult.pricing.finalPrice,
           currency: "USD",
           countries: [countryId],
           bundleGroup: selectedBundle.group,
@@ -667,7 +678,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         await paymentService.initialize({});
 
         const paymentResult = await paymentService.createPaymentIntent({
-          amount: (pricing as any)?.finalPrice,
+          amount: planSnapshot.price, // Use the price from plan snapshot
           currency: "USD",
           payment_method_id: paymentMethodId,
           description: `eSIM purchase: ${planSnapshot.name}`,
@@ -878,48 +889,57 @@ async function simulateWebhookProcessing(
       const pricingEngine = new PricingEngineService(context.services.db);
 
       const firstCountry = planSnapshot.countries[0] || "";
-      const pricingContext = PricingEngineService.createContext({
-        availableBundles: [
-          {
-            id: planSnapshot.name,
-            name: planSnapshot.name,
-            duration: planSnapshot.duration,
-            cost: planSnapshot.price,
-            countryId: firstCountry,
-            countryName: firstCountry,
-            regionId: "",
-            regionName: "Unknown",
-            group: "Standard Fixed",
-            isUnlimited: false,
-            dataAmount: "0GB",
-          },
-        ],
-        requestedDuration: planSnapshot.duration,
-        user: {
+      const pricingInput: PricingEngineInput = {
+        bundles: [{
+          name: planSnapshot.name,
+          basePrice: planSnapshot.price,
+          validityInDays: planSnapshot.duration,
+          countries: [firstCountry],
+          currency: 'USD',
+          dataAmountReadable: '0GB', // TODO: Get actual data amount
+          groups: ['Standard Fixed'],
+          isUnlimited: false,
+          speed: ['4G', '5G']
+        }],
+        costumer: {
           id: steps.authentication.userId,
-          isNew: false,
-          isFirstPurchase: false,
+          segment: 'default'
         },
-        paymentMethod: "ISRAELI_CARD",
-      });
+        payment: {
+          method: 'ISRAELI_CARD'
+        },
+        rules: [],
+        request: {
+          duration: planSnapshot.duration,
+          paymentMethod: 'ISRAELI_CARD'
+        },
+        steps: [],
+        unusedDays: 0,
+        country: firstCountry,
+        region: '',
+        group: 'Standard Fixed',
+        dataType: 'DEFAULT' as any,
+        metadata: {
+          correlationId: `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        }
+      };
 
-      const detailedPricing = await pricingEngine.calculatePrice(
-        pricingContext
-      );
+      const detailedPricing = await pricingEngine.calculatePrice(pricingInput);
 
       // Step 1: Create Order record using repository with detailed pricing
+      // TODO: Update order repository to accept PricingEngineOutput instead of legacy format
       const orderRecord =
         await context.repositories.orders.createOrderWithPricing(
           {
             user_id: steps.authentication.userId,
-            total_price: detailedPricing.finalPrice,
+            total_price: detailedPricing.pricing.finalPrice,
             reference: orderId, // This becomes the order reference
             status: "COMPLETED" as OrderStatus,
             plan_data: planSnapshot, // Store plan info in JSONB field
             quantity: 1,
             esim_go_order_ref: esimData.esimGoOrderRef, // Real eSIM Go order reference
           },
-          detailedPricing
+          detailedPricing.pricing as any // TODO: Update repository to accept new format
         );
 
       console.log("Order record created:", orderRecord.id);
@@ -1030,70 +1050,63 @@ async function provisionESIM(
   customerReference: string,
   context: Context
 ) {
-  console.log("Real eSIM provisioning for plan:", planSnapshot.name);
+  logger.info("Starting eSIM provisioning", {
+    bundleName: planSnapshot.name,
+    customerReference,
+    operationType: "esim-provisioning"
+  });
 
-  const esimGoOrder = {
-    iccid: `89000000000000000${Math.random().toString().substr(2, 6)}`, // Mock ICCID
-    matchingId: "mock-matching-id",
-    smdpAddress: "rsp-3104.idemia.io",
-    activationCode: `ACT-${customerReference}`, // Mock activation code
-    activationUrl: `https://esim-activate.com/activate/${customerReference}`, // Mock activation URL
-    instructions: `To activate your eSIM for ${planSnapshot.name}:\n1. Scan the QR code\n2. Follow setup instructions\n3. Enjoy your data!`,
-    status: "ASSIGNED",
-    esimGoOrderRef: `ESG-${Date.now()}-${Math.random()
-      .toString(36)
-      .substr(2, 6)}`, // Mock eSIM Go order reference
-  };
-  // Return mock for now
-  return {
-    ...esimGoOrder,
-    qrCode: await QRCode.toDataURL(
-      `LPA:1$${esimGoOrder.smdpAddress}$${esimGoOrder.activationCode}`
-    ),
-  };
   try {
-    // Step 1: Create order in eSIM Go API
-    const esimGoOrder = await context.dataSources.orders.createOrder({
-      bundleName: planSnapshot.name,
-      quantity: 1,
-      customerReference,
-      autoActivate: false, // We'll handle activation separately
+    // Use the eSIM Go client to create a new eSIM with bundle
+    // Pass empty string as ICCID to create a new eSIM
+    const applyResult = await context.services.esimGoClient.applyBundleToEsim({
+      iccid: "", // Empty ICCID creates new eSIM
+      bundles: [planSnapshot.name], // Must be exact eSIM Go bundle name
+      customerReference
     });
 
-    console.log("eSIM Go order created:", esimGoOrder.reference);
-
-    // Step 2: Get eSIM assignments (QR codes and ICCIDs)
-    const assignments = await context.dataSources.orders.getOrderAssignments(
-      esimGoOrder.reference
-    );
-
-    if (!assignments || assignments.length === 0) {
-      throw new Error("No eSIM assignments found for order");
+    // Extract eSIM details from response
+    const esimResponse = applyResult.data;
+    if (!esimResponse.esims || esimResponse.esims.length === 0) {
+      throw new Error("No eSIM returned from provisioning API");
     }
 
-    // Take the first assignment (since quantity is 1)
-    const assignment = assignments[0];
-    if (!assignment) {
-      throw new Error("No assignment found in eSIM Go response");
+    const esim = esimResponse.esims[0];
+    if (!esim.iccid || !esim.smdpAddress || !esim.matchingId) {
+      throw new Error("Incomplete eSIM data returned from API");
     }
 
-    console.log("eSIM assignment received:", assignment.iccid);
+    logger.info("eSIM provisioned successfully", {
+      iccid: esim.iccid,
+      operationType: "esim-provisioning"
+    });
+
+    // Generate QR code from LPA string
+    const lpaString = `LPA:1$${esim.smdpAddress}$${esim.matchingId}`;
+    const qrCode = await QRCode.toDataURL(lpaString);
 
     return {
-      iccid: assignment.iccid,
-      qrCode: assignment.qrCode, // This is the real QR code from eSIM Go
-      activationCode: (assignment as any).activationCode || null,
-      activationUrl: (assignment as any).activationUrl || null,
-      instructions:
-        (assignment as any).instructions || generateDefaultInstructions(),
+      iccid: esim.iccid,
+      qrCode,
+      matchingId: esim.matchingId,
+      smdpAddress: esim.smdpAddress,
+      activationCode: esim.matchingId, // Usually same as matching ID
+      activationUrl: null, // Not provided by API
+      instructions: generateDefaultInstructions(),
       status: "ASSIGNED",
-      esimGoOrderRef: esimGoOrder.reference,
+      esimGoOrderRef: customerReference // Using customer reference as order ref for now
     };
   } catch (error) {
-    console.error("Error provisioning eSIM:", error);
+    logger.error("Failed to provision eSIM", error as Error, {
+      bundleName: planSnapshot.name,
+      customerReference,
+      operationType: "esim-provisioning"
+    });
 
-    // If real provisioning fails, we could fall back to mock for development
-    // But in production, we should throw the error
+    // Re-throw with more context
+    if ((error as any).response?.data?.message) {
+      throw new Error(`eSIM provisioning failed: ${(error as any).response.data.message}`);
+    }
     throw new Error(`Failed to provision eSIM: ${(error as Error).message}`);
   }
 }
