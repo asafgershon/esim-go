@@ -74,7 +74,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
 
   // Calculate active filter count
   const activeFilterCount =
-    selectedFilters.bundleGroups.size +
+    selectedFilters.groups.size +
     selectedFilters.durations.size +
     selectedFilters.dataTypes.size +
     (showHighDemandOnly ? 1 : 0);
@@ -135,7 +135,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
 
   const clearAllFilters = () => {
     onFiltersChange({
-      bundleGroups: new Set(),
+      groups: new Set(),
       durations: new Set(),
       dataTypes: new Set(),
     });
@@ -318,7 +318,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Bundle Group filters */}
-          {Array.from(selectedFilters.bundleGroups).map((group) => (
+          {Array.from(selectedFilters.groups).map((group) => (
             <Badge
               key={group}
               variant="secondary"
@@ -348,20 +348,20 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                             onSelect={() => {
                               // Remove old value and add new one
                               const newSet = new Set(
-                                selectedFilters.bundleGroups
+                                selectedFilters.groups
                               );
                               newSet.delete(group);
                               newSet.add(bundleGroup);
                               onFiltersChange({
                                 ...selectedFilters,
-                                bundleGroups: newSet,
+                                groups: newSet,
                               });
                             }}
                             className="flex items-center gap-2"
                           >
                             <Package2 className="h-4 w-4 text-blue-600" />
                             {bundleGroup}
-                            {selectedFilters.bundleGroups.has(bundleGroup) && (
+                            {selectedFilters.groups.has(bundleGroup) && (
                               <Check className="h-4 w-4 ml-auto text-blue-600" />
                             )}
                           </CommandItem>

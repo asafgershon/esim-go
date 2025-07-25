@@ -1,7 +1,7 @@
 // Filter types for pricing split view
 
 export interface FilterState {
-  bundleGroups: Set<string>;
+  groups: Set<string>;
   durations: Set<string>;
   dataTypes: Set<string>;
 }

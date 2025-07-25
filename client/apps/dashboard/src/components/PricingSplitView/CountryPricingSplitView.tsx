@@ -44,7 +44,7 @@ export function CountryPricingSplitView({
   const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [bundleFilters, setBundleFilters] = useState<FilterState>({
-    bundleGroups: new Set(),
+    groups: new Set(),
     durations: new Set(),
     dataTypes: new Set(["unlimited"]), // Set unlimited as default
   });
@@ -126,11 +126,11 @@ export function CountryPricingSplitView({
     let filtered = bundles;
 
     // Filter by bundle groups
-    if (bundleFilters.bundleGroups.size > 0) {
+    if (bundleFilters.groups.size > 0) {
       filtered = filtered.filter(bundle => {
         // Check if bundle has groups and if any group matches the filter
         if (!bundle.groups || bundle.groups.length === 0) return false;
-        return bundle.groups.some(g => bundleFilters.bundleGroups.has(g));
+        return bundle.groups.some(g => bundleFilters.groups.has(g));
       });
     }
 
