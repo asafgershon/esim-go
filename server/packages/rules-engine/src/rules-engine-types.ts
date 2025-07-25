@@ -4,6 +4,7 @@ import type {
   PricingRuleCalculation as BasePricingRuleCalculation,
   Bundle,
   RuleAction,
+  PaymentMethod,
 } from "./generated/types";
 
 export * from "./generated/types";
@@ -14,7 +15,13 @@ export interface NewPricingContext {
   costumer: never; // TODO: create costumer type
   payment: never; // TODO: create payment context
   rules: PricingRule[];
-
+  request: {
+    duration: number;
+    paymentMethod: PaymentMethod;
+    countryISO?: string;
+    region?: string;
+    group?: string;
+  }
 }
 
 // Pricing context for rule evaluation
