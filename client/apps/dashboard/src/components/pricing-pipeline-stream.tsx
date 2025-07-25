@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, Collapsible, CollapsibleContent, CollapsibleTrigger } from '@workspace/ui';
 import {
   Calculator,
   Globe,
@@ -8,6 +8,8 @@ import {
   CheckCircle,
   Clock,
   Activity,
+  ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
 
 interface PipelineStep {
@@ -30,6 +32,18 @@ export const PricingPipelineStream: React.FC<PricingPipelineStreamProps> = ({
   isStreaming,
   wsConnected,
 }) => {
+  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+
+  const toggleStep = (index: number) => {
+    const newExpanded = new Set(expandedSteps);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedSteps(newExpanded);
+  };
+
   const getStepIcon = (step: PipelineStep) => {
     const name = step.name;
     if (name.includes('BUNDLE_SELECTION')) return <Globe className="h-4 w-4 text-blue-500" />;
@@ -114,39 +128,89 @@ export const PricingPipelineStream: React.FC<PricingPipelineStreamProps> = ({
             <div className="divide-y divide-border">
               {steps.map((step, index) => {
                 const isLatest = index === steps.length - 1;
+                const isExpanded = expandedSteps.has(index);
                 const description = getStepDescription(step);
+                const hasDetails = step.state || step.debug || step.appliedRules?.length;
                 
                 return (
                   <div
                     key={`${step.correlationId}-${index}`}
-                    className={`group relative px-6 py-3 transition-all ${
+                    className={`group relative transition-all ${
                       isLatest && isStreaming ? 'bg-muted/50' : ''
                     }`}
                   >
-                    <div className="flex gap-3">
-                      <div className="mt-0.5">{getStepIcon(step)}</div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">
-                            {getStepTitle(step)}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            <Clock className="inline h-3 w-3 mr-1" />
-                            {new Date(step.timestamp).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                              fractionalSecondDigits: 3,
-                            })}
-                          </span>
+                    <div
+                      className={`px-6 py-3 ${hasDetails ? 'cursor-pointer hover:bg-muted/30' : ''}`}
+                      onClick={() => hasDetails && toggleStep(index)}
+                    >
+                      <div className="flex gap-3">
+                        {hasDetails && (
+                          <div className="mt-0.5">
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        )}
+                        <div className="mt-0.5">{getStepIcon(step)}</div>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">
+                              {getStepTitle(step)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              <Clock className="inline h-3 w-3 mr-1" />
+                              {new Date(step.timestamp).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                fractionalSecondDigits: 3,
+                              })}
+                            </span>
+                          </div>
+                          {description && (
+                            <div className="text-sm text-muted-foreground">
+                              {description}
+                            </div>
+                          )}
                         </div>
-                        {description && (
-                          <div className="text-sm text-muted-foreground">
-                            {description}
+                      </div>
+                    </div>
+                    
+                    {/* Expandable details */}
+                    {hasDetails && isExpanded && (
+                      <div className="px-6 pb-3 pl-16 space-y-2">
+                        {step.state && (
+                          <div className="text-xs">
+                            <div className="font-medium text-muted-foreground mb-1">State:</div>
+                            <pre className="bg-muted/50 p-2 rounded-md overflow-x-auto">
+                              {JSON.stringify(step.state, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                        {step.debug && (
+                          <div className="text-xs">
+                            <div className="font-medium text-muted-foreground mb-1">Debug Info:</div>
+                            <pre className="bg-muted/50 p-2 rounded-md overflow-x-auto">
+                              {JSON.stringify(step.debug, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                        {step.appliedRules && step.appliedRules.length > 0 && (
+                          <div className="text-xs">
+                            <div className="font-medium text-muted-foreground mb-1">Applied Rules:</div>
+                            <div className="space-y-1">
+                              {step.appliedRules.map((rule, i) => (
+                                <div key={i} className="bg-muted/50 px-2 py-1 rounded">
+                                  {rule}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
-                    </div>
+                    )}
                     
                     {/* Latest step indicator */}
                     {isLatest && isStreaming && (
@@ -154,18 +218,7 @@ export const PricingPipelineStream: React.FC<PricingPipelineStreamProps> = ({
                     )}
                   </div>
                 );
-              })}
-              
-              {/* Streaming indicator */}
-              {isStreaming && (
-                <div className="px-6 py-3 bg-muted/30">
-                  <div className="flex items-center gap-3">
-                    <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                    <span className="text-sm text-muted-foreground">Processing next step...</span>
-                  </div>
-                </div>
-              )}
-            </div>
+              })}</div>
           )}
         </div>
       </CardContent>

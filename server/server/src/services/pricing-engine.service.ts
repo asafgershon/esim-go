@@ -105,10 +105,15 @@ export class PricingEngineService {
         }
         
         const generator = this.engine.calculatePriceSteps(input);
-        let finalResult: PricingEngineOutput;
+        let finalResult: PricingEngineOutput | null = null;
         
         try {
-          for await (const step of generator) {
+          // Process all steps and capture the final result
+          let result = await generator.next();
+          
+          while (!result.done) {
+            const step = result.value;
+            
             // Log step for debugging
             this.logger.debug('Publishing pricing pipeline step', {
               correlationId: input.metadata.correlationId,
@@ -125,10 +130,12 @@ export class PricingEngineService {
               appliedRules: step.appliedRules || [],
               debug: step.debug || {}
             });
+            
+            // Get next step
+            result = await generator.next();
           }
           
-          // Get the final result from the generator
-          const result = await generator.next();
+          // The final value is the PricingEngineOutput
           finalResult = result.value;
           
         } catch (error) {
@@ -137,6 +144,10 @@ export class PricingEngineService {
             operationType: 'streaming-calculation'
           });
           throw error;
+        }
+        
+        if (!finalResult) {
+          throw new Error('Failed to get final result from pricing engine');
         }
         
         return finalResult;
