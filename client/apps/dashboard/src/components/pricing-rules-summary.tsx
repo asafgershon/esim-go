@@ -66,24 +66,30 @@ export const PricingRulesSummary: React.FC<PricingRulesSummaryProps> = ({
       if (!firstTimestamp) firstTimestamp = timestamp;
       lastTimestamp = timestamp;
 
-      // Count rule evaluations
-      if (step.name.includes('RULE_EVALUATION')) {
-        stats.totalEvaluated++;
-        if (step.state?.matched) {
-          stats.matched++;
-        } else {
-          stats.notMatched++;
-        }
-      }
-
-      // Track rule applications and their impact
-      if (step.name.includes('RULE_APPLICATION') && step.state?.rule) {
-        const impact = step.state.impact || 0;
-        stats.totalImpact += impact;
-        stats.appliedRules.push({
-          name: step.state.rule.name || 'Unknown Rule',
-          impact: impact,
-          type: step.state.rule.type || 'UNKNOWN',
+      // Count rule applications from actual pipeline steps
+      const isRuleStep = step.name.includes('APPLY_DISCOUNTS') || 
+                        step.name.includes('APPLY_CONSTRAINTS') || 
+                        step.name.includes('APPLY_FEES');
+      
+      if (isRuleStep && step.appliedRules && step.appliedRules.length > 0) {
+        // Count each rule in the appliedRules array
+        const rulesCount = step.appliedRules.length;
+        stats.totalEvaluated += rulesCount;
+        stats.matched += rulesCount; // If they're in appliedRules, they matched
+        
+        // Extract rule details from step state if available
+        step.appliedRules.forEach((ruleId) => {
+          // Try to get rule name from state or use rule ID
+          const ruleName = step.state?.rule?.name || `Rule ${ruleId}`;
+          const impact = step.state?.impact || 0;
+          const ruleType = step.name.replace('APPLY_', ''); // DISCOUNTS, CONSTRAINTS, FEES
+          
+          stats.totalImpact += impact;
+          stats.appliedRules.push({
+            name: ruleName,
+            impact: impact,
+            type: ruleType,
+          });
         });
       }
     });
