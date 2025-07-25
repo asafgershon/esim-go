@@ -5,7 +5,7 @@ import type {
   CreatePricingRuleInput, 
   UpdatePricingRuleInput,
   PricingRuleFilter,
-  RuleType,
+  RuleCategory,
   RuleCondition,
   RuleAction
 } from '../types';
@@ -40,8 +40,8 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
       if (filter.isActive !== undefined) {
         query = query.eq('is_active', Boolean(filter.isActive));
       }
-      if (filter.type) {
-        query = query.eq('type', filter.type);
+      if (filter.category) {
+        query = query.eq('category', filter.category);
       }
       if (filter.isEditable !== undefined) {
         query = query.eq('is_editable', Boolean(filter.isEditable));
@@ -90,7 +90,7 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
     });
     
     const row: PricingRuleInsert = {
-      type: input.type,
+      category: input.category,
       name: input.name,
       description: input.description || null,
       conditions: JSON.stringify(input.conditions),

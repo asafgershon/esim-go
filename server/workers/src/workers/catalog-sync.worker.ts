@@ -23,7 +23,7 @@ const connection = new Redis({
 });
 
 // Process job based on type
-async function processJob(job: Job<CatalogSyncJobData>): Promise<any> {
+async function processJob(job: Job<any>): Promise<any> {
   const { type } = job.data;
 
   logger.info('Processing catalog sync job', {
@@ -32,12 +32,37 @@ async function processJob(job: Job<CatalogSyncJobData>): Promise<any> {
     attemptsMade: job.attemptsMade,
   });
 
+  const transformJobType = (type: string) => {
+    switch (type) {
+      // Handle lowercase hyphenated format (original)
+      case 'full-sync':
+        return 'FULL_SYNC';
+      case 'group-sync':
+        return 'GROUP_SYNC';
+      case 'country-sync':
+        return 'COUNTRY_SYNC';
+      case 'bundle-sync':
+        return 'BUNDLE_SYNC';
+      // Handle uppercase underscore format (from GraphQL enum)
+      case 'FULL_SYNC':
+        return 'FULL_SYNC';
+      case 'GROUP_SYNC':
+        return 'GROUP_SYNC';
+      case 'COUNTRY_SYNC':
+        return 'COUNTRY_SYNC';
+      case 'BUNDLE_SYNC':
+        return 'BUNDLE_SYNC';
+      default:
+        throw new Error(`Unknown job type: ${type}`);
+    }
+  };
+
   // Create a sync job in the database
   const dbJob = await syncJobRepository.createJob({
-    jobType: type,
+    jobType: transformJobType(type),
     priority: job.opts.priority === 1 ? 'high' : 'normal',
-    bundleGroup: type === 'group-sync' ? job.data.bundleGroup : undefined,
-    countryId: type === 'country-sync' ? job.data.countryId : undefined,
+    bundleGroup: (type === 'group-sync' || type === 'GROUP_SYNC') ? job.data.bundleGroup : undefined,
+    countryId: (type === 'country-sync' || type === 'COUNTRY_SYNC') ? job.data.countryId : undefined,
     metadata: {
       bullmqJobId: job.id,
       ...job.data.metadata,
@@ -47,14 +72,16 @@ async function processJob(job: Job<CatalogSyncJobData>): Promise<any> {
   try {
     switch (type) {
       case 'full-sync':
+      case 'FULL_SYNC':
         await catalogSyncService.performFullSync(dbJob.id);
         return { 
           success: true, 
-          type: 'full-sync',
+          type,
           dbJobId: dbJob.id,
         };
 
       case 'group-sync':
+      case 'GROUP_SYNC':
         const groupResult = await catalogSyncService.syncBundleGroup(
           job.data.bundleGroup,
           dbJob.id
@@ -69,25 +96,27 @@ async function processJob(job: Job<CatalogSyncJobData>): Promise<any> {
         
         return {
           success: true,
-          type: 'group-sync',
+          type,
           bundleGroup: job.data.bundleGroup,
           result: groupResult,
           dbJobId: dbJob.id,
         };
 
       case 'country-sync':
+      case 'COUNTRY_SYNC':
         await catalogSyncService.syncCountryBundles(
           job.data.countryId,
           dbJob.id
         );
         return {
           success: true,
-          type: 'country-sync',
+          type,
           countryId: job.data.countryId,
           dbJobId: dbJob.id,
         };
 
       case 'bundle-sync':
+      case 'BUNDLE_SYNC':
         // Implement single bundle sync if needed
         throw new Error('Bundle sync not implemented yet');
 
@@ -102,7 +131,7 @@ async function processJob(job: Job<CatalogSyncJobData>): Promise<any> {
 }
 
 // Create the worker
-export const catalogSyncWorker = new Worker<CatalogSyncJobData>(
+export const catalogSyncWorker = new Worker<any>(
   'catalog-sync',
   async (job) => {
     return withPerformanceLogging(
