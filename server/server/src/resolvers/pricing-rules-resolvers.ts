@@ -6,7 +6,10 @@ import type {
   MutationResolvers,
   PricingRule,
   PricingRuleFilter,
-  QueryResolvers
+  QueryResolvers,
+  CreatePricingRuleInput,
+  UpdatePricingRuleInput,
+  PricingRulePriorityUpdate
 } from '../types';
 
 const logger = createLogger({ 

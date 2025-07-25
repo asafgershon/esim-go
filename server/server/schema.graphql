@@ -43,6 +43,9 @@ type Query {
   bundlesForRegion(region: String!): BundlesForRegion
   bundlesForGroup(group: String!): BundlesForGroup
 
+  # Pricing Rules Engine
+  pricingRules(filter: PricingRuleFilter): [PricingRule!]!
+  pricingRule(id: ID!): PricingRule
   activePricingRules: [PricingRule!]!
   conflictingPricingRules(ruleId: ID!): [PricingRule!]!
   calculateBatchPricing(
@@ -835,6 +838,14 @@ extend type Mutation {
     input: ProcessCheckoutPaymentInput!
   ): ProcessCheckoutPaymentResponse!
   validateOrder(input: ValidateOrderInput!): ValidateOrderResponse!
+  
+  # Pricing Rules Engine
+  createPricingRule(input: CreatePricingRuleInput!): PricingRule!
+  updatePricingRule(id: ID!, input: UpdatePricingRuleInput!): PricingRule!
+  deletePricingRule(id: ID!): Boolean!
+  togglePricingRule(id: ID!): PricingRule!
+  updatePricingRulePriorities(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
+  clonePricingRule(id: ID!, newName: String!): PricingRule!
 }
 
 # Pricing Types
@@ -890,6 +901,128 @@ type CountryBundle {
 
   # Rule-based pricing breakdown - Admin only
   appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
+}
+
+# Pricing Rules Engine Types
+enum RuleCategory {
+  DISCOUNT
+  CONSTRAINT
+  FEE
+  BUNDLE_ADJUSTMENT
+}
+
+enum ConditionOperator {
+  EQUALS
+  NOT_EQUALS
+  GREATER_THAN
+  LESS_THAN
+  BETWEEN
+  IN
+  NOT_IN
+  EXISTS
+  NOT_EXISTS
+}
+
+enum ActionType {
+  APPLY_DISCOUNT_PERCENTAGE
+  APPLY_FIXED_DISCOUNT
+  SET_MINIMUM_PRICE
+  SET_MINIMUM_PROFIT
+  ADD_MARKUP
+  SET_PROCESSING_RATE
+  SET_DISCOUNT_PER_UNUSED_DAY
+}
+
+type RuleCondition {
+  field: String!
+  operator: ConditionOperator!
+  value: JSON!
+  type: String
+}
+
+type RuleAction {
+  type: ActionType!
+  value: Float!
+  metadata: JSON
+}
+
+input RuleConditionInput {
+  field: String!
+  operator: ConditionOperator!
+  value: JSON!
+  type: String
+}
+
+input RuleActionInput {
+  type: ActionType!
+  value: Float!
+  metadata: JSON
+}
+
+input PricingRuleFilter {
+  category: RuleCategory
+  isActive: Boolean
+  isEditable: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+type PricingRule {
+  id: ID!
+  category: RuleCategory!
+  name: String!
+  description: String
+
+  # Rule definition
+  conditions: [RuleCondition!]!
+  actions: [RuleAction!]!
+
+  # Metadata
+  priority: Int!
+  isActive: Boolean!
+  isEditable: Boolean!
+  validFrom: String
+  validUntil: String
+
+  # Audit
+  createdBy: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+input CreatePricingRuleInput {
+  category: RuleCategory!
+  name: String!
+  description: String
+  conditions: [RuleConditionInput!]!
+  actions: [RuleActionInput!]!
+  priority: Int!
+  isActive: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input UpdatePricingRuleInput {
+  name: String
+  description: String
+  conditions: [RuleConditionInput!]
+  actions: [RuleActionInput!]
+  priority: Int
+  isActive: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input PricingRulePriorityUpdate {
+  id: ID!
+  priority: Int!
+}
+
+type AppliedRule {
+  id: ID!
+  name: String!
+  category: RuleCategory!
+  impact: Float!
 }
 
 # Batch pricing input
