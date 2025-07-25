@@ -1,12 +1,9 @@
 # Pricing Rules Engine Types
-enum RuleType {
-  SYSTEM_MARKUP
-  SYSTEM_PROCESSING
-  SYSTEM_MINIMUM_PRICE
-  BUSINESS_DISCOUNT
-  BUSINESS_MINIMUM_PROFIT
-  PROMOTION
-  SEGMENT
+enum RuleCategory {
+  DISCOUNT
+  CONSTRAINT
+  FEE
+  BUNDLE_ADJUSTMENT
 }
 
 enum ConditionOperator {
@@ -64,7 +61,7 @@ input RuleActionInput {
 }
 
 input PricingRuleFilter {
-  type: RuleType
+  category: RuleCategory
   isActive: Boolean
   isEditable: Boolean
   validFrom: String
@@ -73,7 +70,7 @@ input PricingRuleFilter {
 
 type PricingRule {
   id: ID!
-  type: RuleType!
+  category: RuleCategory!
   name: String!
   description: String
 
@@ -97,7 +94,7 @@ type PricingRule {
 type AppliedRule {
   id: ID!
   name: String!
-  type: RuleType!
+  category: RuleCategory!
   impact: Float!
 }
 
@@ -131,7 +128,7 @@ type PricingRuleCalculation {
 }
 
 input CreatePricingRuleInput {
-  type: RuleType!
+  category: RuleCategory!
   name: String!
   description: String
   conditions: [RuleConditionInput!]!

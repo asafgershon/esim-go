@@ -11,6 +11,7 @@ import type {
 } from '../types';
 import { createLogger } from '../lib/logger';
 import { supabaseAdmin } from '../context/supabase-auth';
+import { RuleCategory, ConditionOperator, ActionType } from '@esim-go/rules-engine';
 
 type PricingRuleRow = Database['public']['Tables']['pricing_rules']['Row'];
 type PricingRuleInsert = Database['public']['Tables']['pricing_rules']['Insert'];
@@ -86,7 +87,7 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
   async createRule(input: CreatePricingRuleInput): Promise<PricingRule> {
     this.logger.info('Creating pricing rule', { 
       name: input.name,
-      type: input.type 
+      category: input.category 
     });
     
     const row: PricingRuleInsert = {
@@ -203,8 +204,8 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
     return this.mapRowToRule(updatedRow);
   }
 
-  async findByType(type: RuleType): Promise<PricingRule[]> {
-    return this.findAll({ type });
+  async findByCategory(category: RuleCategory): Promise<PricingRule[]> {
+    return this.findAll({ category });
   }
 
   async findActiveRules(): Promise<PricingRule[]> {
@@ -232,7 +233,7 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
     }
 
     const input: CreatePricingRuleInput = {
-      type: existing.type,
+      category: existing.category,
       name: newName,
       description: existing.description ? `Clone of: ${existing.description}` : `Clone of ${existing.name}`,
       conditions: existing.conditions,
@@ -267,7 +268,7 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
     return {
       __typename: 'PricingRule' as const,
       id: row.id,
-      type: row.type as RuleType,
+      category: row.category as RuleCategory,
       name: row.name,
       description: row.description,
       conditions: row.conditions as RuleCondition[],
@@ -325,5 +326,226 @@ export class PricingRulesRepository extends BaseSupabaseRepository<PricingRuleRo
         )
       );
     });
+  }
+
+  /**
+   * Get default system rules that replace hardcoded values
+   */
+  private getDefaultSystemRules(): CreatePricingRuleInput[] {
+    return [
+      // Default processing rate for Israeli cards
+      {
+        category: RuleCategory.Fee,
+        name: 'Israeli Card Processing Rate',
+        description: 'Default processing rate for Israeli payment cards',
+        conditions: [
+          {
+            field: 'customer.paymentMethod',
+            operator: ConditionOperator.Equals,
+            value: 'ISRAELI_CARD'
+          }
+        ],
+        actions: [
+          {
+            type: ActionType.SetProcessingRate,
+            value: 0.014 // 1.4%
+          }
+        ],
+        priority: 100,
+        isActive: true
+      },
+      
+      // Default processing rate for foreign cards
+      {
+        category: RuleCategory.Fee,
+        name: 'Foreign Card Processing Rate',
+        description: 'Default processing rate for foreign payment cards',
+        conditions: [
+          {
+            field: 'customer.paymentMethod',
+            operator: ConditionOperator.Equals,
+            value: 'FOREIGN_CARD'
+          }
+        ],
+        actions: [
+          {
+            type: ActionType.SetProcessingRate,
+            value: 0.045 // 4.5%
+          }
+        ],
+        priority: 100,
+        isActive: true
+      },
+      
+      // Default processing rate for Bit
+      {
+        category: RuleCategory.Fee,
+        name: 'Bit Processing Rate',
+        description: 'Processing rate for Bit payments',
+        conditions: [
+          {
+            field: 'customer.paymentMethod',
+            operator: ConditionOperator.Equals,
+            value: 'BIT'
+          }
+        ],
+        actions: [
+          {
+            type: ActionType.SetProcessingRate,
+            value: 0.014 // 1.4%
+          }
+        ],
+        priority: 100,
+        isActive: true
+      },
+      
+      // Default processing rate for Amex
+      {
+        category: RuleCategory.Fee,
+        name: 'Amex Processing Rate',
+        description: 'Processing rate for American Express',
+        conditions: [
+          {
+            field: 'customer.paymentMethod',
+            operator: ConditionOperator.Equals,
+            value: 'AMEX'
+          }
+        ],
+        actions: [
+          {
+            type: ActionType.SetProcessingRate,
+            value: 0.035 // 3.5%
+          }
+        ],
+        priority: 100,
+        isActive: true
+      },
+      
+      // Default processing rate for Diners
+      {
+        category: RuleCategory.Fee,
+        name: 'Diners Processing Rate', 
+        description: 'Processing rate for Diners Club',
+        conditions: [
+          {
+            field: 'customer.paymentMethod',
+            operator: ConditionOperator.Equals,
+            value: 'DINERS'
+          }
+        ],
+        actions: [
+          {
+            type: ActionType.SetProcessingRate,
+            value: 0.035 // 3.5%
+          }
+        ],
+        priority: 100,
+        isActive: true
+      },
+      
+      // Default minimum price rule - using business discount type
+      {
+        category: RuleCategory.Constraint,
+        name: 'Minimum Price Floor',
+        description: 'Ensures prices never go below $0.01',
+        conditions: [
+          {
+            field: 'bundle.id',
+            operator: ConditionOperator.NotEquals,
+            value: '' // Apply to all bundles
+          }
+        ],
+        actions: [
+          {
+            type: ActionType.SetMinimumPrice,
+            value: 0.01
+          }
+        ],
+        priority: 1000, // Highest priority
+        isActive: true
+      },
+      
+      // Default minimum profit rule
+      {
+        category: RuleCategory.Constraint,
+        name: 'Minimum Profit Margin',
+        description: 'Ensures minimum profit of $1.50 per bundle',
+        conditions: [
+          {
+            field: 'bundle.id',
+            operator: ConditionOperator.NotEquals,
+            value: '' // Apply to all bundles
+          }
+        ],
+        actions: [
+          {
+            type: ActionType.SetMinimumProfit,
+            value: 1.50
+          }
+        ],
+        priority: 900,
+        isActive: true
+      },
+      
+      // Default unused days discount configuration
+      {
+        category: RuleCategory.Discount,
+        name: 'Unused Days Discount Rate',
+        description: 'Default discount rate per unused day (10%)',
+        conditions: [
+          {
+            field: 'bundle.id',
+            operator: ConditionOperator.NotEquals,
+            value: '' // Apply to all bundles
+          }
+        ],
+        actions: [
+          {
+            type: ActionType.SetDiscountPerUnusedDay,
+            value: 0.10 // 10% per day
+          }
+        ],
+        priority: 200,
+        isActive: true
+      }
+    ];
+  }
+
+  /**
+   * Initialize the database with default system rules if none exist
+   */
+  async initializeDefaultRules(): Promise<void> {
+    this.logger.info('Checking if default rules initialization is needed');
+    
+    const existingRules = await this.findAll();
+    
+    if (existingRules.length === 0) {
+      this.logger.info('No rules found, creating default system rules');
+      
+      const defaultRules = this.getDefaultSystemRules();
+      
+      for (const ruleInput of defaultRules) {
+        try {
+          await this.createRule(ruleInput);
+          this.logger.info('Created default rule', { 
+            name: ruleInput.name,
+            category: ruleInput.category 
+          });
+        } catch (error) {
+          this.logger.error('Failed to create default rule', error as Error, {
+            name: ruleInput.name,
+            category: ruleInput.category
+          });
+        }
+      }
+      
+      this.logger.info('Default rules initialization completed', {
+        createdRules: defaultRules.length
+      });
+    } else {
+      this.logger.info('Default rules initialization skipped - rules already exist', {
+        existingRulesCount: existingRules.length
+      });
+    }
   }
 }

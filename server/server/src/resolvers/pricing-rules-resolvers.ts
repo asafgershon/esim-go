@@ -113,7 +113,7 @@ export const pricingRulesMutations: MutationResolvers = {
   ): Promise<PricingRule> => {
     logger.info('Creating pricing rule', { 
       name: input.name,
-      type: input.type 
+      category: input.category 
     });
     
     try {
@@ -132,7 +132,7 @@ export const pricingRulesMutations: MutationResolvers = {
     } catch (error) {
       logger.error('Failed to create pricing rule', error as Error, {
         name: input.name,
-        type: input.type
+        category: input.category
       });
       throw new GraphQLError('Failed to create pricing rule', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' }
@@ -149,7 +149,7 @@ export const pricingRulesMutations: MutationResolvers = {
     logger.info('Updating pricing rule', { 
       id,
       name: input.name,
-      type: input.type 
+      category: input.category 
     });
     
     try {
@@ -185,7 +185,7 @@ export const pricingRulesMutations: MutationResolvers = {
     logger.info('Deleting pricing rule', { id });
     
     try {
-      await context.repositories.pricingRules.deleteRule(id);
+      await context.repositories.pricingRules.delete(id);
       
       // Reload rules in the engine
       const engine = getPricingEngineService(context);

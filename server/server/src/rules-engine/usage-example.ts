@@ -1,7 +1,7 @@
 import { PricingRuleEngine } from './rule-engine';
 import { RuleBuilder } from './rule-builder';
 import type { PricingContext } from './types';
-import { RuleType } from '../types';
+import { RuleType } from '@esim-go/rules-engine';
 
 // Example usage of the pricing rule engine with streaming
 
@@ -69,8 +69,7 @@ async function demonstratePricingEngine() {
       cost: 15.00,
       countryId: "DE",
       countryName: "Germany",
-      regionId: "EU",
-      regionName: "Europe",
+      region: "EU",
       isUnlimited: true,
       dataAmount: "Unlimited"
     },

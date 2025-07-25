@@ -1,6 +1,5 @@
 import { PricingEngine, PricingEngineInput, PricingEngineOutput, Bundle, PricingContext, PricingRuleCalculation } from '@esim-go/rules-engine';
 import { PricingRulesRepository } from '../repositories/pricing-rules.repository';
-import { DefaultRulesService } from './default-rules.service';
 import { createLogger, withPerformanceLogging } from '../lib/logger';
 import { publishEvent, PubSubEvents } from '../context/pubsub';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -343,28 +342,14 @@ export class PricingEngineService {
     
     // If no rules exist, create default system rules
     if (activeRules.length === 0) {
-      this.logger.info('No pricing rules found, creating default system rules');
+      this.logger.info('No pricing rules found, initializing default system rules');
       
-      const defaultRules = DefaultRulesService.createSystemRulesFromDefaults();
-      
-      // Create the default rules in the database
-      for (const rule of defaultRules) {
-        try {
-          await this.repository.create(rule);
-          this.logger.info('Created default rule', { ruleName: rule.name, ruleType: rule.type });
-        } catch (error) {
-          this.logger.error('Failed to create default rule', error as Error, {
-            ruleName: rule.name,
-            ruleType: rule.type
-          });
-        }
-      }
+      await this.repository.initializeDefaultRules();
       
       // Reload rules after creating defaults
       activeRules = await this.repository.findActiveRules();
       
-      this.logger.info('Default system rules created', {
-        createdCount: defaultRules.length,
+      this.logger.info('Default system rules initialized', {
         loadedCount: activeRules.length
       });
     }

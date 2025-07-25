@@ -6,7 +6,6 @@ export { RuleBuilder } from './rule-builder';
 
 // Type exports from base types
 export {
-  RuleType,
   ConditionOperator,
   ActionType,
   PaymentMethod,
