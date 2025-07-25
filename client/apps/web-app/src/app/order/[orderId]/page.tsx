@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@apollo/client";
 import { ArrowLeft, Download, RefreshCw, CheckCircle, Smartphone, Wifi, Share2 } from "lucide-react";
 import Link from "next/link";
@@ -12,8 +12,11 @@ import { OrderDetails } from "@/lib/graphql/checkout";
 import Image from "next/image";
 import { Esim } from "@/__generated__/graphql";
 import { useEffect, useState } from "react";
+import { ErrorDisplay } from "@/components/error-display";
+import { parseGraphQLError } from "@/lib/error-types";
 export default function OrderPage() {
   const { orderId } = useParams();
+  const router = useRouter();
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(true);
   
   const { data, loading, error, refetch } = useQuery(OrderDetails, {
@@ -73,16 +76,11 @@ export default function OrderPage() {
         </header>
 
         <div className="container mx-auto px-4 py-6 max-w-2xl">
-          <Card className="p-6 text-center">
-            <h2 className="text-xl font-semibold mb-2">שגיאה בטעינת ההזמנה</h2>
-            <p className="text-muted-foreground mb-4">
-              לא הצלחנו לטעון את פרטי ההזמנה. אנא נסה שוב.
-            </p>
-            <Button onClick={() => refetch()} className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              נסה שוב
-            </Button>
-          </Card>
+          <ErrorDisplay
+            error={parseGraphQLError(error)}
+            onRetry={() => refetch()}
+            onGoHome={() => router.push('/profile')}
+          />
         </div>
       </div>
     );

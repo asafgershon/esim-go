@@ -13,6 +13,8 @@ import { LoginSection } from "./login-section";
 import { DeliveryMethodSection } from "./delivery-method-section";
 import { CheckoutSkeleton } from "./checkout-skeleton";
 import { CheckoutStepType } from "@/__generated__/graphql";
+import { ErrorDisplay } from "@/components/error-display";
+import { parseGraphQLError, ErrorType } from "@/lib/error-types";
 
 export function CheckoutContainer() {
   const router = useRouter();
@@ -90,11 +92,13 @@ export function CheckoutContainer() {
           
           if (result?.success && result?.isValid) {
             setValidationStatus("valid");
+            setValidationError(null);
             console.log("Order validation successful");
           } else {
             setValidationStatus("invalid");
-            setValidationError(result?.error || "Order validation failed");
-            console.warn("Order validation failed:", result?.error);
+            const errorMessage = result?.appError?.message || result?.error || "Order validation failed";
+            setValidationError(errorMessage);
+            console.warn("Order validation failed:", errorMessage, result?.appError);
           }
         } catch (error) {
           setValidationStatus("invalid");
@@ -252,7 +256,16 @@ export function CheckoutContainer() {
   }
   if (sessionError) {
     return (
-      <div className="p-8 text-center text-red-500">שגיאה בטעינת ההזמנה</div>
+      <div className="max-w-2xl mx-auto p-4">
+        <ErrorDisplay
+          error={parseGraphQLError(sessionError)}
+          onRetry={() => {
+            setToken(""); // Clear token to restart session creation
+            refetchSession();
+          }}
+          onGoHome={() => clearCheckoutState()}
+        />
+      </div>
     );
   }
 
@@ -266,6 +279,30 @@ export function CheckoutContainer() {
             sectionNumber={1}
             validationStatus={validationStatus}
           />
+          
+          {/* Validation Error Display */}
+          {validationStatus === "invalid" && validationError && (
+            <ErrorDisplay
+              error={{
+                type: ErrorType.VALIDATION_FAILED,
+                message: validationError,
+                retryable: true,
+              }}
+              onRetry={() => {
+                setValidationStatus(null);
+                setValidationError(null);
+                // Trigger re-validation
+                if (session?.planSnapshot) {
+                  const planSnapshot = session.planSnapshot as { name?: string };
+                  const bundleName = planSnapshot?.name;
+                  if (bundleName) {
+                    validateOrder(bundleName, 1, session.orderId || undefined);
+                  }
+                }
+              }}
+              compact
+            />
+          )}
           <DeliveryMethodSection
             sectionNumber={2}
             selectedMethod={selectedMethod}
