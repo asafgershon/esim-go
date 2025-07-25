@@ -9,6 +9,8 @@
     "dist",
     "tests",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "src/**/*.backup.ts",
+    "src/usage-example.ts"
   ]
 }

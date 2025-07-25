@@ -1,5 +1,5 @@
 // Main exports
-export { PricingEngine } from './pricing-engine';
+export { PricingEngine, RuleCategory } from './pricing-engine';
 // Keep old export for backward compatibility
 export { PricingEngine as PricingRuleEngine } from './pricing-engine';
 export { RuleBuilder } from './rule-builder';
@@ -19,7 +19,7 @@ export {
   AppliedRule,
   DiscountApplication,
   PricingRuleCalculation
-} from './types';
+} from './rules-engine-types';
 
 // Extended types specific to rules engine
 export {
@@ -59,6 +59,5 @@ export {
   PricingState
 } from './actions/base';
 
-// Re-export everything from types for backward compatibility
-export * from './types';
+// Re-export everything from rules-engine-types for backward compatibility
 export * from './rules-engine-types';

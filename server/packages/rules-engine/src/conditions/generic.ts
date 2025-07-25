@@ -18,12 +18,12 @@ export class GenericConditionEvaluator extends BaseConditionEvaluator {
     return {
       ...context,
       // Direct field shortcuts
-      country: context.bundle?.countryId,
-      countryName: context.bundle?.countryName,
+      country: context.bundle?.countries?.[0],
+      countryName: context.bundle?.countries?.[0], // Use first country as name
       region: context.bundle?.region,
       regionName: context.bundle?.region, // Using region since regionName doesn't exist
-      bundleGroup: context.bundle?.group,
-      duration: context.bundle?.duration,
+      bundleGroup: context.bundle?.groups?.[0],
+      duration: context.bundle?.validityInDays,
       isUnlimited: context.bundle?.isUnlimited,
       
       // User shortcuts
