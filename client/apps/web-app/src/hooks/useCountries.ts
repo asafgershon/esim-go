@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client';
-import { GET_COUNTRIES } from '@/lib/graphql/mutations';
-import type { Country } from '@/__generated__/types';
+import { GET_COUNTRIES_WITH_BUNDLES } from '@/lib/graphql/mutations';
+import type { Country, GetCountriesWithBundlesQuery } from '@/__generated__/types';
 
 // Enhanced country interface that includes computed properties
 export interface EnhancedCountry extends Country {
@@ -24,15 +24,15 @@ const taglines: string[] = [
 ];
 
 export function useCountries() {
-  const { data, loading, error, refetch } = useQuery(GET_COUNTRIES, {
+  const { data, loading, error, refetch } = useQuery<GetCountriesWithBundlesQuery>(GET_COUNTRIES_WITH_BUNDLES, {
     errorPolicy: 'all',
     notifyOnNetworkStatusChange: true,
   });
 
   // Transform GraphQL countries to enhanced countries
-  const countries: EnhancedCountry[] = data?.countries?.map((country: Country, index: number) => ({
-    ...country,
-    id: country.iso.toLowerCase(),
+  const countries: EnhancedCountry[] = data?.bundlesByCountry?.map((item, index: number) => ({
+    ...item.country,
+    id: item.country.iso.toLowerCase(),
     tagline: taglines[index % taglines.length],
     basePrice: 2.5, // Default base price
   })) || [];

@@ -136,12 +136,26 @@ export const GET_COUNTRIES = gql`
   }
 `;
 
+export const GET_COUNTRIES_WITH_BUNDLES = gql`
+  query GetCountriesWithBundles {
+    bundlesByCountry {
+      country {
+        iso
+        name
+        nameHebrew
+        region
+        flag
+      }
+    }
+  }
+`;
+
 export const GET_TRIPS = gql`
   query GetTrips {
     trips {
       name
       description
-      regionId
+      region
       countryIds
     }
   }
@@ -150,8 +164,12 @@ export const GET_TRIPS = gql`
 export const CALCULATE_PRICE = gql`
   query CalculatePrice($numOfDays: Int!, $regionId: String!, $countryId: String!) {
     calculatePrice(numOfDays: $numOfDays, regionId: $regionId, countryId: $countryId) {
-      bundleName
-      countryName
+      bundle {
+        name
+      }
+      country {
+        name
+      }
       duration
       currency
       totalCost
@@ -164,8 +182,12 @@ export const CALCULATE_PRICE = gql`
 export const CALCULATE_PRICES_BATCH = gql`
   query CalculatePricesBatch($inputs: [CalculatePriceInput!]!) {
     calculatePrices(inputs: $inputs) {
-      bundleName
-      countryName
+      bundle {
+        name
+      }
+      country {
+        name
+      }
       duration
       currency
       totalCost

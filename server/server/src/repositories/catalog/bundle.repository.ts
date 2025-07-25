@@ -288,6 +288,105 @@ export class BundleRepository extends BaseSupabaseRepository<
     return data;
   }
 
+  // ========== Data Type and Duration Aggregations ==========
+  
+  async getDataTypes(): Promise<Array<{
+    label: string;
+    value: string;
+    isUnlimited: boolean;
+    minDataMB?: number;
+    maxDataMB?: number;
+  }>> {
+    try {
+      // Get aggregated data for limited bundles
+      const { data: limitedData, error: limitedError } = await this.supabase
+        .from('catalog_bundles')
+        .select('data_amount_mb')
+        .eq('is_unlimited', false)
+        .not('data_amount_mb', 'is', null);
+
+      if (limitedError) throw limitedError;
+
+      // Check if we have unlimited bundles
+      const { count: unlimitedCount, error: unlimitedError } = await this.supabase
+        .from('catalog_bundles')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_unlimited', true);
+
+      if (unlimitedError) throw unlimitedError;
+
+      const dataTypes = [];
+
+      // Add unlimited type if we have unlimited bundles
+      if (unlimitedCount && unlimitedCount > 0) {
+        dataTypes.push({
+          label: "Unlimited",
+          value: "unlimited",
+          isUnlimited: true
+        });
+      }
+
+      // Add limited type if we have limited bundles
+      if (limitedData && limitedData.length > 0) {
+        const dataAmounts = limitedData.map(d => d.data_amount_mb).filter(d => d !== null);
+        const minDataMB = Math.min(...dataAmounts);
+        const maxDataMB = Math.max(...dataAmounts);
+
+        dataTypes.push({
+          label: "Limited",
+          value: "limited",
+          isUnlimited: false,
+          minDataMB,
+          maxDataMB
+        });
+      }
+
+      return dataTypes;
+    } catch (error) {
+      this.logger.error('Failed to get data types from bundles', error, {
+        operationType: 'bundle-data-types-fetch'
+      });
+      throw error;
+    }
+  }
+
+  async getDurationRanges(): Promise<Array<{
+    label: string;
+    value: string;
+    minDays: number;
+    maxDays: number;
+  }>> {
+    try {
+      const { data, error } = await this.supabase
+        .from('catalog_bundles')
+        .select('validity_in_days')
+        .not('validity_in_days', 'is', null)
+        .order('validity_in_days');
+
+      if (error) throw error;
+
+      const durations = data?.map(d => d.validity_in_days) || [];
+      
+      // Create predefined duration ranges
+      const ranges = [
+        { label: "1-7 days", value: "1-7", minDays: 1, maxDays: 7 },
+        { label: "8-14 days", value: "8-14", minDays: 8, maxDays: 14 },
+        { label: "15-30 days", value: "15-30", minDays: 15, maxDays: 30 },
+        { label: "31+ days", value: "31+", minDays: 31, maxDays: 999 }
+      ];
+
+      // Only return ranges that have bundles
+      return ranges.filter(range => 
+        durations.some(d => d >= range.minDays && d <= range.maxDays)
+      );
+    } catch (error) {
+      this.logger.error('Failed to get duration ranges from bundles', error, {
+        operationType: 'bundle-duration-ranges-fetch'
+      });
+      throw error;
+    }
+  }
+
   // ========== Bundle Transformation ==========
   // This is kept in the repository as a utility function
   static transformCatalogToBundle(dbBundle: CatalogBundle) {

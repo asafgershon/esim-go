@@ -1037,6 +1037,8 @@ type DataType {
   label: String!
   value: String!
   isUnlimited: Boolean!
+  minDataMB: Int
+  maxDataMB: Int
 }
 
 input TestPricingContext {
