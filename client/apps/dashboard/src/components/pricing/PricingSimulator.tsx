@@ -17,6 +17,9 @@ import {
   Badge,
   Alert,
   AlertDescription,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@workspace/ui';
 import {
   Calculator,
@@ -152,6 +155,22 @@ export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
   const selectedRuleApplied = selectedRule
     ? appliedRules.find((rule) => rule.name === selectedRule.name)
     : null;
+
+  // Debug logging
+  if (pricingResult) {
+    console.log('Pricing Result:', {
+      cost: pricingResult.cost,
+      markup: pricingResult.markup,
+      totalCost: pricingResult.totalCost,
+      discountValue: pricingResult.discountValue,
+      priceAfterDiscount: pricingResult.priceAfterDiscount,
+      processingCost: pricingResult.processingCost,
+      finalRevenue: pricingResult.finalRevenue,
+      netProfit: pricingResult.netProfit,
+      unusedDays: pricingResult.unusedDays,
+      discountPerDay: pricingResult.discountPerDay,
+    });
+  }
 
 
   return (
@@ -351,27 +370,92 @@ export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
             </Alert>
           )}
 
-          {/* Pricing Summary */}
+          {/* Visual Pricing Breakdown */}
+          <Card className="border-blue-200 bg-blue-50/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base text-blue-900">
+                <Calculator className="h-4 w-4" />
+                Pricing Calculation Flow
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Base Cost (from supplier)</span>
+                  <span className="font-mono font-medium">${pricingResult.cost?.toFixed(2) || '0.00'}</span>
+                </div>
+                <div className="flex items-center justify-between text-green-700">
+                  <span>+ Markup ({pricingResult.cost && pricingResult.markup ? ((pricingResult.markup / pricingResult.cost) * 100).toFixed(1) : '0'}%)</span>
+                  <span className="font-mono font-medium">+ ${pricingResult.markup?.toFixed(2) || '0.00'}</span>
+                </div>
+                <div className="border-t pt-2 flex items-center justify-between font-medium">
+                  <span className="text-gray-700">= Total Cost</span>
+                  <span className="font-mono">${pricingResult.totalCost?.toFixed(2) || '0.00'}</span>
+                </div>
+                {pricingResult.discountValue && pricingResult.discountValue > 0 && (
+                  <>
+                    <div className="flex items-center justify-between text-red-600">
+                      <span>- Discounts</span>
+                      <span className="font-mono font-medium">- ${pricingResult.discountValue?.toFixed(2) || '0.00'}</span>
+                    </div>
+                    <div className="border-t pt-2 flex items-center justify-between font-medium">
+                      <span className="text-gray-700">= Price After Discount</span>
+                      <span className="font-mono">${pricingResult.priceAfterDiscount?.toFixed(2) || '0.00'}</span>
+                    </div>
+                  </>
+                )}
+                <div className="flex items-center justify-between text-orange-600">
+                  <span>+ Processing Fee ({(pricingResult.processingRate || 0) * 100}%)</span>
+                  <span className="font-mono font-medium">+ ${pricingResult.processingCost?.toFixed(2) || '0.00'}</span>
+                </div>
+                <div className="border-t-2 border-blue-300 pt-2 flex items-center justify-between text-lg font-semibold text-blue-900">
+                  <span>= Customer Price</span>
+                  <span className="font-mono">${pricingResult.finalRevenue?.toFixed(2) || '0.00'}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Detailed Pricing Summary */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <TrendingUp className="h-4 w-4" />
-                Final Pricing
+                Detailed Breakdown
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Base Cost:</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-gray-600 underline decoration-dotted cursor-help">Base Cost:</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>The cost we pay to the eSIM provider</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <span className="font-mono">
                       ${pricingResult.cost?.toFixed(3) || '0.000'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Markup:</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-gray-600 underline decoration-dotted cursor-help">Markup Amount:</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Our profit margin added to the base cost</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <span className="font-mono">
                       ${pricingResult.markup?.toFixed(3) || '0.000'}
+                      {pricingResult.cost && pricingResult.markup ? (
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({((pricingResult.markup / pricingResult.cost) * 100).toFixed(1)}%)
+                        </span>
+                      ) : null}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -391,9 +475,21 @@ export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Processing Fee:</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-gray-600 underline decoration-dotted cursor-help">Processing Fee:</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Payment processing costs based on payment method</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <span className="font-mono">
                       ${pricingResult.processingCost?.toFixed(3) || '0.000'}
+                      {pricingResult.processingRate ? (
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({(pricingResult.processingRate * 100).toFixed(1)}%)
+                        </span>
+                      ) : null}
                     </span>
                   </div>
                   <div className="flex justify-between font-semibold border-t pt-2">
@@ -402,6 +498,26 @@ export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
                       ${pricingResult.finalRevenue?.toFixed(2) || '0.00'}
                     </span>
                   </div>
+                  {pricingResult.netProfit !== undefined && (
+                    <div className="flex justify-between text-sm text-gray-600 mt-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="underline decoration-dotted cursor-help">Net Profit:</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Revenue minus all costs (base cost + processing fees)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <span className="font-mono">
+                        ${pricingResult.netProfit?.toFixed(2) || '0.00'}
+                        {pricingResult.finalRevenue && pricingResult.netProfit ? (
+                          <span className="text-xs text-gray-500 ml-1">
+                            ({((pricingResult.netProfit / pricingResult.finalRevenue) * 100).toFixed(1)}% margin)
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

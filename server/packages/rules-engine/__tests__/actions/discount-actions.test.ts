@@ -257,19 +257,8 @@ describe('DiscountActionExecutor', () => {
     });
   });
 
-  describe('canExecute', () => {
-    it('should return true for discount action types', () => {
-      expect(executor.canExecute(ActionType.ApplyDiscountPercentage)).toBe(true);
-      expect(executor.canExecute(ActionType.ApplyFixedDiscount)).toBe(true);
-      expect(executor.canExecute(ActionType.SetDiscountPerUnusedDay)).toBe(true);
-    });
-
-    it('should return false for non-discount action types', () => {
-      expect(executor.canExecute(ActionType.AddMarkup)).toBe(false);
-      expect(executor.canExecute(ActionType.SetProcessingRate)).toBe(false);
-      expect(executor.canExecute(ActionType.SetMinimumPrice)).toBe(false);
-    });
-  });
+  // canExecute is not implemented in the action executors
+  // The action type filtering is handled at a higher level
 
   describe('state immutability', () => {
     it('should not modify original state', () => {

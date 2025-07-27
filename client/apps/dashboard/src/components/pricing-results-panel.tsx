@@ -208,12 +208,19 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
                     <span className="font-mono">{formatCurrency(data.cost, data.currency)}</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
-                    <span className="text-muted-foreground">+ Markup</span>
-                    <span className="font-mono">{formatCurrency(data.markup - data.cost, data.currency)}</span>
+                    <span className="text-muted-foreground">
+                      + Markup
+                      {data.cost && data.markup ? (
+                        <span className="text-xs ml-1">
+                          ({((data.markup / data.cost) * 100).toFixed(1)}%)
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="font-mono">{formatCurrency(data.markup, data.currency)}</span>
                   </div>
                   {data.hasDiscount && (
                     <div className="flex justify-between items-center py-1">
-                      <span className="text-muted-foreground">- Discount ({formatPercentage(data.discountRate * 100)})</span>
+                      <span className="text-muted-foreground">- Discount ({formatPercentage(data.discountRate)})</span>
                       <span className="font-mono text-green-600">-{formatCurrency(data.discountAmount, data.currency)}</span>
                     </div>
                   )}

@@ -4,8 +4,7 @@ import {
   type CreatePricingRuleInput,
   type RuleAction,
   type RuleCondition,
-  type RuleType,
-  RuleType as RuleTypeEnum
+  RuleCategory as RuleCategoryEnum
 } from './generated/types';
 
 export class RuleBuilder {
@@ -28,8 +27,8 @@ export class RuleBuilder {
     return this;
   }
 
-  type(type: RuleType): this {
-    this.rule.type = type;
+  category(category: RuleCategoryEnum): this {
+    this.rule.category = category;
     return this;
   }
 
@@ -57,7 +56,7 @@ export class RuleBuilder {
   }
 
   immutable(): this {
-    this.rule.type = RuleTypeEnum.SystemMarkup; // System rules are immutable
+    this.rule.category = RuleCategoryEnum.BundleAdjustment; // System rules are immutable
     return this;
   }
 
@@ -81,8 +80,8 @@ export class RuleBuilder {
     if (!this.rule.name) {
       throw new Error('Rule name is required');
     }
-    if (!this.rule.type) {
-      this.rule.type = RuleTypeEnum.BusinessDiscount; // Default type
+    if (!this.rule.category) {
+      this.rule.category = RuleCategoryEnum.Discount; // Default category
     }
     if (!this.rule.conditions || this.rule.conditions.length === 0) {
       throw new Error('At least one condition is required');
