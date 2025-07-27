@@ -207,7 +207,7 @@ export function PricingHierarchyExplanation({
                 {/* Step-by-step calculation */}
                 <div className="space-y-3">
                   {/* Step 1: Base Cost */}
-                  <div className="flex items-center justify-between p-3 bg-white rounded-md">
+                  <div className="flex items-center justify-between p-3  rounded-md">
                     <div>
                       <div className="font-medium">1. eSIM Go Base Cost</div>
                       <div className="text-sm text-gray-500">

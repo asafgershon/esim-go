@@ -44,7 +44,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
           >
             <div className={cn('h-full flex flex-col', panel.className)}>
               {panel.header && (
-                <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
+                <div className="sticky top-0 z-10  border-b border-gray-200 px-3 py-3 flex-shrink-0">
                   {panel.header}
                 </div>
               )}

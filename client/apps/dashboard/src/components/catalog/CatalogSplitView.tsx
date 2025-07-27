@@ -362,7 +362,7 @@ export function CatalogSplitView({
           >
             <div className="h-full flex flex-col">
               {/* Bundles Header */}
-              <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
+              <div className="sticky top-0 z-10 border-b border-gray-200 px-3 py-3 flex-shrink-0">
                 <h3 className="text-sm font-medium text-gray-700">
                   Bundles
                   {selectedCountryData && ` (${selectedCountryData.bundleCount || 0})`}
@@ -441,7 +441,7 @@ export function CatalogSplitView({
                     >
                       <div className="h-full flex flex-col">
                         {/* Preview Header */}
-                        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0">
+                        <div className="sticky top-0 z-10  border-b border-gray-200 px-3 py-3 flex-shrink-0">
                           <div className="flex items-center justify-between">
                             <h3 className="text-sm font-medium text-gray-700">
                               Bundle Details

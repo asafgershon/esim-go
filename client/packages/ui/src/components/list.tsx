@@ -56,7 +56,7 @@ const Header = forwardRef<HTMLDivElement, ListHeaderProps>((
       <div
         ref={ref}
         className={cn(
-          "sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0",
+          "sticky top-0 z-10  border-b border-gray-200 px-3 py-3 flex-shrink-0",
           className
         )}
       >
@@ -69,7 +69,7 @@ const Header = forwardRef<HTMLDivElement, ListHeaderProps>((
     <div
       ref={ref}
       className={cn(
-        "sticky top-0 z-10 bg-white border-b border-gray-200 px-3 py-3 flex-shrink-0",
+        "sticky top-0 z-10  border-b border-gray-200 px-3 py-3 flex-shrink-0",
         className
       )}
     >

@@ -153,16 +153,6 @@ export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
     ? appliedRules.find((rule) => rule.name === selectedRule.name)
     : null;
 
-  // Debug: Log the pricing result to console
-  if (pricingResult) {
-    console.log('PricingSimulator - pricingResult:', {
-      unusedDays: pricingResult.unusedDays,
-      discountPerDay: pricingResult.discountPerDay,
-      duration: pricingResult.duration,
-      requestedDuration: testInputs.duration,
-      fullResult: pricingResult
-    });
-  }
 
   return (
     <div className={`space-y-6 ${className}`}>
