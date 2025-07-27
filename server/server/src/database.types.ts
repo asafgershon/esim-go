@@ -29,9 +29,7 @@ export type Database = {
           groups: string[] | null
           id: string
           is_unlimited: boolean | null
-          metadata: Json | null
           price: number | null
-          price_cents: number | null
           region: string | null
           regions: Json | null
           speed: string[] | null
@@ -54,9 +52,7 @@ export type Database = {
           groups?: string[] | null
           id?: string
           is_unlimited?: boolean | null
-          metadata?: Json | null
           price?: number | null
-          price_cents?: number | null
           region?: string | null
           regions?: Json | null
           speed?: string[] | null
@@ -79,9 +75,7 @@ export type Database = {
           groups?: string[] | null
           id?: string
           is_unlimited?: boolean | null
-          metadata?: Json | null
           price?: number | null
-          price_cents?: number | null
           region?: string | null
           regions?: Json | null
           speed?: string[] | null

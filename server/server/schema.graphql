@@ -854,12 +854,12 @@ type PricingBreakdown {
   currency: String!
 
   # Public pricing fields (what users pay)
-  totalCost: Float! # Subtotal before discounts
+  totalCost: Float! # Total cost (cost + markup) before discounts
   discountValue: Float! # Total discount amount
   priceAfterDiscount: Float! # Final price users pay
   # Admin-only business sensitive fields
   cost: Float! @auth(role: "ADMIN") # Base cost from supplier
-  costPlus: Float! @auth(role: "ADMIN") # Cost + markup
+  markup: Float! @auth(role: "ADMIN") # Markup amount added to cost
   discountRate: Float! @auth(role: "ADMIN") # Discount percentage
   processingRate: Float! @auth(role: "ADMIN") # Processing fee percentage
   processingCost: Float! @auth(role: "ADMIN") # Processing fee amount

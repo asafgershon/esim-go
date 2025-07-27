@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import type { Context } from '../context/types';
 import { createLogger } from '../lib/logger';
-import { PricingEngineService } from '../services/pricing-engine.service';
 import type {
   MutationResolvers,
   PricingRule,
@@ -16,10 +15,6 @@ const logger = createLogger({
   component: 'PricingRulesResolvers',
   operationType: 'graphql-resolver'
 });
-
-const getPricingEngineService = (context: Context): PricingEngineService => {
-  return PricingEngineService.getInstance(context.services.db);
-};
 
 export const pricingRulesQueries: QueryResolvers = {
   pricingRules: async (
@@ -125,17 +120,8 @@ export const pricingRulesMutations: MutationResolvers = {
         name: rule.name 
       });
       
-      // Reload rules in the engine (try-catch to not fail the whole operation)
-      try {
-        const engine = getPricingEngineService(context);
-        await engine.reloadRules();
-        logger.info('Pricing engine rules reloaded');
-      } catch (engineError) {
-        logger.warn('Failed to reload pricing engine rules', engineError as Error, {
-          ruleId: rule.id
-        });
-        // Don't fail the whole operation if engine reload fails
-      }
+      // Rules will be automatically loaded on next pricing calculation
+      logger.info('Pricing rule will be applied on next calculation');
       
       return rule;
     } catch (error) {
@@ -169,9 +155,7 @@ export const pricingRulesMutations: MutationResolvers = {
     try {
       const rule = await context.repositories.pricingRules.updateRule(id, input);
       
-      // Reload rules in the engine
-      const engine = getPricingEngineService(context);
-      await engine.reloadRules();
+      // Rules will be automatically loaded on next pricing calculation
       
       logger.info('Pricing rule updated successfully', { 
         id: rule.id,
@@ -201,9 +185,7 @@ export const pricingRulesMutations: MutationResolvers = {
     try {
       await context.repositories.pricingRules.delete(id);
       
-      // Reload rules in the engine
-      const engine = getPricingEngineService(context);
-      await engine.reloadRules();
+      // Rules will be automatically loaded on next pricing calculation
       
       logger.info('Pricing rule deleted successfully', { id });
       
@@ -227,16 +209,8 @@ export const pricingRulesMutations: MutationResolvers = {
     try {
       const rule = await context.repositories.pricingRules.toggleActive(id);
       
-      // Reload rules in the engine
-      try {
-        const engine = getPricingEngineService(context);
-        await engine.reloadRules();
-        logger.info('Pricing engine rules reloaded');
-      } catch (engineError) {
-        logger.warn('Failed to reload pricing engine rules', engineError as Error, {
-          ruleId: rule.id
-        });
-      }
+      // Rules will be automatically loaded on next pricing calculation
+      logger.info('Pricing rule status will be applied on next calculation');
       
       logger.info('Pricing rule toggled successfully', { 
         id: rule.id,
@@ -263,16 +237,8 @@ export const pricingRulesMutations: MutationResolvers = {
     try {
       const rule = await context.repositories.pricingRules.cloneRule(id, newName);
       
-      // Reload rules in the engine
-      try {
-        const engine = getPricingEngineService(context);
-        await engine.reloadRules();
-        logger.info('Pricing engine rules reloaded');
-      } catch (engineError) {
-        logger.warn('Failed to reload pricing engine rules', engineError as Error, {
-          ruleId: rule.id
-        });
-      }
+      // Rules will be automatically loaded on next pricing calculation
+      logger.info('Cloned rule will be applied on next calculation');
       
       logger.info('Pricing rule cloned successfully', { 
         id: rule.id,

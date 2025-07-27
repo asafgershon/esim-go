@@ -901,7 +901,6 @@ export type PricingBreakdown = {
   appliedRules?: Maybe<Array<AppliedRule>>;
   bundle: CountryBundle;
   cost: Scalars['Float']['output'];
-  costPlus: Scalars['Float']['output'];
   country: Country;
   currency: Scalars['String']['output'];
   discountPerDay: Scalars['Float']['output'];
@@ -910,6 +909,7 @@ export type PricingBreakdown = {
   discounts?: Maybe<Array<DiscountApplication>>;
   duration: Scalars['Int']['output'];
   finalRevenue: Scalars['Float']['output'];
+  markup: Scalars['Float']['output'];
   netProfit: Scalars['Float']['output'];
   priceAfterDiscount: Scalars['Float']['output'];
   processingCost: Scalars['Float']['output'];
@@ -1103,9 +1103,7 @@ export type Query = {
   bundlesForCountry?: Maybe<BundlesForCountry>;
   bundlesForGroup?: Maybe<BundlesForGroup>;
   bundlesForRegion?: Maybe<BundlesForRegion>;
-  calculateBatchPricing: Array<PricingBreakdown>;
   calculatePrice: PricingBreakdown;
-  calculatePriceWithRules: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
@@ -1172,22 +1170,12 @@ export type QueryBundlesForRegionArgs = {
 };
 
 
-export type QueryCalculateBatchPricingArgs = {
-  requests: Array<CalculatePriceInput>;
-};
-
-
 export type QueryCalculatePriceArgs = {
   countryId: Scalars['String']['input'];
   groups?: InputMaybe<Array<Scalars['String']['input']>>;
   numOfDays: Scalars['Int']['input'];
   paymentMethod?: InputMaybe<PaymentMethod>;
   regionId?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type QueryCalculatePriceWithRulesArgs = {
-  input: CalculatePriceInput;
 };
 
 
@@ -1472,6 +1460,7 @@ export type UpdatePricingConfigurationResponse = {
 
 export type UpdatePricingRuleInput = {
   actions?: InputMaybe<Array<RuleActionInput>>;
+  category?: InputMaybe<RuleCategory>;
   conditions?: InputMaybe<Array<RuleConditionInput>>;
   description?: InputMaybe<Scalars['String']['input']>;
   isActive?: InputMaybe<Scalars['Boolean']['input']>;

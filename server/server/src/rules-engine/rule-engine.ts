@@ -1,3 +1,4 @@
+import type { PricingEngineOutput } from "@esim-go/rules-engine";
 import { createLogger } from "../lib/logger";
 import type {
   AppliedRule,
@@ -5,7 +6,7 @@ import type {
   PricingRule,
   PricingRuleCalculation,
 } from "../types";
-import { ActionType, RuleType } from "../types";
+import { ActionType, RuleCategory } from "../types";
 import { ActionExecutor, type PricingState } from "./actions";
 import { ConditionEvaluator } from "./conditions";
 import {
@@ -75,7 +76,7 @@ export class PricingRuleEngine {
     return {
       __typename: "PricingRule" as const,
       id: `rule-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      type: input.type,
+      category: input.category,
       name: input.name,
       description: input.description || null,
       conditions: input.conditions,
@@ -427,7 +428,7 @@ export class PricingRuleEngine {
       });
     }
 
-    const result: PricingRuleCalculation = {
+    const result: PricingEngineOutput = {
       baseCost: state.baseCost,
       markup: state.markup,
       subtotal: state.subtotal,
@@ -446,20 +447,7 @@ export class PricingRuleEngine {
       profit,
       maxRecommendedPrice,
       maxDiscountPercentage,
-      appliedRules,
-      selectedBundle: {
-        id: context.bundle?.id || "",
-        name: context.bundle?.name || "",
-        duration: context.bundle?.duration || 0,
-        reason:
-          context.bundle?.duration === context.requestedDuration
-            ? "exact_match"
-            : "next_available",
-      },
-      metadata: {
-        discountPerUnusedDay: state.discountPerUnusedDay,
-        unusedDays: state.unusedDays,
-      },
+      appliedRules: appliedRules,
     };
 
     // Yield completed step
@@ -569,7 +557,7 @@ export class PricingRuleEngine {
     appliedRules.push({
       id: rule.id,
       name: rule.name,
-      type: rule.type,
+      category: rule.category,
       impact: totalImpact,
     });
 
@@ -583,9 +571,9 @@ export class PricingRuleEngine {
 
   private categorizeRule(rule: PricingRule): void {
     if (
-      rule.type === RuleType.SystemMarkup ||
-      rule.type === RuleType.SystemProcessing ||
-      rule.type === RuleType.SystemMinimumPrice
+      rule.category === RuleCategory.Fee ||
+      rule.category === RuleCategory.Discount ||
+      rule.category === RuleCategory.Constraint
     ) {
       this.systemRules.push(rule);
     } else {
@@ -606,7 +594,7 @@ export class PricingRuleEngine {
   private calculateUnusedDays(context: PricingContext): number {
     if (
       !context.requestedDuration ||
-      context.requestedDuration >= context.bundle.duration
+      context.requestedDuration >= context.bundle?.duration
     ) {
       return 0;
     }

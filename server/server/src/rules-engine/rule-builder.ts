@@ -1,15 +1,11 @@
-import { 
-  type RuleType, 
-  type ConditionOperator, 
-  type ActionType,
-  type RuleCondition,
-  type RuleAction,
-  type CreatePricingRuleInput,
-  RuleType as RuleTypeEnum,
+import {
+  ActionType as ActionTypeEnum,
   ConditionOperator as ConditionOperatorEnum,
-  ActionType as ActionTypeEnum
+  type CreatePricingRuleInput,
+  type RuleAction,
+  RuleCategory,
+  type RuleCondition
 } from '../types';
-import { v4 as uuidv4 } from 'uuid';
 
 export class RuleBuilder {
   private rule: Partial<CreatePricingRuleInput> = {
@@ -31,8 +27,8 @@ export class RuleBuilder {
     return this;
   }
 
-  type(type: RuleType): this {
-    this.rule.type = type;
+  category(category: RuleCategory): this {
+    this.rule.category = category;
     return this;
   }
 
@@ -60,7 +56,7 @@ export class RuleBuilder {
   }
 
   immutable(): this {
-    this.rule.type = RuleTypeEnum.SystemMarkup; // System rules are immutable
+    this.rule.category = RuleCategory.Fee; // System rules are immutable
     return this;
   }
 
@@ -84,8 +80,8 @@ export class RuleBuilder {
     if (!this.rule.name) {
       throw new Error('Rule name is required');
     }
-    if (!this.rule.type) {
-      this.rule.type = RuleTypeEnum.BusinessDiscount; // Default type
+    if (!this.rule.category) {
+      this.rule.category = RuleCategory.Discount; // Default type
     }
     if (!this.rule.conditions || this.rule.conditions.length === 0) {
       throw new Error('At least one condition is required');

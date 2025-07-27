@@ -1,33 +1,22 @@
-import { PricingEngine, PricingEngineInput, PricingEngineOutput, Bundle, PricingContext, PricingRuleCalculation } from '@esim-go/rules-engine';
-import { PricingRulesRepository } from '../repositories/pricing-rules.repository';
-import { createLogger, withPerformanceLogging } from '../lib/logger';
-import { publishEvent, PubSubEvents } from '../context/pubsub';
+import { Bundle, PricingContext, PricingEngine, PricingEngineInput, PricingEngineOutput } from '@esim-go/rules-engine';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RedisPubSub } from 'graphql-redis-subscriptions';
+import { publishEvent, PubSubEvents } from '../context/pubsub';
+import { createLogger, withPerformanceLogging } from '../lib/logger';
+import { PricingRulesRepository } from '../repositories/pricing-rules.repository';
 
-export interface ExtendedPricingCalculation extends PricingRuleCalculation {
-  selectedBundle?: {
-    bundleId: string;
-    bundleName: string;
-    duration: number;
-    reason: string;
-  };
-  metadata?: {
-    discountPerUnusedDay?: number;
-  };
-}
 
 export class PricingEngineService {
   private engine: PricingEngine;
   private repository: PricingRulesRepository;
   private pubsub: RedisPubSub | null = null;
-  private logger = createLogger({ 
+  private logger = createLogger({   
     component: 'PricingEngineService',
     operationType: 'pricing-calculation'
   });
   
   // Cache rules for 5 minutes
-  private static readonly RULES_CACHE_KEY = 'pricing:rules:active';
+  private static readonly RULES_CACHE_KEY = 'pricing:rules:active';Ok
   private static readonly RULES_CACHE_TTL = 300; // 5 minutes
   
   // Singleton instance
@@ -159,50 +148,6 @@ export class PricingEngineService {
     );
   }
 
-  /**
-   * Legacy method for backward compatibility
-   * Converts old PricingContext to new PricingEngineInput
-   */
-  async calculatePriceLegacy(context: PricingContext): Promise<ExtendedPricingCalculation> {
-    // Convert PricingContext to PricingEngineInput format
-    const input: PricingEngineInput = {
-      bundles: context.availableBundles || [],
-      costumer: {
-        id: context.user?.id || 'anonymous',
-        segment: context.user?.segment || 'default'
-      },
-      payment: {
-        method: context.paymentMethod as any || 'ISRAELI_CARD'
-      },
-      rules: [], // Will be loaded from repository
-      request: {
-        duration: context.requestedDuration,
-        paymentMethod: context.paymentMethod as any || 'ISRAELI_CARD'
-      },
-      steps: [],
-      unusedDays: 0,
-      country: '',
-      region: '',
-      group: '',
-      dataType: 'DEFAULT' as any,
-      metadata: {
-        correlationId: `legacy-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      }
-    };
-    
-    const result = await this.calculatePrice(input, false);
-    
-    // Convert back to legacy format
-    return {
-      ...result.pricing,
-      selectedBundle: {
-        bundleId: result.selectedBundle?.name || '',
-        bundleName: result.selectedBundle?.name || '',
-        duration: result.selectedBundle?.validityInDays || 0,
-        reason: 'calculated'
-      }
-    } as ExtendedPricingCalculation;
-  }
 
   /**
    * Reload rules from database
@@ -290,23 +235,6 @@ export class PricingEngineService {
     };
     
     return this.validateInput(input as PricingEngineInput);
-  }
-
-  /**
-   * Calculate unused day discount for a specific scenario
-   * Note: This method is deprecated in the new pricing engine
-   */
-  async calculateUnusedDayDiscount(
-    selectedBundleMarkup: number,
-    selectedBundleDuration: number,
-    requestedDuration: number,
-    bundleGroup: string,
-    availableDurations: number[]
-  ): Promise<number> {
-    // Legacy method - the new pricing engine handles this internally
-    const unusedDays = Math.max(0, selectedBundleDuration - requestedDuration);
-    // Simple calculation for backward compatibility
-    return unusedDays * (selectedBundleMarkup / selectedBundleDuration);
   }
 
   private async loadRules(): Promise<void> {

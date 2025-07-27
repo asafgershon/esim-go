@@ -1,17 +1,14 @@
 import { createLogger } from "@esim-go/utils";
 import type {
+  Bundle,
+  PipelineStep,
+  PricingBreakdown,
   PricingEngineInput,
   PricingEngineOutput,
   PricingEngineState,
-  PipelineStep,
-  PricingRule,
-  Bundle,
-  PaymentMethod,
-  DataType,
-  PricingBreakdown,
-  RuleAction,
+  PricingRule
 } from "./rules-engine-types";
-import { ActionType } from "./rules-engine-types";
+import { ActionType, RuleCategory } from "./rules-engine-types";
 
 // Module-level logger for stateless operation
 const logger = createLogger({
@@ -19,13 +16,6 @@ const logger = createLogger({
   operationType: "price-calculation",
 });
 
-// Rule categories for the new pipeline
-export enum RuleCategory {
-  DISCOUNT = 'DISCOUNT',
-  CONSTRAINT = 'CONSTRAINT', 
-  FEE = 'FEE',
-  BUNDLE_ADJUSTMENT = 'BUNDLE_ADJUSTMENT'
-}
 
 export class PricingEngine {
   private rules: PricingRule[] = [];
@@ -34,9 +24,21 @@ export class PricingEngine {
    * Add rules to the engine
    */
   addRules(rules: PricingRule[]): void {
+    logger.info("Adding rules to pricing engine", {
+      rulesCount: rules.length,
+      ruleNames: rules.map(r => r.name),
+      ruleCategories: rules.map(r => r.category),
+      ruleActions: rules.map(r => r.actions.map(a => a.type))
+    });
+    
     this.rules = [...this.rules, ...rules];
     // Sort by priority (higher priority first)
     this.rules.sort((a, b) => b.priority - a.priority);
+    
+    logger.info("Rules added and sorted", {
+      totalRules: this.rules.length,
+      rulesPriority: this.rules.map(r => ({ name: r.name, priority: r.priority }))
+    });
   }
 
   /**
@@ -165,7 +167,7 @@ export class PricingEngine {
     let adjustedPricing = this.initializePricing(state.selectedBundle);
 
     // Find bundle adjustment rules
-    const bundleAdjustmentRules = this.filterRulesByCategory(RuleCategory.BUNDLE_ADJUSTMENT);
+    const bundleAdjustmentRules = this.filterRulesByCategory(RuleCategory.BundleAdjustment);
     
     for (const rule of bundleAdjustmentRules) {
       if (this.evaluateRuleConditions(rule, state)) {
@@ -183,7 +185,7 @@ export class PricingEngine {
       appliedRules,
       debug: {
         basePrice: state.selectedBundle.basePrice,
-        adjustedPrice: adjustedPricing.costPlus,
+        adjustedPrice: adjustedPricing.totalCost,
       }
     };
   }
@@ -200,14 +202,74 @@ export class PricingEngine {
     let discountedPricing = { ...state.pricing! };
 
     // Find discount rules
-    const discountRules = this.filterRulesByCategory(RuleCategory.DISCOUNT);
+    const discountRules = this.filterRulesByCategory(RuleCategory.Discount);
+    
+    logger.debug("Discount rules analysis", {
+      correlationId: state.metadata.correlationId,
+      totalRulesInEngine: this.rules.length,
+      discountRulesFound: discountRules.length,
+      discountRuleNames: discountRules.map(r => r.name),
+      discountRuleCategories: discountRules.map(r => r.category),
+      discountRuleActive: discountRules.map(r => r.isActive),
+      pricingBeforeDiscounts: {
+        totalCost: state.pricing!.totalCost,
+        priceAfterDiscount: state.pricing!.priceAfterDiscount,
+        discountValue: state.pricing!.discountValue
+      }
+    });
     
     for (const rule of discountRules) {
+      logger.debug("Evaluating discount rule", {
+        correlationId: state.metadata.correlationId,
+        ruleName: rule.name,
+        ruleId: rule.id,
+        ruleCategory: rule.category,
+        isActive: rule.isActive,
+        conditions: rule.conditions,
+        actions: rule.actions.map(a => ({ type: a.type, value: a.value }))
+      });
+
       if (this.evaluateRuleConditions(rule, state)) {
+        logger.debug("Discount rule conditions passed, applying actions", {
+          correlationId: state.metadata.correlationId,
+          ruleName: rule.name,
+          pricingBeforeActions: {
+            totalCost: discountedPricing.totalCost,
+            priceAfterDiscount: discountedPricing.priceAfterDiscount,
+            discountValue: discountedPricing.discountValue,
+            discountRate: discountedPricing.discountRate
+          }
+        });
+
         discountedPricing = this.applyRuleActions(rule, discountedPricing, state);
         appliedRules.push(rule.id);
+
+        logger.debug("Discount rule actions applied", {
+          correlationId: state.metadata.correlationId,
+          ruleName: rule.name,
+          pricingAfterActions: {
+            totalCost: discountedPricing.totalCost,
+            priceAfterDiscount: discountedPricing.priceAfterDiscount,
+            discountValue: discountedPricing.discountValue,
+            discountRate: discountedPricing.discountRate
+          }
+        });
+      } else {
+        logger.debug("Discount rule conditions failed", {
+          correlationId: state.metadata.correlationId,
+          ruleName: rule.name
+        });
       }
     }
+
+    logger.debug("Discounts step completed", {
+      correlationId: state.metadata.correlationId,
+      appliedRulesCount: appliedRules.length,
+      appliedRuleNames: appliedRules,
+      finalDiscountValue: discountedPricing.discountValue,
+      finalDiscountRate: discountedPricing.discountRate,
+      finalPriceAfterDiscount: discountedPricing.priceAfterDiscount
+    });
 
     return {
       name: 'APPLY_DISCOUNTS',
@@ -217,8 +279,8 @@ export class PricingEngine {
       },
       appliedRules,
       debug: {
-        originalSubtotal: state.pricing!.costPlus,
-        discountedSubtotal: discountedPricing.costPlus,
+        originalSubtotal: state.pricing!.totalCost,
+        discountedSubtotal: discountedPricing.totalCost,
         totalDiscount: discountedPricing.discountValue,
       }
     };
@@ -236,7 +298,7 @@ export class PricingEngine {
     let constrainedPricing = { ...state.pricing! };
 
     // Find constraint rules (minimum profit, minimum price, etc.)
-    const constraintRules = this.filterRulesByCategory(RuleCategory.CONSTRAINT);
+    const constraintRules = this.filterRulesByCategory(RuleCategory.Constraint);
     
     for (const rule of constraintRules) {
       if (this.evaluateRuleConditions(rule, state)) {
@@ -271,14 +333,70 @@ export class PricingEngine {
     let finalPricing = { ...state.pricing! };
 
     // Find fee rules (processing fees, payment method fees, etc.)
-    const feeRules = this.filterRulesByCategory(RuleCategory.FEE);
+    const feeRules = this.filterRulesByCategory(RuleCategory.Fee);
+    
+    logger.debug("Fee rules analysis", {
+      correlationId: state.metadata.correlationId,
+      totalRulesInEngine: this.rules.length,
+      feeRulesFound: feeRules.length,
+      feeRuleNames: feeRules.map(r => r.name),
+      feeRuleCategories: feeRules.map(r => r.category),
+      feeRuleActive: feeRules.map(r => r.isActive),
+      paymentMethodInState: state.payment.method,
+      paymentFieldValue: this.getFieldValue('payment.method', state)
+    });
     
     for (const rule of feeRules) {
+      logger.debug("Evaluating fee rule", {
+        correlationId: state.metadata.correlationId,
+        ruleName: rule.name,
+        ruleId: rule.id,
+        ruleCategory: rule.category,
+        isActive: rule.isActive,
+        conditions: rule.conditions,
+        actions: rule.actions.map(a => ({ type: a.type, value: a.value }))
+      });
+
       if (this.evaluateRuleConditions(rule, state)) {
+        logger.debug("Fee rule conditions passed, applying actions", {
+          correlationId: state.metadata.correlationId,
+          ruleName: rule.name,
+          pricingBeforeActions: {
+            priceAfterDiscount: finalPricing.priceAfterDiscount,
+            processingRate: finalPricing.processingRate,
+            processingCost: finalPricing.processingCost
+          }
+        });
+
         finalPricing = this.applyRuleActions(rule, finalPricing, state);
         appliedRules.push(rule.id);
+
+        logger.debug("Fee rule actions applied", {
+          correlationId: state.metadata.correlationId,
+          ruleName: rule.name,
+          pricingAfterActions: {
+            priceAfterDiscount: finalPricing.priceAfterDiscount,
+            processingRate: finalPricing.processingRate,
+            processingCost: finalPricing.processingCost,
+            finalRevenue: finalPricing.finalRevenue
+          }
+        });
+      } else {
+        logger.debug("Fee rule conditions failed", {
+          correlationId: state.metadata.correlationId,
+          ruleName: rule.name
+        });
       }
     }
+
+    logger.debug("Fees step completed", {
+      correlationId: state.metadata.correlationId,
+      appliedRulesCount: appliedRules.length,
+      appliedRuleNames: appliedRules,
+      finalProcessingRate: finalPricing.processingRate,
+      finalProcessingCost: finalPricing.processingCost,
+      finalRevenue: finalPricing.finalRevenue
+    });
 
     return {
       name: 'APPLY_FEES',
@@ -303,8 +421,12 @@ export class PricingEngine {
     const finalPricing = { ...state.pricing! };
     
     // Ensure all calculations are complete
+    // Note: Processing cost is paid by the customer, so it's added to the price
     finalPricing.finalRevenue = finalPricing.priceAfterDiscount + finalPricing.processingCost;
-    finalPricing.netProfit = finalPricing.finalRevenue - finalPricing.cost - finalPricing.processingCost;
+    
+    // Net profit is what we keep after paying the supplier cost
+    // Processing fees are passed to the payment processor, not kept as profit
+    finalPricing.netProfit = finalPricing.priceAfterDiscount - finalPricing.cost;
 
     return {
       name: 'FINALIZE',
@@ -406,13 +528,13 @@ export class PricingEngine {
   private initializePricing(bundle: Bundle): PricingBreakdown {
     return {
       cost: bundle.basePrice,
-      costPlus: bundle.basePrice,
+      markup: 0, // Markup starts at 0
+      totalCost: bundle.basePrice, // Initially equals base cost
       priceAfterDiscount: bundle.basePrice,
       processingCost: 0,
       processingRate: 0,
       finalRevenue: bundle.basePrice,
       netProfit: 0,
-      totalCost: bundle.basePrice,
       discountPerDay: 0,
       // Required fields with defaults
       bundle: null as any, // Will be populated later
@@ -427,34 +549,252 @@ export class PricingEngine {
   }
 
   private filterRulesByCategory(category: RuleCategory): PricingRule[] {
-    // For now, return all rules - in a real implementation, rules would have categories
-    // This is a placeholder until rule categorization is implemented
-    return this.rules.filter(rule => rule.isActive);
+    // Filter rules by category and active status
+    return this.rules.filter(rule => 
+      rule.isActive && 
+      rule.category?.toUpperCase() === category.toUpperCase()
+    );
   }
 
   private evaluateRuleConditions(rule: PricingRule, state: PricingEngineState): boolean {
-    // Simplified condition evaluation - in a real implementation, this would be more sophisticated
-    return rule.isActive;
+    logger.debug("Evaluating rule conditions", {
+      ruleName: rule.name,
+      ruleCategory: rule.category,
+      isActive: rule.isActive,
+      conditionsCount: rule.conditions?.length || 0,
+      conditions: rule.conditions
+    });
+
+    // Rule must be active
+    if (!rule.isActive) {
+      logger.debug("Rule is not active, skipping", { ruleName: rule.name });
+      return false;
+    }
+
+    // If no conditions, rule always applies
+    if (!rule.conditions || rule.conditions.length === 0) {
+      logger.debug("Rule has no conditions, applying", { ruleName: rule.name });
+      return true;
+    }
+
+    // Evaluate all conditions - all must pass (AND logic)
+    for (const condition of rule.conditions) {
+      const result = this.evaluateCondition(condition, state);
+      logger.debug("Condition evaluation result", {
+        ruleName: rule.name,
+        condition,
+        result,
+        fieldValue: this.getFieldValue(condition.field, state),
+        actualBundleData: {
+          selectedBundle: state.selectedBundle?.name,
+          bundleGroups: state.selectedBundle?.groups,
+          group: state.group,
+          country: state.country,
+          region: state.region
+        }
+      });
+      
+      if (!result) {
+        logger.debug("Condition failed, rule will not apply", { ruleName: rule.name, condition });
+        return false;
+      }
+    }
+
+    logger.debug("All conditions passed, rule will apply", { ruleName: rule.name });
+    return true;
+  }
+
+  private evaluateCondition(condition: any, state: PricingEngineState): boolean {
+    // Get the field value from state
+    const fieldValue = this.getFieldValue(condition.field, state);
+    const conditionValue = condition.value;
+
+    // Special debug logging for payment method conditions
+    if (condition.field === 'payment.method') {
+      logger.debug("Payment method condition evaluation", {
+        conditionField: condition.field,
+        conditionOperator: condition.operator,
+        conditionValue: conditionValue,
+        conditionValueType: typeof conditionValue,
+        fieldValue: fieldValue,
+        fieldValueType: typeof fieldValue,
+        paymentMethodInState: state.payment?.method,
+        strictEquality: fieldValue === conditionValue,
+        looseEquality: fieldValue == conditionValue
+      });
+    }
+
+    // Compare based on operator
+    switch (condition.operator) {
+      case 'EQUALS':
+        return fieldValue === conditionValue;
+      case 'NOT_EQUALS':
+        return fieldValue !== conditionValue;
+      case 'GREATER_THAN':
+        return Number(fieldValue) > Number(conditionValue);
+      case 'LESS_THAN':
+        return Number(fieldValue) < Number(conditionValue);
+      case 'GREATER_THAN_OR_EQUAL':
+        return Number(fieldValue) >= Number(conditionValue);
+      case 'LESS_THAN_OR_EQUAL':
+        return Number(fieldValue) <= Number(conditionValue);
+      case 'IN':
+        return Array.isArray(conditionValue) && conditionValue.includes(fieldValue);
+      case 'NOT_IN':
+        return Array.isArray(conditionValue) && !conditionValue.includes(fieldValue);
+      default:
+        // Unknown operator, default to true
+        return true;
+    }
+  }
+
+  private getFieldValue(field: string, state: PricingEngineState): any {
+    // Parse dot notation to navigate nested objects
+    const parts = field.split('.');
+    let value: any = state;
+
+    for (const part of parts) {
+      if (value && typeof value === 'object' && part in value) {
+        value = value[part];
+      } else {
+        return undefined;
+      }
+    }
+
+    return value;
   }
 
   private applyRuleActions(rule: PricingRule, pricing: PricingBreakdown, state: PricingEngineState): PricingBreakdown {
-    // Simplified action application - in a real implementation, this would handle different action types
+    logger.debug("Applying rule actions", {
+      ruleName: rule.name,
+      actionsCount: rule.actions.length,
+      actions: rule.actions.map(a => ({ type: a.type, value: a.value })),
+      currentPricing: {
+        cost: pricing.cost,
+        markup: pricing.markup,
+        totalCost: pricing.totalCost,
+        priceAfterDiscount: pricing.priceAfterDiscount
+      }
+    });
+
     const newPricing = { ...pricing };
     
     for (const action of rule.actions) {
+      logger.debug("Processing action", { 
+        ruleName: rule.name, 
+        actionType: action.type, 
+        actionValue: action.value,
+        actionTypeEnum: ActionType.AddMarkup,
+        isAddMarkup: action.type === ActionType.AddMarkup
+      });
+
       switch (action.type) {
         case ActionType.AddMarkup:
-          newPricing.costPlus += action.value;
+          logger.debug("Applying markup action", {
+            ruleName: rule.name,
+            markupValueBefore: newPricing.markup,
+            actionValue: action.value,
+            markupValueAfter: newPricing.markup + action.value
+          });
+          
+          newPricing.markup += action.value;
+          newPricing.totalCost = newPricing.cost + newPricing.markup;
+          // Update price after discount if no discounts have been applied yet
+          if (newPricing.discountValue === 0) {
+            newPricing.priceAfterDiscount = newPricing.totalCost;
+          }
+          
+          logger.debug("Markup action applied", {
+            ruleName: rule.name,
+            newMarkup: newPricing.markup,
+            newTotalCost: newPricing.totalCost,
+            newPriceAfterDiscount: newPricing.priceAfterDiscount
+          });
           break;
         case ActionType.ApplyDiscountPercentage:
-          const discountAmount = newPricing.costPlus * (action.value / 100);
+          logger.debug("Applying percentage discount action", {
+            ruleName: rule.name,
+            actionValue: action.value,
+            actionValueType: typeof action.value,
+            totalCost: newPricing.totalCost,
+            discountValueBefore: newPricing.discountValue,
+            discountRateBefore: newPricing.discountRate,
+            priceAfterDiscountBefore: newPricing.priceAfterDiscount
+          });
+
+          const discountAmount = newPricing.totalCost * (action.value / 100);
           newPricing.discountValue += discountAmount;
-          newPricing.discountRate = (newPricing.discountValue / newPricing.costPlus) * 100;
-          newPricing.priceAfterDiscount = newPricing.costPlus - newPricing.discountValue;
+          newPricing.discountRate = (newPricing.discountValue / newPricing.totalCost) * 100;
+          newPricing.priceAfterDiscount = newPricing.totalCost - newPricing.discountValue;
+
+          logger.debug("Percentage discount action applied", {
+            ruleName: rule.name,
+            discountPercentage: action.value,
+            discountAmount: discountAmount,
+            discountValueAfter: newPricing.discountValue,
+            discountRateAfter: newPricing.discountRate,
+            priceAfterDiscountAfter: newPricing.priceAfterDiscount,
+            calculationCheck: `${newPricing.totalCost} * ${action.value}% = ${discountAmount}`
+          });
           break;
         case ActionType.SetProcessingRate:
+          logger.debug("Applying processing rate action", {
+            ruleName: rule.name,
+            actionValue: action.value,
+            actionValueType: typeof action.value,
+            processingRateBefore: newPricing.processingRate,
+            processingCostBefore: newPricing.processingCost,
+            priceAfterDiscount: newPricing.priceAfterDiscount
+          });
+
           newPricing.processingRate = action.value / 100;
           newPricing.processingCost = newPricing.priceAfterDiscount * newPricing.processingRate;
+
+          logger.debug("Processing rate action applied", {
+            ruleName: rule.name,
+            processingRateAfter: newPricing.processingRate,
+            processingCostAfter: newPricing.processingCost,
+            calculationCheck: `${newPricing.priceAfterDiscount} * ${newPricing.processingRate} = ${newPricing.processingCost}`
+          });
+          break;
+        case ActionType.SetMinimumProfit:
+          // Calculate current profit (revenue after all costs)
+          // Note: priceAfterDiscount should already include markups and discounts
+          const currentProfit = newPricing.priceAfterDiscount - newPricing.cost;
+          
+          // If current profit is below minimum, adjust the price
+          if (currentProfit < action.value) {
+            // Calculate the minimum required price to achieve target profit
+            const requiredPrice = newPricing.cost + action.value;
+            
+            // Only adjust if the current price is below the required price
+            if (newPricing.priceAfterDiscount < requiredPrice) {
+              newPricing.priceAfterDiscount = requiredPrice;
+              
+              // Recalculate discount values to reflect the adjustment
+              const totalDiscount = newPricing.totalCost - newPricing.priceAfterDiscount;
+              newPricing.discountValue = Math.max(0, totalDiscount);
+              newPricing.discountRate = newPricing.totalCost > 0 
+                ? (newPricing.discountValue / newPricing.totalCost) * 100 
+                : 0;
+              
+              // Update net profit
+              newPricing.netProfit = newPricing.priceAfterDiscount - newPricing.cost;
+            }
+          }
+          break;
+        case ActionType.SetMinimumPrice:
+          // Ensure final price doesn't go below a minimum threshold
+          if (newPricing.priceAfterDiscount < action.value) {
+            newPricing.priceAfterDiscount = action.value;
+            
+            // Recalculate discount values
+            const totalDiscount = newPricing.totalCost - newPricing.priceAfterDiscount;
+            newPricing.discountValue = Math.max(0, totalDiscount);
+            newPricing.discountRate = newPricing.totalCost > 0 
+              ? (newPricing.discountValue / newPricing.totalCost) * 100 
+              : 0;
+          }
           break;
       }
     }

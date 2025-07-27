@@ -26,7 +26,7 @@ interface PricingData {
   
   // Business metrics
   cost: number;
-  costPlus: number;
+  markup: number;
   discountRate: number;
   processingRate: number;
   processingCost: number;
@@ -189,7 +189,7 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="text-muted-foreground">+ Markup</span>
-                    <span className="font-mono">{formatCurrency(data.costPlus - data.cost, data.currency)}</span>
+                    <span className="font-mono">{formatCurrency(data.markup - data.cost, data.currency)}</span>
                   </div>
                   {data.hasDiscount && (
                     <div className="flex justify-between items-center py-1">

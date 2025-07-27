@@ -157,9 +157,6 @@ export class CountriesDataSource extends ESIMGoDataSource {
     }
 
     this.countriesLogger.info("✅ getCountries completed", { returning: filteredCountries.length });
-    this.countriesLogger.debug("🌍 Final country list", { 
-      countries: filteredCountries.map((c: any) => `${c.iso} - ${c.country}`)
-    });
 
     return filteredCountries;
   }

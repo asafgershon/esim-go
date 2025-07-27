@@ -515,28 +515,17 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <Label>Field</Label>
-                      <Select
+                      <Input
                         value={condition.field}
-                        onValueChange={(value) => {
-                          const field = conditionFields.find(
-                            (f) => f.value === value
-                          );
-                          updateCondition(index, "field", value);
-                          updateCondition(index, "type", field?.type);
-                          updateCondition(index, "operator", ""); // Reset operator
+                        onChange={(e) => {
+                          updateCondition(index, "field", e.target.value);
+                          updateCondition(index, "type", "string"); // Default to string type
                         }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select field" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {conditionFields.map((field) => (
-                            <SelectItem key={field.value} value={field.value}>
-                              {field.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder="e.g. payment.method, bundleGroup, country"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Use dot notation for nested fields (e.g. payment.method)
+                      </p>
                     </div>
 
                     <div className="space-y-1">
@@ -552,19 +541,14 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                           <SelectValue placeholder="Select operator" />
                         </SelectTrigger>
                         <SelectContent>
-                          {condition.field &&
-                            getOperatorsForType(
-                              conditionFields.find(
-                                (f) => f.value === condition.field
-                              )?.type || "string"
-                            ).map((operator) => (
-                              <SelectItem
-                                key={operator.value}
-                                value={operator.value}
-                              >
-                                {operator.label}
-                              </SelectItem>
-                            ))}
+                          {getOperatorsForType("string").map((operator) => (
+                            <SelectItem
+                              key={operator.value}
+                              value={operator.value}
+                            >
+                              {operator.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>

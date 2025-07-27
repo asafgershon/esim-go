@@ -3,7 +3,7 @@ import type { Bundle } from "@esim-go/rules-engine";
 import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
-import { PricingEngineService } from "../services/pricing-engine.service";
+import { calculatePricingForBundle } from "./pricing-resolvers";
 import type {
   BundlesByCountry,
   BundlesByRegion,
@@ -18,11 +18,6 @@ const logger = createLogger({
   component: "CatalogResolvers",
   operationType: "resolver",
 });
-
-// Helper function to get pricing engine service
-const getPricingEngineService = (context: Context): PricingEngineService => {
-  return PricingEngineService.getInstance(context.services.db);
-};
 
 // Helper function to map payment method enum
 const mapPaymentMethodEnum = (paymentMethod: any) => {
@@ -397,71 +392,94 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   CountryBundle: {
-    pricingBreakdown: async (parent: any, _, context: Context) => {
-      const engineService = getPricingEngineService(context);
-      // TODO: calculate pricing
-      const calculation = await engineService.calculatePrice(
-        PricingEngineService.createContext({
-          availableBundles: parent.bundles,
-          requestedDuration: parent.duration,
-          user: parent.user,
-          paymentMethod: parent.paymentMethod,
-        })
-      );
-      return {
-        bundle: parent.bundle,
-        country: parent.country,
-        currency: parent.currency,
-        duration: parent.duration,
-        cost: calculation.baseCost,
-        costPlus: calculation.baseCost + calculation.markup,
-        discountRate: calculation.discounts.reduce(
-          (acc, discount) => acc + discount.amount,
-          0
-        ),
-        discountValue: calculation.totalDiscount,
-        priceAfterDiscount: calculation.priceAfterDiscount,
-        processingRate: calculation.processingRate,
-        processingFee: calculation.processingFee,
-        discountPerDay: calculation.metadata?.discountPerUnusedDay || 0,
-        finalRevenue: calculation.finalRevenue,
-        netProfit: calculation.profit,
-        processingCost: calculation.processingFee,
-        totalCost: calculation.baseCost + calculation.markup,
-        finalPrice: calculation.finalPrice,
-        appliedRules: calculation.appliedRules,
-        discounts: calculation.discounts,
-        __typename: "PricingBreakdown",
-      };
+    pricingBreakdown: async (parent: any, { paymentMethod }, context: Context) => {
+      try {
+        // CountryBundle already has all the bundle data we need
+        const bundle = {
+          ...parent,
+          __typename: 'CountryBundle',
+          basePrice: parent.basePrice || 0,
+          validityInDays: parent.duration,
+          countries: parent.country ? [parent.country.iso] : [],
+          region: parent.country?.region
+        };
+
+        return calculatePricingForBundle(
+          bundle,
+          mapPaymentMethodEnum(paymentMethod),
+          context
+        );
+      } catch (error) {
+        logger.error('Failed to calculate pricing breakdown', error as Error, {
+          bundleName: parent.name,
+          operationType: 'countryBundle-pricingBreakdown-field-resolver'
+        });
+        throw error;
+      }
     },
 
     // Field resolver for appliedRules (rules that affected the pricing)
     appliedRules: async (parent: any, _, context: Context) => {
-      try {
-        if (parent._pricingCalculation) {
-          return parent._pricingCalculation.appliedRules || [];
-        }
-
-        const calculation = await getPricingEngineService(
-          context
-        ).calculatePrice(
-          PricingEngineService.createContext({
-            availableBundles: parent.bundles,
-            requestedDuration: parent.duration,
-            user: parent.user,
-            paymentMethod: parent.paymentMethod,
-          })
-        );
-        parent._pricingCalculation = calculation;
-        return calculation.appliedRules || [];
-      } catch (error) {
-        logger.error("Error getting applied rules for bundle", error as Error, {
-          bundleName: parent.bundleName,
-          operationType: "countryBundle-appliedRules-field-resolver",
-        });
-        return [];
-      }
+      // Applied rules come from pricing calculation, not directly on bundle
+      // This should be accessed through pricingBreakdown.appliedRules
+      return [];
     },
+  },
+
+  CatalogBundle: {
+    pricingBreakdown: async (parent: any, { paymentMethod }, context: Context) => {
+      try {
+        // CatalogBundle has the complete bundle data
+        const bundle = {
+          ...parent,
+          __typename: 'CatalogBundle',
+          basePrice: parent.basePrice || 0,
+          validityInDays: parent.validityInDays || 1,
+          countries: parent.countries || [],
+          region: parent.region
+        };
+
+        return calculatePricingForBundle(
+          bundle,
+          mapPaymentMethodEnum(paymentMethod),
+          context
+        );
+      } catch (error) {
+        logger.error('Failed to calculate pricing breakdown', error as Error, {
+          bundleName: parent.esimGoName || parent.name,
+          operationType: 'catalogBundle-pricingBreakdown-field-resolver'
+        });
+        throw error;
+      }
+    }
+  },
+
+  CustomerBundle: {
+    pricingBreakdown: async (parent: any, { paymentMethod }, context: Context) => {
+      try {
+        // CustomerBundle is for specific customer purchases
+        const bundle = {
+          ...parent,
+          __typename: 'CustomerBundle',
+          basePrice: parent.price || parent.originalPrice || 0,
+          validityInDays: parent.durationInDays || parent.validityInDays || 1,
+          countries: parent.countries || [],
+          region: parent.region
+        };
+
+        return calculatePricingForBundle(
+          bundle,
+          mapPaymentMethodEnum(paymentMethod),
+          context
+        );
+      } catch (error) {
+        logger.error('Failed to calculate pricing breakdown', error as Error, {
+          bundleName: parent.name,
+          operationType: 'customerBundle-pricingBreakdown-field-resolver'
+        });
+        throw error;
+      }
+    }
   },
 
   PricingBreakdown: {

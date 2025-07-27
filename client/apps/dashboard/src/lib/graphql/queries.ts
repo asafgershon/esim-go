@@ -393,7 +393,7 @@ export const CALCULATE_ADMIN_PRICE = gql(`
       priceAfterDiscount
       # Admin-only business sensitive fields
       cost
-      costPlus
+      markup
       discountRate
       processingRate
       processingCost
@@ -454,7 +454,7 @@ export const CALCULATE_BATCH_ADMIN_PRICING = gql(`
       priceAfterDiscount
       # Admin-only business sensitive fields
       cost
-      costPlus
+      markup
       discountRate
       processingRate
       processingCost
@@ -503,7 +503,7 @@ export const SIMULATE_PRICING = gql(`
       discountValue
       priceAfterDiscount
       cost
-      costPlus
+      markup
       discountRate
       processingRate
       processingCost

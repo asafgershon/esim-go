@@ -129,6 +129,11 @@ export class ConditionBuilder {
     return new UserCondition(this.builder);
   }
 
+  // Payment method conditions
+  paymentMethod(): PaymentMethodCondition {
+    return new PaymentMethodCondition(this.builder);
+  }
+
   // Date conditions
   date(): DateCondition {
     return new DateCondition(this.builder);
@@ -324,6 +329,46 @@ class DateCondition {
       field: 'currentDate',
       operator: ConditionOperatorEnum.LessThan,
       value: date
+    });
+  }
+}
+
+class PaymentMethodCondition {
+  private builder: RuleBuilder;
+
+  constructor(builder: RuleBuilder) {
+    this.builder = builder;
+  }
+
+  equals(paymentMethod: string): RuleBuilder {
+    return this.builder.addCondition({
+      field: 'paymentMethod',
+      operator: ConditionOperatorEnum.Equals,
+      value: paymentMethod
+    });
+  }
+
+  notEquals(paymentMethod: string): RuleBuilder {
+    return this.builder.addCondition({
+      field: 'paymentMethod',
+      operator: ConditionOperatorEnum.NotEquals,
+      value: paymentMethod
+    });
+  }
+
+  in(paymentMethods: string[]): RuleBuilder {
+    return this.builder.addCondition({
+      field: 'paymentMethod',
+      operator: ConditionOperatorEnum.In,
+      value: paymentMethods
+    });
+  }
+
+  notIn(paymentMethods: string[]): RuleBuilder {
+    return this.builder.addCondition({
+      field: 'paymentMethod',
+      operator: ConditionOperatorEnum.NotIn,
+      value: paymentMethods
     });
   }
 }

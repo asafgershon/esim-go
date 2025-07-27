@@ -22,7 +22,7 @@ interface PricingSimulatorData {
   
   // Business metrics
   cost: number;
-  costPlus: number;
+  markup: number;
   discountRate: number;
   processingRate: number;
   processingCost: number;
@@ -34,7 +34,7 @@ interface PricingSimulatorData {
   // Profit analysis
   profitMargin: number; // (netProfit / totalPrice) * 100
   revenueMargin: number; // (finalRevenue / totalPrice) * 100
-  markupPercentage: number; // ((costPlus - cost) / cost) * 100
+  markupPercentage: number; // ((markup - cost) / cost) * 100
   
   // Pipeline metadata
   unusedDays?: number | null;
@@ -154,7 +154,7 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
     // Calculate profit metrics
     const profitMargin = result.totalCost > 0 ? (result.netProfit / totalPrice) * 100 : 0;
     const revenueMargin = result.totalCost > 0 ? (result.finalRevenue / totalPrice) * 100 : 0;
-    const markupPercentage = result.cost > 0 ? ((result.costPlus - result.cost) / result.cost) * 100 : 0;
+    const markupPercentage = result.cost > 0 ? ((result.markup - result.cost) / result.cost) * 100 : 0;
 
     return {
       // Basic pricing info
@@ -168,7 +168,7 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
       
       // Business metrics
       cost: result.cost,
-      costPlus: result.costPlus,
+      markup: result.markup,
       discountRate: result.discountRate,
       processingRate: result.processingRate,
       processingCost: result.processingCost,
@@ -270,7 +270,7 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
           const totalPrice = result.priceAfterDiscount;
           const profitMargin = result.totalCost > 0 ? (result.netProfit / totalPrice) * 100 : 0;
           const revenueMargin = result.totalCost > 0 ? (result.finalRevenue / totalPrice) * 100 : 0;
-          const markupPercentage = result.cost > 0 ? ((result.costPlus - result.cost) / result.cost) * 100 : 0;
+          const markupPercentage = result.cost > 0 ? ((result.markup - result.cost) / result.cost) * 100 : 0;
 
           results[method] = {
             dailyPrice: totalPrice / result.duration,
@@ -281,7 +281,7 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
             days: result.duration,
             currency: result.currency,
             cost: result.cost,
-            costPlus: result.costPlus,
+            markup: result.markup,
             discountRate: result.discountRate,
             processingRate: result.processingRate,
             processingCost: result.processingCost,

@@ -95,11 +95,7 @@ export class PricingRulesRepository extends BaseSupabaseRepository<
       name: input.name,
       category: input.category,
     });
-
-    // Validate input before creating row
-    if (!input.conditions || input.conditions.length === 0) {
-      throw new Error("Rule must have at least one condition");
-    }
+    
     if (!input.actions || input.actions.length === 0) {
       throw new Error("Rule must have at least one action");
     }

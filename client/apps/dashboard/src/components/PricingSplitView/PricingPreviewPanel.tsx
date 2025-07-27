@@ -1,4 +1,14 @@
-import { Bundle, Country, PaymentMethodInfo, CreatePricingRuleInput, CreatePricingRuleMutation, CreatePricingRuleMutationVariables } from "@/__generated__/graphql";
+import {
+  Bundle,
+  Country,
+  PaymentMethodInfo,
+  CreatePricingRuleInput,
+  CreatePricingRuleMutation,
+  CreatePricingRuleMutationVariables,
+  RuleCategory,
+  ActionType,
+  ConditionOperator,
+} from "@/__generated__/graphql";
 import {
   Badge,
   Button,
@@ -36,11 +46,21 @@ import React, {
 } from "react";
 import { toast } from "sonner";
 import { useMutation } from "@apollo/client";
-import { CREATE_PRICING_RULE, CALCULATE_BATCH_ADMIN_PRICING } from "../../lib/graphql/queries";
+import {
+  CREATE_PRICING_RULE,
+  CALCULATE_BATCH_ADMIN_PRICING,
+} from "../../lib/graphql/queries";
 import { ConfigurationLevelIndicator } from "../configuration-level-indicator";
 
 interface PricingPreviewPanelProps {
-  bundle: Bundle & { appliedRules?: Array<{ id?: string; name: string; type: string; impact: number }> };
+  bundle: Bundle & {
+    appliedRules?: Array<{
+      id?: string;
+      name: string;
+      type: string;
+      impact: number;
+    }>;
+  };
   country: Country;
   paymentMethods?: PaymentMethodInfo[];
   onClose: () => void;
@@ -59,7 +79,7 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
     CreatePricingRuleMutation,
     CreatePricingRuleMutationVariables
   >(CREATE_PRICING_RULE);
-  
+
   // State for inline editing
   const [isEditingMarkup, setIsEditingMarkup] = useState(false);
   const [customMarkup, setCustomMarkup] = useState("");
@@ -76,30 +96,41 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   const discountPerDay = bundle.pricingBreakdown?.discountPerDay || 0.1;
 
   // Payment method configuration - use passed data if available, otherwise fallback to defaults
-  const paymentMethodsConfig = paymentMethods.length > 0 
-    ? paymentMethods.map(pm => ({
-        value: pm.value,
-        label: pm.label,
-        rate: pm.processingRate,
-        icon: pm.icon === 'smartphone' ? Smartphone : CreditCard,
-      }))
-    : [
-        {
-          value: "ISRAELI_CARD",
-          label: "Israeli Card",
-          rate: 0.014,
-          icon: CreditCard,
-        },
-        {
-          value: "FOREIGN_CARD",
-          label: "Foreign Card",
-          rate: 0.045,
-          icon: CreditCard,
-        },
-        { value: "BIT", label: "Bit Payment", rate: 0.007, icon: Smartphone },
-        { value: "AMEX", label: "American Express", rate: 0.057, icon: CreditCard },
-        { value: "DINERS", label: "Diners Club", rate: 0.064, icon: CreditCard },
-      ];
+  const paymentMethodsConfig =
+    paymentMethods.length > 0
+      ? paymentMethods.map((pm) => ({
+          value: pm.value,
+          label: pm.label,
+          rate: pm.processingRate,
+          icon: pm.icon === "smartphone" ? Smartphone : CreditCard,
+        }))
+      : [
+          {
+            value: "ISRAELI_CARD",
+            label: "Israeli Card",
+            rate: 0.014,
+            icon: CreditCard,
+          },
+          {
+            value: "FOREIGN_CARD",
+            label: "Foreign Card",
+            rate: 0.045,
+            icon: CreditCard,
+          },
+          { value: "BIT", label: "Bit Payment", rate: 0.007, icon: Smartphone },
+          {
+            value: "AMEX",
+            label: "American Express",
+            rate: 0.057,
+            icon: CreditCard,
+          },
+          {
+            value: "DINERS",
+            label: "Diners Club",
+            rate: 0.064,
+            icon: CreditCard,
+          },
+        ];
 
   const currentPaymentMethod =
     paymentMethodsConfig.find((pm) => pm.value === selectedPaymentMethod) ||
@@ -168,10 +199,12 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
 
   // Use pricing values from pricingBreakdown if available, otherwise use calculated values
   const cost = bundle.pricingBreakdown?.cost || bundle.basePrice || 0; // eSIM Go cost
-  const costPlus = bundle.pricingBreakdown?.costPlus || 10; // Markup amount
-  const totalCost = bundle.pricingBreakdown?.totalCost || (cost + costPlus); // Our selling price before discount
-  const discountValue = bundle.pricingBreakdown?.discountValue || (totalCost * discountRate);
-  const priceAfterDiscount = bundle.pricingBreakdown?.priceAfterDiscount || (totalCost - discountValue); // Customer pays this
+  const markup = bundle.pricingBreakdown?.markup || 0; // Markup amount
+  const totalCost = bundle.pricingBreakdown?.totalCost || cost + markup; // Our selling price before discount
+  const discountValue =
+    bundle.pricingBreakdown?.discountValue || totalCost * discountRate;
+  const priceAfterDiscount =
+    bundle.pricingBreakdown?.priceAfterDiscount || totalCost - discountValue; // Customer pays this
 
   // Calculate processing and profit
   const processingCost = priceAfterDiscount * processingRate;
@@ -192,16 +225,22 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
       const result = await createPricingRule({
         variables: {
           input: {
-            category: 'MARKUP',
+            category: RuleCategory.BundleAdjustment,
             name: `${country.name} ${bundle.validityInDays}d Markup Override`,
             description: `Custom markup for ${country.name} ${bundle.validityInDays}-day bundles: $${markupValue}`,
             conditions: [
-              { field: 'country', operator: 'EQUALS', value: countryCode, type: 'STRING' },
-              { field: 'duration', operator: 'EQUALS', value: bundle.validityInDays.toString(), type: 'STRING' }
+              {
+                field: "country",
+                operator: ConditionOperator.Equals,
+                value: JSON.stringify(countryCode),
+              },
+              {
+                field: "duration",
+                operator: ConditionOperator.Equals,
+                value: JSON.stringify(bundle.validityInDays),
+              },
             ],
-            actions: [
-              { type: 'FIXED_MARKUP', value: markupValue.toString() }
-            ],
+            actions: [{ type: ActionType.AddMarkup, value: markupValue }],
             priority: 100,
             isActive: true,
           },
@@ -210,11 +249,13 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
           {
             query: CALCULATE_BATCH_ADMIN_PRICING,
             variables: {
-              requests: [{
-                countryId: countryCode,
-                duration: bundle.validityInDays,
-                groups: bundle.groups,
-              }]
+              inputs: [
+                {
+                  countryId: countryCode,
+                  numOfDays: bundle.validityInDays,
+                  groups: bundle.groups,
+                },
+              ],
             },
           },
         ],
@@ -247,15 +288,26 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
       const result = await createPricingRule({
         variables: {
           input: {
-            category: 'DISCOUNT',
+            category: RuleCategory.Discount,
             name: `${country.name} ${bundle.validityInDays}d Discount Override`,
             description: `Custom discount for ${country.name} ${bundle.validityInDays}-day bundles: ${discountValue}%`,
             conditions: [
-              { field: 'country', operator: 'EQUALS', value: countryCode, type: 'STRING' },
-              { field: 'duration', operator: 'EQUALS', value: bundle.validityInDays.toString(), type: 'STRING' }
+              {
+                field: "country",
+                operator: ConditionOperator.Equals,
+                value: JSON.stringify(countryCode),
+              },
+              {
+                field: "duration",
+                operator: ConditionOperator.Equals,
+                value: JSON.stringify(bundle.validityInDays),
+              },
             ],
             actions: [
-              { type: 'PERCENTAGE_DISCOUNT', value: discountValue.toString() }
+              {
+                type: ActionType.ApplyDiscountPercentage,
+                value: discountValue,
+              },
             ],
             priority: 100,
             isActive: true,
@@ -265,18 +317,22 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
           {
             query: CALCULATE_BATCH_ADMIN_PRICING,
             variables: {
-              requests: [{
-                countryId: countryCode,
-                duration: bundle.validityInDays,
-                groups: bundle.groups,
-              }]
+              inputs: [
+                {
+                  countryId: countryCode,
+                  numOfDays: bundle.validityInDays,
+                  groups: bundle.groups,
+                },
+              ],
             },
           },
         ],
       });
 
       setIsEditingDiscount(false);
-      toast.success(`Discount of ${discountValue}% applied for ${country.name}`);
+      toast.success(
+        `Discount of ${discountValue}% applied for ${country.name}`
+      );
       onConfigurationSaved?.();
     } catch (error: any) {
       const logger = {
@@ -322,7 +378,10 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
               <h4 className="font-medium text-sm">{bundle.name}</h4>
               <p className="text-xs text-gray-600 mt-1">
                 {country.name} • {bundle.validityInDays} days
-                {bundle.isUnlimited ? ' • Unlimited' : bundle.dataAmountReadable && ` • ${bundle.dataAmountReadable}`}
+                {bundle.isUnlimited
+                  ? " • Unlimited"
+                  : bundle.dataAmountReadable &&
+                    ` • ${bundle.dataAmountReadable}`}
               </p>
             </div>
           </div>
@@ -350,7 +409,7 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
                     step="0.01"
                     value={customMarkup}
                     onChange={(e) => setCustomMarkup(e.target.value)}
-                    placeholder={costPlus.toFixed(2)}
+                    placeholder={markup.toFixed(2)}
                     leftAdornment="$"
                     className="w-24 h-7 text-sm"
                     autoFocus
@@ -378,14 +437,14 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
               ) : (
                 <div className="flex items-center gap-1">
                   <span className="font-mono">
-                    + {formatCurrency(costPlus)}
+                    + {formatCurrency(markup)}
                   </span>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
                       setIsEditingMarkup(true);
-                      setCustomMarkup(costPlus.toString());
+                      setCustomMarkup(markup.toString());
                     }}
                     className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                   >

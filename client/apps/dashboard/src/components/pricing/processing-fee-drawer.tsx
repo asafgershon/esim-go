@@ -2,6 +2,7 @@ import {
   ActionType,
   ConditionOperator,
   CreatePricingRuleInput,
+  PaymentMethod,
   RuleActionInput,
   RuleConditionInput,
   RuleCategory,
@@ -65,10 +66,10 @@ export function ProcessingFeeDrawer({
       // Add payment method condition if specific
       if (applyToMethod === "specific" && paymentMethod) {
         conditions.push({
-          type: "payment_method",
+          type: "payment.method",
           operator: ConditionOperator.Equals,
           value: paymentMethod,
-          field: "payment_method",
+          field: "payment.method",
         });
       }
 
@@ -299,13 +300,11 @@ export function ProcessingFeeDrawer({
                     <SelectValue placeholder="Select payment method" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="credit_card">Credit Card</SelectItem>
-                    <SelectItem value="debit_card">Debit Card</SelectItem>
-                    <SelectItem value="paypal">PayPal</SelectItem>
-                    <SelectItem value="apple_pay">Apple Pay</SelectItem>
-                    <SelectItem value="google_pay">Google Pay</SelectItem>
-                    <SelectItem value="bitcoin">Bitcoin</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value={PaymentMethod.IsraeliCard}>Israeli Card</SelectItem>
+                    <SelectItem value={PaymentMethod.ForeignCard}>Foreign Card</SelectItem>
+                    <SelectItem value={PaymentMethod.Bit}>BIT</SelectItem>
+                    <SelectItem value={PaymentMethod.Amex}>American Express</SelectItem>
+                    <SelectItem value={PaymentMethod.Diners}>Diners Club</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

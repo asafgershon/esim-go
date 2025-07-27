@@ -8,8 +8,9 @@ import { createLogger } from "../lib/logger";
 import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.repository";
 import { createPaymentService } from "../services/payment";
 import { PaymentMethod, type EsimStatus, type OrderStatus, type Resolvers } from "../types";
-import type { PricingEngineInput } from "@esim-go/rules-engine";
+import { PricingEngine, type PricingEngineInput } from "@esim-go/rules-engine";
 import { BundleOrderTypeEnum, OrderRequestTypeEnum } from "@esim-go/client";
+import { calculatePricingForBundle } from "./pricing-resolvers";
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS
@@ -309,13 +310,13 @@ export const checkoutResolvers: Partial<Resolvers> = {
           };
         });
 
-        // Use new pricing engine with strict validation
-        const { PricingEngineService } = await import(
-          "../services/pricing-engine.service"
-        );
-        const { supabaseAdmin } = await import("../context/supabase-auth");
-        const pricingEngine = new PricingEngineService(supabaseAdmin);
-        await pricingEngine.initialize();
+        // Use pricing engine directly
+        const pricingEngine = new PricingEngine();
+        
+        // Get active pricing rules
+        const rules = await context.repositories.pricingRules.getActiveRules();
+        pricingEngine.clearRules();
+        pricingEngine.addRules(rules);
 
         // Debug: Log what we're passing to the pricing engine
         console.log(
@@ -977,10 +978,12 @@ async function simulateWebhookProcessing(
       }
 
       // Calculate detailed pricing breakdown for the order using the pricing engine
-      const { PricingEngineService } = await import(
-        "../services/pricing-engine.service"
-      );
-      const pricingEngine = new PricingEngineService(context.services.db);
+      const pricingEngine = new PricingEngine();
+      
+      // Get active pricing rules
+      const rules = await context.repositories.pricingRules.getActiveRules();
+      pricingEngine.clearRules();
+      pricingEngine.addRules(rules);
 
       const firstCountry = planSnapshot.countries[0] || "";
       const pricingInput: PricingEngineInput = {
