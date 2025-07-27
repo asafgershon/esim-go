@@ -18,7 +18,7 @@ const CatalogueResponseInnerSchema = z.object({
   countries: z.array(CountrySchema).optional(),
   dataAmount: z.number().optional(),
   duration: z.number().optional(),
-  speed: z.array(z.string()).optional().default([]),
+  speed: z.array(z.string()).nullable().optional().default([]),
   autostart: z.boolean().optional(),
   unlimited: z.boolean().optional(),
   roamingEnabled: z.array(CountrySchema).optional(),
@@ -144,7 +144,7 @@ export function transformAndValidateCatalogBundle(
       currency: organizationCurrency,
       countries: countryCodes,
       region: primaryRegion,
-      speed: validated.speed || [], // Default to 4G if not specified
+      speed: validated.speed ?? [], // Use nullish coalescing to handle null values
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       synced_at: new Date().toISOString(),
