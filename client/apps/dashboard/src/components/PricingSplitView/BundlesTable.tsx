@@ -47,13 +47,13 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
       
       try {
         const result = await calculateBatchPricing({
-          variables: { requests }
+          variables: { inputs: requests }
         });
         
-        if (result.data?.calculateBatchPricing) {
+        if (result.data?.calculatePrices) {
           // Create a map of duration to pricing data
           const pricingMap = new Map();
-          result.data.calculateBatchPricing.forEach((pricing: any) => {
+          result.data.calculatePrices.forEach((pricing: any) => {
             pricingMap.set(pricing.duration, pricing);
           });
           

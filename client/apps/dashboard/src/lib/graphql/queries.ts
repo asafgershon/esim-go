@@ -420,8 +420,8 @@ export const CALCULATE_ADMIN_PRICE = gql(`
 `);
 
 export const CALCULATE_BATCH_ADMIN_PRICING = gql(`
-  query CalculateBatchAdminPricing($requests: [CalculatePriceInput!]!) {
-    calculateBatchPricing(requests: $requests) {
+  query CalculateBatchAdminPricing($inputs: [CalculatePriceInput!]!) {
+    calculatePrices(inputs: $inputs) {
       bundle {
         id
         name

@@ -257,7 +257,8 @@ const PAYMENT_METHODS_CONFIG = [
 // Unified pricing resolvers
 export const pricingQueries: QueryResolvers = {
   /**
-   * Public pricing calculation - returns PricingBreakdown with public fields only
+   * Single pricing calculation - returns PricingBreakdown with all fields
+   * Field-level auth directives control access to sensitive data
    */
   calculatePrice: async (
     _,
@@ -324,7 +325,8 @@ export const pricingQueries: QueryResolvers = {
   },
 
   /**
-   * Public batch pricing calculation - returns PricingBreakdown[] with public fields only
+   * Batch pricing calculation - returns PricingBreakdown[] with all fields
+   * Field-level auth directives control access to sensitive data
    */
   calculatePrices: async (
     _,
@@ -366,102 +368,6 @@ export const pricingQueries: QueryResolvers = {
       });
       throw new GraphQLError('Failed to calculate batch prices', {
         extensions: { code: 'BATCH_CALCULATION_FAILED' }
-      });
-    }
-  },
-
-  /**
-   * Admin pricing calculation with rules visibility - returns PricingBreakdown with all fields
-   */
-  calculatePriceWithRules: async (
-    _,
-    { input },
-    context: Context
-  ): Promise<PricingBreakdown> => {
-    const correlationId = getCorrelationId(context);
-    
-    try {
-      logger.info('Calculating single price with rules (admin)', {
-        countryId: input.countryId,
-        numOfDays: input.numOfDays,
-        correlationId,
-        operationType: 'calculate-price-admin'
-      });
-
-      const engineInput = await convertToPricingEngineInput(input, context, correlationId);
-      const engineService = getPricingEngineService(context);
-      
-      // Use streaming calculation for admin visibility (optional)
-      const result = await engineService.calculatePrice(engineInput, false);
-      
-      const pricingBreakdown = mapEngineToPricingBreakdown(result, input);
-
-      logger.info('Single price with rules calculated successfully (admin)', {
-        countryId: input.countryId,
-        numOfDays: input.numOfDays,
-        finalPrice: pricingBreakdown.priceAfterDiscount,
-        appliedRulesCount: pricingBreakdown.appliedRules?.length || 0,
-        correlationId,
-        operationType: 'calculate-price-admin'
-      });
-
-      return pricingBreakdown;
-    } catch (error) {
-      logger.error('Failed to calculate single price with rules (admin)', error as Error, {
-        countryId: input.countryId,
-        numOfDays: input.numOfDays,
-        correlationId,
-        operationType: 'calculate-price-admin'
-      });
-      throw new GraphQLError('Failed to calculate price with rules', {
-        extensions: { code: 'ADMIN_CALCULATION_FAILED' }
-      });
-    }
-  },
-
-  /**
-   * Admin batch pricing calculation with rules visibility - returns PricingBreakdown[] with all fields
-   */
-  calculateBatchPricing: async (
-    _,
-    { requests },
-    context: Context
-  ): Promise<PricingBreakdown[]> => {
-    const correlationId = getCorrelationId(context);
-    
-    try {
-      logger.info('Calculating batch pricing with rules (admin)', {
-        requestCount: requests.length,
-        correlationId,
-        operationType: 'calculate-batch-pricing-admin'
-      });
-
-      const engineService = getPricingEngineService(context);
-      const results: PricingBreakdown[] = [];
-
-      // Process each request with admin visibility
-      for (const request of requests) {
-        const engineInput = await convertToPricingEngineInput(request, context, `${correlationId}-${results.length}`);
-        const result = await engineService.calculatePrice(engineInput, false);
-        const pricingBreakdown = mapEngineToPricingBreakdown(result, request);
-        results.push(pricingBreakdown);
-      }
-
-      logger.info('Batch pricing with rules calculated successfully (admin)', {
-        requestCount: requests.length,
-        correlationId,
-        operationType: 'calculate-batch-pricing-admin'
-      });
-
-      return results;
-    } catch (error) {
-      logger.error('Failed to calculate batch pricing with rules (admin)', error as Error, {
-        requestCount: requests.length,
-        correlationId,
-        operationType: 'calculate-batch-pricing-admin'
-      });
-      throw new GraphQLError('Failed to calculate batch pricing with rules', {
-        extensions: { code: 'ADMIN_BATCH_CALCULATION_FAILED' }
       });
     }
   },

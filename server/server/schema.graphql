@@ -49,10 +49,6 @@ type Query {
   pricingRule(id: ID!): PricingRule
   activePricingRules: [PricingRule!]!
   conflictingPricingRules(ruleId: ID!): [PricingRule!]!
-  calculateBatchPricing(
-    requests: [CalculatePriceInput!]!
-  ): [PricingBreakdown!]! @auth(role: "ADMIN")
-  calculatePriceWithRules(input: CalculatePriceInput!): PricingBreakdown!
   simulatePricingRule(
     rule: CreatePricingRuleInput!
     testContext: TestPricingContext!

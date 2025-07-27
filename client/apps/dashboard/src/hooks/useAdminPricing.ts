@@ -218,7 +218,7 @@ export function useBatchAdminPricing({ regionId, countryId, paymentMethod, maxDa
       }));
 
       calculateBatchPricing({
-        variables: { requests }
+        variables: { inputs: requests }
       });
     } else {
       // Reset when no country
@@ -228,10 +228,10 @@ export function useBatchAdminPricing({ regionId, countryId, paymentMethod, maxDa
 
   // Process batch data into cache
   useEffect(() => {
-    if (batchData?.calculateBatchPricing) {
+    if (batchData?.calculatePrices) {
       const newCache = new Map<number, AdminPricingData>();
       
-      batchData.calculateBatchPricing.forEach((result) => {
+      batchData.calculatePrices.forEach((result) => {
         const originalPrice = result.totalCost;
         const discountAmount = result.discountValue;
         const totalPrice = result.priceAfterDiscount;

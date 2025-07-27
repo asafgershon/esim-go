@@ -1,4 +1,4 @@
-import { Bundle, Country, PaymentMethodInfo } from "@/__generated__/graphql";
+import { Bundle, Country, PaymentMethodInfo, CreatePricingRuleInput, CreatePricingRuleMutation, CreatePricingRuleMutationVariables } from "@/__generated__/graphql";
 import {
   Badge,
   Button,
@@ -35,10 +35,12 @@ import React, {
   useState,
 } from "react";
 import { toast } from "sonner";
+import { useMutation } from "@apollo/client";
+import { CREATE_PRICING_RULE, CALCULATE_BATCH_ADMIN_PRICING } from "../../lib/graphql/queries";
 import { ConfigurationLevelIndicator } from "../configuration-level-indicator";
 
 interface PricingPreviewPanelProps {
-  bundle: Bundle;
+  bundle: Bundle & { appliedRules?: Array<{ id?: string; name: string; type: string; impact: number }> };
   country: Country;
   paymentMethods?: PaymentMethodInfo[];
   onClose: () => void;
@@ -53,8 +55,11 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   onConfigurationSaved,
 }) => {
   // Mutations
-  // TODO: Update to use new rule-based pricing system mutations
-  // const [updatePricingRule, { loading: savingConfig }] = useMutation(UPDATE_PRICING_RULE);
+  const [createPricingRule, { loading: savingConfig }] = useMutation<
+    CreatePricingRuleMutation,
+    CreatePricingRuleMutationVariables
+  >(CREATE_PRICING_RULE);
+  
   // State for inline editing
   const [isEditingMarkup, setIsEditingMarkup] = useState(false);
   const [customMarkup, setCustomMarkup] = useState("");
@@ -66,9 +71,9 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   const [showDiscountTooltip, setShowDiscountTooltip] = useState(false);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get actual values from bundle (placeholder until pricingBreakdown is implemented)
-  const discountRate = 0; // bundle.pricingBreakdown?.discountRate || 0;
-  const discountPerDay = 0.1; // bundle.pricingBreakdown?.discountPerDay || 0.1;
+  // Get actual values from bundle pricing breakdown if available
+  const discountRate = bundle.pricingBreakdown?.discountRate || 0;
+  const discountPerDay = bundle.pricingBreakdown?.discountPerDay || 0.1;
 
   // Payment method configuration - use passed data if available, otherwise fallback to defaults
   const paymentMethodsConfig = paymentMethods.length > 0 
@@ -161,12 +166,12 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
     [maxAllowedDiscount, showInvalidDiscountTooltip]
   );
 
-  // Use placeholder pricing values until pricingBreakdown is implemented
-  const cost = bundle.basePrice || 0; // eSIM Go cost
-  const costPlus = 10; // Default markup
-  const totalCost = cost + costPlus; // Our selling price before discount
-  const discountValue = totalCost * discountRate;
-  const priceAfterDiscount = totalCost - discountValue; // Customer pays this
+  // Use pricing values from pricingBreakdown if available, otherwise use calculated values
+  const cost = bundle.pricingBreakdown?.cost || bundle.basePrice || 0; // eSIM Go cost
+  const costPlus = bundle.pricingBreakdown?.costPlus || 10; // Markup amount
+  const totalCost = bundle.pricingBreakdown?.totalCost || (cost + costPlus); // Our selling price before discount
+  const discountValue = bundle.pricingBreakdown?.discountValue || (totalCost * discountRate);
+  const priceAfterDiscount = bundle.pricingBreakdown?.priceAfterDiscount || (totalCost - discountValue); // Customer pays this
 
   // Calculate processing and profit
   const processingCost = priceAfterDiscount * processingRate;
@@ -174,11 +179,57 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   const netProfit = revenueAfterProcessing - cost;
 
   // Handler for saving markup changes
-  const handleSaveMarkup = () => {
-    // TODO: Call mutation to save markup override using new rule-based pricing system
-    const logger = { info: (msg: string, data: any) => console.log(msg, data) };
-    logger.info("Save markup:", customMarkup);
-    setIsEditingMarkup(false);
+  const handleSaveMarkup = async () => {
+    if (!customMarkup || parseFloat(customMarkup) < 0) {
+      toast.error("Please enter a valid markup amount");
+      return;
+    }
+
+    const markupValue = parseFloat(customMarkup);
+    const countryCode = bundle.countries[0]; // Get first country from array
+
+    try {
+      const result = await createPricingRule({
+        variables: {
+          input: {
+            category: 'MARKUP',
+            name: `${country.name} ${bundle.validityInDays}d Markup Override`,
+            description: `Custom markup for ${country.name} ${bundle.validityInDays}-day bundles: $${markupValue}`,
+            conditions: [
+              { field: 'country', operator: 'EQUALS', value: countryCode, type: 'STRING' },
+              { field: 'duration', operator: 'EQUALS', value: bundle.validityInDays.toString(), type: 'STRING' }
+            ],
+            actions: [
+              { type: 'FIXED_MARKUP', value: markupValue.toString() }
+            ],
+            priority: 100,
+            isActive: true,
+          },
+        },
+        refetchQueries: [
+          {
+            query: CALCULATE_BATCH_ADMIN_PRICING,
+            variables: {
+              requests: [{
+                countryId: countryCode,
+                duration: bundle.validityInDays,
+                groups: bundle.groups,
+              }]
+            },
+          },
+        ],
+      });
+
+      setIsEditingMarkup(false);
+      toast.success(`Markup of $${markupValue} applied for ${country.name}`);
+      onConfigurationSaved?.();
+    } catch (error: any) {
+      const logger = {
+        error: (msg: string, err: any) => console.error(msg, err),
+      };
+      logger.error("Error saving markup:", error);
+      toast.error(error?.message || "Failed to save markup configuration");
+    }
   };
 
   // Handler for saving discount changes
@@ -188,41 +239,44 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
       return;
     }
 
-    try {
-      // TODO: Update to use new rule-based pricing system
-      // This should create or update a pricing rule instead of using the old configuration system
-      toast.info(
-        `Saving discount of ${customDiscount}% for ${country.name} - Update needed for new pricing system`
-      );
+    const discountValue = parseFloat(customDiscount);
+    const countryCode = bundle.countries[0]; // Get first country from array
+    const bundleName = bundle.name;
 
-      // Placeholder for new rule-based pricing update
-      // const result = await createPricingRule({
-      //   variables: {
-      //     input: {
-      //       name: `${bundle.countryName} ${bundle.duration}d Discount Override`,
-      //       description: `Custom discount for ${bundle.countryName} ${bundle.duration}-day bundles: ${customDiscount}%`,
-      //       type: 'DISCOUNT',
-      //       conditions: [
-      //         { field: 'countryId', operator: 'EQUALS', value: bundle.countryId },
-      //         { field: 'duration', operator: 'EQUALS', value: bundle.duration.toString() }
-      //       ],
-      //       actions: [
-      //         { type: 'PERCENTAGE_DISCOUNT', value: discountRateDecimal }
-      //       ],
-      //       priority: 100,
-      //       isActive: true,
-      //     },
-      //   },
-      //   refetchQueries: [
-      //     {
-      //       query: GET_COUNTRY_BUNDLES,
-      //       variables: { countryId: bundle.countryId },
-      //     },
-      //   ],
-      // });
+    try {
+      const result = await createPricingRule({
+        variables: {
+          input: {
+            category: 'DISCOUNT',
+            name: `${country.name} ${bundle.validityInDays}d Discount Override`,
+            description: `Custom discount for ${country.name} ${bundle.validityInDays}-day bundles: ${discountValue}%`,
+            conditions: [
+              { field: 'country', operator: 'EQUALS', value: countryCode, type: 'STRING' },
+              { field: 'duration', operator: 'EQUALS', value: bundle.validityInDays.toString(), type: 'STRING' }
+            ],
+            actions: [
+              { type: 'PERCENTAGE_DISCOUNT', value: discountValue.toString() }
+            ],
+            priority: 100,
+            isActive: true,
+          },
+        },
+        refetchQueries: [
+          {
+            query: CALCULATE_BATCH_ADMIN_PRICING,
+            variables: {
+              requests: [{
+                countryId: countryCode,
+                duration: bundle.validityInDays,
+                groups: bundle.groups,
+              }]
+            },
+          },
+        ],
+      });
 
       setIsEditingDiscount(false);
-      // toast.success(`Discount of ${customDiscount}% applied for ${bundle.countryName}`);
+      toast.success(`Discount of ${discountValue}% applied for ${country.name}`);
       onConfigurationSaved?.();
     } catch (error: any) {
       const logger = {
