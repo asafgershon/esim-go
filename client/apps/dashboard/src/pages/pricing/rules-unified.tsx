@@ -57,8 +57,7 @@ import {
 
 // Import components
 import { SplitView } from "../../components/common/SplitView";
-import { MarkupRuleDrawer } from "../../components/pricing/markup-rule-drawer";
-import { ProcessingFeeDrawer } from "../../components/pricing/processing-fee-drawer";
+// Removed specialized drawers - using EnhancedRuleBuilder for all rule types
 import { EnhancedRuleBuilder } from "../../components/pricing/EnhancedRuleBuilder";
 import { SingleRuleTestPanel } from "../../components/pricing/single-rule-test-panel";
 import { CreatePricingRuleMutation, TogglePricingRuleMutation, DeletePricingRuleMutation, UpdatePricingRuleMutation, TogglePricingRuleMutationVariables, DeletePricingRuleMutationVariables, UpdatePricingRuleMutationVariables, CreatePricingRuleMutationVariables, PricingRule } from "@/__generated__/graphql";
@@ -105,9 +104,8 @@ const UnifiedPricingRulesPage: React.FC = () => {
 
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showMarkupDialog, setShowMarkupDialog] = useState(false);
-  const [showProcessingDialog, setShowProcessingDialog] = useState(false);
   const [editingRule, setEditingRule] = useState<PricingRule | null>(null);
+  const [ruleTemplate, setRuleTemplate] = useState<Partial<PricingRule> | null>(null);
 
   // Check for mobile viewport
   useEffect(() => {
@@ -268,7 +266,16 @@ const UnifiedPricingRulesPage: React.FC = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => setShowMarkupDialog(true)}
+            onClick={() => {
+              setRuleTemplate({
+                name: 'Markup Rule',
+                category: 'FEE',
+                conditions: [],
+                actions: [{ type: 'ADD_MARKUP', value: 20 }],
+                priority: 50,
+              });
+              setShowCreateDialog(true);
+            }}
             className="flex items-center gap-2"
           >
             <DollarSign className="h-4 w-4" />
@@ -276,7 +283,16 @@ const UnifiedPricingRulesPage: React.FC = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => setShowProcessingDialog(true)}
+            onClick={() => {
+              setRuleTemplate({
+                name: 'Processing Fee',
+                category: 'FEE',
+                conditions: [],
+                actions: [{ type: 'ADD_MARKUP', value: 2.9 }],
+                priority: 50,
+              });
+              setShowCreateDialog(true);
+            }}
             className="flex items-center gap-2"
           >
             <CreditCard className="h-4 w-4" />
@@ -687,18 +703,39 @@ const UnifiedPricingRulesPage: React.FC = () => {
                             : "Get started by creating your first pricing rule"}
                         </p>
                         <div className="mt-4 flex justify-center gap-3">
-                          <Button onClick={() => setShowCreateDialog(true)}>
+                          <Button onClick={() => {
+                            setRuleTemplate(null);
+                            setShowCreateDialog(true);
+                          }}>
                             Create Custom Rule
                           </Button>
                           <Button
                             variant="outline"
-                            onClick={() => setShowMarkupDialog(true)}
+                            onClick={() => {
+                              setRuleTemplate({
+                                name: 'Markup Rule',
+                                category: 'FEE',
+                                conditions: [],
+                                actions: [{ type: 'ADD_MARKUP', value: 20 }],
+                                priority: 50,
+                              });
+                              setShowCreateDialog(true);
+                            }}
                           >
                             Add Markup
                           </Button>
                           <Button
                             variant="outline"
-                            onClick={() => setShowProcessingDialog(true)}
+                            onClick={() => {
+                              setRuleTemplate({
+                                name: 'Processing Fee',
+                                category: 'FEE',
+                                conditions: [],
+                                actions: [{ type: 'ADD_MARKUP', value: 2.9 }],
+                                priority: 50,
+                              });
+                              setShowCreateDialog(true);
+                            }}
                           >
                             Add Processing Fee
                           </Button>
@@ -752,6 +789,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
           if (!open) {
             setShowCreateDialog(false);
             setEditingRule(null);
+            setRuleTemplate(null);
           }
         }}
       >
@@ -774,7 +812,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
           </SheetHeader>
           <div className="px-6 py-4">
             <EnhancedRuleBuilder
-              rule={editingRule}
+              rule={editingRule || ruleTemplate}
               onSave={async (ruleData) => {
                 try {
                   if (editingRule) {
@@ -794,6 +832,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
                   await refetch();
                   setShowCreateDialog(false);
                   setEditingRule(null);
+                  setRuleTemplate(null);
                 } catch (error) {
                   toast.error("Failed to save rule");
                 }
@@ -801,47 +840,13 @@ const UnifiedPricingRulesPage: React.FC = () => {
               onCancel={() => {
                 setShowCreateDialog(false);
                 setEditingRule(null);
+                setRuleTemplate(null);
               }}
             />
           </div>
         </SheetContent>
       </Sheet>
 
-      {/* Markup Rule Drawer */}
-      <MarkupRuleDrawer
-        open={showMarkupDialog}
-        onOpenChange={setShowMarkupDialog}
-        onSave={async (ruleData) => {
-          try {
-            await createRule({
-              variables: { input: ruleData },
-            });
-            toast.success("Markup rule created successfully");
-            await refetch();
-            setShowMarkupDialog(false);
-          } catch (error) {
-            toast.error("Failed to create markup rule");
-          }
-        }}
-      />
-
-      {/* Processing Fee Drawer */}
-      <ProcessingFeeDrawer
-        open={showProcessingDialog}
-        onOpenChange={setShowProcessingDialog}
-        onSave={async (ruleData) => {
-          try {
-            await createRule({
-              variables: { input: ruleData },
-            });
-            toast.success("Processing fee rule created successfully");
-            await refetch();
-            setShowProcessingDialog(false);
-          } catch (error) {
-            toast.error("Failed to create processing fee rule");
-          }
-        }}
-      />
     </div>
   );
 };
