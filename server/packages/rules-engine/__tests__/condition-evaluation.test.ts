@@ -52,7 +52,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         duration: 10,
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
@@ -86,7 +86,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         duration: 10,
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
@@ -124,7 +124,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         },
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
@@ -160,7 +160,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         duration: 10, // Greater than 7
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
@@ -194,7 +194,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         duration: 5, // Less than 7
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
@@ -230,7 +230,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         duration: 10,
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
@@ -264,7 +264,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         duration: 10,
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
@@ -307,7 +307,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         duration: 10,
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
@@ -320,7 +320,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         duration: 10,
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
@@ -333,7 +333,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         duration: 5,
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
@@ -367,7 +367,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         duration: 10,
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
         // No user field provided
       });
@@ -401,7 +401,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         duration: 10,
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
@@ -452,7 +452,10 @@ describe('Condition Evaluation in PricingEngine', () => {
         bundle: mockBundle,
         country: 'US',
         duration: 10,
-        rules: [lowPriorityRule, highPriorityRule] // Order shouldn't matter
+        rules: [lowPriorityRule, highPriorityRule], // Order shouldn't matter
+        metadata: {
+          correlationId: 'test-priority-order'
+        }
       });
 
       // Both rules should apply, but in priority order
@@ -495,7 +498,7 @@ describe('Condition Evaluation in PricingEngine', () => {
         },
         rules: [rule],
         metadata: {
-          correlationId: 'test-'60035C35
+          correlationId: 'test-condition-eval'
         }
       });
 
