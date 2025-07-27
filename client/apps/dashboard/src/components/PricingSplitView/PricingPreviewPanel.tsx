@@ -206,9 +206,10 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   const priceAfterDiscount =
     bundle.pricingBreakdown?.priceAfterDiscount || totalCost - discountValue; // Customer pays this
 
-  // Calculate processing and profit
+  // Calculate customer price (includes processing fee)
   const processingCost = priceAfterDiscount * processingRate;
-  const revenueAfterProcessing = priceAfterDiscount - processingCost;
+  const customerPrice = priceAfterDiscount + processingCost;
+  const revenueAfterProcessing = priceAfterDiscount; // Revenue after processing fee removed
   const netProfit = revenueAfterProcessing - cost;
 
   // Handler for saving markup changes
@@ -389,17 +390,25 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
 
         {/* Pricing Calculation */}
         <div className="space-y-3">
+          <h4 className="font-medium text-sm">Pricing Breakdown</h4>
           <div className="space-y-2 text-sm">
             {/* Cost Structure */}
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Base cost</span>
+              <span className="text-gray-600">Base Cost</span>
               <span className="font-mono">{formatCurrency(cost)}</span>
             </div>
 
             {/* Markup with inline editing */}
             <div className="flex justify-between items-center group">
               <div className="flex items-center gap-1">
-                <span className="text-gray-600">Markup</span>
+                <span className="text-gray-600">
+                  + Markup
+                  {cost && markup ? (
+                    <span className="text-xs ml-1">
+                      ({((markup / cost) * 100).toFixed(1)}%)
+                    </span>
+                  ) : null}
+                </span>
               </div>
               {isEditingMarkup ? (
                 <div className="flex items-center gap-1">
@@ -436,9 +445,7 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-1">
-                  <span className="font-mono">
-                    + {formatCurrency(markup)}
-                  </span>
+                  <span className="font-mono">{formatCurrency(markup)}</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -453,99 +460,110 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
                 </div>
               )}
             </div>
-            <div className="flex justify-between items-center pt-2 border-t">
-              <span className="font-medium">Selling price</span>
-              <span className="font-mono font-medium">
-                {formatCurrency(totalCost)}
-              </span>
-            </div>
 
             {/* Discount with inline editing */}
-            <div className="flex justify-between items-center pt-2 group">
-              <div className="flex items-center gap-1">
-                <span className="text-gray-600">Discount</span>
-              </div>
-              {isEditingDiscount ? (
-                <div className="flex items-center gap-1">
-                  <TooltipProvider>
-                    <Tooltip open={showDiscountTooltip}>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <InputWithAdornment
-                            type="number"
-                            min="0"
-                            max={maxAllowedDiscount}
-                            step="0.1"
-                            value={customDiscount}
-                            onChange={(e) =>
-                              handleDiscountChange(e.target.value)
-                            }
-                            placeholder={(discountRate * 100).toFixed(1)}
-                            rightAdornment="%"
-                            className="w-20 h-7 text-sm"
-                            autoFocus
-                          />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="top"
-                        className="bg-gray-900 text-white border-gray-700"
+            {discountValue > 0 && (
+              <>
+                <div className="flex justify-between items-center group">
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-600">
+                      - Discount ({formatPercentage(discountRate)})
+                    </span>
+                  </div>
+                  {isEditingDiscount ? (
+                    <div className="flex items-center gap-1">
+                      <TooltipProvider>
+                        <Tooltip open={showDiscountTooltip}>
+                          <TooltipTrigger asChild>
+                            <div>
+                              <InputWithAdornment
+                                type="number"
+                                min="0"
+                                max={maxAllowedDiscount}
+                                step="0.1"
+                                value={customDiscount}
+                                onChange={(e) =>
+                                  handleDiscountChange(e.target.value)
+                                }
+                                placeholder={(discountRate * 100).toFixed(1)}
+                                rightAdornment="%"
+                                className="w-20 h-7 text-sm"
+                                autoFocus
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="top"
+                            className="bg-gray-900 text-white border-gray-700"
+                          >
+                            <div className="text-sm">
+                              <p className="font-medium">
+                                Maximum discount: {maxAllowedDiscount.toFixed(1)}%
+                              </p>
+                              <p className="text-xs text-gray-300 mt-1">
+                                Higher discounts would violate the minimum profit
+                                margin of $1.50 above cost.
+                              </p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSaveDiscount}
+                        className="h-7 w-7 p-0 text-green-600"
                       >
-                        <div className="text-sm">
-                          <p className="font-medium">
-                            Maximum discount: {maxAllowedDiscount.toFixed(1)}%
-                          </p>
-                          <p className="text-xs text-gray-300 mt-1">
-                            Higher discounts would violate the minimum profit
-                            margin of $1.50 above cost.
-                          </p>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSaveDiscount}
-                    className="h-7 w-7 p-0 text-green-600"
-                  >
-                    <Check className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditingDiscount(false);
-                      setCustomDiscount("");
-                    }}
-                    className="h-7 w-7 p-0 text-gray-400"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
+                        <Check className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setIsEditingDiscount(false);
+                          setCustomDiscount("");
+                        }}
+                        className="h-7 w-7 p-0 text-gray-400"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono text-green-600">
+                        -{formatCurrency(discountValue)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setIsEditingDiscount(true);
+                          setCustomDiscount((discountRate * 100).toString());
+                        }}
+                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="flex items-center gap-1">
-                  <span className="font-mono text-green-600">
-                    - {formatCurrency(discountValue)} (
-                    {formatPercentage(discountRate)})
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditingDiscount(true);
-                      setCustomDiscount((discountRate * 100).toString());
-                    }}
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Edit3 className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-            </div>
+                {bundle.pricingBreakdown?.unusedDays && bundle.pricingBreakdown.unusedDays > 0 && (
+                  <div className="flex justify-between items-center text-xs text-blue-600 italic">
+                    <span>  ↳ Includes unused days:</span>
+                    <span className="font-mono">
+                      -{formatCurrency((bundle.pricingBreakdown.unusedDays || 0) * (bundle.pricingBreakdown.discountPerDay || 0))}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Processing Fee */}
             <div className="flex justify-between items-center group">
               <div className="flex items-center gap-1">
-                <span className="text-gray-600">Processing</span>
+                <span className="text-gray-600">
+                  + Processing Fee ({formatPercentage(processingRate)})
+                </span>
                 <Popover
                   open={paymentMethodOpen}
                   onOpenChange={setPaymentMethodOpen}
@@ -595,29 +613,45 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <span className="text-xs text-gray-500">
-                  ({formatPercentage(processingRate)})
-                </span>
               </div>
-              <span className="font-mono text-orange-600">
-                - {formatCurrency(processingCost)}
+              <span className="font-mono">{formatCurrency(processingCost)}</span>
+            </div>
+
+            {/* Customer Price */}
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="font-medium">Customer Price</span>
+              <span className="font-mono font-medium text-lg">
+                {formatCurrency(priceAfterDiscount + processingCost)}
               </span>
             </div>
 
-            {/* Final Result */}
-            <div className="flex justify-between items-center pt-2 border-t">
-              <span className="font-medium">Net profit</span>
-              <div className="text-right">
-                <div
-                  className={`font-mono font-medium text-lg ${
-                    netProfit > 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                >
+            {/* Revenue Breakdown */}
+            <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
+              <div className="text-xs font-medium text-gray-500 mb-1">Revenue Breakdown</div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 text-xs">Customer Price</span>
+                <span className="font-mono text-xs">{formatCurrency(priceAfterDiscount + processingCost)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 text-xs">- Processing Fee</span>
+                <span className="font-mono text-xs text-orange-600">-{formatCurrency(processingCost)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-medium">Revenue After Processing</span>
+                <span className="font-mono text-xs font-medium">{formatCurrency(revenueAfterProcessing)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 text-xs">- Base Cost</span>
+                <span className="font-mono text-xs text-red-600">-{formatCurrency(cost)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-1 border-t">
+                <span className="text-xs font-medium">Net Profit</span>
+                <span className={`font-mono text-sm font-bold ${netProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(netProfit)}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {((netProfit / totalCost) * 100).toFixed(1)}% margin
-                </div>
+                  <span className="text-xs font-normal ml-1">
+                    ({((netProfit / (priceAfterDiscount + processingCost)) * 100).toFixed(1)}% margin)
+                  </span>
+                </span>
               </div>
             </div>
           </div>

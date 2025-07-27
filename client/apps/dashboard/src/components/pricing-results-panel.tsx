@@ -190,7 +190,7 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
               </div>
 
               {/* Unused Days Discount Notice */}
-              {data.unusedDays && data.unusedDays > 0 && (
+              {data.unusedDays !== undefined && data.unusedDays !== null && data.unusedDays > 0 && (
                 <Alert className="border-blue-200 bg-blue-50">
                   <TrendingDown className="h-4 w-4 text-blue-600" />
                   <AlertDescription className="text-blue-800">
@@ -305,16 +305,6 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
                     ))}
                   </div>
                 </div>
-              )}
-
-              {/* Warnings */}
-              {data.netProfit < 1.5 && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Net profit of {formatCurrency(data.netProfit, data.currency)} is below the minimum requirement of $1.50
-                  </AlertDescription>
-                </Alert>
               )}
 
               {/* Rules Impact Summary */}
