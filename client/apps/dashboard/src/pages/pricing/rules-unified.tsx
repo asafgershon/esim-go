@@ -3,16 +3,16 @@ import {
   Badge,
   Button,
   Card,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
   Input,
   Popover,
   PopoverContent,
   PopoverTrigger,
   Separator,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
   Table,
   TableBody,
   TableCell,
@@ -59,7 +59,7 @@ import {
 import { SplitView } from "../../components/common/SplitView";
 import { MarkupRuleDrawer } from "../../components/pricing/markup-rule-drawer";
 import { ProcessingFeeDrawer } from "../../components/pricing/processing-fee-drawer";
-import { RuleBuilder } from "../../components/pricing/rule-builder";
+import { EnhancedRuleBuilder } from "../../components/pricing/EnhancedRuleBuilder";
 import { SingleRuleTestPanel } from "../../components/pricing/single-rule-test-panel";
 import { CreatePricingRuleMutation, TogglePricingRuleMutation, DeletePricingRuleMutation, UpdatePricingRuleMutation, TogglePricingRuleMutationVariables, DeletePricingRuleMutationVariables, UpdatePricingRuleMutationVariables, CreatePricingRuleMutationVariables, PricingRule } from "@/__generated__/graphql";
 
@@ -293,8 +293,8 @@ const UnifiedPricingRulesPage: React.FC = () => {
           panels={[
             {
               id: "main-content",
-              defaultSize: selectedRuleForTesting ? 70 : 100,
-              minSize: 50,
+              defaultSize: selectedRuleForTesting ? 55 : 100,
+              minSize: 30,
               content: (
                 <div className="flex flex-col space-y-4 p-4">
                   {/* Filters */}
@@ -713,9 +713,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
               ? [
                   {
                     id: "test-panel",
-                    defaultSize: 30,
-                    minSize: 25,
-                    maxSize: 50,
+                    defaultSize: 45,
+                    minSize: 30,
+                    maxSize: 70,
                     content: (
                       <SingleRuleTestPanel rule={selectedRuleForTesting} />
                     ),
@@ -724,6 +724,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <TestTube className="h-4 w-4" />
                           <span className="font-medium">Rule Testing</span>
+                          <Badge variant="outline" className="text-xs">
+                            {selectedRuleForTesting.name}
+                          </Badge>
                         </div>
                         <Button
                           variant="ghost"
@@ -742,8 +745,8 @@ const UnifiedPricingRulesPage: React.FC = () => {
         />
       </div>
 
-      {/* Create/Edit Rule Dialog */}
-      <Dialog
+      {/* Create/Edit Rule Drawer - Full Page */}
+      <Sheet
         open={showCreateDialog || !!editingRule}
         onOpenChange={(open) => {
           if (!open) {
@@ -752,51 +755,57 @@ const UnifiedPricingRulesPage: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+        <SheetContent 
+          side="right" 
+          className="w-full sm:w-[70vw] lg:w-[60vw] xl:w-[50vw] overflow-y-auto"
+          style={{ minWidth: '800px', maxWidth: '1200px' }}
+        >
+          <SheetHeader className="px-6">
+            <SheetTitle className="text-xl">
               {editingRule
                 ? `Edit Rule: ${editingRule.name}`
                 : "Create New Pricing Rule"}
-            </DialogTitle>
-            <DialogDescription>
+            </SheetTitle>
+            <SheetDescription>
               {editingRule
                 ? "Modify the rule configuration below. Changes will take effect immediately."
                 : "Build a new pricing rule using conditions and actions."}
-            </DialogDescription>
-          </DialogHeader>
-          <RuleBuilder
-            rule={editingRule}
-            onSave={async (ruleData) => {
-              try {
-                if (editingRule) {
-                  await updateRule({
-                    variables: {
-                      id: editingRule.id,
-                      input: ruleData,
-                    },
-                  });
-                  toast.success("Rule updated successfully");
-                } else {
-                  await createRule({
-                    variables: { input: ruleData },
-                  });
-                  toast.success("Rule created successfully");
+            </SheetDescription>
+          </SheetHeader>
+          <div className="px-6 py-4">
+            <EnhancedRuleBuilder
+              rule={editingRule}
+              onSave={async (ruleData) => {
+                try {
+                  if (editingRule) {
+                    await updateRule({
+                      variables: {
+                        id: editingRule.id,
+                        input: ruleData,
+                      },
+                    });
+                    toast.success("Rule updated successfully");
+                  } else {
+                    await createRule({
+                      variables: { input: ruleData },
+                    });
+                    toast.success("Rule created successfully");
+                  }
+                  await refetch();
+                  setShowCreateDialog(false);
+                  setEditingRule(null);
+                } catch (error) {
+                  toast.error("Failed to save rule");
                 }
-                await refetch();
+              }}
+              onCancel={() => {
                 setShowCreateDialog(false);
                 setEditingRule(null);
-              } catch (error) {
-                toast.error("Failed to save rule");
-              }
-            }}
-            onCancel={() => {
-              setShowCreateDialog(false);
-              setEditingRule(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+              }}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Markup Rule Drawer */}
       <MarkupRuleDrawer
