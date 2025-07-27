@@ -16,9 +16,8 @@
     "lint": "eslint src --ext .ts",
     "clean": "rm -rf dist",
     "codegen": "graphql-codegen --config codegen.ts",
-    "db:types": "./scripts/sync-db-types.sh",
-    "db:types:bun": "bun scripts/generate-db-types.ts",
-    "postinstall": "bun run db:types"
+    "codegen:dbtypes": "bunx supabase gen types typescript --project-id \"dgkyjkzkwzmjjurzvcxy\" --schema public > src/database.types.ts || echo \"Skipping Supabase codegen (no token available)\"",
+    "postinstall": "bun run codegen && bun run codegen:dbtypes"
   },
   "dependencies": {
     "@esim-go/client": "workspace:*",
