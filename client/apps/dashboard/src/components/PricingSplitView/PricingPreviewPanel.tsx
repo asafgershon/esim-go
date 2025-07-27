@@ -393,15 +393,15 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
           <h4 className="font-medium text-sm">Pricing Breakdown</h4>
           <div className="space-y-2 text-sm">
             {/* Cost Structure */}
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Base Cost</span>
+            <div className="flex justify-between items-center py-1">
+              <span className="text-muted-foreground">Base Cost</span>
               <span className="font-mono">{formatCurrency(cost)}</span>
             </div>
 
             {/* Markup with inline editing */}
-            <div className="flex justify-between items-center group">
+            <div className="flex justify-between items-center py-1 group">
               <div className="flex items-center gap-1">
-                <span className="text-gray-600">
+                <span className="text-muted-foreground">
                   + Markup
                   {cost && markup ? (
                     <span className="text-xs ml-1">
@@ -464,9 +464,9 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
             {/* Discount with inline editing */}
             {discountValue > 0 && (
               <>
-                <div className="flex justify-between items-center group">
+                <div className="flex justify-between items-center py-1 group">
                   <div className="flex items-center gap-1">
-                    <span className="text-gray-600">
+                    <span className="text-muted-foreground">
                       - Discount ({formatPercentage(discountRate)})
                     </span>
                   </div>
@@ -559,9 +559,9 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
             )}
 
             {/* Processing Fee */}
-            <div className="flex justify-between items-center group">
+            <div className="flex justify-between items-center py-1 group">
               <div className="flex items-center gap-1">
-                <span className="text-gray-600">
+                <span className="text-muted-foreground">
                   + Processing Fee ({formatPercentage(processingRate)})
                 </span>
                 <Popover
@@ -618,38 +618,38 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
             </div>
 
             {/* Customer Price */}
-            <div className="flex justify-between items-center pt-2 border-t">
+            <div className="flex justify-between items-center py-1 pt-2 border-t">
               <span className="font-medium">Customer Price</span>
               <span className="font-mono font-medium text-lg">
-                {formatCurrency(priceAfterDiscount + processingCost)}
+                {formatCurrency(customerPrice)}
               </span>
             </div>
 
             {/* Revenue Breakdown */}
             <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
               <div className="text-xs font-medium text-gray-500 mb-1">Revenue Breakdown</div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 text-xs">Customer Price</span>
-                <span className="font-mono text-xs">{formatCurrency(priceAfterDiscount + processingCost)}</span>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-muted-foreground text-xs">Customer Price</span>
+                <span className="font-mono text-xs">{formatCurrency(customerPrice)}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 text-xs">- Processing Fee</span>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-muted-foreground text-xs">- Processing Fee</span>
                 <span className="font-mono text-xs text-orange-600">-{formatCurrency(processingCost)}</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center py-1">
                 <span className="text-xs font-medium">Revenue After Processing</span>
                 <span className="font-mono text-xs font-medium">{formatCurrency(revenueAfterProcessing)}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 text-xs">- Base Cost</span>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-muted-foreground text-xs">- Base Cost</span>
                 <span className="font-mono text-xs text-red-600">-{formatCurrency(cost)}</span>
               </div>
-              <div className="flex justify-between items-center pt-1 border-t">
+              <div className="flex justify-between items-center py-1 pt-1 border-t">
                 <span className="text-xs font-medium">Net Profit</span>
                 <span className={`font-mono text-sm font-bold ${netProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(netProfit)}
                   <span className="text-xs font-normal ml-1">
-                    ({((netProfit / (priceAfterDiscount + processingCost)) * 100).toFixed(1)}% margin)
+                    ({((netProfit / customerPrice) * 100).toFixed(1)}% margin)
                   </span>
                 </span>
               </div>
