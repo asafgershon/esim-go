@@ -170,10 +170,15 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
                   <div>
                     <p className="text-sm text-muted-foreground">Customer Price</p>
                     <p className="text-2xl font-bold">{formatCurrency(data.totalPrice, data.currency)}</p>
-                    <p className="text-xs text-muted-foreground">{formatCurrency(data.dailyPrice, data.currency)}/day</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(data.dailyPrice, data.currency)}/day
+                      {data.processingRate ? (
+                        <span className="ml-1">(incl. {formatPercentage(data.processingRate * 100)} fee)</span>
+                      ) : null}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Net Profit</p>
+                    <p className="text-sm text-muted-foreground">Net Profit (after all costs)</p>
                     <p className={`text-2xl font-bold ${data.netProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(data.netProfit, data.currency)}
                     </p>
@@ -219,30 +224,58 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
                     <span className="font-mono">{formatCurrency(data.markup, data.currency)}</span>
                   </div>
                   {data.hasDiscount && (
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-muted-foreground">- Discount ({formatPercentage(data.discountRate)})</span>
-                      <span className="font-mono text-green-600">-{formatCurrency(data.discountAmount, data.currency)}</span>
-                    </div>
+                    <>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-muted-foreground">- Discount ({formatPercentage(data.discountRate)})</span>
+                        <span className="font-mono text-green-600">-{formatCurrency(data.discountAmount, data.currency)}</span>
+                      </div>
+                      {data.unusedDays && data.unusedDays > 0 && (
+                        <div className="flex justify-between items-center py-1 text-xs text-blue-600 italic">
+                          <span>  ↳ Includes unused days:</span>
+                          <span className="font-mono">
+                            -{formatCurrency((data.unusedDays || 0) * (data.discountPerDay || 0), data.currency)}
+                          </span>
+                        </div>
+                      )}
+                    </>
                   )}
-                  {data.unusedDays && data.unusedDays > 0 && (
-                    <div className="flex justify-between items-center py-1 text-xs text-blue-600 italic">
-                      <span>  ↳ Includes unused days:</span>
-                      <span className="font-mono">
-                        -{formatCurrency((data.unusedDays || 0) * (data.discountPerDay || 0), data.currency)}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-muted-foreground">+ Processing Fee ({formatPercentage(data.processingRate * 100)})</span>
+                    <span className="font-mono">{formatCurrency(data.processingCost, data.currency)}</span>
+                  </div>
                   <div className="flex justify-between items-center py-1 pt-2 border-t">
                     <span className="font-medium">Customer Price</span>
-                    <span className="font-mono font-medium">{formatCurrency(data.totalPrice, data.currency)}</span>
+                    <span className="font-mono font-medium text-lg">{formatCurrency(data.totalPrice, data.currency)}</span>
                   </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-muted-foreground">- Processing ({formatPercentage(data.processingRate * 100)})</span>
-                    <span className="font-mono text-orange-600">-{formatCurrency(data.processingCost, data.currency)}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 pt-2 border-t">
-                    <span className="font-medium">Final Revenue</span>
-                    <span className="font-mono font-medium">{formatCurrency(data.finalRevenue, data.currency)}</span>
+                  
+                  {/* Revenue Breakdown */}
+                  <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
+                    <div className="text-xs font-medium text-gray-500 mb-1">Revenue Breakdown</div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground text-xs">Customer Price</span>
+                      <span className="font-mono text-xs">{formatCurrency(data.totalPrice, data.currency)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground text-xs">- Processing Fee</span>
+                      <span className="font-mono text-xs text-orange-600">-{formatCurrency(data.processingCost, data.currency)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-xs font-medium">Revenue After Processing</span>
+                      <span className="font-mono text-xs font-medium">{formatCurrency(data.finalRevenue, data.currency)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground text-xs">- Base Cost</span>
+                      <span className="font-mono text-xs text-red-600">-{formatCurrency(data.cost, data.currency)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 pt-1 border-t">
+                      <span className="text-xs font-medium">Net Profit</span>
+                      <span className={`font-mono text-sm font-bold ${data.netProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(data.netProfit, data.currency)}
+                        <span className="text-xs font-normal ml-1">
+                          ({((data.netProfit / data.totalPrice) * 100).toFixed(1)}% margin)
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
