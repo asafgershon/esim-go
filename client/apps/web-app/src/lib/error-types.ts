@@ -1,5 +1,7 @@
 // Error type definitions for better error handling
 
+import { ApolloError } from "@apollo/client";
+
 export enum ErrorType {
   // Network errors
   NETWORK_ERROR = 'NETWORK_ERROR',
@@ -144,7 +146,7 @@ export const ERROR_MESSAGES: Record<ErrorType, { title: string; message: string;
 };
 
 // Helper function to parse GraphQL errors into AppError
-export function parseGraphQLError(error: any): AppError {
+export function parseGraphQLError(error: ApolloError | undefined): AppError {
   if (!error) {
     return {
       type: ErrorType.UNKNOWN_ERROR,
@@ -182,7 +184,7 @@ export function parseGraphQLError(error: any): AppError {
         return {
           type: ErrorType.BUNDLE_NOT_FOUND,
           message: ERROR_MESSAGES[ErrorType.BUNDLE_NOT_FOUND].message,
-          details: extensions.countryId,
+          details: String(extensions.countryId),
           retryable: false,
         };
       case 'VALIDATION_FAILED':
@@ -196,7 +198,7 @@ export function parseGraphQLError(error: any): AppError {
         return {
           type: ErrorType.API_ERROR,
           message: graphQLError.message || ERROR_MESSAGES[ErrorType.API_ERROR].message,
-          code: extensions.code,
+          code: String(extensions.code),
           retryable: true,
         };
     }

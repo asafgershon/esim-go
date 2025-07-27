@@ -1,18 +1,23 @@
 "use client";
 
-import { Smartphone, ArrowRight, Eye, EyeOff } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { cn } from "@/lib/utils";
-import { Button } from "@workspace/ui";
-import { Input } from "@workspace/ui";
-import { Label, InputOTP, InputOTPGroup, InputOTPSlot } from "@workspace/ui";
-import { Checkbox } from "@workspace/ui/components/checkbox";
+import { ErrorDisplay } from "@/components/error-display";
 import { useAppleSignIn } from "@/hooks/useAppleSignIn";
 import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 import { usePhoneOTP } from "@/hooks/usePhoneOTP";
-import { ErrorDisplay } from "@/components/error-display";
-import { parseGraphQLError, ErrorType } from "@/lib/error-types";
+import { ErrorType } from "@/lib/error-types";
+import { cn } from "@/lib/utils";
+import {
+  Button,
+  Input,
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+  Label,
+} from "@workspace/ui";
+import { Checkbox } from "@workspace/ui/components/checkbox";
+import { ArrowRight, Smartphone } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 // Form validation schemas
 interface PhoneFormData {
@@ -29,11 +34,11 @@ interface EnhancedLoginFormProps extends React.ComponentProps<"div"> {
   redirectTo?: string;
 }
 
-export function EnhancedLoginForm({ 
-  className, 
-  onSuccess, 
+export function EnhancedLoginForm({
+  className,
+  onSuccess,
   redirectTo = "/profile",
-  ...props 
+  ...props
 }: EnhancedLoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [otp, setOtp] = useState("");
@@ -69,6 +74,31 @@ export function EnhancedLoginForm({
     mode: "onChange",
   });
 
+  const handleOTPSubmit = useCallback(
+    async (data: OTPFormData) => {
+      setError(null);
+
+      const result = await verifyOTP(data.otp);
+
+      if (result.success) {
+        // Clear any pending errors
+        setError(null);
+
+        // Success callback
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          window.location.href = redirectTo;
+        }
+      } else {
+        setError(result.error || "קוד האימות שגוי");
+        setOtp("");
+        otpForm.setValue("otp", "");
+      }
+    },
+    [onSuccess, otpForm, redirectTo, verifyOTP]
+  );
+
   // Resend cooldown timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -83,25 +113,27 @@ export function EnhancedLoginForm({
     if (otp.length === 6 && !otpLoading) {
       handleOTPSubmit({ otp });
     }
-  }, [otp, otpLoading]);
+  }, [handleOTPSubmit, otp, otpLoading]);
 
   const formatPhoneNumber = (value: string) => {
     // Remove all non-digits except +
-    let cleaned = value.replace(/[^\d+]/g, '');
-    
+    const cleaned = value.replace(/[^\d+]/g, "");
+
     // If it starts with +972, format as Israeli number
-    if (cleaned.startsWith('+972')) {
+    if (cleaned.startsWith("+972")) {
       const rest = cleaned.slice(4);
       if (rest.length <= 9) {
-        return `+972 ${rest.replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3')}`;
+        return `+972 ${rest.replace(/(\d{2})(\d{3})(\d{4})/, "$1-$2-$3")}`;
       }
     }
-    
+
     // If it starts with 05, assume Israeli mobile
-    if (cleaned.startsWith('05')) {
-      return `+972 ${cleaned.slice(1).replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3')}`;
+    if (cleaned.startsWith("05")) {
+      return `+972 ${cleaned
+        .slice(1)
+        .replace(/(\d{2})(\d{3})(\d{4})/, "$1-$2-$3")}`;
     }
-    
+
     return cleaned;
   };
 
@@ -109,53 +141,31 @@ export function EnhancedLoginForm({
     setError(null);
 
     // Clean and validate phone number
-    const cleanedPhone = data.phoneNumber.replace(/[^\d+]/g, '');
-    
+    const cleanedPhone = data.phoneNumber.replace(/[^\d+]/g, "");
+
     const result = await sendOTP(cleanedPhone);
 
     if (result.success) {
       setResendCooldown(60); // 60 second cooldown
       // Save preference if remember me is checked
       if (data.rememberMe) {
-        localStorage.setItem('rememberLogin', 'true');
-        localStorage.setItem('lastPhoneNumber', cleanedPhone);
+        localStorage.setItem("rememberLogin", "true");
+        localStorage.setItem("lastPhoneNumber", cleanedPhone);
       } else {
-        localStorage.removeItem('rememberLogin');
-        localStorage.removeItem('lastPhoneNumber');
+        localStorage.removeItem("rememberLogin");
+        localStorage.removeItem("lastPhoneNumber");
       }
     } else {
       setError(result.error || "שליחת קוד האימות נכשלה");
     }
   };
 
-  const handleOTPSubmit = async (data: OTPFormData) => {
-    setError(null);
-
-    const result = await verifyOTP(data.otp);
-
-    if (result.success) {
-      // Clear any pending errors
-      setError(null);
-      
-      // Success callback
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        window.location.href = redirectTo;
-      }
-    } else {
-      setError(result.error || "קוד האימות שגוי");
-      setOtp("");
-      otpForm.setValue("otp", "");
-    }
-  };
-
   const handleResendOTP = async () => {
     if (resendCooldown > 0) return;
-    
+
     setError(null);
     const result = await sendOTP(phoneNumber);
-    
+
     if (result.success) {
       setResendCooldown(60);
     } else {
@@ -163,14 +173,15 @@ export function EnhancedLoginForm({
     }
   };
 
-  const handleSocialSignIn = async (provider: 'apple' | 'google') => {
+  const handleSocialSignIn = async (provider: "apple" | "google") => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      const result = provider === 'apple' 
-        ? await signInWithApple(false)
-        : await signInWithGoogle(false);
+
+      const result =
+        provider === "apple"
+          ? await signInWithApple(false)
+          : await signInWithGoogle(false);
 
       if (result.success) {
         if (onSuccess) {
@@ -179,15 +190,17 @@ export function EnhancedLoginForm({
           window.location.href = redirectTo;
         }
       } else {
-        const errorMessage = provider === 'apple' 
-          ? "התחברות עם Apple נכשלה"
-          : "התחברות עם Google נכשלה";
+        const errorMessage =
+          provider === "apple"
+            ? "התחברות עם Apple נכשלה"
+            : "התחברות עם Google נכשלה";
         setError(`${errorMessage}: ${result.error}`);
       }
     } catch (error) {
-      const errorMessage = provider === 'apple' 
-        ? "התחברות עם Apple נכשלה"
-        : "התחברות עם Google נכשלה";
+      const errorMessage =
+        provider === "apple"
+          ? "התחברות עם Apple נכשלה"
+          : "התחברות עם Google נכשלה";
       setError(`${errorMessage}: ${(error as Error).message}`);
     } finally {
       setIsLoading(false);
@@ -205,14 +218,14 @@ export function EnhancedLoginForm({
 
   // Load remembered phone number
   useEffect(() => {
-    const rememberLogin = localStorage.getItem('rememberLogin') === 'true';
-    const lastPhone = localStorage.getItem('lastPhoneNumber');
-    
+    const rememberLogin = localStorage.getItem("rememberLogin") === "true";
+    const lastPhone = localStorage.getItem("lastPhoneNumber");
+
     if (rememberLogin && lastPhone) {
-      phoneForm.setValue('phoneNumber', formatPhoneNumber(lastPhone));
-      phoneForm.setValue('rememberMe', true);
+      phoneForm.setValue("phoneNumber", formatPhoneNumber(lastPhone));
+      phoneForm.setValue("rememberMe", true);
     }
-  }, []);
+  }, [phoneForm]);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} dir="rtl" {...props}>
@@ -225,10 +238,9 @@ export function EnhancedLoginForm({
           {step === "phone" ? "התחברות לחשבון" : "אימות מספר טלפון"}
         </h1>
         <p className="text-balance text-muted-foreground mt-2">
-          {step === "phone" 
+          {step === "phone"
             ? "בחר את דרך ההתחברות המועדפת עליך"
-            : `הזנו את הקוד שנשלח ל-${phoneNumber}`
-          }
+            : `הזנו את הקוד שנשלח ל-${phoneNumber}`}
         </p>
       </div>
 
@@ -261,7 +273,6 @@ export function EnhancedLoginForm({
                 placeholder="+972 50-123-4567"
                 type="tel"
                 dir="ltr"
-                className="text-left"
                 {...phoneForm.register("phoneNumber", {
                   required: "מספר טלפון נדרש",
                   pattern: {
@@ -289,12 +300,12 @@ export function EnhancedLoginForm({
                 autoComplete="tel"
                 disabled={otpLoading}
                 className={
-                  phoneForm.formState.errors.phoneNumber
+                  (phoneForm.formState.errors.phoneNumber
                     ? "border-destructive"
-                    : ""
+                    : "") + " text-left"
                 }
               />
-              
+
               {/* Phone number helper */}
               {showPhoneHelper && (
                 <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
@@ -304,7 +315,7 @@ export function EnhancedLoginForm({
                   <p>• +1-555-123-4567</p>
                 </div>
               )}
-              
+
               {phoneForm.formState.errors.phoneNumber && (
                 <p className="text-sm text-destructive text-right">
                   {phoneForm.formState.errors.phoneNumber.message}
@@ -317,7 +328,7 @@ export function EnhancedLoginForm({
               <Checkbox
                 id="rememberMe"
                 checked={phoneForm.watch("rememberMe")}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   phoneForm.setValue("rememberMe", !!checked)
                 }
               />
@@ -348,7 +359,7 @@ export function EnhancedLoginForm({
             <Button
               variant="outline"
               type="button"
-              onClick={() => handleSocialSignIn('apple')}
+              onClick={() => handleSocialSignIn("apple")}
               disabled={isLoading || appleLoading || otpLoading}
               className="w-full"
             >
@@ -368,7 +379,7 @@ export function EnhancedLoginForm({
             <Button
               variant="outline"
               type="button"
-              onClick={() => handleSocialSignIn('google')}
+              onClick={() => handleSocialSignIn("google")}
               disabled={isLoading || googleLoading || otpLoading}
               className="w-full"
             >
@@ -452,10 +463,9 @@ export function EnhancedLoginForm({
                 disabled={resendCooldown > 0 || otpLoading}
                 className="text-sm"
               >
-                {resendCooldown > 0 
+                {resendCooldown > 0
                   ? `שלח שוב בעוד ${resendCooldown} שניות`
-                  : "שלח קוד חדש"
-                }
+                  : "שלח קוד חדש"}
               </Button>
             </div>
 
@@ -475,11 +485,17 @@ export function EnhancedLoginForm({
       {/* Terms */}
       <div className="text-muted-foreground text-center text-xs text-balance">
         על ידי המשך, אתה מסכים ל
-        <a href="#" className="underline underline-offset-4 hover:text-primary mx-1">
+        <a
+          href="#"
+          className="underline underline-offset-4 hover:text-primary mx-1"
+        >
           תנאי השימוש
         </a>
         ו
-        <a href="#" className="underline underline-offset-4 hover:text-primary mx-1">
+        <a
+          href="#"
+          className="underline underline-offset-4 hover:text-primary mx-1"
+        >
           מדיניות הפרטיות
         </a>
         שלנו.

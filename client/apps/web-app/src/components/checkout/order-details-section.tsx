@@ -82,7 +82,6 @@ export function OrderDetailsSection({
   // Extract bundle and country information
   const bundleName = planSnapshot.name || "";
   const countryName = planSnapshot.countries?.[0] || "";
-  const currency = planSnapshot.currency || "USD";
   const dataAmount = planSnapshot.dataAmount || "ללא הגבלה";
   const isUnlimited = planSnapshot.dataAmount?.toLowerCase().includes('unlimited') || 
                      planSnapshot.dataAmount?.toLowerCase().includes('ללא הגבלה');

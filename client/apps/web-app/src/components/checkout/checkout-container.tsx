@@ -23,9 +23,6 @@ export function CheckoutContainer() {
   // URL state management with nuqs
   const {
     token,
-    numOfDays,
-    countryId,
-    regionId,
     setToken,
     hasToken,
     clearCheckoutState,
@@ -54,7 +51,7 @@ export function CheckoutContainer() {
   const { handlePayment } = useCheckoutPayment();
   
   // Order validation hook
-  const { validateOrder, loading: validationLoading } = useOrderValidation();
+  const { validateOrder } = useOrderValidation();
 
   // Handle session errors (expired token, invalid session, etc.)
   useEffect(() => {

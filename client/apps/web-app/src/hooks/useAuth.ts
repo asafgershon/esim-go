@@ -1,8 +1,8 @@
-import { useQuery } from '@apollo/client';
-import { useEffect, useState, useCallback } from 'react';
+import { parseGraphQLError } from '@/lib/error-types';
 import { ME } from '@/lib/graphql/mutations';
 import type { User } from '@/lib/types';
-import { parseGraphQLError, ErrorType } from '@/lib/error-types';
+import { useQuery } from '@apollo/client';
+import { useCallback, useEffect, useState } from 'react';
 
 export interface AuthState {
   user: User | null;

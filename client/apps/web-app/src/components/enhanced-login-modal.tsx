@@ -21,7 +21,7 @@ interface EnhancedLoginModalProps {
   className?: string;
 }
 
-export function EnhancedLoginModal({ 
+export function EnhancedLoginModal({
   redirectTo = "/profile",
   trigger = "avatar",
   size = "md",
@@ -57,9 +57,12 @@ export function EnhancedLoginModal({
 
   const getModalSize = () => {
     switch (size) {
-      case "sm": return "max-w-[360px]";
-      case "lg": return "max-w-[600px]";
-      default: return "max-w-[480px]";
+      case "sm":
+        return "max-w-[360px]";
+      case "lg":
+        return "max-w-[600px]";
+      default:
+        return "max-w-[480px]";
     }
   };
 
@@ -86,7 +89,10 @@ export function EnhancedLoginModal({
           <Button
             variant="outline"
             size="icon"
-            className={cn("rounded-full flex items-center justify-center", className)}
+            className={cn(
+              "rounded-full flex items-center justify-center",
+              className
+            )}
             disabled={isLoading}
           >
             <UserIcon className="h-5 w-5" />
@@ -97,15 +103,12 @@ export function EnhancedLoginModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen} modal>
-      <DialogTrigger asChild>
-        {getTriggerButton()}
-      </DialogTrigger>
-      <DialogContent 
+      <DialogTrigger asChild>{getTriggerButton()}</DialogTrigger>
+      <DialogContent
         className={cn(
           "w-full p-0 border-none bg-transparent shadow-none",
           getModalSize()
         )}
-        hideCloseButton
       >
         <div className="bg-background rounded-xl border shadow-lg overflow-hidden">
           {/* Custom header with close button */}
@@ -119,10 +122,10 @@ export function EnhancedLoginModal({
               <X className="h-4 w-4" />
             </Button>
           </div>
-          
+
           {/* Login form */}
           <div className="px-6 pb-6">
-            <EnhancedLoginForm 
+            <EnhancedLoginForm
               onSuccess={handleLoginSuccess}
               redirectTo={redirectTo}
             />
@@ -134,33 +137,32 @@ export function EnhancedLoginModal({
 }
 
 // Convenience components for common use cases
-export function LoginButton({ 
-  className, 
+export function LoginButton({
+  className,
   redirectTo = "/profile",
-  ...props 
-}: { 
-  className?: string; 
+}: {
+  className?: string;
   redirectTo?: string;
 } & React.ComponentProps<typeof Button>) {
   return (
-    <EnhancedLoginModal 
-      trigger="button" 
+    <EnhancedLoginModal
+      trigger="button"
       redirectTo={redirectTo}
       className={className}
     />
   );
 }
 
-export function LoginAvatar({ 
-  className, 
-  redirectTo = "/profile" 
-}: { 
-  className?: string; 
+export function LoginAvatar({
+  className,
+  redirectTo = "/profile",
+}: {
+  className?: string;
   redirectTo?: string;
 }) {
   return (
-    <EnhancedLoginModal 
-      trigger="avatar" 
+    <EnhancedLoginModal
+      trigger="avatar"
       redirectTo={redirectTo}
       className={className}
     />
@@ -170,11 +172,11 @@ export function LoginAvatar({
 // Login modal that can be triggered programmatically
 export function useLoginModal() {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const openLogin = () => setIsOpen(true);
   const closeLogin = () => setIsOpen(false);
-  
-  const LoginModalComponent = ({ 
+
+  const LoginModalComponent = ({
     redirectTo = "/profile",
     onSuccess,
   }: {
@@ -188,10 +190,7 @@ export function useLoginModal() {
 
     return (
       <Dialog open={isOpen} onOpenChange={setIsOpen} modal>
-        <DialogContent 
-          className="max-w-[480px] w-full p-0 border-none bg-transparent shadow-none"
-          hideCloseButton
-        >
+        <DialogContent className="max-w-[480px] w-full p-0 border-none bg-transparent shadow-none">
           <div className="bg-background rounded-xl border shadow-lg overflow-hidden">
             <div className="flex justify-end p-4 pb-0">
               <Button
@@ -203,9 +202,9 @@ export function useLoginModal() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="px-6 pb-6">
-              <EnhancedLoginForm 
+              <EnhancedLoginForm
                 onSuccess={handleSuccess}
                 redirectTo={redirectTo}
               />

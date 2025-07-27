@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
 import { EnhancedLoginForm } from "@/components/enhanced-login-form";
 import { ErrorDisplay } from "@/components/error-display";
+import { useAuth } from "@/hooks/useAuth";
+import { ErrorType } from "@/lib/error-types";
 import { Card } from "@workspace/ui";
 import { Skeleton } from "@workspace/ui/components/skeleton";
-import { Shield, ArrowRight } from "lucide-react";
-import { ErrorType } from "@/lib/error-types";
+import { Shield } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -176,8 +176,6 @@ export function ConditionalAuth({
   when: boolean;
   fallback?: React.ComponentType<{ onLogin: () => void }>;
 }) {
-  const { isAuthenticated, isLoading } = useAuth();
-
   // If condition is not met, show children without auth check
   if (!when) {
     return <>{children}</>;

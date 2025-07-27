@@ -203,7 +203,7 @@ export default function OrderPage() {
                   </h4>
                   <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
                     <li>1. פתח הגדרות → סלולר/נתונים סלולריים</li>
-                    <li>2. לחץ על "הוסף eSIM" או "הוסף תוכנית סלולרית"</li>
+                    <li>2. לחץ על &quot;הוסף eSIM&quot; או &quot;הוסף תוכנית סלולרית&quot;</li>
                     <li>3. סרוק את קוד ה-QR עם המצלמה</li>
                     <li>4. עקוב אחר ההנחיות במסך להשלמת ההתקנה</li>
                   </ol>

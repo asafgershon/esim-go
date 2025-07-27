@@ -3,7 +3,7 @@
 import React from "react";
 import { Button, Card } from "@workspace/ui";
 import { AlertTriangle, RefreshCw, Home, LogIn, ExternalLink, ArrowRight } from "lucide-react";
-import { AppError, getErrorDisplay } from "@/lib/error-types";
+import { AppError, ErrorType, getErrorDisplay } from "@/lib/error-types";
 
 interface ErrorDisplayProps {
   error: AppError;
@@ -148,7 +148,7 @@ export function NetworkErrorDisplay({ onRetry }: { onRetry: () => void }) {
   return (
     <ErrorDisplay
       error={{
-        type: 'NETWORK_ERROR' as any,
+        type: ErrorType.NETWORK_ERROR,
         message: 'לא הצלחנו להתחבר לשרת. אנא בדוק את החיבור לאינטרנט ונסה שוב.',
         retryable: true,
         actionRequired: 'retry',
@@ -163,7 +163,7 @@ export function AuthRequiredDisplay({ onLogin }: { onLogin: () => void }) {
   return (
     <ErrorDisplay
       error={{
-        type: 'AUTH_REQUIRED' as any,
+        type: ErrorType.AUTH_REQUIRED,
         message: 'אנא התחבר כדי להמשיך בתהליך הרכישה.',
         retryable: false,
         actionRequired: 'login',
@@ -177,7 +177,7 @@ export function BundleNotFoundDisplay({ country, onSelectOther }: { country?: st
   return (
     <ErrorDisplay
       error={{
-        type: 'BUNDLE_NOT_FOUND' as any,
+        type: ErrorType.BUNDLE_NOT_FOUND,
         message: country 
           ? `לא נמצאו חבילות זמינות עבור ${country}. אנא בחר יעד אחר.`
           : 'לא נמצאו חבילות זמינות עבור היעד הנבחר. אנא בחר יעד אחר.',
