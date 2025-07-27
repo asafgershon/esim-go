@@ -27,6 +27,7 @@ import {
   BarChart3,
   Check,
   CheckCircle,
+  ChevronDown,
   Copy,
   CreditCard,
   DollarSign,
@@ -60,7 +61,7 @@ import { SplitView } from "../../components/common/SplitView";
 // Removed specialized drawers - using EnhancedRuleBuilder for all rule types
 import { EnhancedRuleBuilder } from "../../components/pricing/EnhancedRuleBuilder";
 import { SingleRuleTestPanel } from "../../components/pricing/single-rule-test-panel";
-import { CreatePricingRuleMutation, TogglePricingRuleMutation, DeletePricingRuleMutation, UpdatePricingRuleMutation, TogglePricingRuleMutationVariables, DeletePricingRuleMutationVariables, UpdatePricingRuleMutationVariables, CreatePricingRuleMutationVariables, PricingRule } from "@/__generated__/graphql";
+import { CreatePricingRuleMutation, TogglePricingRuleMutation, DeletePricingRuleMutation, UpdatePricingRuleMutation, TogglePricingRuleMutationVariables, DeletePricingRuleMutationVariables, UpdatePricingRuleMutationVariables, CreatePricingRuleMutationVariables, PricingRule, ActionType, RuleCategory } from "@/__generated__/graphql";
 
 
 // Rule category configurations
@@ -101,6 +102,10 @@ const UnifiedPricingRulesPage: React.FC = () => {
   const [selectedRuleCategories, setSelectedRuleCategories] = useState<string[]>([]);
   const [showSystemRules, setShowSystemRules] = useState(true);
   const [typeFilterOpen, setTypeFilterOpen] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -135,7 +140,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
   const rules = rulesData?.pricingRules || [];
 
   // Filter rules based on search and filters
-  const filteredRules = rules.filter((rule: PricingRule) => {
+  const filteredRulesAll = rules.filter((rule: PricingRule) => {
     const matchesSearch =
       rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       rule.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -145,6 +150,17 @@ const UnifiedPricingRulesPage: React.FC = () => {
 
     return matchesSearch && matchesCategory && matchesSystemFilter;
   });
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredRulesAll.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const filteredRules = filteredRulesAll.slice(startIndex, endIndex);
+  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedRuleCategories, showSystemRules]);
 
   const toggleRuleCategory = (category: string) => {
     setSelectedRuleCategories((prev) =>
@@ -234,11 +250,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
   if (isMobile) {
     return (
       <div className="space-y-6">
-        {/* Mobile header with testing toggle */}
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">Pricing Rules</h2>
-        </div>
-
         {/* Mobile content - simplified view */}
         <div className="space-y-4">
           {/* Add this implementation based on mobile needs */}
@@ -255,49 +266,71 @@ const UnifiedPricingRulesPage: React.FC = () => {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          {/* Quick add buttons */}
-          <Button
-            onClick={() => setShowCreateDialog(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Custom Rule
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setRuleTemplate({
-                name: 'Markup Rule',
-                category: 'FEE',
-                conditions: [],
-                actions: [{ type: 'ADD_MARKUP', value: 20 }],
-                priority: 50,
-              });
-              setShowCreateDialog(true);
-            }}
-            className="flex items-center gap-2"
-          >
-            <DollarSign className="h-4 w-4" />
-            Add Markup
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setRuleTemplate({
-                name: 'Processing Fee',
-                category: 'FEE',
-                conditions: [],
-                actions: [{ type: 'ADD_MARKUP', value: 2.9 }],
-                priority: 50,
-              });
-              setShowCreateDialog(true);
-            }}
-            className="flex items-center gap-2"
-          >
-            <CreditCard className="h-4 w-4" />
-            Add Processing Fee
-          </Button>
+        <div>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* Consolidated dropdown menu */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Rule
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="end">
+              <div className="space-y-1">
+                <button
+                  onClick={() => setShowCreateDialog(true)}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors text-left"
+                >
+                  <Settings className="h-4 w-4 text-gray-600" />
+                  <div>
+                    <div className="font-medium">Custom Rule</div>
+                    <div className="text-xs text-gray-500">Create a custom pricing rule</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => {
+                    setRuleTemplate({
+                      name: 'Markup Rule',
+                      category: RuleCategory.Fee,
+                      conditions: [],
+                      actions: [{ type: ActionType.AddMarkup, value: 20 }],
+                      priority: 50,
+                    });
+                    setShowCreateDialog(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors text-left"
+                >
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                  <div>
+                    <div className="font-medium">Add Markup</div>
+                    <div className="text-xs text-gray-500">Add percentage or fixed markup</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => {
+                    setRuleTemplate({
+                      name: 'Processing Fee',
+                      category: RuleCategory.Fee,
+                      conditions: [],
+                      actions: [{ type: ActionType.AddMarkup, value: 2.9 }],
+                      priority: 50,
+                    });
+                    setShowCreateDialog(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors text-left"
+                >
+                  <CreditCard className="h-4 w-4 text-blue-600" />
+                  <div>
+                    <div className="font-medium">Processing Fee</div>
+                    <div className="text-xs text-gray-500">Add payment processing fee</div>
+                  </div>
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -312,7 +345,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
               defaultSize: selectedRuleForTesting ? 55 : 100,
               minSize: 30,
               content: (
-                <div className="flex flex-col space-y-4 p-4">
+                <div className="flex flex-col space-y-4 p-4 h-full overflow-hidden">
                   {/* Filters */}
                   <div className="flex items-center justify-between gap-4">
                     {/* Search on the left */}
@@ -419,7 +452,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
                   </div>
 
                   {/* Rules Table */}
-                  <Card className="flex-1 flex flex-col">
+                  <Card className="flex-1 flex flex-col overflow-hidden">
                     <div className="flex-1 overflow-auto">
                       <Table>
                         <TableHeader className="sticky top-0 bg-background z-10">
@@ -641,54 +674,80 @@ const UnifiedPricingRulesPage: React.FC = () => {
                       </Table>
                     </div>
 
-                    {/* Sticky Stats Footer */}
-                    <div className="sticky bottom-0 bg-background border-t px-4 py-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-2">
-                            <Settings className="h-4 w-4 text-gray-400" />
-                            <span className="text-gray-600">Total:</span>
-                            <span className="font-medium text-gray-900">
-                              {rules.length}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                            <span className="text-gray-600">Active:</span>
-                            <span className="font-medium text-green-600">
-                              {
-                                rules.filter((r: PricingRule) => r.isActive)
-                                  .length
-                              }
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Target className="h-4 w-4 text-blue-500" />
-                            <span className="text-gray-600">System:</span>
-                            <span className="font-medium text-blue-600">
-                              {
-                                rules.filter((r: PricingRule) => !r.isEditable)
-                                  .length
-                              }
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-purple-500" />
-                            <span className="text-gray-600">Custom:</span>
-                            <span className="font-medium text-purple-600">
-                              {
-                                rules.filter((r: PricingRule) => r.isEditable)
-                                  .length
-                              }
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-gray-500">
-                          Showing {filteredRules.length} of {rules.length} rules
+                  </Card>
+
+                  {/* Pagination Controls */}
+                  {filteredRulesAll.length > 0 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>
+                          Showing {startIndex + 1} to {Math.min(endIndex, filteredRulesAll.length)} of {filteredRulesAll.length} rules
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span>Show:</span>
+                          <select
+                            value={pageSize}
+                            onChange={(e) => {
+                              setPageSize(Number(e.target.value));
+                              setCurrentPage(1);
+                            }}
+                            className="h-8 px-2 border rounded text-sm"
+                          >
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                          </select>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let page: number;
+                            if (totalPages <= 5) {
+                              page = i + 1;
+                            } else if (currentPage <= 3) {
+                              page = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              page = totalPages - 4 + i;
+                            } else {
+                              page = currentPage - 2 + i;
+                            }
+                            
+                            if (page < 1 || page > totalPages) return null;
+                            
+                            return (
+                              <Button
+                                key={page}
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className="w-9"
+                              >
+                                {page}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
                     </div>
-                  </Card>
+                  )}
 
                   {filteredRules.length === 0 && (
                     <Card className="p-12">
@@ -714,9 +773,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
                             onClick={() => {
                               setRuleTemplate({
                                 name: 'Markup Rule',
-                                category: 'FEE',
+                                category: RuleCategory.Fee,
                                 conditions: [],
-                                actions: [{ type: 'ADD_MARKUP', value: 20 }],
+                                actions: [{ type: ActionType.AddMarkup, value: 20 }],
                                 priority: 50,
                               });
                               setShowCreateDialog(true);
@@ -729,9 +788,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
                             onClick={() => {
                               setRuleTemplate({
                                 name: 'Processing Fee',
-                                category: 'FEE',
+                                category: RuleCategory.Fee,
                                 conditions: [],
-                                actions: [{ type: 'ADD_MARKUP', value: 2.9 }],
+                                actions: [{ type: ActionType.AddMarkup, value: 2.9 }],
                                 priority: 50,
                               });
                               setShowCreateDialog(true);
