@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client";
+import { ApolloError, useMutation } from "@apollo/client";
 import { ValidateOrderMutation, ValidateOrderMutationVariables } from "@/__generated__/graphql";
 import { ValidateOrder } from "@/lib/graphql/checkout";
 import { parseGraphQLError, AppError, ErrorType } from "@/lib/error-types";
@@ -67,7 +67,7 @@ export const useOrderValidation = () => {
     } catch (err) {
       console.error("Order validation error:", err);
       
-      const appError = parseGraphQLError(err);
+      const appError = parseGraphQLError(err as ApolloError);
       
       return {
         success: false,

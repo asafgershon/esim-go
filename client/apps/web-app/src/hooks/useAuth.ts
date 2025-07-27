@@ -125,6 +125,11 @@ export const useAuth = () => {
     if (!authState.error) return null;
     
     return parseGraphQLError({
+      cause: new Error(authState.error),
+      clientErrors: [],
+      extraInfo: {},
+      name: 'ApolloError',
+      protocolErrors: [],
       message: authState.error,
       graphQLErrors: error?.graphQLErrors || [],
       networkError: error?.networkError || null,
