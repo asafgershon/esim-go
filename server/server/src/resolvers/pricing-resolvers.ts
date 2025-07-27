@@ -399,6 +399,16 @@ export const pricingQueries: QueryResolvers = {
       // 5. Let engine select best bundle and calculate pricing
       const result = await pricingEngine.calculatePrice(engineInput);
       
+      // Debug log for unused days (single pricing)
+      logger.info('DEBUG: Single pricing engine result for unused days', {
+        correlationId,
+        requestedDuration: numOfDays,
+        selectedBundleDuration: result.selectedBundle?.validityInDays,
+        unusedDays: result.unusedDays,
+        discountPerDay: result.pricing?.discountPerDay,
+        operationType: 'unused-days-debug-single'
+      });
+      
       // 6. Map result to GraphQL format
       const pricingBreakdown = mapEngineToPricingBreakdown(result, { 
         numOfDays, 
@@ -406,6 +416,14 @@ export const pricingQueries: QueryResolvers = {
         paymentMethod, 
         regionId, 
         groups 
+      });
+      
+      // Debug log for mapped result (single pricing)
+      logger.info('DEBUG: Single mapped pricing breakdown for unused days', {
+        correlationId,
+        unusedDays: pricingBreakdown.unusedDays,
+        discountPerDay: pricingBreakdown.discountPerDay,
+        operationType: 'unused-days-debug-single'
       });
 
       logger.info('Single price calculated successfully', {
@@ -524,7 +542,27 @@ export const pricingQueries: QueryResolvers = {
         };
 
         const result = await pricingEngine.calculatePrice(engineInput);
+        
+        // Debug log for unused days
+        logger.info('DEBUG: Pricing engine result for unused days', {
+          correlationId: `${correlationId}-${results.length}`,
+          requestedDuration: input.numOfDays,
+          selectedBundleDuration: result.selectedBundle?.validityInDays,
+          unusedDays: result.unusedDays,
+          discountPerDay: result.pricing?.discountPerDay,
+          operationType: 'unused-days-debug'
+        });
+        
         const pricingBreakdown = mapEngineToPricingBreakdown(result, input);
+        
+        // Debug log for mapped result
+        logger.info('DEBUG: Mapped pricing breakdown for unused days', {
+          correlationId: `${correlationId}-${results.length}`,
+          unusedDays: pricingBreakdown.unusedDays,
+          discountPerDay: pricingBreakdown.discountPerDay,
+          operationType: 'unused-days-debug'
+        });
+        
         results.push(pricingBreakdown);
       }
 

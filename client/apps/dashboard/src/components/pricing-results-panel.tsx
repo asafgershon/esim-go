@@ -32,9 +32,14 @@ interface PricingData {
   processingCost: number;
   finalRevenue: number;
   netProfit: number;
+  discountPerDay: number;
   
   // Profit analysis
   profitMargin: number;
+  
+  // Pipeline metadata
+  unusedDays?: number | null;
+  selectedReason?: string | null;
   
   // Bundle info
   bundle: {
@@ -179,6 +184,21 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
                 </div>
               </div>
 
+              {/* Unused Days Discount Notice */}
+              {data.unusedDays && data.unusedDays > 0 && (
+                <Alert className="border-blue-200 bg-blue-50">
+                  <TrendingDown className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <div className="font-medium mb-1">Unused Days Discount Applied</div>
+                    <div className="text-sm">
+                      Requested {data.days} days, selected {data.bundle.duration}-day bundle. 
+                      Discount: {data.unusedDays} unused days × ${data.discountPerDay?.toFixed(2) || '0.00'}/day = 
+                      ${((data.unusedDays || 0) * (data.discountPerDay || 0)).toFixed(2)} total discount.
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Pricing Breakdown */}
               <div className="space-y-2">
                 <h4 className="font-medium text-sm">Pricing Breakdown</h4>
@@ -195,6 +215,14 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
                     <div className="flex justify-between items-center py-1">
                       <span className="text-muted-foreground">- Discount ({formatPercentage(data.discountRate * 100)})</span>
                       <span className="font-mono text-green-600">-{formatCurrency(data.discountAmount, data.currency)}</span>
+                    </div>
+                  )}
+                  {data.unusedDays && data.unusedDays > 0 && (
+                    <div className="flex justify-between items-center py-1 text-xs text-blue-600 italic">
+                      <span>  ↳ Includes unused days:</span>
+                      <span className="font-mono">
+                        -{formatCurrency((data.unusedDays || 0) * (data.discountPerDay || 0), data.currency)}
+                      </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center py-1 pt-2 border-t">

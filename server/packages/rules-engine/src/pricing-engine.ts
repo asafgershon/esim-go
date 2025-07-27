@@ -90,6 +90,12 @@ export class PricingEngine {
     state.steps.push(discountStep);
     yield discountStep;
 
+    // Step 3.5: Apply Unused Days Discount
+    const unusedDaysStep = await this.applyUnusedDaysDiscount(state);
+    state = { ...state, ...unusedDaysStep.state };
+    state.steps.push(unusedDaysStep);
+    yield unusedDaysStep;
+
     // Step 4: Apply Constraints
     const constraintStep = await this.applyConstraints(state);
     state = { ...state, ...constraintStep.state };
@@ -287,6 +293,118 @@ export class PricingEngine {
   }
 
   /**
+   * Step 3.5: Apply Unused Days Discount
+   */
+  private async applyUnusedDaysDiscount(state: PricingEngineState): Promise<PipelineStep> {
+    logger.debug("Executing unused days discount step", {
+      correlationId: state.metadata.correlationId,
+      unusedDays: state.unusedDays,
+      requestedDuration: state.request.duration,
+      selectedBundleDuration: state.selectedBundle?.validityInDays
+    });
+
+    // If no unused days, skip
+    if ((state.unusedDays || 0) <= 0) {
+      return {
+        name: 'APPLY_UNUSED_DAYS_DISCOUNT',
+        timestamp: new Date(),
+        state: {
+          pricing: state.pricing,
+        },
+        appliedRules: [],
+        debug: {
+          unusedDays: state.unusedDays || 0,
+          discountPerDay: 0,
+          totalUnusedDiscount: 0,
+          message: 'No unused days discount needed'
+        }
+      };
+    }
+
+    try {
+      // Calculate discount per day based on markup difference formula
+      const discountPerDay = await this.calculateUnusedDayDiscount(
+        state.bundles,
+        state.selectedBundle!,
+        state.request.duration
+      );
+
+      if (discountPerDay <= 0) {
+        return {
+          name: 'APPLY_UNUSED_DAYS_DISCOUNT',
+          timestamp: new Date(),
+          state: {
+            pricing: state.pricing,
+          },
+          appliedRules: [],
+          debug: {
+            unusedDays: state.unusedDays || 0,
+            discountPerDay: 0,
+            totalUnusedDiscount: 0,
+            message: 'No discount per day calculated'
+          }
+        };
+      }
+
+      // Apply unused days discount
+      const totalUnusedDiscount = discountPerDay * (state.unusedDays || 0);
+      const updatedPricing = { ...state.pricing! };
+      
+      // Add to existing discount
+      updatedPricing.discountValue = (updatedPricing.discountValue || 0) + totalUnusedDiscount;
+      updatedPricing.discountPerDay = discountPerDay;
+      updatedPricing.priceAfterDiscount = updatedPricing.totalCost - updatedPricing.discountValue;
+
+      logger.debug("Applied unused days discount", {
+        correlationId: state.metadata.correlationId,
+        unusedDays: state.unusedDays,
+        discountPerDay,
+        totalUnusedDiscount,
+        newTotalDiscount: updatedPricing.discountValue,
+        newPriceAfterDiscount: updatedPricing.priceAfterDiscount
+      });
+
+      return {
+        name: 'APPLY_UNUSED_DAYS_DISCOUNT',
+        timestamp: new Date(),
+        state: {
+          pricing: updatedPricing,
+        },
+        appliedRules: [`unused-days-${state.unusedDays}d-@${discountPerDay.toFixed(2)}`],
+        debug: {
+          unusedDays: state.unusedDays || 0,
+          discountPerDay,
+          totalUnusedDiscount,
+          message: `Applied ${state.unusedDays} unused days discount at $${discountPerDay.toFixed(2)}/day`
+        }
+      };
+
+    } catch (error) {
+      logger.error('Failed to calculate unused days discount', error as Error, {
+        correlationId: state.metadata.correlationId,
+        unusedDays: state.unusedDays,
+        operationType: 'unused-days-discount'
+      });
+
+      return {
+        name: 'APPLY_UNUSED_DAYS_DISCOUNT',
+        timestamp: new Date(),
+        state: {
+          pricing: state.pricing,
+        },
+        appliedRules: [],
+        debug: {
+          unusedDays: state.unusedDays || 0,
+          discountPerDay: 0,
+          totalUnusedDiscount: 0,
+          error: (error as Error).message,
+          message: 'Failed to calculate unused days discount'
+        }
+      };
+    }
+  }
+
+  /**
    * Step 4: Apply Constraints
    */
   private async applyConstraints(state: PricingEngineState): Promise<PipelineStep> {
@@ -421,8 +539,11 @@ export class PricingEngine {
     const finalPricing = { ...state.pricing! };
     
     // Ensure all calculations are complete
-    // Note: Processing cost is paid by the customer, so it's added to the price
-    finalPricing.finalRevenue = finalPricing.priceAfterDiscount + finalPricing.processingCost;
+    // finalRevenue = what customer pays (before processing fee deduction)
+    finalPricing.finalRevenue = finalPricing.priceAfterDiscount;
+    
+    // revenueAfterProcessing = bottom line revenue after processing fees are deducted
+    finalPricing.revenueAfterProcessing = finalPricing.priceAfterDiscount - finalPricing.processingCost;
     
     // Net profit is what we keep after paying the supplier cost
     // Processing fees are passed to the payment processor, not kept as profit
@@ -534,6 +655,7 @@ export class PricingEngine {
       processingCost: 0,
       processingRate: 0,
       finalRevenue: bundle.basePrice,
+      revenueAfterProcessing: bundle.basePrice, // Initially same as finalRevenue
       netProfit: 0,
       discountPerDay: 0,
       // Required fields with defaults
@@ -805,5 +927,96 @@ export class PricingEngine {
   private extractAppliedRules(steps: PipelineStep[]): PricingRule[] {
     const appliedRuleIds = steps.flatMap(step => step.appliedRules || []);
     return this.rules.filter(rule => appliedRuleIds.includes(rule.id));
+  }
+
+  /**
+   * Calculate discount per unused day based on markup difference formula
+   * Formula: (selectedBundlePrice - previousBundlePrice) / (selectedDuration - previousDuration)
+   */
+  private async calculateUnusedDayDiscount(
+    availableBundles: Bundle[],
+    selectedBundle: Bundle,
+    requestedDuration: number
+  ): Promise<number> {
+    try {
+      // Find all bundles in the same group/category
+      const sameCategoryBundles = availableBundles.filter(bundle => 
+        bundle.groups.some(group => selectedBundle.groups.includes(group)) &&
+        bundle.countries.some(country => selectedBundle.countries.includes(country))
+      );
+
+      // Get all available durations, sorted
+      const availableDurations = sameCategoryBundles
+        .map(bundle => bundle.validityInDays)
+        .filter((duration, index, arr) => arr.indexOf(duration) === index) // unique
+        .sort((a, b) => a - b);
+
+      // Find the previous duration (closest duration less than requested)
+      const previousDuration = availableDurations
+        .filter(duration => duration < requestedDuration)
+        .pop(); // Get the largest duration that's still less than requested
+
+      if (!previousDuration) {
+        logger.debug('No previous duration found for unused days calculation', {
+          requestedDuration,
+          selectedDuration: selectedBundle.validityInDays,
+          availableDurations,
+          operationType: 'unused-days-discount'
+        });
+        return 0;
+      }
+
+      // Find the previous bundle
+      const previousBundle = sameCategoryBundles.find(
+        bundle => bundle.validityInDays === previousDuration
+      );
+
+      if (!previousBundle) {
+        logger.debug('No previous bundle found for unused days calculation', {
+          previousDuration,
+          operationType: 'unused-days-discount'
+        });
+        return 0;
+      }
+
+      // Calculate discount per day using the markup difference formula
+      // Formula: (selectedBundlePrice - previousBundlePrice) / (selectedDuration - previousDuration)
+      const priceDifference = selectedBundle.basePrice - previousBundle.basePrice;
+      const daysDifference = selectedBundle.validityInDays - previousBundle.validityInDays;
+
+      if (daysDifference <= 0) {
+        logger.debug('Invalid days difference for unused days calculation', {
+          selectedDuration: selectedBundle.validityInDays,
+          previousDuration: previousBundle.validityInDays,
+          daysDifference,
+          operationType: 'unused-days-discount'
+        });
+        return 0;
+      }
+
+      const discountPerDay = priceDifference / daysDifference;
+
+      logger.debug('Calculated unused days discount per day', {
+        selectedBundle: selectedBundle.name,
+        selectedPrice: selectedBundle.basePrice,
+        selectedDuration: selectedBundle.validityInDays,
+        previousBundle: previousBundle.name,
+        previousPrice: previousBundle.basePrice,
+        previousDuration: previousBundle.validityInDays,
+        priceDifference,
+        daysDifference,
+        discountPerDay,
+        operationType: 'unused-days-discount'
+      });
+
+      return Math.max(0, discountPerDay); // Ensure non-negative discount
+    } catch (error) {
+      logger.error('Error calculating unused days discount', error as Error, {
+        selectedBundle: selectedBundle.name,
+        requestedDuration,
+        operationType: 'unused-days-discount'
+      });
+      return 0;
+    }
   }
 }
