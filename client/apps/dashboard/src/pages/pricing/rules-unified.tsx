@@ -440,15 +440,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
                         </PopoverContent>
                       </Popover>
 
-                      <Button
-                        variant={!showSystemRules ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setShowSystemRules(!showSystemRules)}
-                        className={!showSystemRules ? "" : "border-dashed"}
-                      >
-                        <Target className="h-4 w-4 mr-2" />
-                        Hide System Rules
-                      </Button>
                     </div>
                   </div>
 
