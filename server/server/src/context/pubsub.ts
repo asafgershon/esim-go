@@ -7,10 +7,6 @@ const logger = createLogger({ component: "PubSub" });
 
 const env = cleanEnv(process.env, {
   REDIS_URL: str({ default: "redis://default:mypassword@localhost:6379" }),
-  REDIS_HOST: str({ default: "localhost" }),
-  REDIS_PORT: str({ default: "6379" }),
-  REDIS_PASSWORD: str({ default: "mypassword" }),
-  REDIS_USER: str({ default: "default" }),
 });
 
 let pubsub: RedisPubSub | null = null;
@@ -22,10 +18,6 @@ export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
       redisUrl: env.REDIS_URL,
       allEnvRedisVars: {
         REDIS_URL: env.REDIS_URL,
-        REDIS_HOST: env.REDIS_HOST,
-        REDIS_PORT: env.REDIS_PORT,
-        REDIS_PASSWORD: env.REDIS_PASSWORD,
-        REDIS_USER: env.REDIS_USER,
       },
     });
 
@@ -35,17 +27,10 @@ export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
     // Use the REDIS_URL directly if available (for Railway internal DNS)
     let publisher: Redis;
     let subscriber: Redis;
-
-    const redisConfig = {
-      host: env.REDIS_HOST,
-      port: parseInt(env.REDIS_PORT),
-      password: env.REDIS_PASSWORD,
-      username: env.REDIS_USER,
-      maxRetriesPerRequest: null, // Required for PubSub compatibility
-    };
-
-    publisher = new Redis(redisConfig);
-    subscriber = new Redis(redisConfig);
+    const url = env.REDIS_URL + "?family=0";
+    logger.debug(`Redis URL: ${url}`);
+    publisher = new Redis(url);
+    subscriber = new Redis(url);
 
     publisher.on("error", (error) => {
       logger.error("Redis publisher error", error as Error, {
