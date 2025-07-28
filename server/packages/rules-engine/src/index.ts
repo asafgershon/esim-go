@@ -1,5 +1,5 @@
 // Main exports
-export { PricingEngine, RuleCategory } from './pricing-engine';
+export { PricingEngine } from './pricing-engine';
 // Keep old export for backward compatibility
 export { PricingEngine as PricingRuleEngine } from './pricing-engine';
 export { RuleBuilder } from './rule-builder';

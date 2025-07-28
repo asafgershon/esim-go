@@ -7,8 +7,8 @@ dist/
 *.d.ts
 *.js.map
 
-# Generated files
-src/generated/
+# Generated files (keeping types committed for Docker builds)
+# src/generated/
 
 # Test coverage
 coverage/

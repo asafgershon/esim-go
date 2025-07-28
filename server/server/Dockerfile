@@ -1,27 +1,46 @@
-# Use the official Bun image
-FROM oven/bun:1-alpine
+# Stage 1: Pruning stage
+FROM oven/bun:1-alpine AS pruner
+
+WORKDIR /app
+
+# Copy package files for pruning
+COPY package.json bun.lock turbo.json ./
+COPY packages ./packages
+COPY server ./server
+COPY workers ./workers
+
+# Prune the workspace for just the server
+RUN bunx turbo prune esim-go-server --out-dir=out
+
+# Stage 2: Build stage
+FROM oven/bun:1-alpine AS builder
 
 # Install dependencies for building
 RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-# Copy the entire server monorepo
-COPY server ./
+# Copy the pruned workspace
+COPY --from=pruner /app/out .
 
-# Install all dependencies
-RUN bun install --frozen-lockfile
+# Fix package.json to remove workers workspace reference
+RUN node -e "const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf8')); pkg.workspaces = pkg.workspaces.filter(w => w !== 'workers'); require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
 
-# Build the workspace packages
-WORKDIR /app/packages/utils
-RUN bun run build
+# Install all dependencies (skip postinstall scripts)
+RUN bun install --ignore-scripts
 
-WORKDIR /app/packages/esim-go-client  
-RUN bun run build
+# Use turbo to build dependencies for esim-go-server
+RUN bunx turbo run build --filter=...esim-go-server
 
-# Build the server (this runs codegen)
 WORKDIR /app/server
-RUN bun run build
+
+# Stage 3: Runtime stage
+FROM oven/bun:1-alpine
+
+WORKDIR /app
+
+# Copy built application from builder stage
+COPY --from=builder /app .
 
 # Set runtime environment
 ENV NODE_ENV=production

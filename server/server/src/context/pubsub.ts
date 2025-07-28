@@ -6,6 +6,7 @@ import { createLogger } from '../lib/logger';
 const logger = createLogger({ component: 'PubSub' });
 
 const env = cleanEnv(process.env, {
+  REDIS_URL: str({ default: "redis://default:mypassword@localhost:6379" }),
   REDIS_HOST: str({ default: "localhost" }),
   REDIS_PORT: str({ default: "6379" }),
   REDIS_PASSWORD: str({ default: "mypassword" }),
@@ -17,21 +18,31 @@ let pubsub: RedisPubSub | null = null;
 export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
   if (!pubsub) {
     logger.info('Initializing Redis PubSub with separate clients', {
-      operationType: 'pubsub-init'
+      operationType: 'pubsub-init',
+      redisUrl: env.REDIS_URL
     });
 
-    // Create native Redis clients specifically for PubSub
+    // Create native Redis clients specifically for PubSub using Redis URL
     // These are separate from Apollo Server's KeyvAdapter Redis client
     const redisConfig = {
-      host: env.REDIS_HOST,
-      port: parseInt(env.REDIS_PORT),
-      password: env.REDIS_PASSWORD,
-      username: env.REDIS_USER,
       maxRetriesPerRequest: null, // Required for PubSub compatibility
     };
 
-    const publisher = new Redis(redisConfig);
-    const subscriber = new Redis(redisConfig);
+    const publisher = new Redis(env.REDIS_URL, redisConfig);
+    const subscriber = new Redis(env.REDIS_URL, redisConfig);
+
+    // Add error handlers to prevent unhandled error events
+    publisher.on('error', (error) => {
+      logger.error('Redis publisher error', error as Error, {
+        operationType: 'redis-publisher-error'
+      });
+    });
+
+    subscriber.on('error', (error) => {
+      logger.error('Redis subscriber error', error as Error, {
+        operationType: 'redis-subscriber-error'
+      });
+    });
 
     // Test connections
     try {

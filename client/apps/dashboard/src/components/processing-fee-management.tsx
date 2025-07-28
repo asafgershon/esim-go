@@ -20,6 +20,7 @@ import {
   CREATE_PRICING_RULE,
   UPDATE_PRICING_RULE,
 } from "../lib/graphql/queries";
+import { cleanPricingRuleForMutation } from "../utils/graphql-utils";
 
 // Helper functions to convert between processing fee data and pricing rules
 const convertProcessingFeeToPricingRules = (fees: ProcessingFeeData) => [
@@ -249,23 +250,25 @@ export const ProcessingFeeManagement: React.FC = () => {
 
         if (existingRule) {
           // Update existing rule - only pass fields allowed in UpdatePricingRuleInput
+          const updateInput = {
+            name: rule.name,
+            description: rule.description,
+            conditions: rule.conditions,
+            actions: rule.actions,
+            priority: rule.priority,
+            isActive: rule.isActive,
+          };
+          
           await updatePricingRule({
             variables: {
               id: existingRule.id,
-              input: {
-                name: rule.name,
-                description: rule.description,
-                conditions: rule.conditions,
-                actions: rule.actions,
-                priority: rule.priority,
-                isActive: rule.isActive,
-              },
+              input: cleanPricingRuleForMutation(updateInput),
             },
           });
         } else {
           // Create new rule - use full CreatePricingRuleInput
           await createPricingRule({
-            variables: { input: rule },
+            variables: { input: cleanPricingRuleForMutation(rule) },
           });
         }
       }

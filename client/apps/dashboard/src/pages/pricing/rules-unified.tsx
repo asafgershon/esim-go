@@ -55,6 +55,7 @@ import {
   TOGGLE_PRICING_RULE,
   UPDATE_PRICING_RULE,
 } from "../../lib/graphql/queries";
+import { cleanPricingRuleForMutation } from "../../utils/graphql-utils";
 
 // Import components
 import { SplitView } from "../../components/common/SplitView";
@@ -878,13 +879,13 @@ const UnifiedPricingRulesPage: React.FC = () => {
                     await updateRule({
                       variables: {
                         id: editingRule.id,
-                        input: ruleData,
+                        input: cleanPricingRuleForMutation(ruleData),
                       },
                     });
                     toast.success("Rule updated successfully");
                   } else {
                     await createRule({
-                      variables: { input: ruleData },
+                      variables: { input: cleanPricingRuleForMutation(ruleData) },
                     });
                     toast.success("Rule created successfully");
                   }

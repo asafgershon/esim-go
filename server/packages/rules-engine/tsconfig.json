@@ -18,16 +18,9 @@
     "noFallthroughCasesInSwitch": true,
     "composite": true,
     "baseUrl": ".",
-    "paths": {
-      "@esim-go/utils": ["../utils/src"]
-    }
   },
-  "references": [
-    { "path": "../utils" }
-  ],
-  "include": [
-    "src/**/*"
-, "__tests__"  ],
+  "references": [{ "path": "../utils" }],
+  "include": ["src/**/*", "__tests__"],
   "exclude": [
     "node_modules",
     "dist",

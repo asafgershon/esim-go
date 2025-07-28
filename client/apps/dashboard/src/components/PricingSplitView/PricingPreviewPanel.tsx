@@ -50,6 +50,7 @@ import {
   CREATE_PRICING_RULE,
   CALCULATE_BATCH_ADMIN_PRICING,
 } from "../../lib/graphql/queries";
+import { cleanPricingRuleForMutation } from "../../utils/graphql-utils";
 import { ConfigurationLevelIndicator } from "../configuration-level-indicator";
 
 interface PricingPreviewPanelProps {
@@ -223,28 +224,30 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
     const countryCode = bundle.countries[0]; // Get first country from array
 
     try {
+      const ruleInput = {
+        category: RuleCategory.BundleAdjustment,
+        name: `${country.name} ${bundle.validityInDays}d Markup Override`,
+        description: `Custom markup for ${country.name} ${bundle.validityInDays}-day bundles: $${markupValue}`,
+        conditions: [
+          {
+            field: "country",
+            operator: ConditionOperator.Equals,
+            value: JSON.stringify(countryCode),
+          },
+          {
+            field: "duration",
+            operator: ConditionOperator.Equals,
+            value: JSON.stringify(bundle.validityInDays),
+          },
+        ],
+        actions: [{ type: ActionType.AddMarkup, value: markupValue }],
+        priority: 100,
+        isActive: true,
+      };
+
       const result = await createPricingRule({
         variables: {
-          input: {
-            category: RuleCategory.BundleAdjustment,
-            name: `${country.name} ${bundle.validityInDays}d Markup Override`,
-            description: `Custom markup for ${country.name} ${bundle.validityInDays}-day bundles: $${markupValue}`,
-            conditions: [
-              {
-                field: "country",
-                operator: ConditionOperator.Equals,
-                value: JSON.stringify(countryCode),
-              },
-              {
-                field: "duration",
-                operator: ConditionOperator.Equals,
-                value: JSON.stringify(bundle.validityInDays),
-              },
-            ],
-            actions: [{ type: ActionType.AddMarkup, value: markupValue }],
-            priority: 100,
-            isActive: true,
-          },
+          input: cleanPricingRuleForMutation(ruleInput),
         },
         refetchQueries: [
           {
@@ -286,33 +289,35 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
     const bundleName = bundle.name;
 
     try {
+      const ruleInput = {
+        category: RuleCategory.Discount,
+        name: `${country.name} ${bundle.validityInDays}d Discount Override`,
+        description: `Custom discount for ${country.name} ${bundle.validityInDays}-day bundles: ${discountValue}%`,
+        conditions: [
+          {
+            field: "country",
+            operator: ConditionOperator.Equals,
+            value: JSON.stringify(countryCode),
+          },
+          {
+            field: "duration",
+            operator: ConditionOperator.Equals,
+            value: JSON.stringify(bundle.validityInDays),
+          },
+        ],
+        actions: [
+          {
+            type: ActionType.ApplyDiscountPercentage,
+            value: discountValue,
+          },
+        ],
+        priority: 100,
+        isActive: true,
+      };
+
       const result = await createPricingRule({
         variables: {
-          input: {
-            category: RuleCategory.Discount,
-            name: `${country.name} ${bundle.validityInDays}d Discount Override`,
-            description: `Custom discount for ${country.name} ${bundle.validityInDays}-day bundles: ${discountValue}%`,
-            conditions: [
-              {
-                field: "country",
-                operator: ConditionOperator.Equals,
-                value: JSON.stringify(countryCode),
-              },
-              {
-                field: "duration",
-                operator: ConditionOperator.Equals,
-                value: JSON.stringify(bundle.validityInDays),
-              },
-            ],
-            actions: [
-              {
-                type: ActionType.ApplyDiscountPercentage,
-                value: discountValue,
-              },
-            ],
-            priority: 100,
-            isActive: true,
-          },
+          input: cleanPricingRuleForMutation(ruleInput),
         },
         refetchQueries: [
           {

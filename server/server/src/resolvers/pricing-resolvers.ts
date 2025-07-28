@@ -230,7 +230,8 @@ function mapEngineToPricingBreakdown(
     discountRate: pricing?.discountRate || 0, // Discount percentage
     processingRate: pricing?.processingRate || 0, // Processing fee percentage
     processingCost: pricing?.processingCost || 0, // Processing fee amount
-    finalRevenue: pricing?.finalRevenue || 0, // Revenue after processing
+    finalRevenue: pricing?.finalRevenue || 0, // What customer pays
+    revenueAfterProcessing: pricing?.revenueAfterProcessing || 0, // What we receive after processing fees
     netProfit: pricing?.netProfit || 0, // Final profit
     discountPerDay: pricing?.discountPerDay || 0, // Per-day discount rate
     

@@ -19,7 +19,7 @@ describe('RuleBuilder', () => {
         .when()
           .country().equals('IL')
         .then()
-          .applyDiscount(10)
+          .applyDiscountPercentage(10)
         .build();
 
       expect(rule).toMatchObject({
@@ -35,8 +35,7 @@ describe('RuleBuilder', () => {
         }],
         actions: [{
           type: ActionType.ApplyDiscountPercentage,
-          value: 10,
-          metadata: {}
+          value: 10
         }]
       });
     });
@@ -47,7 +46,7 @@ describe('RuleBuilder', () => {
         .category(RuleCategory.BundleAdjustment)
         .when()
           .bundleGroup().equals('Premium')
-        .when()
+          .and()
           .duration().greaterThan(15)
         .then()
           .addMarkup(25.00)
@@ -72,21 +71,21 @@ describe('RuleBuilder', () => {
         .category(RuleCategory.Discount)
         .when()
           .region().equals('Europe')
-        .when()
+          .and()
           .duration().between(7, 30)
-        .when()
+          .and()
           .paymentMethod().in(['FOREIGN_CARD', 'AMEX'])
         .then()
-          .applyDiscount(15)
+          .applyDiscountPercentage(15)
         .build();
 
-      expect(rule.conditions).toHaveLength(3); // region + duration (single between) + payment method
+      expect(rule.conditions).toHaveLength(4); // region + duration min/max + payment method
       expect(rule.conditions.find(c => c.field === 'region')).toMatchObject({
         field: 'region',
         operator: ConditionOperator.Equals,
         value: 'Europe'
       });
-      expect(rule.conditions.filter(c => c.field === 'duration')).toHaveLength(1); // between creates single condition
+      expect(rule.conditions.filter(c => c.field === 'duration')).toHaveLength(2);
       expect(rule.conditions.find(c => c.field === 'paymentMethod')).toMatchObject({
         field: 'paymentMethod',
         operator: ConditionOperator.In,
@@ -103,60 +102,64 @@ describe('RuleBuilder', () => {
 
       expect(() => {
         builder.name('Test Rule').build();
-      }).toThrow('At least one condition is required');
+      }).toThrow('Rule category is required');
 
       expect(() => {
-        builder.name('Test Rule')
-          .when().country().equals('US')
-          .build();
+        builder.name('Test Rule').category(RuleCategory.Discount).build();
       }).toThrow('At least one action is required');
     });
 
-    it('should default to Discount category if not specified', () => {
-      const rule = builder
-        .name('Default Type Rule')
-        .when().country().equals('US')
-        .then().applyDiscount(10)
-        .build();
+    it('should validate priority range', () => {
+      expect(() => {
+        builder
+          .name('Test Rule')
+          .category(RuleCategory.Discount)
+          .priority(-1)
+          .when().country().equals('US')
+          .then().applyDiscountPercentage(10)
+          .build();
+      }).toThrow('Priority must be between 0 and 1000');
 
-      expect(rule.category).toBe(RuleCategory.Discount);
+      expect(() => {
+        builder
+          .name('Test Rule')
+          .category(RuleCategory.Discount)
+          .priority(1001)
+          .when().country().equals('US')
+          .then().applyDiscountPercentage(10)
+          .build();
+      }).toThrow('Priority must be between 0 and 1000');
     });
 
-    it('should not validate priority range', () => {
-      // The actual RuleBuilder doesn't validate priority range
-      const rule = builder
-        .name('Test Rule')
-        .category(RuleCategory.Discount)
-        .priority(2000) // Above 1000
-        .when().country().equals('US')
-        .then().applyDiscount(10)
-        .build();
+    it('should validate discount percentage range', () => {
+      expect(() => {
+        builder
+          .name('Invalid Discount')
+          .category(RuleCategory.Discount)
+          .when().country().equals('US')
+          .then().applyDiscountPercentage(101)
+          .build();
+      }).toThrow('Discount percentage must be between 0 and 100');
 
-      expect(rule.priority).toBe(2000);
+      expect(() => {
+        builder
+          .name('Invalid Discount')
+          .category(RuleCategory.Discount)
+          .when().country().equals('US')
+          .then().applyDiscountPercentage(-5)
+          .build();
+      }).toThrow('Discount percentage must be between 0 and 100');
     });
 
-    it('should not validate discount percentage range', () => {
-      // The actual RuleBuilder doesn't validate discount percentage
-      const rule = builder
-        .name('High Discount')
-        .category(RuleCategory.Discount)
-        .when().country().equals('US')
-        .then().applyDiscount(150) // Above 100%
-        .build();
-
-      expect(rule.actions[0].value).toBe(150);
-    });
-
-    it('should not validate processing rate range', () => {
-      // The actual RuleBuilder doesn't validate processing rate
-      const rule = builder
-        .name('High Processing')
-        .category(RuleCategory.Fee)
-        .when().paymentMethod().equals('FOREIGN_CARD')
-        .then().setProcessingRate(150)
-        .build();
-
-      expect(rule.actions[0].value).toBe(150);
+    it('should validate processing rate range', () => {
+      expect(() => {
+        builder
+          .name('Invalid Processing')
+          .category(RuleCategory.Fee)
+          .when().paymentMethod().equals('FOREIGN_CARD')
+          .then().setProcessingRate(101)
+          .build();
+      }).toThrow('Processing rate must be between 0 and 100');
     });
   });
 
@@ -173,7 +176,7 @@ describe('RuleBuilder', () => {
         .when()
           .country().equals('US')
         .then()
-          .applyDiscount(20)
+          .applyDiscountPercentage(20)
         .build();
 
       expect(rule.validFrom).toBe(startDate.toISOString());
@@ -204,20 +207,17 @@ describe('RuleBuilder', () => {
           .paymentMethod().equals('AMEX')
         .then()
           .setProcessingRate(5.5)
-        .then()
           .addMarkup(2.00)
         .build();
 
       expect(rule.actions).toHaveLength(2);
       expect(rule.actions[0]).toMatchObject({
         type: ActionType.SetProcessingRate,
-        value: 5.5,
-        metadata: {}
+        value: 5.5
       });
       expect(rule.actions[1]).toMatchObject({
         type: ActionType.AddMarkup,
-        value: 2.00,
-        metadata: {}
+        value: 2.00
       });
     });
   });
@@ -228,17 +228,17 @@ describe('RuleBuilder', () => {
         .name('Complex Condition Rule')
         .category(RuleCategory.Discount)
         .when()
-          .field('bundle.isUnlimited').equals(true)
-        .when()
+          .custom('bundle.isUnlimited').equals(true)
+          .and()
           .duration().lessThan(30)
-        .when()
-          .field('cost').equals(50) // Generic field only has equals/notEquals/in/notIn
-        .when()
+          .and()
+          .cost().greaterThanOrEqual(50)
+          .and()
           .region().notEquals('Asia')
-        .when()
-          .field('bundleGroup').equals('Premium')
+          .and()
+          .bundleGroup().contains('Premium')
         .then()
-          .applyDiscount(25)
+          .applyDiscountPercentage(25)
         .build();
 
       expect(rule.conditions).toHaveLength(5);
@@ -253,7 +253,7 @@ describe('RuleBuilder', () => {
         value: 30
       });
       expect(conditions.find(c => c.field === 'cost')).toMatchObject({
-        operator: ConditionOperator.Equals,
+        operator: ConditionOperator.GreaterThanOrEqual,
         value: 50
       });
       expect(conditions.find(c => c.field === 'region')).toMatchObject({
@@ -261,7 +261,7 @@ describe('RuleBuilder', () => {
         value: 'Asia'
       });
       expect(conditions.find(c => c.field === 'bundleGroup')).toMatchObject({
-        operator: ConditionOperator.Equals,
+        operator: ConditionOperator.Contains,
         value: 'Premium'
       });
     });
@@ -290,15 +290,19 @@ describe('RuleBuilder', () => {
         .category(RuleCategory.Constraint)
         .priority(900)
         .when()
-          .field('profit').equals(1.50) // Generic fields don't have lessThan
+          .custom('profit').lessThan(1.50)
         .then()
-          .applyDiscount(0) // Constraint rules don't have specific actions in the builder
+          .setMinimumProfit(1.50)
         .build();
 
       expect(rule.category).toBe(RuleCategory.Constraint);
       expect(rule.conditions[0]).toMatchObject({
         field: 'profit',
-        operator: ConditionOperator.Equals,
+        operator: ConditionOperator.LessThan,
+        value: 1.50
+      });
+      expect(rule.actions[0]).toMatchObject({
+        type: ActionType.SetMinimumProfit,
         value: 1.50
       });
     });
@@ -312,7 +316,7 @@ describe('RuleBuilder', () => {
         .when()
           .country().equals('')
         .then()
-          .applyDiscount(5)
+          .applyDiscountPercentage(5)
         .build();
 
       expect(rule.conditions[0].value).toBe('');
@@ -332,15 +336,18 @@ describe('RuleBuilder', () => {
       expect(rule.actions[0].value).toBe(0);
     });
 
-    it('should not reset builder state after build', () => {
+    it('should reset builder state after build', () => {
       const rule1 = builder
         .name('First Rule')
         .category(RuleCategory.Discount)
         .when().country().equals('US')
-        .then().applyDiscount(10)
+        .then().applyDiscountPercentage(10)
         .build();
 
-      // The actual RuleBuilder doesn't reset state, so we can build again
+      // Builder should be reset, so building again should fail
+      expect(() => builder.build()).toThrow('Rule name is required');
+
+      // Should be able to build a completely different rule
       const rule2 = builder
         .name('Second Rule')
         .category(RuleCategory.Fee)
@@ -349,8 +356,7 @@ describe('RuleBuilder', () => {
         .build();
 
       expect(rule2.name).toBe('Second Rule');
-      // Should include conditions from both rules
-      expect(rule2.conditions.length).toBeGreaterThan(1);
+      expect(rule2.conditions).not.toEqual(rule1.conditions);
     });
   });
 
@@ -360,154 +366,24 @@ describe('RuleBuilder', () => {
         .name('Nested Field Rule')
         .category(RuleCategory.Discount)
         .when()
-          .field('bundle.metadata.tags').in(['promotional'])
-        .when()
-          .field('customer.profile.tier').equals('premium')
+          .custom('bundle.metadata.tags').contains('promotional')
+          .and()
+          .custom('customer.profile.tier').equals('premium')
         .then()
-          .applyDiscount(30)
+          .applyDiscountPercentage(30)
         .build();
 
       expect(rule.conditions).toHaveLength(2);
       expect(rule.conditions[0]).toMatchObject({
         field: 'bundle.metadata.tags',
-        operator: ConditionOperator.In,
-        value: ['promotional']
+        operator: ConditionOperator.Contains,
+        value: 'promotional'
       });
       expect(rule.conditions[1]).toMatchObject({
         field: 'customer.profile.tier',
         operator: ConditionOperator.Equals,
         value: 'premium'
       });
-    });
-  });
-
-  describe('Condition builder methods', () => {
-    it('should support user conditions', () => {
-      const rule = builder
-        .name('First Purchase Discount')
-        .category(RuleCategory.Discount)
-        .when()
-          .user().isFirstPurchase()
-        .then()
-          .applyDiscount(15)
-        .build();
-
-      expect(rule.conditions[0]).toMatchObject({
-        field: 'user.isFirstPurchase',
-        operator: ConditionOperator.Equals,
-        value: true
-      });
-    });
-
-    it('should support date conditions', () => {
-      const rule = builder
-        .name('Date Range Rule')
-        .category(RuleCategory.Discount)
-        .when()
-          .date().between('2024-01-01', '2024-12-31')
-        .then()
-          .applyDiscount(10)
-        .build();
-
-      expect(rule.conditions[0]).toMatchObject({
-        field: 'currentDate',
-        operator: ConditionOperator.Between,
-        value: ['2024-01-01', '2024-12-31']
-      });
-    });
-
-    it('should support payment method conditions with in operator', () => {
-      const rule = builder
-        .name('Foreign Card Processing')
-        .category(RuleCategory.Fee)
-        .when()
-          .paymentMethod().in(['FOREIGN_CARD', 'AMEX', 'DISCOVER'])
-        .then()
-          .setProcessingRate(4.5)
-        .build();
-
-      expect(rule.conditions[0]).toMatchObject({
-        field: 'paymentMethod',
-        operator: ConditionOperator.In,
-        value: ['FOREIGN_CARD', 'AMEX', 'DISCOVER']
-      });
-    });
-  });
-
-  describe('Missing methods in condition builder', () => {
-    it('should support numeric operators', () => {
-      const rule = builder
-        .name('Duration Range')
-        .category(RuleCategory.BundleAdjustment)
-        .when()
-          .duration().between(5, 30)
-        .then()
-          .addMarkup(10)
-        .build();
-
-      expect(rule.conditions).toHaveLength(1); // between() creates a single condition
-      expect(rule.conditions[0]).toMatchObject({
-        field: 'duration',
-        operator: ConditionOperator.Between,
-        value: [5, 30]
-      });
-    });
-
-    it('should support generic field conditions', () => {
-      const rule = builder
-        .name('Generic Field Test')
-        .category(RuleCategory.Discount)
-        .when()
-          .field('customField').exists()
-        .then()
-          .applyDiscount(5)
-        .build();
-
-      expect(rule.conditions[0]).toMatchObject({
-        field: 'customField',
-        operator: ConditionOperator.Exists,
-        value: true
-      });
-    });
-  });
-
-  describe('Action builder special methods', () => {
-    it('should support setDiscountPerUnusedDay action', () => {
-      const rule = builder
-        .name('Unused Day Discount')
-        .category(RuleCategory.Discount)
-        .when()
-          .field('unusedDays').equals(1) // Generic field only has equals/notEquals/in/notIn
-        .then()
-          .setDiscountPerUnusedDay(0.15)
-        .build();
-
-      expect(rule.actions[0]).toMatchObject({
-        type: ActionType.SetDiscountPerUnusedDay,
-        value: 0.15,
-        metadata: {}
-      });
-    });
-  });
-
-  describe('Chaining support', () => {
-    it('should allow condition chaining with and()', () => {
-      const conditionBuilder = builder
-        .name('Chained Conditions')
-        .category(RuleCategory.Discount)
-        .when();
-
-      // The actual implementation doesn't have and() method on condition builders
-      // Instead, chaining works by returning the RuleBuilder from condition methods
-      const rule = conditionBuilder
-        .country().equals('US')
-        .when()
-        .region().equals('North America')
-        .then()
-        .applyDiscount(10)
-        .build();
-
-      expect(rule.conditions).toHaveLength(2);
     });
   });
 });

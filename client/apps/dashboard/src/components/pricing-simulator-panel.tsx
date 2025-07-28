@@ -1,34 +1,22 @@
-import React from 'react';
+import { Country, PaymentMethod } from '@/__generated__/graphql';
+import { useQuery } from '@apollo/client';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  Button,
   Input,
   Label,
+  ScrollArea,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-  Button,
-  ScrollArea,
-  Badge,
-  Separator,
+  SelectValue
 } from '@workspace/ui';
 import {
   Calculator,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Clock,
-  Globe,
   CreditCard,
-  Package,
+  Package
 } from 'lucide-react';
-import { Country, PaymentMethod } from '@/__generated__/graphql';
-import { useQuery } from '@apollo/client';
+import React from 'react';
 import { GET_BUNDLE_GROUPS } from '../lib/graphql/queries';
 
 interface PricingSimulatorPanelProps {
@@ -67,7 +55,7 @@ export const PricingSimulatorPanel: React.FC<PricingSimulatorPanelProps> = ({
   loading,
 }) => {
   // Fetch available bundle groups
-  const { data: bundleGroupsData, loading: loadingBundleGroups } = useQuery(GET_BUNDLE_GROUPS);
+  const { data: bundleGroupsData } = useQuery(GET_BUNDLE_GROUPS);
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
@@ -160,7 +148,7 @@ export const PricingSimulatorPanel: React.FC<PricingSimulatorPanelProps> = ({
                   </div>
                 </SelectItem>
                 {bundleGroupsData?.pricingFilters?.groups?.map((group: string) => (
-                  <SelectItem key={group} value={group}>
+                  <SelectItem key={group} value={'Standard - Unlimited Plus'}>
                     <div className="flex items-center gap-2">
                       <Package className="h-4 w-4" />
                       <span>{group}</span>

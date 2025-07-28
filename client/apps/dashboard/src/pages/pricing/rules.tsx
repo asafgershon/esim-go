@@ -59,6 +59,7 @@ import {
   TOGGLE_PRICING_RULE,
   CLONE_PRICING_RULE
 } from '../../lib/graphql/queries';
+import { cleanPricingRuleForMutation } from '../../utils/graphql-utils';
 import { RuleBuilder } from '../../components/pricing/rule-builder';
 import { RuleAnalytics } from '../../components/pricing/rule-analytics';
 
@@ -547,13 +548,13 @@ const RulesPage: React.FC = () => {
                   await updateRule({
                     variables: {
                       id: editingRule.id,
-                      input: ruleData
+                      input: cleanPricingRuleForMutation(ruleData)
                     }
                   });
                   toast.success('Rule updated successfully');
                 } else {
                   await createRule({
-                    variables: { input: ruleData }
+                    variables: { input: cleanPricingRuleForMutation(ruleData) }
                   });
                   toast.success('Rule created successfully');
                 }

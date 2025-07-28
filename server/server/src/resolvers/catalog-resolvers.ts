@@ -297,13 +297,30 @@ export const catalogResolvers: Partial<Resolvers> = {
         // Import the BullMQ queue to actually queue jobs
         const { Queue } = await import("bullmq");
         const { default: IORedis } = await import("ioredis");
+        const { cleanEnv, str } = await import("envalid");
+
+        // Get Redis config from environment
+        const env = cleanEnv(process.env, {
+          REDIS_HOST: str({ default: "localhost" }),
+          REDIS_PORT: str({ default: "6379" }),
+          REDIS_PASSWORD: str({ default: "mypassword" }),
+          REDIS_USER: str({ default: "default" }),
+        });
 
         // Create Redis connection (same config as workers)
         const redis = new IORedis({
-          host: "localhost",
-          port: 6379,
-          password: "mypassword",
+          host: env.REDIS_HOST,
+          port: parseInt(env.REDIS_PORT),
+          password: env.REDIS_PASSWORD,
+          username: env.REDIS_USER,
           maxRetriesPerRequest: null,
+        });
+
+        // Add error handler to prevent unhandled error events
+        redis.on('error', (error) => {
+          logger.error('Redis catalog queue error', error as Error, {
+            operationType: 'redis-catalog-queue-error'
+          });
         });
 
         // Create the same queue as workers use

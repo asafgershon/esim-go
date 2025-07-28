@@ -544,6 +544,7 @@ export class PricingEngine {
     
     // revenueAfterProcessing = bottom line revenue after processing fees are deducted
     finalPricing.revenueAfterProcessing = finalPricing.priceAfterDiscount - finalPricing.processingCost;
+    finalPricing.totalCostBeforeProcessing = finalPricing.priceAfterDiscount - finalPricing.processingCost;
     
     // Net profit is what we keep after paying the supplier cost
     // Processing fees are passed to the payment processor, not kept as profit
@@ -654,8 +655,9 @@ export class PricingEngine {
       priceAfterDiscount: bundle.basePrice,
       processingCost: 0,
       processingRate: 0,
-      finalRevenue: bundle.basePrice,
-      revenueAfterProcessing: bundle.basePrice, // Initially same as finalRevenue
+      finalRevenue: bundle.basePrice, // What customer pays
+      revenueAfterProcessing: bundle.basePrice, // What we receive after processing fees
+      totalCostBeforeProcessing: bundle.basePrice,
       netProfit: 0,
       discountPerDay: 0,
       // Required fields with defaults

@@ -863,7 +863,8 @@ type PricingBreakdown {
   discountRate: Float! @auth(role: "ADMIN") # Discount percentage
   processingRate: Float! @auth(role: "ADMIN") # Processing fee percentage
   processingCost: Float! @auth(role: "ADMIN") # Processing fee amount
-  finalRevenue: Float! @auth(role: "ADMIN") # Revenue after processing
+  finalRevenue: Float! @auth(role: "ADMIN") # What customer pays (same as priceAfterDiscount)
+  revenueAfterProcessing: Float! @auth(role: "ADMIN") # What we receive after processing fees
   netProfit: Float! @auth(role: "ADMIN") # Final profit
   discountPerDay: Float! @auth(role: "ADMIN") # Per-day discount rate
   # Rule-based pricing breakdown - Admin only
