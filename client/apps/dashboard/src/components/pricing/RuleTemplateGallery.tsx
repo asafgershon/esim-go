@@ -100,7 +100,7 @@ const RULE_TEMPLATES: RuleTemplate[] = [
       conditions: [
         {
           field: 'request.duration',
-          operator: ConditionOperator.GreaterThanOrEqual,
+          operator: ConditionOperator.Equals,
           value: '30',
         },
       ],
@@ -210,7 +210,7 @@ const RULE_TEMPLATES: RuleTemplate[] = [
       conditions: [
         {
           field: 'request.duration',
-          operator: ConditionOperator.LessThanOrEqual,
+          operator: ConditionOperator.Equals,
           value: '3',
         },
       ],

@@ -1,16 +1,11 @@
-import React from 'react';
-import { ScrollArea, Badge, Alert, AlertDescription } from '@workspace/ui';
+import { Alert, AlertDescription, Badge, ScrollArea } from '@workspace/ui';
 import {
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  Clock,
-  Zap,
-  CheckCircle2,
-  XCircle,
   Activity,
+  AlertCircle,
+  TrendingDown,
+  Zap
 } from 'lucide-react';
+import React from 'react';
 import { PricingPipelineStream } from './pricing-pipeline-stream';
 import { PricingRulesSummary } from './pricing-rules-summary';
 

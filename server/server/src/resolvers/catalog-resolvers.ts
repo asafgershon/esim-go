@@ -9,6 +9,7 @@ import type {
   SyncJobType
 } from "../types";
 import { calculatePricingForBundle } from "./pricing-resolvers";
+import type Redis from "ioredis";
 
 const logger = createLogger({
   component: "CatalogResolvers",
@@ -307,7 +308,7 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Use REDIS_URL directly if available (for Railway internal DNS)
-        let redis: IORedis;
+        let redis: Redis;
         
         if (process.env.REDIS_URL) {
           logger.info('Using Redis URL for catalog queue', {

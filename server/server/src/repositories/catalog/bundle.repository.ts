@@ -356,8 +356,8 @@ export class BundleRepository extends BaseSupabaseRepository<
 
       return dataTypes;
     } catch (error) {
-      this.logger.error('Failed to get data types from bundles', error, {
-        operationType: 'bundle-data-types-fetch'
+      this.logger.error('Failed to get data types from bundles', error as Error, {
+        operationType: 'bundle-data-types-fetch'  
       });
       throw error;
     }
@@ -390,10 +390,10 @@ export class BundleRepository extends BaseSupabaseRepository<
 
       // Only return ranges that have bundles
       return ranges.filter(range => 
-        durations.some(d => d >= range.minDays && d <= range.maxDays)
+        durations.filter(d => d !== null).some(d => d >= range.minDays && d <= range.maxDays)
       );
     } catch (error) {
-      this.logger.error('Failed to get duration ranges from bundles', error, {
+      this.logger.error('Failed to get duration ranges from bundles', error as Error, {
         operationType: 'bundle-duration-ranges-fetch'
       });
       throw error;

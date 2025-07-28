@@ -87,7 +87,6 @@ const pipelineSteps: PipelineStep[] = [
 ];
 
 export const PipelineStepVisualization: React.FC<PipelineStepVisualizationProps> = ({
-  pricingResult,
   appliedRules,
   selectedRule,
   className = '',

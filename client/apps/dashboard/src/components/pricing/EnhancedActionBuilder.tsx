@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import { ActionType, RuleAction, RuleCategory } from '@/__generated__/graphql';
 import {
+  Alert,
+  AlertDescription,
+  Badge,
   Button,
   Card,
   CardContent,
@@ -10,23 +13,19 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Badge,
-  Alert,
-  AlertDescription,
 } from '@workspace/ui';
 import {
-  Plus,
-  Trash2,
-  DollarSign,
-  Percent,
-  TrendingUp,
-  TrendingDown,
-  Target,
-  Zap,
-  Info,
   AlertTriangle,
+  DollarSign,
+  Info,
+  Percent,
+  Plus,
+  Target,
+  Trash2,
+  TrendingDown,
+  Zap
 } from 'lucide-react';
-import { ActionType, RuleAction, RuleCategory } from '@/__generated__/graphql';
+import React, { useState } from 'react';
 
 interface EnhancedActionBuilderProps {
   actions: RuleAction[];

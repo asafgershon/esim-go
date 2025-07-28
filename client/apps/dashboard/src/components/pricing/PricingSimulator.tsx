@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import {
+  CalculateBatchAdminPricingQuery,
+  CalculateBatchAdminPricingQueryVariables,
+  GetCountriesQuery,
+  GetCountryBundlesQuery,
+  PricingRule,
+} from '@/__generated__/graphql';
 import { useLazyQuery, useQuery } from '@apollo/client';
 import {
+  Alert,
+  AlertDescription,
+  Badge,
   Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  Input,
   Label,
   Select,
   SelectContent,
@@ -14,36 +22,27 @@ import {
   SelectTrigger,
   SelectValue,
   Slider,
-  Badge,
-  Alert,
-  AlertDescription,
   Tooltip,
   TooltipContent,
-  TooltipTrigger,
+  TooltipTrigger
 } from '@workspace/ui';
 import {
+  AlertCircle,
   Calculator,
   CreditCard,
   Globe,
-  Calendar,
-  Zap,
   RefreshCw,
+  TrendingDown,
   TrendingUp,
-  AlertCircle,
+  Zap
 } from 'lucide-react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 import {
+  CALCULATE_BATCH_ADMIN_PRICING,
   GET_COUNTRIES,
   GET_COUNTRY_BUNDLES,
-  CALCULATE_BATCH_ADMIN_PRICING,
 } from '../../lib/graphql/queries';
-import {
-  GetCountriesQuery,
-  GetCountryBundlesQuery,
-  CalculateBatchAdminPricingQuery,
-  CalculateBatchAdminPricingQueryVariables,
-  PricingRule,
-} from '@/__generated__/graphql';
 import { PipelineStepVisualization } from './PipelineStepVisualization';
 import { RuleImpactCard } from './RuleImpactCard';
 

@@ -95,7 +95,7 @@ export const PricingRulesSummary: React.FC<PricingRulesSummaryProps> = ({
     });
 
     // Calculate total evaluation time
-    if (firstTimestamp && lastTimestamp) {
+    if (firstTimestamp && lastTimestamp && fir) {
       stats.evaluationTime = lastTimestamp.getTime() - firstTimestamp.getTime();
     }
 

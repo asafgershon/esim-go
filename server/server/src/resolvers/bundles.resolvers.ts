@@ -468,7 +468,7 @@ export const bundlesResolvers: Partial<Resolvers> = {
       if ((obj as CatalogBundle).esimGoName) {
         return "CatalogBundle";
       }
-      if ((obj as CustomerBundle).pricing) {
+      if ((obj as CustomerBundle).pricingBreakdown) {
         return "CustomerBundle";
       }
       return "CatalogBundle";
