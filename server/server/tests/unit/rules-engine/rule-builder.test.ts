@@ -45,7 +45,7 @@ describe('RuleBuilder', () => {
         .name('Premium Bundle Markup')
         .category(RuleCategory.BundleAdjustment)
         .when()
-          .bundleGroup().equals('Premium')
+          .group().equals('Premium')
           .and()
           .duration().greaterThan(15)
         .then()
@@ -274,7 +274,7 @@ describe('RuleBuilder', () => {
         .category(RuleCategory.BundleAdjustment)
         .priority(1000)
         .when()
-          .bundleGroup().notEquals('')
+          .group().notEquals('')
         .then()
           .addMarkup(15.00)
         .build();

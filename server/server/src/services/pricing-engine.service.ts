@@ -1,44 +1,52 @@
-import { Bundle, PricingContext, PricingEngine, PricingEngineInput, PricingEngineOutput } from '@esim-go/rules-engine';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { RedisPubSub } from 'graphql-redis-subscriptions';
-import { publishEvent, PubSubEvents } from '../context/pubsub';
-import { createLogger, withPerformanceLogging } from '../lib/logger';
-import { PricingRulesRepository } from '../repositories/pricing-rules.repository';
-
+import {
+  PricingEngine,
+  type PricingEngineInput,
+  type PricingEngineOutput,
+  type PricingEngineState,
+} from "@esim-go/rules-engine";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { RedisPubSub } from "graphql-redis-subscriptions";
+import { publishEvent, PubSubEvents } from "../context/pubsub";
+import { createLogger, withPerformanceLogging } from "../lib/logger";
+import { PricingRulesRepository } from "../repositories/pricing-rules.repository";
+import type { Bundle, PaymentMethod } from "../types";
 
 export class PricingEngineService {
   private engine: PricingEngine;
   private repository: PricingRulesRepository;
   private pubsub: RedisPubSub | null = null;
-  private logger = createLogger({   
-    component: 'PricingEngineService',
-    operationType: 'pricing-calculation'
+  private logger = createLogger({
+    component: "PricingEngineService",
+    operationType: "pricing-calculation",
   });
-  
+
   // Cache rules for 5 minutes
-  private static readonly RULES_CACHE_KEY = 'pricing:rules:active';Ok
+  private static readonly RULES_CACHE_KEY = "pricing:rules:active";
   private static readonly RULES_CACHE_TTL = 300; // 5 minutes
-  
+
   // Singleton instance
   private static instance: PricingEngineService | null = null;
 
-  constructor(supabase: SupabaseClient, pubsub?: RedisPubSub) {
+  constructor(pubsub?: RedisPubSub) {
     this.engine = new PricingEngine();
-    this.repository = new PricingRulesRepository(supabase);
+    this.repository = new PricingRulesRepository();
     this.pubsub = pubsub || null;
   }
 
   /**
    * Get singleton instance of the pricing engine service
    */
-  static getInstance(supabase: SupabaseClient, pubsub?: RedisPubSub): PricingEngineService {
+  static getInstance(
+    supabase: SupabaseClient,
+    pubsub?: RedisPubSub
+  ): PricingEngineService {
     if (!PricingEngineService.instance) {
-      PricingEngineService.instance = new PricingEngineService(supabase, pubsub);
+      PricingEngineService.instance = new PricingEngineService(pubsub);
       // Initialize in background
-      PricingEngineService.instance.initialize().catch(error => {
-        const logger = createLogger({ component: 'PricingEngineService' });
-        logger.error('Failed to initialize pricing engine', error as Error, {
-          operationType: 'pricing-engine-init'
+      PricingEngineService.instance.initialize().catch((error) => {
+        const logger = createLogger({ component: "PricingEngineService" });
+        logger.error("Failed to initialize pricing engine", error as Error, {
+          operationType: "pricing-engine-init",
         });
       });
     }
@@ -59,7 +67,7 @@ export class PricingEngineService {
   async initialize(): Promise<void> {
     return withPerformanceLogging(
       this.logger,
-      'initialize-pricing-engine',
+      "initialize-pricing-engine",
       async () => {
         await this.loadRules();
       }
@@ -71,94 +79,106 @@ export class PricingEngineService {
    * @param input - Pricing engine input
    * @param streaming - Enable real-time step streaming via WebSocket
    */
-  async calculatePrice(input: PricingEngineInput, streaming = false): Promise<PricingEngineOutput> {
+  async calculatePrice(
+    input: PricingEngineInput,
+    streaming = false
+  ): Promise<PricingEngineOutput> {
     // Ensure rules are loaded
     await this.ensureRulesLoaded();
-    
+
     return withPerformanceLogging(
       this.logger,
-      'calculate-price',
+      "calculate-price",
       async () => {
         if (!streaming) {
           // Non-streaming calculation - use legacy method
           return await this.engine.calculatePrice(input);
         }
-        
+
         // Streaming calculation - emit each step via PubSub
         if (!this.pubsub) {
-          this.logger.warn('Streaming requested but PubSub not available, falling back to non-streaming', {
-            correlationId: input.metadata.correlationId
-          });
+          this.logger.warn(
+            "Streaming requested but PubSub not available, falling back to non-streaming",
+            {
+              correlationId: input.metadata.correlationId,
+            }
+          );
           return await this.engine.calculatePrice(input);
         }
-        
+
         const generator = this.engine.calculatePriceSteps(input);
         let finalResult: PricingEngineOutput | null = null;
-        
+
         try {
           // Process all steps and capture the final result
           let result = await generator.next();
-          
+
           while (!result.done) {
             const step = result.value;
-            
+
             // Log step for debugging
-            this.logger.debug('Publishing pricing pipeline step', {
+            this.logger.debug("Publishing pricing pipeline step", {
               correlationId: input.metadata.correlationId,
               stepName: step.name,
-              operationType: 'pricing-pipeline-publish'
+              operationType: "pricing-pipeline-publish",
             });
-            
+
             // Publish step to PubSub for real-time streaming
-            await publishEvent(this.pubsub, PubSubEvents.PRICING_PIPELINE_STEP, {
-              correlationId: input.metadata.correlationId,
-              name: step.name,
-              timestamp: step.timestamp.toISOString(),
-              state: step.state,
-              appliedRules: step.appliedRules || [],
-              debug: step.debug || {}
-            });
-            
+            await publishEvent(
+              this.pubsub,
+              PubSubEvents.PRICING_PIPELINE_STEP,
+              {
+                correlationId: input.metadata.correlationId,
+                name: step.name,
+                timestamp: step.timestamp.toISOString(),
+                state: step.state,
+                appliedRules: step.appliedRules || [],
+                debug: step.debug || {},
+              }
+            );
+
             // Get next step
             result = await generator.next();
           }
-          
+
           // The final value is the PricingEngineOutput
           finalResult = result.value;
-          
         } catch (error) {
-          this.logger.error('Error during streaming calculation', error as Error, {
-            correlationId: input.metadata.correlationId,
-            operationType: 'streaming-calculation'
-          });
+          this.logger.error(
+            "Error during streaming calculation",
+            error as Error,
+            {
+              correlationId: input.metadata.correlationId,
+              operationType: "streaming-calculation",
+            }
+          );
           throw error;
         }
-        
+
         if (!finalResult) {
-          throw new Error('Failed to get final result from pricing engine');
+          throw new Error("Failed to get final result from pricing engine");
         }
-        
+
         return finalResult;
       },
       {
         bundleCount: input.bundles?.length || 0,
         requestedDuration: input.request.duration,
-        streaming
+        streaming,
       }
     );
   }
-
 
   /**
    * Reload rules from database
    * Call this when rules are updated
    */
   async reloadRules(): Promise<void> {
-    this.logger.info('Reloading pricing rules');
-    
+    this.logger.info("Reloading pricing rules");
+
     // Clear engine rules
     this.engine.clearRules();
-    
+
     // Load fresh rules
     await this.loadRules();
   }
@@ -172,7 +192,7 @@ export class PricingEngineService {
     return {
       all: [], // TODO: Implement rules getter in new PricingEngine
       system: [],
-      business: []
+      business: [],
     };
   }
 
@@ -181,9 +201,9 @@ export class PricingEngineService {
    */
   validateInput(input: PricingEngineInput): string[] {
     const errors: string[] = [];
-    
+
     if (!input.bundles || input.bundles.length === 0) {
-      errors.push('At least one bundle is required');
+      errors.push("At least one bundle is required");
     } else {
       // Validate each bundle
       input.bundles.forEach((bundle, index) => {
@@ -196,44 +216,45 @@ export class PricingEngineService {
         }
       });
     }
-    
+
     if (!input.request.duration || input.request.duration < 1) {
-      errors.push('Requested duration must be at least 1 day');
+      errors.push("Requested duration must be at least 1 day");
     }
-    
+
     if (!input.metadata?.correlationId) {
-      errors.push('Correlation ID is required for tracking');
+      errors.push("Correlation ID is required for tracking");
     }
-    
+
     return errors;
   }
 
   /**
    * Legacy validate method for backward compatibility
    */
-  validateContext(context: PricingContext): string[] {
+  validateContext(context: PricingEngineState): string[] {
     // Convert to new format and validate
     const input: Partial<PricingEngineInput> = {
-      bundles: context.availableBundles?.map(bundle => ({
-        name: (bundle as any).id || 'unknown',
-        basePrice: (bundle as any).cost || 0,
-        validityInDays: (bundle as any).duration || 0,
-        countries: [],
-        currency: 'USD',
-        dataAmountReadable: 'Unknown',
-        groups: [],
-        isUnlimited: false,
-        speed: []
-      })) || [],
+      bundles:
+        context.bundles?.map((bundle) => ({
+          name: (bundle as any).id || "unknown",
+          basePrice: (bundle as any).cost || 0,
+          validityInDays: (bundle as any).duration || 0,
+          countries: [],
+          currency: "USD",
+          dataAmountReadable: "Unknown",
+          groups: [],
+          isUnlimited: false,
+          speed: [],
+        })) || [],
       request: {
-        duration: context.requestedDuration,
-        paymentMethod: context.paymentMethod as any
+        duration: context.request.duration,
+        paymentMethod: context.request.paymentMethod,
       },
       metadata: {
-        correlationId: 'validation'
-      }
+        correlationId: "validation",
+      },
     };
-    
+
     return this.validateInput(input as PricingEngineInput);
   }
 
@@ -241,51 +262,53 @@ export class PricingEngineService {
     // Try to load from cache first if available
     // if (this.cache) { // This line was removed as per the new_code, as the cache property is removed.
     //   const cachedRules = await this.cache.get(PricingEngineService.RULES_CACHE_KEY);
-      
+
     //   if (cachedRules) {
     //     this.logger.info('Loading rules from cache');
     //     const rules = JSON.parse(cachedRules);
-        
+
     //     // Separate system and business rules
     //     const systemRules = rules.filter((r: any) => !r.isEditable);
     //     const businessRules = rules.filter((r: any) => r.isEditable);
-        
+
     //     // Add to engine
     //     this.engine.addSystemRules(systemRules);
     //     this.engine.addRules(businessRules);
-        
+
     //     this.logger.info('Rules loaded from cache', {
     //       systemCount: systemRules.length,
     //       businessCount: businessRules.length
     //     });
-        
+
     //     return;
     //   }
     // }
-    
+
     // Load from database
-    this.logger.info('Loading rules from database');
-    
+    this.logger.info("Loading rules from database");
+
     let activeRules = await this.repository.findActiveRules();
-    
+
     // If no rules exist, create default system rules
     if (activeRules.length === 0) {
-      this.logger.info('No pricing rules found, initializing default system rules');
-      
+      this.logger.info(
+        "No pricing rules found, initializing default system rules"
+      );
+
       await this.repository.initializeDefaultRules();
-      
+
       // Reload rules after creating defaults
       activeRules = await this.repository.findActiveRules();
-      
-      this.logger.info('Default system rules initialized', {
-        loadedCount: activeRules.length
+
+      this.logger.info("Default system rules initialized", {
+        loadedCount: activeRules.length,
       });
     }
-    
+
     // Add all rules to the new pricing engine
     // The new engine doesn't separate system/business rules
     this.engine.addRules(activeRules);
-    
+
     // Cache the rules if cache is available
     // if (this.cache) { // This line was removed as per the new_code, as the cache property is removed.
     //   await this.cache.set(
@@ -294,9 +317,9 @@ export class PricingEngineService {
     //     { ttl: PricingEngineService.RULES_CACHE_TTL }
     //   );
     // }
-    
-    this.logger.info('Rules loaded from database', {
-      totalCount: activeRules.length
+
+    this.logger.info("Rules loaded from database", {
+      totalCount: activeRules.length,
     });
   }
 
@@ -306,34 +329,12 @@ export class PricingEngineService {
     try {
       await this.loadRules();
     } catch (error) {
-      this.logger.warn('Failed to ensure rules loaded, continuing with empty rules', {
-        error: (error as Error).message
-      });
+      this.logger.warn(
+        "Failed to ensure rules loaded, continuing with empty rules",
+        {
+          error: (error as Error).message,
+        }
+      );
     }
   }
-  /**
-   * Create a pricing context from common inputs
-   * Helper method for GraphQL resolvers
-   */
-  static createContext(params: {
-      availableBundles: Array<Bundle>;
-    requestedDuration: number;
-    user?: {
-      id: string;
-      isNew?: boolean;
-      isFirstPurchase?: boolean;
-      purchaseCount?: number;
-      segment?: string;
-    };
-    paymentMethod?: string;
-  }): PricingContext {
-    return {
-      availableBundles: params.availableBundles,
-      requestedDuration: params.requestedDuration,
-      user: params.user,
-      paymentMethod: params.paymentMethod || 'ISRAELI_CARD',
-      currentDate: new Date()
-    };
-  }
 }
-

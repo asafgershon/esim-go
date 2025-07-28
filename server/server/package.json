@@ -27,6 +27,7 @@
     "@types/qrcode": "^1.5.5",
     "@vitest/ui": "^3.2.4",
     "dotenv": "^17.2.0",
+    "@types/byte-size": "^8.1.2",
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
@@ -36,6 +37,7 @@
     "@apollo/datasource-rest": "^6.4.1",
     "@apollo/server": "^4.12.2",
     "@apollo/utils.keyvadapter": "^4.0.1",
+    "byte-size": "^9.0.1",
     "@esim-go/client": "workspace:*",
     "@esim-go/rules-engine": "workspace:*",
     "@esim-go/utils": "workspace:*",

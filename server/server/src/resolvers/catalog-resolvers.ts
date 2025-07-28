@@ -1,21 +1,14 @@
-import type { Country } from "@esim-go/client";
-import type { Bundle } from "@esim-go/rules-engine";
+import byteSize from "byte-size";
 import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
-import { calculatePricingForBundle } from "./pricing-resolvers";
 import type {
-  BundlesByCountry,
-  BundlesByRegion,
-  CalculatePriceInput,
   CatalogBundle,
-  CountryBundle,
   CustomerBundle,
-  PricingBreakdown,
   Resolvers,
-  SyncJobType,
+  SyncJobType
 } from "../types";
-import byteSize, { default as bytesize } from "byte-size";
+import { calculatePricingForBundle } from "./pricing-resolvers";
 
 const logger = createLogger({
   component: "CatalogResolvers",
@@ -311,15 +304,11 @@ export const catalogResolvers: Partial<Resolvers> = {
           REDIS_PORT: str({ default: "6379" }),
           REDIS_PASSWORD: str({ default: "mypassword" }),
           REDIS_USER: str({ default: "default" }),
-          RAILWAY_SERVICE_REDIS_URL: str({ default: "" }),
         });
-
-        // Use external Railway Redis URL if available (internal DNS not working)
-        const redisHost = env.RAILWAY_SERVICE_REDIS_URL || env.REDIS_HOST;
 
         // Create Redis connection (same config as workers)
         const redis = new IORedis({
-          host: redisHost,
+          host: env.REDIS_HOST,
           port: parseInt(env.REDIS_PORT),
           password: env.REDIS_PASSWORD,
           username: env.REDIS_USER,
@@ -420,8 +409,8 @@ export const catalogResolvers: Partial<Resolvers> = {
 
   CountryBundle: {
     pricingBreakdown: async (
-      parent: any,
-      { paymentMethod },
+      parent,
+      { },
       context: Context
     ) => {
       try {
@@ -429,7 +418,7 @@ export const catalogResolvers: Partial<Resolvers> = {
         const bundle = {
           ...parent,
           __typename: "CountryBundle",
-          basePrice: parent.basePrice || 0,
+          basePrice: parent.price || 0,
           validityInDays: parent.duration,
           countries: parent.country ? [parent.country.iso] : [],
           region: parent.country?.region,
@@ -437,7 +426,7 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         return calculatePricingForBundle(
           bundle,
-          mapPaymentMethodEnum(paymentMethod),
+          mapPaymentMethodEnum(parent),
           context
         );
       } catch (error) {
