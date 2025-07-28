@@ -304,34 +304,34 @@ export const catalogResolvers: Partial<Resolvers> = {
           REDIS_PORT: str({ default: "6379" }),
           REDIS_PASSWORD: str({ default: "mypassword" }),
           REDIS_USER: str({ default: "default" }),
-          RAILWAY_SERVICE_REDIS_URL: str({ default: "" }),
         });
 
-        // Use external Railway Redis URL if available (internal DNS not working)
-        let redisConfig: any;
+        // Use REDIS_URL directly if available (for Railway internal DNS)
+        let redis: IORedis;
         
-        if (env.RAILWAY_SERVICE_REDIS_URL && process.env.REDIS_URL) {
-          // Replace internal hostname with external one in the URL
-          const externalRedisUrl = process.env.REDIS_URL.replace('redis.railway.internal', env.RAILWAY_SERVICE_REDIS_URL);
-          logger.info('Using external Redis URL for catalog queue', {
-            originalUrl: process.env.REDIS_URL,
-            externalUrl: externalRedisUrl,
-            operationType: 'redis-catalog-url-config'
+        if (process.env.REDIS_URL) {
+          logger.info('Using Redis URL for catalog queue', {
+            redisUrl: process.env.REDIS_URL,
+            operationType: 'redis-catalog-config'
           });
-          redisConfig = externalRedisUrl;
+          redis = new IORedis(process.env.REDIS_URL);
         } else {
-          // Fallback to object config
-          redisConfig = {
+          const redisConfig = {
             host: env.REDIS_HOST,
             port: parseInt(env.REDIS_PORT),
             password: env.REDIS_PASSWORD,
             username: env.REDIS_USER,
             maxRetriesPerRequest: null,
           };
+          
+          logger.info('Using Redis object config for catalog queue', {
+            host: redisConfig.host,
+            port: redisConfig.port,
+            operationType: 'redis-catalog-config'
+          });
+          
+          redis = new IORedis(redisConfig);
         }
-
-        // Create Redis connection (same config as workers)
-        const redis = new IORedis(redisConfig);
 
         // Add error handler to prevent unhandled error events
         redis.on("error", (error) => {

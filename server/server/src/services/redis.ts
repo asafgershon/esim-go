@@ -10,7 +10,6 @@ const env = cleanEnv(process.env, {
   REDIS_HOST: str({ default: "localhost" }),
   REDIS_PORT: port({ default: 6379 }),
   REDIS_USER: str({ default: "default" }),
-  RAILWAY_SERVICE_REDIS_URL: str({ default: "" }),
 });
 
 const logger = createLogger({ component: 'redis' });
@@ -19,22 +18,13 @@ let redisInstance: KeyvAdapter<any>;
 
 export async function getRedis() {
   if (!redisInstance) {
-    // Use external Railway Redis URL if available (internal DNS not working)
-    let redisUrl: string;
+    // Use REDIS_URL directly if available (for Railway internal DNS)
+    const redisUrl = env.REDIS_URL || `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`;
     
-    if (env.RAILWAY_SERVICE_REDIS_URL && env.REDIS_URL) {
-      // Replace internal hostname with external one in the URL
-      redisUrl = env.REDIS_URL.replace('redis.railway.internal', env.RAILWAY_SERVICE_REDIS_URL);
-      logger.info('Using external Redis URL', { 
-        originalUrl: env.REDIS_URL,
-        externalUrl: redisUrl,
-        operationType: 'redis-url-config'
-      });
-    } else {
-      // Fallback to constructing URL
-      const redisHost = env.REDIS_HOST;
-      redisUrl = `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${redisHost}:${env.REDIS_PORT}`;
-    }
+    logger.info('Redis configuration', { 
+      redisUrl,
+      operationType: 'redis-config'
+    });
     const store = new KeyvRedis(
       {
         url: redisUrl,

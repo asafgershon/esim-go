@@ -11,7 +11,6 @@ const env = cleanEnv(process.env, {
   REDIS_PORT: str({ default: "6379" }),
   REDIS_PASSWORD: str({ default: "mypassword" }),
   REDIS_USER: str({ default: "default" }),
-  RAILWAY_SERVICE_REDIS_URL: str({ default: "" }),
 });
 
 let pubsub: RedisPubSub | null = null;
@@ -27,60 +26,47 @@ export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
         REDIS_PORT: process.env.REDIS_PORT,
         REDIS_PASSWORD: process.env.REDIS_PASSWORD,
         REDIS_USER: process.env.REDIS_USER,
-        RAILWAY_SERVICE_REDIS_URL: process.env.RAILWAY_SERVICE_REDIS_URL,
       }
     });
 
-    // Create native Redis clients specifically for PubSub using object config
+    // Create native Redis clients specifically for PubSub
     // These are separate from Apollo Server's KeyvAdapter Redis client
-    // Use external Railway Redis URL if available (internal DNS not working)
-    let redisConfig: any;
     
-    if (env.RAILWAY_SERVICE_REDIS_URL && env.REDIS_URL) {
-      // Replace internal hostname with external one in the URL
-      const externalRedisUrl = env.REDIS_URL.replace('redis.railway.internal', env.RAILWAY_SERVICE_REDIS_URL);
-      logger.info('Using external Redis URL', {
-        operationType: 'redis-url-config',
-        originalUrl: env.REDIS_URL,
-        externalUrl: externalRedisUrl
+    // Use the REDIS_URL directly if available (for Railway internal DNS)
+    let publisher: Redis;
+    let subscriber: Redis;
+    
+    if (env.REDIS_URL) {
+      logger.info('Using Redis URL for PubSub', {
+        operationType: 'redis-config',
+        redisUrl: env.REDIS_URL
       });
-      redisConfig = externalRedisUrl;
+      
+      publisher = new Redis(env.REDIS_URL);
+      subscriber = new Redis(env.REDIS_URL);
     } else {
-      // Fallback to object config
-      redisConfig = {
+      const redisConfig = {
         host: env.REDIS_HOST,
         port: parseInt(env.REDIS_PORT),
         password: env.REDIS_PASSWORD,
         username: env.REDIS_USER,
         maxRetriesPerRequest: null, // Required for PubSub compatibility
       };
+      
+      logger.info('Using Redis object config for PubSub', {
+        operationType: 'redis-config',
+        host: redisConfig.host,
+        port: redisConfig.port
+      });
+      
+      publisher = new Redis(redisConfig);
+      subscriber = new Redis(redisConfig);
     }
-
-    logger.info('Creating Redis clients', {
-      operationType: 'redis-client-creation',
-      configType: typeof redisConfig === 'string' ? 'url' : 'object',
-      config: typeof redisConfig === 'string' 
-        ? { url: redisConfig }
-        : {
-            host: redisConfig.host,
-            port: redisConfig.port,
-            username: redisConfig.username,
-            hasPassword: !!redisConfig.password
-          }
-    });
-
-    const publisher = new Redis(redisConfig);
-    const subscriber = new Redis(redisConfig);
 
     // Add error handlers to prevent unhandled error events
     publisher.on('error', (error) => {
       logger.error('Redis publisher error', error as Error, {
         operationType: 'redis-publisher-error',
-        configType: typeof redisConfig === 'string' ? 'url' : 'object',
-        config: typeof redisConfig === 'string' ? redisConfig : {
-          host: redisConfig.host,
-          port: redisConfig.port
-        },
         errorName: error.name,
         errorMessage: error.message
       });
@@ -89,11 +75,6 @@ export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
     subscriber.on('error', (error) => {
       logger.error('Redis subscriber error', error as Error, {
         operationType: 'redis-subscriber-error',
-        configType: typeof redisConfig === 'string' ? 'url' : 'object',
-        config: typeof redisConfig === 'string' ? redisConfig : {
-          host: redisConfig.host,
-          port: redisConfig.port
-        },
         errorName: error.name,
         errorMessage: error.message
       });
@@ -101,12 +82,7 @@ export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
 
     // Test DNS resolution first
     logger.info('Testing Redis connection', {
-      operationType: 'redis-connection-test',
-      configType: typeof redisConfig === 'string' ? 'url' : 'object',
-      config: typeof redisConfig === 'string' ? 'url string' : {
-        host: redisConfig.host,
-        port: redisConfig.port
-      }
+      operationType: 'redis-connection-test'
     });
 
     // Test connections with detailed logging
@@ -122,17 +98,11 @@ export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
       await subscriber.ping();
       
       logger.info('✅ Redis PubSub clients connected successfully', {
-        operationType: 'pubsub-init-success',
-        configType: typeof redisConfig === 'string' ? 'url' : 'object'
+        operationType: 'pubsub-init-success'
       });
     } catch (error) {
       logger.error('❌ Failed to connect Redis PubSub clients', error as Error, {
         operationType: 'pubsub-init-failure',
-        configType: typeof redisConfig === 'string' ? 'url' : 'object',
-        config: typeof redisConfig === 'string' ? 'url string' : {
-          host: redisConfig.host,
-          port: redisConfig.port
-        },
         errorName: (error as Error).name,
         errorMessage: (error as Error).message
       });
