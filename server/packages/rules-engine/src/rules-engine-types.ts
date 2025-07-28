@@ -38,7 +38,7 @@ export interface PricingEngineState {
   rules: PricingRule[];
   date: Date;
 
-  // Request
+  // User Request
   request: {
     duration: number;
     paymentMethod: PaymentMethod;
@@ -49,6 +49,7 @@ export interface PricingEngineState {
     dataType?: DataType;
   };
 
+  // Pipeline Steps
   steps: PipelineStep[];
 
   // Response

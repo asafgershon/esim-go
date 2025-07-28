@@ -1,6 +1,5 @@
 import {
   PricingEngine,
-  type Bundle as EngineBundle,
   type PricingEngineInput,
   type PricingEngineOutput,
 } from "@esim-go/rules-engine";
@@ -75,27 +74,6 @@ async function getActivePricingRules(context: Context): Promise<PricingRule[]> {
 }
 
 /**
- * Convert GraphQL Bundle to Engine Bundle format
- */
-function convertToEngineBundle(bundle: Bundle | any): EngineBundle {
-  return {
-    name: bundle.name || bundle.esimGoName || "Unknown Bundle",
-    description: bundle.description || "",
-    groups: bundle.groups || [],
-    validityInDays: bundle.validityInDays || bundle.validity_in_days || 1,
-    dataAmountMB: bundle.dataAmountMB || bundle.data_amount_mb || null,
-    dataAmountReadable:
-      bundle.dataAmountReadable || bundle.data_amount_readable || "Unknown",
-    isUnlimited: bundle.isUnlimited || bundle.is_unlimited || false,
-    countries: bundle.countries || [],
-    region: bundle.region || "",
-    speed: bundle.speed || [],
-    currency: bundle.currency || "USD",
-    basePrice: bundle.basePrice || bundle.price || 0,
-  };
-}
-
-/**
  * Shared function to calculate pricing for a single bundle
  * This is the single source of truth for all pricing calculations
  */
@@ -122,40 +100,29 @@ export async function calculatePricingForBundle(
     pricingEngine.clearRules();
     pricingEngine.addRules(rules);
 
-    // 3. Convert bundle to engine format
-    const engineBundle = convertToEngineBundle(bundle);
-
-    // 4. Create pricing engine input
+    // 3. Create pricing engine input
     const engineInput: PricingEngineInput = {
-      bundles: [engineBundle],
-      costumer: {
-        id: context.auth?.user?.id || "anonymous",
-        segment: "default",
+      context: {
+        bundles: [bundle],
+        costumer: {
+          id: context.auth?.user?.id || "anonymous",
+          segment: "default",
+        },
+        payment: {
+          method: paymentMethod,
+          promo: undefined,
+        },
+        rules,
+        date: new Date(),
       },
-      date: new Date(),
-      payment: {
-        method: paymentMethod,
-        promo: undefined,
-      },
-      rules,
       request: {
         duration: bundle.validityInDays,
         paymentMethod,
         countryISO: bundle.countries?.[0],
         region: bundle.region || "",
         group: bundle.groups?.[0] || "",
-        dataType: {
-          isUnlimited: bundle.isUnlimited,
-          label: bundle.dataAmountReadable,
-          value: String(bundle.dataAmountMB),
-        },
+        dataType: bundle.isUnlimited ? "unlimited" : "fixed",
       },
-      steps: [],
-      unusedDays: 0,
-      country: bundle.countries?.[0] || "",
-      region: bundle.region || "",
-      group: bundle.groups?.[0] || "",
-      dataType: "DEFAULT" as any,
       metadata: {
         correlationId: finalCorrelationId,
         userId: context.auth?.user?.id,
@@ -187,11 +154,11 @@ function mapEngineToPricingBreakdown(
   engineOutput: PricingEngineOutput,
   bundleOrInput: Bundle | CalculatePriceInput
 ): PricingBreakdown {
-  const pricing = engineOutput.pricing;
-  const selectedBundle = engineOutput.selectedBundle;
+  const pricing = engineOutput.response.pricing;
+  const selectedBundle = engineOutput.response.selectedBundle;
 
   // Extract bundle selection reason from pipeline steps
-  const bundleSelectionStep = engineOutput.steps?.find(
+  const bundleSelectionStep = engineOutput.state.steps?.find(
     (step) => step.name === "BUNDLE_SELECTION"
   );
   const selectedReason = bundleSelectionStep?.debug?.reason || "calculated";
@@ -225,6 +192,7 @@ function mapEngineToPricingBreakdown(
       data: selectedBundle?.dataAmountMB || null,
       isUnlimited: selectedBundle?.isUnlimited || false,
       currency: selectedBundle?.currency || "USD",
+      group: selectedBundle?.groups?.[0] || null, // Add the group field
       country: {
         iso: countryIso || "",
         name: countryIso || "", // Will be resolved by country resolver
@@ -259,10 +227,10 @@ function mapEngineToPricingBreakdown(
 
     // Rule-based pricing breakdown - Admin only
     appliedRules:
-      engineOutput.appliedRules?.map((rule) => ({
+      engineOutput.response.rules?.map((rule) => ({
         id: rule.id,
         name: rule.name,
-        type: rule.type,
+        category: rule.category,
         impact: 0, // TODO: Calculate impact from rule actions
       })) || [],
 
@@ -274,7 +242,7 @@ function mapEngineToPricingBreakdown(
       })) || [],
 
     // Pipeline metadata - Admin only
-    unusedDays: engineOutput.unusedDays || 0,
+    unusedDays: engineOutput.response.unusedDays || 0,
     selectedReason,
 
     // Additional pricing engine fields - Admin only
@@ -351,7 +319,6 @@ export const pricingQueries: QueryResolvers = {
       // 1. Get available bundles from catalog
       const catalogResponse = await context.repositories.bundles.search({
         countries: [countryId || ""],
-        maxValidityInDays: numOfDays * 2, // Get bundles with longer duration too
         minValidityInDays: 1,
         groups: groups?.filter(Boolean) || [],
       });
@@ -394,31 +361,27 @@ export const pricingQueries: QueryResolvers = {
 
       // 4. Create engine input with all bundles
       const engineInput: PricingEngineInput = {
-        bundles: bundles.map(convertToEngineBundle),
-        costumer: {
-          id: context.auth?.user?.id || "anonymous",
-          segment: "default",
+        context: {
+          bundles,
+          costumer: {
+            id: context.auth?.user?.id || "anonymous",
+            segment: "default",
+          },
+          payment: {
+            method: mapPaymentMethodEnum(paymentMethod),
+            promo: undefined,
+          },
+          rules,
+          date: new Date(),
         },
-        payment: {
-          method: mapPaymentMethodEnum(paymentMethod),
-          promo: undefined,
-        },
-        date: new Date(),
-        rules,
         request: {
           duration: numOfDays,
           paymentMethod: mapPaymentMethodEnum(paymentMethod),
           countryISO: countryId,
           region: regionId || "",
-          dataType: { isUnlimited: false, label: "Unknown", value: "unknown" },
           group: groups?.[0] || "",
+          dataType: undefined,
         },
-        steps: [],
-        unusedDays: 0,
-        country: countryId || "",
-        region: regionId || "",
-        group: groups?.[0] || "",
-        dataType: "DEFAULT" as any,
         metadata: {
           correlationId,
           userId: context.auth?.user?.id,
@@ -427,16 +390,6 @@ export const pricingQueries: QueryResolvers = {
 
       // 5. Let engine select best bundle and calculate pricing
       const result = await pricingEngine.calculatePrice(engineInput);
-
-      // Debug log for unused days (single pricing)
-      logger.info("DEBUG: Single pricing engine result for unused days", {
-        correlationId,
-        requestedDuration: numOfDays,
-        selectedBundleDuration: result.selectedBundle?.validityInDays,
-        unusedDays: result.unusedDays,
-        discountPerDay: result.pricing?.discountPerDay,
-        operationType: "unused-days-debug-single",
-      });
 
       // 6. Map result to GraphQL format
       const pricingBreakdown = mapEngineToPricingBreakdown(result, {
@@ -459,7 +412,7 @@ export const pricingQueries: QueryResolvers = {
         countryId,
         numOfDays,
         finalPrice: pricingBreakdown.priceAfterDiscount,
-        selectedBundle: result.selectedBundle?.name,
+        selectedBundle: result.response.selectedBundle?.name,
         correlationId,
         operationType: "calculate-price",
       });
@@ -517,7 +470,6 @@ export const pricingQueries: QueryResolvers = {
         // Use the same logic as calculatePrice
         const catalogResponse = await context.repositories.bundles.search({
           countries: [input.countryId || ""],
-          maxValidityInDays: input.numOfDays * 2,
           minValidityInDays: 1,
           groups: input.groups || [],
         });
@@ -536,48 +488,41 @@ export const pricingQueries: QueryResolvers = {
 
         // Create engine input
         const engineInput: PricingEngineInput = {
-          bundles: catalogResponse.data.map((b) =>
-            convertToEngineBundle({
-              name: b.esim_go_name || "Unknown",
-              groups: b.groups || [],
-              validityInDays: b.validity_in_days || 1,
-              dataAmountMB: b.data_amount_mb,
-              dataAmountReadable: b.data_amount_readable || "Unknown",
-              isUnlimited: b.is_unlimited || false,
-              countries: [input.countryId],
-              region: b.region,
-              basePrice: b.price || 0,
-              currency: "USD",
-            })
-          ),
-          date: new Date(),
-          costumer: {
-            id: context.auth?.user?.id || "anonymous",
-            segment: "default",
+          context: {
+            bundles: catalogResponse.data.map((b) => {
+              return {
+                basePrice: b.price || 0,
+                countries: b.countries || [],
+                currency: "USD",
+                dataAmountReadable: b.data_amount_readable || "Unknown",
+                groups: b.groups || [],
+                isUnlimited: b.is_unlimited || false,
+                name: b.esim_go_name || "Unknown",
+                region: b.region,
+                speed: [],
+                validityInDays: b.validity_in_days || 1,
+                dataAmountMB: b.data_amount_mb,
+              };
+            }),
+            costumer: {
+              id: context.auth?.user?.id || "anonymous",
+              segment: "default",
+            },
+            payment: {
+              method: mapPaymentMethodEnum(input.paymentMethod),
+              promo: undefined,
+            },
+            rules,
+            date: new Date(),
           },
-          payment: {
-            method: mapPaymentMethodEnum(input.paymentMethod),
-            promo: undefined,
-          },
-          rules,
           request: {
             duration: input.numOfDays,
             paymentMethod: mapPaymentMethodEnum(input.paymentMethod),
             countryISO: input.countryId || "",
             region: input.regionId || "",
-            dataType: {
-              isUnlimited: false,
-              label: "Unknown",
-              value: "unknown",
-            },
             group: input.groups?.[0] || "",
+            dataType: undefined,
           },
-          steps: [],
-          unusedDays: 0,
-          country: input.countryId || "",
-          region: input.regionId || "",
-          group: input.groups?.[0] || "",
-          dataType: { isUnlimited: false, label: "Unknown", value: "unknown" },
           metadata: {
             correlationId: `${correlationId}-${results.length}`,
             userId: context.auth?.user?.id,
@@ -590,9 +535,10 @@ export const pricingQueries: QueryResolvers = {
         logger.info("DEBUG: Pricing engine result for unused days", {
           correlationId: `${correlationId}-${results.length}`,
           requestedDuration: input.numOfDays,
-          selectedBundleDuration: result.selectedBundle?.validityInDays,
-          unusedDays: result.unusedDays,
-          discountPerDay: result.pricing?.discountPerDay,
+          selectedBundleDuration:
+            result.response.selectedBundle?.validityInDays,
+          unusedDays: result.response.unusedDays,
+          discountPerDay: result.response.pricing?.discountPerDay,
           operationType: "unused-days-debug",
         });
 
@@ -688,43 +634,41 @@ export const pricingQueries: QueryResolvers = {
 
       // Create engine input
       const engineInput: PricingEngineInput = {
-        bundles: catalogResponse.data.map((b) =>
-          convertToEngineBundle({
-            name: b.esim_go_name || "Unknown",
-            groups: b.groups || [],
-            validityInDays: b.validity_in_days || 1,
-            dataAmountMB: b.data_amount_mb,
-            dataAmountReadable: b.data_amount_readable || "Unknown",
-            isUnlimited: b.is_unlimited || false,
-            countries: [input.countryId],
-            region: b.region,
-            basePrice: b.price || 0,
-            currency: "USD",
-          })
-        ),
-        costumer: {
-          id: context.auth?.user?.id || "anonymous",
-          segment: "default",
+        context: {
+          bundles: catalogResponse.data.map((b) => {
+            return {
+              basePrice: b.price || 0,
+              countries: b.countries || [],
+              currency: "USD",
+              dataAmountReadable: b.data_amount_readable || "Unknown",
+              groups: b.groups || [],
+              isUnlimited: b.is_unlimited || false,
+              name: b.esim_go_name || "Unknown",
+              region: b.region,
+              speed: [],
+              validityInDays: b.validity_in_days || 1,
+              dataAmountMB: b.data_amount_mb,
+            };
+          }),
+          costumer: {
+            id: context.auth?.user?.id || "anonymous",
+            segment: "default",
+          },
+          payment: {
+            method: mapPaymentMethodEnum(input.paymentMethod),
+            promo: undefined,
+          },
+          rules: [...existingRules, testRuleWithId],
+          date: new Date(),
         },
-        payment: {
-          method: mapPaymentMethodEnum(input.paymentMethod),
-          promo: undefined,
-        },
-        rules: [...existingRules, testRuleWithId],
         request: {
           duration: input.numOfDays,
           paymentMethod: mapPaymentMethodEnum(input.paymentMethod),
           countryISO: input.countryId || "",
           region: undefined,
-          dataType: { isUnlimited: false, label: "Unknown", value: "unknown" },
+          group: "",
+          dataType: undefined,
         },
-        group: "",
-        steps: [],
-        unusedDays: 0,
-        country: input.countryId || "",
-        region: "",
-        dataType: { isUnlimited: false, label: "Unknown", value: "unknown" },
-        date: new Date(),
         metadata: {
           correlationId,
           userId: context.auth?.user?.id,
@@ -738,7 +682,7 @@ export const pricingQueries: QueryResolvers = {
       logger.info("Pricing rule simulation completed (admin)", {
         ruleName: rule.name,
         finalPrice: pricingBreakdown.priceAfterDiscount,
-        appliedRules: result.pricing?.appliedRules?.length || 0,
+        appliedRules: result.response.rules?.length || 0,
         correlationId,
         operationType: "simulate-pricing-rule",
       });

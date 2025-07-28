@@ -2,14 +2,12 @@ import {
   PricingEngine,
   type PricingEngineInput,
   type PricingEngineOutput,
-  type PricingEngineState,
 } from "@esim-go/rules-engine";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RedisPubSub } from "graphql-redis-subscriptions";
 import { publishEvent, PubSubEvents } from "../context/pubsub";
 import { createLogger, withPerformanceLogging } from "../lib/logger";
 import { PricingRulesRepository } from "../repositories/pricing-rules.repository";
-import type { Bundle, PaymentMethod } from "../types";
 
 export class PricingEngineService {
   private engine: PricingEngine;
@@ -19,10 +17,6 @@ export class PricingEngineService {
     component: "PricingEngineService",
     operationType: "pricing-calculation",
   });
-
-  // Cache rules for 5 minutes
-  private static readonly RULES_CACHE_KEY = "pricing:rules:active";
-  private static readonly RULES_CACHE_TTL = 300; // 5 minutes
 
   // Singleton instance
   private static instance: PricingEngineService | null = null;
@@ -36,10 +30,7 @@ export class PricingEngineService {
   /**
    * Get singleton instance of the pricing engine service
    */
-  static getInstance(
-    supabase: SupabaseClient,
-    pubsub?: RedisPubSub
-  ): PricingEngineService {
+  static getInstance(pubsub?: RedisPubSub): PricingEngineService {
     if (!PricingEngineService.instance) {
       PricingEngineService.instance = new PricingEngineService(pubsub);
       // Initialize in background
@@ -162,7 +153,7 @@ export class PricingEngineService {
         return finalResult;
       },
       {
-        bundleCount: input.bundles?.length || 0,
+        bundleCount: input.context.bundles?.length || 0,
         requestedDuration: input.request.duration,
         streaming,
       }
@@ -202,11 +193,11 @@ export class PricingEngineService {
   validateInput(input: PricingEngineInput): string[] {
     const errors: string[] = [];
 
-    if (!input.bundles || input.bundles.length === 0) {
+    if (!input.context.bundles || input.context.bundles.length === 0) {
       errors.push("At least one bundle is required");
     } else {
       // Validate each bundle
-      input.bundles.forEach((bundle, index) => {
+      input.context.bundles.forEach((bundle, index) => {
         if (!bundle.name) errors.push(`Bundle ${index}: name is required`);
         if (!bundle.basePrice || bundle.basePrice < 0) {
           errors.push(`Bundle ${index}: basePrice must be a positive number`);
@@ -228,62 +219,7 @@ export class PricingEngineService {
     return errors;
   }
 
-  /**
-   * Legacy validate method for backward compatibility
-   */
-  validateContext(context: PricingEngineState): string[] {
-    // Convert to new format and validate
-    const input: Partial<PricingEngineInput> = {
-      bundles:
-        context.bundles?.map((bundle) => ({
-          name: (bundle as any).id || "unknown",
-          basePrice: (bundle as any).cost || 0,
-          validityInDays: (bundle as any).duration || 0,
-          countries: [],
-          currency: "USD",
-          dataAmountReadable: "Unknown",
-          groups: [],
-          isUnlimited: false,
-          speed: [],
-        })) || [],
-      request: {
-        duration: context.request.duration,
-        paymentMethod: context.request.paymentMethod,
-      },
-      metadata: {
-        correlationId: "validation",
-      },
-    };
-
-    return this.validateInput(input as PricingEngineInput);
-  }
-
   private async loadRules(): Promise<void> {
-    // Try to load from cache first if available
-    // if (this.cache) { // This line was removed as per the new_code, as the cache property is removed.
-    //   const cachedRules = await this.cache.get(PricingEngineService.RULES_CACHE_KEY);
-
-    //   if (cachedRules) {
-    //     this.logger.info('Loading rules from cache');
-    //     const rules = JSON.parse(cachedRules);
-
-    //     // Separate system and business rules
-    //     const systemRules = rules.filter((r: any) => !r.isEditable);
-    //     const businessRules = rules.filter((r: any) => r.isEditable);
-
-    //     // Add to engine
-    //     this.engine.addSystemRules(systemRules);
-    //     this.engine.addRules(businessRules);
-
-    //     this.logger.info('Rules loaded from cache', {
-    //       systemCount: systemRules.length,
-    //       businessCount: businessRules.length
-    //     });
-
-    //     return;
-    //   }
-    // }
-
     // Load from database
     this.logger.info("Loading rules from database");
 
@@ -305,18 +241,7 @@ export class PricingEngineService {
       });
     }
 
-    // Add all rules to the new pricing engine
-    // The new engine doesn't separate system/business rules
     this.engine.addRules(activeRules);
-
-    // Cache the rules if cache is available
-    // if (this.cache) { // This line was removed as per the new_code, as the cache property is removed.
-    //   await this.cache.set(
-    //     PricingEngineService.RULES_CACHE_KEY,
-    //     JSON.stringify(activeRules),
-    //     { ttl: PricingEngineService.RULES_CACHE_TTL }
-    //   );
-    // }
 
     this.logger.info("Rules loaded from database", {
       totalCount: activeRules.length,

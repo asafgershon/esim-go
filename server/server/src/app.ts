@@ -5,6 +5,7 @@ dotenv.config({ path: join(__dirname, "../.env") });
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import { ESimGoClient } from "@esim-go/client";
 import { mergeTypeDefs } from "@graphql-tools/merge";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import cors from "cors";
@@ -51,7 +52,6 @@ import { TripRepository } from "./repositories/trip.repository";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
-import { ESimGoClient } from "@esim-go/client";
 
 // Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
@@ -74,18 +74,17 @@ const env = cleanEnv(process.env, {
 });
 
 async function startServer() {
-  
   try {
     console.log("Creating executable schema...");
     // Create the schema
     const executableSchema = makeExecutableSchema({ typeDefs, resolvers });
     console.log("Applying auth directive transformer...");
     const schemaWithDirectives = authDirectiveTransformer(executableSchema);
-    
+
     console.log("Getting Redis connection...");
     // Redis is now configured at Apollo Server level for caching
     const redis = await getRedis();
-    
+
     // Initialize PubSub for WebSocket subscriptions
     console.log("🔄 Initializing PubSub for WebSocket subscriptions...");
     const pubsub = await getPubSub(redis);
@@ -95,7 +94,7 @@ async function startServer() {
     console.log("Initializing eSIM Go client...");
     const esimGoClient = new ESimGoClient({
       apiKey: env.ESIM_GO_API_KEY,
-      baseUrl: 'https://api.esim-go.com/v2.5',
+      baseUrl: "https://api.esim-go.com/v2.5",
       retryAttempts: 3,
     });
 
@@ -181,48 +180,48 @@ async function startServer() {
         introspection: true,
         cache: redis,
         plugins: [
-        // Proper shutdown for the HTTP server
-        ApolloServerPluginDrainHttpServer({ httpServer }),
-        // Proper shutdown for the WebSocket server
-        {
-          async serverWillStart() {
-            return {
-              async drainServer() {
-                await serverCleanup.dispose();
-              },
-            };
+          // Proper shutdown for the HTTP server
+          ApolloServerPluginDrainHttpServer({ httpServer }),
+          // Proper shutdown for the WebSocket server
+          {
+            async serverWillStart() {
+              return {
+                async drainServer() {
+                  await serverCleanup.dispose();
+                },
+              };
+            },
           },
-        },
-        // Add request timeout plugin
-        {
-          async requestDidStart() {
-            const startTime = Date.now();
-            return {
-              async willSendResponse(requestContext) {
-                // Log slow requests for debugging
-                const duration = Date.now() - startTime;
-                if (duration > 5000) {
-                  logger.warn("Slow GraphQL request detected", {
-                    duration,
-                    operationName: requestContext.request.operationName,
-                    operationType: "performance-warning",
-                  });
-                }
-              },
-            };
+          // Add request timeout plugin
+          {
+            async requestDidStart() {
+              const startTime = Date.now();
+              return {
+                async willSendResponse(requestContext) {
+                  // Log slow requests for debugging
+                  const duration = Date.now() - startTime;
+                  if (duration > 5000) {
+                    logger.warn("Slow GraphQL request detected", {
+                      duration,
+                      operationName: requestContext.request.operationName,
+                      operationType: "performance-warning",
+                    });
+                  }
+                },
+              };
+            },
           },
+        ],
+        // Add global query timeout
+        formatError: (formattedError, error: any) => {
+          // Log errors for debugging
+          logger.error("GraphQL Error:", error as Error, {
+            code: formattedError.extensions?.code as string,
+            path: formattedError.path,
+            extensions: formattedError.extensions,
+          });
+          return formattedError;
         },
-      ],
-      // Add global query timeout
-      formatError: (formattedError, error: any) => {
-        // Log errors for debugging
-        logger.error("GraphQL Error:", error as Error, {
-          code: formattedError.extensions?.code as string,
-          path: formattedError.path,
-          extensions: formattedError.extensions,
-        });
-        return formattedError;
-      },
       });
     } catch (error) {
       console.error("Error creating ApolloServer:", error);

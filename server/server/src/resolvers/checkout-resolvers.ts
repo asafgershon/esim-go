@@ -1,3 +1,5 @@
+import { BundleOrderTypeEnum, OrderRequestTypeEnum } from "@esim-go/client";
+import { PricingEngine, type PricingEngineInput } from "@esim-go/rules-engine";
 import crypto from "crypto";
 import { GraphQLError } from "graphql";
 import jwt from "jsonwebtoken";
@@ -8,9 +10,6 @@ import { createLogger } from "../lib/logger";
 import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.repository";
 import { createPaymentService } from "../services/payment";
 import { PaymentMethod, type EsimStatus, type OrderStatus, type Resolvers } from "../types";
-import { PricingEngine, type PricingEngineInput } from "@esim-go/rules-engine";
-import { BundleOrderTypeEnum, OrderRequestTypeEnum } from "@esim-go/client";
-import { calculatePricingForBundle } from "./pricing-resolvers";
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS

@@ -206,7 +206,7 @@ async function handleBundleActivated(data: any) {
       .from('esim_bundles')
       .insert({
         esim_id: dbESIM.id,
-        data_plan_id: dbESIM.esim_orders.data_plan_id,
+        data_plan_id: dbESIM.esim_orders.data_plan_id || '',
         name: bundle_name,
         state: 'ACTIVE',
         start_date,

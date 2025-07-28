@@ -1,8 +1,4 @@
 import { z } from "zod";
-import type {
-  ESIMGoDataPlan
-} from "../datasources/esim-go/types";
-import { convertCentsToDollars, convertBytesToMB } from '../utils/bundle-display.utils';
 
 // Input validation schemas
 const ESIMGoDataPlanSchema = z.object({
@@ -84,7 +80,7 @@ export function mapOrder(order: any, dbOrder: any, bundleName?: string, bundleId
     reference: validatedOrder.reference,
     status: validatedOrder.status,
     bundleId: bundleId || null,
-    bundleName: bundleName || validatedOrder.bundleName || null,
+    bundleName: bundleName || null,
     quantity: validatedOrder.quantity,
     totalPrice: validatedOrder.totalPrice,
     esims: [], // Populated separately

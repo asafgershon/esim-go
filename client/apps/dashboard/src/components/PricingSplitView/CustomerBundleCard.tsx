@@ -1,4 +1,4 @@
-import { Bundle } from "@/__generated__/graphql";
+import { Bundle, CatalogBundle } from "@/__generated__/graphql";
 import { Badge } from "@workspace/ui";
 import { Calendar, Globe, Wifi } from "lucide-react";
 import React from "react";
@@ -15,8 +15,9 @@ export const CustomerBundleCard: React.FC<CustomerBundleCardProps> = ({
   onClick,
 }) => {
   // Type guard to check if bundle is CatalogBundle
-  const isCatalogBundle = bundle.__typename === 'CatalogBundle';
-  
+  const isCatalogBundle =
+    (bundle as CatalogBundle).__typename === "CatalogBundle";
+
   const formatDataAmount = (bundle: Bundle) => {
     if (bundle.isUnlimited) return "Unlimited";
     return bundle.dataAmountReadable || "Unknown";
@@ -55,7 +56,8 @@ export const CustomerBundleCard: React.FC<CustomerBundleCardProps> = ({
             <div className="flex items-center gap-1 text-gray-600">
               <Calendar className="h-3.5 w-3.5" />
               <span>
-                {bundle.validityInDays} day{bundle.validityInDays !== 1 ? "s" : ""}
+                {bundle.validityInDays} day
+                {bundle.validityInDays !== 1 ? "s" : ""}
               </span>
             </div>
 
@@ -74,11 +76,13 @@ export const CustomerBundleCard: React.FC<CustomerBundleCardProps> = ({
 
           {/* Groups and Region */}
           <div className="flex flex-wrap items-center gap-2">
-            {isCatalogBundle && bundle.groups && formatGroups(bundle.groups) && (
-              <Badge variant="secondary" className="text-xs">
-                {formatGroups(bundle.groups)}
-              </Badge>
-            )}
+            {isCatalogBundle &&
+              bundle.groups &&
+              formatGroups(bundle.groups) && (
+                <Badge variant="secondary" className="text-xs">
+                  {formatGroups(bundle.groups)}
+                </Badge>
+              )}
             {bundle.region && (
               <Badge variant="outline" className="text-xs">
                 {bundle.region}
@@ -100,16 +104,25 @@ export const CustomerBundleCard: React.FC<CustomerBundleCardProps> = ({
               <div className="text-xs text-gray-500">
                 {bundle.pricingBreakdown.currency}
               </div>
-              
+
               {/* Profit Information */}
               <div className="pt-2 mt-2 border-t border-gray-100">
                 <div className="text-xs text-gray-600">
                   Profit: ${bundle.pricingBreakdown.netProfit.toFixed(2)}
                 </div>
-                <div className={`text-xs font-medium ${
-                  bundle.pricingBreakdown.netProfit > 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {((bundle.pricingBreakdown.netProfit / bundle.pricingBreakdown.priceAfterDiscount) * 100).toFixed(1)}% margin
+                <div
+                  className={`text-xs font-medium ${
+                    bundle.pricingBreakdown.netProfit > 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {(
+                    (bundle.pricingBreakdown.netProfit /
+                      bundle.pricingBreakdown.priceAfterDiscount) *
+                    100
+                  ).toFixed(1)}
+                  % margin
                 </div>
               </div>
             </>
@@ -121,15 +134,11 @@ export const CustomerBundleCard: React.FC<CustomerBundleCardProps> = ({
               <div className="text-xl font-semibold text-gray-900">
                 ${bundle.basePrice.toFixed(2)}
               </div>
-              <div className="text-xs text-gray-500">
-                {bundle.currency}
-              </div>
-              
+              <div className="text-xs text-gray-500">{bundle.currency}</div>
+
               {/* Placeholder for pricing */}
               <div className="pt-2 mt-2 border-t border-gray-100">
-                <div className="text-xs text-gray-400">
-                  Calculating...
-                </div>
+                <div className="text-xs text-gray-400">Calculating...</div>
               </div>
             </>
           )}

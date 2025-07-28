@@ -1,14 +1,10 @@
 import { GraphQLError } from 'graphql';
-import type { Context } from '../context/types';
 import { createLogger } from '../lib/logger';
 import type {
   MutationResolvers,
   PricingRule,
   PricingRuleFilter,
-  QueryResolvers,
-  CreatePricingRuleInput,
-  UpdatePricingRuleInput,
-  PricingRulePriorityUpdate
+  QueryResolvers
 } from '../types';
 
 const logger = createLogger({ 

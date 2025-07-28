@@ -1,5 +1,5 @@
 import { RedisPubSub } from 'graphql-redis-subscriptions';
-import Redis from 'ioredis';
+import  { type RedisOptions,Redis } from 'ioredis';
 import { cleanEnv, str } from 'envalid';
 import { createLogger } from '../lib/logger';
 
@@ -21,11 +21,11 @@ export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
       operationType: 'pubsub-init-start',
       redisUrl: env.REDIS_URL,
       allEnvRedisVars: {
-        REDIS_URL: process.env.REDIS_URL,
-        REDIS_HOST: process.env.REDIS_HOST,
-        REDIS_PORT: process.env.REDIS_PORT,
-        REDIS_PASSWORD: process.env.REDIS_PASSWORD,
-        REDIS_USER: process.env.REDIS_USER,
+        REDIS_URL: env.REDIS_URL,
+        REDIS_HOST: env.REDIS_HOST,
+        REDIS_PORT: env.REDIS_PORT,
+        REDIS_PASSWORD: env.REDIS_PASSWORD,
+        REDIS_USER: env.REDIS_USER,
       }
     });
 
@@ -36,34 +36,26 @@ export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
     let publisher: Redis;
     let subscriber: Redis;
     
-    if (env.REDIS_URL) {
-      logger.info('Using Redis URL for PubSub', {
-        operationType: 'redis-config',
-        redisUrl: env.REDIS_URL
-      });
-      
-      publisher = new Redis(env.REDIS_URL);
-      subscriber = new Redis(env.REDIS_URL);
-    } else {
-      const redisConfig = {
+
+      const config = {
+        connectionName: 'publisher',
+        username: env.REDIS_USER,
+        password: env.REDIS_PASSWORD,
         host: env.REDIS_HOST,
         port: parseInt(env.REDIS_PORT),
-        password: env.REDIS_PASSWORD,
-        username: env.REDIS_USER,
         maxRetriesPerRequest: null, // Required for PubSub compatibility
-      };
-      
+        enableReadyCheck: true,
+      } satisfies RedisOptions;
+
       logger.info('Using Redis object config for PubSub', {
         operationType: 'redis-config',
-        host: redisConfig.host,
-        port: redisConfig.port
+        config: config
       });
-      
-      publisher = new Redis(redisConfig);
-      subscriber = new Redis(redisConfig);
-    }
+      const redis = new Redis(config)
+      publisher = redis
+      subscriber = redis
+      await redis.ping()
 
-    // Add error handlers to prevent unhandled error events
     publisher.on('error', (error) => {
       logger.error('Redis publisher error', error as Error, {
         operationType: 'redis-publisher-error',

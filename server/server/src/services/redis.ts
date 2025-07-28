@@ -19,7 +19,7 @@ let redisInstance: KeyvAdapter<any>;
 export async function getRedis() {
   if (!redisInstance) {
     // Use REDIS_URL directly if available (for Railway internal DNS)
-    const redisUrl = env.REDIS_URL || `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`;
+    const redisUrl = `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`;
     
     logger.info('Redis configuration', { 
       redisUrl,

@@ -290,4 +290,7 @@ export const resolvers: Resolvers = {
   Bundle: {
     ...bundlesResolvers.Bundle!,
   },
+  CustomerBundle: {
+    ...bundlesResolvers.CustomerBundle!,
+  },
 };

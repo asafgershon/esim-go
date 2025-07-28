@@ -541,7 +541,7 @@ export function CountryPricingSplitView({
                       </div>
                     </div>
                     <div className="flex-1 flex flex-col">
-                      <PricingPreviewPanel 
+                      {selectedCountryData && <PricingPreviewPanel 
                       bundle={selectedBundle} 
                       country={selectedCountryData.country}
                       paymentMethods={paymentMethodsData?.paymentMethods || []}
@@ -552,7 +552,7 @@ export function CountryPricingSplitView({
                           onExpandCountry(selectedCountry);
                         }
                       }}
-                    />
+                    />}
                     </div>
                   </div>
                 </Panel>

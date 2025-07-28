@@ -67,7 +67,7 @@ export class CountriesDataSource extends ESIMGoDataSource {
 
         // Check if the response indicates an error (e.g., access denied)
         if (!response || !response.countryNetworks || (response as any).message) {
-          this.countriesLogger.error("❌ API response invalid", {
+          this.countriesLogger.error("❌ API response invalid", new Error("No response"), {
             hasResponse: !!response,
             hasCountryNetworks: !!(response && response.countryNetworks),
             message: (response as any)?.message
@@ -114,11 +114,8 @@ export class CountriesDataSource extends ESIMGoDataSource {
         await this.cache?.set(cacheKey, JSON.stringify(allCountries), { ttl: 86400 });
         this.countriesLogger.debug("💾 Countries cached for 1 day");
       } catch (error: any) {
-        this.countriesLogger.error("Countries API error", {
-          message: error.message,
+        this.countriesLogger.error("Countries API error", new Error(error.message), {
           code: error.code,
-          type: error.constructor.name,
-          stack: error.stack?.split('\n')[0]
         });
         
         // Use fallback for any API error (timeout, access denied, network issues, etc.)

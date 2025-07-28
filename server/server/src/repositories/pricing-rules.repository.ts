@@ -229,12 +229,12 @@ export class PricingRulesRepository extends BaseSupabaseRepository<
 
     const update: PricingRuleUpdate = {};
 
-    if (input.category !== undefined) update.category = input.category;
+    if (input.category !== undefined) update.category = input.category || "";
     if (input.name !== undefined) update.name = input.name || "";
     if (input.description !== undefined) update.description = input.description;
     if (input.conditions !== undefined) {
       // Process conditions to ensure proper types
-      const processedConditions = this.processConditions(input.conditions);
+      const processedConditions = this.processConditions(input.conditions || []);
       update.conditions = processedConditions as any;
     }
     if (input.actions !== undefined) update.actions = input.actions as any;
