@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { PricingEngine } from '../src/pricing-engine';
 import { ActionType, PaymentMethod, RuleCategory, type Bundle, type PricingEngineInput, type PricingRule } from '../src/rules-engine-types';
+import { convertToNewInputStructure } from './test-helpers';
 
 describe('Markup Functionality', () => {
   let pricingEngine: PricingEngine;
@@ -22,7 +23,7 @@ describe('Markup Functionality', () => {
   };
 
   // Base pricing input
-  const basePricingInput: PricingEngineInput = {
+  const basePricingInput: PricingEngineInput = convertToNewInputStructure({
     bundles: [testBundle],
     costumer: {
       id: 'test-customer',
@@ -49,7 +50,7 @@ describe('Markup Functionality', () => {
     metadata: {
       correlationId: 'test-markup'
     }
-  };
+  });
 
   beforeEach(() => {
     pricingEngine = new PricingEngine();
@@ -83,11 +84,11 @@ describe('Markup Functionality', () => {
       const result = await pricingEngine.calculatePrice(basePricingInput);
 
       // Verify markup is correctly applied
-      expect(result.pricing.cost).toBe(10.00); // Base cost unchanged
-      expect(result.pricing.markup).toBe(5.00); // Markup added
-      expect(result.pricing.totalCost).toBe(15.00); // cost + markup
-      expect(result.pricing.priceAfterDiscount).toBe(15.00); // No discount, so equals totalCost
-      expect(result.pricing.netProfit).toBe(5.00); // Profit = price - cost
+      expect(result.response.pricing.cost).toBe(10.00); // Base cost unchanged
+      expect(result.response.pricing.markup).toBe(5.00); // Markup added
+      expect(result.response.pricing.totalCost).toBe(15.00); // cost + markup
+      expect(result.response.pricing.priceAfterDiscount).toBe(15.00); // No discount, so equals totalCost
+      expect(result.response.pricing.netProfit).toBe(5.00); // Profit = price - cost
     });
 
     it('should handle multiple markup rules', async () => {
@@ -137,8 +138,8 @@ describe('Markup Functionality', () => {
       const result = await pricingEngine.calculatePrice(basePricingInput);
 
       // Markups should be cumulative
-      expect(result.pricing.markup).toBe(5.00); // 3 + 2
-      expect(result.pricing.totalCost).toBe(15.00); // 10 + 5
+      expect(result.response.pricing.markup).toBe(5.00); // 3 + 2
+      expect(result.response.pricing.totalCost).toBe(15.00); // 10 + 5
     });
 
     it('should start with zero markup when no rules apply', async () => {
@@ -146,10 +147,10 @@ describe('Markup Functionality', () => {
 
       const result = await pricingEngine.calculatePrice(basePricingInput);
 
-      expect(result.pricing.cost).toBe(10.00);
-      expect(result.pricing.markup).toBe(0); // No markup
-      expect(result.pricing.totalCost).toBe(10.00); // Same as cost
-      expect(result.pricing.netProfit).toBe(0); // No profit without markup
+      expect(result.response.pricing.cost).toBe(10.00);
+      expect(result.response.pricing.markup).toBe(0); // No markup
+      expect(result.response.pricing.totalCost).toBe(10.00); // Same as cost
+      expect(result.response.pricing.netProfit).toBe(0); // No profit without markup
     });
   });
 
@@ -202,12 +203,12 @@ describe('Markup Functionality', () => {
 
       // Cost: $10, Markup: $10, Total: $20
       // 20% discount on $20 = $4 discount
-      expect(result.pricing.cost).toBe(10.00);
-      expect(result.pricing.markup).toBe(10.00);
-      expect(result.pricing.totalCost).toBe(20.00);
-      expect(result.pricing.discountValue).toBe(4.00); // 20% of $20
-      expect(result.pricing.priceAfterDiscount).toBe(16.00); // $20 - $4
-      expect(result.pricing.netProfit).toBe(6.00); // $16 - $10 cost
+      expect(result.response.pricing.cost).toBe(10.00);
+      expect(result.response.pricing.markup).toBe(10.00);
+      expect(result.response.pricing.totalCost).toBe(20.00);
+      expect(result.response.pricing.discountValue).toBe(4.00); // 20% of $20
+      expect(result.response.pricing.priceAfterDiscount).toBe(16.00); // $20 - $4
+      expect(result.response.pricing.netProfit).toBe(6.00); // $16 - $10 cost
     });
 
     it('should maintain positive profit with markup even after heavy discounts', async () => {
@@ -258,10 +259,10 @@ describe('Markup Functionality', () => {
 
       // Cost: $10, Markup: $20, Total: $30
       // 50% discount on $30 = $15 discount
-      expect(result.pricing.totalCost).toBe(30.00);
-      expect(result.pricing.discountValue).toBe(15.00);
-      expect(result.pricing.priceAfterDiscount).toBe(15.00);
-      expect(result.pricing.netProfit).toBe(5.00); // Still profitable
+      expect(result.response.pricing.totalCost).toBe(30.00);
+      expect(result.response.pricing.discountValue).toBe(15.00);
+      expect(result.response.pricing.priceAfterDiscount).toBe(15.00);
+      expect(result.response.pricing.netProfit).toBe(5.00); // Still profitable
     });
   });
 
@@ -313,10 +314,10 @@ describe('Markup Functionality', () => {
       const result = await pricingEngine.calculatePrice(basePricingInput);
 
       // Markup only adds $0.50, but min profit requires $2
-      expect(result.pricing.markup).toBe(0.50); // Original markup preserved
-      expect(result.pricing.totalCost).toBe(10.50);
-      expect(result.pricing.priceAfterDiscount).toBe(12.00); // Adjusted for min profit
-      expect(result.pricing.netProfit).toBe(2.00); // Minimum profit enforced
+      expect(result.response.pricing.markup).toBe(0.50); // Original markup preserved
+      expect(result.response.pricing.totalCost).toBe(10.50);
+      expect(result.response.pricing.priceAfterDiscount).toBe(12.00); // Adjusted for min profit
+      expect(result.response.pricing.netProfit).toBe(2.00); // Minimum profit enforced
     });
   });
 
@@ -347,9 +348,9 @@ describe('Markup Functionality', () => {
 
       const result = await pricingEngine.calculatePrice(basePricingInput);
 
-      expect(result.pricing.markup).toBe(0);
-      expect(result.pricing.totalCost).toBe(10.00);
-      expect(result.pricing.netProfit).toBe(0);
+      expect(result.response.pricing.markup).toBe(0);
+      expect(result.response.pricing.totalCost).toBe(10.00);
+      expect(result.response.pricing.netProfit).toBe(0);
     });
 
     it('should handle very large markups', async () => {
@@ -378,10 +379,10 @@ describe('Markup Functionality', () => {
 
       const result = await pricingEngine.calculatePrice(basePricingInput);
 
-      expect(result.pricing.markup).toBe(1000.00);
-      expect(result.pricing.totalCost).toBe(1010.00);
-      expect(result.pricing.priceAfterDiscount).toBe(1010.00);
-      expect(result.pricing.netProfit).toBe(1000.00);
+      expect(result.response.pricing.markup).toBe(1000.00);
+      expect(result.response.pricing.totalCost).toBe(1010.00);
+      expect(result.response.pricing.priceAfterDiscount).toBe(1010.00);
+      expect(result.response.pricing.netProfit).toBe(1000.00);
     });
 
     it('should calculate correct percentages with markup', async () => {
@@ -410,10 +411,10 @@ describe('Markup Functionality', () => {
 
       const result = await pricingEngine.calculatePrice(basePricingInput);
 
-      const markupPercentage = (result.pricing.markup / result.pricing.cost) * 100;
+      const markupPercentage = (result.response.pricing.markup / result.response.pricing.cost) * 100;
       expect(markupPercentage).toBe(50); // 50% markup on cost
       
-      const profitMargin = (result.pricing.netProfit / result.pricing.totalCost) * 100;
+      const profitMargin = (result.response.pricing.netProfit / result.response.pricing.totalCost) * 100;
       expect(profitMargin).toBeCloseTo(33.33, 2); // 33.33% profit margin
     });
   });

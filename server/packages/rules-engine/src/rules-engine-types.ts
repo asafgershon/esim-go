@@ -32,13 +32,16 @@ export interface PipelineStep {
 
 export interface PricingEngineState {
   // Context
-  bundles: Bundle[];
-  costumer: UserContext;
-  payment: PaymentContext;
-  rules: PricingRule[];
-  date: Date;
 
-  // User Request
+  context: {
+    bundles: Bundle[]; // Bundles provided by the client
+    costumer: UserContext; // Costumer provided by the client
+    payment: PaymentContext; // Payment method and promo code
+    rules: PricingRule[]; // Rules provided by the client
+    date: Date; // Today's date (used for rule evaluation)
+  };
+
+  // Client request to calculate pricing
   request: {
     duration: number;
     paymentMethod: PaymentMethod;
@@ -46,20 +49,26 @@ export interface PricingEngineState {
     countryISO?: string;
     region?: string;
     group?: string;
-    dataType?: DataType;
+    dataType?: 'unlimited' | 'fixed';
   };
 
-  // Pipeline Steps
-  steps: PipelineStep[];
 
-  // Response
-  unusedDays: number;
-  country: string;
-  region: string;
-  group: string;
-  dataType: DataType;
-  selectedBundle: Bundle;
-  pricing: PricingBreakdown;
+  response: {
+    unusedDays: number;
+    selectedBundle: Bundle;
+    pricing: PricingBreakdown;
+    rules: PricingRule[];
+  };
+  
+  state: {
+    steps: PipelineStep[];
+    country: string;
+    selectedBundle: Bundle;
+    pricing: PricingBreakdown;
+    region: string;
+    data: 'unlimited' | 'fixed';
+    group: string;
+  }
 
   // Metadata
   metadata: {
@@ -68,14 +77,12 @@ export interface PricingEngineState {
   };
 }
 
-export type PricingEngineInput = Omit<
+export type PricingEngineInput = Pick<
   PricingEngineState,
-  "selectedBundle" | "pricing"
+  "context" | "request" | "metadata"
 >;
 
-export type PricingEngineOutput = PricingEngineState & {
-  appliedRules: PricingRule[];
-};
+export type PricingEngineOutput = Pick<PricingEngineState, "response" | "state" | "metadata">;
 
 export interface PricingEngine {
   /**
@@ -90,7 +97,6 @@ export interface PricingEngine {
     requests: PricingEngineInput[]
   ): Promise<PricingEngineOutput[]>;
 }
-
 
 // Extended pricing calculation result
 export interface PricingCalculation

@@ -356,6 +356,31 @@ export const pricingQueries: QueryResolvers = {
 
       // 3. Get active rules and configure engine
       const rules = await getActivePricingRules(context);
+
+      // Debug logging
+      logger.info("DEBUG: Pricing calculation context", {
+        correlationId,
+        totalBundles: bundles.length,
+        requestedDays: numOfDays,
+        groups: groups,
+        totalRules: rules.length,
+        operationType: "calculate-price-debug",
+      });
+
+      // Log bundle details
+      if (bundles.length > 0) {
+        const firstBundle = bundles[0];
+        logger.info("DEBUG: First bundle details", {
+          correlationId,
+          bundleName: firstBundle?.name,
+          bundleGroups: firstBundle?.groups,
+          basePrice: firstBundle?.basePrice,
+          validityInDays: firstBundle?.validityInDays,
+          isUnlimited: firstBundle?.isUnlimited,
+          operationType: "bundle-debug",
+        });
+      }
+
       pricingEngine.clearRules();
       pricingEngine.addRules(rules);
 
@@ -390,6 +415,22 @@ export const pricingQueries: QueryResolvers = {
 
       // 5. Let engine select best bundle and calculate pricing
       const result = await pricingEngine.calculatePrice(engineInput);
+
+      // Debug log engine result
+      logger.info("DEBUG: Pricing engine result", {
+        correlationId,
+        selectedBundleName: result.response.selectedBundle?.name,
+        selectedBundleGroups: result.response.selectedBundle?.groups,
+        stateGroup: result.state.group,
+        appliedRulesCount: result.response.rules?.length || 0,
+        appliedRuleNames: result.response.rules?.map((r) => r.name) || [],
+        pricing: {
+          cost: result.response.pricing?.cost,
+          markup: result.response.pricing?.markup,
+          totalCost: result.response.pricing?.totalCost,
+        },
+        operationType: "engine-result-debug",
+      });
 
       // 6. Map result to GraphQL format
       const pricingBreakdown = mapEngineToPricingBreakdown(result, {

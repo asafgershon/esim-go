@@ -10,6 +10,11 @@ import type {
 } from "./rules-engine-types";
 import { ActionType, RuleCategory } from "./rules-engine-types";
 
+// Helper to generate correlation ID
+function generateCorrelationId(): string {
+  return `pricing-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
 // Module-level logger for stateless operation
 const logger = createLogger({
   component: "PricingEngine",
@@ -56,79 +61,106 @@ export class PricingEngine {
   async *calculatePriceSteps(
     input: PricingEngineInput
   ): AsyncGenerator<PipelineStep, PricingEngineOutput> {
-    const correlationId = input.metadata.correlationId;
+    const correlationId = input.metadata?.correlationId || generateCorrelationId();
 
     logger.info("Starting step-by-step price calculation", {
       correlationId,
       operationType: "price-calculation-pipeline",
     });
 
-    // Initialize state
+    // Initialize state with new structure
     let state: PricingEngineState = {
-      ...input,
-      selectedBundle: null as any, // Will be set in step 1
-      pricing: null as any, // Will be set during pipeline
-      steps: [],
-      unusedDays: 0,
-      country: input.request.countryISO || "",
-      region: input.request.region || "",
-      group: input.request.group || "",
-      dataType: input.request.dataType || ("DEFAULT" as any),
+      context: input.context,
+      request: {
+        duration: input.request?.duration || 0,
+        paymentMethod: input.request?.paymentMethod || input.request?.paymentMethod,
+        promo: input.request?.promo,
+        countryISO: input.request?.countryISO,
+        region: input.request?.region,
+        group: input.request?.group,
+        dataType: input.request?.dataType as 'unlimited' | 'fixed' | undefined,
+      },
+      response: {
+        unusedDays: 0,
+        selectedBundle: null as any,
+        pricing: null as any,
+        rules: [],
+      },
+      state: {
+        steps: [],
+        country: input.request?.countryISO || "",
+        selectedBundle: null as any,
+        pricing: null as any,
+        region: input.request?.region || "",
+        data: input.request?.dataType as 'unlimited' | 'fixed' || 'fixed',
+        group: input.request?.group || "",
+      },
+      metadata: {
+        ...(input.metadata || {}),
+        correlationId: input.metadata?.correlationId || generateCorrelationId(),
+      },
     };
 
     // Step 1: Bundle Selection
     const bundleStep = await this.selectBundle(state);
     state = { ...state, ...bundleStep.state };
-    state.steps.push(bundleStep);
+    state.state.steps.push(bundleStep);
     yield bundleStep;
 
     // Step 2: Bundle Adjustments
     const adjustmentStep = await this.applyBundleAdjustments(state);
     state = { ...state, ...adjustmentStep.state };
-    state.steps.push(adjustmentStep);
+    state.state.steps.push(adjustmentStep);
     yield adjustmentStep;
 
     // Step 3: Apply Discounts
     const discountStep = await this.applyDiscounts(state);
     state = { ...state, ...discountStep.state };
-    state.steps.push(discountStep);
+    state.state.steps.push(discountStep);
     yield discountStep;
 
     // Step 3.5: Apply Unused Days Discount
     const unusedDaysStep = await this.applyUnusedDaysDiscount(state);
     state = { ...state, ...unusedDaysStep.state };
-    state.steps.push(unusedDaysStep);
+    state.state.steps.push(unusedDaysStep);
     yield unusedDaysStep;
 
     // Step 4: Apply Constraints
     const constraintStep = await this.applyConstraints(state);
     state = { ...state, ...constraintStep.state };
-    state.steps.push(constraintStep);
+    state.state.steps.push(constraintStep);
     yield constraintStep;
 
     // Step 5: Apply Fees
     const feeStep = await this.applyFees(state);
     state = { ...state, ...feeStep.state };
-    state.steps.push(feeStep);
+    state.state.steps.push(feeStep);
     yield feeStep;
 
     // Final step: Compile results
     const finalStep = await this.compileFinalResults(state);
     state = { ...state, ...finalStep.state };
-    state.steps.push(finalStep);
+    state.state.steps.push(finalStep);
     yield finalStep;
 
     logger.info("Completed step-by-step price calculation", {
       correlationId,
-      totalSteps: state.steps.length,
-      finalPrice: state.pricing?.finalRevenue,
+      totalSteps: state.state.steps.length,
+      finalPrice: state.state.pricing?.finalRevenue,
       operationType: "price-calculation-pipeline",
     });
 
-    // Return final output
+    // Extract applied rules and add to response
+    const appliedRules = this.extractAppliedRules(state.state.steps);
+    
+    // Return final output with only response, state, and metadata
     return {
-      ...state,
-      appliedRules: this.extractAppliedRules(state.steps),
+      response: {
+        ...state.response,
+        rules: appliedRules,
+      },
+      state: state.state,
+      metadata: state.metadata,
     } as PricingEngineOutput;
   }
 
@@ -139,12 +171,12 @@ export class PricingEngine {
     logger.debug("Executing bundle selection step", {
       correlationId: state.metadata.correlationId,
       requestedDuration: state.request.duration,
-      availableBundles: state.bundles.length,
+      availableBundles: state.context.bundles.length,
     });
 
     // Find the best matching bundle
     const selectedBundle = this.findOptimalBundle(
-      state.bundles,
+      state.context.bundles,
       state.request.duration
     );
     const unusedDays = Math.max(
@@ -152,16 +184,27 @@ export class PricingEngine {
       selectedBundle.validityInDays - state.request.duration
     );
 
+    // Update state objects
+    const stateUpdate: Partial<PricingEngineState> = {
+      response: {
+        ...state.response,
+        selectedBundle,
+        unusedDays,
+      },
+      state: {
+        ...state.state,
+        selectedBundle,
+        country: selectedBundle.countries?.[0] || state.state.country,
+        region: selectedBundle.region || state.state.region,
+        group: selectedBundle.groups?.[0] || state.state.group,
+        data: selectedBundle.isUnlimited ? 'unlimited' : 'fixed',
+      },
+    };
+
     return {
       name: "BUNDLE_SELECTION",
       timestamp: new Date(),
-      state: {
-        selectedBundle,
-        unusedDays,
-        country: selectedBundle.countries[0] || state.country,
-        region: selectedBundle.region || state.region,
-        group: selectedBundle.groups[0] || state.group,
-      },
+      state: stateUpdate,
       debug: {
         reason:
           selectedBundle.validityInDays === state.request.duration
@@ -180,12 +223,12 @@ export class PricingEngine {
   ): Promise<PipelineStep> {
     logger.debug("Executing bundle adjustments step", {
       correlationId: state.metadata.correlationId,
-      bundleId: state.selectedBundle?.name,
+      bundleId: state.state.selectedBundle?.name,
     });
 
     // Apply bundle-specific adjustments (e.g., proration for unused days)
     const appliedRules: string[] = [];
-    let adjustedPricing = this.initializePricing(state.selectedBundle);
+    let adjustedPricing = this.initializePricing(state.state.selectedBundle);
 
     // Find bundle adjustment rules
     const bundleAdjustmentRules = this.filterRulesByCategory(
@@ -203,11 +246,18 @@ export class PricingEngine {
       name: "BUNDLE_ADJUSTMENT",
       timestamp: new Date(),
       state: {
-        pricing: adjustedPricing,
+        state: {
+          ...state.state,
+          pricing: adjustedPricing,
+        },
+        response: {
+          ...state.response,
+          pricing: adjustedPricing,
+        },
       },
       appliedRules,
       debug: {
-        basePrice: state.selectedBundle.basePrice,
+        basePrice: state.state.selectedBundle.basePrice,
         adjustedPrice: adjustedPricing.totalCost,
       },
     };
@@ -224,7 +274,7 @@ export class PricingEngine {
     });
 
     const appliedRules: string[] = [];
-    let discountedPricing = { ...state.pricing! };
+    let discountedPricing = { ...state.state.pricing! };
 
     // Find discount rules
     const discountRules = this.filterRulesByCategory(RuleCategory.Discount);
@@ -237,9 +287,9 @@ export class PricingEngine {
       discountRuleCategories: discountRules.map((r) => r.category),
       discountRuleActive: discountRules.map((r) => r.isActive),
       pricingBeforeDiscounts: {
-        totalCost: state.pricing!.totalCost,
-        priceAfterDiscount: state.pricing!.priceAfterDiscount,
-        discountValue: state.pricing!.discountValue,
+        totalCost: state.state.pricing!.totalCost,
+        priceAfterDiscount: state.state.pricing!.priceAfterDiscount,
+        discountValue: state.state.pricing!.discountValue,
       },
     });
 
@@ -304,11 +354,18 @@ export class PricingEngine {
       name: "APPLY_DISCOUNTS",
       timestamp: new Date(),
       state: {
-        pricing: discountedPricing,
+        state: {
+          ...state.state,
+          pricing: discountedPricing,
+        },
+        response: {
+          ...state.response,
+          pricing: discountedPricing,
+        },
       },
       appliedRules,
       debug: {
-        originalSubtotal: state.pricing!.totalCost,
+        originalSubtotal: state.state.pricing!.totalCost,
         discountedSubtotal: discountedPricing.totalCost,
         totalDiscount: discountedPricing.discountValue,
       },
@@ -323,22 +380,25 @@ export class PricingEngine {
   ): Promise<PipelineStep> {
     logger.debug("Executing unused days discount step", {
       correlationId: state.metadata.correlationId,
-      unusedDays: state.unusedDays,
+      unusedDays: state.response.unusedDays,
       requestedDuration: state.request.duration,
-      selectedBundleDuration: state.selectedBundle?.validityInDays,
+      selectedBundleDuration: state.response.selectedBundle?.validityInDays,
     });
 
     // If no unused days, skip
-    if ((state.unusedDays || 0) <= 0) {
+    if ((state.response.unusedDays || 0) <= 0) {
       return {
         name: "APPLY_UNUSED_DAYS_DISCOUNT",
         timestamp: new Date(),
         state: {
-          pricing: state.pricing,
+          state: {
+            ...state.state,
+            pricing: state.state.pricing,
+          },
         },
         appliedRules: [],
         debug: {
-          unusedDays: state.unusedDays || 0,
+          unusedDays: state.response.unusedDays || 0,
           discountPerDay: 0,
           totalUnusedDiscount: 0,
           message: "No unused days discount needed",
@@ -349,8 +409,8 @@ export class PricingEngine {
     try {
       // Calculate discount per day based on markup difference formula
       const discountPerDay = await this.calculateUnusedDayDiscount(
-        state.bundles,
-        state.selectedBundle!,
+        state.context.bundles,
+        state.response.selectedBundle!,
         state.request.duration
       );
 
@@ -359,11 +419,14 @@ export class PricingEngine {
           name: "APPLY_UNUSED_DAYS_DISCOUNT",
           timestamp: new Date(),
           state: {
-            pricing: state.pricing,
+            state: {
+              ...state.state,
+              pricing: state.state.pricing,
+            },
           },
           appliedRules: [],
           debug: {
-            unusedDays: state.unusedDays || 0,
+            unusedDays: state.response.unusedDays || 0,
             discountPerDay: 0,
             totalUnusedDiscount: 0,
             message: "No discount per day calculated",
@@ -372,8 +435,8 @@ export class PricingEngine {
       }
 
       // Apply unused days discount
-      const totalUnusedDiscount = discountPerDay * (state.unusedDays || 0);
-      const updatedPricing = { ...state.pricing! };
+      const totalUnusedDiscount = discountPerDay * (state.response.unusedDays || 0);
+      const updatedPricing = { ...state.state.pricing! };
 
       // Add to existing discount
       updatedPricing.discountValue =
@@ -384,7 +447,7 @@ export class PricingEngine {
 
       logger.debug("Applied unused days discount", {
         correlationId: state.metadata.correlationId,
-        unusedDays: state.unusedDays,
+        unusedDays: state.response.unusedDays,
         discountPerDay,
         totalUnusedDiscount,
         newTotalDiscount: updatedPricing.discountValue,
@@ -395,24 +458,31 @@ export class PricingEngine {
         name: "APPLY_UNUSED_DAYS_DISCOUNT",
         timestamp: new Date(),
         state: {
-          pricing: updatedPricing,
+          state: {
+            ...state.state,
+            pricing: updatedPricing,
+          },
+          response: {
+            ...state.response,
+            pricing: updatedPricing,
+          },
         },
         appliedRules: [
-          `unused-days-${state.unusedDays}d-@${discountPerDay.toFixed(2)}`,
+          `unused-days-${state.response.unusedDays}d-@${discountPerDay.toFixed(2)}`,
         ],
         debug: {
-          unusedDays: state.unusedDays || 0,
+          unusedDays: state.response.unusedDays || 0,
           discountPerDay,
           totalUnusedDiscount,
           message: `Applied ${
-            state.unusedDays
+            state.response.unusedDays
           } unused days discount at $${discountPerDay.toFixed(2)}/day`,
         },
       };
     } catch (error) {
       logger.error("Failed to calculate unused days discount", error as Error, {
         correlationId: state.metadata.correlationId,
-        unusedDays: state.unusedDays,
+        unusedDays: state.response.unusedDays,
         operationType: "unused-days-discount",
       });
 
@@ -420,11 +490,14 @@ export class PricingEngine {
         name: "APPLY_UNUSED_DAYS_DISCOUNT",
         timestamp: new Date(),
         state: {
-          pricing: state.pricing,
+          state: {
+            ...state.state,
+            pricing: state.state.pricing,
+          },
         },
         appliedRules: [],
         debug: {
-          unusedDays: state.unusedDays || 0,
+          unusedDays: state.response.unusedDays || 0,
           discountPerDay: 0,
           totalUnusedDiscount: 0,
           error: (error as Error).message,
@@ -445,7 +518,7 @@ export class PricingEngine {
     });
 
     const appliedRules: string[] = [];
-    let constrainedPricing = { ...state.pricing! };
+    let constrainedPricing = { ...state.state.pricing! };
 
     // Find constraint rules (minimum profit, minimum price, etc.)
     const constraintRules = this.filterRulesByCategory(RuleCategory.Constraint);
@@ -465,7 +538,14 @@ export class PricingEngine {
       name: "APPLY_CONSTRAINTS",
       timestamp: new Date(),
       state: {
-        pricing: constrainedPricing,
+        state: {
+          ...state.state,
+          pricing: constrainedPricing,
+        },
+        response: {
+          ...state.response,
+          pricing: constrainedPricing,
+        },
       },
       appliedRules,
       debug: {
@@ -480,11 +560,11 @@ export class PricingEngine {
   private async applyFees(state: PricingEngineState): Promise<PipelineStep> {
     logger.debug("Executing fees step", {
       correlationId: state.metadata.correlationId,
-      paymentMethod: state.payment.method,
+      paymentMethod: state.context.payment?.method,
     });
 
     const appliedRules: string[] = [];
-    let finalPricing = { ...state.pricing! };
+    let finalPricing = { ...state.state.pricing! };
 
     // Find fee rules (processing fees, payment method fees, etc.)
     const feeRules = this.filterRulesByCategory(RuleCategory.Fee);
@@ -496,8 +576,8 @@ export class PricingEngine {
       feeRuleNames: feeRules.map((r) => r.name),
       feeRuleCategories: feeRules.map((r) => r.category),
       feeRuleActive: feeRules.map((r) => r.isActive),
-      paymentMethodInState: state.payment.method,
-      paymentFieldValue: this.getFieldValue("payment.method", state),
+      paymentMethodInState: state.context.payment?.method,
+      paymentFieldValue: this.getFieldValue("context.payment.method", state),
     });
 
     for (const rule of feeRules) {
@@ -556,11 +636,18 @@ export class PricingEngine {
       name: "APPLY_FEES",
       timestamp: new Date(),
       state: {
-        pricing: finalPricing,
+        state: {
+          ...state.state,
+          pricing: finalPricing,
+        },
+        response: {
+          ...state.response,
+          pricing: finalPricing,
+        },
       },
       appliedRules,
       debug: {
-        priceBeforeFees: state.pricing!.priceAfterDiscount,
+        priceBeforeFees: state.state.pricing!.priceAfterDiscount,
         finalPrice: finalPricing.finalRevenue,
         totalFees: finalPricing.processingCost,
       },
@@ -574,7 +661,7 @@ export class PricingEngine {
     state: PricingEngineState
   ): Promise<PipelineStep> {
     // Final validation and cleanup
-    const finalPricing = { ...state.pricing! };
+    const finalPricing = { ...state.state.pricing! };
 
     // Ensure all calculations are complete
     // finalRevenue = what customer pays (before processing fee deduction)
@@ -595,7 +682,14 @@ export class PricingEngine {
       name: "FINALIZE",
       timestamp: new Date(),
       state: {
-        pricing: finalPricing,
+        state: {
+          ...state.state,
+          pricing: finalPricing,
+        },
+        response: {
+          ...state.response,
+          pricing: finalPricing,
+        },
       },
       debug: {
         finalPrice: finalPricing.finalRevenue,
@@ -732,7 +826,8 @@ export class PricingEngine {
     // Filter rules by category and active status
     return this.rules.filter(
       (rule) =>
-        rule.isActive && rule.category?.toUpperCase() === category.toUpperCase()
+        (rule.isActive === undefined || rule.isActive === true) && 
+        rule.category?.toUpperCase() === category.toUpperCase()
     );
   }
 
@@ -748,8 +843,8 @@ export class PricingEngine {
       conditions: rule.conditions,
     });
 
-    // Rule must be active
-    if (!rule.isActive) {
+    // Rule must be active (default to true if not specified)
+    if (rule.isActive === false) {
       logger.debug("Rule is not active, skipping", { ruleName: rule.name });
       return false;
     }
@@ -769,11 +864,11 @@ export class PricingEngine {
         result,
         fieldValue: this.getFieldValue(condition.field, state),
         actualBundleData: {
-          selectedBundle: state.selectedBundle?.name,
-          bundleGroups: state.selectedBundle?.groups,
-          group: state.group,
-          country: state.country,
-          region: state.region,
+          selectedBundle: state.response.selectedBundle?.name,
+          bundleGroups: state.response.selectedBundle?.groups,
+          group: state.state.group,
+          country: state.state.country,
+          region: state.state.region,
         },
       });
 
@@ -801,7 +896,7 @@ export class PricingEngine {
     const conditionValue = condition.value;
 
     // Special debug logging for payment method conditions
-    if (condition.field === "payment.method") {
+    if (condition.field === "context.payment.method" || condition.field === "payment.method") {
       logger.debug("Payment method condition evaluation", {
         conditionField: condition.field,
         conditionOperator: condition.operator,
@@ -809,7 +904,7 @@ export class PricingEngine {
         conditionValueType: typeof conditionValue,
         fieldValue: fieldValue,
         fieldValueType: typeof fieldValue,
-        paymentMethodInState: state.payment?.method,
+        paymentMethodInState: state.context.payment?.method,
         strictEquality: fieldValue === conditionValue,
         looseEquality: fieldValue == conditionValue,
       });

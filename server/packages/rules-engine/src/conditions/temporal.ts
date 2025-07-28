@@ -4,7 +4,7 @@ import { PricingEngineState } from '../rules-engine-types';
 
 export class TemporalConditionEvaluator extends BaseConditionEvaluator {
   evaluate(condition: RuleCondition, context: PricingEngineState): boolean {
-    const currentDate = context.date || new Date();
+    const currentDate = context.context.date || new Date();
     
     switch (condition.field) {
       case 'currentDate':
