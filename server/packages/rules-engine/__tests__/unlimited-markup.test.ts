@@ -19,7 +19,7 @@ describe("Unlimited Bundle Markup Tests", () => {
       priority: 200,
       conditions: [
         {
-          field: "state.group",
+          field: "request.group",
           operator: ConditionOperator.Equals,
           value: "Standard - Unlimited Lite",
         },
@@ -41,7 +41,7 @@ describe("Unlimited Bundle Markup Tests", () => {
       priority: 200,
       conditions: [
         {
-          field: "state.group",
+          field: "request.group",
           operator: "EQUALS",
           value: "Standard - Unlimited Essential",
         },
@@ -63,7 +63,7 @@ describe("Unlimited Bundle Markup Tests", () => {
       priority: 200,
       conditions: [
         {
-          field: "state.group",
+          field: "request.group",
           operator: "EQUALS",
           value: "Standard - Unlimited Plus",
         },

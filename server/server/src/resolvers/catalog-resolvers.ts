@@ -6,7 +6,7 @@ import type {
   CatalogBundle,
   CustomerBundle,
   Resolvers,
-  SyncJobType
+  SyncJobType,
 } from "../types";
 import { calculatePricingForBundle } from "./pricing-resolvers";
 import type Redis from "ioredis";
@@ -30,7 +30,9 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Get all filter data from repository methods
-        const groups = await context.repositories.bundles.getGroups();
+        const groups = (await context.repositories.bundles.getGroups()).map(
+          (g) => g.replace("-", "")
+        );
         const dataTypes = await context.repositories.bundles.getDataTypes();
         const durations =
           await context.repositories.bundles.getDurationRanges();
@@ -309,11 +311,11 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         // Use REDIS_URL directly if available (for Railway internal DNS)
         let redis: Redis;
-        
+
         if (process.env.REDIS_URL) {
-          logger.info('Using Redis URL for catalog queue', {
+          logger.info("Using Redis URL for catalog queue", {
             redisUrl: process.env.REDIS_URL,
-            operationType: 'redis-catalog-config'
+            operationType: "redis-catalog-config",
           });
           redis = new IORedis(process.env.REDIS_URL);
         } else {
@@ -324,13 +326,13 @@ export const catalogResolvers: Partial<Resolvers> = {
             username: env.REDIS_USER,
             maxRetriesPerRequest: null,
           };
-          
-          logger.info('Using Redis object config for catalog queue', {
+
+          logger.info("Using Redis object config for catalog queue", {
             host: redisConfig.host,
             port: redisConfig.port,
-            operationType: 'redis-catalog-config'
+            operationType: "redis-catalog-config",
           });
-          
+
           redis = new IORedis(redisConfig);
         }
 
@@ -427,11 +429,7 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   CountryBundle: {
-    pricingBreakdown: async (
-      parent,
-      { },
-      context: Context
-    ) => {
+    pricingBreakdown: async (parent, {}, context: Context) => {
       try {
         // CountryBundle already has all the bundle data we need
         const bundle = {
