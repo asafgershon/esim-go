@@ -11,6 +11,7 @@ const env = cleanEnv(process.env, {
   REDIS_PORT: str({ default: "6379" }),
   REDIS_PASSWORD: str({ default: "mypassword" }),
   REDIS_USER: str({ default: "default" }),
+  RAILWAY_SERVICE_REDIS_URL: str({ default: "" }),
 });
 
 let pubsub: RedisPubSub | null = null;
@@ -26,13 +27,17 @@ export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
         REDIS_PORT: process.env.REDIS_PORT,
         REDIS_PASSWORD: process.env.REDIS_PASSWORD,
         REDIS_USER: process.env.REDIS_USER,
+        RAILWAY_SERVICE_REDIS_URL: process.env.RAILWAY_SERVICE_REDIS_URL,
       }
     });
 
     // Create native Redis clients specifically for PubSub using object config
     // These are separate from Apollo Server's KeyvAdapter Redis client
+    // Use external Railway Redis URL if available (internal DNS not working)
+    const redisHost = env.RAILWAY_SERVICE_REDIS_URL || env.REDIS_HOST;
+    
     const redisConfig = {
-      host: env.REDIS_HOST,
+      host: redisHost,
       port: parseInt(env.REDIS_PORT),
       password: env.REDIS_PASSWORD,
       username: env.REDIS_USER,

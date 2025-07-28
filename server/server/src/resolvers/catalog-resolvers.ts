@@ -8,11 +8,14 @@ import type {
   BundlesByCountry,
   BundlesByRegion,
   CalculatePriceInput,
+  CatalogBundle,
   CountryBundle,
+  CustomerBundle,
   PricingBreakdown,
   Resolvers,
-  SyncJobType
+  SyncJobType,
 } from "../types";
+import byteSize, { default as bytesize } from "byte-size";
 
 const logger = createLogger({
   component: "CatalogResolvers",
@@ -35,7 +38,8 @@ export const catalogResolvers: Partial<Resolvers> = {
         // Get all filter data from repository methods
         const groups = await context.repositories.bundles.getGroups();
         const dataTypes = await context.repositories.bundles.getDataTypes();
-        const durations = await context.repositories.bundles.getDurationRanges();
+        const durations =
+          await context.repositories.bundles.getDurationRanges();
 
         logger.info("Pricing filters fetched successfully", {
           bundleGroupCount: groups.length,
@@ -94,9 +98,11 @@ export const catalogResolvers: Partial<Resolvers> = {
           bundlesUpdated: job.bundles_updated,
           startedAt: job.started_at || job.created_at,
           completedAt: job.completed_at,
-          duration: job.completed_at && job.started_at 
-            ? new Date(job.completed_at).getTime() - new Date(job.started_at).getTime()
-            : null,
+          duration:
+            job.completed_at && job.started_at
+              ? new Date(job.completed_at).getTime() -
+                new Date(job.started_at).getTime()
+              : null,
           errorMessage: job.error_message,
           metadata: job.metadata,
           createdAt: job.created_at,
@@ -146,32 +152,32 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         // Use bundle repository to search bundles
         const searchResult = await context.repositories.bundles.search({
-            countries: countries as any,
-            groups: bundleGroups as any,
-            minValidityInDays: minDuration as any,
-            maxValidityInDays: maxDuration as any,
-            isUnlimited: unlimited as any,
-            limit: limit || 50,
-            offset: offset || 0,
-          });
-        
+          countries: countries as any,
+          groups: bundleGroups as any,
+          minValidityInDays: minDuration as any,
+          maxValidityInDays: maxDuration as any,
+          isUnlimited: unlimited as any,
+          limit: limit || 50,
+          offset: offset || 0,
+        });
+
         const data = searchResult.data;
         const count = searchResult.count;
 
         // Transform data
         const bundles = (data || []).map((bundle) => ({
-          id: bundle.esim_go_name,  // Use esim_go_name as id
+          id: bundle.esim_go_name, // Use esim_go_name as id
           esimGoName: bundle.esim_go_name,
-          bundleGroup: bundle.groups?.[0] || "",  // groups is an array
+          bundleGroup: bundle.groups?.[0] || "", // groups is an array
           description: bundle.description || "",
           duration: bundle.validity_in_days,
           dataAmount: bundle.data_amount_mb,
           unlimited: bundle.is_unlimited,
-          priceCents: Math.round((bundle.price || 0) * 100),  // Convert to cents
+          priceCents: Math.round((bundle.price || 0) * 100), // Convert to cents
           currency: bundle.currency,
           countries: bundle.countries || [],
-          regions: bundle.region ? [bundle.region] : [],  // region is singular
-          syncedAt: bundle.updated_at,  // Using updated_at as there's no last_synced field
+          regions: bundle.region ? [bundle.region] : [], // region is singular
+          syncedAt: bundle.updated_at, // Using updated_at as there's no last_synced field
           createdAt: bundle.created_at,
           updatedAt: bundle.updated_at,
         }));
@@ -305,11 +311,15 @@ export const catalogResolvers: Partial<Resolvers> = {
           REDIS_PORT: str({ default: "6379" }),
           REDIS_PASSWORD: str({ default: "mypassword" }),
           REDIS_USER: str({ default: "default" }),
+          RAILWAY_SERVICE_REDIS_URL: str({ default: "" }),
         });
+
+        // Use external Railway Redis URL if available (internal DNS not working)
+        const redisHost = env.RAILWAY_SERVICE_REDIS_URL || env.REDIS_HOST;
 
         // Create Redis connection (same config as workers)
         const redis = new IORedis({
-          host: env.REDIS_HOST,
+          host: redisHost,
           port: parseInt(env.REDIS_PORT),
           password: env.REDIS_PASSWORD,
           username: env.REDIS_USER,
@@ -317,9 +327,9 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Add error handler to prevent unhandled error events
-        redis.on('error', (error) => {
-          logger.error('Redis catalog queue error', error as Error, {
-            operationType: 'redis-catalog-queue-error'
+        redis.on("error", (error) => {
+          logger.error("Redis catalog queue error", error as Error, {
+            operationType: "redis-catalog-queue-error",
           });
         });
 
@@ -409,16 +419,20 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   CountryBundle: {
-    pricingBreakdown: async (parent: any, { paymentMethod }, context: Context) => {
+    pricingBreakdown: async (
+      parent: any,
+      { paymentMethod },
+      context: Context
+    ) => {
       try {
         // CountryBundle already has all the bundle data we need
         const bundle = {
           ...parent,
-          __typename: 'CountryBundle',
+          __typename: "CountryBundle",
           basePrice: parent.basePrice || 0,
           validityInDays: parent.duration,
           countries: parent.country ? [parent.country.iso] : [],
-          region: parent.country?.region
+          region: parent.country?.region,
         };
 
         return calculatePricingForBundle(
@@ -427,9 +441,9 @@ export const catalogResolvers: Partial<Resolvers> = {
           context
         );
       } catch (error) {
-        logger.error('Failed to calculate pricing breakdown', error as Error, {
+        logger.error("Failed to calculate pricing breakdown", error as Error, {
           bundleName: parent.name,
-          operationType: 'countryBundle-pricingBreakdown-field-resolver'
+          operationType: "countryBundle-pricingBreakdown-field-resolver",
         });
         throw error;
       }
@@ -444,16 +458,20 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   CatalogBundle: {
-    pricingBreakdown: async (parent: any, { paymentMethod }, context: Context) => {
+    pricingBreakdown: async (
+      parent: any,
+      { paymentMethod },
+      context: Context
+    ) => {
       try {
         // CatalogBundle has the complete bundle data
         const bundle = {
           ...parent,
-          __typename: 'CatalogBundle',
+          __typename: "CatalogBundle",
           basePrice: parent.basePrice || 0,
           validityInDays: parent.validityInDays || 1,
           countries: parent.countries || [],
-          region: parent.region
+          region: parent.region,
         };
 
         return calculatePricingForBundle(
@@ -462,26 +480,30 @@ export const catalogResolvers: Partial<Resolvers> = {
           context
         );
       } catch (error) {
-        logger.error('Failed to calculate pricing breakdown', error as Error, {
+        logger.error("Failed to calculate pricing breakdown", error as Error, {
           bundleName: parent.esimGoName || parent.name,
-          operationType: 'catalogBundle-pricingBreakdown-field-resolver'
+          operationType: "catalogBundle-pricingBreakdown-field-resolver",
         });
         throw error;
       }
-    }
+    },
   },
 
   CustomerBundle: {
-    pricingBreakdown: async (parent: any, { paymentMethod }, context: Context) => {
+    pricingBreakdown: async (
+      parent: any,
+      { paymentMethod },
+      context: Context
+    ) => {
       try {
         // CustomerBundle is for specific customer purchases
         const bundle = {
           ...parent,
-          __typename: 'CustomerBundle',
+          __typename: "CustomerBundle",
           basePrice: parent.price || parent.originalPrice || 0,
           validityInDays: parent.durationInDays || parent.validityInDays || 1,
           countries: parent.countries || [],
-          region: parent.region
+          region: parent.region,
         };
 
         return calculatePricingForBundle(
@@ -490,13 +512,13 @@ export const catalogResolvers: Partial<Resolvers> = {
           context
         );
       } catch (error) {
-        logger.error('Failed to calculate pricing breakdown', error as Error, {
+        logger.error("Failed to calculate pricing breakdown", error as Error, {
           bundleName: parent.name,
-          operationType: 'customerBundle-pricingBreakdown-field-resolver'
+          operationType: "customerBundle-pricingBreakdown-field-resolver",
         });
         throw error;
       }
-    }
+    },
   },
 
   PricingBreakdown: {
@@ -546,7 +568,7 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   BundlesByCountry: {
-    bundles: async (parent: any, _, context: Context) => {
+    bundles: async (parent, _, context: Context) => {
       try {
         // Only calculate bundles if they weren't already provided or if explicitly requested
         if (parent.bundles !== null) {
@@ -554,44 +576,52 @@ export const catalogResolvers: Partial<Resolvers> = {
         }
 
         logger.info("Calculating bundles with pricing for country", {
-          countryId: parent.countryId,
+          countryId: parent.country.iso,
           operationType: "bundles-countries-field-resolver",
         });
-
         // Get bundles for this country
-        const countryBundles =
-          await context.repositories.bundles.getBundlesByCountry(
-            parent.countryId
-          );
+        const countryBundles = await context.repositories.bundles.search({
+          countries: [parent.country.iso],
+          limit: 100,
+          offset: 0,
+        });
 
-        if (!countryBundles || countryBundles.length === 0) {
+        if (!countryBundles || countryBundles.count === 0) {
           logger.warn("No bundles found for country in field resolver", {
-            countryId: parent.countryId,
+            countryId: parent.country.iso,
             operationType: "bundles-countries-field-resolver",
           });
           return [];
         }
 
         // Map to CountryBundle format - field resolvers will handle pricing calculations
-        const bundles = countryBundles.map((bundle) => {
-          const countryBundle: CountryBundle = {
-            id: bundle?.id,
+        const bundles = countryBundles.data.map((bundle) => {
+          const countryBundle: CatalogBundle | CustomerBundle = {
+            basePrice: bundle?.price || 0,
+            countries: [parent.country.iso],
+            createdAt: bundle?.created_at,
+            isUnlimited: bundle?.is_unlimited || bundle?.data_amount_mb === -1,
+            currency: bundle?.currency || "USD",
+            dataAmountReadable: byteSize(
+              bundle?.data_amount_mb || 0
+            ).toString(),
+            groups: bundle?.groups || [],
             name: bundle?.esim_go_name || "Bundle",
-            country: parent.country,
-            duration: bundle?.duration || 0,
-            __typename: "CountryBundle",
-            currency: "USD",
-            group: bundle?.bundle_group || "Standard Fixed",
-            isUnlimited: bundle?.unlimited || bundle?.data_amount === -1,
-            data: bundle?.data_amount || 0,
-            pricingBreakdown: undefined,
-            appliedRules: undefined,
+            validityInDays: bundle?.validity_in_days || 0,
+            esimGoName: bundle?.esim_go_name || "Bundle",
+            id: bundle?.esim_go_name || "Bundle",
+            speed: bundle.speed || [],
+            syncedAt: bundle?.updated_at,
+            updatedAt: bundle?.updated_at,
+            dataAmountMB: bundle?.data_amount_mb,
+            description: bundle?.description,
+            region: bundle?.region,
           };
           return countryBundle;
         });
 
         logger.info("Bundles prepared for field resolvers", {
-          countryId: parent.countryId,
+          countryId: parent.country.iso,
           bundleCount: bundles.length,
           operationType: "bundles-countries-field-resolver",
         });
@@ -602,7 +632,7 @@ export const catalogResolvers: Partial<Resolvers> = {
           "Failed to prepare bundles for field resolvers",
           error as Error,
           {
-            countryId: parent.countryId,
+            countryId: parent.country.iso,
             operationType: "bundles-countries-field-resolver",
           }
         );
@@ -645,30 +675,31 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         const { PubSubEvents } = await import("../context/pubsub");
         const { withFilter } = await import("graphql-subscriptions");
-        
+
         // Create the async iterator with the filter
         const iterator = withFilter(
-          () => context.services.pubsub!.asyncIterator([
-            PubSubEvents.PRICING_PIPELINE_STEP,
-          ]),
+          () =>
+            context.services.pubsub!.asyncIterator([
+              PubSubEvents.PRICING_PIPELINE_STEP,
+            ]),
           (payload, variables) => {
             // Log for debugging
             logger.debug("Filtering pricing pipeline event", {
               payloadCorrelationId: payload.correlationId,
               requestedCorrelationId: variables.correlationId,
               match: payload.correlationId === variables.correlationId,
-              operationType: "pricing-pipeline-filter"
+              operationType: "pricing-pipeline-filter",
             });
-            
+
             // Filter by correlationId to ensure users only get their own pricing updates
             return payload.correlationId === variables.correlationId;
           }
         );
-        
+
         // Return the iterator result
         return iterator(_, { correlationId }, context);
       },
-      resolve: (payload) => {
+      resolve: (payload: any) => {
         // The payload itself is the pricing pipeline step data
         return payload;
       },
