@@ -751,8 +751,16 @@ export class PricingEngine {
     // Compare based on operator
     switch (condition.operator) {
       case 'EQUALS':
+        // Use flexible matching for group-related fields
+        if (this.isGroupField(condition.field)) {
+          return this.compareGroupNames(fieldValue, conditionValue);
+        }
         return fieldValue === conditionValue;
       case 'NOT_EQUALS':
+        // Use flexible matching for group-related fields
+        if (this.isGroupField(condition.field)) {
+          return !this.compareGroupNames(fieldValue, conditionValue);
+        }
         return fieldValue !== conditionValue;
       case 'GREATER_THAN':
         return Number(fieldValue) > Number(conditionValue);
@@ -763,9 +771,23 @@ export class PricingEngine {
       case 'LESS_THAN_OR_EQUAL':
         return Number(fieldValue) <= Number(conditionValue);
       case 'IN':
-        return Array.isArray(conditionValue) && conditionValue.includes(fieldValue);
+        if (Array.isArray(conditionValue)) {
+          // Use flexible matching for group-related fields
+          if (this.isGroupField(condition.field)) {
+            return conditionValue.some(value => this.compareGroupNames(fieldValue, value));
+          }
+          return conditionValue.includes(fieldValue);
+        }
+        return false;
       case 'NOT_IN':
-        return Array.isArray(conditionValue) && !conditionValue.includes(fieldValue);
+        if (Array.isArray(conditionValue)) {
+          // Use flexible matching for group-related fields
+          if (this.isGroupField(condition.field)) {
+            return !conditionValue.some(value => this.compareGroupNames(fieldValue, value));
+          }
+          return !conditionValue.includes(fieldValue);
+        }
+        return true;
       default:
         // Unknown operator, default to true
         return true;
@@ -786,6 +808,47 @@ export class PricingEngine {
     }
 
     return value;
+  }
+
+  /**
+   * Normalize group name for flexible matching
+   * Removes quotes, spaces, hyphens, commas and converts to lowercase
+   */
+  private normalizeGroupName(value: string): string {
+    return value
+      .toLowerCase()                    // Convert to lowercase
+      .replace(/["\s\-,]+/g, '')       // Remove quotes, spaces, hyphens, commas
+      .trim();                         // Remove leading/trailing whitespace
+  }
+
+  /**
+   * Check if a field name is group-related and should use flexible matching
+   */
+  private isGroupField(fieldName: string): boolean {
+    return fieldName.toLowerCase().includes('group');
+  }
+
+  /**
+   * Compare group names using flexible matching
+   * Falls back to strict equality for non-string values
+   */
+  private compareGroupNames(fieldValue: any, conditionValue: any): boolean {
+    if (typeof fieldValue !== 'string' || typeof conditionValue !== 'string') {
+      return fieldValue === conditionValue; // Fallback to strict equality
+    }
+    
+    const normalizedField = this.normalizeGroupName(fieldValue);
+    const normalizedCondition = this.normalizeGroupName(conditionValue);
+    
+    logger.debug("Using flexible group name matching", {
+      originalField: fieldValue,
+      originalCondition: conditionValue,
+      normalizedField,
+      normalizedCondition,
+      match: normalizedField === normalizedCondition
+    });
+    
+    return normalizedField === normalizedCondition;
   }
 
   private applyRuleActions(rule: PricingRule, pricing: PricingBreakdown, state: PricingEngineState): PricingBreakdown {
