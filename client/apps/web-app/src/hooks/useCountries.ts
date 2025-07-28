@@ -26,7 +26,6 @@ const taglines: string[] = [
 export function useCountries() {
   const { data, loading, error, refetch } = useQuery<GetCountriesWithBundlesQuery>(GET_COUNTRIES_WITH_BUNDLES, {
     errorPolicy: 'all',
-    notifyOnNetworkStatusChange: true,
   });
 
   // Transform GraphQL countries to enhanced countries

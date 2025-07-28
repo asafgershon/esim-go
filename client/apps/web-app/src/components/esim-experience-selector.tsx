@@ -50,7 +50,10 @@ export function EsimExperienceSelector() {
     const timer = setTimeout(() => setIsInitialLoading(false), 1200);
     return () => clearTimeout(timer);
   }, []);
-  const isLoading = isInitialLoading || countriesLoading || tripsLoading;
+  
+  // Check if we have data - if we do, don't show skeleton even if refetching
+  const hasData = countries.length > 0 || trips.length > 0;
+  const isLoading = isInitialLoading || (!hasData && (countriesLoading || tripsLoading));
   // Create combobox options based on active tab
   const comboboxOptions = useMemo(() => {
     if (activeTab === "countries") {

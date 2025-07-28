@@ -59,7 +59,7 @@ export function useBatchPricing({ regionId, countryId, paymentMethod, maxDays = 
       
       // Web-app configuration: Only request available bundle groups  
       // Note: Changed from 'Unlimited Plus' to 'Standard Fixed' based on eSIM Go catalog
-      const WEB_APP_BUNDLE_GROUPS = ['Standard - Unlimited Plus'];
+      const WEB_APP_BUNDLE_GROUPS = ['Standard Unlimited Plus'];
       
       // Create inputs for all days from 1 to maxDays
       const inputs = Array.from({ length: maxDays }, (_, i) => ({

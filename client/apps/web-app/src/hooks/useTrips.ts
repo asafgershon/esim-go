@@ -48,7 +48,6 @@ const basePrices: Record<string, number> = {
 export function useTrips() {
   const { data, loading, error, refetch } = useQuery(GET_TRIPS, {
     errorPolicy: 'all',
-    notifyOnNetworkStatusChange: true,
   });
 
   // Transform GraphQL trips to enhanced trips
