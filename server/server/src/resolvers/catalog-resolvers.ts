@@ -309,42 +309,10 @@ export const catalogResolvers: Partial<Resolvers> = {
           REDIS_USER: str({ default: "default" }),
         });
 
-        // Use REDIS_URL directly if available (for Railway internal DNS)
-        let redis: Redis;
-
-        if (process.env.REDIS_URL) {
-          logger.info("Using Redis URL for catalog queue", {
-            redisUrl: process.env.REDIS_URL,
-            operationType: "redis-catalog-config",
-          });
-          redis = new IORedis(process.env.REDIS_URL);
-        } else {
-          const redisConfig = {
-            host: env.REDIS_HOST,
-            port: parseInt(env.REDIS_PORT),
-            password: env.REDIS_PASSWORD,
-            username: env.REDIS_USER,
-            maxRetriesPerRequest: null,
-          };
-
-          logger.info("Using Redis object config for catalog queue", {
-            host: redisConfig.host,
-            port: redisConfig.port,
-            operationType: "redis-catalog-config",
-          });
-
-          redis = new IORedis(redisConfig);
-        }
-
-        // Add error handler to prevent unhandled error events
-        redis.on("error", (error) => {
-          logger.error("Redis catalog queue error", error as Error, {
-            operationType: "redis-catalog-queue-error",
-          });
-        });
+       
 
         // Create the same queue as workers use
-        const catalogQueue = new Queue("catalog-sync", { connection: redis });
+        const catalogQueue = new Queue("catalog-sync", { connection: context.services.redis });
 
         // Generate proper UUID for the job ID
         const { randomUUID } = await import("crypto");
@@ -395,8 +363,7 @@ export const catalogResolvers: Partial<Resolvers> = {
           },
         });
 
-        // Clean up Redis connection
-        await redis.quit();
+
 
         logger.info("Catalog sync job queued successfully", {
           dbJobId: syncJob.id,
@@ -442,7 +409,7 @@ export const catalogResolvers: Partial<Resolvers> = {
         };
 
         return calculatePricingForBundle(
-          bundle,
+          bundle as any,
           mapPaymentMethodEnum(parent),
           context
         );
