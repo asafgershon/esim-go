@@ -54,7 +54,7 @@ export const CountryCard: React.FC<CountryCardProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="flex items-center gap-2 cursor-default">
-                  <MapPin className="h-4 w-4" />
+                  {country.country.flag + '    ' || <MapPin className="h-4 w-4" />}
                   {country.country.name || country.country.iso}
                 </span>
               </TooltipTrigger>
