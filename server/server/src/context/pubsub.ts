@@ -27,6 +27,7 @@ export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
     // Use the REDIS_URL directly if available (for Railway internal DNS)
     let publisher: Redis;
     let subscriber: Redis;
+    console.log(env.REDIS_URL);
     const url = env.REDIS_URL + "?family=0";
     logger.debug(`Redis URL: ${url}`);
     publisher = new Redis(url);

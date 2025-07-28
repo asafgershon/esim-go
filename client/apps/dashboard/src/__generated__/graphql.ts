@@ -916,6 +916,7 @@ export type PricingBreakdown = {
   priceAfterDiscount: Scalars['Float']['output'];
   processingCost: Scalars['Float']['output'];
   processingRate: Scalars['Float']['output'];
+  revenueAfterProcessing: Scalars['Float']['output'];
   selectedReason?: Maybe<Scalars['String']['output']>;
   totalCost: Scalars['Float']['output'];
   totalCostBeforeProcessing?: Maybe<Scalars['Float']['output']>;

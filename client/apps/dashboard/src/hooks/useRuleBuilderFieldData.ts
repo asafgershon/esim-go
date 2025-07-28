@@ -9,6 +9,7 @@ import {
   GetCountriesQuery,
   GetBundleGroupsQuery,
   GetPaymentMethodsQuery,
+  PaymentMethod,
 } from '@/__generated__/graphql';
 
 interface FieldOption {
@@ -147,11 +148,11 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
     if (!paymentMethodsData?.paymentMethods) {
       // Fallback to known payment methods
       return [
-        { value: 'ISRAELI_CARD', label: 'Israeli Credit Card', description: 'Domestic credit cards' },
-        { value: 'FOREIGN_CARD', label: 'Foreign Credit Card', description: 'International credit cards' },
-        { value: 'AMEX', label: 'American Express', description: 'AMEX cards' },
-        { value: 'BIT', label: 'Bit Payment', description: 'Israeli digital payment' },
-        { value: 'DINERS', label: 'Diners Club', description: 'Diners Club cards' },
+        { value: PaymentMethod.IsraeliCard, label: 'Israeli Credit Card', description: 'Domestic credit cards' },
+        { value: PaymentMethod.ForeignCard, label: 'Foreign Credit Card', description: 'International credit cards' },
+        { value: PaymentMethod.Amex, label: 'American Express', description: 'AMEX cards' },
+        { value: PaymentMethod.Bit, label: 'Bit Payment', description: 'Israeli digital payment' },
+        { value: PaymentMethod.Diners, label: 'Diners Club', description: 'Diners Club cards' },
       ];
     }
 
@@ -176,15 +177,15 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
   // Utility function to get options for a specific field
   const getFieldOptions = (fieldValue: string): FieldOption[] => {
     switch (fieldValue) {
-      case 'group':
+      case 'request.group':
         return bundleGroups;
-      case 'country':
+      case 'request.countryISO':
         return countries;
-      case 'region':
+      case 'request.region':
         return regions;
-      case 'paymentMethod':
+      case 'context.payment.method':
         return paymentMethods;
-      case 'customerSegment':
+      case 'context.customer.segment':
         return customerSegments;
       default:
         return [];
@@ -194,12 +195,12 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
   // Utility function to check if a field is loading
   const isFieldLoading = (fieldValue: string): boolean => {
     switch (fieldValue) {
-      case 'group':
+      case 'request.group':
         return bundleGroupsLoading;
-      case 'country':
-      case 'region':
+      case 'request.countryISO':
+      case 'request.region':
         return countriesLoading;
-      case 'paymentMethod':
+      case 'context.payment.method':
         return paymentMethodsLoading;
       default:
         return false;
@@ -209,12 +210,12 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
   // Utility function to check if a field has errors
   const hasFieldError = (fieldValue: string): boolean => {
     switch (fieldValue) {
-      case 'group':
+      case 'request.group':
         return !!bundleGroupsError;
-      case 'country':
-      case 'region':
+      case 'request.countryISO':
+      case 'request.region':
         return !!countriesError;
-      case 'paymentMethod':
+      case 'context.payment.method':
         return !!paymentMethodsError;
       default:
         return false;

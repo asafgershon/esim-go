@@ -36,15 +36,22 @@ import {
   Target,
   Trash2,
   TrendingUp,
-  Zap
+  Zap,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-
 interface RuleBuilderProps {
-  rule: Omit<PricingRule, "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt"> | null;
-  onSave: (ruleData: Omit<PricingRule, "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt"> | null) => void;
+  rule: Omit<
+    PricingRule,
+    "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt"
+  > | null;
+  onSave: (
+    ruleData: Omit<
+      PricingRule,
+      "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt"
+    > | null
+  ) => void;
   onCancel: () => void;
 }
 
@@ -53,7 +60,12 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
   onSave,
   onCancel,
 }) => {
-  const [ruleData, setRuleData] = useState<Omit<PricingRule, "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt">>({
+  const [ruleData, setRuleData] = useState<
+    Omit<
+      PricingRule,
+      "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt"
+    >
+  >({
     category: RuleCategory.Discount,
     name: "",
     description: "",
@@ -70,17 +82,17 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
   // Helper function to determine field type
   const getFieldType = (field: string): string => {
     const fieldTypes: Record<string, string> = {
-      'duration': 'number',
-      'isUnlimited': 'boolean',
-      'cost': 'number',
-      'unusedDays': 'number',
-      'group': 'string',
-      'country': 'string',
-      'region': 'string',
-      'paymentMethod': 'string',
-      'planId': 'string'
+      duration: "number",
+      isUnlimited: "boolean",
+      cost: "number",
+      unusedDays: "number",
+      group: "string",
+      country: "string",
+      region: "string",
+      paymentMethod: "string",
+      planId: "string",
     };
-    return fieldTypes[field] || 'string';
+    return fieldTypes[field] || "string";
   };
 
   // Rule category configurations
@@ -171,7 +183,11 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
       case "CONSTRAINT":
         return [
           { value: "SET_MINIMUM_PRICE", label: "Set Minimum Price", unit: "$" },
-          { value: "SET_MINIMUM_PROFIT", label: "Set Minimum Profit", unit: "$" },
+          {
+            value: "SET_MINIMUM_PROFIT",
+            label: "Set Minimum Profit",
+            unit: "$",
+          },
         ];
       case "FEE":
         return [
@@ -208,7 +224,9 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
             ? rule.conditions
             : [{ field: "", operator: ConditionOperator.Equals, value: "" }],
         actions:
-          rule.actions.length > 0 ? rule.actions : [{ type: ActionType.ApplyDiscountPercentage, value: 0 }],
+          rule.actions.length > 0
+            ? rule.actions
+            : [{ type: ActionType.ApplyDiscountPercentage, value: 0 }],
         priority: rule.priority,
         isActive: rule.isActive,
         validFrom: rule.validFrom || "",
@@ -224,7 +242,7 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
       errors.push("Rule name is required");
     }
 
-    if (ruleData.conditions.some((c) => !c.field || !c.operator)) {
+    if (ruleData.conditions.length > 0 && ruleData.conditions.some((c) => !c.field || !c.operator)) {
       errors.push("All conditions must have field and operator selected");
     }
 
@@ -257,23 +275,23 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
         category: ruleData.category,
         name: ruleData.name,
         description: ruleData.description,
-        conditions: ruleData.conditions.map(condition => ({
+        conditions: ruleData.conditions.map((condition) => ({
           field: condition.field,
           operator: condition.operator,
           value: condition.value,
-          type: condition.type
+          type: condition.type,
         })),
-        actions: ruleData.actions.map(action => ({
+        actions: ruleData.actions.map((action) => ({
           type: action.type,
           value: action.value,
-          metadata: action.metadata
+          metadata: action.metadata,
         })),
         priority: ruleData.priority,
         isActive: ruleData.isActive,
         validFrom: ruleData.validFrom,
         validUntil: ruleData.validUntil,
       };
-      
+
       onSave(cleanRuleData);
     } else {
       toast.error("Please fix validation errors before saving");
@@ -340,7 +358,9 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
     }));
   };
 
-  const selectedRuleCategory = ruleCategories.find((rc) => rc.value === ruleData.category);
+  const selectedRuleCategory = ruleCategories.find(
+    (rc) => rc.value === ruleData.category
+  );
   const RuleIcon = selectedRuleCategory?.icon || Target;
 
   return (
@@ -391,7 +411,10 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                   <Select
                     value={ruleData.category}
                     onValueChange={(value) =>
-                      setRuleData((prev) => ({ ...prev, category: value as RuleCategory }))
+                      setRuleData((prev) => ({
+                        ...prev,
+                        category: value as RuleCategory,
+                      }))
                     }
                   >
                     <SelectTrigger>
@@ -401,11 +424,16 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                       {ruleCategories.map((category) => {
                         const Icon = category.icon;
                         return (
-                          <SelectItem key={category.value} value={category.value}>
+                          <SelectItem
+                            key={category.value}
+                            value={category.value}
+                          >
                             <div className="flex items-center gap-2">
                               <Icon className="h-4 w-4" />
                               <div>
-                                <div className="font-medium">{category.label}</div>
+                                <div className="font-medium">
+                                  {category.label}
+                                </div>
                                 <div className="text-xs text-gray-500">
                                   {category.description}
                                 </div>
@@ -529,14 +557,22 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="group">Bundle Group</SelectItem>
-                          <SelectItem value="duration">Duration (days)</SelectItem>
-                          <SelectItem value="isUnlimited">Is Unlimited</SelectItem>
+                          <SelectItem value="duration">
+                            Duration (days)
+                          </SelectItem>
+                          <SelectItem value="isUnlimited">
+                            Is Unlimited
+                          </SelectItem>
                           <SelectItem value="country">Country Code</SelectItem>
                           <SelectItem value="region">Region</SelectItem>
                           <SelectItem value="cost">Cost</SelectItem>
-                          <SelectItem value="paymentMethod">Payment Method</SelectItem>
+                          <SelectItem value="paymentMethod">
+                            Payment Method
+                          </SelectItem>
                           <SelectItem value="planId">Plan ID</SelectItem>
-                          <SelectItem value="unusedDays">Unused Days</SelectItem>
+                          <SelectItem value="unusedDays">
+                            Unused Days
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-gray-500">
@@ -557,7 +593,9 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                           <SelectValue placeholder="Select operator" />
                         </SelectTrigger>
                         <SelectContent>
-                          {getOperatorsForType(getFieldType(condition.field)).map((operator) => (
+                          {getOperatorsForType(
+                            getFieldType(condition.field)
+                          ).map((operator) => (
                             <SelectItem
                               key={operator.value}
                               value={operator.value}
@@ -571,11 +609,11 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
 
                     <div className="space-y-1">
                       <Label>Value</Label>
-                      {getFieldType(condition.field) === 'boolean' ? (
+                      {getFieldType(condition.field) === "boolean" ? (
                         <Select
                           value={String(condition.value)}
                           onValueChange={(value) =>
-                            updateCondition(index, "value", value === 'true')
+                            updateCondition(index, "value", value === "true")
                           }
                           disabled={!condition.operator}
                         >
@@ -587,7 +625,7 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                             <SelectItem value="false">False</SelectItem>
                           </SelectContent>
                         </Select>
-                      ) : condition.field === 'group' ? (
+                      ) : condition.field === "group" ? (
                         <Select
                           value={condition.value}
                           onValueChange={(value) =>
@@ -599,14 +637,24 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                             <SelectValue placeholder="Select bundle group" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Standard Fixed">Standard Fixed</SelectItem>
-                            <SelectItem value="Standard - Unlimited Lite">Standard - Unlimited Lite</SelectItem>
-                            <SelectItem value="Standard - Unlimited Essential">Standard - Unlimited Essential</SelectItem>
-                            <SelectItem value="Standard - Unlimited Plus">Standard - Unlimited Plus</SelectItem>
-                            <SelectItem value="Regional Bundles">Regional Bundles</SelectItem>
+                            <SelectItem value="Standard Fixed">
+                              Standard Fixed
+                            </SelectItem>
+                            <SelectItem value="Standard - Unlimited Lite">
+                              Standard - Unlimited Lite
+                            </SelectItem>
+                            <SelectItem value="Standard - Unlimited Essential">
+                              Standard - Unlimited Essential
+                            </SelectItem>
+                            <SelectItem value="Standard - Unlimited Plus">
+                              Standard - Unlimited Plus
+                            </SelectItem>
+                            <SelectItem value="Regional Bundles">
+                              Regional Bundles
+                            </SelectItem>
                           </SelectContent>
                         </Select>
-                      ) : condition.field === 'paymentMethod' ? (
+                      ) : condition.field === "paymentMethod" ? (
                         <Select
                           value={condition.value}
                           onValueChange={(value) =>
@@ -618,22 +666,35 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                             <SelectValue placeholder="Select payment method" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="ISRAELI_CARD">Israeli Card</SelectItem>
-                            <SelectItem value="FOREIGN_CARD">Foreign Card</SelectItem>
-                            <SelectItem value="AMEX">American Express</SelectItem>
+                            <SelectItem value="ISRAELI_CARD">
+                              Israeli Card
+                            </SelectItem>
+                            <SelectItem value="FOREIGN_CARD">
+                              Foreign Card
+                            </SelectItem>
+                            <SelectItem value="AMEX">
+                              American Express
+                            </SelectItem>
                             <SelectItem value="BIT">Bit</SelectItem>
                             <SelectItem value="DINERS">Diners Club</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <Input
-                          type={getFieldType(condition.field) === 'number' ? 'number' : 'text'}
+                          type={
+                            getFieldType(condition.field) === "number"
+                              ? "number"
+                              : "text"
+                          }
                           value={condition.value}
                           onChange={(e) => {
                             const fieldType = getFieldType(condition.field);
-                            const value = fieldType === 'number' 
-                              ? (e.target.value ? Number(e.target.value) : '')
-                              : e.target.value;
+                            const value =
+                              fieldType === "number"
+                                ? e.target.value
+                                  ? Number(e.target.value)
+                                  : ""
+                                : e.target.value;
                             updateCondition(index, "value", value);
                           }}
                           placeholder="Enter value"
@@ -736,9 +797,9 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                             <span className="text-sm text-gray-500">
                               {
-                                getActionsForRuleCategory(ruleData.category).find(
-                                  (a) => a.value === action.type
-                                )?.unit
+                                getActionsForRuleCategory(
+                                  ruleData.category
+                                ).find((a) => a.value === action.type)?.unit
                               }
                             </span>
                           </div>

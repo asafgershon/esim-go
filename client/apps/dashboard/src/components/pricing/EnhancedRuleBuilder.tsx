@@ -1,5 +1,12 @@
-import React, { useEffect, useState } from "react";
 import {
+  ActionType,
+  ConditionOperator,
+  PricingRule,
+  RuleCategory,
+} from "@/__generated__/graphql";
+import {
+  Alert,
+  AlertDescription,
   Badge,
   Button,
   Card,
@@ -20,38 +27,36 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
-  Alert,
-  AlertDescription,
 } from "@workspace/ui";
 import {
   AlertTriangle,
   CheckCircle,
-  Sparkles,
-  Save,
-  X,
-  TrendingUp,
-  Target,
   DollarSign,
-  Zap,
   HelpCircle,
+  Save,
+  Target,
+  TrendingUp,
+  X,
+  Zap,
 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import {
-  ActionType,
-  ConditionOperator,
-  PricingRule,
-  RuleAction,
-  RuleCondition,
-  RuleCategory,
-} from "@/__generated__/graphql";
 
-import { EnhancedConditionBuilder } from "./EnhancedConditionBuilder";
 import { EnhancedActionBuilder } from "./EnhancedActionBuilder";
+import { EnhancedConditionBuilder } from "./EnhancedConditionBuilder";
 import { RuleTemplateGallery } from "./RuleTemplateGallery";
 
 interface EnhancedRuleBuilderProps {
-  rule: Omit<PricingRule, "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt"> | null;
-  onSave: (ruleData: Omit<PricingRule, "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt">) => void;
+  rule: Omit<
+    PricingRule,
+    "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt"
+  > | null;
+  onSave: (
+    ruleData: Omit<
+      PricingRule,
+      "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt"
+    >
+  ) => void;
   onCancel: () => void;
 }
 
@@ -60,7 +65,12 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
   onSave,
   onCancel,
 }) => {
-  const [ruleData, setRuleData] = useState<Omit<PricingRule, "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt">>({
+  const [ruleData, setRuleData] = useState<
+    Omit<
+      PricingRule,
+      "createdAt" | "createdBy" | "id" | "isEditable" | "updatedAt"
+    >
+  >({
     category: RuleCategory.Discount,
     name: "",
     description: "",
@@ -83,7 +93,11 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
       icon: TrendingUp,
       color: "green",
       description: "Apply discounts to pricing",
-      examples: ["Volume discounts", "Promotional offers", "Customer loyalty rewards"],
+      examples: [
+        "Volume discounts",
+        "Promotional offers",
+        "Customer loyalty rewards",
+      ],
     },
     {
       value: "CONSTRAINT",
@@ -99,7 +113,11 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
       icon: DollarSign,
       color: "blue",
       description: "Add processing fees and charges",
-      examples: ["Payment processing fees", "Service charges", "Currency conversion fees"],
+      examples: [
+        "Payment processing fees",
+        "Service charges",
+        "Currency conversion fees",
+      ],
     },
     {
       value: "BUNDLE_ADJUSTMENT",
@@ -123,8 +141,8 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
             ? rule.conditions
             : [{ field: "", operator: ConditionOperator.Equals, value: "" }],
         actions:
-          rule.actions.length > 0 
-            ? rule.actions 
+          rule.actions.length > 0
+            ? rule.actions
             : [{ type: ActionType.ApplyDiscountPercentage, value: 0 }],
         priority: rule.priority,
         isActive: rule.isActive,
@@ -157,7 +175,9 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
       errors.push("All actions must have a type selected");
     }
 
-    if (ruleData.actions.some((a) => a.value === undefined || a.value === null)) {
+    if (
+      ruleData.actions.some((a) => a.value === undefined || a.value === null)
+    ) {
       errors.push("All actions must have a value");
     }
 
@@ -179,11 +199,15 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
   const handleSave = () => {
     const errors = validateRule();
     setValidationErrors(errors);
-    
+
     if (errors.length === 0) {
       onSave(ruleData);
     } else {
-      toast.error(`Please fix ${errors.length} validation error${errors.length !== 1 ? 's' : ''}`);
+      toast.error(
+        `Please fix ${errors.length} validation error${
+          errors.length !== 1 ? "s" : ""
+        }`
+      );
     }
   };
 
@@ -205,7 +229,7 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
   };
 
   const getCategoryConfig = (categoryValue: string) => {
-    return ruleCategories.find(cat => cat.value === categoryValue);
+    return ruleCategories.find((cat) => cat.value === categoryValue);
   };
 
   const selectedCategoryConfig = getCategoryConfig(ruleData.category);
@@ -219,10 +243,9 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
             {rule ? "Edit Rule" : "Create New Rule"}
           </h2>
           <p className="text-gray-600">
-            {rule 
-              ? "Modify the rule configuration below" 
-              : "Build a new pricing rule using conditions and actions"
-            }
+            {rule
+              ? "Modify the rule configuration below"
+              : "Build a new pricing rule using conditions and actions"}
           </p>
         </div>
         <RuleTemplateGallery onSelectTemplate={handleTemplateSelect} />
@@ -237,7 +260,9 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
               <p className="font-medium">Please fix the following errors:</p>
               <ul className="list-disc list-inside space-y-1">
                 {validationErrors.map((error, index) => (
-                  <li key={index} className="text-sm">{error}</li>
+                  <li key={index} className="text-sm">
+                    {error}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -246,7 +271,11 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
       )}
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="basic" className="flex items-center gap-2">
             <HelpCircle className="h-4 w-4" />
@@ -268,7 +297,9 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 {selectedCategoryConfig && (
-                  <selectedCategoryConfig.icon className={`h-5 w-5 text-${selectedCategoryConfig.color}-600`} />
+                  <selectedCategoryConfig.icon
+                    className={`h-5 w-5 text-${selectedCategoryConfig.color}-600`}
+                  />
                 )}
                 Rule Configuration
               </CardTitle>
@@ -284,10 +315,15 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
                   <Select
                     value={ruleData.category}
                     onValueChange={(value) => {
-                      updateRuleData({ 
+                      updateRuleData({
                         category: value as RuleCategory,
                         // Reset actions when category changes
-                        actions: [{ type: ActionType.ApplyDiscountPercentage, value: 0 }]
+                        actions: [
+                          {
+                            type: ActionType.ApplyDiscountPercentage,
+                            value: 0,
+                          },
+                        ],
                       });
                     }}
                   >
@@ -298,11 +334,16 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
                       {ruleCategories.map((category) => {
                         const Icon = category.icon;
                         return (
-                          <SelectItem key={category.value} value={category.value}>
+                          <SelectItem
+                            key={category.value}
+                            value={category.value}
+                          >
                             <div className="flex items-center gap-3">
                               <Icon className="h-4 w-4" />
                               <div>
-                                <div className="font-medium">{category.label}</div>
+                                <div className="font-medium">
+                                  {category.label}
+                                </div>
                                 <div className="text-xs text-gray-500">
                                   {category.description}
                                 </div>
@@ -316,7 +357,10 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
                   {selectedCategoryConfig && (
                     <div className="text-xs text-gray-500 space-y-1">
                       <p>{selectedCategoryConfig.description}</p>
-                      <p><strong>Examples:</strong> {selectedCategoryConfig.examples.join(", ")}</p>
+                      <p>
+                        <strong>Examples:</strong>{" "}
+                        {selectedCategoryConfig.examples.join(", ")}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -325,7 +369,11 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
                   <Label htmlFor="priority">
                     Priority (0-100)
                     <Badge variant="outline" className="ml-2 text-xs">
-                      {ruleData.priority >= 90 ? 'High' : ruleData.priority >= 50 ? 'Medium' : 'Low'}
+                      {ruleData.priority >= 90
+                        ? "High"
+                        : ruleData.priority >= 50
+                        ? "Medium"
+                        : "Low"}
                     </Badge>
                   </Label>
                   <Input
@@ -335,11 +383,14 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
                     max="100"
                     value={ruleData.priority}
                     onChange={(e) =>
-                      updateRuleData({ priority: parseInt(e.target.value) || 0 })
+                      updateRuleData({
+                        priority: parseInt(e.target.value) || 0,
+                      })
                     }
                   />
                   <p className="text-xs text-gray-500">
-                    Higher priority rules are evaluated first. Use 90+ for critical business rules.
+                    Higher priority rules are evaluated first. Use 90+ for
+                    critical business rules.
                   </p>
                 </div>
               </div>
@@ -365,7 +416,9 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
                 <Textarea
                   id="description"
                   value={ruleData.description || ""}
-                  onChange={(e) => updateRuleData({ description: e.target.value })}
+                  onChange={(e) =>
+                    updateRuleData({ description: e.target.value })
+                  }
                   placeholder="Describe when and how this rule should be applied"
                   rows={3}
                 />
@@ -377,12 +430,16 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
                   <div className="space-y-1">
                     <Label>Rule Status</Label>
                     <p className="text-sm text-gray-500">
-                      {ruleData.isActive ? "Active and affecting pricing" : "Inactive - no effect"}
+                      {ruleData.isActive
+                        ? "Active and affecting pricing"
+                        : "Inactive - no effect"}
                     </p>
                   </div>
                   <Switch
                     checked={ruleData.isActive}
-                    onCheckedChange={(checked) => updateRuleData({ isActive: checked })}
+                    onCheckedChange={(checked) =>
+                      updateRuleData({ isActive: checked })
+                    }
                   />
                 </div>
 
@@ -392,7 +449,9 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
                     id="valid-from"
                     type="date"
                     value={ruleData.validFrom || ""}
-                    onChange={(e) => updateRuleData({ validFrom: e.target.value })}
+                    onChange={(e) =>
+                      updateRuleData({ validFrom: e.target.value })
+                    }
                   />
                 </div>
 
@@ -402,7 +461,9 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
                     id="valid-until"
                     type="date"
                     value={ruleData.validUntil || ""}
-                    onChange={(e) => updateRuleData({ validUntil: e.target.value })}
+                    onChange={(e) =>
+                      updateRuleData({ validUntil: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -439,14 +500,36 @@ export const EnhancedRuleBuilder: React.FC<EnhancedRuleBuilderProps> = ({
         <CardContent className="text-blue-700">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p><strong>Name:</strong> {ruleData.name || "Unnamed rule"}</p>
-              <p><strong>Category:</strong> {selectedCategoryConfig?.label || ruleData.category}</p>
-              <p><strong>Priority:</strong> {ruleData.priority} (evaluated {ruleData.priority >= 90 ? 'first' : ruleData.priority >= 50 ? 'middle' : 'last'})</p>
+              <p>
+                <strong>Name:</strong> {ruleData.name || "Unnamed rule"}
+              </p>
+              <p>
+                <strong>Category:</strong>{" "}
+                {selectedCategoryConfig?.label || ruleData.category}
+              </p>
+              <p>
+                <strong>Priority:</strong> {ruleData.priority} (evaluated{" "}
+                {ruleData.priority >= 90
+                  ? "first"
+                  : ruleData.priority >= 50
+                  ? "middle"
+                  : "last"}
+                )
+              </p>
             </div>
             <div>
-              <p><strong>Conditions:</strong> {ruleData.conditions.length} condition{ruleData.conditions.length !== 1 ? 's' : ''}</p>
-              <p><strong>Actions:</strong> {ruleData.actions.length} action{ruleData.actions.length !== 1 ? 's' : ''}</p>
-              <p><strong>Status:</strong> {ruleData.isActive ? "Active" : "Inactive"}</p>
+              <p>
+                <strong>Conditions:</strong> {ruleData.conditions.length}{" "}
+                condition{ruleData.conditions.length !== 1 ? "s" : ""}
+              </p>
+              <p>
+                <strong>Actions:</strong> {ruleData.actions.length} action
+                {ruleData.actions.length !== 1 ? "s" : ""}
+              </p>
+              <p>
+                <strong>Status:</strong>{" "}
+                {ruleData.isActive ? "Active" : "Inactive"}
+              </p>
             </div>
           </div>
         </CardContent>

@@ -1,9 +1,11 @@
 import {
   CalculateBatchAdminPricingQuery,
   CalculateBatchAdminPricingQueryVariables,
+  CustomerBundle,
   GetCountriesQuery,
   GetCountryBundlesQuery,
-  PricingRule,
+  PaymentMethod,
+  PricingRule
 } from '@/__generated__/graphql';
 import { useLazyQuery, useQuery } from '@apollo/client';
 import {
@@ -54,15 +56,15 @@ interface PricingSimulatorProps {
 interface TestInputs {
   countryISO: string;
   duration: number;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
 }
 
 const paymentMethods = [
-  { value: 'ISRAELI_CARD', label: 'Israeli Credit Card', icon: CreditCard },
-  { value: 'FOREIGN_CARD', label: 'Foreign Credit Card', icon: CreditCard },
-  { value: 'AMEX', label: 'American Express', icon: CreditCard },
-  { value: 'BIT', label: 'Bit Payment', icon: CreditCard },
-  { value: 'DINERS', label: 'Diners Club', icon: CreditCard },
+  { value: PaymentMethod.IsraeliCard, label: 'Israeli Credit Card', icon: CreditCard },
+  { value: PaymentMethod.ForeignCard, label: 'Foreign Credit Card', icon: CreditCard },
+  { value: PaymentMethod.Amex, label: 'American Express', icon: CreditCard },
+  { value: PaymentMethod.Bit, label: 'Bit Payment', icon: CreditCard },
+  { value: PaymentMethod.Diners, label: 'Diners Club', icon: CreditCard },
 ];
 
 export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
@@ -72,7 +74,7 @@ export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
   const [testInputs, setTestInputs] = useState<TestInputs>({
     countryISO: '',
     duration: 7,
-    paymentMethod: 'ISRAELI_CARD',
+    paymentMethod: PaymentMethod.IsraeliCard,
   });
 
   const [selectedBundle, setSelectedBundle] = useState<string>('');
@@ -107,7 +109,7 @@ export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
   >(CALCULATE_BATCH_ADMIN_PRICING);
 
   const countries = countriesData?.countries || [];
-  const bundles = bundlesData?.bundlesForCountry?.bundles || [];
+  const bundles = (bundlesData?.bundlesForCountry?.bundles || []) as CustomerBundle[];
 
   const handleCountryChange = (countryISO: string) => {
     setTestInputs((prev) => ({ ...prev, countryISO }));
@@ -124,7 +126,7 @@ export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
     }
 
     try {
-      const bundle = bundles.find((b) => b.esimGoName === selectedBundle);
+      const bundle = bundles.find((b) => b.name === selectedBundle);
       if (!bundle) {
         toast.error('Selected bundle not found');
         return;
@@ -246,9 +248,9 @@ export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
                     </SelectItem>
                   ) : (
                     bundles.map((bundle) => (
-                      <SelectItem key={bundle.esimGoName} value={bundle.esimGoName}>
-                        {bundle.esimGoName} - {bundle.validityInDays} days
-                        {bundle.isUnlimited ? ' (Unlimited)' : ` (${bundle.data})`}
+                      <SelectItem key={bundle.name} value={bundle.name}>
+                        {bundle.name} - {bundle.validityInDays} days
+                        {bundle.dataAmountReadable}
                       </SelectItem>
                     ))
                   )}
@@ -280,7 +282,7 @@ export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
             <Select
               value={testInputs.paymentMethod}
               onValueChange={(value) =>
-                setTestInputs((prev) => ({ ...prev, paymentMethod: value }))
+                setTestInputs((prev) => ({ ...prev, paymentMethod: value as PaymentMethod }))
               }
             >
               <SelectTrigger>

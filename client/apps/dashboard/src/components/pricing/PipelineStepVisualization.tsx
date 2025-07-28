@@ -17,11 +17,11 @@ import {
   ArrowRight,
   Zap,
 } from 'lucide-react';
-import { PricingRule } from '@/__generated__/graphql';
+import { PricingBreakdown, PricingRule } from '@/__generated__/graphql';
 
 interface PipelineStepVisualizationProps {
-  pricingResult: any;
-  appliedRules: any[];
+  pricingResult: PricingBreakdown;
+  appliedRules: PricingRule[];
   selectedRule?: PricingRule | null;
   className?: string;
 }
