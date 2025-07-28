@@ -67,6 +67,22 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+  // Helper function to determine field type
+  const getFieldType = (field: string): string => {
+    const fieldTypes: Record<string, string> = {
+      'duration': 'number',
+      'isUnlimited': 'boolean',
+      'cost': 'number',
+      'unusedDays': 'number',
+      'group': 'string',
+      'country': 'string',
+      'region': 'string',
+      'paymentMethod': 'string',
+      'planId': 'string'
+    };
+    return fieldTypes[field] || 'string';
+  };
+
   // Rule category configurations
   const ruleCategories = [
     {
@@ -499,16 +515,32 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <Label>Field</Label>
-                      <Input
+                      <Select
                         value={condition.field}
-                        onChange={(e) => {
-                          updateCondition(index, "field", e.target.value);
-                          updateCondition(index, "type", "string"); // Default to string type
+                        onValueChange={(value) => {
+                          updateCondition(index, "field", value);
+                          // Set appropriate type based on field
+                          const fieldType = getFieldType(value);
+                          updateCondition(index, "type", fieldType);
                         }}
-                        placeholder="e.g. payment.method, bundleGroup, country"
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select field" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="group">Bundle Group</SelectItem>
+                          <SelectItem value="duration">Duration (days)</SelectItem>
+                          <SelectItem value="isUnlimited">Is Unlimited</SelectItem>
+                          <SelectItem value="country">Country Code</SelectItem>
+                          <SelectItem value="region">Region</SelectItem>
+                          <SelectItem value="cost">Cost</SelectItem>
+                          <SelectItem value="paymentMethod">Payment Method</SelectItem>
+                          <SelectItem value="planId">Plan ID</SelectItem>
+                          <SelectItem value="unusedDays">Unused Days</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <p className="text-xs text-gray-500">
-                        Use dot notation for nested fields (e.g. payment.method)
+                        Select the field to match against
                       </p>
                     </div>
 
@@ -525,7 +557,7 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                           <SelectValue placeholder="Select operator" />
                         </SelectTrigger>
                         <SelectContent>
-                          {getOperatorsForType("string").map((operator) => (
+                          {getOperatorsForType(getFieldType(condition.field)).map((operator) => (
                             <SelectItem
                               key={operator.value}
                               value={operator.value}
@@ -539,14 +571,75 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
 
                     <div className="space-y-1">
                       <Label>Value</Label>
-                      <Input
-                        value={condition.value}
-                        onChange={(e) =>
-                          updateCondition(index, "value", e.target.value)
-                        }
-                        placeholder="Enter value"
-                        disabled={!condition.operator}
-                      />
+                      {getFieldType(condition.field) === 'boolean' ? (
+                        <Select
+                          value={String(condition.value)}
+                          onValueChange={(value) =>
+                            updateCondition(index, "value", value === 'true')
+                          }
+                          disabled={!condition.operator}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select value" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">True</SelectItem>
+                            <SelectItem value="false">False</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : condition.field === 'group' ? (
+                        <Select
+                          value={condition.value}
+                          onValueChange={(value) =>
+                            updateCondition(index, "value", value)
+                          }
+                          disabled={!condition.operator}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select bundle group" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Standard Fixed">Standard Fixed</SelectItem>
+                            <SelectItem value="Standard - Unlimited Lite">Standard - Unlimited Lite</SelectItem>
+                            <SelectItem value="Standard - Unlimited Essential">Standard - Unlimited Essential</SelectItem>
+                            <SelectItem value="Standard - Unlimited Plus">Standard - Unlimited Plus</SelectItem>
+                            <SelectItem value="Regional Bundles">Regional Bundles</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : condition.field === 'paymentMethod' ? (
+                        <Select
+                          value={condition.value}
+                          onValueChange={(value) =>
+                            updateCondition(index, "value", value)
+                          }
+                          disabled={!condition.operator}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select payment method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ISRAELI_CARD">Israeli Card</SelectItem>
+                            <SelectItem value="FOREIGN_CARD">Foreign Card</SelectItem>
+                            <SelectItem value="AMEX">American Express</SelectItem>
+                            <SelectItem value="BIT">Bit</SelectItem>
+                            <SelectItem value="DINERS">Diners Club</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          type={getFieldType(condition.field) === 'number' ? 'number' : 'text'}
+                          value={condition.value}
+                          onChange={(e) => {
+                            const fieldType = getFieldType(condition.field);
+                            const value = fieldType === 'number' 
+                              ? (e.target.value ? Number(e.target.value) : '')
+                              : e.target.value;
+                            updateCondition(index, "value", value);
+                          }}
+                          placeholder="Enter value"
+                          disabled={!condition.operator}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

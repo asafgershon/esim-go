@@ -32,6 +32,67 @@ export class PricingRulesRepository extends BaseSupabaseRepository<
     super("pricing_rules");
   }
 
+  // Field type mapping for proper type coercion
+  private fieldTypes: Record<string, 'number' | 'boolean' | 'string'> = {
+    'duration': 'number',
+    'isUnlimited': 'boolean',
+    'cost': 'number',
+    'unusedDays': 'number',
+    'totalCost': 'number',
+    'revenue': 'number',
+    'finalRevenue': 'number',
+    'markup': 'number',
+    'processingRate': 'number',
+    'processingFee': 'number',
+    'discountPerUnusedDay': 'number',
+    'revenueAfterProcessing': 'number',
+    'group': 'string',
+    'country': 'string',
+    'region': 'string',
+    'paymentMethod': 'string',
+    'planId': 'string'
+  };
+
+  // Coerce condition values to proper types
+  private coerceConditionValue(field: string, value: any): any {
+    const fieldType = this.fieldTypes[field];
+    
+    if (!fieldType) {
+      return value; // Unknown field, return as-is
+    }
+
+    switch (fieldType) {
+      case 'number':
+        if (typeof value === 'string') {
+          const num = Number(value);
+          if (!isNaN(num)) {
+            this.logger.warn('Coerced string to number for field', { field, originalValue: value, coercedValue: num });
+            return num;
+          }
+        }
+        return value;
+      
+      case 'boolean':
+        if (typeof value === 'string') {
+          const bool = value.toLowerCase() === 'true';
+          this.logger.warn('Coerced string to boolean for field', { field, originalValue: value, coercedValue: bool });
+          return bool;
+        }
+        return value;
+      
+      default:
+        return value;
+    }
+  }
+
+  // Process conditions to ensure proper types
+  private processConditions(conditions: RuleCondition[]): RuleCondition[] {
+    return conditions.map(condition => ({
+      ...condition,
+      value: this.coerceConditionValue(condition.field, condition.value)
+    }));
+  }
+
   async findAll(filter?: PricingRuleFilter): Promise<PricingRule[]> {
     this.logger.info("Finding pricing rules", { filter });
 
@@ -100,11 +161,14 @@ export class PricingRulesRepository extends BaseSupabaseRepository<
       throw new Error("Rule must have at least one action");
     }
 
+    // Process conditions to ensure proper types
+    const processedConditions = this.processConditions(input.conditions);
+
     const row: PricingRuleInsert = {
       category: input.category,
       name: input.name,
       description: input.description || null,
-      conditions: input.conditions as any, // Let Supabase handle JSONB conversion
+      conditions: processedConditions as any, // Let Supabase handle JSONB conversion
       actions: input.actions as any, // Let Supabase handle JSONB conversion
       priority: input.priority,
       is_active: input.isActive ?? true,
@@ -168,8 +232,11 @@ export class PricingRulesRepository extends BaseSupabaseRepository<
     if (input.category !== undefined) update.category = input.category;
     if (input.name !== undefined) update.name = input.name || "";
     if (input.description !== undefined) update.description = input.description;
-    if (input.conditions !== undefined)
-      update.conditions = input.conditions as any;
+    if (input.conditions !== undefined) {
+      // Process conditions to ensure proper types
+      const processedConditions = this.processConditions(input.conditions);
+      update.conditions = processedConditions as any;
+    }
     if (input.actions !== undefined) update.actions = input.actions as any;
     if (input.priority !== undefined) update.priority = input.priority || 0;
     if (input.isActive !== undefined)

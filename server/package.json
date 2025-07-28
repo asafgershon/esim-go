@@ -21,7 +21,9 @@
     "workers:start": "bun run --filter ./workers start"
   },
   "devDependencies": {
+    "@apollo/client": "^3.13.8",
     "concurrently": "^9.2.0",
+    "graphql": "^16.11.0",
     "turbo": "^2.5.5"
   }
 }

@@ -1,4 +1,4 @@
-import { Country, PaymentMethod } from '@/__generated__/graphql';
+import { Country, GetBundleGroupsQuery, PaymentMethod } from '@/__generated__/graphql';
 import { useQuery } from '@apollo/client';
 import {
   Button,
@@ -55,7 +55,7 @@ export const PricingSimulatorPanel: React.FC<PricingSimulatorPanelProps> = ({
   loading,
 }) => {
   // Fetch available bundle groups
-  const { data: bundleGroupsData } = useQuery(GET_BUNDLE_GROUPS);
+  const { data: bundleGroupsData } = useQuery<GetBundleGroupsQuery>(GET_BUNDLE_GROUPS);
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
@@ -126,13 +126,13 @@ export const PricingSimulatorPanel: React.FC<PricingSimulatorPanelProps> = ({
 
           {/* Bundle Groups */}
           <div className="space-y-2">
-            <Label htmlFor="groups">Bundle Groups (Optional)</Label>
+            <Label htmlFor="groups">Bundle Group (Optional)</Label>
             <Select 
-              value={selectedGroups.length === 1 ? selectedGroups[0] : ''} 
+              value={selectedGroups.length > 0 ? selectedGroups[0] : 'all'} 
               onValueChange={(value) => {
                 if (value === 'all') {
                   onGroupsChange([]);
-                } else if (value) {
+                } else {
                   onGroupsChange([value]);
                 }
               }}
@@ -148,7 +148,7 @@ export const PricingSimulatorPanel: React.FC<PricingSimulatorPanelProps> = ({
                   </div>
                 </SelectItem>
                 {bundleGroupsData?.pricingFilters?.groups?.map((group: string) => (
-                  <SelectItem key={group} value={'Standard - Unlimited Plus'}>
+                  <SelectItem key={group} value={group}>
                     <div className="flex items-center gap-2">
                       <Package className="h-4 w-4" />
                       <span>{group}</span>
@@ -160,7 +160,7 @@ export const PricingSimulatorPanel: React.FC<PricingSimulatorPanelProps> = ({
             {selectedGroups.length > 0 && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Package className="h-3 w-3" />
-                <span>Filtering by: {selectedGroups.join(', ')}</span>
+                <span>Filtering by: {selectedGroups[0]}</span>
               </div>
             )}
           </div>

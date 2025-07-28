@@ -178,13 +178,13 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
     switch (fieldValue) {
       case 'group':
         return bundleGroups;
-      case 'request.countryISO':
+      case 'country':
         return countries;
-      case 'request.region':
+      case 'region':
         return regions;
-      case 'payment.method':
+      case 'paymentMethod':
         return paymentMethods;
-      case 'costumer.segment':
+      case 'customerSegment':
         return customerSegments;
       default:
         return [];
@@ -196,10 +196,10 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
     switch (fieldValue) {
       case 'group':
         return bundleGroupsLoading;
-      case 'request.countryISO':
-      case 'request.region':
+      case 'country':
+      case 'region':
         return countriesLoading;
-      case 'payment.method':
+      case 'paymentMethod':
         return paymentMethodsLoading;
       default:
         return false;
@@ -211,10 +211,10 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
     switch (fieldValue) {
       case 'group':
         return !!bundleGroupsError;
-      case 'request.countryISO':
-      case 'request.region':
+      case 'country':
+      case 'region':
         return !!countriesError;
-      case 'payment.method':
+      case 'paymentMethod':
         return !!paymentMethodsError;
       default:
         return false;
