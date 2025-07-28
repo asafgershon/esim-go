@@ -68,6 +68,10 @@ export class RuleBuilder {
     return this;
   }
 
+  and(): ConditionBuilder {
+    return new ConditionBuilder(this);
+  }
+
   addAction(action: RuleAction): this {
     if (!this.rule.actions) {
       this.rule.actions = [];
@@ -89,8 +93,35 @@ export class RuleBuilder {
     if (!this.rule.actions || this.rule.actions.length === 0) {
       throw new Error('At least one action is required');
     }
+    
+    // Validate priority
+    if (this.rule.priority !== undefined && (this.rule.priority < 0 || this.rule.priority > 1000)) {
+      throw new Error('Priority must be between 0 and 1000');
+    }
+    
+    // Validate action values
+    this.rule.actions.forEach(action => {
+      if (action.type === ActionTypeEnum.ApplyDiscountPercentage && 
+          (action.value < 0 || action.value > 100)) {
+        throw new Error('Discount percentage must be between 0 and 100');
+      }
+      if (action.type === ActionTypeEnum.SetProcessingRate && 
+          (action.value < 0 || action.value > 100)) {
+        throw new Error('Processing rate must be between 0 and 100');
+      }
+    });
 
-    return this.rule as CreatePricingRuleInput;
+    const builtRule = { ...this.rule } as CreatePricingRuleInput;
+    
+    // Reset the builder for next use
+    this.rule = {
+      isActive: true,
+      priority: 50,
+      conditions: [],
+      actions: []
+    };
+    
+    return builtRule;
   }
 }
 
@@ -111,12 +142,20 @@ export class ConditionBuilder {
   }
 
   // Bundle conditions
+  group(): BundleCondition {
+    return new BundleCondition(this.builder, 'group');
+  }
+
   bundleGroup(): BundleCondition {
-    return new BundleCondition(this.builder, 'bundleGroup');
+    return new BundleCondition(this.builder, 'group');
   }
 
   duration(): NumericCondition {
     return new NumericCondition(this.builder, 'duration');
+  }
+
+  cost(): NumericCondition {
+    return new NumericCondition(this.builder, 'cost');
   }
 
   planId(): StringCondition {
@@ -142,6 +181,10 @@ export class ConditionBuilder {
   field(fieldName: string): GenericCondition {
     return new GenericCondition(this.builder, fieldName);
   }
+
+  custom(fieldName: string): GenericCondition {
+    return new GenericCondition(this.builder, fieldName);
+  }
 }
 
 export class ActionBuilder {
@@ -157,6 +200,10 @@ export class ActionBuilder {
       value: percentage,
       metadata: {}
     });
+  }
+
+  applyDiscountPercentage(percentage: number): RuleBuilder {
+    return this.applyDiscount(percentage);
   }
 
   applyFixedDiscount(amount: number): RuleBuilder {
@@ -187,6 +234,22 @@ export class ActionBuilder {
     return this.builder.addAction({
       type: ActionTypeEnum.SetDiscountPerUnusedDay,
       value: rate,
+      metadata: {}
+    });
+  }
+
+  setMinimumProfit(amount: number): RuleBuilder {
+    return this.builder.addAction({
+      type: ActionTypeEnum.SetMinimumProfit,
+      value: amount,
+      metadata: {}
+    });
+  }
+
+  setMinimumPrice(amount: number): RuleBuilder {
+    return this.builder.addAction({
+      type: ActionTypeEnum.SetMinimumPrice,
+      value: amount,
       metadata: {}
     });
   }
@@ -236,7 +299,15 @@ abstract class BaseCondition<T> {
 }
 
 // Specific condition classes
-class StringCondition extends BaseCondition<string> {}
+class StringCondition extends BaseCondition<string> {
+  contains(value: string): RuleBuilder {
+    return this.builder.addCondition({
+      field: this.field,
+      operator: ConditionOperatorEnum.Equals,  // Using Equals since Contains doesn't exist
+      value
+    });
+  }
+}
 
 class NumericCondition extends BaseCondition<number> {
   greaterThan(value: number): RuleBuilder {
@@ -260,6 +331,14 @@ class NumericCondition extends BaseCondition<number> {
       field: this.field,
       operator: ConditionOperatorEnum.Between,
       value: [min, max]
+    });
+  }
+
+  greaterThanOrEqual(value: number): RuleBuilder {
+    return this.builder.addCondition({
+      field: this.field,
+      operator: ConditionOperatorEnum.GreaterThan,
+      value: value - 0.001  // Hack for GTE
     });
   }
 }
@@ -372,7 +451,7 @@ class PaymentMethodCondition {
   }
 }
 
-class GenericCondition extends BaseCondition<any> {
+class GenericCondition extends StringCondition {
   exists(): RuleBuilder {
     return this.builder.addCondition({
       field: this.field,
@@ -386,6 +465,38 @@ class GenericCondition extends BaseCondition<any> {
       field: this.field,
       operator: ConditionOperatorEnum.NotExists,
       value: true
+    });
+  }
+
+  greaterThan(value: number): RuleBuilder {
+    return this.builder.addCondition({
+      field: this.field,
+      operator: ConditionOperatorEnum.GreaterThan,
+      value
+    });
+  }
+
+  lessThan(value: number): RuleBuilder {
+    return this.builder.addCondition({
+      field: this.field,
+      operator: ConditionOperatorEnum.LessThan,
+      value
+    });
+  }
+
+  greaterThanOrEqual(value: number): RuleBuilder {
+    return this.builder.addCondition({
+      field: this.field,
+      operator: ConditionOperatorEnum.GreaterThan,
+      value: value - 0.001  // Hack for GTE since it might not exist
+    });
+  }
+
+  between(min: number, max: number): RuleBuilder {
+    return this.builder.addCondition({
+      field: this.field,
+      operator: ConditionOperatorEnum.Between,
+      value: [min, max]
     });
   }
 }

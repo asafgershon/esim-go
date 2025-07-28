@@ -3,8 +3,8 @@ import {
   ConditionOperator,
   PricingRule,
   RuleAction,
-  RuleCondition,
   RuleCategory,
+  RuleCondition,
 } from "@/__generated__/graphql";
 import {
   Badge,
@@ -30,15 +30,13 @@ import {
 } from "@workspace/ui";
 import {
   AlertTriangle,
-  BarChart3,
   CheckCircle,
   DollarSign,
   Plus,
   Target,
   Trash2,
   TrendingUp,
-  Users,
-  Zap,
+  Zap
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -99,20 +97,6 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
       color: "purple",
       description: "Adjust bundle selection and pricing",
     },
-  ];
-
-  // Available condition fields
-  const conditionFields = [
-    { value: "bundleGroup", label: "Bundle Group", type: "string" },
-    { value: "duration", label: "Duration (days)", type: "number" },
-    { value: "country", label: "Country", type: "string" },
-    { value: "region", label: "Region", type: "string" },
-    { value: "paymentMethod", label: "Payment Method", type: "string" },
-    { value: "userSegment", label: "User Segment", type: "string" },
-    { value: "isNewUser", label: "Is New User", type: "boolean" },
-    { value: "purchaseCount", label: "Purchase Count", type: "number" },
-    { value: "totalSpent", label: "Total Spent", type: "number" },
-    { value: "currentDate", label: "Current Date", type: "date" },
   ];
 
   // Available operators based on field type

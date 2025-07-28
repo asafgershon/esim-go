@@ -1,7 +1,5 @@
-import { PricingRuleEngine } from './rule-engine';
+import { PricingRuleEngine, RuleCategory, type PricingEngineState } from './index';
 import { RuleBuilder } from './rule-builder';
-import type { PricingContext } from './rules-engine-types';
-import { RuleType } from './types';
 
 // Example usage of the pricing rule engine with streaming
 
@@ -13,11 +11,11 @@ async function demonstratePricingEngine() {
   engine.addSystemRules([
     new RuleBuilder()
       .name("Standard Unlimited Lite 7-day Markup")
-      .type(RuleType.SystemMarkup)
+      .category(RuleCategory.BundleAdjustment)
       .when()
-        .bundleGroup().equals("Standard - Unlimited Lite")
+        .field("group").equals("Standard - Unlimited Lite")
       .when()
-        .duration().equals(7)
+        .field("duration").equals(7)
       .then()
         .addMarkup(12.00)
       .priority(100)
@@ -25,7 +23,7 @@ async function demonstratePricingEngine() {
       
     new RuleBuilder()
       .name("Israeli Card Processing")
-      .type(RuleType.SystemProcessing)
+      .category(RuleCategory.Fee)
       .when()
         .field("paymentMethod").equals("ISRAELI_CARD")
       .then()
@@ -38,9 +36,9 @@ async function demonstratePricingEngine() {
   engine.addRules([
     new RuleBuilder()
       .name("Germany 20% Discount")
-      .type(RuleType.BusinessDiscount)
+      .category(RuleCategory.Discount)
       .when()
-        .country().equals("DE")
+        .field("country").equals("DE")
       .then()
         .applyDiscount(20)
       .priority(50)
@@ -48,9 +46,9 @@ async function demonstratePricingEngine() {
       
     new RuleBuilder()
       .name("Europe Unlimited Special")
-      .type(RuleType.BusinessDiscount)
+      .category(RuleCategory.Discount)
       .when()
-        .region().equals("Europe")
+        .field("region").equals("Europe")
       .when()
         .field("bundle.isUnlimited").equals(true)
       .then()
@@ -60,7 +58,7 @@ async function demonstratePricingEngine() {
   ]);
   
   // Create pricing context with available bundles
-  const context: PricingContext = {
+  const context: PricingEngineState = {
     availableBundles: [
       {
         id: "bundle-123",
@@ -151,7 +149,7 @@ async function demonstratePricingEngine() {
   console.log("\n=== GRAPHQL SUBSCRIPTION EXAMPLE ===\n");
   
   // This could be used in a GraphQL subscription resolver
-  async function* pricingSubscription(context: PricingContext) {
+  async function* pricingSubscription(context: PricingEngineState) {
     for await (const update of engine.streamPricing(context)) {
       yield {
         pricingUpdate: update

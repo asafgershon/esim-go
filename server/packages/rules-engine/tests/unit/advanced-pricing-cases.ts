@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PricingRuleEngine, PricingContext, CreatePricingRuleInput, ConditionOperator } from '../../src';
+import { PricingRuleEngine, PricingEngineState, CreatePricingRuleInput, ConditionOperator } from '../../src';
 
 describe('Advanced Pricing Cases', () => {
   let engine: PricingRuleEngine;
@@ -81,7 +81,7 @@ describe('Advanced Pricing Cases', () => {
     });
 
     it('should apply 20% discount across country with per-bundle markup', async () => {
-      const context: PricingContext = {
+      const context: PricingEngineState = {
         bundle: {
           id: 'israel-15day-bundle',
           name: 'Israel 15-Day Bundle',
@@ -135,7 +135,7 @@ describe('Advanced Pricing Cases', () => {
     });
 
     it('should calculate max recommended price as cost + $1.50', async () => {
-      const context: PricingContext = {
+      const context: PricingEngineState = {
         bundle: {
           id: 'test-bundle',
           name: 'Test Bundle',
@@ -164,7 +164,7 @@ describe('Advanced Pricing Cases', () => {
     });
 
     it('should calculate how much percentage discount can be given while maintaining $1.50 profit', async () => {
-      const context: PricingContext = {
+      const context: PricingEngineState = {
         bundle: {
           id: 'test-bundle',
           name: 'Test Bundle',
@@ -239,7 +239,7 @@ describe('Advanced Pricing Cases', () => {
     });
 
     it('should apply markup-based unused day discount: 13 days usage of 15-day bundle', async () => {
-      const context: PricingContext = {
+      const context: PricingEngineState = {
         bundle: {
           id: 'test-15day-bundle',
           name: 'Test 15-Day Bundle',
@@ -334,7 +334,7 @@ describe('Advanced Pricing Cases', () => {
     });
 
     it('should calculate revenue correctly: final revenue = final payment - cost', async () => {
-      const context: PricingContext = {
+      const context: PricingEngineState = {
         bundle: {
           id: 'revenue-test-bundle',
           name: 'Revenue Test Bundle',
@@ -381,7 +381,7 @@ describe('Advanced Pricing Cases', () => {
     });
 
     it('should handle edge case: revenue after processing is the bottom line', async () => {
-      const context: PricingContext = {
+      const context: PricingEngineState = {
         bundle: {
           id: 'edge-case-bundle',
           name: 'Edge Case Bundle',
@@ -457,7 +457,7 @@ describe('Advanced Pricing Cases', () => {
     });
 
     it('should stack multiple discounts correctly', async () => {
-      const context: PricingContext = {
+      const context: PricingEngineState = {
         bundle: {
           id: 'multiple-discount-bundle',
           name: 'Multiple Discount Bundle',

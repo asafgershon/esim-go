@@ -221,7 +221,7 @@ export class BundleDatabaseService {
     const { data, error } = await this.supabase
       .from('catalog_bundles')
       .select('*')
-      .eq('bundle_group', bundleGroup)
+      .contains('groups', [bundleGroup])
       .order('duration', { ascending: true });
 
     if (error) {

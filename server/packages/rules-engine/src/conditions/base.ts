@@ -1,15 +1,18 @@
-import type { ConditionOperator, RuleCondition } from '../generated/types';
-import type { PricingContext } from '../rules-engine-types';
+import { PricingEngineState } from "src/rules-engine-types";
+import type { ConditionOperator, RuleCondition } from "../generated/types";
 
 export abstract class BaseConditionEvaluator {
-  abstract evaluate(condition: RuleCondition, context: PricingContext): boolean;
+  abstract evaluate(
+    condition: RuleCondition,
+    context: PricingEngineState
+  ): boolean;
 
-  protected getFieldValue(fieldPath: string, context: PricingContext): any {
-    const parts = fieldPath.split('.');
+  protected getFieldValue(fieldPath: string, context: PricingEngineState): any {
+    const parts = fieldPath.split(".");
     let value: any = context;
 
     for (const part of parts) {
-      if (value && typeof value === 'object' && part in value) {
+      if (value && typeof value === "object" && part in value) {
         value = value[part];
       } else {
         return undefined;
@@ -19,33 +22,53 @@ export abstract class BaseConditionEvaluator {
     return value;
   }
 
-  protected evaluateOperator(operator: ConditionOperator, fieldValue: any, conditionValue: any): boolean {
+  protected evaluateOperator(
+    operator: ConditionOperator,
+    fieldValue: any,
+    conditionValue: any
+  ): boolean {
     switch (operator) {
-      case 'EQUALS':
+      case "EQUALS":
         return fieldValue === conditionValue;
-      
-      case 'NOT_EQUALS':
+
+      case "NOT_EQUALS":
         return fieldValue !== conditionValue;
-      
-      case 'IN':
-        return Array.isArray(conditionValue) && conditionValue.includes(fieldValue);
-      
-      case 'NOT_IN':
-        return Array.isArray(conditionValue) && !conditionValue.includes(fieldValue);
-      
-      case 'GREATER_THAN':
-        return typeof fieldValue === 'number' && typeof conditionValue === 'number' && fieldValue > conditionValue;
-      
-      case 'LESS_THAN':
-        return typeof fieldValue === 'number' && typeof conditionValue === 'number' && fieldValue < conditionValue;
-      
-      case 'BETWEEN':
+
+      case "IN":
+        return (
+          Array.isArray(conditionValue) && conditionValue.includes(fieldValue)
+        );
+
+      case "NOT_IN":
+        return (
+          Array.isArray(conditionValue) && !conditionValue.includes(fieldValue)
+        );
+
+      case "GREATER_THAN":
+        return (
+          typeof fieldValue === "number" &&
+          typeof conditionValue === "number" &&
+          fieldValue > conditionValue
+        );
+
+      case "LESS_THAN":
+        return (
+          typeof fieldValue === "number" &&
+          typeof conditionValue === "number" &&
+          fieldValue < conditionValue
+        );
+
+      case "BETWEEN":
         if (Array.isArray(conditionValue) && conditionValue.length === 2) {
           const [min, max] = conditionValue;
-          if (typeof fieldValue === 'number') {
+          if (typeof fieldValue === "number") {
             return fieldValue >= min && fieldValue <= max;
           }
-          if (typeof fieldValue === 'string' && (fieldValue.match(/^\d{4}-\d{2}-\d{2}/) || fieldValue.match(/^\d{4}-\d{2}-\d{2}T/))) {
+          if (
+            typeof fieldValue === "string" &&
+            (fieldValue.match(/^\d{4}-\d{2}-\d{2}/) ||
+              fieldValue.match(/^\d{4}-\d{2}-\d{2}T/))
+          ) {
             const fieldDate = new Date(fieldValue);
             const minDate = new Date(min);
             const maxDate = new Date(max);
@@ -53,13 +76,13 @@ export abstract class BaseConditionEvaluator {
           }
         }
         return false;
-      
-      case 'EXISTS':
+
+      case "EXISTS":
         return fieldValue !== undefined && fieldValue !== null;
-      
-      case 'NOT_EXISTS':
+
+      case "NOT_EXISTS":
         return fieldValue === undefined || fieldValue === null;
-      
+
       default:
         return false;
     }

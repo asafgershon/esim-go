@@ -24,7 +24,6 @@ export {
 export {
   PricingRule,
   Bundle,
-  PricingContext,
   PricingCalculation,
   RuleEvaluationResult,
   RuleValidationError,
@@ -51,12 +50,6 @@ export {
   CompletedStep,
   PricingStep
 } from './pricing-steps';
-
-// Action types
-export {
-  ActionResult,
-  PricingState
-} from './actions/base';
 
 // Re-export everything from rules-engine-types for backward compatibility
 export * from './rules-engine-types';

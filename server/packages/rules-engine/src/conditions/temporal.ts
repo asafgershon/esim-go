@@ -1,10 +1,10 @@
 import type { RuleCondition } from '../generated/types';
-import type { PricingContext } from '../rules-engine-types';
 import { BaseConditionEvaluator } from './base';
+import { PricingEngineState } from '../rules-engine-types';
 
 export class TemporalConditionEvaluator extends BaseConditionEvaluator {
-  evaluate(condition: RuleCondition, context: PricingContext): boolean {
-    const currentDate = context.currentDate || new Date();
+  evaluate(condition: RuleCondition, context: PricingEngineState): boolean {
+    const currentDate = context.date || new Date();
     
     switch (condition.field) {
       case 'currentDate':

@@ -36,6 +36,7 @@ export interface PricingEngineState {
   costumer: UserContext;
   payment: PaymentContext;
   rules: PricingRule[];
+  date: Date;
 
   // Request
   request: {
@@ -89,34 +90,6 @@ export interface PricingEngine {
   ): Promise<PricingEngineOutput[]>;
 }
 
-//  ------ OLD CONTEXT ------
-// Pricing context for rule evaluation
-export interface PricingContext {
-  // Available bundles to choose from
-  availableBundles: Bundle[];
-  // The duration the customer requested
-  requestedDuration: number;
-
-  // User information
-  user?: {
-    id: string;
-    isNew?: boolean;
-    isFirstPurchase?: boolean;
-    purchaseCount?: number;
-    segment?: string;
-  };
-
-  // Payment and timing
-  paymentMethod: string;
-  currentDate: Date;
-
-  // These fields will be populated after bundle selection
-  bundle?: Bundle; // Selected bundle
-  country?: string; // Same as bundle.countryId
-  region?: string; // Same as bundle.regionId
-  bundleGroup?: string; // Same as bundle.group
-  duration?: number; // Same as bundle.duration
-}
 
 // Extended pricing calculation result
 export interface PricingCalculation

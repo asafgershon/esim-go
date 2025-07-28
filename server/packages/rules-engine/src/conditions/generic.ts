@@ -1,39 +1,19 @@
-import type { RuleCondition } from '../generated/types';
-import type { PricingContext } from '../rules-engine-types';
-import { getDeepValue } from '@esim-go/utils';
-import { BaseConditionEvaluator } from './base';
+import type { RuleCondition } from "../generated/types";
+import { getDeepValue } from "@esim-go/utils";
+import { BaseConditionEvaluator } from "./base";
+import { PricingEngineState } from "src/rules-engine-types";
 
 export class GenericConditionEvaluator extends BaseConditionEvaluator {
-  evaluate(condition: RuleCondition, context: PricingContext): boolean {
+  evaluate(condition: RuleCondition, context: PricingEngineState): boolean {
     // Handle special cases for common shortcuts
-    const contextWithShortcuts = this.addContextShortcuts(context);
-    
+
     // Get the value using deep path access
-    const fieldValue = getDeepValue(contextWithShortcuts as any, condition.field);
-    
-    return this.evaluateOperator(condition.operator, fieldValue, condition.value);
-  }
-  
-  private addContextShortcuts(context: PricingContext): any {
-    return {
-      ...context,
-      // Direct field shortcuts
-      country: context.bundle?.countries?.[0],
-      countryName: context.bundle?.countries?.[0], // Use first country as name
-      region: context.bundle?.region,
-      regionName: context.bundle?.region, // Using region since regionName doesn't exist
-      bundleGroup: context.bundle?.groups?.[0],
-      duration: context.bundle?.validityInDays,
-      isUnlimited: context.bundle?.isUnlimited,
-      
-      // User shortcuts
-      isFirstPurchase: context.user?.purchaseCount === 0 || context.user?.isFirstPurchase,
-      isNewUser: context.user?.isNew,
-      userSegment: context.user?.segment,
-      
-      // Date shortcuts
-      currentDate: context.currentDate || new Date(),
-      today: new Date().toISOString().split('T')[0],
-    };
+    const fieldValue = this.getFieldValue(condition.field, context);
+
+    return this.evaluateOperator(
+      condition.operator,
+      fieldValue,
+      condition.value
+    );
   }
 }

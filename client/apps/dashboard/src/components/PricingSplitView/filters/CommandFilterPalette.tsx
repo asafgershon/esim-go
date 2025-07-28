@@ -342,16 +342,16 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                     <CommandList className="max-h-48">
                       <CommandEmpty>No bundle groups found.</CommandEmpty>
                       <CommandGroup>
-                        {filters?.groups.map((bundleGroup) => (
+                        {filters?.groups.map((group) => (
                           <CommandItem
-                            key={bundleGroup}
+                            key={group}
                             onSelect={() => {
                               // Remove old value and add new one
                               const newSet = new Set(
                                 selectedFilters.groups
                               );
                               newSet.delete(group);
-                              newSet.add(bundleGroup);
+                              newSet.add(group);
                               onFiltersChange({
                                 ...selectedFilters,
                                 groups: newSet,
@@ -360,8 +360,8 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                             className="flex items-center gap-2"
                           >
                             <Package2 className="h-4 w-4 text-blue-600" />
-                            {bundleGroup}
-                            {selectedFilters.groups.has(bundleGroup) && (
+                            {group}
+                            {selectedFilters.groups.has(group) && (
                               <Check className="h-4 w-4 ml-auto text-blue-600" />
                             )}
                           </CommandItem>

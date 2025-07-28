@@ -8,9 +8,8 @@ import type {
   Country,
   PaymentMethod,
   PricingBreakdown,
-  QueryResolvers,
   PricingRule,
-  CountryBundle
+  QueryResolvers
 } from '../types';
 
 const logger = createLogger({ 
@@ -135,7 +134,7 @@ export async function calculatePricingForBundle(
         duration: bundle.validityInDays,
         paymentMethod,
         countryISO: bundle.countries?.[0],
-        region: bundle.region,
+        region: bundle.region || '',
         dataType: 'DEFAULT' as any
       },
       steps: [],

@@ -1,5 +1,5 @@
+import { PricingEngineState } from 'src/rules-engine-types';
 import type { RuleCondition } from '../generated/types';
-import type { PricingContext } from '../rules-engine-types';
 import { GenericConditionEvaluator } from './generic';
 import { TemporalConditionEvaluator } from './temporal';
 
@@ -12,7 +12,7 @@ export class ConditionEvaluator {
     this.temporalEvaluator = new TemporalConditionEvaluator();
   }
   
-  evaluate(condition: RuleCondition, context: PricingContext): boolean {
+  evaluate(condition: RuleCondition, context: PricingEngineState): boolean {
     // Use temporal evaluator for date-related fields
     if (this.isTemporalCondition(condition)) {
       return this.temporalEvaluator.evaluate(condition, context);
