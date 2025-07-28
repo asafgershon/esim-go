@@ -180,7 +180,7 @@ export default function OrderPage() {
             </div>
             
             <div className="flex justify-center mb-6">
-              <div className="bg-white p-4 rounded-lg border shadow-sm">
+              <div className="p-4 rounded-lg border shadow-sm">
                 <Image 
                   src={primaryEsim.qrCode} 
                   alt="QR Code for eSIM activation"
