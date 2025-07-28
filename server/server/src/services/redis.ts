@@ -9,6 +9,7 @@ const env = cleanEnv(process.env, {
   REDIS_PASSWORD: str({ default: "mypassword" }),
   REDIS_HOST: str({ default: "localhost" }),
   REDIS_PORT: port({ default: 6379 }),
+  REDIS_USER: str({ default: "default" }),
 });
 
 const logger = createLogger({ component: 'redis' });
@@ -18,13 +19,13 @@ let redisInstance: KeyvAdapter<any>;
 export async function getRedis() {
   if (!redisInstance) {
     // Parse the REDIS_URL and add password if provided
-    const redisUrl = `redis://${env.REDIS_HOST}:${env.REDIS_PORT}`;
+    const redisUrl = `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`;
     const store = new KeyvRedis(
       {
         url: redisUrl,
       },
       {
-        throwOnConnectError: true,
+        throwOnConnectError: false,
         connectionTimeout: 5000,
         throwErrors: true,
       }

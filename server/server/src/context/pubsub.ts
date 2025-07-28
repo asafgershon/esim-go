@@ -17,45 +17,93 @@ let pubsub: RedisPubSub | null = null;
 
 export async function getPubSub(apolloRedis?: any): Promise<RedisPubSub> {
   if (!pubsub) {
-    logger.info('Initializing Redis PubSub with separate clients', {
-      operationType: 'pubsub-init',
-      redisUrl: env.REDIS_URL
+    logger.info('=== STARTING REDIS PUBSUB INITIALIZATION ===', {
+      operationType: 'pubsub-init-start',
+      redisUrl: env.REDIS_URL,
+      allEnvRedisVars: {
+        REDIS_URL: process.env.REDIS_URL,
+        REDIS_HOST: process.env.REDIS_HOST,
+        REDIS_PORT: process.env.REDIS_PORT,
+        REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+        REDIS_USER: process.env.REDIS_USER,
+      }
     });
 
-    // Create native Redis clients specifically for PubSub using Redis URL
+    // Create native Redis clients specifically for PubSub using object config
     // These are separate from Apollo Server's KeyvAdapter Redis client
     const redisConfig = {
+      host: env.REDIS_HOST,
+      port: parseInt(env.REDIS_PORT),
+      password: env.REDIS_PASSWORD,
+      username: env.REDIS_USER,
       maxRetriesPerRequest: null, // Required for PubSub compatibility
     };
 
-    const publisher = new Redis(env.REDIS_URL, redisConfig);
-    const subscriber = new Redis(env.REDIS_URL, redisConfig);
+    logger.info('Creating Redis clients with object configuration', {
+      operationType: 'redis-client-creation',
+      config: {
+        host: redisConfig.host,
+        port: redisConfig.port,
+        username: redisConfig.username,
+        hasPassword: !!redisConfig.password
+      }
+    });
+
+    const publisher = new Redis(redisConfig);
+    const subscriber = new Redis(redisConfig);
 
     // Add error handlers to prevent unhandled error events
     publisher.on('error', (error) => {
       logger.error('Redis publisher error', error as Error, {
-        operationType: 'redis-publisher-error'
+        operationType: 'redis-publisher-error',
+        host: redisConfig.host,
+        port: redisConfig.port,
+        errorName: error.name,
+        errorMessage: error.message
       });
     });
 
     subscriber.on('error', (error) => {
       logger.error('Redis subscriber error', error as Error, {
-        operationType: 'redis-subscriber-error'
+        operationType: 'redis-subscriber-error',
+        host: redisConfig.host,
+        port: redisConfig.port,
+        errorName: error.name,
+        errorMessage: error.message
       });
     });
 
-    // Test connections
+    // Test DNS resolution first
+    logger.info('Testing Redis connection', {
+      operationType: 'redis-connection-test',
+      host: redisConfig.host,
+      port: redisConfig.port
+    });
+
+    // Test connections with detailed logging
     try {
+      logger.info('Attempting to ping Redis publisher...', {
+        operationType: 'redis-ping-test'
+      });
       await publisher.ping();
+      
+      logger.info('Attempting to ping Redis subscriber...', {
+        operationType: 'redis-ping-test'
+      });
       await subscriber.ping();
-      logger.info('Redis PubSub clients connected successfully', {
-        host: env.REDIS_HOST,
-        port: env.REDIS_PORT,
-        operationType: 'pubsub-init'
+      
+      logger.info('✅ Redis PubSub clients connected successfully', {
+        operationType: 'pubsub-init-success',
+        host: redisConfig.host,
+        port: redisConfig.port
       });
     } catch (error) {
-      logger.error('Failed to connect Redis PubSub clients', error as Error, {
-        operationType: 'pubsub-init'
+      logger.error('❌ Failed to connect Redis PubSub clients', error as Error, {
+        operationType: 'pubsub-init-failure',
+        host: redisConfig.host,
+        port: redisConfig.port,
+        errorName: (error as Error).name,
+        errorMessage: (error as Error).message
       });
       throw error;
     }

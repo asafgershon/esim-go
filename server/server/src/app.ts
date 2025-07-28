@@ -87,7 +87,9 @@ async function startServer() {
     const redis = await getRedis();
     
     // Initialize PubSub for WebSocket subscriptions
+    console.log("🔄 Initializing PubSub for WebSocket subscriptions...");
     const pubsub = await getPubSub(redis);
+    console.log("✅ PubSub initialized successfully");
 
     // Initialize eSIM Go client
     console.log("Initializing eSIM Go client...");
