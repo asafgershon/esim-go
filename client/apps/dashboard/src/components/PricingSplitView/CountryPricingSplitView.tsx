@@ -37,8 +37,10 @@ export function CountryPricingSplitView({
   onExpandCountry,
   showTrips = false,
   onToggleTrips,
+  selectedCountryId,
+  onCountrySelect,
 }: CountryPricingSplitViewProps) {
-  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(selectedCountryId || null);
   const [selectedTrip, setSelectedTrip] = useState<string | null>(null);
   const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null);
   const [loadingCountries, setLoadingCountries] = useState<Set<string>>(new Set());
@@ -200,6 +202,7 @@ export function CountryPricingSplitView({
     if (!country) return;
 
     setSelectedCountry(countryId);
+    onCountrySelect?.(countryId);
     setSelectedBundle(null); // Clear selected bundle when changing country
     
     // If country doesn't have bundles loaded, load them
@@ -271,25 +274,39 @@ export function CountryPricingSplitView({
     };
   };
 
+  // Sync with external selectedCountryId prop
+  React.useEffect(() => {
+    if (selectedCountryId && selectedCountryId !== selectedCountry) {
+      setSelectedCountry(selectedCountryId);
+      // Auto-load the country's data if not already loaded
+      const country = filteredBundlesByCountry.find(c => c.country.iso === selectedCountryId);
+      if (country && !country.bundles && !loadingCountries.has(selectedCountryId)) {
+        handleCountrySelect(selectedCountryId);
+      }
+    }
+  }, [selectedCountryId, selectedCountry, filteredBundlesByCountry, loadingCountries, handleCountrySelect]);
+
   // Set default selection based on current view
   React.useEffect(() => {
     if (showTrips) {
       // Clear country selection when switching to trips
       setSelectedCountry(null);
+      onCountrySelect?.(null);
       if (!selectedTrip && filteredTrips.length > 0) {
         setSelectedTrip(filteredTrips[0].id);
       }
     } else {
       // Clear trip selection when switching to countries
       setSelectedTrip(null);
-      if (!selectedCountry && filteredBundlesByCountry.length > 0) {
+      if (!selectedCountry && !selectedCountryId && filteredBundlesByCountry.length > 0) {
         const firstCountryId = filteredBundlesByCountry[0].country.iso;
         setSelectedCountry(firstCountryId);
+        onCountrySelect?.(firstCountryId);
         // Auto-load the first country's data
         handleCountrySelect(firstCountryId);
       }
     }
-  }, [showTrips, filteredBundlesByCountry, filteredTrips, selectedCountry, selectedTrip, handleCountrySelect]);
+  }, [showTrips, filteredBundlesByCountry, filteredTrips, selectedCountry, selectedCountryId, selectedTrip, handleCountrySelect, onCountrySelect]);
 
   // Handle trip selection
   const handleTripSelect = useCallback((tripId: string) => {

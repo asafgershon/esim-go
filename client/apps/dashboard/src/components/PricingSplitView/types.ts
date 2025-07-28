@@ -14,4 +14,6 @@ export interface CountryPricingSplitViewProps {
   loading?: boolean;
   showTrips?: boolean;
   onToggleTrips?: (show: boolean) => void;
+  selectedCountryId?: string;
+  onCountrySelect?: (countryId: string | null) => void;
 }

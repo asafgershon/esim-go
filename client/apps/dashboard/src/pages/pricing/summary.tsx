@@ -1,10 +1,12 @@
 import { Bundle, BundlesByCountry, GetBundlesByCountryQuery, GetCountryBundlesQuery, GetTripsQuery } from '@/__generated__/graphql';
 import { useLazyQuery, useQuery } from '@apollo/client';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { BundlesByCountryWithBundles, CountryPricingSplitView } from '../../components/PricingSplitView';
 import { GET_BUNDLES_BY_COUNTRY, GET_COUNTRY_BUNDLES, GET_TRIPS } from '../../lib/graphql/queries';
+import { useSearchParams } from 'react-router-dom';
 
 export const PricingSummaryPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showTrips, setShowTrips] = useState(false);
   const [countryGroups, setCountryGroups] = useState<BundlesByCountryWithBundles[]>([]);
   
@@ -33,7 +35,7 @@ export const PricingSummaryPage: React.FC = () => {
   const [getCountryBundles] = useLazyQuery<GetCountryBundlesQuery>(GET_COUNTRY_BUNDLES);
 
   // Handle expanding a country to load its bundles
-  const expandCountry = async (countryId: string) => {
+  const expandCountry = useCallback(async (countryId: string) => {
     try {
       const result = await getCountryBundles({
         variables: { countryId }
@@ -56,7 +58,19 @@ export const PricingSummaryPage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching bundles for country:', countryId, error);
     }
-  };
+  }, [getCountryBundles]);
+
+  // Auto-load country from URL on mount
+  React.useEffect(() => {
+    const countryFromUrl = searchParams.get('country');
+    if (countryFromUrl && countryGroups.length > 0) {
+      const country = countryGroups.find(group => group.country.iso === countryFromUrl);
+      // Only load if country exists and bundles haven't been loaded yet
+      if (country && !country.bundles) {
+        expandCountry(countryFromUrl);
+      }
+    }
+  }, [searchParams, countryGroups, expandCountry]);
 
   if (bundlesLoading) {
     return (
@@ -90,6 +104,15 @@ export const PricingSummaryPage: React.FC = () => {
           onExpandCountry={expandCountry}
           showTrips={showTrips}
           onToggleTrips={setShowTrips}
+          selectedCountryId={searchParams.get('country') || undefined}
+          onCountrySelect={(countryId) => {
+            if (countryId) {
+              setSearchParams({ country: countryId });
+            } else {
+              searchParams.delete('country');
+              setSearchParams(searchParams);
+            }
+          }}
         />
       </div>
     </div>
