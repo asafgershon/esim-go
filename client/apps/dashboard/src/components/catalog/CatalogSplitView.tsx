@@ -6,20 +6,44 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  FilterBar,
+  FilterConfig,
+  BaseFilterState,
+  FilterOption,
 } from "@workspace/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import Fuse from "fuse.js";
-import { Database, Globe, Package, RefreshCw, X } from "lucide-react";
+import { Database, Globe, Package, RefreshCw, X, Package2, Clock, Infinity } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { Panel, PanelGroup } from "react-resizable-panels";
 import { toast } from "sonner";
-import { FilterDropdown } from "../PricingSplitView/filters/FilterDropdown";
 import { ResizeHandle } from "../resize-handle";
 import { CatalogBundlePreview } from "./CatalogBundlePreview";
 import { CatalogBundlesTable } from "./CatalogBundlesTable";
 import { CatalogCountryCard } from "./CatalogCountryCard";
 import { CatalogRegionCard } from "./CatalogRegionCard";
 import { CatalogSyncPanel } from "./CatalogSyncPanel";
+
+// Catalog-specific filter state
+interface CatalogFilterState extends BaseFilterState {
+  bundleGroups: Set<string>;
+  durations: Set<string>;
+  dataTypes: Set<string>;
+  regions?: Set<string>;
+}
+
+// Duration filter options 
+const DURATION_OPTIONS: FilterOption[] = [
+  { label: "Short (1-7 days)", value: "short" },
+  { label: "Medium (8-30 days)", value: "medium" },
+  { label: "Long (31+ days)", value: "long" },
+];
+
+// Data type filter options
+const DATA_TYPE_OPTIONS: FilterOption[] = [
+  { label: "Unlimited", value: "unlimited" },
+  { label: "Limited", value: "limited" },
+];
 
 interface CatalogSplitViewProps {
   countriesData: BundlesByCountry[];
@@ -55,9 +79,16 @@ export function CatalogSplitView({
   const [selectedBundle, setSelectedBundle] = useState<CatalogBundle | null>(
     null
   );
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBundleGroup, setSelectedBundleGroup] = useState<string>("all");
   const [showRegions, setShowRegions] = useState(false);
+  
+  // New unified filter state
+  const [filterState, setFilterState] = useState<CatalogFilterState>({
+    search: "",
+    bundleGroups: new Set<string>(),
+    durations: new Set<string>(),
+    dataTypes: new Set<string>(),
+    regions: new Set<string>(),
+  });
 
   // Configure Fuse.js for country search
   const countryFuse = useMemo(() => {
@@ -81,25 +112,23 @@ export function CatalogSplitView({
     return new Fuse(regionsData, fuseOptions);
   }, [regionsData]);
 
-  // Filter countries by search query and bundle group
+  // Filter countries by search query
   const filteredCountriesData = useMemo(() => {
     let filtered = countriesData;
 
     // Apply search filter
-    if (searchQuery.trim()) {
-      const searchResults = countryFuse.search(searchQuery);
+    if (filterState.search?.trim()) {
+      const searchResults = countryFuse.search(filterState.search);
       const searchedIds = new Set(
         searchResults.map((result) => result.item.country.iso)
       );
       filtered = filtered.filter((country) => searchedIds.has(country.country.iso));
     }
 
-    // Note: Bundle group filtering is now handled in the table component
-
     return filtered;
   }, [
     countriesData,
-    searchQuery,
+    filterState.search,
     countryFuse,
   ]);
 
@@ -189,39 +218,122 @@ export function CatalogSplitView({
     onCountrySelect,
   ]);
 
-  const bundleGroupOptions = [
-    { label: "All Groups", value: "all" },
-    ...bundleGroups.map((group) => ({
-      label: group.group,
-      value: group.group,
-    })),
-  ];
+  // Create filter configuration
+  const filterConfig: FilterConfig = useMemo(() => ({
+    categories: [
+      {
+        key: 'bundleGroups',
+        label: 'Bundle Group',
+        icon: Package2,
+        color: 'blue',
+        options: bundleGroups.map((group) => ({
+          label: group.group,
+          value: group.group,
+        })),
+      },
+      {
+        key: 'durations',
+        label: 'Duration',
+        icon: Clock,
+        color: 'green',
+        options: DURATION_OPTIONS,
+      },
+      {
+        key: 'dataTypes',
+        label: 'Data Type',
+        icon: Infinity,
+        color: 'purple',
+        options: DATA_TYPE_OPTIONS,
+      },
+    ],
+    quickFilters: [
+      {
+        key: 'showRegions',
+        label: showRegions ? 'Countries' : 'Regions',
+        icon: Globe,
+        value: showRegions,
+        type: 'toggle' as const,
+      },
+    ],
+    showSearch: true,
+    searchPlaceholder: showRegions ? "Search regions..." : "Search countries...",
+    allowClearAll: true,
+  }), [bundleGroups, showRegions]);
+
+  // Handle filter change and special quick filters
+  const handleFilterChange = useCallback((newFilterState: CatalogFilterState) => {
+    // Check if showRegions toggle was changed
+    if ('showRegions' in newFilterState && newFilterState.showRegions !== showRegions) {
+      setShowRegions(newFilterState.showRegions as boolean);
+    }
+    
+    // Update the main filter state
+    setFilterState(newFilterState);
+  }, [showRegions]);
+
+  // Calculate filtered bundles count for currently selected country
+  const filteredBundlesCount = useMemo(() => {
+    if (!selectedCountryData?.bundles) return 0;
+    
+    let filtered = selectedCountryData.bundles;
+    
+    // Apply bundle group filter
+    if (filterState.bundleGroups.size > 0) {
+      filtered = filtered.filter(bundle => 
+        bundle.groups?.some(g => filterState.bundleGroups.has(g))
+      );
+    }
+    
+    // Apply duration filter
+    if (filterState.durations.size > 0) {
+      filtered = filtered.filter(bundle => {
+        const duration = bundle.validityInDays;
+        return Array.from(filterState.durations).some(filterValue => {
+          switch (filterValue) {
+            case "short": return duration >= 1 && duration <= 7;
+            case "medium": return duration >= 8 && duration <= 30;
+            case "long": return duration >= 31;
+            default: return false;
+          }
+        });
+      });
+    }
+    
+    // Apply data type filter
+    if (filterState.dataTypes.size > 0) {
+      filtered = filtered.filter(bundle => {
+        const isUnlimited = bundle.isUnlimited;
+        return Array.from(filterState.dataTypes).some(filterValue => {
+          switch (filterValue) {
+            case "unlimited": return isUnlimited;
+            case "limited": return !isUnlimited;
+            default: return false;
+          }
+        });
+      });
+    }
+    
+    return filtered.length;
+  }, [selectedCountryData, filterState]);
 
   return (
     <div className="h-full flex flex-col">
       {/* Filter Bar */}
-      <div className="flex-shrink-0 mb-4 flex items-center gap-4">
-        <FilterDropdown
-          title="Bundle Group"
-          options={bundleGroupOptions}
-          selected={
-            new Set(selectedBundleGroup === "all" ? [] : [selectedBundleGroup])
-          }
-          onSelectionChange={(values) => {
-            setSelectedBundleGroup(values.length === 0 ? "all" : values[0]);
-          }}
-          placeholder="All Groups"
-        />
-        {selectedBundleGroup !== "all" && (
-          <div className="text-sm text-muted-foreground">
-            Filtered by: <strong>{selectedBundleGroup}</strong>
+      <div className="flex-shrink-0 mb-4">
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <FilterBar
+              config={filterConfig}
+              filterState={filterState}
+              onFilterChange={handleFilterChange}
+              totalItems={selectedCountryData?.bundles?.length}
+              filteredItems={filteredBundlesCount}
+            />
           </div>
-        )}
-        <div className="ml-auto flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
-            className={`${
+            className={`h-7 ${
               showSyncPanel ? "bg-accent text-accent-foreground" : ""
             }`}
             onClick={() => onToggleSyncPanel(!showSyncPanel)}
@@ -283,13 +395,6 @@ export function CatalogSplitView({
                   </TooltipProvider>
                 </div>
               </List.Header>
-              <List.Search
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder={
-                  showRegions ? "Search regions..." : "Search countries..."
-                }
-              />
               <List.Content spacing="normal" padding={true}>
                 <div className="space-y-2">
                   {showRegions ? (
@@ -395,7 +500,8 @@ export function CatalogSplitView({
                       regionName={selectedRegion}
                       selectedBundle={selectedBundle}
                       onBundleSelect={setSelectedBundle}
-                      bundleGroupFilter={selectedBundleGroup}
+                      bundleGroupFilter={filterState.bundleGroups.size > 0 ? Array.from(filterState.bundleGroups)[0] : "all"}
+                      filterState={filterState}
                     />
                   </div>
                 ) : (

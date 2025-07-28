@@ -8,12 +8,19 @@ import {
   GetRegionBundlesQueryVariables,
   CatalogBundle,
 } from "@/__generated__/graphql";
-import { ScrollArea } from "@workspace/ui";
-import { Badge } from "@workspace/ui/components/badge";
+import { ScrollArea, Badge, BaseFilterState } from "@workspace/ui";
 import { Clock, Package, Wifi, WifiOff } from "lucide-react";
 import React, { useEffect } from "react";
 import { useLazyQuery } from "@apollo/client";
 import { GET_COUNTRY_BUNDLES, GET_REGION_BUNDLES } from "@/lib/graphql/queries";
+
+// Catalog-specific filter state (matching the one in CatalogSplitView)
+interface CatalogFilterState extends BaseFilterState {
+  bundleGroups: Set<string>;
+  durations: Set<string>;
+  dataTypes: Set<string>;
+  regions?: Set<string>;
+}
 
 interface CatalogBundlesTableProps {
   countryId?: string | null;
@@ -21,6 +28,7 @@ interface CatalogBundlesTableProps {
   selectedBundle: CatalogBundle | null;
   onBundleSelect: (bundle: CatalogBundle) => void;
   bundleGroupFilter?: string;
+  filterState?: CatalogFilterState;
 }
 
 export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
@@ -29,6 +37,7 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
   selectedBundle,
   onBundleSelect,
   bundleGroupFilter = "all",
+  filterState,
 }) => {
   // Lazy queries for loading bundles
   const [getCountryBundles, { data: countryData, loading: countryLoading }] = useLazyQuery<
@@ -60,15 +69,52 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
       allBundles = regionData.bundlesForRegion.bundles as CatalogBundle[];
     }
 
-    // Apply bundle group filter
-    if (bundleGroupFilter !== "all") {
-      return allBundles.filter(bundle => 
+    // Apply filters if filterState is provided
+    if (filterState) {
+      // Apply bundle group filter
+      if (filterState.bundleGroups.size > 0) {
+        allBundles = allBundles.filter(bundle => 
+          bundle.groups?.some(g => filterState.bundleGroups.has(g))
+        );
+      }
+      
+      // Apply duration filter
+      if (filterState.durations.size > 0) {
+        allBundles = allBundles.filter(bundle => {
+          const duration = bundle.validityInDays;
+          return Array.from(filterState.durations).some(filterValue => {
+            switch (filterValue) {
+              case "short": return duration >= 1 && duration <= 7;
+              case "medium": return duration >= 8 && duration <= 30;
+              case "long": return duration >= 31;
+              default: return false;
+            }
+          });
+        });
+      }
+      
+      // Apply data type filter
+      if (filterState.dataTypes.size > 0) {
+        allBundles = allBundles.filter(bundle => {
+          const isUnlimited = bundle.isUnlimited;
+          return Array.from(filterState.dataTypes).some(filterValue => {
+            switch (filterValue) {
+              case "unlimited": return isUnlimited;
+              case "limited": return !isUnlimited;
+              default: return false;
+            }
+          });
+        });
+      }
+    } else if (bundleGroupFilter !== "all") {
+      // Fallback to old bundle group filter
+      allBundles = allBundles.filter(bundle => 
         bundle.groups.includes(bundleGroupFilter)
       );
     }
 
     return allBundles;
-  }, [countryData, regionData, bundleGroupFilter]);
+  }, [countryData, regionData, bundleGroupFilter, filterState]);
 
   const isLoading = countryLoading || regionLoading;
 
