@@ -1,4 +1,4 @@
-import { Bundle } from "@/__generated__/graphql";
+import { Bundle, CalculateBatchAdminPricingQuery, CalculateBatchAdminPricingQueryVariables, PaymentMethod } from "@/__generated__/graphql";
 import { ScrollArea } from "@workspace/ui";
 import { Package } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -24,7 +24,7 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
   const [bundlesWithPricing, setBundlesWithPricing] = useState<Bundle[]>([]);
   const [pricingLoading, setPricingLoading] = useState(false);
   
-  const [calculateBatchPricing] = useLazyQuery(CALCULATE_BATCH_ADMIN_PRICING);
+  const [calculateBatchPricing] = useLazyQuery<CalculateBatchAdminPricingQuery, CalculateBatchAdminPricingQueryVariables>(CALCULATE_BATCH_ADMIN_PRICING);
 
   // Calculate pricing when bundles are loaded
   useEffect(() => {
@@ -33,17 +33,15 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
     const calculatePricing = async () => {
       setPricingLoading(true);
       
-      // Get unique durations from bundles
-      const uniqueDurations = Array.from(new Set(
-        country.bundles!.map(bundle => bundle.validityInDays).filter(days => days > 0)
-      ));
-      
-      // Create pricing requests
-      const requests = uniqueDurations.map(days => ({
-        numOfDays: days,
-        countryId: country.country.iso.toUpperCase(),
-        paymentMethod: 'ISRAELI_CARD' // Default payment method
-      }));
+      // Create a pricing request for each bundle to account for different groups
+      const requests = country.bundles!
+        .filter(bundle => bundle.validityInDays > 0)
+        .map(bundle => ({
+          numOfDays: bundle.validityInDays,
+          countryId: country.country.iso.toUpperCase(),
+          paymentMethod: PaymentMethod.IsraeliCard, // Default payment method
+          groups: bundle.groups || [] // Include bundle groups for proper pricing calculation
+        }));
       
       try {
         const result = await calculateBatchPricing({
@@ -51,17 +49,16 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
         });
         
         if (result.data?.calculatePrices) {
-          // Create a map of duration to pricing data
-          const pricingMap = new Map();
-          result.data.calculatePrices.forEach((pricing: any) => {
-            pricingMap.set(pricing.duration, pricing);
+          // Merge pricing data with bundles by index (since we created one request per bundle)
+          const bundlesWithPricing = country.bundles!.map((bundle, index) => {
+            // Find the corresponding pricing data
+            const pricingData = result.data?.calculatePrices[index];
+            
+            return {
+              ...bundle,
+              pricingBreakdown: pricingData || undefined
+            } as Bundle;
           });
-          
-          // Merge pricing data with bundles
-          const bundlesWithPricing = country.bundles!.map(bundle => ({
-            ...bundle,
-            pricingBreakdown: pricingMap.get(bundle.validityInDays)
-          }));
           
           setBundlesWithPricing(bundlesWithPricing);
         }
