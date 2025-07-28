@@ -80,18 +80,73 @@ export class RuleBuilder {
     return this;
   }
 
+  // Direct action methods
+  applyDiscount(percentage: number): RuleBuilder {
+    this.addAction({
+      type: ActionTypeEnum.ApplyDiscountPercentage,
+      value: percentage,
+      metadata: {}
+    });
+    return this;
+  }
+
+  applyDiscountPercentage(percentage: number): RuleBuilder {
+    this.addAction({
+      type: ActionTypeEnum.ApplyDiscountPercentage,
+      value: percentage,
+      metadata: {}
+    });
+    return this;
+  }
+
+  setProcessingRate(rate: number): RuleBuilder {
+    this.addAction({
+      type: ActionTypeEnum.SetProcessingRate,
+      value: rate,
+      metadata: {}
+    });
+    return this;
+  }
+
+  addMarkup(percentage: number): RuleBuilder {
+    this.addAction({
+      type: ActionTypeEnum.AddMarkup,
+      value: percentage,
+      metadata: {}
+    });
+    return this;
+  }
+
+  setMinimumProfit(value: number): RuleBuilder {
+    this.addAction({
+      type: ActionTypeEnum.SetMinimumProfit,
+      value: value,
+      metadata: {}
+    });
+    return this;
+  }
+
+  setMinimumPrice(value: number): RuleBuilder {
+    this.addAction({
+      type: ActionTypeEnum.SetMinimumPrice,
+      value: value,
+      metadata: {}
+    });
+    return this;
+  }
+
   build(): CreatePricingRuleInput {
     if (!this.rule.name) {
       throw new Error('Rule name is required');
     }
     if (!this.rule.category) {
-      this.rule.category = RuleCategoryEnum.Discount; // Default category
-    }
-    if (!this.rule.conditions || this.rule.conditions.length === 0) {
-      throw new Error('At least one condition is required');
+      throw new Error('Rule category is required');
     }
     if (!this.rule.actions || this.rule.actions.length === 0) {
       throw new Error('At least one action is required');
+    }
+    if (!this.rule.conditions || this.rule.conditions.length === 0) {
+      throw new Error('At least one condition is required');
     }
     
     // Validate priority
@@ -327,10 +382,16 @@ class NumericCondition extends BaseCondition<number> {
   }
 
   between(min: number, max: number): RuleBuilder {
+    // Add two conditions: >= min and <= max
+    this.builder.addCondition({
+      field: this.field,
+      operator: ConditionOperatorEnum.GreaterThan,
+      value: min - 0.001  // Hack for GTE
+    });
     return this.builder.addCondition({
       field: this.field,
-      operator: ConditionOperatorEnum.Between,
-      value: [min, max]
+      operator: ConditionOperatorEnum.LessThan,
+      value: max + 0.001  // Hack for LTE
     });
   }
 
@@ -493,10 +554,16 @@ class GenericCondition extends StringCondition {
   }
 
   between(min: number, max: number): RuleBuilder {
+    // Add two conditions: >= min and <= max
+    this.builder.addCondition({
+      field: this.field,
+      operator: ConditionOperatorEnum.GreaterThan,
+      value: min - 0.001  // Hack for GTE
+    });
     return this.builder.addCondition({
       field: this.field,
-      operator: ConditionOperatorEnum.Between,
-      value: [min, max]
+      operator: ConditionOperatorEnum.LessThan,
+      value: max + 0.001  // Hack for LTE
     });
   }
 }

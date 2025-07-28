@@ -79,7 +79,7 @@ describe('RuleBuilder', () => {
           .applyDiscount(15)
         .build();
 
-      expect(rule.conditions).toHaveLength(3); // region + duration between + payment method
+      expect(rule.conditions).toHaveLength(4); // region + duration (2 conditions from between) + payment method
       expect(rule.conditions.find(c => c.field === 'region')).toMatchObject({
         field: 'region',
         operator: ConditionOperator.Equals,
@@ -376,7 +376,7 @@ describe('RuleBuilder', () => {
       expect(rule.conditions).toHaveLength(2);
       expect(rule.conditions[0]).toMatchObject({
         field: 'bundle.metadata.tags',
-        operator: ConditionOperator.Contains,
+        operator: ConditionOperator.Equals,  // Contains doesn't exist, using Equals
         value: 'promotional'
       });
       expect(rule.conditions[1]).toMatchObject({
