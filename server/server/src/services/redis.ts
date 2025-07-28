@@ -5,7 +5,6 @@ import Keyv from "keyv";
 import { createLogger } from "../lib/logger";
 
 const env = cleanEnv(process.env, {
-  REDIS_URL: str({ default: "redis://localhost:6379" }),
   REDIS_PASSWORD: str({ default: "mypassword" }),
   REDIS_HOST: str({ default: "localhost" }),
   REDIS_PORT: port({ default: 6379 }),
@@ -18,8 +17,7 @@ let redisInstance: KeyvAdapter<any>;
 
 export async function getRedis() {
   if (!redisInstance) {
-    // Use REDIS_URL directly if available (for Railway internal DNS)
-    const redisUrl = `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`;
+    const redisUrl = `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}?family=0`;
     
     logger.info('Redis configuration', { 
       redisUrl,
@@ -31,7 +29,7 @@ export async function getRedis() {
       },
       {
         throwOnConnectError: true,
-        connectionTimeout: 5000,
+        connectionTimeout: 5 * 1000,
         throwErrors: true,
       }
     );
