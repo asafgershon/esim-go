@@ -32,6 +32,8 @@ interface CatalogSplitViewProps {
   loading: boolean;
   onSync: () => void;
   syncLoading: boolean;
+  selectedCountryId?: string;
+  onCountrySelect?: (countryId: string | null) => void;
 }
 
 export function CatalogSplitView({
@@ -45,8 +47,10 @@ export function CatalogSplitView({
   loading = false,
   onSync,
   syncLoading,
+  selectedCountryId,
+  onCountrySelect,
 }: CatalogSplitViewProps) {
-  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(selectedCountryId || null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedBundle, setSelectedBundle] = useState<CatalogBundle | null>(
     null
@@ -118,10 +122,11 @@ export function CatalogSplitView({
   const handleCountrySelect = useCallback(
     (countryId: string) => {
       setSelectedCountry(countryId);
+      onCountrySelect?.(countryId);
       setSelectedRegion(null); // Clear region selection
       setSelectedBundle(null); // Clear selected bundle when changing country
     },
-    []
+    [onCountrySelect]
   );
 
   // Handle region selection
@@ -147,20 +152,30 @@ export function CatalogSplitView({
     };
   };
 
+  // Sync with external selectedCountryId prop
+  React.useEffect(() => {
+    if (selectedCountryId && selectedCountryId !== selectedCountry) {
+      setSelectedCountry(selectedCountryId);
+    }
+  }, [selectedCountryId, selectedCountry]);
+
   // Set default selection based on current view
   React.useEffect(() => {
     if (showRegions) {
       // Clear country selection when switching to regions
       setSelectedCountry(null);
+      onCountrySelect?.(null);
       if (!selectedRegion && regionsData.length > 0) {
         setSelectedRegion(regionsData[0].region);
       }
     } else {
       // Clear region selection when switching to countries
       setSelectedRegion(null);
-      if (!selectedCountry && filteredCountriesData.length > 0) {
-        setSelectedCountry(filteredCountriesData[0].country.iso);
-        handleCountrySelect(filteredCountriesData[0].country.iso);
+      if (!selectedCountry && !selectedCountryId && filteredCountriesData.length > 0) {
+        const firstCountryId = filteredCountriesData[0].country.iso;
+        setSelectedCountry(firstCountryId);
+        onCountrySelect?.(firstCountryId);
+        handleCountrySelect(firstCountryId);
       }
     }
   }, [
@@ -168,8 +183,10 @@ export function CatalogSplitView({
     filteredCountriesData,
     regionsData,
     selectedCountry,
+    selectedCountryId,
     selectedRegion,
     handleCountrySelect,
+    onCountrySelect,
   ]);
 
   const bundleGroupOptions = [

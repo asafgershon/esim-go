@@ -30,7 +30,7 @@ export async function getRedis() {
         url: redisUrl,
       },
       {
-        throwOnConnectError: false,
+        throwOnConnectError: true,
         connectionTimeout: 5000,
         throwErrors: true,
       }

@@ -33,6 +33,7 @@ import { gql, useMutation, useQuery } from "@apollo/client";
 import { Database } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
 
 const GET_BUNDLES = gql(`
   query GetBundles($filter: BundleFilter, $pagination: PaginationInput) {
@@ -121,6 +122,7 @@ function useCatalogBundles(options?: {
 }
 
 function CatalogPageContent() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showSyncPanel, setShowSyncPanel] = useState(false);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [conflictingJob, setConflictingJob] = useState<ConflictingJob | null>(
@@ -271,6 +273,15 @@ function CatalogPageContent() {
             loading={catalogLoading || regionsLoading}
             onSync={handleSyncClick}
             syncLoading={syncLoading}
+            selectedCountryId={searchParams.get('country') || undefined}
+            onCountrySelect={(countryId) => {
+              if (countryId) {
+                setSearchParams({ country: countryId });
+              } else {
+                searchParams.delete('country');
+                setSearchParams(searchParams);
+              }
+            }}
           />
         </div>
       </PageLayout.Content>
