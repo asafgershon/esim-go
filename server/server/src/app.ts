@@ -243,36 +243,32 @@ async function startServer() {
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-        origin: (origin, callback) => {
-          logger.info('CORS origin check', { 
-            origin,
-            allowedOrigins,
-            isAllowed: !origin || allowedOrigins.includes(origin),
-            operationType: 'cors-check'
-          });
-          
-          // Allow requests with no origin (like mobile apps or curl)
-          if (!origin) return callback(null, true);
-          
-          if (allowedOrigins.includes(origin)) {
-            callback(null, true);
-          } else {
-            logger.warn(`CORS blocked origin: ${origin}`, { 
-              allowedOrigins,
-              operationType: 'cors-rejection' 
-            });
-            callback(new Error('Not allowed by CORS'));
-          }
-        },
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+        origin: allowedOrigins,
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-correlation-id'],
         exposedHeaders: ['Content-Length', 'Content-Type'],
         maxAge: 86400, // 24 hours
         preflightContinue: false,
+        credentials: false,
         optionsSuccessStatus: 204
       })
     );
 
     app.use(express.json({ limit: "50mb" }));
+
+    // Add debug middleware to log all requests
+    app.use((req, res, next) => {
+      logger.info('Incoming request', {
+        method: req.method,
+        path: req.path,
+        headers: {
+          origin: req.headers.origin,
+          referer: req.headers.referer,
+          'content-type': req.headers['content-type'],
+        },
+        operationType: 'request-debug'
+      });
+      next();
+    });
 
     // Add global request timeout middleware
     app.use((req, res, next) => {
@@ -376,6 +372,15 @@ async function startServer() {
             token,
           };
         },
+      }),
+      cors({
+        origin: allowedOrigins,
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-correlation-id'],
+        exposedHeaders: ['Content-Length', 'Content-Type'],
+        maxAge: 86400, // 24 hours
+        preflightContinue: false,
+        credentials: false,
+        optionsSuccessStatus: 204
       })
     );
 
