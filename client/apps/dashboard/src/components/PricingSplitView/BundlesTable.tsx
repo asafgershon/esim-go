@@ -56,7 +56,13 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({
             
             return {
               ...bundle,
-              pricingBreakdown: pricingData || undefined
+              pricingBreakdown: pricingData || undefined,
+              appliedRules: pricingData?.appliedRules?.map(rule => ({
+                id: undefined, // No ID available from pricing breakdown
+                name: rule.name,
+                type: rule.category,
+                impact: rule.impact
+              })) || []
             } as Bundle;
           });
           

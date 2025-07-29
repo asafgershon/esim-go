@@ -855,20 +855,61 @@ export class PricingEngine {
       return true;
     }
 
+    // DEBUG: Log the complete engine state structure for the first condition
+    if (rule.conditions.length > 0 && rule.name.includes("1 day Markup")) {
+      logger.info("🔍 COMPLETE ENGINE STATE STRUCTURE", {
+        ruleName: rule.name,
+        contextBundles: state.context.bundles?.map(b => ({
+          name: b.name,
+          groups: b.groups,
+          isUnlimited: b.isUnlimited,
+          validityInDays: b.validityInDays
+        })),
+        contextPayment: state.context.payment,
+        request: state.request,
+        responseSelectedBundle: state.response.selectedBundle ? {
+          name: state.response.selectedBundle.name,  
+          groups: state.response.selectedBundle.groups,
+          isUnlimited: state.response.selectedBundle.isUnlimited,
+          validityInDays: state.response.selectedBundle.validityInDays
+        } : null,
+        stateData: state.state,
+        operationType: "engine-state-debug"
+      });
+    }
+
     // Evaluate all conditions - all must pass (AND logic)
     for (const condition of rule.conditions) {
       const result = this.evaluateCondition(condition, state);
-      logger.debug("Condition evaluation result", {
+      
+      // Enhanced debug logging with more field paths tested
+      const debugFieldPaths = {
+        'context.bundles[0].groups': state.context.bundles?.[0]?.groups,
+        'request.group': state.request.group,
+        'request.duration': state.request.duration,
+        'state.group': state.state.group,
+        'state.duration': state.state.duration,
+        'response.selectedBundle.groups': state.response.selectedBundle?.groups,
+        'response.selectedBundle.isUnlimited': state.response.selectedBundle?.isUnlimited,
+        'bundleGroup': (state as any).bundleGroup,
+        'group': (state as any).group,
+        'duration': (state as any).duration,
+        'isUnlimited': (state as any).isUnlimited
+      };
+
+      logger.debug("🔍 Enhanced condition evaluation", {
         ruleName: rule.name,
         condition,
         result,
-        fieldValue: this.getFieldValue(condition.field, state),
+        requestedFieldValue: this.getFieldValue(condition.field, state),
+        availableFieldPaths: debugFieldPaths,
+        conditionField: condition.field,
+        conditionValue: condition.value,
         actualBundleData: {
           selectedBundle: state.response.selectedBundle?.name,
           bundleGroups: state.response.selectedBundle?.groups,
-          group: state.state.group,
-          country: state.state.country,
-          region: state.state.region,
+          stateGroup: state.state.group,
+          requestGroup: state.request.group,
         },
       });
 

@@ -8,6 +8,7 @@ import {
 import React from 'react';
 import { PricingPipelineStream } from './pricing-pipeline-stream';
 import { PricingRulesSummary } from './pricing-rules-summary';
+import { AppliedRules } from './applied-rules';
 
 interface PricingData {
   // Basic pricing info
@@ -276,31 +277,10 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
               </div>
 
               {/* Applied Rules */}
-              {data.appliedRules.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm flex items-center gap-2">
-                    <Zap className="h-4 w-4" />
-                    Applied Rules
-                  </h4>
-                  <div className="space-y-1">
-                    {data.appliedRules.map((rule, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-md text-sm">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {rule.type}
-                          </Badge>
-                          <span>{rule.name}</span>
-                        </div>
-                        <span className={`font-mono font-medium ${
-                          rule.impact > 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {rule.impact > 0 ? '+' : ''}{formatCurrency(rule.impact, data.currency)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <AppliedRules
+                rules={data.appliedRules}
+                currency={data.currency}
+              />
 
               {/* Rules Impact Summary */}
               {pipelineSteps.length > 0 && (
