@@ -151,7 +151,17 @@ export function CountryPricingSplitView({
         filtered = filtered.filter((bundle) => {
           // Check if bundle has groups and if any group matches the filter
           if (!bundle.groups || bundle.groups.length === 0) return false;
-          return bundle.groups.some((g) => bundleFilters.groups.has(g));
+          
+          // Flexible matching: normalize both sides by removing hyphens and spaces
+          const normalizeGroup = (group: string) => group.replace(/[-\s]/g, '').toLowerCase();
+          
+          return bundle.groups.some((bundleGroup) => {
+            const normalizedBundleGroup = normalizeGroup(bundleGroup);
+            // Check if any filter group matches when normalized
+            return Array.from(bundleFilters.groups).some(filterGroup => 
+              normalizeGroup(filterGroup) === normalizedBundleGroup
+            );
+          });
         });
       }
 
