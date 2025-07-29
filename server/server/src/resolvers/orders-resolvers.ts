@@ -77,10 +77,12 @@ export const ordersResolvers: Partial<Resolvers> = {
 
       if (!data) return [];
 
-      // Transform the data to map qr_code_url to qrCode for GraphQL schema
+      // Transform the data to map snake_case fields to camelCase for GraphQL schema
       return data.map((esim) => ({
         ...esim,
         qrCode: esim.qr_code_url,
+        smdpAddress: esim.smdp_address,
+        matchingId: esim.matching_id,
       })) as any;
     },
     user: async (parent, _, context: Context) => {

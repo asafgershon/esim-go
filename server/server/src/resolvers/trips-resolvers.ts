@@ -59,9 +59,8 @@ export const tripsResolvers: Resolvers = {
           });
         }
 
-        // Validate country codes exist
-        const validCountries = await context.dataSources.countries.getCountries();
-        const validCountryCodes = validCountries.map(c => c.iso);
+        // Validate country codes exist in catalog
+        const validCountryCodes = await context.repositories.bundles.getCountries();
         const invalidCountries = input.countryIds.filter(id => !validCountryCodes.includes(id));
         
         if (invalidCountries.length > 0) {
@@ -129,9 +128,8 @@ export const tripsResolvers: Resolvers = {
           });
         }
 
-        // Validate country codes exist
-        const validCountries = await context.dataSources.countries.getCountries();
-        const validCountryCodes = validCountries.map(c => c.iso);
+        // Validate country codes exist in catalog
+        const validCountryCodes = await context.repositories.bundles.getCountries();
         const invalidCountries = input.countryIds.filter(id => !validCountryCodes.includes(id));
         
         if (invalidCountries.length > 0) {

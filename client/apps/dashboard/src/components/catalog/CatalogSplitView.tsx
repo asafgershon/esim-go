@@ -93,7 +93,7 @@ export function CatalogSplitView({
   // Configure Fuse.js for country search
   const countryFuse = useMemo(() => {
     const fuseOptions = {
-      keys: ["countryName", "countryId"],
+      keys: ["country.name", "country.iso"],
       threshold: 0.3,
       includeScore: true,
     };
@@ -104,7 +104,7 @@ export function CatalogSplitView({
   // Configure Fuse.js for region search
   const regionFuse = useMemo(() => {
     const fuseOptions = {
-      keys: ["regionName"],
+      keys: ["region"],
       threshold: 0.3,
       includeScore: true,
     };
@@ -439,11 +439,11 @@ export function CatalogSplitView({
                         <Database className="h-12 w-12 mx-auto text-gray-300" />
                       }
                       message={
-                        searchQuery
-                          ? `No countries found matching "${searchQuery}"`
-                          : selectedBundleGroup === "all"
+                        filterState.search
+                          ? `No countries found matching "${filterState.search}"`
+                          : filterState.bundleGroups.size === 0
                           ? "No catalog data available. Try syncing the catalog."
-                          : `No bundles found for group: ${selectedBundleGroup}`
+                          : `No bundles found for selected group filters`
                       }
                     />
                   ) : (

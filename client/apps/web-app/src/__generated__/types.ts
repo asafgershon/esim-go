@@ -382,6 +382,7 @@ export type CountryBundle = {
 
 export type CreateCheckoutSessionInput = {
   countryId?: InputMaybe<Scalars['String']['input']>;
+  group?: InputMaybe<Scalars['String']['input']>;
   numOfDays: Scalars['Int']['input'];
   regionId?: InputMaybe<Scalars['String']['input']>;
 };
@@ -505,8 +506,10 @@ export type Esim = {
   iccid: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   lastAction?: Maybe<Scalars['String']['output']>;
+  matchingId?: Maybe<Scalars['String']['output']>;
   order: Order;
   qrCode?: Maybe<Scalars['String']['output']>;
+  smdpAddress?: Maybe<Scalars['String']['output']>;
   status: EsimStatus;
   updatedAt: Scalars['String']['output'];
   usage: EsimUsage;
@@ -914,6 +917,7 @@ export type PricingBreakdown = {
   priceAfterDiscount: Scalars['Float']['output'];
   processingCost: Scalars['Float']['output'];
   processingRate: Scalars['Float']['output'];
+  revenueAfterProcessing: Scalars['Float']['output'];
   selectedReason?: Maybe<Scalars['String']['output']>;
   totalCost: Scalars['Float']['output'];
   totalCostBeforeProcessing?: Maybe<Scalars['Float']['output']>;
@@ -1555,7 +1559,7 @@ export type OrderDetailsQueryVariables = Exact<{
 }>;
 
 
-export type OrderDetailsQuery = { __typename?: 'Query', orderDetails?: { __typename?: 'Order', id: string, reference: string, status: OrderStatus, totalPrice: number, esims: Array<{ __typename?: 'ESIM', id: string, iccid: string, qrCode?: string | null, status: EsimStatus }> } | null };
+export type OrderDetailsQuery = { __typename?: 'Query', orderDetails?: { __typename?: 'Order', id: string, reference: string, status: OrderStatus, totalPrice: number, esims: Array<{ __typename?: 'ESIM', id: string, iccid: string, qrCode?: string | null, status: EsimStatus, smdpAddress?: string | null, matchingId?: string | null }> } | null };
 
 export type GetUserOrdersQueryVariables = Exact<{ [key: string]: never; }>;
 

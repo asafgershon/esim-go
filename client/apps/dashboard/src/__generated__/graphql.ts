@@ -507,8 +507,10 @@ export type Esim = {
   iccid: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   lastAction?: Maybe<Scalars['String']['output']>;
+  matchingId?: Maybe<Scalars['String']['output']>;
   order: Order;
   qrCode?: Maybe<Scalars['String']['output']>;
+  smdpAddress?: Maybe<Scalars['String']['output']>;
   status: EsimStatus;
   updatedAt: Scalars['String']['output'];
   usage: EsimUsage;

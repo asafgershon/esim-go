@@ -649,6 +649,8 @@ type ESIM {
   usage: ESIMUsage!
   createdAt: String!
   updatedAt: String!
+  smdpAddress: String # SMDP+ address for eSIM activation
+  matchingId: String # Matching ID for eSIM activation
 }
 
 type ESIMBundle {
@@ -766,6 +768,7 @@ input CreateCheckoutSessionInput {
   numOfDays: Int!
   regionId: String
   countryId: String
+  group: String
 }
 
 # Response types

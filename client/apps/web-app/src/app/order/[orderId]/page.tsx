@@ -2,15 +2,15 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@apollo/client";
-import { ArrowLeft, Download, RefreshCw, CheckCircle, Smartphone, Wifi, Share2 } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, CheckCircle, Smartphone, Wifi } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@workspace/ui";
 import { Card } from "@workspace/ui";
 import { Badge } from "@workspace/ui/components/badge";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { OrderDetails } from "@/lib/graphql/checkout";
+import { OrderDetailsQuery } from "@/__generated__/graphql";
 import Image from "next/image";
-import { Esim } from "@/__generated__/graphql";
 import { useEffect, useState } from "react";
 import { ErrorDisplay } from "@/components/error-display";
 import { parseGraphQLError } from "@/lib/error-types";
@@ -19,9 +19,10 @@ export default function OrderPage() {
   const router = useRouter();
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(true);
   
-  const { data, loading, error, refetch } = useQuery(OrderDetails, {
-    variables: { id: orderId },
+  const { data, loading, error, refetch } = useQuery<OrderDetailsQuery>(OrderDetails, {
+    variables: { id: orderId as string },
     skip: !orderId,
+    fetchPolicy: 'network-only', // Force fresh data from server
   });
 
   // Hide success animation after 3 seconds
@@ -88,6 +89,9 @@ export default function OrderPage() {
 
   const order = data.orderDetails;
   const primaryEsim = order.esims[0]; // Assuming first eSIM is primary
+  
+  // Debug: Log eSIM data to see what fields are available
+  console.log('Primary eSIM data:', primaryEsim);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -161,7 +165,7 @@ export default function OrderPage() {
               <Badge variant={getStatusColor(order.status)}>
                 {getStatusText(order.status)}
               </Badge>
-              <p className="text-lg font-semibold mt-1">₪{order.totalPrice}</p>
+              <p className="text-lg font-semibold mt-1">${order.totalPrice}</p>
             </div>
           </div>
         </Card>
@@ -182,7 +186,7 @@ export default function OrderPage() {
             <div className="flex justify-center mb-6">
               <div className="p-4 rounded-lg border shadow-sm">
                 <Image 
-                  src={primaryEsim.qrCode} 
+                  src={primaryEsim.qrCode || ''} 
                   alt="QR Code for eSIM activation"
                   width={256}
                   height={256}
@@ -214,6 +218,19 @@ export default function OrderPage() {
             <div className="text-center space-y-2 text-sm text-muted-foreground">
               <p>ICCID: {primaryEsim.iccid}</p>
               <p>סטטוס eSIM: {getStatusText(primaryEsim.status)}</p>
+              
+              {/* LPA Link for manual installation */}
+              {primaryEsim.smdpAddress && primaryEsim.matchingId && (
+                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <p className="text-xs font-medium mb-1">להתקנה ידנית או בלחיצה:</p>
+                  <a 
+                    href={`LPA:1$${primaryEsim.smdpAddress}$${primaryEsim.matchingId}`}
+                    className="text-primary hover:underline break-all text-xs"
+                  >
+                    LPA:1${primaryEsim.smdpAddress}${primaryEsim.matchingId}
+                  </a>
+                </div>
+              )}
             </div>
           </Card>
         )}
@@ -223,7 +240,7 @@ export default function OrderPage() {
           <Card className="p-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">כרטיסי eSIM</h3>
             <div className="space-y-4">
-              {order.esims.map((esim: Esim, index: number) => (
+              {order.esims.map((esim, index) => (
                 <div key={esim.id} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -251,38 +268,18 @@ export default function OrderPage() {
                 className="w-full" 
                 onClick={() => {
                   // Create a downloadable link for the QR code
-                  const link = document.createElement('a');
-                  link.href = primaryEsim.qrCode;
-                  link.download = `eSIM-QR-${order.reference}.png`;
-                  link.click();
+                  if (primaryEsim.qrCode) {
+                    const link = document.createElement('a');
+                    link.href = primaryEsim.qrCode;
+                    link.download = `eSIM-QR-${order.reference}.png`;
+                    link.click();
+                  }
                 }}
               >
                 <Download className="h-4 w-4 ml-2" />
                 הורדת קוד QR
               </Button>
             )}
-            
-            <Button 
-              className="w-full" 
-              variant="outline"
-              onClick={() => {
-                // Share the order details
-                if (navigator.share && primaryEsim) {
-                  navigator.share({
-                    title: `eSIM - הזמנה #${order.reference}`,
-                    text: `כרטיס ה-eSIM שלך מוכן! ICCID: ${primaryEsim.iccid}`,
-                    url: window.location.href
-                  });
-                } else {
-                  // Fallback: copy to clipboard
-                  navigator.clipboard.writeText(window.location.href);
-                  // You could add a toast notification here
-                }
-              }}
-            >
-              <Share2 className="h-4 w-4 ml-2" />
-              שיתוף פרטי ההזמנה
-            </Button>
             
             <Button 
               className="w-full" 

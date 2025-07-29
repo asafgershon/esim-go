@@ -642,6 +642,23 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
             </Button>
           )}
 
+          {/* Standard Unlimited Essential Quick Filter Button */}
+          {filters?.groups.includes("Standard - Unlimited Essential") && (
+            <Button
+              variant={selectedFilters.groups.has("Standard - Unlimited Essential") ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleFilterChange("groups", "Standard - Unlimited Essential")}
+              className={`h-7 px-3 gap-2 ${
+                selectedFilters.groups.has("Standard - Unlimited Essential")
+                  ? "bg-primary text-primary-foreground"
+                  : "border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              <Package2 className="h-3 w-3" />
+              <span className="text-xs font-medium">Essential</span>
+            </Button>
+          )}
+
           {/* Add Filter button */}
           <DropdownMenu
             open={open}

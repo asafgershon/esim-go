@@ -11,6 +11,8 @@ import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.rep
 import { createPaymentService } from "../services/payment";
 import { PaymentMethod, type EsimStatus, type OrderStatus, type Resolvers } from "../types";
 import type { OrderResponse } from "../datasources/esim-go";
+import { purchaseAndDeliverESIM } from "../services/esim-purchase";
+import { WEB_APP_BUNDLE_GROUP } from "../lib/constants/bundle-groups";
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS
@@ -169,14 +171,16 @@ export const checkoutResolvers: Partial<Resolvers> = {
     // Create a new checkout session
     createCheckoutSession: async (_, { input }, context: Context) => {
       try {
-        const { countryId, numOfDays, regionId } = input;
+        const { countryId, numOfDays, regionId, group } = input;
         console.log(
           "Creating checkout session for countryId:",
           countryId,
           "numOfDays:",
           numOfDays,
           "regionId:",
-          regionId
+          regionId,
+          "group:",
+          group
         );
         // Validate input parameters strictly - this is payment flow
         if (!numOfDays || numOfDays <= 0) {
@@ -191,6 +195,8 @@ export const checkoutResolvers: Partial<Resolvers> = {
         // Build search parameters based on what's provided
         const searchParams: any = {
           minValidityInDays: 1,
+          // Use provided group or default to web app bundle group
+          groups: [group || WEB_APP_BUNDLE_GROUP],
         };
 
         // Only add countries if countryId is provided
@@ -304,7 +310,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             countryName: primaryCountry, // We don't have country names in bundle data
             regionId: regionId || "",
             regionName: "Unknown",
-            group: bundle.groups?.[0] || "Standard Fixed",
+            group: bundle.groups?.[0] || WEB_APP_BUNDLE_GROUP,
             speed: bundle.speed,
             isUnlimited: bundle.is_unlimited || false,
             dataAmount: bundle.data_amount_mb ? `${bundle.data_amount_mb}GB` : "0GB",
@@ -357,7 +363,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             paymentMethod: PaymentMethod.IsraeliCard,
             countryISO: countryId,
             region: regionId || '',
-            group: 'Standard Fixed',
+            group: WEB_APP_BUNDLE_GROUP,
             dataType: 'fixed'
           },
           metadata: {
@@ -972,9 +978,6 @@ async function simulateWebhookProcessing(
         originalSession.plan_snapshot
       );
 
-      // Step 2: Real eSIM provisioning using eSIM Go API
-      const esimData = await provisionESIM(planSnapshot, orderId, context);
-
       if (!steps.authentication?.userId) {
         throw new Error("Cannot create order without a user ID");
       }
@@ -997,7 +1000,7 @@ async function simulateWebhookProcessing(
             countries: [firstCountry],
             currency: 'USD',
             dataAmountReadable: '0GB', // TODO: Get actual data amount
-            groups: ['Standard Fixed'],
+            groups: [WEB_APP_BUNDLE_GROUP],
             isUnlimited: false,
             speed: ['4G', '5G']
           }],
@@ -1034,33 +1037,25 @@ async function simulateWebhookProcessing(
             user_id: steps.authentication.userId,
             total_price: detailedPricing.response.pricing.priceAfterDiscount,
             reference: orderId, // This becomes the order reference
-            status: "COMPLETED" as OrderStatus,
+            status: "PROCESSING" as OrderStatus, // Start as PROCESSING, will be updated to COMPLETED after eSIM delivery
             plan_data: planSnapshot, // Store plan info in JSONB field
             quantity: 1,
-            esim_go_order_ref: esimData.esimGoOrderRef, // Real eSIM Go order reference
           },
           detailedPricing.response.pricing as any // TODO: Update repository to accept new format
         );
 
       console.log("Order record created:", orderRecord.id);
 
-      // Step 3: Create ESIM record using repository
-      const esimRecord = await context.repositories.esims.create({
-        user_id: steps.authentication.userId,
-        order_id: orderRecord.id,
-        iccid: esimData.iccid,
-        customer_ref: orderId,
-        qr_code_url: esimData.qrCode,
-        status: "ASSIGNED" as EsimStatus,
-        assigned_date: new Date().toISOString(),
-        last_action: "ASSIGNED",
-        action_date: new Date().toISOString(),
-      });
+      // Step 2: Purchase and deliver eSIM using our simplified approach
+      await purchaseAndDeliverESIM(
+        orderRecord.id,
+        planSnapshot.name,
+        steps.authentication.userId,
+        steps.delivery?.email || "", // Get email from delivery step
+        context
+      );
 
-      console.log("eSIM record created:", esimRecord.id);
-
-      // Step 4: Deliver eSIM QR code to customer
-      // TODO: Implement delivery service when ready
+      console.log("eSIM purchase and delivery completed");
 
       // Step 5: Update checkout session to completed
       const completedSteps = {
@@ -1083,7 +1078,6 @@ async function simulateWebhookProcessing(
       await context.repositories.checkoutSessions.markCompleted(sessionId, {
         orderId: orderRecord.id, // This is the database order ID, not the reference
         orderReference: orderId, // This is the reference string
-        esimId: esimRecord.id,
       });
 
       console.log(
