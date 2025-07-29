@@ -13,6 +13,9 @@ if (import.meta.env.DEV) {
 
 const httpLink = createHttpLink({
   uri: import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:5001/graphql',
+  fetchOptions: {
+    credentials: 'include', // Send cookies for cross-origin requests
+  },
 })
 
 const authLink = setContext((_, { headers }: { headers?: Record<string, string> }) => {
