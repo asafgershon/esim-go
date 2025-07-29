@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@apollo/client";
-import { ArrowLeft, Download, RefreshCw, CheckCircle, Smartphone, Wifi } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, CheckCircle, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@workspace/ui";
 import { Card } from "@workspace/ui";
