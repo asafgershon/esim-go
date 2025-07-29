@@ -388,42 +388,51 @@ export type Database = {
       esims: {
         Row: {
           action_date: string | null
+          activation_code: string | null
           assigned_date: string | null
           created_at: string | null
           customer_ref: string | null
           iccid: string
           id: string
           last_action: string | null
+          matching_id: string | null
           order_id: string
           qr_code_url: string | null
+          smdp_address: string | null
           status: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
           action_date?: string | null
+          activation_code?: string | null
           assigned_date?: string | null
           created_at?: string | null
           customer_ref?: string | null
           iccid: string
           id?: string
           last_action?: string | null
+          matching_id?: string | null
           order_id: string
           qr_code_url?: string | null
+          smdp_address?: string | null
           status?: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
           action_date?: string | null
+          activation_code?: string | null
           assigned_date?: string | null
           created_at?: string | null
           customer_ref?: string | null
           iccid?: string
           id?: string
           last_action?: string | null
+          matching_id?: string | null
           order_id?: string
           qr_code_url?: string | null
+          smdp_address?: string | null
           status?: string
           updated_at?: string | null
           user_id?: string

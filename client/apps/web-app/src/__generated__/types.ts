@@ -505,6 +505,7 @@ export type Esim = {
   customerRef?: Maybe<Scalars['String']['output']>;
   iccid: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  installationLinks?: Maybe<InstallationLinks>;
   lastAction?: Maybe<Scalars['String']['output']>;
   matchingId?: Maybe<Scalars['String']['output']>;
   order: Order;
@@ -585,6 +586,18 @@ export type GroupDataStats = {
   unlimited: Scalars['Int']['output'];
 };
 
+export type InstallationLinks = {
+  __typename?: 'InstallationLinks';
+  /** LPA scheme for Android/Windows direct activation */
+  lpaScheme: Scalars['String']['output'];
+  /** Manual entry components for all devices */
+  manual: ManualInstallation;
+  /** QR code data string (LPA format) for fallback */
+  qrCodeData: Scalars['String']['output'];
+  /** iOS 17.4+ direct activation link (no QR scanning needed) */
+  universalLink: Scalars['String']['output'];
+};
+
 export type IntRange = {
   max?: InputMaybe<Scalars['Int']['input']>;
   min?: InputMaybe<Scalars['Int']['input']>;
@@ -601,6 +614,16 @@ export type InviteAdminUserResponse = {
   error?: Maybe<Scalars['String']['output']>;
   invitedEmail?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type ManualInstallation = {
+  __typename?: 'ManualInstallation';
+  /** Activation code */
+  activationCode: Scalars['String']['output'];
+  /** Optional confirmation code */
+  confirmationCode?: Maybe<Scalars['String']['output']>;
+  /** SM-DP+ server address */
+  smDpAddress: Scalars['String']['output'];
 };
 
 export type Mutation = {
@@ -1559,7 +1582,7 @@ export type OrderDetailsQueryVariables = Exact<{
 }>;
 
 
-export type OrderDetailsQuery = { __typename?: 'Query', orderDetails?: { __typename?: 'Order', id: string, reference: string, status: OrderStatus, totalPrice: number, esims: Array<{ __typename?: 'ESIM', id: string, iccid: string, qrCode?: string | null, status: EsimStatus, smdpAddress?: string | null, matchingId?: string | null }> } | null };
+export type OrderDetailsQuery = { __typename?: 'Query', orderDetails?: { __typename?: 'Order', id: string, reference: string, status: OrderStatus, totalPrice: number, esims: Array<{ __typename?: 'ESIM', id: string, iccid: string, qrCode?: string | null, status: EsimStatus, smdpAddress?: string | null, matchingId?: string | null, installationLinks?: { __typename?: 'InstallationLinks', universalLink: string, lpaScheme: string, qrCodeData: string, manual: { __typename?: 'ManualInstallation', smDpAddress: string, activationCode: string, confirmationCode?: string | null } } | null }> } | null };
 
 export type GetUserOrdersQueryVariables = Exact<{ [key: string]: never; }>;
 

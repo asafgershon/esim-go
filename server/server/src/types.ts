@@ -509,6 +509,7 @@ export type Esim = {
   customerRef?: Maybe<Scalars['String']['output']>;
   iccid: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  installationLinks?: Maybe<InstallationLinks>;
   lastAction?: Maybe<Scalars['String']['output']>;
   matchingId?: Maybe<Scalars['String']['output']>;
   order: Order;
@@ -589,6 +590,18 @@ export type GroupDataStats = {
   unlimited: Scalars['Int']['output'];
 };
 
+export type InstallationLinks = {
+  __typename?: 'InstallationLinks';
+  /** LPA scheme for Android/Windows direct activation */
+  lpaScheme: Scalars['String']['output'];
+  /** Manual entry components for all devices */
+  manual: ManualInstallation;
+  /** QR code data string (LPA format) for fallback */
+  qrCodeData: Scalars['String']['output'];
+  /** iOS 17.4+ direct activation link (no QR scanning needed) */
+  universalLink: Scalars['String']['output'];
+};
+
 export type IntRange = {
   max?: InputMaybe<Scalars['Int']['input']>;
   min?: InputMaybe<Scalars['Int']['input']>;
@@ -605,6 +618,16 @@ export type InviteAdminUserResponse = {
   error?: Maybe<Scalars['String']['output']>;
   invitedEmail?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type ManualInstallation = {
+  __typename?: 'ManualInstallation';
+  /** Activation code */
+  activationCode: Scalars['String']['output'];
+  /** Optional confirmation code */
+  confirmationCode?: Maybe<Scalars['String']['output']>;
+  /** SM-DP+ server address */
+  smDpAddress: Scalars['String']['output'];
 };
 
 export type Mutation = {
@@ -1663,11 +1686,13 @@ export type ResolversTypes = {
   GroupDataStats: ResolverTypeWrapper<GroupDataStats>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   ISOCountryCode: ResolverTypeWrapper<Scalars['ISOCountryCode']['output']>;
+  InstallationLinks: ResolverTypeWrapper<InstallationLinks>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   IntRange: IntRange;
   InviteAdminUserInput: InviteAdminUserInput;
   InviteAdminUserResponse: ResolverTypeWrapper<InviteAdminUserResponse>;
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
+  ManualInstallation: ResolverTypeWrapper<ManualInstallation>;
   Mutation: ResolverTypeWrapper<{}>;
   Order: ResolverTypeWrapper<Order>;
   OrderFilter: OrderFilter;
@@ -1783,11 +1808,13 @@ export type ResolversParentTypes = {
   GroupDataStats: GroupDataStats;
   ID: Scalars['ID']['output'];
   ISOCountryCode: Scalars['ISOCountryCode']['output'];
+  InstallationLinks: InstallationLinks;
   Int: Scalars['Int']['output'];
   IntRange: IntRange;
   InviteAdminUserInput: InviteAdminUserInput;
   InviteAdminUserResponse: InviteAdminUserResponse;
   JSON: Scalars['JSON']['output'];
+  ManualInstallation: ManualInstallation;
   Mutation: {};
   Order: Order;
   OrderFilter: OrderFilter;
@@ -2190,6 +2217,7 @@ export type EsimResolvers<ContextType = Context, ParentType extends ResolversPar
   customerRef?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   iccid?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  installationLinks?: Resolver<Maybe<ResolversTypes['InstallationLinks']>, ParentType, ContextType>;
   lastAction?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   matchingId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   order?: Resolver<ResolversTypes['Order'], ParentType, ContextType>;
@@ -2261,6 +2289,14 @@ export interface IsoCountryCodeScalarConfig extends GraphQLScalarTypeConfig<Reso
   name: 'ISOCountryCode';
 }
 
+export type InstallationLinksResolvers<ContextType = Context, ParentType extends ResolversParentTypes['InstallationLinks'] = ResolversParentTypes['InstallationLinks']> = {
+  lpaScheme?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  manual?: Resolver<ResolversTypes['ManualInstallation'], ParentType, ContextType>;
+  qrCodeData?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  universalLink?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type InviteAdminUserResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['InviteAdminUserResponse'] = ResolversParentTypes['InviteAdminUserResponse']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   invitedEmail?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -2271,6 +2307,13 @@ export type InviteAdminUserResponseResolvers<ContextType = Context, ParentType e
 export interface JsonScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['JSON'], any> {
   name: 'JSON';
 }
+
+export type ManualInstallationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ManualInstallation'] = ResolversParentTypes['ManualInstallation']> = {
+  activationCode?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  confirmationCode?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  smDpAddress?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
 
 export type MutationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   activateESIM?: Resolver<Maybe<ResolversTypes['ActivateESIMResponse']>, ParentType, ContextType, RequireFields<MutationActivateEsimArgs, 'esimId'>>;
@@ -2716,8 +2759,10 @@ export type Resolvers<ContextType = Context> = {
   GetCheckoutSessionResponse?: GetCheckoutSessionResponseResolvers<ContextType>;
   GroupDataStats?: GroupDataStatsResolvers<ContextType>;
   ISOCountryCode?: GraphQLScalarType;
+  InstallationLinks?: InstallationLinksResolvers<ContextType>;
   InviteAdminUserResponse?: InviteAdminUserResponseResolvers<ContextType>;
   JSON?: GraphQLScalarType;
+  ManualInstallation?: ManualInstallationResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Order?: OrderResolvers<ContextType>;
   PackageAssignment?: PackageAssignmentResolvers<ContextType>;
