@@ -30,6 +30,7 @@ export async function purchaseAndDeliverESIM(
       orderId, 
       bundleName, 
       userId,
+      email,
       mode: env.ESIM_GO_MODE,
       operationType: 'esim-purchase' 
     });
@@ -148,9 +149,38 @@ export async function purchaseAndDeliverESIM(
     try {
       const deliveryService = createDeliveryService();
       
-      // Get order details for email
-      const order = await context.repositories.orders.findById(orderId);
-      const bundle = await context.repositories.bundles.findByName(bundleName);
+      // Get order and user details for email
+      const order = await context.repositories.orders.getById(orderId);
+      let customerName = 'Customer';
+      
+      if (order?.user_id) {
+        try {
+          const user = await context.repositories.users.getById(order.user_id);
+          customerName = user?.first_name || 'Customer';
+        } catch (userError) {
+          logger.warn('Could not fetch user details for email', {
+            userId: order.user_id,
+            operationType: 'user-fetch-error'
+          });
+        }
+      }
+      
+      // Search for bundle by name to get details
+      let planDisplayName = bundleName;
+      try {
+        const bundleSearchResult = await context.repositories.bundles.search({
+          name: bundleName,
+          limit: 1
+        });
+        if (bundleSearchResult.data.length > 0) {
+          planDisplayName = bundleSearchResult.data[0].name || bundleName;
+        }
+      } catch (bundleError) {
+        logger.warn('Could not fetch bundle details for email', {
+          bundleName,
+          operationType: 'bundle-fetch-error'
+        });
+      }
       
       const deliveryData: ESIMDeliveryData = {
         esimId: esimRecord.id,
@@ -163,8 +193,8 @@ export async function purchaseAndDeliverESIM(
 2. Select "Use QR Code" 
 3. Scan the QR code or enter details manually
 4. Follow the on-screen instructions to complete setup`,
-        planName: bundle?.name || bundleName,
-        customerName: order?.user?.firstName || 'Customer',
+        planName: planDisplayName,
+        customerName,
         orderReference: orderId,
       };
       
