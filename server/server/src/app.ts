@@ -231,14 +231,30 @@ async function startServer() {
     await server.start();
     console.log("Server started successfully");
 
-    logger.debug('Allowing CORS for', env.CORS_ORIGINS.split(","));
+    const allowedOrigins = env.CORS_ORIGINS.split(",").map(origin => origin.trim());
+    logger.debug('Allowing CORS for', allowedOrigins);
+    
     // Set up our Express middleware to handle CORS, body parsing
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-        origin: env.CORS_ORIGINS.split(","),
+        origin: (origin, callback) => {
+          // Allow requests with no origin (like mobile apps or curl)
+          if (!origin) return callback(null, true);
+          
+          if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+          } else {
+            logger.warn(`CORS blocked origin: ${origin}`, { 
+              allowedOrigins,
+              operationType: 'cors-rejection' 
+            });
+            callback(new Error('Not allowed by CORS'));
+          }
+        },
         credentials: true,
         preflightContinue: true,
+        optionsSuccessStatus: 204
       })
     );
 
