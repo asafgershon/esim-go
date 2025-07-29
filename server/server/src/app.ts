@@ -233,6 +233,7 @@ async function startServer() {
     await server.start();
     console.log("Server started successfully");
 
+    logger.debug('Allowing CORS for', env.CORS_ORIGINS.split(","));
     // Set up our Express middleware to handle CORS, body parsing
     app.use(
       cors({
