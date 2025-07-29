@@ -2,6 +2,7 @@ import { useLazyQuery } from '@apollo/client';
 import { CALCULATE_PRICES_BATCH } from '@/lib/graphql/mutations';
 import { CalculatePricesBatchQuery, PaymentMethod } from '@/__generated__/types';
 import { useEffect, useMemo, useState } from 'react';
+import { WEB_APP_BUNDLE_GROUP } from '@/lib/constants/bundle-groups';
 
 interface UseBatchPricingParams {
   regionId?: string;
@@ -58,8 +59,8 @@ export function useBatchPricing({ regionId, countryId, paymentMethod, maxDays = 
       setPricingCache(new Map());
       
       // Web-app configuration: Only request available bundle groups  
-      // Note: Changed from 'Unlimited Plus' to 'Standard Fixed' based on eSIM Go catalog
-      const WEB_APP_BUNDLE_GROUPS = ['Standard Unlimited Plus'];
+      // Using shared constant to ensure consistency with checkout
+      const WEB_APP_BUNDLE_GROUPS = [WEB_APP_BUNDLE_GROUP];
       
       // Create inputs for all days from 1 to maxDays
       const inputs = Array.from({ length: maxDays }, (_, i) => ({

@@ -2,6 +2,7 @@ import { Country, GetBundleGroupsQuery, PaymentMethod } from '@/__generated__/gr
 import { useQuery } from '@apollo/client';
 import {
   Button,
+  CountrySelect,
   Input,
   Label,
   ScrollArea,
@@ -70,21 +71,20 @@ export const PricingSimulatorPanel: React.FC<PricingSimulatorPanelProps> = ({
           {/* Country Selection */}
           <div className="space-y-2">
             <Label htmlFor="country">Country</Label>
-            <Select value={selectedCountry} onValueChange={onCountryChange}>
-              <SelectTrigger id="country">
-                <SelectValue placeholder="Select a country" />
-              </SelectTrigger>
-              <SelectContent>
-                {countries.map((country) => (
-                  <SelectItem key={country.iso} value={country.iso}>
-                    <div className="flex items-center gap-2">
-                      {country.flag && <span>{country.flag}</span>}
-                      <span>{country.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CountrySelect
+              countries={countries.map(c => ({
+                id: c.iso,
+                name: c.name,
+                iso: c.iso,
+                flag: c.flag || '',
+                keywords: c.keywords || []
+              }))}
+              value={selectedCountry}
+              onValueChange={onCountryChange}
+              placeholder="Select a country"
+              searchPlaceholder="Search countries..."
+              emptyMessage="No countries found"
+            />
           </div>
 
           {/* Duration */}

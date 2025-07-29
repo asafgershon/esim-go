@@ -6,7 +6,6 @@ import type {
   CatalogueDataSourceV2,
   OrdersDataSource,
   ESIMsDataSource,
-  CountriesDataSource,
   RegionsDataSource,
   InventoryDataSource,
   PricingDataSource,
@@ -50,7 +49,6 @@ export type Context = {
     catalogue: CatalogueDataSourceV2;
     orders: OrdersDataSource;
     esims: ESIMsDataSource;
-    countries: CountriesDataSource;
     regions: RegionsDataSource;
     inventory: InventoryDataSource;
     pricing: PricingDataSource;

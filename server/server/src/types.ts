@@ -386,6 +386,7 @@ export type CountryBundle = {
 
 export type CreateCheckoutSessionInput = {
   countryId?: InputMaybe<Scalars['String']['input']>;
+  group?: InputMaybe<Scalars['String']['input']>;
   numOfDays: Scalars['Int']['input'];
   regionId?: InputMaybe<Scalars['String']['input']>;
 };
@@ -509,8 +510,10 @@ export type Esim = {
   iccid: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   lastAction?: Maybe<Scalars['String']['output']>;
+  matchingId?: Maybe<Scalars['String']['output']>;
   order: Order;
   qrCode?: Maybe<Scalars['String']['output']>;
+  smdpAddress?: Maybe<Scalars['String']['output']>;
   status: EsimStatus;
   updatedAt: Scalars['String']['output'];
   usage: EsimUsage;
@@ -2188,8 +2191,10 @@ export type EsimResolvers<ContextType = Context, ParentType extends ResolversPar
   iccid?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   lastAction?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  matchingId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   order?: Resolver<ResolversTypes['Order'], ParentType, ContextType>;
   qrCode?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  smdpAddress?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   status?: Resolver<ResolversTypes['ESIMStatus'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   usage?: Resolver<ResolversTypes['ESIMUsage'], ParentType, ContextType>;
