@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Check, ChevronDown, Filter, Search, X } from "lucide-react";
-import { cn } from "../lib";
+import { cn } from "../lib/utils";
 import { Badge } from "./badge";
 import { Button } from "./button";
 import { Input } from "./input";

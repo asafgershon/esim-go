@@ -38,9 +38,14 @@ export async function getRedis() {
       store,
     });
 
+    keyv.set("connection-test", "test");
     // Wait for Redis connection to be established
     try {
-      await keyv.get("connection-test");
+      const test = await keyv.get("connection-test");
+      console.log(test);
+      if (test !== "test") {
+        throw new Error("Redis connection test failed");
+      }
       logger.info('Redis connected', { redisUrl, operationType: 'redis-connection' });
     } catch (error) {
       logger.error('Redis connection error', error as Error, { redisUrl, operationType: 'redis-connection' });

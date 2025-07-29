@@ -306,7 +306,7 @@ export const EnhancedActionBuilder: React.FC<EnhancedActionBuilderProps> = ({
                         <SelectTrigger>
                           <SelectValue placeholder="Select action..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="max-h-[300px] overflow-y-auto">
                           {availableActions.map((actionType) => {
                             const def = getActionDefinition(actionType);
                             const Icon = def?.icon || Info;

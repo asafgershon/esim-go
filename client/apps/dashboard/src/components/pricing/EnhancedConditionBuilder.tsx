@@ -553,13 +553,13 @@ export const EnhancedConditionBuilder: React.FC<
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 p-0" align="start">
-                          <Command>
+                          <Command className="max-h-[400px]">
                             <CommandInput
                               placeholder="Search fields..."
                               value={searchQuery}
                               onValueChange={setSearchQuery}
                             />
-                            <CommandList className="max-h-[300px] overflow-y-auto">
+                            <CommandList>
                               <CommandEmpty>No fields found.</CommandEmpty>
                               {Object.entries(groupedFields).map(
                                 ([category, fields]) => (

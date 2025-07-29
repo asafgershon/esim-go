@@ -276,12 +276,13 @@ export class ESimGoClient {
         }
 
         const applyRequest: ApplyBundleWithICCIDRequest = {
-          iccid: request.iccid,
+          iccid: request.iccid || undefined,
           name: bundleName,
+          allowReassign: false,
         };
 
         const response = await this.esimsApi.esimsApplyPost({
-          esimsApplyPostRequest: applyRequest
+          esimsApplyPostRequest: applyRequest,
         });
 
         this.logger?.info('Bundle applied to eSIM', {
