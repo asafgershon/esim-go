@@ -6,6 +6,7 @@ const httpLink = createHttpLink({
   // Add timeout configuration
   fetchOptions: {
     timeout: 30000, // 30 seconds
+    credentials: 'include', // Send cookies for cross-origin requests
   },
 });
 

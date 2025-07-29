@@ -232,13 +232,25 @@ async function startServer() {
     console.log("Server started successfully");
 
     const allowedOrigins = env.CORS_ORIGINS.split(",").map(origin => origin.trim());
-    logger.debug('Allowing CORS for', allowedOrigins);
+    logger.info('CORS configuration', { 
+      allowedOrigins,
+      rawCorsOrigins: env.CORS_ORIGINS,
+      originCount: allowedOrigins.length,
+      operationType: 'cors-setup'
+    });
     
     // Set up our Express middleware to handle CORS, body parsing
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
         origin: (origin, callback) => {
+          logger.info('CORS origin check', { 
+            origin,
+            allowedOrigins,
+            isAllowed: !origin || allowedOrigins.includes(origin),
+            operationType: 'cors-check'
+          });
+          
           // Allow requests with no origin (like mobile apps or curl)
           if (!origin) return callback(null, true);
           
@@ -253,7 +265,10 @@ async function startServer() {
           }
         },
         credentials: true,
-        preflightContinue: true,
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+        exposedHeaders: ['Content-Length', 'Content-Type'],
+        maxAge: 86400, // 24 hours
+        preflightContinue: false,
         optionsSuccessStatus: 204
       })
     );
