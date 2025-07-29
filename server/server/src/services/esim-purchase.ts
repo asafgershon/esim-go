@@ -2,6 +2,7 @@ import type { Context } from '../context/types';
 import { createLogger } from '../lib/logger';
 import { OrderRequestTypeEnum, BundleOrderTypeEnum } from '@esim-go/client';
 import { cleanEnv, str } from 'envalid';
+import { createDeliveryService, type ESIMDeliveryData } from './delivery';
 
 const env = cleanEnv(process.env, {
   ESIM_GO_MODE: str({ 
@@ -143,12 +144,56 @@ export async function purchaseAndDeliverESIM(
       await context.repositories.orders.updateESIMGoReference(orderId, esimData.esimGoOrderRef);
     }
 
-    // TODO: Send email with QR code (implement when email service is ready)
-    logger.info('eSIM delivery email would be sent here', { 
-      email, 
-      qrCode: esimData.qrCode,
-      operationType: 'email-delivery' 
-    });
+    // Send email with eSIM activation details
+    try {
+      const deliveryService = createDeliveryService();
+      
+      // Get order details for email
+      const order = await context.repositories.orders.findById(orderId);
+      const bundle = await context.repositories.bundles.findByName(bundleName);
+      
+      const deliveryData: ESIMDeliveryData = {
+        esimId: esimRecord.id,
+        iccid: esimData.iccid,
+        qrCode: esimData.qrCode,
+        activationCode: esimData.activationCode,
+        smdpAddress: esimData.smdpAddress,
+        matchingId: esimData.matchingId,
+        instructions: `1. Go to Settings > Cellular > Add eSIM
+2. Select "Use QR Code" 
+3. Scan the QR code or enter details manually
+4. Follow the on-screen instructions to complete setup`,
+        planName: bundle?.name || bundleName,
+        customerName: order?.user?.firstName || 'Customer',
+        orderReference: orderId,
+      };
+      
+      const deliveryResult = await deliveryService.deliverESIM(deliveryData, {
+        type: 'EMAIL',
+        email,
+      });
+      
+      if (deliveryResult.success) {
+        logger.info('eSIM delivery email sent successfully', {
+          email,
+          messageId: deliveryResult.messageId,
+          operationType: 'email-delivery-success'
+        });
+      } else {
+        logger.warn('Failed to send eSIM delivery email', {
+          email,
+          error: deliveryResult.error,
+          operationType: 'email-delivery-failed'
+        });
+      }
+    } catch (emailError) {
+      // Log error but don't throw - email failure shouldn't break the purchase
+      logger.error('Email delivery error', emailError as Error, {
+        email,
+        orderId,
+        operationType: 'email-delivery-error'
+      });
+    }
 
     logger.info('eSIM delivered successfully', { 
       orderId, 
