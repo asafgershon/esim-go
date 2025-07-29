@@ -82,6 +82,8 @@ query OrderDetails($id: ID!) {
       iccid
       qrCode
       status
+      smdpAddress
+      matchingId
     }
   }
 }`
