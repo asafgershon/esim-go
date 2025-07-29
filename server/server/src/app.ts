@@ -264,7 +264,6 @@ async function startServer() {
             callback(new Error('Not allowed by CORS'));
           }
         },
-        credentials: true,
         allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
         exposedHeaders: ['Content-Length', 'Content-Type'],
         maxAge: 86400, // 24 hours
