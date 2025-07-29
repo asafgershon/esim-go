@@ -64,6 +64,7 @@ export function CountryPricingSplitView({
   const {
     isHighDemandCountry,
     toggleCountryHighDemand,
+    isCountryLoading,
     toggleLoading,
     loading: highDemandLoading,
   } = useHighDemandCountries();
@@ -545,7 +546,7 @@ export function CountryPricingSplitView({
                               e.stopPropagation();
                               toggleCountryHighDemand(country.country.iso);
                             }}
-                            toggleLoading={toggleLoading}
+                            toggleLoading={typeof isCountryLoading === 'function' ? isCountryLoading(country.country.iso) : false}
                             summary={summary}
                           />
                         </List.Item>
@@ -788,7 +789,7 @@ export function CountryPricingSplitView({
                           e.stopPropagation();
                           toggleCountryHighDemand(country.country.iso);
                         }}
-                        toggleLoading={toggleLoading}
+                        toggleLoading={typeof isCountryLoading === 'function' ? isCountryLoading(country.country.iso) : false}
                         summary={summary}
                       />
                     </List.Item>

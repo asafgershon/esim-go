@@ -5,6 +5,7 @@ import { GET_HIGH_DEMAND_COUNTRIES, TOGGLE_HIGH_DEMAND_COUNTRY } from '../lib/gr
 
 export function useHighDemandCountries() {
   const [optimisticUpdates, setOptimisticUpdates] = useState<Record<string, boolean>>({});
+  const [loadingCountries, setLoadingCountries] = useState<Set<string>>(new Set());
 
   // Query to get high demand countries
   const { data, loading, error, refetch } = useQuery(GET_HIGH_DEMAND_COUNTRIES, {
@@ -12,7 +13,7 @@ export function useHighDemandCountries() {
   });
 
   // Mutation to toggle high demand status
-  const [toggleHighDemandCountry, { loading: toggleLoading }] = useMutation(TOGGLE_HIGH_DEMAND_COUNTRY);
+  const [toggleHighDemandCountry] = useMutation(TOGGLE_HIGH_DEMAND_COUNTRY);
 
   // Get set of high demand country IDs for quick lookup
   const highDemandCountryIds = new Set(data?.highDemandCountries || []);
@@ -32,6 +33,9 @@ export function useHighDemandCountries() {
   const toggleCountryHighDemand = useCallback(async (countryId: string) => {
     const currentStatus = isHighDemandCountry(countryId);
     const newStatus = !currentStatus;
+
+    // Set loading state for this specific country
+    setLoadingCountries(prev => new Set(prev).add(countryId));
 
     // Optimistic update
     setOptimisticUpdates(prev => ({
@@ -57,8 +61,8 @@ export function useHighDemandCountries() {
 
         toast.success(
           newStatus
-            ? `Marked ${countryId} as high demand`
-            : `Removed ${countryId} from high demand`
+            ? 'Country marked as high demand'
+            : 'Country removed from high demand'
         );
       } else {
         throw new Error(
@@ -79,15 +83,28 @@ export function useHighDemandCountries() {
           ? error.message 
           : 'Failed to toggle high demand status'
       );
+    } finally {
+      // Remove loading state for this country
+      setLoadingCountries(prev => {
+        const next = new Set(prev);
+        next.delete(countryId);
+        return next;
+      });
     }
   }, [isHighDemandCountry, toggleHighDemandCountry, refetch]);
+
+  // Check if a specific country is loading
+  const isCountryLoading = useCallback((countryId: string): boolean => {
+    return loadingCountries.has(countryId);
+  }, [loadingCountries]);
 
   return {
     highDemandCountries: data?.highDemandCountries || [],
     loading,
     error,
-    toggleLoading,
+    toggleLoading: loadingCountries.size > 0, // Keep for backward compatibility
     isHighDemandCountry,
     toggleCountryHighDemand,
+    isCountryLoading,
   };
 }

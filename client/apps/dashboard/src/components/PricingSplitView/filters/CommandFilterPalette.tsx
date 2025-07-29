@@ -30,7 +30,7 @@ import {
   Package2,
   Search,
   Sparkles,
-  TrendingUp,
+  Star,
   X,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
@@ -110,7 +110,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
     {
       key: "highDemand",
       label: "High Demand",
-      icon: TrendingUp,
+      icon: Star,
     },
   ];
 
@@ -246,7 +246,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
       categoryLabel: "High Demand",
       value: "highDemand",
       label: "High Demand",
-      icon: TrendingUp,
+      icon: Star,
       searchText: "high demand trending popular",
     });
 
@@ -651,7 +651,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                 : "border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800"
             }`}
           >
-            <TrendingUp className="h-3 w-3" />
+            <Star className="h-3 w-3" />
             <span className="text-xs font-medium">High Demand</span>
           </Button>
 
