@@ -16,19 +16,7 @@ import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Badge } from "@workspace/ui/components/badge";
 import { Separator } from "@workspace/ui/components/separator";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@workspace/ui/components/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@workspace/ui/components/popover";
+import { MultiCountrySelect } from "@workspace/ui/components/multi-country-select";
 import { X, Plus, MapPin, Globe, Search, Check } from "lucide-react";
 import { toast } from "sonner";
 import { CREATE_TRIP, UPDATE_TRIP, GET_COUNTRIES } from "@/lib/graphql/queries";
@@ -123,18 +111,6 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
     setCountrySearch("");
   }, [open, trip, reset]);
 
-  const handleAddCountry = (countryId: string) => {
-    if (!watchedCountryIds.includes(countryId)) {
-      setValue("countryIds", [...watchedCountryIds, countryId]);
-    }
-    setCountrySearch("");
-    setShowCountryPopover(false);
-  };
-
-  const handleRemoveCountry = (countryId: string) => {
-    setValue("countryIds", watchedCountryIds.filter(id => id !== countryId));
-  };
-
   const onSubmit = async (data: TripFormData) => {
     try {
       if (trip) {
@@ -185,9 +161,6 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
     }
   };
 
-  const selectedCountries = watchedCountryIds.map(id => 
-    countries.find((country: Country) => country.iso === id)
-  ).filter(Boolean) as Country[];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -276,80 +249,27 @@ export function TripFormModal({ open, onOpenChange, trip, onSuccess }: TripFormM
             </div>
 
             {/* Countries Selection Area */}
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-3 p-4 bg-muted/30 rounded-lg min-h-[60px]">
-                {/* Selected Countries */}
-                {selectedCountries.map((country) => (
-                  <Badge
-                    key={country.iso}
-                    variant="secondary"
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium"
-                  >
-                    <span className="text-base">{country.flag}</span>
-                    <span>{country.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCountry(country.iso)}
-                      className="ml-1 hover:bg-destructive hover:text-destructive-foreground rounded-full p-1 transition-colors"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-                
-                {/* Add Country Button */}
-                <Popover open={showCountryPopover} onOpenChange={setShowCountryPopover}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="border-dashed border-2 px-3 py-2 text-sm font-medium hover:bg-muted/50"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Country
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-0" align="start">
-                    <Command>
-                      <CommandInput
-                        placeholder="Search by country name or code..."
-                        value={countrySearch}
-                        onValueChange={setCountrySearch}
-                      />
-                      <CommandList>
-                        <CommandEmpty>No countries found.</CommandEmpty>
-                        <CommandGroup>
-                          {filteredCountries.slice(0, 20).map((country: Country) => (
-                            <CommandItem
-                              key={country.iso}
-                              value={`${country.name} ${country.iso} ${country.nameHebrew}`}
-                              onSelect={() => handleAddCountry(country.iso)}
-                              disabled={watchedCountryIds.includes(country.iso)}
-                              className={watchedCountryIds.includes(country.iso) ? "opacity-50" : ""}
-                            >
-                              <span className="text-lg mr-2">{country.flag}</span>
-                              <div className="flex-1 min-w-0">
-                                <div className="font-medium truncate">{country.name}</div>
-                                <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                  <span className="font-mono">{country.iso}</span>
-                                  <span>•</span>
-                                  <span className="truncate">{country.nameHebrew}</span>
-                                </div>
-                              </div>
-                              {watchedCountryIds.includes(country.iso) ? (
-                                <Check className="h-4 w-4 text-green-600" />
-                              ) : (
-                                <Plus className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
+            <Controller
+              name="countryIds"
+              control={control}
+              render={({ field }) => (
+                <MultiCountrySelect
+                  countries={countries?.map((c: Country) => ({
+                    id: c.iso,
+                    name: c.name,
+                    iso: c.iso,
+                    flag: c.flag || '',
+                    keywords: [c.nameHebrew || '']
+                  })) || []}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Select countries..."
+                  searchPlaceholder="Search by country name or code..."
+                  emptyMessage="No countries found."
+                  loading={loading}
+                />
+              )}
+            />
           </div>
 
           {/* Form Actions */}
