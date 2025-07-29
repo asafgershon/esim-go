@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@apollo/client";
-import { ArrowLeft, Download, RefreshCw, CheckCircle, Smartphone, Wifi } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, CheckCircle, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@workspace/ui";
 import { Card } from "@workspace/ui";
@@ -14,6 +14,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ErrorDisplay } from "@/components/error-display";
 import { parseGraphQLError } from "@/lib/error-types";
+import { ActivationMethodSelector } from "@/components/esim/ActivationMethodSelector";
 export default function OrderPage() {
   const { orderId } = useParams();
   const router = useRouter();
@@ -89,9 +90,6 @@ export default function OrderPage() {
 
   const order = data.orderDetails;
   const primaryEsim = order.esims[0]; // Assuming first eSIM is primary
-  
-  // Debug: Log eSIM data to see what fields are available
-  console.log('Primary eSIM data:', primaryEsim);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -170,8 +168,17 @@ export default function OrderPage() {
           </div>
         </Card>
 
-        {/* QR Code & Installation */}
-        {primaryEsim && (
+        {/* Smart eSIM Activation */}
+        {primaryEsim && primaryEsim.installationLinks && (
+          <ActivationMethodSelector
+            installationLinks={primaryEsim.installationLinks}
+            qrCode={primaryEsim.qrCode}
+            iccid={primaryEsim.iccid}
+          />
+        )}
+
+        {/* Fallback for old data without installationLinks */}
+        {primaryEsim && !primaryEsim.installationLinks && (
           <Card className="p-6 mb-6">
             <div className="text-center mb-6">
               <div className="flex items-center justify-center gap-2 mb-2">
@@ -192,26 +199,6 @@ export default function OrderPage() {
                   height={256}
                   className="w-64 h-64"
                 />
-              </div>
-            </div>
-            
-            {/* Installation Instructions */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
-              <div className="flex items-start gap-3">
-                <div className="rounded-full bg-blue-100 dark:bg-blue-800 p-2 mt-1">
-                  <Wifi className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                    הוראות התקנה
-                  </h4>
-                  <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                    <li>1. פתח הגדרות → סלולר/נתונים סלולריים</li>
-                    <li>2. לחץ על &quot;הוסף eSIM&quot; או &quot;הוסף תוכנית סלולרית&quot;</li>
-                    <li>3. סרוק את קוד ה-QR עם המצלמה</li>
-                    <li>4. עקוב אחר ההנחיות במסך להשלמת ההתקנה</li>
-                  </ol>
-                </div>
               </div>
             </div>
             

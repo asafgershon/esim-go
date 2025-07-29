@@ -651,6 +651,47 @@ type ESIM {
   updatedAt: String!
   smdpAddress: String # SMDP+ address for eSIM activation
   matchingId: String # Matching ID for eSIM activation
+  installationLinks: InstallationLinks # All activation link formats
+}
+
+# Installation links for direct eSIM activation
+type InstallationLinks {
+  """
+  iOS 17.4+ direct activation link (no QR scanning needed)
+  """
+  universalLink: String!
+  
+  """
+  LPA scheme for Android/Windows direct activation
+  """
+  lpaScheme: String!
+  
+  """
+  Manual entry components for all devices
+  """
+  manual: ManualInstallation!
+  
+  """
+  QR code data string (LPA format) for fallback
+  """
+  qrCodeData: String!
+}
+
+type ManualInstallation {
+  """
+  SM-DP+ server address
+  """
+  smDpAddress: String!
+  
+  """
+  Activation code
+  """
+  activationCode: String!
+  
+  """
+  Optional confirmation code
+  """
+  confirmationCode: String
 }
 
 type ESIMBundle {

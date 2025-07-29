@@ -84,6 +84,16 @@ query OrderDetails($id: ID!) {
       status
       smdpAddress
       matchingId
+      installationLinks {
+        universalLink
+        lpaScheme
+        qrCodeData
+        manual {
+          smDpAddress
+          activationCode
+          confirmationCode
+        }
+      }
     }
   }
 }`

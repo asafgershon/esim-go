@@ -143,7 +143,23 @@ export class OrderRepository extends BaseSupabaseRepository<
       .from('esim_orders')
       .select(`
         *,
-        esims (*)
+        esims (
+          id,
+          iccid,
+          qr_code_url,
+          status,
+          customer_ref,
+          assigned_date,
+          last_action,
+          action_date,
+          created_at,
+          updated_at,
+          user_id,
+          order_id,
+          activation_code,
+          smdp_address,
+          matching_id
+        )
       `)
       .eq('id', orderId)
       .single();

@@ -8,6 +8,7 @@ import {
 } from "../schemas/transformations";
 import type { Resolvers } from "../types";
 import { createLogger } from "../lib/logger";
+import { generateInstallationLinks } from "../utils/esim.utils";
 
 const logger = createLogger({
   name: "esim-resolvers",
@@ -232,36 +233,28 @@ export const esimResolvers: Partial<Resolvers> = {
           });
         }
         
-        // Debug: Log the raw order data
-        console.log('Raw order from DB:', {
-          orderId: order.id,
-          esimsCount: order.esims?.length,
-          firstEsim: order.esims?.[0]
-        });
         // Transform eSIMs to map qr_code_url to qrCode and include activation fields
         const transformedEsims = order.esims.map((esim) => {
-          // Debug: Log the raw esim data
-          console.log('Raw eSIM data from DB:', {
-            id: esim.id,
-            smdp_address: esim.smdp_address,
-            matching_id: esim.matching_id,
-            activation_code: esim.activation_code
-          });
+          
+          // Generate installation links if we have the required data
+          let installationLinks = null;
+          if (esim.smdp_address && esim.matching_id) {
+            installationLinks = generateInstallationLinks({
+              smDpAddress: esim.smdp_address,
+              activationCode: esim.matching_id,
+              confirmationCode: null // eSIM Go doesn't use confirmation codes
+            });
+          }
           
           return {
             ...esim,
             qrCode: esim.qr_code_url,
             smdpAddress: esim.smdp_address,
             matchingId: esim.matching_id,
+            installationLinks
           };
         });
         
-        // Debug: Log transformed eSIMs
-        console.log('Transformed eSIMs:', transformedEsims.map(e => ({
-          id: e.id,
-          smdpAddress: e.smdpAddress,
-          matchingId: e.matchingId
-        })));
 
         // Convert snake_case to camelCase for the main order object
         const camelCaseOrder = Object.fromEntries(
@@ -279,8 +272,6 @@ export const esimResolvers: Partial<Resolvers> = {
           })
         );
 
-        // Debug: Log the final response
-        console.log('Final order response:', JSON.stringify(camelCaseOrder, null, 2));
         
         const response = camelCaseOrder as Order;
         logger.debug("Order response processed", {

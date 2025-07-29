@@ -3,6 +3,7 @@ import type { Context } from "../context/types";
 import type { Resolvers } from "../types";
 import { supabaseAdmin } from "../context/supabase-auth";
 import { createLogger } from "../lib/logger";
+import { generateInstallationLinks } from "../utils/esim.utils";
 
 const logger = createLogger({ component: "orders-resolvers" });
 
@@ -78,12 +79,25 @@ export const ordersResolvers: Partial<Resolvers> = {
       if (!data) return [];
 
       // Transform the data to map snake_case fields to camelCase for GraphQL schema
-      return data.map((esim) => ({
-        ...esim,
-        qrCode: esim.qr_code_url,
-        smdpAddress: esim.smdp_address,
-        matchingId: esim.matching_id,
-      })) as any;
+      return data.map((esim) => {
+        // Generate installation links if we have the required data
+        let installationLinks = null;
+        if (esim.smdp_address && esim.matching_id) {
+          installationLinks = generateInstallationLinks({
+            smDpAddress: esim.smdp_address,
+            activationCode: esim.matching_id,
+            confirmationCode: null // eSIM Go doesn't use confirmation codes
+          });
+        }
+        
+        return {
+          ...esim,
+          qrCode: esim.qr_code_url,
+          smdpAddress: esim.smdp_address,
+          matchingId: esim.matching_id,
+          installationLinks
+        };
+      }) as any;
     },
     user: async (parent, _, context: Context) => {
       // Get the user_id from the order and fetch user data
