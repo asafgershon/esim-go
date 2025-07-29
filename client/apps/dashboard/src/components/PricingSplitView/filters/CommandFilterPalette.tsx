@@ -30,7 +30,7 @@ import {
   Package2,
   Search,
   Sparkles,
-  TrendingUp,
+  Star,
   X,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
@@ -110,7 +110,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
     {
       key: "highDemand",
       label: "High Demand",
-      icon: TrendingUp,
+      icon: Star,
     },
   ];
 
@@ -121,10 +121,39 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
     }
 
     const currentSet = new Set(selectedFilters[category as keyof FilterState]);
-    if (currentSet.has(value)) {
-      currentSet.delete(value);
+    
+    // For bundle groups, normalize to handle hyphen inconsistencies
+    if (category === 'groups') {
+      const normalizedValue = value.replace(/[-\s]/g, '').toLowerCase();
+      let foundMatch = false;
+      
+      // Check if we're toggling off an existing value (exact match or normalized match)
+      for (const existingValue of currentSet) {
+        const normalizedExisting = existingValue.replace(/[-\s]/g, '').toLowerCase();
+        if (existingValue === value || normalizedExisting === normalizedValue) {
+          currentSet.delete(existingValue);
+          foundMatch = true;
+          break;
+        }
+      }
+      
+      // If no match was found, we're adding a new value
+      if (!foundMatch) {
+        // Remove any existing normalized matches before adding
+        for (const existingValue of currentSet) {
+          if (existingValue.replace(/[-\s]/g, '').toLowerCase() === normalizedValue) {
+            currentSet.delete(existingValue);
+          }
+        }
+        currentSet.add(value);
+      }
     } else {
-      currentSet.add(value);
+      // For other categories, use standard toggle logic
+      if (currentSet.has(value)) {
+        currentSet.delete(value);
+      } else {
+        currentSet.add(value);
+      }
     }
 
     onFiltersChange({
@@ -217,7 +246,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
       categoryLabel: "High Demand",
       value: "highDemand",
       label: "High Demand",
-      icon: TrendingUp,
+      icon: Star,
       searchText: "high demand trending popular",
     });
 
@@ -346,22 +375,23 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                           <CommandItem
                             key={group}
                             onSelect={() => {
-                              // Remove old value and add new one
-                              const newSet = new Set(
-                                selectedFilters.groups
-                              );
-                              newSet.delete(group);
-                              newSet.add(group);
-                              onFiltersChange({
-                                ...selectedFilters,
-                                groups: newSet,
-                              });
+                              handleFilterChange("groups", group);
                             }}
                             className="flex items-center gap-2"
                           >
                             <Package2 className="h-4 w-4 text-blue-600" />
                             {group}
-                            {selectedFilters.groups.has(group) && (
+                            {(() => {
+                              // Check if this group is selected (either exact match or normalized match)
+                              const normalizedGroup = group.replace(/[-\s]/g, '').toLowerCase();
+                              for (const selectedGroup of selectedFilters.groups) {
+                                if (selectedGroup === group || 
+                                    selectedGroup.replace(/[-\s]/g, '').toLowerCase() === normalizedGroup) {
+                                  return true;
+                                }
+                              }
+                              return false;
+                            })() && (
                               <Check className="h-4 w-4 ml-auto text-blue-600" />
                             )}
                           </CommandItem>
@@ -621,7 +651,7 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
                 : "border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800"
             }`}
           >
-            <TrendingUp className="h-3 w-3" />
+            <Star className="h-3 w-3" />
             <span className="text-xs font-medium">High Demand</span>
           </Button>
 

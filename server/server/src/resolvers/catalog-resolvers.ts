@@ -424,9 +424,31 @@ export const catalogResolvers: Partial<Resolvers> = {
 
     // Field resolver for appliedRules (rules that affected the pricing)
     appliedRules: async (parent: any, _, context: Context) => {
-      // Applied rules come from pricing calculation, not directly on bundle
-      // This should be accessed through pricingBreakdown.appliedRules
-      return [];
+      try {
+        // To get applied rules, we need to calculate pricing for this bundle
+        const bundle = {
+          ...parent,
+          __typename: "CountryBundle",
+          basePrice: parent.price || 0,
+          validityInDays: parent.duration,
+          countries: parent.country ? [parent.country.iso] : [],
+          region: parent.country?.region,
+        };
+
+        const pricingBreakdown = await calculatePricingForBundle(
+          bundle as any,
+          mapPaymentMethodEnum(parent),
+          context
+        );
+
+        return pricingBreakdown.appliedRules || [];
+      } catch (error) {
+        logger.error("Failed to get applied rules for bundle", error as Error, {
+          bundleName: parent.name,
+          operationType: "countryBundle-appliedRules-field-resolver",
+        });
+        return [];
+      }
     },
   },
 

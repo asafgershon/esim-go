@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@workspace/ui";
-import { TrendingUp, MapPin } from "lucide-react";
+import { Star, MapPin } from "lucide-react";
 import { BundlesByCountryWithBundles } from "./types";
 import { PricingRange } from "@/__generated__/graphql";
 
@@ -72,15 +72,26 @@ export const CountryCard: React.FC<CountryCardProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`h-6 w-6 p-0 transition-opacity ${
+                  className={`h-6 w-6 p-0 rounded-full transition-all ${
                     isHighDemand 
-                      ? 'opacity-100' 
-                      : 'opacity-0 group-hover:opacity-100'
-                  } hover:bg-orange-50`}
+                      ? 'bg-orange-500 hover:bg-orange-600 opacity-100' 
+                      : 'bg-orange-50 border border-orange-200 hover:bg-orange-500 hover:border-orange-500 opacity-0 group-hover:opacity-100'
+                  }`}
+                  style={{
+                    fontSize: 0
+                  }}
                   onClick={onToggleHighDemand}
                   disabled={toggleLoading}
                 >
-                  <TrendingUp className="h-4 w-4 text-orange-500" />
+                  <Star 
+                    className="transition-colors"
+                    style={{
+                      width: '10px',
+                      height: '10px',
+                      color: isHighDemand ? 'white' : '#ea580c',
+                      fill: isHighDemand ? 'white' : 'transparent'
+                    }}
+                  />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
