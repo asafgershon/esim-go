@@ -133,69 +133,103 @@ export const FilterBar = React.forwardRef<HTMLDivElement, FilterBarProps>(
             {/* Active filter badges */}
             {config.categories.map(category => {
               const selectedValues = getSelectedValues(category);
-              return selectedValues.map(value => {
-                const option = category.options.find(opt => opt.value === value);
-                if (!option) return null;
-                
-                return (
-                  <Badge
-                    key={`${category.key}-${value}`}
-                    variant="secondary"
-                    className={cn(
-                      "h-7 px-3 gap-2 text-xs",
-                      category.color === "blue" && "bg-blue-50 border-blue-200 hover:bg-blue-100",
-                      category.color === "green" && "bg-green-50 border-green-200 hover:bg-green-100",
-                      category.color === "purple" && "bg-purple-50 border-purple-200 hover:bg-purple-100",
-                      category.color === "orange" && "bg-orange-50 border-orange-200 hover:bg-orange-100"
-                    )}
-                  >
-                    {category.icon && (
-                      <category.icon className={cn(
-                        "h-3 w-3",
-                        category.color === "blue" && "text-blue-600",
-                        category.color === "green" && "text-green-600",
-                        category.color === "purple" && "text-purple-600",
-                        category.color === "orange" && "text-orange-600"
-                      )} />
-                    )}
-                    <span className={cn(
-                      category.color === "blue" && "text-blue-800",
-                      category.color === "green" && "text-green-800",
-                      category.color === "purple" && "text-purple-800",
-                      category.color === "orange" && "text-orange-800"
-                    )}>
-                      {category.label}
-                    </span>
-                    <span className={cn(
-                      "font-medium",
-                      category.color === "blue" && "text-blue-900",
-                      category.color === "green" && "text-green-900",
-                      category.color === "purple" && "text-purple-900",
-                      category.color === "orange" && "text-orange-900"
-                    )}>
-                      {option.label}
-                    </span>
-                    <button
-                      onClick={() => toggleFilterValue(category.key, value)}
+              if (selectedValues.length === 0) return null;
+              
+              // Get labels for selected values
+              const selectedOptions = selectedValues
+                .map(value => category.options.find(opt => opt.value === value))
+                .filter((opt): opt is FilterOption => opt !== undefined);
+              
+              if (selectedOptions.length === 0) return null;
+              
+              // Prepare display text
+              const displayItems = selectedOptions.slice(0, 2).map(opt => opt.label);
+              const remainingCount = selectedOptions.length - 2;
+              const displayText = displayItems.join(", ") + (remainingCount > 0 ? ` +${remainingCount} more` : "");
+              
+              return (
+                <Popover key={category.key}>
+                  <PopoverTrigger asChild>
+                    <Badge
+                      variant="secondary"
                       className={cn(
-                        "ml-1 rounded-full p-0.5 transition-colors",
-                        category.color === "blue" && "hover:bg-blue-200",
-                        category.color === "green" && "hover:bg-green-200",
-                        category.color === "purple" && "hover:bg-purple-200",
-                        category.color === "orange" && "hover:bg-orange-200"
+                        "h-7 px-3 gap-2 text-xs cursor-pointer",
+                        category.color === "blue" && "bg-blue-50 border-blue-200 hover:bg-blue-100",
+                        category.color === "green" && "bg-green-50 border-green-200 hover:bg-green-100",
+                        category.color === "purple" && "bg-purple-50 border-purple-200 hover:bg-purple-100",
+                        category.color === "orange" && "bg-orange-50 border-orange-200 hover:bg-orange-100"
                       )}
                     >
-                      <X className={cn(
-                        "h-2.5 w-2.5",
-                        category.color === "blue" && "text-blue-600",
-                        category.color === "green" && "text-green-600",
-                        category.color === "purple" && "text-purple-600",
-                        category.color === "orange" && "text-orange-600"
-                      )} />
-                    </button>
-                  </Badge>
-                );
-              });
+                      {category.icon && (
+                        <category.icon className={cn(
+                          "h-3 w-3",
+                          category.color === "blue" && "text-blue-600",
+                          category.color === "green" && "text-green-600",
+                          category.color === "purple" && "text-purple-600",
+                          category.color === "orange" && "text-orange-600"
+                        )} />
+                      )}
+                      <span className={cn(
+                        category.color === "blue" && "text-blue-800",
+                        category.color === "green" && "text-green-800",
+                        category.color === "purple" && "text-purple-800",
+                        category.color === "orange" && "text-orange-800"
+                      )}>
+                        {category.label}:
+                      </span>
+                      <span className={cn(
+                        "font-medium",
+                        category.color === "blue" && "text-blue-900",
+                        category.color === "green" && "text-green-900",
+                        category.color === "purple" && "text-purple-900",
+                        category.color === "orange" && "text-orange-900"
+                      )}>
+                        {displayText}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Clear all values for this category
+                          onFilterChange({
+                            ...filterState,
+                            [category.key]: new Set<string>(),
+                          });
+                        }}
+                        className={cn(
+                          "ml-1 rounded-full p-0.5 transition-colors",
+                          category.color === "blue" && "hover:bg-blue-200",
+                          category.color === "green" && "hover:bg-green-200",
+                          category.color === "purple" && "hover:bg-purple-200",
+                          category.color === "orange" && "hover:bg-orange-200"
+                        )}
+                      >
+                        <X className={cn(
+                          "h-2.5 w-2.5",
+                          category.color === "blue" && "text-blue-600",
+                          category.color === "green" && "text-green-600",
+                          category.color === "purple" && "text-purple-600",
+                          category.color === "orange" && "text-orange-600"
+                        )} />
+                      </button>
+                    </Badge>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-2" align="start">
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium px-2 py-1">{category.label} Filters</div>
+                      {selectedOptions.map(option => (
+                        <button
+                          key={option.value}
+                          onClick={() => toggleFilterValue(category.key, option.value)}
+                          className="w-full flex items-center justify-between px-2 py-1.5 text-sm rounded hover:bg-gray-100 transition-colors"
+                        >
+                          <span>{option.label}</span>
+                          <X className="h-3 w-3 text-gray-500" />
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              );
             })}
 
             {/* Quick filters */}

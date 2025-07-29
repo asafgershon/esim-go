@@ -318,67 +318,58 @@ export const CommandFilterPalette: React.FC<CommandFilterPaletteProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Bundle Group filters */}
-          {Array.from(selectedFilters.groups).map((group) => (
+          {selectedFilters.groups.size > 0 && (
             <Badge
-              key={group}
               variant="secondary"
               className="h-7 px-3 gap-2 text-xs bg-blue-50 border-blue-200 hover:bg-blue-100"
             >
               <Package2 className="h-3 w-3 text-blue-600" />
-              <span className="text-blue-800">Bundle</span>
-              <span className="text-blue-900 font-medium">is</span>
+              <span className="text-blue-800">Bundle Groups:</span>
               <Popover>
                 <PopoverTrigger asChild>
                   <button className="bg-blue-100 px-1.5 py-0.5 rounded text-blue-900 font-medium hover:bg-blue-200 transition-colors">
-                    {group}
+                    {(() => {
+                      const groupArray = Array.from(selectedFilters.groups);
+                      const displayGroups = groupArray.slice(0, 2).join(", ");
+                      const remainingCount = groupArray.length - 2;
+                      return displayGroups + (remainingCount > 0 ? ` +${remainingCount} more` : "");
+                    })()}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-64 p-0" align="start">
-                  <Command className="rounded-lg border-none shadow-md">
-                    <CommandInput
-                      placeholder="Search bundle groups..."
-                      className="border-none focus:ring-0"
-                    />
-                    <CommandList className="max-h-48">
-                      <CommandEmpty>No bundle groups found.</CommandEmpty>
-                      <CommandGroup>
-                        {filters?.groups.map((group) => (
-                          <CommandItem
-                            key={group}
-                            onSelect={() => {
-                              // Remove old value and add new one
-                              const newSet = new Set(
-                                selectedFilters.groups
-                              );
-                              newSet.delete(group);
-                              newSet.add(group);
-                              onFiltersChange({
-                                ...selectedFilters,
-                                groups: newSet,
-                              });
-                            }}
-                            className="flex items-center gap-2"
-                          >
-                            <Package2 className="h-4 w-4 text-blue-600" />
-                            {group}
-                            {selectedFilters.groups.has(group) && (
-                              <Check className="h-4 w-4 ml-auto text-blue-600" />
-                            )}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
+                <PopoverContent className="w-64 p-2" align="start">
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium px-2 py-1">Selected Bundle Groups</div>
+                    {Array.from(selectedFilters.groups).map((group) => (
+                      <div
+                        key={group}
+                        className="flex items-center justify-between px-2 py-1.5 text-sm rounded hover:bg-gray-100 transition-colors"
+                      >
+                        <span>{group}</span>
+                        <button
+                          onClick={() => handleFilterChange("groups", group)}
+                          className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                        >
+                          <X className="h-3 w-3 text-gray-500" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </PopoverContent>
               </Popover>
               <button
-                onClick={() => handleFilterChange("groups", group)}
+                onClick={() => {
+                  // Clear all bundle group filters
+                  onFiltersChange({
+                    ...selectedFilters,
+                    groups: new Set(),
+                  });
+                }}
                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5 transition-colors"
               >
                 <X className="h-2.5 w-2.5 text-blue-600" />
               </button>
             </Badge>
-          ))}
+          )}
 
           {/* Duration filters */}
           {Array.from(selectedFilters.durations).map((duration) => {
