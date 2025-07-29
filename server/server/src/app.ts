@@ -372,15 +372,6 @@ async function startServer() {
             token,
           };
         },
-      }),
-      cors({
-        origin: allowedOrigins,
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-correlation-id'],
-        exposedHeaders: ['Content-Length', 'Content-Type'],
-        maxAge: 86400, // 24 hours
-        preflightContinue: false,
-        credentials: false,
-        optionsSuccessStatus: 204
       })
     );
 
