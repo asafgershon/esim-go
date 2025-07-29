@@ -52,75 +52,47 @@ export const resolvers: Resolvers = {
     // Countries resolvers
     countries: async (_, __, context: Context) => {
       try {
-        // Get countries with bundle data instead of basic countries
-        const bundleCountries =
-          await context.repositories.bundles.byCountries();
-
-        // Get full country data for mapping
-        const allCountries = await context.dataSources.countries.getCountries();
-        const countryMap = new Map(
-          allCountries.map((country: any) => [country.iso, country])
-        );
-
-        // Map bundle countries to full country data
-        const result = [];
-        for (const bundleCountry of bundleCountries) {
-          const countryData = countryMap.get(bundleCountry.country_code);
-          if (countryData) {
-            result.push({
-              iso: countryData.iso,
-              name: countryData.country,
-              nameHebrew: countryData.hebrewName || countryData.country,
-              region: countryData.region,
-              flag: countryData.flag,
-            });
-          }
-        }
+        // Import countries-list for enrichment
+        const countriesList = await import("countries-list");
+        const { getCountryNameHebrew } = await import("./datasources/esim-go/hebrew-names");
+        
+        // Get country codes from catalog bundles
+        const countryCodes = await context.repositories.bundles.getCountries();
+        
+        // Enrich country codes with full data
+        const result = countryCodes
+          .map((iso) => {
+            const countryData = countriesList.getCountryData(iso as any);
+            if (!countryData) {
+              logger.warn("Country data not found in countries-list", {
+                iso,
+                operationType: "countries-query",
+              });
+              return null;
+            }
+            
+            return {
+              iso,
+              name: countryData.name,
+              nameHebrew: getCountryNameHebrew(iso) || countryData.name,
+              region: countryData.continent,
+              flag: countriesList.getEmojiFlag(iso as any) || '🌍',
+            };
+          })
+          .filter(Boolean) // Remove any null entries
+          .sort((a, b) => a!.name.localeCompare(b!.name));
+        
+        logger.info("Countries fetched from catalog", {
+          count: result.length,
+          operationType: "countries-query",
+        });
+        
         return result;
       } catch (error) {
-        console.error("Error fetching countries with bundle data:", error);
-        // Fallback to original implementation
-        const countries = await context.dataSources.countries.getCountries();
-
-        // List of known regions to filter out from countries list
-        const knownRegions = new Set([
-          "Africa",
-          "Asia",
-          "Europe",
-          "North America",
-          "South America",
-          "Oceania",
-          "Antarctica",
-          "Middle East",
-          "Caribbean",
-          "Central America",
-          "Western Europe",
-          "Eastern Europe",
-          "Southeast Asia",
-          "East Asia",
-          "Central Asia",
-          "Southern Africa",
-          "Northern Africa",
-          "Western Africa",
-          "Eastern Africa",
-          "Central Africa",
-        ]);
-
-        return countries
-          .filter((country) => {
-            return (
-              !knownRegions.has(country.country) &&
-              country.iso &&
-              country.iso.length === 2
-            );
-          })
-          .map((country) => ({
-            iso: country.iso,
-            name: country.country,
-            nameHebrew: country.hebrewName || country.country,
-            region: country.region,
-            flag: country.flag,
-          }));
+        logger.error("Error fetching countries", error as Error, {
+          operationType: "countries-query",
+        });
+        throw new GraphQLError("Failed to fetch countries");
       }
     },
     // trips resolver moved to tripsResolvers
@@ -157,17 +129,6 @@ export const resolvers: Resolvers = {
       return [];
 
       // TODO: Implement DataLoader pattern for batching country requests
-      const countries = await context.dataSources.countries.getCountries({
-        isos: parent.countryIds,
-      });
-
-      return countries.map((country) => ({
-        iso: country.iso,
-        name: country.country,
-        nameHebrew: country.hebrewName || country.country,
-        region: country.region,
-        flag: country.flag,
-      }));
     },
   },
 
@@ -249,10 +210,8 @@ export const resolvers: Resolvers = {
       return country?.name || parent.name || '';
     },
     nameHebrew: async (parent, _, context: Context) => {
-      const country = await context.dataSources.countries.getCountryByCode(
-        parent.iso
-      );
-      return country?.hebrewName || parent.name;
+      const { getCountryNameHebrew } = await import("./datasources/esim-go/hebrew-names");
+      return getCountryNameHebrew(parent.iso) || parent.name;
     },
     region: async (parent) => {
       const region = countriesList.getCountryData(parent.iso).continent;

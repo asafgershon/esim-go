@@ -30,7 +30,6 @@ import {
 } from "./context/supabase-auth";
 import {
   CatalogueDataSourceV2,
-  CountriesDataSource,
   ESIMsDataSource,
   InventoryDataSource,
   OrdersDataSource,
@@ -159,7 +158,6 @@ async function startServer() {
               catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
               orders: new OrdersDataSource({ cache: redis }),
               esims: new ESIMsDataSource({ cache: redis }),
-              countries: new CountriesDataSource({ cache: redis }),
               regions: RegionsDataSource,
               inventory: new InventoryDataSource({ cache: redis }),
               pricing: new PricingDataSource({ cache: redis }),
@@ -240,6 +238,7 @@ async function startServer() {
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
         origin: env.CORS_ORIGINS.split(","),
         credentials: true,
+        preflightContinue: true,
       })
     );
 
@@ -338,7 +337,6 @@ async function startServer() {
               catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
               orders: new OrdersDataSource({ cache: redis }),
               esims: new ESIMsDataSource({ cache: redis }),
-              countries: new CountriesDataSource({ cache: redis }),
               regions: RegionsDataSource,
               inventory: new InventoryDataSource({ cache: redis }),
               pricing: new PricingDataSource({ cache: redis }),
