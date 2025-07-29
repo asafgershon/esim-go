@@ -243,12 +243,25 @@ async function startServer() {
     app.use(
       cors({
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-        origin: allowedOrigins,
+        origin: (origin, callback) => {
+          // Allow requests with no origin (like mobile apps or curl without origin header)
+          if (!origin) return callback(null, true);
+          
+          if (allowedOrigins.includes(origin)) {
+            callback(null, origin);
+          } else {
+            logger.warn(`CORS blocked origin: ${origin}`, { 
+              allowedOrigins,
+              operationType: 'cors-rejection' 
+            });
+            callback(new Error('Not allowed by CORS'));
+          }
+        },
+        credentials: true,
         allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-correlation-id'],
         exposedHeaders: ['Content-Length', 'Content-Type'],
         maxAge: 86400, // 24 hours
         preflightContinue: false,
-        credentials: false,
         optionsSuccessStatus: 204
       })
     );
@@ -347,16 +360,6 @@ async function startServer() {
       }
     });
 
-    // Handle OPTIONS requests explicitly for GraphQL endpoint
-    app.options("/graphql", (req, res, next) => {
-      logger.info('OPTIONS request for GraphQL - passing to CORS', {
-        origin: req.headers.origin,
-        method: req.method,
-        operationType: 'options-handler'
-      });
-      // Let CORS middleware handle it
-      next();
-    });
 
     app.use(
       "/graphql",
