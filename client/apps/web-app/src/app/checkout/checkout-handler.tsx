@@ -2,6 +2,7 @@ import { CreateCheckoutSessionInput } from "@/__generated__/graphql";
 import { CheckoutContainer } from "@/components/checkout/checkout-container";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { WEB_APP_BUNDLE_GROUP } from "@/lib/constants/bundle-groups";
 
 interface CheckoutHandlerProps {
   searchParams: {
@@ -35,7 +36,10 @@ async function createCheckoutSession(numOfDays: number, regionId?: string, count
 
   try {
     // Build input object with only defined values
-    const input: CreateCheckoutSessionInput = { numOfDays };
+    const input: CreateCheckoutSessionInput = { 
+      numOfDays,
+      group: WEB_APP_BUNDLE_GROUP
+    };
     if (regionId) {
       input.regionId = regionId;
     }
