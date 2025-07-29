@@ -72,20 +72,25 @@ export const CountryCard: React.FC<CountryCardProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`h-8 w-8 p-0 rounded-full transition-all ${
+                  className={`h-6 w-6 p-0 rounded-full transition-all ${
                     isHighDemand 
                       ? 'bg-orange-500 hover:bg-orange-600 opacity-100' 
                       : 'bg-orange-50 border border-orange-200 hover:bg-orange-500 hover:border-orange-500 opacity-0 group-hover:opacity-100'
                   }`}
+                  style={{
+                    fontSize: 0
+                  }}
                   onClick={onToggleHighDemand}
                   disabled={toggleLoading}
                 >
                   <Star 
-                    className={`h-5 w-5 transition-colors ${
-                      isHighDemand 
-                        ? 'text-white fill-white' 
-                        : 'text-orange-600 hover:text-white hover:fill-white'
-                    }`}
+                    className="transition-colors"
+                    style={{
+                      width: '10px',
+                      height: '10px',
+                      color: isHighDemand ? 'white' : '#ea580c',
+                      fill: isHighDemand ? 'white' : 'transparent'
+                    }}
                   />
                 </Button>
               </TooltipTrigger>
