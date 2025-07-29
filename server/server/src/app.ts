@@ -240,31 +240,27 @@ async function startServer() {
     });
     
     // Set up our Express middleware to handle CORS, body parsing
-    app.use(
-      cors({
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-        origin: (origin, callback) => {
-          // Allow requests with no origin (like mobile apps or curl without origin header)
-          if (!origin) return callback(null, true);
-          
-          if (allowedOrigins.includes(origin)) {
-            callback(null, origin);
-          } else {
-            logger.warn(`CORS blocked origin: ${origin}`, { 
-              allowedOrigins,
-              operationType: 'cors-rejection' 
-            });
-            callback(new Error('Not allowed by CORS'));
-          }
-        },
-        credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-correlation-id'],
-        exposedHeaders: ['Content-Length', 'Content-Type'],
-        maxAge: 86400, // 24 hours
-        preflightContinue: false,
-        optionsSuccessStatus: 204
-      })
-    );
+    // Manually handle CORS because the cors package seems to have issues
+    app.use((req, res, next) => {
+      const origin = req.headers.origin;
+      
+      // Check if origin is allowed
+      if (origin && allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Vary', 'Origin');
+      }
+      
+      // Handle preflight
+      if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept,x-correlation-id');
+        res.setHeader('Access-Control-Max-Age', '86400');
+        return res.sendStatus(204);
+      }
+      
+      next();
+    });
 
     app.use(express.json({ limit: "50mb" }));
 
