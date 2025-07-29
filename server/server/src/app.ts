@@ -260,13 +260,31 @@ async function startServer() {
       logger.info('Incoming request', {
         method: req.method,
         path: req.path,
+        url: req.url,
         headers: {
           origin: req.headers.origin,
+          host: req.headers.host,
           referer: req.headers.referer,
           'content-type': req.headers['content-type'],
+          'access-control-request-method': req.headers['access-control-request-method'],
+          'access-control-request-headers': req.headers['access-control-request-headers'],
         },
         operationType: 'request-debug'
       });
+      
+      // Log response headers after CORS
+      const originalSend = res.send;
+      res.send = function(data) {
+        logger.info('Response headers', {
+          method: req.method,
+          path: req.path,
+          statusCode: res.statusCode,
+          headers: res.getHeaders(),
+          operationType: 'response-debug'
+        });
+        return originalSend.call(this, data);
+      };
+      
       next();
     });
 
@@ -327,6 +345,17 @@ async function startServer() {
           message: error.message || "Webhook processing failed",
         });
       }
+    });
+
+    // Handle OPTIONS requests explicitly for GraphQL endpoint
+    app.options("/graphql", (req, res, next) => {
+      logger.info('OPTIONS request for GraphQL - passing to CORS', {
+        origin: req.headers.origin,
+        method: req.method,
+        operationType: 'options-handler'
+      });
+      // Let CORS middleware handle it
+      next();
     });
 
     app.use(
