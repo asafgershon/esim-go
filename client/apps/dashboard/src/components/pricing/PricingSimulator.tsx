@@ -47,6 +47,7 @@ import {
 } from '../../lib/graphql/queries';
 import { PipelineStepVisualization } from './PipelineStepVisualization';
 import { RuleImpactCard } from './RuleImpactCard';
+import { UnusedDaysFormulaAlert } from '../unused-days-formula-alert';
 
 interface PricingSimulatorProps {
   selectedRule?: PricingRule | null;
@@ -358,17 +359,13 @@ export const PricingSimulator: React.FC<PricingSimulatorProps> = ({
 
           {/* Unused Days Discount Notice */}
           {pricingResult.unusedDays && pricingResult.unusedDays > 0 && (
-            <Alert className="border-blue-200 bg-blue-50">
-              <TrendingDown className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800">
-                <div className="font-medium mb-1">Unused Days Discount Applied</div>
-                <div className="text-sm">
-                  Requested {testInputs.duration} days, selected {pricingResult.duration}-day bundle. 
-                  Discount: {pricingResult.unusedDays} unused days × ${pricingResult.discountPerDay?.toFixed(2) || '0.00'}/day = 
-                  ${((pricingResult.unusedDays || 0) * (pricingResult.discountPerDay || 0)).toFixed(2)} total discount.
-                </div>
-              </AlertDescription>
-            </Alert>
+            <UnusedDaysFormulaAlert
+              unusedDays={pricingResult.unusedDays}
+              requestedDays={testInputs.duration}
+              selectedBundleDuration={pricingResult.duration || 0}
+              discountPerDay={pricingResult.discountPerDay || 0}
+              currency={pricingResult.currency || 'USD'}
+            />
           )}
 
           {/* Visual Pricing Breakdown */}

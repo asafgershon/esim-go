@@ -9,6 +9,7 @@ import React from 'react';
 import { PricingPipelineStream } from './pricing-pipeline-stream';
 import { PricingRulesSummary } from './pricing-rules-summary';
 import { AppliedRules } from './applied-rules';
+import { UnusedDaysFormulaAlert } from './unused-days-formula-alert';
 
 interface PricingData {
   // Basic pricing info
@@ -187,17 +188,13 @@ export const PricingResultsPanel: React.FC<PricingResultsPanelProps> = ({
 
               {/* Unused Days Discount Notice */}
               {data.unusedDays !== undefined && data.unusedDays !== null && data.unusedDays > 0 && (
-                <Alert className="border-blue-200 bg-blue-50">
-                  <TrendingDown className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800">
-                    <div className="font-medium mb-1">Unused Days Discount Applied</div>
-                    <div className="text-sm">
-                      Requested {data.days} days, selected {data.bundle.duration}-day bundle. 
-                      Discount: {data.unusedDays} unused days × ${data.discountPerDay?.toFixed(2) || '0.00'}/day = 
-                      ${((data.unusedDays || 0) * (data.discountPerDay || 0)).toFixed(2)} total discount.
-                    </div>
-                  </AlertDescription>
-                </Alert>
+                <UnusedDaysFormulaAlert
+                  unusedDays={data.unusedDays}
+                  requestedDays={data.days}
+                  selectedBundleDuration={data.bundle.duration}
+                  discountPerDay={data.discountPerDay || 0}
+                  currency={data.currency}
+                />
               )}
 
               {/* Pricing Breakdown */}
