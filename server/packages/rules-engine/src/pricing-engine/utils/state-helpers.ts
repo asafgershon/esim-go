@@ -38,6 +38,11 @@ export const initializeState: StateInitializer = (input) => {
       previousBundle: undefined,
       region: "", // Will be derived from countryISO
       group: "", // Will be derived from bundle selection
+      // Initialize computed business fields
+      markupDifference: 0,
+      unusedDaysDiscountPerDay: 0,
+      bundleUpgrade: false,
+      effectiveDiscount: 0,
     },
     response: {
       unusedDays: 0,
@@ -175,4 +180,45 @@ export const getFieldValue = (field: string, state: any): any => {
  */
 export const setFieldValue = (field: string, value: any, state: any): void => {
   dot.set(field, value, state);
+};
+
+/**
+ * Calculate computed business fields for admin-friendly rules
+ */
+export const calculateComputedFields = (
+  selectedBundle: Bundle,
+  previousBundle: Bundle | undefined,
+  requestedDuration: number,
+  unusedDays: number,
+  selectedPricing?: PricingBreakdown,
+  previousPricing?: PricingBreakdown
+): {
+  markupDifference: number;
+  unusedDaysDiscountPerDay: number;
+  bundleUpgrade: boolean;
+  effectiveDiscount: number;
+} => {
+  // Calculate markup difference
+  const selectedMarkup = selectedPricing?.markup || 0;
+  const previousMarkup = previousPricing?.markup || 0;
+  const markupDifference = selectedMarkup - previousMarkup;
+  
+  // Calculate bundle upgrade status
+  const bundleUpgrade = selectedBundle.validityInDays > requestedDuration;
+  
+  // Calculate discount per unused day
+  let unusedDaysDiscountPerDay = 0;
+  if (unusedDays > 0 && markupDifference > 0) {
+    unusedDaysDiscountPerDay = markupDifference / unusedDays;
+  }
+  
+  // Calculate effective discount amount
+  const effectiveDiscount = unusedDaysDiscountPerDay * unusedDays;
+  
+  return {
+    markupDifference,
+    unusedDaysDiscountPerDay,
+    bundleUpgrade,
+    effectiveDiscount,
+  };
 };

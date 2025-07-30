@@ -56,6 +56,11 @@ export interface PricingEngineState {
     previousBundle?: Bundle;
     region: string;  // Derived from countryISO
     group: string;   // Derived from bundle selection
+    // Computed business fields for admin-friendly rules
+    markupDifference: number;  // selectedBundle.markup - previousBundle.markup
+    unusedDaysDiscountPerDay: number;  // markupDifference / unusedDays (when > 0)
+    bundleUpgrade: boolean;  // selectedBundle.validityInDays > requestedDuration
+    effectiveDiscount: number;  // Total computed discount for unused days
   };
 
   // Response - Final output to the client

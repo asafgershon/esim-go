@@ -240,6 +240,27 @@ export class ConditionBuilder {
   custom(fieldName: string): GenericCondition {
     return new GenericCondition(this.builder, fieldName);
   }
+
+  // Admin-friendly computed field conditions
+  bundleUpgrade(): GenericCondition {
+    return new GenericCondition(this.builder, 'processing.bundleUpgrade');
+  }
+
+  unusedDays(): GenericCondition {
+    return new GenericCondition(this.builder, 'response.unusedDays');
+  }
+
+  markupDifference(): GenericCondition {
+    return new GenericCondition(this.builder, 'processing.markupDifference');
+  }
+
+  unusedDaysDiscountPerDay(): GenericCondition {
+    return new GenericCondition(this.builder, 'processing.unusedDaysDiscountPerDay');
+  }
+
+  effectiveDiscount(): GenericCondition {
+    return new GenericCondition(this.builder, 'processing.effectiveDiscount');
+  }
 }
 
 export class ActionBuilder {
@@ -290,6 +311,18 @@ export class ActionBuilder {
       type: ActionTypeEnum.SetDiscountPerUnusedDay,
       value: rate,
       metadata: {}
+    });
+  }
+
+  /**
+   * Admin-friendly method to apply unused days discount automatically
+   * @param value - "auto" for automatic calculation, or number for manual override
+   */
+  applyUnusedDaysDiscount(value: "auto" | number = "auto"): RuleBuilder {
+    return this.builder.addAction({
+      type: "APPLY_UNUSED_DAYS_DISCOUNT" as any,
+      value: value === "auto" ? 1 : value, // Convert "auto" to numeric for compatibility
+      metadata: { originalValue: value }
     });
   }
 

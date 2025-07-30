@@ -91,8 +91,24 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
       region: "string",
       paymentMethod: "string",
       planId: "string",
+      // Admin-friendly computed fields
+      "processing.bundleUpgrade": "boolean",
+      "processing.markupDifference": "number",
+      "processing.unusedDaysDiscountPerDay": "number",
+      "processing.effectiveDiscount": "number",
     };
     return fieldTypes[field] || "string";
+  };
+
+  // Helper function to get field descriptions for computed fields
+  const getFieldDescription = (field: string): string => {
+    const descriptions: Record<string, string> = {
+      "processing.bundleUpgrade": "True when customer gets a bundle longer than requested",
+      "processing.markupDifference": "Price difference between selected and previous bundle options",
+      "processing.unusedDaysDiscountPerDay": "Automatically calculated discount per unused day",
+      "processing.effectiveDiscount": "Total calculated discount amount for unused days",
+    };
+    return descriptions[field] || "Select the field to match against";
   };
 
   // Rule category configurations
@@ -178,6 +194,12 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
             value: "SET_DISCOUNT_PER_UNUSED_DAY",
             label: "Discount Per Unused Day",
             unit: "%/day",
+          },
+          {
+            value: "APPLY_UNUSED_DAYS_DISCOUNT",
+            label: "Apply Unused Days Discount (Auto)",
+            unit: "$",
+            description: "Automatically calculate discount for unused days",
           },
         ];
       case "CONSTRAINT":
@@ -573,10 +595,25 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                           <SelectItem value="unusedDays">
                             Unused Days
                           </SelectItem>
+                          {/* Admin-friendly computed fields */}
+                          <SelectItem value="processing.bundleUpgrade">
+                            Bundle Upgrade (Auto)
+                          </SelectItem>
+                          <SelectItem value="processing.markupDifference">
+                            Markup Difference (Auto)
+                          </SelectItem>
+                          <SelectItem value="processing.unusedDaysDiscountPerDay">
+                            Discount Per Day (Auto)
+                          </SelectItem>
+                          <SelectItem value="processing.effectiveDiscount">
+                            Effective Discount (Auto)
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-gray-500">
-                        Select the field to match against
+                        {condition.field.startsWith("processing.") 
+                          ? getFieldDescription(condition.field)
+                          : "Select the field to match against"}
                       </p>
                     </div>
 
@@ -779,20 +816,67 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                     <div className="space-y-1">
                       <Label>Value</Label>
                       <div className="relative">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={action.value}
-                          onChange={(e) =>
-                            updateAction(
-                              index,
-                              "value",
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          placeholder="Enter value"
-                          disabled={!action.type}
-                        />
+                        {action.type === "APPLY_UNUSED_DAYS_DISCOUNT" ? (
+                          <div className="space-y-2">
+                            <Select
+                              value={action.value === 1 ? "auto" : "custom"}
+                              onValueChange={(value) => {
+                                updateAction(
+                                  index,
+                                  "value",
+                                  value === "auto" ? 1 : 0
+                                );
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose discount type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="auto">
+                                  Automatic Calculation
+                                </SelectItem>
+                                <SelectItem value="custom">
+                                  Custom Amount
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {action.value !== 1 && (
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={action.value}
+                                onChange={(e) =>
+                                  updateAction(
+                                    index,
+                                    "value",
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
+                                placeholder="Enter custom discount amount"
+                              />
+                            )}
+                            <p className="text-xs text-gray-500">
+                              {action.value === 1 
+                                ? "Engine will automatically calculate discount based on markup difference"
+                                : "Enter a fixed discount amount to override automatic calculation"}
+                            </p>
+                          </div>
+                        ) : (
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={action.value}
+                            onChange={(e) =>
+                              updateAction(
+                                index,
+                                "value",
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            placeholder="Enter value"
+                            disabled={!action.type}
+                          />
+                        )}
                         {action.type && (
                           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                             <span className="text-sm text-gray-500">

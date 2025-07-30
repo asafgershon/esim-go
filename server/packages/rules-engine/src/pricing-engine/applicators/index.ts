@@ -4,6 +4,7 @@ import { addMarkup } from "./markup";
 import { applyDiscountPercentage, applyDiscountFixed } from "./discount";
 import { setProcessingRate, addProcessingFee } from "./fees";
 import { setMinimumProfit, setMinimumPrice } from "./constraints";
+import { applyUnusedDaysDiscount } from "./unused-days-discount";
 
 /**
  * Map of action types to applicator functions
@@ -14,9 +15,12 @@ const applicatorMap: Record<string, ActionApplicator> = {
   [ActionType.SetProcessingRate]: setProcessingRate,
   [ActionType.SetMinimumProfit]: setMinimumProfit,
   [ActionType.SetMinimumPrice]: setMinimumPrice,
+  [ActionType.SetDiscountPerUnusedDay]: applyUnusedDaysDiscount,
   // Add more as needed
   APPLY_DISCOUNT_FIXED: applyDiscountFixed,
   ADD_PROCESSING_FEE: addProcessingFee,
+  // Admin-friendly action types
+  APPLY_UNUSED_DAYS_DISCOUNT: applyUnusedDaysDiscount,
 };
 
 /**

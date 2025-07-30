@@ -47,6 +47,11 @@ export class StateBuilder {
         previousBundle: undefined,
         region: "",
         group: "",
+        // Initialize computed business fields
+        markupDifference: 0,
+        unusedDaysDiscountPerDay: 0,
+        bundleUpgrade: false,
+        effectiveDiscount: 0,
       },
       response: {
         unusedDays: 0,
@@ -157,6 +162,44 @@ export class StateBuilder {
   withMetadata(updater: (metadata: PricingEngineState['metadata']) => void): StateBuilder {
     return this.update(draft => {
       updater(draft.metadata);
+    });
+  }
+
+  /**
+   * Update computed business fields automatically
+   */
+  withComputedFields(): StateBuilder {
+    return this.update(draft => {
+      if (!draft.processing.selectedBundle || !draft.response.pricing) {
+        return; // Can't compute without selected bundle and pricing
+      }
+
+      const selectedBundle = draft.processing.selectedBundle;
+      const previousBundle = draft.processing.previousBundle;
+      const requestedDuration = draft.request.duration;
+      const unusedDays = draft.response.unusedDays;
+      const selectedPricing = draft.response.pricing;
+      const previousPricing = previousBundle?.pricingBreakdown;
+
+      // Calculate computed fields
+      const selectedMarkup = selectedPricing?.markup || 0;
+      const previousMarkup = previousPricing?.markup || 0;
+      const markupDifference = selectedMarkup - previousMarkup;
+      
+      const bundleUpgrade = selectedBundle.validityInDays > requestedDuration;
+      
+      let unusedDaysDiscountPerDay = 0;
+      if (unusedDays > 0 && markupDifference > 0) {
+        unusedDaysDiscountPerDay = markupDifference / unusedDays;
+      }
+      
+      const effectiveDiscount = unusedDaysDiscountPerDay * unusedDays;
+
+      // Update processing fields
+      draft.processing.markupDifference = markupDifference;
+      draft.processing.unusedDaysDiscountPerDay = unusedDaysDiscountPerDay;
+      draft.processing.bundleUpgrade = bundleUpgrade;
+      draft.processing.effectiveDiscount = effectiveDiscount;
     });
   }
   

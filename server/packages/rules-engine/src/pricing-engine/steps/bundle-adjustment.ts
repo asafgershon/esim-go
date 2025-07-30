@@ -5,7 +5,7 @@ import { RuleCategory } from "../../rules-engine-types";
 import { filterRulesByCategory } from "../utils/rule-matcher";
 import { evaluateConditions } from "../evaluators";
 import { applyActions } from "../applicators";
-import { initializePricing } from "../utils/state-helpers";
+import { initializePricing, calculateComputedFields } from "../utils/state-helpers";
 
 /**
  * Helper function to calculate pricing for a specific bundle
@@ -67,6 +67,24 @@ export const bundleAdjustmentStep: PipelineStep = {
         
         // Store the pricing in processing since we can't modify Bundle type
         draft.processing.previousBundle.pricingBreakdown = previousPricing;
+      }
+
+      // Calculate computed business fields now that we have both bundle pricings
+      if (draft.processing.selectedBundle && draft.response.pricing) {
+        const computedFields = calculateComputedFields(
+          draft.processing.selectedBundle,
+          draft.processing.previousBundle,
+          state.request.duration || 0,
+          draft.response.unusedDays || 0,
+          draft.response.pricing,
+          draft.processing.previousBundle?.pricingBreakdown || undefined
+        );
+
+        // Update the processing fields with computed values
+        draft.processing.markupDifference = computedFields.markupDifference;
+        draft.processing.unusedDaysDiscountPerDay = computedFields.unusedDaysDiscountPerDay;
+        draft.processing.bundleUpgrade = computedFields.bundleUpgrade;
+        draft.processing.effectiveDiscount = computedFields.effectiveDiscount;
       }
     });
     
