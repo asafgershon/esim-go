@@ -1,5 +1,4 @@
 import { produce } from "immer";
-import * as dot from "dot-object";
 import type { PipelineStep } from "../types";
 import { calculateUnusedDayDiscount } from "../utils/bundle-selector";
 
@@ -10,7 +9,7 @@ export const unusedDaysDiscountStep: PipelineStep = {
   name: "APPLY_UNUSED_DAYS_DISCOUNT",
   
   execute: async (state, rules) => {
-    const unusedDays = dot.pick("response.unusedDays", state) || 0;
+    const unusedDays = state.response.unusedDays || 0;
     
     // If no unused days, skip
     if (unusedDays <= 0) {
@@ -28,9 +27,9 @@ export const unusedDaysDiscountStep: PipelineStep = {
       };
     }
     
-    const selectedBundle = dot.pick("state.selectedBundle", state);
-    const previousBundle = dot.pick("state.previousBundle", state);
-    const requestedDuration = dot.pick("request.duration", state) || 0;
+    const selectedBundle = state.processing.selectedBundle;
+    const previousBundle = state.processing.previousBundle;
+    const requestedDuration = state.request.duration || 0;
     
     if (!selectedBundle) {
       return {
@@ -48,8 +47,8 @@ export const unusedDaysDiscountStep: PipelineStep = {
     // Calculate discount per day using markup difference formula
     let discountPerDay = 0;
     
-    const selectedPricing = dot.pick("state.pricing", state);
-    const previousPricing = dot.pick("state.previousBundlePricing", state);
+    const selectedPricing = state.response.pricing;
+    const previousPricing = state.processing.previousBundle?.pricingBreakdown;
     
     if (previousBundle && selectedPricing && previousPricing) {
       // Formula: (selectedBundle.markup - previousBundle.markup) / (selectedBundle.validityInDays - requestedDuration)
@@ -81,14 +80,11 @@ export const unusedDaysDiscountStep: PipelineStep = {
     
     const newState = produce(state, draft => {
       // Directly mutate draft instead of using dot.pick/set
-      if (draft.state && draft.state.pricing) {
+      if (draft.response && draft.response.pricing) {
         // Add to existing discount
-        draft.state.pricing.discountValue = (draft.state.pricing.discountValue || 0) + totalUnusedDiscount;
-        draft.state.pricing.discountPerDay = discountPerDay;
-        draft.state.pricing.priceAfterDiscount = draft.state.pricing.totalCost - draft.state.pricing.discountValue;
-        
-        // Update response as well
-        draft.response.pricing = draft.state.pricing;
+        draft.response.pricing.discountValue = (draft.response.pricing.discountValue || 0) + totalUnusedDiscount;
+        draft.response.pricing.discountPerDay = discountPerDay;
+        draft.response.pricing.priceAfterDiscount = draft.response.pricing.totalCost - draft.response.pricing.discountValue;
       }
     });
     

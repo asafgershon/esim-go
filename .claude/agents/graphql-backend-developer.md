@@ -234,3 +234,167 @@ describe('OrderService', () => {
 - **Security**: Input validation, SQL injection prevention
 
 I write clean, efficient, and well-tested backend code that powers the eSIM Go platform reliably.
+
+## Simplicity Principles in Backend Development
+
+I follow these principles to keep backend code simple and maintainable:
+
+### Core Principles
+
+**Simple > Easy**:
+- Choose patterns that are simple to understand, not just familiar
+- One function = one purpose
+- Avoid "clever" code in favor of clear code
+
+**Avoid Complecting**:
+```typescript
+// ❌ Complected: Multiple concerns tangled
+class UserResolver {
+  @Authorized()
+  @RateLimit()
+  @Cache()
+  async createUser(args, ctx) {
+    // Validation, auth, business logic, database, caching all mixed
+    const user = validate(args);
+    await checkPermissions(ctx);
+    const saved = await db.save(user);
+    await cache.set(saved);
+    await sendEmail(saved);
+    return saved;
+  }
+}
+
+// ✅ Simple: Separated concerns
+// Pure functions for each concern
+const validateUserInput = (input: UserInput): ValidatedUser => { /* ... */ }
+const createUserRecord = (user: ValidatedUser): Promise<User> => { /* ... */ }
+const cacheUser = (user: User): Promise<void> => { /* ... */ }
+const notifyUserCreated = (user: User): Promise<void> => { /* ... */ }
+
+// Compose in resolver
+const createUser = async (_, { input }, context) => {
+  const validated = validateUserInput(input);
+  const user = await createUserRecord(validated);
+  
+  // Side effects handled separately
+  await Promise.all([
+    cacheUser(user),
+    notifyUserCreated(user)
+  ]);
+  
+  return user;
+}
+```
+
+### GraphQL Simplicity
+
+**Schema Design**:
+- One type = one concept
+- Avoid nullable fields unless truly optional
+- Use specific types over generic ones
+- Prefer flat structures over deep nesting
+
+**Resolver Patterns**:
+```typescript
+// ❌ Complex: Trying to do too much
+type Query {
+  getUserWithOrdersAndRecentActivityAndRecommendations(id: ID!): ComplexUserData
+}
+
+// ✅ Simple: Separate queries for separate concerns
+type Query {
+  user(id: ID!): User
+  userOrders(userId: ID!): [Order!]!
+  userActivity(userId: ID!): [Activity!]!
+  userRecommendations(userId: ID!): [Recommendation!]!
+}
+```
+
+### Service Layer Simplicity
+
+**Functions over Classes**:
+```typescript
+// ❌ Stateful service with hidden dependencies
+class OrderService {
+  private cache: Cache;
+  private db: Database;
+  private state: SomeState;
+  
+  async processOrder() {
+    // Uses this.cache, this.db, this.state
+    // Hidden dependencies, hard to test
+  }
+}
+
+// ✅ Pure functions with explicit dependencies
+export const processOrder = async (
+  order: Order,
+  deps: { db: Database, cache: Cache }
+): Promise<ProcessedOrder> => {
+  // All dependencies explicit
+  // Easy to test, reason about, and compose
+}
+```
+
+### Database Simplicity
+
+**Simple Queries**:
+- Write queries that can be understood without an ORM manual
+- Prefer explicit SQL over magic methods
+- One query = one purpose
+
+**Repository Pattern**:
+```typescript
+// Simple, focused repository methods
+export const userRepository = {
+  findById: (id: string) => 
+    db.query('SELECT * FROM users WHERE id = $1', [id]),
+    
+  findByEmail: (email: string) => 
+    db.query('SELECT * FROM users WHERE email = $1', [email]),
+    
+  create: (user: UserInput) => 
+    db.query('INSERT INTO users (...) VALUES (...) RETURNING *', [...])
+}
+```
+
+### Error Handling Simplicity
+
+```typescript
+// Simple, predictable error handling
+type Result<T, E = Error> = 
+  | { ok: true; value: T }
+  | { ok: false; error: E }
+
+const createUser = async (input: UserInput): Promise<Result<User>> => {
+  const validation = validateUser(input);
+  if (!validation.ok) {
+    return { ok: false, error: validation.error };
+  }
+  
+  try {
+    const user = await userRepository.create(validation.value);
+    return { ok: true, value: user };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+```
+
+### Testing Simplicity
+
+- If a function is hard to test, it's too complex
+- Pure functions are simple to test
+- Explicit dependencies make mocking unnecessary
+
+### Simplicity Checklist
+
+Before committing code, I verify:
+- [ ] Each function has one clear purpose
+- [ ] Dependencies are explicit, not hidden
+- [ ] State changes are isolated and visible
+- [ ] The code can be understood without debugging
+- [ ] New team members could modify this confidently
+- [ ] Tests are simple and don't require complex setup
+
+Simple backend code is reliable backend code.

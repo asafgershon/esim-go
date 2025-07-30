@@ -68,31 +68,29 @@ describe('Africa Region 10% Discount', () => {
   };
 
   const createPricingInput = (bundle: Bundle): PricingEngineInput => ({
-    bundles: [bundle],
-    costumer: {
-      id: 'test-customer',
-      segment: 'default'
+    context: {
+      bundles: [bundle],
+      customer: {
+        id: 'test-customer',
+        segment: 'default'
+      },
+      payment: {
+        method: PaymentMethod.IsraeliCard,
+        promo: undefined
+      },
+      rules: [],
+      date: new Date()
     },
-    payment: {
-      method: PaymentMethod.IsraeliCard,
-      promo: undefined
-    },
-    rules: [],
     request: {
       duration: bundle.validityInDays,
-      paymentMethod: PaymentMethod.IsraeliCard,
       countryISO: bundle.countries[0],
-      region: bundle.region || undefined,
-      dataType: 'DEFAULT' as any
+      paymentMethod: PaymentMethod.IsraeliCard,
+      dataType: bundle.isUnlimited ? 'unlimited' : 'fixed',
+      promo: undefined
     },
-    steps: [],
-    unusedDays: 0,
-    country: bundle.countries[0],
-    region: bundle.region,
-    group: bundle.groups[0],
-    dataType: 'DEFAULT' as any,
     metadata: {
-      correlationId: `test-africa-discount-${bundle.countries[0]}`
+      correlationId: `test-africa-discount-${bundle.countries[0]}`,
+      timestamp: new Date()
     }
   });
 
@@ -110,7 +108,7 @@ describe('Africa Region 10% Discount', () => {
         description: '10% discount for all bundles in Africa region',
         conditions: [
           {
-            field: 'region',
+            field: 'processing.region',
             operator: ConditionOperator.Equals,
             value: 'Africa',
             type: 'string'
@@ -138,36 +136,36 @@ describe('Africa Region 10% Discount', () => {
         createPricingInput(africaBundles[0])
       );
 
-      expect(southAfricaResult.state.pricing.cost).toBe(12.00);
-      expect(southAfricaResult.state.pricing.totalCost).toBe(12.00);
-      expect(southAfricaResult.state.pricing.discountValue).toBeCloseTo(1.20, 2); // 10% of $12
-      expect(southAfricaResult.state.pricing.discountRate).toBeCloseTo(10, 1);
-      expect(southAfricaResult.state.pricing.priceAfterDiscount).toBe(10.80); // $12 - $1.20
-      expect(southAfricaResult.state.pricing.finalRevenue).toBe(10.80);
+      expect(southAfricaResult.response.pricing.cost).toBe(12.00);
+      expect(southAfricaResult.response.pricing.totalCost).toBe(12.00);
+      expect(southAfricaResult.response.pricing.discountValue).toBeCloseTo(1.20, 2); // 10% of $12
+      expect(southAfricaResult.response.pricing.discountRate).toBeCloseTo(10, 1);
+      expect(southAfricaResult.response.pricing.priceAfterDiscount).toBe(10.80); // $12 - $1.20
+      expect(southAfricaResult.response.pricing.finalRevenue).toBe(10.80);
 
       // Test Nigeria bundle: $25 - 10% = $22.50
       const nigeriaResult = await pricingEngine.calculatePrice(
         createPricingInput(africaBundles[1])
       );
 
-      expect(nigeriaResult.state.pricing.cost).toBe(25.00);
-      expect(nigeriaResult.state.pricing.totalCost).toBe(25.00);
-      expect(nigeriaResult.state.pricing.discountValue).toBeCloseTo(2.50, 2); // 10% of $25
-      expect(nigeriaResult.state.pricing.discountRate).toBeCloseTo(10, 1);
-      expect(nigeriaResult.pricing.priceAfterDiscount).toBe(22.50); // $25 - $2.50
-      expect(nigeriaResult.pricing.finalRevenue).toBe(22.50);
+      expect(nigeriaResult.response.pricing.cost).toBe(25.00);
+      expect(nigeriaResult.response.pricing.totalCost).toBe(25.00);
+      expect(nigeriaResult.response.pricing.discountValue).toBeCloseTo(2.50, 2); // 10% of $25
+      expect(nigeriaResult.response.pricing.discountRate).toBeCloseTo(10, 1);
+      expect(nigeriaResult.response.pricing.priceAfterDiscount).toBe(22.50); // $25 - $2.50
+      expect(nigeriaResult.response.pricing.finalRevenue).toBe(22.50);
 
       // Test Kenya bundle: $45 - 10% = $40.50
       const kenyaResult = await pricingEngine.calculatePrice(
         createPricingInput(africaBundles[2])
       );
 
-      expect(kenyaResult.state.pricing.cost).toBe(45.00);
-      expect(kenyaResult.state.pricing.totalCost).toBe(45.00);
-      expect(kenyaResult.state.pricing.discountValue).toBeCloseTo(4.50, 2); // 10% of $45
-      expect(kenyaResult.state.pricing.discountRate).toBeCloseTo(10, 1);
-      expect(kenyaResult.state.pricing.priceAfterDiscount).toBe(40.50); // $45 - $4.50
-      expect(kenyaResult.state.pricing.finalRevenue).toBe(40.50);
+      expect(kenyaResult.response.pricing.cost).toBe(45.00);
+      expect(kenyaResult.response.pricing.totalCost).toBe(45.00);
+      expect(kenyaResult.response.pricing.discountValue).toBeCloseTo(4.50, 2); // 10% of $45
+      expect(kenyaResult.response.pricing.discountRate).toBeCloseTo(10, 1);
+      expect(kenyaResult.response.pricing.priceAfterDiscount).toBe(40.50); // $45 - $4.50
+      expect(kenyaResult.response.pricing.finalRevenue).toBe(40.50);
     });
 
     it('should NOT apply Africa discount to non-Africa regions', async () => {
@@ -179,7 +177,7 @@ describe('Africa Region 10% Discount', () => {
         description: '10% discount for all bundles in Africa region',
         conditions: [
           {
-            field: 'region',
+            field: 'processing.region',
             operator: ConditionOperator.Equals,
             value: 'Africa',
             type: 'string'
@@ -207,12 +205,12 @@ describe('Africa Region 10% Discount', () => {
         createPricingInput(europeanBundle)
       );
 
-      expect(europeResult.pricing.cost).toBe(15.00);
-      expect(europeResult.pricing.totalCost).toBe(15.00);
-      expect(europeResult.pricing.discountValue).toBe(0); // No discount applied
-      expect(europeResult.pricing.discountRate).toBe(0);
-      expect(europeResult.pricing.priceAfterDiscount).toBe(15.00); // No discount
-      expect(europeResult.pricing.finalRevenue).toBe(15.00);
+      expect(europeResult.response.pricing.cost).toBe(15.00);
+      expect(europeResult.response.pricing.totalCost).toBe(15.00);
+      expect(europeResult.response.pricing.discountValue).toBe(0); // No discount applied
+      expect(europeResult.response.pricing.discountRate).toBe(0);
+      expect(europeResult.response.pricing.priceAfterDiscount).toBe(15.00); // No discount
+      expect(europeResult.response.pricing.finalRevenue).toBe(15.00);
     });
 
     it('should work with processing fees and other rules', async () => {
@@ -224,7 +222,7 @@ describe('Africa Region 10% Discount', () => {
         description: '10% discount for all bundles in Africa region',
         conditions: [
           {
-            field: 'region',
+            field: 'processing.region',
             operator: ConditionOperator.Equals,
             value: 'Africa',
             type: 'string'
@@ -280,12 +278,12 @@ describe('Africa Region 10% Discount', () => {
       // Final revenue: $10.80 (what customer pays)
       // Revenue after processing: $10.80 - $0.3132 = $10.4868
 
-      expect(result.pricing.cost).toBe(12.00);
-      expect(result.pricing.discountValue).toBeCloseTo(1.20, 2);
-      expect(result.pricing.priceAfterDiscount).toBe(10.80);
-      expect(result.pricing.processingCost).toBeCloseTo(0.31, 2);
-      expect(result.pricing.finalRevenue).toBe(10.80); // What customer pays
-      expect(result.pricing.revenueAfterProcessing).toBeCloseTo(10.49, 2); // What we receive
+      expect(result.response.pricing.cost).toBe(12.00);
+      expect(result.response.pricing.discountValue).toBeCloseTo(1.20, 2);
+      expect(result.response.pricing.priceAfterDiscount).toBe(10.80);
+      expect(result.response.pricing.processingCost).toBeCloseTo(0.31, 2);
+      expect(result.response.pricing.finalRevenue).toBe(10.80); // What customer pays
+      expect(result.response.pricing.revenueAfterProcessing).toBeCloseTo(10.49, 2); // What we receive
     });
 
     it('should work with bundle-specific markup rules', async () => {
@@ -297,7 +295,7 @@ describe('Africa Region 10% Discount', () => {
         description: '10% discount for all bundles in Africa region',
         conditions: [
           {
-            field: 'region',
+            field: 'processing.region',
             operator: ConditionOperator.Equals,
             value: 'Africa',
             type: 'string'
@@ -353,13 +351,13 @@ describe('Africa Region 10% Discount', () => {
         createPricingInput(africaBundles[1]) // Nigeria Premium bundle
       );
 
-      expect(result.pricing.cost).toBe(25.00);
-      expect(result.pricing.markup).toBe(3.00);
-      expect(result.pricing.totalCost).toBe(28.00); // $25 + $3
-      expect(result.pricing.discountValue).toBeCloseTo(2.80, 2); // 10% of $28
-      expect(result.pricing.discountRate).toBeCloseTo(10, 1);
-      expect(result.pricing.priceAfterDiscount).toBe(25.20); // $28 - $2.80
-      expect(result.pricing.finalRevenue).toBe(25.20);
+      expect(result.response.pricing.cost).toBe(25.00);
+      expect(result.response.pricing.markup).toBe(3.00);
+      expect(result.response.pricing.totalCost).toBe(28.00); // $25 + $3
+      expect(result.response.pricing.discountValue).toBeCloseTo(2.80, 2); // 10% of $28
+      expect(result.response.pricing.discountRate).toBeCloseTo(10, 1);
+      expect(result.response.pricing.priceAfterDiscount).toBe(25.20); // $28 - $2.80
+      expect(result.response.pricing.finalRevenue).toBe(25.20);
     });
   });
 });

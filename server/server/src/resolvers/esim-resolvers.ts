@@ -1,6 +1,6 @@
 import { GraphQLError } from "graphql";
-import { supabaseAdmin } from "../context/supabase-auth";
 import type { Context } from "../context/types";
+import { supabaseAdmin } from "../context/supabase-auth";
 import {
   mapBundle,
   mapESIM,
@@ -16,6 +16,230 @@ const logger = createLogger({
 
 export const esimResolvers: Partial<Resolvers> = {
   Query: {
+    // Admin queries
+    getAllESIMs: async (_, __, context: Context) => {
+      try {
+        // Get all eSIMs with order data
+        const { data: esims, error } = await supabaseAdmin
+          .from('esims')
+          .select(`
+            *,
+            esim_orders!esims_order_id_fkey (
+              id,
+              reference,
+              plan_data
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(1000); // Reasonable limit for admin view
+
+        if (error) {
+          logger.error("Error fetching all eSIMs", error);
+          throw new GraphQLError("Failed to fetch eSIMs", {
+            extensions: { code: "INTERNAL_ERROR" },
+          });
+        }
+
+        // Transform the data to match AdminESIM type
+        const transformedESIMs = await Promise.all(
+          (esims || []).map(async (esim) => {
+            // Try to get real-time status from API
+            let apiStatus = esim.status;
+            let usage = null;
+            
+            try {
+              const apiESIM = await context.dataSources.esims.getESIM(esim.iccid);
+              if (apiESIM) {
+                apiStatus = apiESIM.status;
+                const apiUsage = await context.dataSources.esims.getESIMUsage(esim.iccid);
+                usage = {
+                  totalUsed: apiUsage.totalUsed / (1024 * 1024),
+                  totalRemaining: apiUsage.totalRemaining ? apiUsage.totalRemaining / (1024 * 1024) : null,
+                  activeBundles: apiUsage.activeBundles
+                };
+              }
+            } catch (error) {
+              // Log but don't fail if API call fails
+              logger.debug("Could not fetch API data for eSIM", { iccid: esim.iccid });
+            }
+
+            return {
+              id: esim.id,
+              iccid: esim.iccid,
+              userId: esim.user_id,
+              orderId: esim.order_id,
+              status: esim.status,
+              apiStatus,
+              customerRef: esim.customer_ref,
+              assignedDate: esim.assigned_date,
+              activationCode: esim.activation_code,
+              qrCodeUrl: esim.qr_code_url,
+              smdpAddress: esim.smdp_address,
+              matchingId: esim.matching_id,
+              lastAction: esim.last_action,
+              actionDate: esim.action_date,
+              createdAt: esim.created_at || "",
+              updatedAt: esim.updated_at || "",
+              usage,
+              user: null, // Will be populated below
+              order: esim.esim_orders ? {
+                id: esim.esim_orders.id,
+                reference: esim.esim_orders.reference,
+                bundleName: esim.esim_orders.plan_data?.name || null
+              } : null
+            };
+          })
+        );
+
+        // Fetch user profiles
+        const userIds = [...new Set(transformedESIMs.map(esim => esim.userId))];
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabaseAdmin
+            .from('profiles')
+            .select('*')
+            .in('id', userIds);
+          
+          const profileMap = new Map(
+            (profiles || []).map(profile => [profile.id, profile])
+          );
+
+          // Try to fetch emails from auth users
+          try {
+            const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+            const emailMap = new Map(
+              authUsers?.users
+                .filter(user => userIds.includes(user.id))
+                .map(user => [user.id, user.email]) || []
+            );
+
+            // Update esims with user data
+            transformedESIMs.forEach(esim => {
+              const profile = profileMap.get(esim.userId);
+              if (profile) {
+                esim.user = {
+                  id: profile.id,
+                  email: emailMap.get(profile.id) || '',
+                  firstName: profile.first_name,
+                  lastName: profile.last_name
+                };
+              }
+            });
+          } catch (error) {
+            // If we can't get emails, just use profile data
+            transformedESIMs.forEach(esim => {
+              const profile = profileMap.get(esim.userId);
+              if (profile) {
+                esim.user = {
+                  id: profile.id,
+                  email: '',
+                  firstName: profile.first_name,
+                  lastName: profile.last_name
+                };
+              }
+            });
+          }
+        }
+
+        return transformedESIMs;
+      } catch (error) {
+        logger.error("Error in getAllESIMs resolver", error as Error);
+        throw new GraphQLError("Failed to fetch eSIMs", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
+      }
+    },
+
+    getCustomerESIMs: async (_, { userId }, context: Context) => {
+      // Check admin authorization
+      if (!context.auth?.isAuthenticated) {
+        throw new GraphQLError("Not authenticated", {
+          extensions: { code: "UNAUTHENTICATED" },
+        });
+      }
+      
+      // The @auth directive will handle the role check
+
+      try {
+        // Get all eSIMs for the user
+        const esims = await context.repositories.esim.getESIMsWithBundles(userId);
+        
+        // Enhance with real-time data from eSIM Go API
+        const enhancedESIMs = await Promise.all(
+          esims.map(async (esim) => {
+            try {
+              const apiESIM = await context.dataSources.esims.getESIM(esim.iccid);
+              const usage = await context.dataSources.esims.getESIMUsage(esim.iccid);
+              
+              return {
+                ...esim,
+                apiStatus: apiESIM?.status || esim.status,
+                usage: {
+                  totalUsed: usage.totalUsed / (1024 * 1024),
+                  totalRemaining: usage.totalRemaining ? usage.totalRemaining / (1024 * 1024) : null,
+                  activeBundles: usage.activeBundles
+                }
+              };
+            } catch (error) {
+              logger.error("Error fetching eSIM details from API", error as Error, {
+                iccid: esim.iccid
+              });
+              return esim;
+            }
+          })
+        );
+        
+        return enhancedESIMs;
+      } catch (error) {
+        logger.error("Error fetching customer eSIMs", error as Error);
+        throw new GraphQLError("Failed to fetch customer eSIMs", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
+      }
+    },
+
+    getAdminESIMDetails: async (_, { iccid }, context: Context) => {
+      // Check admin authorization
+      if (!context.auth?.isAuthenticated) {
+        throw new GraphQLError("Not authenticated", {
+          extensions: { code: "UNAUTHENTICATED" },
+        });
+      }
+      
+      // The @auth directive will handle the role check
+
+      try {
+        // Get eSIM from database
+        const dbESIM = await context.repositories.esim.getByICCID(iccid);
+        if (!dbESIM) {
+          throw new GraphQLError("eSIM not found", {
+            extensions: { code: "NOT_FOUND" },
+          });
+        }
+
+        // Get full details from API
+        const apiESIM = await context.dataSources.esims.getESIM(iccid);
+        const usage = await context.dataSources.esims.getESIMUsage(iccid);
+        
+        // Get order details
+        const order = await context.repositories.orders.getOrderWithESIMs(dbESIM.order_id);
+        
+        return {
+          ...dbESIM,
+          apiDetails: apiESIM,
+          usage: {
+            totalUsed: usage.totalUsed / (1024 * 1024),
+            totalRemaining: usage.totalRemaining ? usage.totalRemaining / (1024 * 1024) : null,
+            activeBundles: usage.activeBundles
+          },
+          order
+        };
+      } catch (error) {
+        logger.error("Error fetching admin eSIM details", error as Error);
+        throw new GraphQLError("Failed to fetch eSIM details", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
+      }
+    },
 
     // Order queries (auth required)
     myOrders: async (_, { filter }, context: Context) => {
@@ -296,12 +520,6 @@ export const esimResolvers: Partial<Resolvers> = {
   Mutation: {
     // eSIM purchase
     purchaseESIM: async (_, { planId, input }, context: Context) => {
-      if (!context.auth?.isAuthenticated) {
-        throw new GraphQLError("Not authenticated", {
-          extensions: { code: "UNAUTHORIZED" },
-        });
-      }
-
       try {
         // Get data plan from database
         const { data: dbPlan } = await supabaseAdmin
@@ -378,12 +596,6 @@ export const esimResolvers: Partial<Resolvers> = {
 
     // eSIM actions
     suspendESIM: async (_, { esimId }, context: Context) => {
-      if (!context.auth?.isAuthenticated) {
-        throw new GraphQLError("Not authenticated", {
-          extensions: { code: "UNAUTHORIZED" },
-        });
-      }
-
       try {
         // Get eSIM from database
         const { data: dbESIM } = await supabaseAdmin
@@ -423,7 +635,7 @@ export const esimResolvers: Partial<Resolvers> = {
         const { data: dbPlan } = await supabaseAdmin
           .from("data_plans")
           .select("*")
-          .eq("id", dbESIM.esim_orders.data_plan_id)
+          .eq("id", dbESIM.esim_orders.data_plan_id || "")
           .single();
         const plan = await context.dataSources.catalogue.getPlanByName(
           dbPlan.name

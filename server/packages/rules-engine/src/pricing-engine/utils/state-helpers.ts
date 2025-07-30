@@ -21,34 +21,35 @@ export const generateCorrelationId = (): string => {
  */
 export const initializeState: StateInitializer = (input) => {
   return {
-    context: input.context,
+    context: {
+      ...input.context,
+      customer: input.context.customer, // Ensure we use 'customer' not 'costumer'
+    },
     request: {
-      duration: input.request?.duration || 0,
-      paymentMethod: input.request?.paymentMethod,
-      promo: input.request?.promo,
-      countryISO: input.request?.countryISO,
-      region: input.request?.region,
-      group: input.request?.group,
-      dataType: input.request?.dataType as 'unlimited' | 'fixed' | undefined,
+      duration: input.request.duration,
+      countryISO: input.request.countryISO, // Required field
+      paymentMethod: input.request.paymentMethod,
+      dataType: input.request.dataType, // Required field
+      promo: input.request.promo,
+    },
+    processing: {
+      steps: [],
+      selectedBundle: null as any,
+      previousBundle: undefined,
+      region: "", // Will be derived from countryISO
+      group: "", // Will be derived from bundle selection
     },
     response: {
       unusedDays: 0,
       selectedBundle: null as any,
       pricing: null as any,
-      rules: [],
-    },
-    state: {
-      steps: [],
-      country: input.request?.countryISO || "",
-      selectedBundle: null as any,
-      pricing: null as any,
-      region: input.request?.region || "",
-      data: (input.request?.dataType || "fixed") as 'unlimited' | 'fixed',
-      group: input.request?.group || "",
+      appliedRules: [],
     },
     metadata: {
       ...(input.metadata || {}),
       correlationId: input.metadata?.correlationId || generateCorrelationId(),
+      timestamp: input.metadata?.timestamp || new Date(),
+      version: input.metadata?.version,
     },
   } as PricingEngineState;
 };
@@ -58,9 +59,9 @@ export const initializeState: StateInitializer = (input) => {
  */
 export const createOutput: OutputCreator = (state) => {
   return {
-    response: dot.pick("response", state) as any,
-    state: dot.pick("state", state) as any,
-    metadata: dot.pick("metadata", state) as any,
+    response: typedPick("response", state),
+    processing: typedPick("processing", state),
+    metadata: typedPick("metadata", state),
   };
 };
 
@@ -92,6 +93,20 @@ export const initializePricing = (bundle: Bundle): PricingBreakdown => {
 };
 
 /**
+ * Strongly-typed dot.set wrapper
+ * @param path - Dot notation path that must be valid for the given object type
+ * @param value - Value to set at the path
+ * @param obj - Object to set in
+ */
+export function typedSet<T extends object, P extends Path<T>>(
+  path: P,
+  value: PathValue<T, P>,
+  obj: T
+): void {
+  dot.set(path, value, obj);
+}
+
+/**
  * Update state with selected bundle information
  */
 export const updateStateWithBundle = (
@@ -101,17 +116,52 @@ export const updateStateWithBundle = (
 ): PricingEngineState => {
   return produce(state, (draft) => {
     // Update response
-    dot.set("response.selectedBundle", selectedBundle, draft);
-    dot.set("response.unusedDays", unusedDays, draft);
+    typedSet("response.selectedBundle", selectedBundle, draft);
+    typedSet("response.unusedDays", unusedDays, draft);
 
-    // Update state
-    dot.set("state.selectedBundle", selectedBundle, draft);
-    dot.set("state.country", selectedBundle.countries?.[0] || state.state.country, draft);
-    dot.set("state.region", selectedBundle.region || state.state.region, draft);
-    dot.set("state.group", selectedBundle.groups?.[0] || state.state.group, draft);
-    dot.set("state.data", selectedBundle.isUnlimited ? "unlimited" : "fixed", draft);
+    // Update processing
+    typedSet("processing.selectedBundle", selectedBundle, draft);
+    typedSet("processing.region", selectedBundle.region || "", draft);
+    typedSet("processing.group", selectedBundle.groups?.[0] || "", draft);
   });
 };
+
+/**
+ * Type-safe dot notation path builder
+ */
+type Path<T> = T extends object
+  ? {
+      [K in keyof T & string]: T[K] extends object
+        ? `${K}` | `${K}.${Path<T[K]>}`
+        : `${K}`;
+    }[keyof T & string]
+  : never;
+
+/**
+ * Type-safe value getter for a path
+ */
+type PathValue<T, P extends string> = P extends `${infer K}.${infer Rest}`
+  ? K extends keyof T
+    ? Rest extends Path<T[K]>
+      ? PathValue<T[K], Rest>
+      : never
+    : never
+  : P extends keyof T
+  ? T[P]
+  : never;
+
+/**
+ * Strongly-typed dot.pick wrapper
+ * @param path - Dot notation path that must be valid for the given object type
+ * @param obj - Object to pick from
+ * @returns The value at the given path with proper typing
+ */
+export function typedPick<T extends object, P extends Path<T>>(
+  path: P,
+  obj: T
+): PathValue<T, P> {
+  return dot.pick(path, obj) as PathValue<T, P>;
+}
 
 /**
  * Get field value from state using dot notation

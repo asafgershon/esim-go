@@ -8,6 +8,7 @@ import {
   Zap,
   DollarSign,
   Database,
+  CardSim,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -43,6 +44,11 @@ const data = {
       title: "Orders",
       url: "/orders",
       icon: ShoppingCart,
+    },
+    {
+      title: "eSIMs",
+      url: "/esims",
+      icon: CardSim,
     },
     {
       title: "Catalog",

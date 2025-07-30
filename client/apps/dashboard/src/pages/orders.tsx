@@ -16,7 +16,7 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
-// import { OrderDetailsDrawer } from "@/components/order-details-drawer";
+import { OrderDetailsDrawer } from "@/components/order-details-drawer";
 import { useState } from "react";
 import { PageLayout } from "@/components/common/PageLayout";
 import { Package } from "lucide-react";
@@ -305,11 +305,11 @@ export function OrdersPage() {
           />
         )}
 
-        {/* <OrderDetailsDrawer
+        <OrderDetailsDrawer
           orderId={selectedOrderId}
           open={drawerOpen}
           onOpenChange={setDrawerOpen}
-        /> */}
+        />
       </PageLayout.Content>
     </PageLayout.Container>
   );

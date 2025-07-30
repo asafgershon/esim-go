@@ -7,7 +7,7 @@ export function convertToNewInputStructure(oldInput: any): PricingEngineInput {
   return {
     context: {
       bundles: oldInput.bundles || [],
-      costumer: oldInput.costumer || { id: 'test', segment: 'default' },
+      customer: oldInput.customer || oldInput.costumer || { id: 'test', segment: 'default' },
       payment: oldInput.payment || { method: 'ISRAELI_CARD' },
       rules: oldInput.rules || [],
       date: oldInput.date || new Date(),
@@ -15,11 +15,9 @@ export function convertToNewInputStructure(oldInput: any): PricingEngineInput {
     request: {
       duration: oldInput.request?.duration || oldInput.duration || 7,
       paymentMethod: oldInput.request?.paymentMethod || oldInput.payment?.method || 'ISRAELI_CARD',
+      countryISO: oldInput.request?.countryISO || oldInput.country || '',
+      dataType: (oldInput.request?.dataType || oldInput.dataType || 'fixed') as 'unlimited' | 'fixed',
       promo: oldInput.request?.promo,
-      countryISO: oldInput.request?.countryISO || oldInput.country,
-      region: oldInput.request?.region || oldInput.region,
-      group: oldInput.request?.group || oldInput.group,
-      dataType: oldInput.request?.dataType as 'unlimited' | 'fixed' | undefined,
     },
     metadata: oldInput.metadata || { correlationId: 'test' },
   };

@@ -71,6 +71,11 @@ type Query {
   catalogBundles(criteria: SearchCatalogCriteria): CatalogBundleConnection!
     @auth(role: "ADMIN")
   bundleFilterOptions: BundleFilterOptions!
+  
+  # Admin eSIM management queries
+  getAllESIMs: [AdminESIM!]! @auth(role: "ADMIN")
+  getCustomerESIMs(userId: ID!): [AdminESIM!]! @auth(role: "ADMIN")
+  getAdminESIMDetails(iccid: String!): AdminESIMDetails! @auth(role: "ADMIN")
 }
 
 type BundleConnection {
@@ -726,6 +731,64 @@ enum ESIMStatus {
   SUSPENDED
   EXPIRED
   CANCELLED
+}
+
+# Admin eSIM types
+type AdminESIM {
+  id: ID!
+  iccid: String!
+  userId: String!
+  orderId: String!
+  status: String!
+  apiStatus: String
+  customerRef: String
+  assignedDate: String
+  activationCode: String
+  qrCodeUrl: String
+  smdpAddress: String
+  matchingId: String
+  lastAction: String
+  actionDate: String
+  createdAt: String!
+  updatedAt: String
+  usage: ESIMUsage
+  esim_bundles: [JSON]
+  user: AdminESIMUser
+  order: AdminESIMOrder
+}
+
+type AdminESIMUser {
+  id: ID!
+  email: String
+  firstName: String
+  lastName: String
+}
+
+type AdminESIMOrder {
+  id: ID!
+  reference: String!
+  bundleName: String
+}
+
+type AdminESIMDetails {
+  id: ID!
+  iccid: String!
+  userId: String!
+  orderId: String!
+  status: String!
+  customerRef: String
+  assignedDate: String
+  activationCode: String
+  qrCodeUrl: String
+  smdpAddress: String
+  matchingId: String
+  lastAction: String
+  actionDate: String
+  createdAt: String!
+  updatedAt: String
+  apiDetails: JSON
+  usage: ESIMUsage
+  order: Order
 }
 
 # eSIM Operations

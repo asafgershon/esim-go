@@ -16,8 +16,8 @@ export const feeApplicationStep: PipelineStep = {
     const feeRules = filterRulesByCategory(rules, RuleCategory.Fee);
     const appliedRuleIds: string[] = [];
     
-    const priceBeforeFees = dot.pick("state.pricing.priceAfterDiscount", state) || 0;
-    const processingCostBefore = dot.pick("state.pricing.processingCost", state) || 0;
+    const priceBeforeFees = dot.pick("response.pricing.priceAfterDiscount", state) || 0;
+    const processingCostBefore = dot.pick("response.pricing.processingCost", state) || 0;
     
     const newState = produce(state, draft => {
       feeRules.forEach(rule => {
@@ -28,18 +28,15 @@ export const feeApplicationStep: PipelineStep = {
       });
       
       // Update final revenue based on current pricing - directly mutate draft
-      if (draft.state && draft.state.pricing) {
+      if (draft.response && draft.response.pricing) {
         // finalRevenue = what customer pays (before processing fee deduction)
-        draft.state.pricing.finalRevenue = draft.state.pricing.priceAfterDiscount;
-        
-        // Update response as well
-        draft.response.pricing = draft.state.pricing;
+        draft.response.pricing.finalRevenue = draft.response.pricing.priceAfterDiscount;
       }
     });
     
-    const finalPrice = dot.pick("state.pricing.finalRevenue", newState) || 0;
-    const totalFees = dot.pick("state.pricing.processingCost", newState) || 0;
-    const processingRate = dot.pick("state.pricing.processingRate", newState) || 0;
+    const finalPrice = dot.pick("response.pricing.finalRevenue", newState) || 0;
+    const totalFees = dot.pick("response.pricing.processingCost", newState) || 0;
+    const processingRate = dot.pick("response.pricing.processingRate", newState) || 0;
     
     return {
       name: "APPLY_FEES",

@@ -38,6 +38,67 @@ export type ActivateEsimResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type AdminEsim = {
+  __typename?: 'AdminESIM';
+  actionDate?: Maybe<Scalars['String']['output']>;
+  activationCode?: Maybe<Scalars['String']['output']>;
+  apiStatus?: Maybe<Scalars['String']['output']>;
+  assignedDate?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  customerRef?: Maybe<Scalars['String']['output']>;
+  esim_bundles?: Maybe<Array<Maybe<Scalars['JSON']['output']>>>;
+  iccid: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  lastAction?: Maybe<Scalars['String']['output']>;
+  matchingId?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<AdminEsimOrder>;
+  orderId: Scalars['String']['output'];
+  qrCodeUrl?: Maybe<Scalars['String']['output']>;
+  smdpAddress?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  usage?: Maybe<EsimUsage>;
+  user?: Maybe<AdminEsimUser>;
+  userId: Scalars['String']['output'];
+};
+
+export type AdminEsimDetails = {
+  __typename?: 'AdminESIMDetails';
+  actionDate?: Maybe<Scalars['String']['output']>;
+  activationCode?: Maybe<Scalars['String']['output']>;
+  apiDetails?: Maybe<Scalars['JSON']['output']>;
+  assignedDate?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  customerRef?: Maybe<Scalars['String']['output']>;
+  iccid: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  lastAction?: Maybe<Scalars['String']['output']>;
+  matchingId?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<Order>;
+  orderId: Scalars['String']['output'];
+  qrCodeUrl?: Maybe<Scalars['String']['output']>;
+  smdpAddress?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  usage?: Maybe<EsimUsage>;
+  userId: Scalars['String']['output'];
+};
+
+export type AdminEsimOrder = {
+  __typename?: 'AdminESIMOrder';
+  bundleName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  reference: Scalars['String']['output'];
+};
+
+export type AdminEsimUser = {
+  __typename?: 'AdminESIMUser';
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  lastName?: Maybe<Scalars['String']['output']>;
+};
+
 export type AppliedRule = {
   __typename?: 'AppliedRule';
   category: RuleCategory;
@@ -1141,7 +1202,10 @@ export type Query = {
   conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   esimDetails?: Maybe<Esim>;
+  getAdminESIMDetails: AdminEsimDetails;
+  getAllESIMs: Array<AdminEsim>;
   getCheckoutSession: GetCheckoutSessionResponse;
+  getCustomerESIMs: Array<AdminEsim>;
   getUserOrders: Array<Order>;
   hello: Scalars['String']['output'];
   highDemandCountries: Array<Scalars['String']['output']>;
@@ -1235,8 +1299,18 @@ export type QueryEsimDetailsArgs = {
 };
 
 
+export type QueryGetAdminEsimDetailsArgs = {
+  iccid: Scalars['String']['input'];
+};
+
+
 export type QueryGetCheckoutSessionArgs = {
   token: Scalars['String']['input'];
+};
+
+
+export type QueryGetCustomerEsiMsArgs = {
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -1630,6 +1704,10 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
 export type ResolversTypes = {
   ActionType: ActionType;
   ActivateESIMResponse: ResolverTypeWrapper<ActivateEsimResponse>;
+  AdminESIM: ResolverTypeWrapper<AdminEsim>;
+  AdminESIMDetails: ResolverTypeWrapper<AdminEsimDetails>;
+  AdminESIMOrder: ResolverTypeWrapper<AdminEsimOrder>;
+  AdminESIMUser: ResolverTypeWrapper<AdminEsimUser>;
   AppliedRule: ResolverTypeWrapper<AppliedRule>;
   AssignPackageResponse: ResolverTypeWrapper<AssignPackageResponse>;
   AssignmentStatus: AssignmentStatus;
@@ -1757,6 +1835,10 @@ export type ResolversTypes = {
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
   ActivateESIMResponse: ActivateEsimResponse;
+  AdminESIM: AdminEsim;
+  AdminESIMDetails: AdminEsimDetails;
+  AdminESIMOrder: AdminEsimOrder;
+  AdminESIMUser: AdminEsimUser;
   AppliedRule: AppliedRule;
   AssignPackageResponse: AssignPackageResponse;
   Boolean: Scalars['Boolean']['output'];
@@ -1875,6 +1957,67 @@ export type ActivateEsimResponseResolvers<ContextType = Context, ParentType exte
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   esim?: Resolver<Maybe<ResolversTypes['ESIM']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AdminEsimResolvers<ContextType = Context, ParentType extends ResolversParentTypes['AdminESIM'] = ResolversParentTypes['AdminESIM']> = {
+  actionDate?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  activationCode?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  apiStatus?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  assignedDate?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  customerRef?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  esim_bundles?: Resolver<Maybe<Array<Maybe<ResolversTypes['JSON']>>>, ParentType, ContextType>;
+  iccid?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  lastAction?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  matchingId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  order?: Resolver<Maybe<ResolversTypes['AdminESIMOrder']>, ParentType, ContextType>;
+  orderId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  qrCodeUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  smdpAddress?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  usage?: Resolver<Maybe<ResolversTypes['ESIMUsage']>, ParentType, ContextType>;
+  user?: Resolver<Maybe<ResolversTypes['AdminESIMUser']>, ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AdminEsimDetailsResolvers<ContextType = Context, ParentType extends ResolversParentTypes['AdminESIMDetails'] = ResolversParentTypes['AdminESIMDetails']> = {
+  actionDate?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  activationCode?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  apiDetails?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  assignedDate?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  customerRef?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  iccid?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  lastAction?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  matchingId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  order?: Resolver<Maybe<ResolversTypes['Order']>, ParentType, ContextType>;
+  orderId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  qrCodeUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  smdpAddress?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  usage?: Resolver<Maybe<ResolversTypes['ESIMUsage']>, ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AdminEsimOrderResolvers<ContextType = Context, ParentType extends ResolversParentTypes['AdminESIMOrder'] = ResolversParentTypes['AdminESIMOrder']> = {
+  bundleName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  reference?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AdminEsimUserResolvers<ContextType = Context, ParentType extends ResolversParentTypes['AdminESIMUser'] = ResolversParentTypes['AdminESIMUser']> = {
+  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  firstName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  lastName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2575,7 +2718,10 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   conflictingPricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<QueryConflictingPricingRulesArgs, 'ruleId'>>;
   countries?: Resolver<Array<ResolversTypes['Country']>, ParentType, ContextType>;
   esimDetails?: Resolver<Maybe<ResolversTypes['ESIM']>, ParentType, ContextType, RequireFields<QueryEsimDetailsArgs, 'id'>>;
+  getAdminESIMDetails?: Resolver<ResolversTypes['AdminESIMDetails'], ParentType, ContextType, RequireFields<QueryGetAdminEsimDetailsArgs, 'iccid'>>;
+  getAllESIMs?: Resolver<Array<ResolversTypes['AdminESIM']>, ParentType, ContextType>;
   getCheckoutSession?: Resolver<ResolversTypes['GetCheckoutSessionResponse'], ParentType, ContextType, RequireFields<QueryGetCheckoutSessionArgs, 'token'>>;
+  getCustomerESIMs?: Resolver<Array<ResolversTypes['AdminESIM']>, ParentType, ContextType, RequireFields<QueryGetCustomerEsiMsArgs, 'userId'>>;
   getUserOrders?: Resolver<Array<ResolversTypes['Order']>, ParentType, ContextType, RequireFields<QueryGetUserOrdersArgs, 'userId'>>;
   hello?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   highDemandCountries?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
@@ -2717,6 +2863,10 @@ export type ValidateOrderResponseResolvers<ContextType = Context, ParentType ext
 
 export type Resolvers<ContextType = Context> = {
   ActivateESIMResponse?: ActivateEsimResponseResolvers<ContextType>;
+  AdminESIM?: AdminEsimResolvers<ContextType>;
+  AdminESIMDetails?: AdminEsimDetailsResolvers<ContextType>;
+  AdminESIMOrder?: AdminEsimOrderResolvers<ContextType>;
+  AdminESIMUser?: AdminEsimUserResolvers<ContextType>;
   AppliedRule?: AppliedRuleResolvers<ContextType>;
   AssignPackageResponse?: AssignPackageResponseResolvers<ContextType>;
   Bundle?: BundleResolvers<ContextType>;

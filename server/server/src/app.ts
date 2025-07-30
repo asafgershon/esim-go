@@ -8,7 +8,6 @@ import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHt
 import { ESimGoClient } from "@esim-go/client";
 import { mergeTypeDefs } from "@graphql-tools/merge";
 import { makeExecutableSchema } from "@graphql-tools/schema";
-import cors from "cors";
 import { cleanEnv, port, str } from "envalid";
 import express from "express";
 import type { Context as WSContext } from "graphql-ws";

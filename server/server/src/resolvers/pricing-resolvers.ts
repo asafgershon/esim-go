@@ -31,18 +31,19 @@ const mapPaymentMethodEnum = (paymentMethod: any): PaymentMethod => {
 
 // Helper function to generate correlation ID
 const generateCorrelationId = (): string => {
-  return `pricing-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `pricing-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 };
 
 // Helper function to normalize group names for consistency between bundles and rules
 const normalizeGroupName = (groupName: string): string => {
   if (!groupName) return "";
-  
-  // Convert "Standard Unlimited Essential" to "Standard - Unlimited Essential"
+
+  // Remove any hyphens and normalize whitespace
   // This ensures consistency between bundle data and rule conditions
   return groupName
+    .replace(/-/g, "") // Remove hyphens
     .replace(/\s+/g, " ") // Normalize whitespace
-    .replace(/^(Standard)\s+(Unlimited\s+\w+)$/, "$1 - $2"); // Add hyphen for Standard Unlimited patterns
+    .trim();
 };
 
 // Helper function to get correlation ID from context or generate new one
@@ -115,7 +116,7 @@ export async function calculatePricingForBundle(
     const engineInput: PricingEngineInput = {
       context: {
         bundles: [bundle],
-        costumer: {
+        customer: {
           id: context.auth?.user?.id || "anonymous",
           segment: "default",
         },
@@ -129,42 +130,30 @@ export async function calculatePricingForBundle(
       request: {
         duration: bundle.validityInDays,
         paymentMethod,
-        countryISO: bundle.countries?.[0],
-        region: bundle.region || "",
-        group: normalizeGroupName(bundle.groups?.[0] || ""),
-        dataType: bundle.isUnlimited ? "unlimited" : "fixed",
+        countryISO: bundle.countries?.[0] || "",
+        dataType: (bundle.isUnlimited ? "unlimited" : "fixed") as "unlimited" | "fixed",
       },
       metadata: {
         correlationId: finalCorrelationId,
+        timestamp: new Date(),
         userId: context.auth?.user?.id,
       },
     };
 
-    // DEBUG: Log the engine input to understand what fields are available for rule matching
-    console.log("🔍 DEBUG: Engine input for rule matching:", JSON.stringify({
-      bundleName: bundle.name,
-      bundleGroup: bundle.groups?.[0],
-      normalizedGroup: normalizeGroupName(bundle.groups?.[0] || ""),
-      duration: bundle.validityInDays,
-      isUnlimited: bundle.isUnlimited,
-      request: engineInput.request,
-      correlationId: finalCorrelationId,
-    }, null, 2));
 
     // Also log what will be available in the engine state structure
     logger.info("Engine input structure for field matching", {
       bundleName: bundle.name,
       bundleGroups: bundle.groups,
       normalizedGroup: normalizeGroupName(bundle.groups?.[0] || ""),
-      requestGroup: engineInput.request.group,
-      contextBundles: engineInput.context.bundles.map(b => ({
+      contextBundles: engineInput.context.bundles.map((b) => ({
         name: b.name,
         groups: b.groups,
         isUnlimited: b.isUnlimited,
-        validityInDays: b.validityInDays
+        validityInDays: b.validityInDays,
       })),
       correlationId: finalCorrelationId,
-      operationType: "engine-state-debug"
+      operationType: "engine-state-debug",
     });
 
     // 5. Calculate pricing
@@ -195,9 +184,9 @@ function mapEngineToPricingBreakdown(
   // Log basic engine output structure for debugging
   logger.debug("Engine output structure", {
     hasResponse: !!engineOutput.response,
-    hasState: !!engineOutput.state,
-    appliedRulesCount: engineOutput.response?.rules?.length || 0,
-    stepsCount: engineOutput.state?.steps?.length || 0,
+    hasProcessing: !!engineOutput.processing,
+    appliedRulesCount: engineOutput.response?.appliedRules?.length || 0,
+    stepsCount: engineOutput.processing?.steps?.length || 0,
     operationType: "engine-output-summary",
   });
 
@@ -205,8 +194,8 @@ function mapEngineToPricingBreakdown(
   const selectedBundle = engineOutput.response.selectedBundle;
 
   // Extract bundle selection reason from pipeline steps
-  const bundleSelectionStep = engineOutput.state.steps?.find(
-    (step) => step.name === "BUNDLE_SELECTION"
+  const bundleSelectionStep = engineOutput.processing.steps?.find(
+    (step: any) => step.name === "BUNDLE_SELECTION"
   );
   const selectedReason = bundleSelectionStep?.debug?.reason || "calculated";
 
@@ -275,39 +264,39 @@ function mapEngineToPricingBreakdown(
     // Rule-based pricing breakdown - Admin only
     appliedRules: (() => {
       // Get applied rules from the engine response (this is where the engine places them)
-      const rules = engineOutput.response?.rules || [];
-      
-      // DEBUG: Log the rules we found
-      console.log("🔍 DEBUG: Applied rules in response.rules:", JSON.stringify(rules, null, 2));
+      const rules = engineOutput.response?.appliedRules || [];
+
       logger.info("Applied rules mapping", {
         rulesCount: rules.length,
-        ruleNames: rules.map(r => r.name || 'Unknown'),
-        ruleCategories: rules.map(r => r.category || 'Unknown'),
-        operationType: "applied-rules-mapping"
+        ruleNames: rules.map((r: PricingRule) => r.name || "Unknown"),
+        ruleCategories: rules.map((r: PricingRule) => r.category || "Unknown"),
+        operationType: "applied-rules-mapping",
       });
-      
+
       // Calculate impact for each rule based on its actions
-      return rules.map((rule) => {
+      return rules.map((rule: PricingRule) => {
         let impact = 0;
-        
+
         // Calculate impact from rule actions
         if (rule.actions) {
           for (const action of rule.actions) {
             switch (action.type) {
-              case 'ADD_MARKUP':
+              case "ADD_MARKUP":
                 impact += action.value || 0;
                 break;
-              case 'APPLY_DISCOUNT_PERCENTAGE':
+              case "APPLY_DISCOUNT_PERCENTAGE":
                 // Negative impact for discounts
                 impact -= action.value || 0;
                 break;
-              case 'APPLY_FIXED_DISCOUNT':
+              case "APPLY_FIXED_DISCOUNT":
                 // Negative impact for fixed discounts
                 impact -= action.value || 0;
                 break;
-              case 'SET_PROCESSING_RATE':
+              case "SET_PROCESSING_RATE":
                 // Processing rate impact (calculated as percentage of total)
-                impact += (pricing?.priceAfterDiscount || 0) * (action.value || 0) / 100;
+                impact +=
+                  ((pricing?.priceAfterDiscount || 0) * (action.value || 0)) /
+                  100;
                 break;
               default:
                 // For other action types, use the value as-is
@@ -315,7 +304,7 @@ function mapEngineToPricingBreakdown(
             }
           }
         }
-        
+
         return {
           id: rule.id,
           name: rule.name,
@@ -338,45 +327,48 @@ function mapEngineToPricingBreakdown(
 
     // Additional pricing engine fields - Admin only
     totalCostBeforeProcessing: pricing?.priceAfterDiscount || 0, // Price before processing fees
-    
+
     // Internal field used by field resolvers - cache the pricing calculation data
     _pricingCalculation: {
-      appliedRules: engineOutput.response?.rules?.map((rule) => {
-        let impact = 0;
-        
-        // Calculate impact from rule actions
-        if (rule.actions) {
-          for (const action of rule.actions) {
-            switch (action.type) {
-              case 'ADD_MARKUP':
-                impact += action.value || 0;
-                break;
-              case 'APPLY_DISCOUNT_PERCENTAGE':
-                // Negative impact for discounts
-                impact -= action.value || 0;
-                break;
-              case 'APPLY_FIXED_DISCOUNT':
-                // Negative impact for fixed discounts
-                impact -= action.value || 0;
-                break;
-              case 'SET_PROCESSING_RATE':
-                // Processing rate impact (calculated as percentage of total)
-                impact += (pricing?.priceAfterDiscount || 0) * (action.value || 0) / 100;
-                break;
-              default:
-                // For other action types, use the value as-is
-                impact += action.value || 0;
+      appliedRules:
+        engineOutput.response?.appliedRules?.map((rule: PricingRule) => {
+          let impact = 0;
+
+          // Calculate impact from rule actions
+          if (rule.actions) {
+            for (const action of rule.actions) {
+              switch (action.type) {
+                case "ADD_MARKUP":
+                  impact += action.value || 0;
+                  break;
+                case "APPLY_DISCOUNT_PERCENTAGE":
+                  // Negative impact for discounts
+                  impact -= action.value || 0;
+                  break;
+                case "APPLY_FIXED_DISCOUNT":
+                  // Negative impact for fixed discounts
+                  impact -= action.value || 0;
+                  break;
+                case "SET_PROCESSING_RATE":
+                  // Processing rate impact (calculated as percentage of total)
+                  impact +=
+                    ((pricing?.priceAfterDiscount || 0) * (action.value || 0)) /
+                    100;
+                  break;
+                default:
+                  // For other action types, use the value as-is
+                  impact += action.value || 0;
+              }
             }
           }
-        }
-        
-        return {
-          id: rule.id,
-          name: rule.name,
-          category: rule.category,
-          impact: Math.round(impact * 100) / 100, // Round to 2 decimal places
-        };
-      }) || [],
+
+          return {
+            id: rule.id,
+            name: rule.name,
+            category: rule.category,
+            impact: Math.round(impact * 100) / 100, // Round to 2 decimal places
+          };
+        }) || [],
       discounts: pricing.discounts || [],
     },
   } as PricingBreakdown;
@@ -462,28 +454,23 @@ export const pricingQueries: QueryResolvers = {
       }
 
       // 2. Convert catalog bundles to GraphQL Bundle format
-      const bundles: Bundle[] = catalogResponse.data.map(
+      const bundles = catalogResponse.data.map(
         (catalogBundle) =>
           ({
-            __typename: "CatalogBundle",
-            esimGoName: catalogBundle.esim_go_name || "",
             name: catalogBundle.esim_go_name || "Unknown Bundle",
             description: catalogBundle.description,
             groups: catalogBundle.groups || [],
             validityInDays: catalogBundle.validity_in_days || 1,
             dataAmountMB: catalogBundle.data_amount_mb,
             dataAmountReadable: catalogBundle.data_amount_readable || "Unknown",
-            isUnlimited: catalogBundle.is_unlimited || false,
+            isUnlimited: Boolean(catalogBundle.is_unlimited),
             countries: [countryId],
             region: catalogBundle.region,
             speed: [],
             basePrice: catalogBundle.price || 0,
             currency: "USD",
-            createdAt: catalogBundle.created_at,
-            updatedAt: catalogBundle.updated_at,
-            syncedAt: catalogBundle.synced_at,
             pricingBreakdown: undefined,
-          } as any)
+          } satisfies Bundle)
       );
 
       // 3. Get active rules and configure engine
@@ -499,21 +486,6 @@ export const pricingQueries: QueryResolvers = {
         operationType: "calculate-price-debug",
       });
 
-      // Log bundle details
-      if (bundles.length > 0) {
-        const firstBundle = bundles[0];
-        logger.info("DEBUG: First bundle details", {
-          correlationId,
-          bundleName: firstBundle?.name,
-          bundleGroups: firstBundle?.groups,
-          basePrice: firstBundle?.basePrice,
-          validityInDays: firstBundle?.validityInDays,
-          isUnlimited: firstBundle?.isUnlimited,
-          operationType: "bundle-debug",
-        });
-      }
-
-
       pricingEngine.clearRules();
       pricingEngine.addRules(rules);
 
@@ -521,7 +493,7 @@ export const pricingQueries: QueryResolvers = {
       const engineInput: PricingEngineInput = {
         context: {
           bundles,
-          costumer: {
+          customer: {
             id: context.auth?.user?.id || "anonymous",
             segment: "default",
           },
@@ -535,17 +507,15 @@ export const pricingQueries: QueryResolvers = {
         request: {
           duration: numOfDays,
           paymentMethod: mapPaymentMethodEnum(paymentMethod),
-          countryISO: countryId,
-          region: regionId || "",
-          group: groups?.[0] || "",
-          dataType: undefined,
+          countryISO: countryId || "",
+          dataType: (groups?.map(g=>g.toLowerCase().includes('unlimited'))?.includes(true) || false) ? "unlimited" : "fixed" as "unlimited" | "fixed",
         },
         metadata: {
           correlationId,
+          timestamp: new Date(),
           userId: context.auth?.user?.id,
         },
       };
-
 
       // 5. Let engine select best bundle and calculate pricing
       const result = await pricingEngine.calculatePrice(engineInput);
@@ -555,9 +525,9 @@ export const pricingQueries: QueryResolvers = {
         correlationId,
         selectedBundleName: result.response.selectedBundle?.name,
         selectedBundleGroups: result.response.selectedBundle?.groups,
-        stateGroup: result.state.group,
-        appliedRulesCount: result.response.rules?.length || 0,
-        appliedRuleNames: result.response.rules?.map((r) => r.name) || [],
+        processingGroup: result.processing.group,
+        appliedRulesCount: result.response.appliedRules?.length || 0,
+        appliedRuleNames: result.response.appliedRules?.map((r: PricingRule) => r.name) || [],
         pricing: {
           cost: result.response.pricing?.cost,
           markup: result.response.pricing?.markup,
@@ -679,7 +649,7 @@ export const pricingQueries: QueryResolvers = {
                 dataAmountMB: b.data_amount_mb,
               };
             }),
-            costumer: {
+            customer: {
               id: context.auth?.user?.id || "anonymous",
               segment: "default",
             },
@@ -694,12 +664,14 @@ export const pricingQueries: QueryResolvers = {
             duration: input.numOfDays,
             paymentMethod: mapPaymentMethodEnum(input.paymentMethod),
             countryISO: input.countryId || "",
-            region: input.regionId || "",
-            group: input.groups?.[0] || "",
-            dataType: undefined,
+            dataType: (input.groups?.includes("Standard Unlimited Essential") || 
+                       input.groups?.includes("Standard Unlimited Plus") || 
+                       input.groups?.includes("Standard Unlimited Lite")) 
+                       ? "unlimited" : "fixed" as "unlimited" | "fixed",
           },
           metadata: {
             correlationId: `${correlationId}-${results.length}`,
+            timestamp: new Date(),
             userId: context.auth?.user?.id,
           },
         };
@@ -825,7 +797,7 @@ export const pricingQueries: QueryResolvers = {
               dataAmountMB: b.data_amount_mb,
             };
           }),
-          costumer: {
+          customer: {
             id: context.auth?.user?.id || "anonymous",
             segment: "default",
           },
@@ -840,12 +812,11 @@ export const pricingQueries: QueryResolvers = {
           duration: input.numOfDays,
           paymentMethod: mapPaymentMethodEnum(input.paymentMethod),
           countryISO: input.countryId || "",
-          region: undefined,
-          group: "",
-          dataType: undefined,
+          dataType: "unlimited" as "unlimited" | "fixed",
         },
         metadata: {
           correlationId,
+          timestamp: new Date(),
           userId: context.auth?.user?.id,
           isSimulation: true,
         },
@@ -857,7 +828,7 @@ export const pricingQueries: QueryResolvers = {
       logger.info("Pricing rule simulation completed (admin)", {
         ruleName: rule.name,
         finalPrice: pricingBreakdown.priceAfterDiscount,
-        appliedRules: result.response.rules?.length || 0,
+        appliedRules: result.response.appliedRules?.length || 0,
         correlationId,
         operationType: "simulate-pricing-rule",
       });

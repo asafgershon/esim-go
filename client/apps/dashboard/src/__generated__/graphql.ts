@@ -36,6 +36,67 @@ export type ActivateEsimResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type AdminEsim = {
+  __typename?: 'AdminESIM';
+  actionDate?: Maybe<Scalars['String']['output']>;
+  activationCode?: Maybe<Scalars['String']['output']>;
+  apiStatus?: Maybe<Scalars['String']['output']>;
+  assignedDate?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  customerRef?: Maybe<Scalars['String']['output']>;
+  esim_bundles?: Maybe<Array<Maybe<Scalars['JSON']['output']>>>;
+  iccid: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  lastAction?: Maybe<Scalars['String']['output']>;
+  matchingId?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<AdminEsimOrder>;
+  orderId: Scalars['String']['output'];
+  qrCodeUrl?: Maybe<Scalars['String']['output']>;
+  smdpAddress?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  usage?: Maybe<EsimUsage>;
+  user?: Maybe<AdminEsimUser>;
+  userId: Scalars['String']['output'];
+};
+
+export type AdminEsimDetails = {
+  __typename?: 'AdminESIMDetails';
+  actionDate?: Maybe<Scalars['String']['output']>;
+  activationCode?: Maybe<Scalars['String']['output']>;
+  apiDetails?: Maybe<Scalars['JSON']['output']>;
+  assignedDate?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  customerRef?: Maybe<Scalars['String']['output']>;
+  iccid: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  lastAction?: Maybe<Scalars['String']['output']>;
+  matchingId?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<Order>;
+  orderId: Scalars['String']['output'];
+  qrCodeUrl?: Maybe<Scalars['String']['output']>;
+  smdpAddress?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  usage?: Maybe<EsimUsage>;
+  userId: Scalars['String']['output'];
+};
+
+export type AdminEsimOrder = {
+  __typename?: 'AdminESIMOrder';
+  bundleName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  reference: Scalars['String']['output'];
+};
+
+export type AdminEsimUser = {
+  __typename?: 'AdminESIMUser';
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  lastName?: Maybe<Scalars['String']['output']>;
+};
+
 export type AppliedRule = {
   __typename?: 'AppliedRule';
   category: RuleCategory;
@@ -384,6 +445,7 @@ export type CountryBundle = {
 
 export type CreateCheckoutSessionInput = {
   countryId?: InputMaybe<Scalars['String']['input']>;
+  group?: InputMaybe<Scalars['String']['input']>;
   numOfDays: Scalars['Int']['input'];
   regionId?: InputMaybe<Scalars['String']['input']>;
 };
@@ -506,6 +568,7 @@ export type Esim = {
   customerRef?: Maybe<Scalars['String']['output']>;
   iccid: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  installationLinks?: Maybe<InstallationLinks>;
   lastAction?: Maybe<Scalars['String']['output']>;
   matchingId?: Maybe<Scalars['String']['output']>;
   order: Order;
@@ -586,6 +649,18 @@ export type GroupDataStats = {
   unlimited: Scalars['Int']['output'];
 };
 
+export type InstallationLinks = {
+  __typename?: 'InstallationLinks';
+  /** LPA scheme for Android/Windows direct activation */
+  lpaScheme: Scalars['String']['output'];
+  /** Manual entry components for all devices */
+  manual: ManualInstallation;
+  /** QR code data string (LPA format) for fallback */
+  qrCodeData: Scalars['String']['output'];
+  /** iOS 17.4+ direct activation link (no QR scanning needed) */
+  universalLink: Scalars['String']['output'];
+};
+
 export type IntRange = {
   max?: InputMaybe<Scalars['Int']['input']>;
   min?: InputMaybe<Scalars['Int']['input']>;
@@ -602,6 +677,16 @@ export type InviteAdminUserResponse = {
   error?: Maybe<Scalars['String']['output']>;
   invitedEmail?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type ManualInstallation = {
+  __typename?: 'ManualInstallation';
+  /** Activation code */
+  activationCode: Scalars['String']['output'];
+  /** Optional confirmation code */
+  confirmationCode?: Maybe<Scalars['String']['output']>;
+  /** SM-DP+ server address */
+  smDpAddress: Scalars['String']['output'];
 };
 
 export type Mutation = {
@@ -1115,7 +1200,10 @@ export type Query = {
   conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   esimDetails?: Maybe<Esim>;
+  getAdminESIMDetails: AdminEsimDetails;
+  getAllESIMs: Array<AdminEsim>;
   getCheckoutSession: GetCheckoutSessionResponse;
+  getCustomerESIMs: Array<AdminEsim>;
   getUserOrders: Array<Order>;
   hello: Scalars['String']['output'];
   highDemandCountries: Array<Scalars['String']['output']>;
@@ -1209,8 +1297,18 @@ export type QueryEsimDetailsArgs = {
 };
 
 
+export type QueryGetAdminEsimDetailsArgs = {
+  iccid: Scalars['String']['input'];
+};
+
+
 export type QueryGetCheckoutSessionArgs = {
   token: Scalars['String']['input'];
+};
+
+
+export type QueryGetCustomerEsiMsArgs = {
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -1532,6 +1630,27 @@ export type CatalogSyncProgressSubscriptionVariables = Exact<{ [key: string]: ne
 
 export type CatalogSyncProgressSubscription = { __typename?: 'Subscription', catalogSyncProgress: { __typename?: 'CatalogSyncProgressUpdate', jobId: string, jobType: SyncJobType, status: SyncJobStatus, bundleGroup?: string | null, countryId?: string | null, bundlesProcessed: number, bundlesAdded: number, bundlesUpdated: number, totalBundles?: number | null, progress: number, message?: string | null, errorMessage?: string | null, startedAt: string, updatedAt: string } };
 
+export type GetAdminEsimDetailsQueryVariables = Exact<{
+  iccid: Scalars['String']['input'];
+}>;
+
+
+export type GetAdminEsimDetailsQuery = { __typename?: 'Query', getAdminESIMDetails: { __typename?: 'AdminESIMDetails', id: string, iccid: string, userId: string, orderId: string, status: string, customerRef?: string | null, assignedDate?: string | null, activationCode?: string | null, qrCodeUrl?: string | null, smdpAddress?: string | null, matchingId?: string | null, lastAction?: string | null, actionDate?: string | null, createdAt: string, updatedAt?: string | null, apiDetails?: any | null, usage?: { __typename?: 'ESIMUsage', totalUsed: number, totalRemaining?: number | null, activeBundles: Array<{ __typename?: 'ESIMBundle', id: string, name: string, state: BundleState, dataUsed: number, dataRemaining?: number | null, startDate?: string | null, endDate?: string | null }> } | null, order?: { __typename?: 'Order', id: string, reference: string, status: OrderStatus, bundleName?: string | null, totalPrice: number, createdAt: string } | null } };
+
+export type GetOrderDetailsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetOrderDetailsQuery = { __typename?: 'Query', orderDetails?: { __typename?: 'Order', id: string, reference: string, status: OrderStatus, quantity: number, totalPrice: number, createdAt: string, updatedAt: string, bundleId?: string | null, bundleName?: string | null, user?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, role: string } | null, esims: Array<{ __typename?: 'ESIM', id: string, iccid: string, status: EsimStatus, qrCode?: string | null, smdpAddress?: string | null, matchingId?: string | null, customerRef?: string | null, assignedDate?: string | null, lastAction?: string | null, actionDate?: string | null, createdAt: string, installationLinks?: { __typename?: 'InstallationLinks', universalLink: string, lpaScheme: string } | null }> } | null };
+
+export type GetCustomerEsiMsQueryVariables = Exact<{
+  userId: Scalars['ID']['input'];
+}>;
+
+
+export type GetCustomerEsiMsQuery = { __typename?: 'Query', getCustomerESIMs: Array<{ __typename?: 'AdminESIM', id: string, iccid: string, status: string, apiStatus?: string | null, customerRef?: string | null, assignedDate?: string | null, lastAction?: string | null, actionDate?: string | null, createdAt: string, esim_bundles?: Array<any | null> | null, usage?: { __typename?: 'ESIMUsage', totalUsed: number, totalRemaining?: number | null } | null }> };
+
 export type GetPaymentMethodsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1778,8 +1897,16 @@ export type GetBundlesQueryVariables = Exact<{
 
 export type GetBundlesQuery = { __typename?: 'Query', bundles: { __typename?: 'BundleConnection', totalCount: number, nodes: Array<{ __typename?: 'CatalogBundle', esimGoName: string, name: string, description?: string | null, groups: Array<string>, validityInDays: number, dataAmountMB?: number | null, dataAmountReadable: string, isUnlimited: boolean, countries: Array<string>, region?: string | null, basePrice: number, currency: string, createdAt: any, updatedAt: any, syncedAt: any } | { __typename?: 'CustomerBundle' }>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, hasPreviousPage: boolean } } };
 
+export type GetAllEsiMsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetAllEsiMsQuery = { __typename?: 'Query', getAllESIMs: Array<{ __typename?: 'AdminESIM', id: string, iccid: string, status: string, apiStatus?: string | null, userId: string, orderId: string, customerRef?: string | null, assignedDate?: string | null, lastAction?: string | null, actionDate?: string | null, createdAt: string, updatedAt?: string | null, user?: { __typename?: 'AdminESIMUser', id: string, email?: string | null, firstName?: string | null, lastName?: string | null } | null, order?: { __typename?: 'AdminESIMOrder', id: string, reference: string, bundleName?: string | null } | null, usage?: { __typename?: 'ESIMUsage', totalUsed: number, totalRemaining?: number | null } | null }> };
+
 
 export const CatalogSyncProgressDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"CatalogSyncProgress"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"catalogSyncProgress"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"jobId"}},{"kind":"Field","name":{"kind":"Name","value":"jobType"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"bundleGroup"}},{"kind":"Field","name":{"kind":"Name","value":"countryId"}},{"kind":"Field","name":{"kind":"Name","value":"bundlesProcessed"}},{"kind":"Field","name":{"kind":"Name","value":"bundlesAdded"}},{"kind":"Field","name":{"kind":"Name","value":"bundlesUpdated"}},{"kind":"Field","name":{"kind":"Name","value":"totalBundles"}},{"kind":"Field","name":{"kind":"Name","value":"progress"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"errorMessage"}},{"kind":"Field","name":{"kind":"Name","value":"startedAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<CatalogSyncProgressSubscription, CatalogSyncProgressSubscriptionVariables>;
+export const GetAdminEsimDetailsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAdminESIMDetails"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"iccid"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getAdminESIMDetails"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"iccid"},"value":{"kind":"Variable","name":{"kind":"Name","value":"iccid"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"iccid"}},{"kind":"Field","name":{"kind":"Name","value":"userId"}},{"kind":"Field","name":{"kind":"Name","value":"orderId"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"customerRef"}},{"kind":"Field","name":{"kind":"Name","value":"assignedDate"}},{"kind":"Field","name":{"kind":"Name","value":"activationCode"}},{"kind":"Field","name":{"kind":"Name","value":"qrCodeUrl"}},{"kind":"Field","name":{"kind":"Name","value":"smdpAddress"}},{"kind":"Field","name":{"kind":"Name","value":"matchingId"}},{"kind":"Field","name":{"kind":"Name","value":"lastAction"}},{"kind":"Field","name":{"kind":"Name","value":"actionDate"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"apiDetails"}},{"kind":"Field","name":{"kind":"Name","value":"usage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalUsed"}},{"kind":"Field","name":{"kind":"Name","value":"totalRemaining"}},{"kind":"Field","name":{"kind":"Name","value":"activeBundles"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"state"}},{"kind":"Field","name":{"kind":"Name","value":"dataUsed"}},{"kind":"Field","name":{"kind":"Name","value":"dataRemaining"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"order"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"reference"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"bundleName"}},{"kind":"Field","name":{"kind":"Name","value":"totalPrice"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]}}]} as unknown as DocumentNode<GetAdminEsimDetailsQuery, GetAdminEsimDetailsQueryVariables>;
+export const GetOrderDetailsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetOrderDetails"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"orderDetails"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"reference"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"totalPrice"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"bundleId"}},{"kind":"Field","name":{"kind":"Name","value":"bundleName"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"role"}}]}},{"kind":"Field","name":{"kind":"Name","value":"esims"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"iccid"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"qrCode"}},{"kind":"Field","name":{"kind":"Name","value":"smdpAddress"}},{"kind":"Field","name":{"kind":"Name","value":"matchingId"}},{"kind":"Field","name":{"kind":"Name","value":"customerRef"}},{"kind":"Field","name":{"kind":"Name","value":"assignedDate"}},{"kind":"Field","name":{"kind":"Name","value":"lastAction"}},{"kind":"Field","name":{"kind":"Name","value":"actionDate"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"installationLinks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"universalLink"}},{"kind":"Field","name":{"kind":"Name","value":"lpaScheme"}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetOrderDetailsQuery, GetOrderDetailsQueryVariables>;
+export const GetCustomerEsiMsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCustomerESIMs"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getCustomerESIMs"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"iccid"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"apiStatus"}},{"kind":"Field","name":{"kind":"Name","value":"customerRef"}},{"kind":"Field","name":{"kind":"Name","value":"assignedDate"}},{"kind":"Field","name":{"kind":"Name","value":"lastAction"}},{"kind":"Field","name":{"kind":"Name","value":"actionDate"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"usage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalUsed"}},{"kind":"Field","name":{"kind":"Name","value":"totalRemaining"}}]}},{"kind":"Field","name":{"kind":"Name","value":"esim_bundles"}}]}}]}}]} as unknown as DocumentNode<GetCustomerEsiMsQuery, GetCustomerEsiMsQueryVariables>;
 export const GetPaymentMethodsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPaymentMethods"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"paymentMethods"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"processingRate"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}}]}}]}}]} as unknown as DocumentNode<GetPaymentMethodsQuery, GetPaymentMethodsQueryVariables>;
 export const GetPricingRulesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPricingRules"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"PricingRuleFilter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pricingRules"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"filter"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"operator"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"actions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}}]}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"isEditable"}},{"kind":"Field","name":{"kind":"Name","value":"validFrom"}},{"kind":"Field","name":{"kind":"Name","value":"validUntil"}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetPricingRulesQuery, GetPricingRulesQueryVariables>;
 export const CreatePricingRuleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreatePricingRule"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreatePricingRuleInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createPricingRule"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"operator"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"actions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}}]}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"isEditable"}},{"kind":"Field","name":{"kind":"Name","value":"validFrom"}},{"kind":"Field","name":{"kind":"Name","value":"validUntil"}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<CreatePricingRuleMutation, CreatePricingRuleMutationVariables>;
@@ -1817,3 +1944,4 @@ export const ToggleHighDemandCountryDocument = {"kind":"Document","definitions":
 export const GetCatalogSyncHistoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCatalogSyncHistory"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"params"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"SyncHistoryParams"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"catalogSyncHistory"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"params"},"value":{"kind":"Variable","name":{"kind":"Name","value":"params"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"jobs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"jobType"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"group"}},{"kind":"Field","name":{"kind":"Name","value":"countryId"}},{"kind":"Field","name":{"kind":"Name","value":"bundlesProcessed"}},{"kind":"Field","name":{"kind":"Name","value":"bundlesAdded"}},{"kind":"Field","name":{"kind":"Name","value":"bundlesUpdated"}},{"kind":"Field","name":{"kind":"Name","value":"errorMessage"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"startedAt"}},{"kind":"Field","name":{"kind":"Name","value":"completedAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}}]}}]}}]} as unknown as DocumentNode<GetCatalogSyncHistoryQuery, GetCatalogSyncHistoryQueryVariables>;
 export const TriggerCatalogSyncDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"TriggerCatalogSync"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"params"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TriggerSyncParams"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"triggerCatalogSync"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"params"},"value":{"kind":"Variable","name":{"kind":"Name","value":"params"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"jobId"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"conflictingJob"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"jobType"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"startedAt"}}]}}]}}]}}]} as unknown as DocumentNode<TriggerCatalogSyncMutation, TriggerCatalogSyncMutationVariables>;
 export const GetBundlesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetBundles"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"BundleFilter"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"pagination"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"PaginationInput"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bundles"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"filter"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}},{"kind":"Argument","name":{"kind":"Name","value":"pagination"},"value":{"kind":"Variable","name":{"kind":"Name","value":"pagination"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"nodes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"CatalogBundle"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"esimGoName"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"groups"}},{"kind":"Field","name":{"kind":"Name","value":"validityInDays"}},{"kind":"Field","name":{"kind":"Name","value":"dataAmountMB"}},{"kind":"Field","name":{"kind":"Name","value":"dataAmountReadable"}},{"kind":"Field","name":{"kind":"Name","value":"isUnlimited"}},{"kind":"Field","name":{"kind":"Name","value":"countries"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"basePrice"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"syncedAt"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasPreviousPage"}}]}}]}}]}}]} as unknown as DocumentNode<GetBundlesQuery, GetBundlesQueryVariables>;
+export const GetAllEsiMsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAllESIMs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getAllESIMs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"iccid"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"apiStatus"}},{"kind":"Field","name":{"kind":"Name","value":"userId"}},{"kind":"Field","name":{"kind":"Name","value":"orderId"}},{"kind":"Field","name":{"kind":"Name","value":"customerRef"}},{"kind":"Field","name":{"kind":"Name","value":"assignedDate"}},{"kind":"Field","name":{"kind":"Name","value":"lastAction"}},{"kind":"Field","name":{"kind":"Name","value":"actionDate"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"order"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"reference"}},{"kind":"Field","name":{"kind":"Name","value":"bundleName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"usage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalUsed"}},{"kind":"Field","name":{"kind":"Name","value":"totalRemaining"}}]}}]}}]}}]} as unknown as DocumentNode<GetAllEsiMsQuery, GetAllEsiMsQueryVariables>;

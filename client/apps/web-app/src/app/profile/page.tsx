@@ -68,10 +68,18 @@ export default function ProfilePage() {
                       activeESIM.plan?.region || 
                       "Unknown";
     
+    // Use usage data from the API if available, otherwise fall back to bundle data
+    const dataUsedMB = activeESIM.usage?.totalUsed || activeBundle.dataUsed || 0;
+    const dataRemainingMB = activeESIM.usage?.totalRemaining || activeBundle.dataRemaining || 0;
+    const dataTotalMB = dataUsedMB + dataRemainingMB;
+    
     return {
       country: countryName,
-      dataUsed: activeBundle.dataUsed || 0, // Already in MB from backend
-      dataTotal: (activeBundle.dataUsed || 0) + (activeBundle.dataRemaining || 0),
+      dataUsedMB: dataUsedMB,
+      dataRemainingMB: dataRemainingMB,
+      dataTotalMB: dataTotalMB,
+      dataUsedGB: dataUsedMB / 1024, // Convert MB to GB
+      dataTotalGB: dataTotalMB / 1024, // Convert MB to GB
       daysLeft,
       totalDays,
       expiryDate: endDate,
@@ -125,12 +133,15 @@ export default function ProfilePage() {
   };
 
   // Calculate percentages based on real data
-  const dataUsagePercentage = currentPlan && currentPlan.dataTotal > 0 
-    ? (currentPlan.dataUsed / currentPlan.dataTotal) * 100 
+  const dataUsagePercentage = currentPlan && currentPlan.dataTotalMB > 0 
+    ? (currentPlan.dataUsedMB / currentPlan.dataTotalMB) * 100 
     : 0;
   const daysUsagePercentage = currentPlan && currentPlan.totalDays > 0
     ? ((currentPlan.totalDays - currentPlan.daysLeft) / currentPlan.totalDays) * 100
     : 0;
+  
+  // Check if usage exceeds 80%
+  const isHighUsage = dataUsagePercentage > 80;
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -221,18 +232,44 @@ export default function ProfilePage() {
           
           {currentPlan && (
             <>
+              {/* Usage Summary Card */}
+              {isHighUsage && (
+                <Card className="p-4 mb-4 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-orange-900 dark:text-orange-100">
+                        שימוש גבוה בנתונים
+                      </p>
+                      <p className="text-sm text-orange-700 dark:text-orange-300">
+                        השתמשת ב-{dataUsagePercentage.toFixed(0)}% מהחבילה שלך
+                      </p>
+                    </div>
+                    <div className="text-2xl font-bold text-orange-900 dark:text-orange-100">
+                      {currentPlan.dataRemainingMB > 0 ? (currentPlan.dataRemainingMB / 1024).toFixed(1) : '0'}GB
+                    </div>
+                  </div>
+                </Card>
+              )}
 
               {/* Data Usage */}
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">שימוש בנתונים היום</span>
+                  <span className="text-sm font-medium">שימוש בנתונים</span>
                   <span className="text-sm text-muted-foreground">
-                    {Math.round(currentPlan.dataUsed)}MB / {Math.round(currentPlan.dataTotal)}MB
+                    {currentPlan.dataUsedGB.toFixed(2)}GB / {currentPlan.dataTotalGB.toFixed(2)}GB
                   </span>
                 </div>
-                <Progress value={dataUsagePercentage} className="h-2 mb-2" />
+                <Progress 
+                  value={dataUsagePercentage} 
+                  className={`h-2 mb-2 ${isHighUsage ? '[&>div]:bg-orange-500' : ''}`} 
+                />
+                {isHighUsage && (
+                  <p className="text-xs text-orange-500 mb-1">
+                    ⚠️ שימת לב: השתמשת ביותר מ-80% מהחבילה
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
-                  לאחר חריגה מהמכסה, המהירות תהיה איטית יותר עד לאיפוס היומי
+                  נותרו {currentPlan.dataRemainingMB > 0 ? `${(currentPlan.dataRemainingMB / 1024).toFixed(2)}GB` : '0GB'} לשימוש
                 </p>
               </div>
 

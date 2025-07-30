@@ -16,7 +16,7 @@ export const constraintApplicationStep: PipelineStep = {
     const constraintRules = filterRulesByCategory(rules, RuleCategory.Constraint);
     const appliedRuleIds: string[] = [];
     
-    const priceBeforeConstraints = dot.pick("state.pricing.priceAfterDiscount", state) || 0;
+    const priceBeforeConstraints = dot.pick("response.pricing.priceAfterDiscount", state) || 0;
     
     const newState = produce(state, draft => {
       constraintRules.forEach(rule => {
@@ -27,7 +27,7 @@ export const constraintApplicationStep: PipelineStep = {
       });
     });
     
-    const priceAfterConstraints = dot.pick("state.pricing.priceAfterDiscount", newState) || 0;
+    const priceAfterConstraints = dot.pick("response.pricing.priceAfterDiscount", newState) || 0;
     const priceAdjustment = priceAfterConstraints - priceBeforeConstraints;
     
     return {

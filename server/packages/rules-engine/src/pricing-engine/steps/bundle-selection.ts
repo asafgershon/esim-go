@@ -24,18 +24,15 @@ export const bundleSelectionStep: PipelineStep = {
     // Update state with selected bundle
     const newState = produce(state, draft => {
       // Update response - directly mutate draft
-      draft.state.previousBundle = previousBundle;
       draft.response.selectedBundle = selectedBundle;
       draft.response.unusedDays = unusedDays;
       draft.response.pricing = initialPricing;
       
-      // Update state - directly mutate draft
-      draft.state.selectedBundle = selectedBundle;
-      draft.state.pricing = initialPricing;
-      draft.state.country = selectedBundle.countries?.[0] || draft.state.country || "";
-      draft.state.region = selectedBundle.region || draft.state.region || "";
-      draft.state.group = selectedBundle.groups?.[0] || draft.state.group || "";
-      draft.state.data = selectedBundle.isUnlimited ? "unlimited" : "fixed";
+      // Update processing - directly mutate draft
+      draft.processing.previousBundle = previousBundle;
+      draft.processing.selectedBundle = selectedBundle;
+      draft.processing.region = selectedBundle.region || "";
+      draft.processing.group = selectedBundle.groups?.[0] || "";
     });
     
     return {

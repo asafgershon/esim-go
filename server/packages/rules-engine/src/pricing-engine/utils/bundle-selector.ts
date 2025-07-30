@@ -8,31 +8,68 @@ import type { BundleSelector } from "../types";
  * 3. Fallback to largest bundle if none can cover the duration
  */
 export const findOptimalBundle: BundleSelector = (bundles, requestedDuration) => {
-  // Try exact match first
-  const exactMatch = bundles.find(b => b.validityInDays === requestedDuration);
-  if (exactMatch) return {
-    selectedBundle: exactMatch,
-    previousBundle: undefined
-  };
+  let exactMatch = undefined;
+  let smallestSuitable = undefined;
+  let largestBundle = undefined;
+  let secondLargest = undefined;
 
-  // Find smallest bundle that covers the requested duration
-  const suitableBundles = bundles
-    .filter(b => b.validityInDays >= requestedDuration)
-    .sort((a, b) => a.validityInDays - b.validityInDays);
+  // Single pass through all bundles - O(n)
+  for (const bundle of bundles) {
+    // Check for exact match
+    if (bundle.validityInDays === requestedDuration) {
+      exactMatch = bundle;
+    }
 
-  if (suitableBundles.length > 0) {
-    return {
-      selectedBundle: suitableBundles[0],
-      previousBundle: suitableBundles[1]
+    // Track smallest bundle that covers requested duration
+    if (bundle.validityInDays >= requestedDuration) {
+      if (!smallestSuitable || bundle.validityInDays < smallestSuitable.validityInDays) {
+        smallestSuitable = bundle;
+      }
+    }
+
+    // Track largest bundle overall
+    if (!largestBundle || bundle.validityInDays > largestBundle.validityInDays) {
+      secondLargest = largestBundle;
+      largestBundle = bundle;
+    } else if (!secondLargest || bundle.validityInDays > secondLargest.validityInDays) {
+      secondLargest = bundle;
     }
   }
 
-  // Fallback to largest bundle if none can cover the duration
-  const sortedBundles = bundles.sort((a, b) => b.validityInDays - a.validityInDays);
-  return {
-    selectedBundle: sortedBundles[0],
-    previousBundle: sortedBundles[1]
+  // Return exact match if found
+  if (exactMatch) {
+    return {
+      selectedBundle: exactMatch,
+      previousBundle: undefined
+    };
   }
+
+  // Return smallest suitable bundle if found
+  if (smallestSuitable) {
+    // Find the largest bundle smaller than selected in another pass - still O(n)
+    let previousBundle = undefined;
+    for (const bundle of bundles) {
+      if (bundle.validityInDays < smallestSuitable.validityInDays) {
+        if (!previousBundle || bundle.validityInDays > previousBundle.validityInDays) {
+          previousBundle = bundle;
+        }
+      }
+    }
+    
+    return {
+      selectedBundle: smallestSuitable,
+      previousBundle
+    };
+  }
+
+  if (!largestBundle) {
+    throw new Error("No bundle found");
+  }
+
+  return {
+    selectedBundle: largestBundle,
+    previousBundle: largestBundle === largestBundle ? secondLargest : undefined
+  };
 };
 
 /**

@@ -16,8 +16,8 @@ export const discountApplicationStep: PipelineStep = {
     const discountRules = filterRulesByCategory(rules, RuleCategory.Discount);
     const appliedRuleIds: string[] = [];
     
-    const originalPrice = dot.pick("state.pricing.totalCost", state) || 0;
-    const originalDiscount = dot.pick("state.pricing.discountValue", state) || 0;
+    const originalPrice = dot.pick("response.pricing.totalCost", state) || 0;
+    const originalDiscount = dot.pick("response.pricing.discountValue", state) || 0;
     
     const newState = produce(state, draft => {
       discountRules.forEach(rule => {
@@ -28,8 +28,8 @@ export const discountApplicationStep: PipelineStep = {
       });
     });
     
-    const finalPrice = dot.pick("state.pricing.priceAfterDiscount", newState) || 0;
-    const totalDiscount = dot.pick("state.pricing.discountValue", newState) || 0;
+    const finalPrice = dot.pick("response.pricing.priceAfterDiscount", newState) || 0;
+    const totalDiscount = dot.pick("response.pricing.discountValue", newState) || 0;
     
     return {
       name: "APPLY_DISCOUNTS",

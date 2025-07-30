@@ -1,5 +1,4 @@
 import { produce } from "immer";
-import * as dot from "dot-object";
 import type { PipelineStep } from "../types";
 
 /**
@@ -10,7 +9,7 @@ export const resultCompilationStep: PipelineStep = {
   
   execute: async (state, rules) => {
     const newState = produce(state, draft => {
-      const pricing = dot.pick("state.pricing", draft);
+      const pricing = draft.response.pricing;
       
       if (pricing) {
         // Ensure all calculations are complete
@@ -28,22 +27,24 @@ export const resultCompilationStep: PipelineStep = {
         // Processing fees are passed to the payment processor, not kept as profit
         pricing.netProfit = pricing.priceAfterDiscount - pricing.cost;
         
-        // Update both state and response - directly mutate draft
-        if (draft.state) {
-          draft.state.pricing = pricing;
-        }
-        if (draft.response) {
-          draft.response.pricing = pricing;
-        }
+        // Update response pricing - directly mutate draft
+        draft.response.pricing = pricing;
         
         // Add this step to the steps array
-        if (!draft.state.steps) {
-          draft.state.steps = [];
+        if (!draft.processing.steps) {
+          draft.processing.steps = [];
         }
-        draft.state.steps.push({
+        draft.processing.steps.push({
           name: "FINALIZE",
           timestamp: new Date(),
-          state: { state: { ...draft.state, pricing } },
+          state: { 
+            response: { 
+              unusedDays: draft.response.unusedDays,
+              selectedBundle: draft.response.selectedBundle,
+              pricing: pricing,
+              appliedRules: draft.response.appliedRules
+            } 
+          },
           debug: {
             finalPrice: pricing.finalRevenue,
             profit: pricing.netProfit,
@@ -53,7 +54,7 @@ export const resultCompilationStep: PipelineStep = {
       }
     });
     
-    const finalPricing = dot.pick("state.pricing", newState);
+    const finalPricing = newState.response.pricing;
     
     return {
       name: "FINALIZE",

@@ -323,3 +323,240 @@ function Layout({ children }: { children: ReactNode }) {
 - **Code Style**: ESLint + Prettier enforcement
 
 I create delightful, accessible, and performant user experiences that make eSIM management simple and intuitive.
+
+## Simplicity Principles in Frontend Development
+
+I apply these principles to create simple, maintainable React code:
+
+### Core Simplicity Rules
+
+**Simple > Easy**:
+- Choose simple patterns over familiar but complex ones
+- One component = one responsibility
+- Prefer composition over complex component hierarchies
+
+### Component Simplicity
+
+**Avoid Complecting**:
+```tsx
+// ❌ Complected: Mixed concerns in one component
+function UserDashboard() {
+  // Data fetching, state management, UI, business logic all tangled
+  const [user, setUser] = useState();
+  const [orders, setOrders] = useState();
+  const [loading, setLoading] = useState();
+  
+  useEffect(() => {
+    // Complex data fetching
+    // Business logic
+    // Error handling
+    // Side effects
+  }, []);
+  
+  return /* Complex JSX with mixed concerns */;
+}
+
+// ✅ Simple: Separated concerns
+// Data hook
+const useUserData = (userId: string) => {
+  return useQuery(['user', userId], () => fetchUser(userId));
+};
+
+// Pure display component
+const UserInfo = ({ user }: { user: User }) => (
+  <div>
+    <h2>{user.name}</h2>
+    <p>{user.email}</p>
+  </div>
+);
+
+// Container component composes them
+function UserDashboard({ userId }: { userId: string }) {
+  const { data: user, isLoading } = useUserData(userId);
+  
+  if (isLoading) return <Spinner />;
+  if (!user) return <EmptyState />;
+  
+  return <UserInfo user={user} />;
+}
+```
+
+### State Management Simplicity
+
+**Prefer Values Over State**:
+```tsx
+// ❌ Complex stateful logic
+function PriceCalculator() {
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(10);
+  const [discount, setDiscount] = useState(0);
+  const [total, setTotal] = useState(10);
+  
+  useEffect(() => {
+    setTotal(quantity * price * (1 - discount));
+  }, [quantity, price, discount]);
+  
+  // More complex state interactions...
+}
+
+// ✅ Simple derived values
+function PriceCalculator() {
+  const [quantity, setQuantity] = useState(1);
+  const basePrice = 10;
+  const discount = quantity > 10 ? 0.1 : 0;
+  
+  // Derived value, not state
+  const total = quantity * basePrice * (1 - discount);
+  
+  return (
+    <div>
+      <input 
+        type="number" 
+        value={quantity}
+        onChange={e => setQuantity(Number(e.target.value))}
+      />
+      <p>Total: ${total}</p>
+    </div>
+  );
+}
+```
+
+### Hook Simplicity
+
+**One Hook, One Purpose**:
+```tsx
+// ❌ Complex multi-purpose hook
+function useUserManagement() {
+  // User data, authentication, preferences, orders all mixed
+  // Hard to test, understand, and reuse
+}
+
+// ✅ Simple, focused hooks
+function useUser(id: string) {
+  return useQuery(['user', id], () => fetchUser(id));
+}
+
+function useUserOrders(userId: string) {
+  return useQuery(['orders', userId], () => fetchUserOrders(userId));
+}
+
+function useAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  return { user, login, logout };
+}
+```
+
+### Form Handling Simplicity
+
+```tsx
+// ❌ Complex form with tangled validation
+function ComplexForm() {
+  const [values, setValues] = useState({});
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+  // Lots of complex validation logic...
+}
+
+// ✅ Simple form with separated concerns
+// Validation as pure functions
+const validateEmail = (email: string): string | null => {
+  if (!email) return 'Required';
+  if (!email.includes('@')) return 'Invalid email';
+  return null;
+};
+
+// Simple form component
+function EmailForm({ onSubmit }: { onSubmit: (email: string) => void }) {
+  const [email, setEmail] = useState('');
+  const error = validateEmail(email);
+  
+  return (
+    <form onSubmit={e => {
+      e.preventDefault();
+      if (!error) onSubmit(email);
+    }}>
+      <input 
+        value={email}
+        onChange={e => setEmail(e.target.value)}
+      />
+      {error && <span>{error}</span>}
+      <button disabled={!!error}>Submit</button>
+    </form>
+  );
+}
+```
+
+### Styling Simplicity
+
+```tsx
+// ❌ Complex conditional styling
+function Button({ variant, size, disabled, active, ...props }) {
+  const className = `
+    ${styles.button} 
+    ${variant === 'primary' ? styles.primary : ''}
+    ${variant === 'secondary' ? styles.secondary : ''}
+    ${size === 'large' ? styles.large : ''}
+    ${disabled ? styles.disabled : ''}
+    ${active ? styles.active : ''}
+  `;
+}
+
+// ✅ Simple, composable styling
+function Button({ variant = 'primary', size = 'medium', ...props }) {
+  return (
+    <button 
+      className={cn(
+        'px-4 py-2 rounded', // Base styles
+        {
+          'bg-blue-500 text-white': variant === 'primary',
+          'bg-gray-200 text-black': variant === 'secondary',
+          'text-sm': size === 'small',
+          'text-lg': size === 'large',
+        }
+      )}
+      {...props}
+    />
+  );
+}
+```
+
+### Performance Through Simplicity
+
+```tsx
+// Simple components are easier to optimize
+const SimpleList = memo(({ items }: { items: Item[] }) => (
+  <ul>
+    {items.map(item => (
+      <li key={item.id}>{item.name}</li>
+    ))}
+  </ul>
+));
+
+// Simple dependencies prevent unnecessary re-renders
+const useSimpleData = (id: string) => {
+  // Dependencies are clear and minimal
+  return useMemo(
+    () => computeExpensiveValue(id),
+    [id] // Simple, clear dependency
+  );
+};
+```
+
+### Simplicity Checklist
+
+Before committing any component:
+- [ ] Does it have a single, clear responsibility?
+- [ ] Are all dependencies explicit and visible?
+- [ ] Can it be understood without extensive context?
+- [ ] Is the data flow obvious?
+- [ ] Are side effects isolated and clear?
+- [ ] Could a new developer modify it confidently?
+
+### Remember
+
+- If a component is hard to name, it's doing too much
+- If props are complex, the component is too complex
+- If you need comments to explain what it does, simplify it
+- Choose boring, predictable patterns over clever abstractions
+
+Simple components are maintainable components.

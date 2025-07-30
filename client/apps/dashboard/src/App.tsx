@@ -11,6 +11,7 @@ import { AuthCallbackPage } from '@/pages/auth/callback'
 import { HomePage } from '@/pages/home'
 import { UsersPage } from '@/pages/users'
 import { OrdersPage } from '@/pages/orders'
+import { ESIMsPage } from '@/pages/esims'
 import { CatalogPage } from '@/pages/catalog'
 import { TripsPage } from '@/pages/trips'
 import PricingPage from '@/pages/pricing'
@@ -43,6 +44,7 @@ function App() {
                   <Route index element={<ErrorBoundary><HomePage /></ErrorBoundary>} />
                   <Route path="users" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><UsersPage /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="orders" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><OrdersPage /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="esims" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><ESIMsPage /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="catalog" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><CatalogPage /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="trips" element={<ErrorBoundary><TripsPage /></ErrorBoundary>} />
                   <Route path="pricing" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><PricingPage /></ProtectedRoute></ErrorBoundary>}>

@@ -1,10 +1,10 @@
 import { produce } from "immer";
-import * as dot from "dot-object";
-import type {
-  PricingEngineInput,
-  PricingEngineOutput,
-  PricingEngineState,
-  PricingRule,
+import {
+  RuleCategory,
+  type PricingEngineInput,
+  type PricingEngineOutput,
+  type PricingEngineState,
+  type PricingRule,
 } from "../rules-engine-types";
 import type { PipelineStep, PipelineStepResult } from "./types";
 import { createLogger } from "@esim-go/utils";
@@ -83,8 +83,7 @@ export const createPricingEngine = (initialRules: PricingRule[] = []) => {
     async *calculatePriceSteps(
       input: PricingEngineInput
     ): AsyncGenerator<PipelineStepResult, PricingEngineOutput> {
-      const correlationId = dot.pick("metadata.correlationId", input) || 
-        dot.pick("context.requestId", input);
+      const correlationId = input.metadata?.correlationId;
 
       logger.info("Starting step-by-step price calculation", {
         correlationId,
@@ -100,9 +99,10 @@ export const createPricingEngine = (initialRules: PricingRule[] = []) => {
           correlationId,
           step: step.name,
         });
-
+        if (step.name === "BUNDLE_ADJUSTMENT") {
+          logger.info("🔍 DEBUG: Processing", {processing: state.processing, group: state.processing.group, region: state.processing.region, country: state.request.countryISO, paymentMethod: state.context.payment.method, dataType: state.request.dataType, isUnlimited: state.request.dataType === "unlimited", isFixed: state.request.dataType === "fixed"});
+        }
         const result = await step.execute(state, rules);
-        
         // Update state with step results
         state = produce(state, draft => {
           // Merge the step's state changes - do a proper deep merge
@@ -116,11 +116,11 @@ export const createPricingEngine = (initialRules: PricingRule[] = []) => {
                 ...result.state.response
               };
             }
-            if (result.state.state) {
-              draft.state = {
-                ...draft.state,
-                ...result.state.state,
-                steps: draft.state.steps // Preserve existing steps
+            if (result.state.processing) {
+              draft.processing = {
+                ...draft.processing,
+                ...result.state.processing,
+                steps: draft.processing.steps // Preserve existing steps
               };
             }
             if (result.state.metadata) {
@@ -132,7 +132,7 @@ export const createPricingEngine = (initialRules: PricingRule[] = []) => {
           }
           
           // Add step to history
-          draft.state.steps.push(result);
+          draft.processing.steps.push(result);
         });
 
         yield result;
@@ -141,16 +141,16 @@ export const createPricingEngine = (initialRules: PricingRule[] = []) => {
       logger.info("Completed step-by-step price calculation", {
         correlationId,
         totalSteps: pipelineSteps.length,
-        finalPrice: dot.pick("state.pricing.finalRevenue", state),
+        finalPrice: state.response.pricing?.finalRevenue,
       });
 
       // Extract applied rules
-      const appliedRuleIds = extractAppliedRuleIds(dot.pick("state.steps", state) || []);
+      const appliedRuleIds = extractAppliedRuleIds(state.processing.steps || []);
       const appliedRules = getAppliedRules(rules, appliedRuleIds);
 
       // Update response with applied rules
       state = produce(state, draft => {
-        draft.response.rules = appliedRules;
+        draft.response.appliedRules = appliedRules;
       });
 
       // Return final output
@@ -187,7 +187,7 @@ export const createPricingEngine = (initialRules: PricingRule[] = []) => {
       // Process each request
       for (let i = 0; i < requests.length; i++) {
         const request = requests[i];
-        const correlationId = dot.pick("metadata.correlationId", request);
+        const correlationId = request.metadata?.correlationId;
 
         try {
           const result = await this.calculatePrice(request);

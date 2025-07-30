@@ -5,16 +5,13 @@ import type { ActionApplicator } from "../types";
  */
 export const addMarkup: ActionApplicator = (draft, value) => {
   // Directly mutate draft instead of using dot.pick/set
-  if (draft.state && draft.state.pricing) {
-    draft.state.pricing.markup += value;
-    draft.state.pricing.totalCost = draft.state.pricing.cost + draft.state.pricing.markup;
+  if (draft.response && draft.response.pricing) {
+    draft.response.pricing.markup += value;
+    draft.response.pricing.totalCost = draft.response.pricing.cost + draft.response.pricing.markup;
     
     // Update price after discount if no discounts have been applied yet
-    if (draft.state.pricing.discountValue === 0) {
-      draft.state.pricing.priceAfterDiscount = draft.state.pricing.totalCost;
+    if (draft.response.pricing.discountValue === 0) {
+      draft.response.pricing.priceAfterDiscount = draft.response.pricing.totalCost;
     }
-    
-    // Update response as well
-    draft.response.pricing = draft.state.pricing;
   }
 };
