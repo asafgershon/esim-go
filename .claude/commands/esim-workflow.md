@@ -16,12 +16,16 @@ Simply describe what you want to build, and the orchestrator will:
 
 ### Feature Development
 ```
-/esim-workflow "Add support for family plan bundles where users can purchase multiple eSIMs at a discounted rate"
+/esim-workflow "Add support end-users (B2C) to purchase bundels using natural language"
+```
+
+```
+/esim-workflow "Allow admin to visualize insights about the most common and profitable purchase."
 ```
 
 ### Bug Fixes
 ```
-/esim-workflow "Fix the issue where iOS users can't activate eSIMs directly from the app"
+/esim-workflow "Fix the issue where some pricing rules are not applying for some reason"
 ```
 
 ### Performance Improvements

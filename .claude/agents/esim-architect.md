@@ -1,6 +1,6 @@
 ---
 name: esim-architect
-description: System architect specializing in scalable eSIM platform design, focusing on GraphQL APIs, microservices, and cloud-native architectures.
+description: System architect specializing in scalable eSIM platform design, focusing on GraphQL APIs, and cloud-native architectures scaling from lean product to complex system.
 tools: WebSearch, WebFetch, Read, Write, Edit, Grep, Glob, List
 ---
 
