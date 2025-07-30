@@ -1,5 +1,4 @@
 import { produce } from "immer";
-import * as dot from "dot-object";
 import type { PipelineStep } from "../types";
 import type { Bundle, PricingEngineState } from "../../rules-engine-types";
 import { RuleCategory } from "../../rules-engine-types";
@@ -32,7 +31,7 @@ const calculateBundlePricing = (
     });
   });
 
-  return dot.pick("state.pricing", pricingState);
+  return pricingState.state.pricing;
 };
 
 /**
@@ -44,7 +43,6 @@ export const bundleAdjustmentStep: PipelineStep = {
   execute: async (state, rules) => {
     const bundleAdjustmentRules = filterRulesByCategory(rules, RuleCategory.BundleAdjustment);
     const appliedRuleIds: string[] = [];
-    const previousBundleAppliedRules: string[] = [];
     
     const newState = produce(state, draft => {
       // Calculate pricing for selected bundle
@@ -64,17 +62,17 @@ export const bundleAdjustmentStep: PipelineStep = {
           bundleAdjustmentRules
         );
         
-        // Store previous bundle pricing in state
-        (draft.state as any).previousBundlePricing = previousPricing;
+        // Store the pricing in state since we can't modify Bundle type
+        draft.state.previousBundlePricing = previousPricing;
       }
     });
     
-    const selectedPrice = dot.pick("state.selectedBundle.basePrice", state);
-    const selectedAdjustedPrice = dot.pick("state.pricing.totalCost", newState);
-    const selectedMarkup = dot.pick("state.pricing.markup", newState) || 0;
+    const selectedPrice = state.state.selectedBundle?.basePrice || 0;
+    const selectedAdjustedPrice = newState.state.pricing.totalCost;
+    const selectedMarkup = newState.state.pricing.markup || 0;
     
-    const previousPrice = dot.pick("state.previousBundle.basePrice", newState);
-    const previousMarkup = dot.pick("state.previousBundlePricing.markup", newState) || 0;
+    const previousPrice = newState.state.previousBundle?.basePrice || 0;
+    const previousMarkup = newState.state.previousBundlePricing?.markup || 0;
     
     return {
       name: "BUNDLE_ADJUSTMENT",

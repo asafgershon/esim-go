@@ -1,4 +1,3 @@
-import * as dot from "dot-object";
 import type { ActionApplicator } from "../types";
 
 /**

@@ -513,6 +513,7 @@ export const pricingQueries: QueryResolvers = {
         });
       }
 
+
       pricingEngine.clearRules();
       pricingEngine.addRules(rules);
 
@@ -536,7 +537,7 @@ export const pricingQueries: QueryResolvers = {
           paymentMethod: mapPaymentMethodEnum(paymentMethod),
           countryISO: countryId,
           region: regionId || "",
-          group: normalizeGroupName(groups?.[0] || ""),
+          group: groups?.[0] || "",
           dataType: undefined,
         },
         metadata: {
@@ -544,6 +545,7 @@ export const pricingQueries: QueryResolvers = {
           userId: context.auth?.user?.id,
         },
       };
+
 
       // 5. Let engine select best bundle and calculate pricing
       const result = await pricingEngine.calculatePrice(engineInput);

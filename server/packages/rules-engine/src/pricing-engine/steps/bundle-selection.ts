@@ -1,5 +1,4 @@
 import { produce } from "immer";
-import * as dot from "dot-object";
 import type { PipelineStep, PipelineStepResult } from "../types";
 import type { PricingEngineState, PricingRule } from "../../rules-engine-types";
 import { findOptimalBundle } from "../utils/bundle-selector";
@@ -12,8 +11,8 @@ export const bundleSelectionStep: PipelineStep = {
   name: "BUNDLE_SELECTION",
   
   execute: async (state) => {
-    const bundles = dot.pick("context.bundles", state) || [];
-    const requestedDuration = dot.pick("request.duration", state) || 0;
+    const bundles = state.context.bundles || [];
+    const requestedDuration = state.request.duration || 0;
     
     // Find the best matching bundle
     const {selectedBundle, previousBundle} = findOptimalBundle(bundles, requestedDuration);

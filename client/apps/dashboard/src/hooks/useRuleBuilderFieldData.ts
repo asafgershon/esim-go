@@ -79,9 +79,9 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
       // Fallback to known groups if API fails
       return [
         { value: 'Standard Fixed', label: 'Standard Fixed', description: 'Fixed data allowance bundles' },
-        { value: 'Standard - Unlimited Lite', label: 'Standard - Unlimited Lite', description: 'Basic unlimited data plans' },
-        { value: 'Standard - Unlimited Essential', label: 'Standard - Unlimited Essential', description: 'Standard unlimited data plans' },
-        { value: 'Standard - Unlimited Plus', label: 'Standard - Unlimited Plus', description: 'Premium unlimited data plans' },
+        { value: 'Standard Unlimited Lite', label: 'Standard Unlimited Lite', description: 'Basic unlimited data plans' },
+        { value: 'Standard Unlimited Essential', label: 'Standard Unlimited Essential', description: 'Standard unlimited data plans' },
+        { value: 'Standard Unlimited Plus', label: 'Standard Unlimited Plus', description: 'Premium unlimited data plans' },
         { value: 'Regional Bundles', label: 'Regional Bundles', description: 'Multi-country regional coverage' },
       ];
     }
@@ -177,12 +177,12 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
   // Utility function to get options for a specific field
   const getFieldOptions = (fieldValue: string): FieldOption[] => {
     switch (fieldValue) {
-      case 'request.group':
+      case 'processing.group':
         return bundleGroups;
+      case 'processing.region':
+        return regions;
       case 'request.countryISO':
         return countries;
-      case 'request.region':
-        return regions;
       case 'context.payment.method':
         return paymentMethods;
       case 'context.customer.segment':
@@ -195,10 +195,11 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
   // Utility function to check if a field is loading
   const isFieldLoading = (fieldValue: string): boolean => {
     switch (fieldValue) {
-      case 'request.group':
+      case 'processing.group':
         return bundleGroupsLoading;
       case 'request.countryISO':
-      case 'request.region':
+        return countriesLoading;
+      case 'processing.region':
         return countriesLoading;
       case 'context.payment.method':
         return paymentMethodsLoading;
@@ -210,10 +211,11 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
   // Utility function to check if a field has errors
   const hasFieldError = (fieldValue: string): boolean => {
     switch (fieldValue) {
-      case 'request.group':
+      case 'processing.group':
         return !!bundleGroupsError;
       case 'request.countryISO':
-      case 'request.region':
+        return !!countriesError;
+      case 'processing.region':
         return !!countriesError;
       case 'context.payment.method':
         return !!paymentMethodsError;
@@ -262,9 +264,9 @@ export const useRuleBuilderFieldData = (): UseRuleBuilderFieldDataReturn => {
 function getBundleGroupDescription(group: string): string {
   const descriptions: Record<string, string> = {
     'Standard Fixed': 'Fixed data allowance bundles',
-    'Standard - Unlimited Lite': 'Basic unlimited data plans',
-    'Standard - Unlimited Essential': 'Standard unlimited data plans',
-    'Standard - Unlimited Plus': 'Premium unlimited data plans',
+    'Standard Unlimited Lite': 'Basic unlimited data plans',
+    'Standard Unlimited Essential': 'Standard unlimited data plans',
+    'Standard Unlimited Plus': 'Premium unlimited data plans',
     'Regional Bundles': 'Multi-country regional coverage',
   };
   

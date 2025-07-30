@@ -5,7 +5,7 @@ import type { ActionApplicator } from "../types";
  * Set minimum profit constraint
  */
 export const setMinimumProfit: ActionApplicator = (draft, value) => {
-  const pricing = dot.pick("state.pricing", draft);
+  const pricing = dot.pick("response.pricing", draft);
   
   if (pricing) {
     // Calculate current profit (revenue after all costs)
@@ -33,7 +33,6 @@ export const setMinimumProfit: ActionApplicator = (draft, value) => {
     }
     
     // Update the draft with modified pricing
-    dot.set("state.pricing", pricing, draft);
     dot.set("response.pricing", pricing, draft);
   }
 };
@@ -42,7 +41,7 @@ export const setMinimumProfit: ActionApplicator = (draft, value) => {
  * Set minimum price constraint
  */
 export const setMinimumPrice: ActionApplicator = (draft, value) => {
-  const pricing = dot.pick("state.pricing", draft);
+  const pricing = dot.pick("response.pricing", draft);
   
   if (pricing) {
     // Ensure final price doesn't go below a minimum threshold
@@ -58,7 +57,6 @@ export const setMinimumPrice: ActionApplicator = (draft, value) => {
     }
     
     // Update the draft with modified pricing
-    dot.set("state.pricing", pricing, draft);
     dot.set("response.pricing", pricing, draft);
   }
 };

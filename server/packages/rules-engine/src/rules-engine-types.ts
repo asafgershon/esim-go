@@ -31,49 +31,46 @@ export interface PipelineStep {
 }
 
 export interface PricingEngineState {
-  // Context
-
+  // Context - External dependencies and configuration
   context: {
-    bundles: Bundle[]; // Bundles provided by the client
-    costumer: UserContext; // Costumer provided by the client
-    payment: PaymentContext; // Payment method and promo code
-    rules: PricingRule[]; // Rules provided by the client
-    date: Date; // Today's date (used for rule evaluation)
+    bundles: Bundle[];
+    customer: UserContext;  // Note: fix typo from 'costumer'
+    payment: PaymentContext;
+    rules: PricingRule[];
+    date: Date;
   };
 
-  // Client request to calculate pricing
+  // Request - What the client is asking for
   request: {
     duration: number;
+    countryISO: string;  // Make required
     paymentMethod: PaymentMethod;
+    dataType: 'unlimited' | 'fixed';  // Make required
     promo?: string;
-    countryISO?: string;
-    region?: string;
-    group?: string;
-    dataType?: 'unlimited' | 'fixed';
   };
 
+  // Processing - Derived/computed values during pipeline execution
+  processing: {
+    steps: PipelineStep[];
+    selectedBundle: Bundle;
+    previousBundle?: Bundle;
+    region: string;  // Derived from countryISO
+    group: string;   // Derived from bundle selection
+  };
 
+  // Response - Final output to the client
   response: {
     unusedDays: number;
     selectedBundle: Bundle;
     pricing: PricingBreakdown;
-    rules: PricingRule[];
+    appliedRules: PricingRule[];
   };
-  
-  state: {
-    steps: PipelineStep[];
-    country: string;
-    selectedBundle: Bundle;
-    previousBundle?: Bundle;
-    pricing: PricingBreakdown;
-    region: string;
-    data: 'unlimited' | 'fixed';
-    group: string;
-  }
 
-  // Metadata
+  // Metadata - Tracking and debugging
   metadata: {
     correlationId: string;
+    timestamp: Date;
+    version?: string;
     [key: string]: any;
   };
 }
@@ -83,7 +80,7 @@ export type PricingEngineInput = Pick<
   "context" | "request" | "metadata"
 >;
 
-export type PricingEngineOutput = Pick<PricingEngineState, "response" | "state" | "metadata">;
+export type PricingEngineOutput = Pick<PricingEngineState, "response" | "processing" | "metadata">;
 
 export interface PricingEngine {
   /**

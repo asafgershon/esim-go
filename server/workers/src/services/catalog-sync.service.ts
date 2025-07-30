@@ -55,9 +55,9 @@ export class CatalogSyncService {
       // Fallback to hardcoded groups if API fails
       return [
         "Standard Fixed",
-        "Standard - Unlimited Lite",
-        "Standard - Unlimited Essential",
-        "Standard - Unlimited Plus",
+        "Standard Unlimited Lite",
+        "Standard Unlimited Essential",
+        "Standard Unlimited Plus",
         "Regional Bundles",
       ];
     }

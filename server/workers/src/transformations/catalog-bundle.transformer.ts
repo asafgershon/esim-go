@@ -134,7 +134,7 @@ export function transformAndValidateCatalogBundle(
     // Transform to catalog bundle format
     const transformed: CatalogBundleSchema = {
       esim_go_name: validated.name,
-      groups: validated.groups || [],
+      groups: (validated.groups || []).map(g => g.replace(/-/g, '')), // Remove hyphens from group names
       description: validated.description || null,
       validity_in_days: validated.duration,
       data_amount_mb: isUnlimited ? null : validated.dataAmount || null,

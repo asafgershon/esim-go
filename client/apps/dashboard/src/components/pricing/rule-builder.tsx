@@ -640,14 +640,14 @@ export const RuleBuilder: React.FC<RuleBuilderProps> = ({
                             <SelectItem value="Standard Fixed">
                               Standard Fixed
                             </SelectItem>
-                            <SelectItem value="Standard - Unlimited Lite">
-                              Standard - Unlimited Lite
+                            <SelectItem value="Standard Unlimited Lite">
+                              Standard Unlimited Lite
                             </SelectItem>
-                            <SelectItem value="Standard - Unlimited Essential">
-                              Standard - Unlimited Essential
+                            <SelectItem value="Standard Unlimited Essential">
+                              Standard Unlimited Essential
                             </SelectItem>
-                            <SelectItem value="Standard - Unlimited Plus">
-                              Standard - Unlimited Plus
+                            <SelectItem value="Standard Unlimited Plus">
+                              Standard Unlimited Plus
                             </SelectItem>
                             <SelectItem value="Regional Bundles">
                               Regional Bundles

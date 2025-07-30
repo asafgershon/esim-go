@@ -55,7 +55,7 @@ export function CountryPricingSplitView({
   const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [bundleFilters, setBundleFilters] = useState<FilterState>({
-    groups: new Set(["Standard - Unlimited Essential"]), // Set Standard Unlimited Essential as default
+    groups: new Set(["Standard Unlimited Essential"]), // Set Standard Unlimited Essential as default
     durations: new Set(),
     dataTypes: new Set(["unlimited"]), // Set unlimited as default
   });

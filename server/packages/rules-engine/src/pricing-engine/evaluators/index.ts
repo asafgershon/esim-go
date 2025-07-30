@@ -1,7 +1,7 @@
 import * as dot from "dot-object";
 import type { ConditionEvaluator, RuleCondition } from "../types";
 import type { PricingEngineState } from "../../rules-engine-types";
-import { equals, notEquals } from "./equals";
+import { equals, normalizeGroupName, notEquals } from "./equals";
 import { greaterThan, lessThan, greaterThanOrEqual, lessThanOrEqual } from "./comparison";
 import { inArray, notInArray } from "./array";
 
@@ -34,6 +34,11 @@ export const evaluateCondition = (
     return true;
   }
   
+  // Handle group field
+  if (condition.field.includes(".group") && typeof fieldValue === "string" && typeof condition.value === "string") {
+    return evaluator(normalizeGroupName(fieldValue), normalizeGroupName(condition.value));
+  }
+  
   return evaluator(fieldValue, condition.value);
 };
 
@@ -48,7 +53,6 @@ export const evaluateConditions = (
   if (!conditions || conditions.length === 0) {
     return true;
   }
-  
   // All conditions must pass
   return conditions.every(condition => evaluateCondition(condition, state));
 };

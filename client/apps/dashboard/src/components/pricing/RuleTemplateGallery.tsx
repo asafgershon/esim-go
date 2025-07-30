@@ -152,7 +152,7 @@ const RULE_TEMPLATES: RuleTemplate[] = [
       description: "Add $2 markup for European destinations",
       conditions: [
         {
-          field: "request.region",
+          field: "processing.region",
           operator: ConditionOperator.Equals,
           value: "Europe",
         },
@@ -181,9 +181,9 @@ const RULE_TEMPLATES: RuleTemplate[] = [
       description: "Add $1.50 premium for unlimited data bundles",
       conditions: [
         {
-          field: "selectedBundle.isUnlimited",
+          field: "request.dataType",
           operator: ConditionOperator.Equals,
-          value: "true",
+          value: "unlimited",
         },
       ],
       actions: [
@@ -239,7 +239,7 @@ const RULE_TEMPLATES: RuleTemplate[] = [
       description: "Apply 5% discount per unused day (max 25%)",
       conditions: [
         {
-          field: "unusedDays",
+          field: "response.unusedDays",
           operator: ConditionOperator.GreaterThan,
           value: "0",
         },
@@ -268,7 +268,7 @@ const RULE_TEMPLATES: RuleTemplate[] = [
       description: "Add $3 premium for regional bundles",
       conditions: [
         {
-          field: "group",
+          field: "processing.group",
           operator: ConditionOperator.Equals,
           value: "Regional Bundles",
         },
