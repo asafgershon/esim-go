@@ -220,4 +220,3 @@ export const createPricingEngine = (initialRules: PricingRule[] = []) => {
 
 // Export types for external use
 export * from "./types";
-export { PricingEngineInput, PricingEngineOutput, PricingRule } from "../rules-engine-types";

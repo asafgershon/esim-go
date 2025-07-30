@@ -28,8 +28,8 @@ export const unusedDaysDiscountStep: PipelineStep = {
       };
     }
     
-    const bundles = dot.pick("context.bundles", state) || [];
-    const selectedBundle = dot.pick("response.selectedBundle", state);
+    const selectedBundle = dot.pick("state.selectedBundle", state);
+    const previousBundle = dot.pick("state.previousBundle", state);
     const requestedDuration = dot.pick("request.duration", state) || 0;
     
     if (!selectedBundle) {
@@ -45,12 +45,21 @@ export const unusedDaysDiscountStep: PipelineStep = {
       };
     }
     
-    // Calculate discount per day
-    const discountPerDay = calculateUnusedDayDiscount(
-      bundles,
-      selectedBundle,
-      requestedDuration
-    );
+    // Calculate discount per day using markup difference formula
+    let discountPerDay = 0;
+    
+    const selectedPricing = dot.pick("state.pricing", state);
+    const previousPricing = dot.pick("state.previousBundlePricing", state);
+    
+    if (previousBundle && selectedPricing && previousPricing) {
+      // Formula: (selectedBundle.markup - previousBundle.markup) / (selectedBundle.validityInDays - requestedDuration)
+      const markupDifference = (selectedPricing.markup || 0) - (previousPricing.markup || 0);
+      const daysDifference = selectedBundle.validityInDays - requestedDuration;
+      
+      if (daysDifference > 0) {
+        discountPerDay = markupDifference / daysDifference;
+      }
+    }
     
     if (discountPerDay <= 0) {
       return {
@@ -92,6 +101,9 @@ export const unusedDaysDiscountStep: PipelineStep = {
         unusedDays,
         discountPerDay,
         totalUnusedDiscount,
+        selectedMarkup: selectedPricing?.markup || 0,
+        previousMarkup: previousPricing?.markup || 0,
+        markupDifference: (selectedPricing?.markup || 0) - (previousPricing?.markup || 0),
         message: `Applied ${unusedDays} unused days discount at $${discountPerDay.toFixed(2)}/day`
       }
     };
