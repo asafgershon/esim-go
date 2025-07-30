@@ -64,6 +64,7 @@ export interface PricingEngineState {
     steps: PipelineStep[];
     country: string;
     selectedBundle: Bundle;
+    previousBundle?: Bundle;
     pricing: PricingBreakdown;
     region: string;
     data: 'unlimited' | 'fixed';
