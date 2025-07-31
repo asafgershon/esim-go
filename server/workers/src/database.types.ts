@@ -388,42 +388,51 @@ export type Database = {
       esims: {
         Row: {
           action_date: string | null
+          activation_code: string | null
           assigned_date: string | null
           created_at: string | null
           customer_ref: string | null
           iccid: string
           id: string
           last_action: string | null
+          matching_id: string | null
           order_id: string
           qr_code_url: string | null
+          smdp_address: string | null
           status: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
           action_date?: string | null
+          activation_code?: string | null
           assigned_date?: string | null
           created_at?: string | null
           customer_ref?: string | null
           iccid: string
           id?: string
           last_action?: string | null
+          matching_id?: string | null
           order_id: string
           qr_code_url?: string | null
+          smdp_address?: string | null
           status?: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
           action_date?: string | null
+          activation_code?: string | null
           assigned_date?: string | null
           created_at?: string | null
           customer_ref?: string | null
           iccid?: string
           id?: string
           last_action?: string | null
+          matching_id?: string | null
           order_id?: string
           qr_code_url?: string | null
+          smdp_address?: string | null
           status?: string
           updated_at?: string | null
           user_id?: string
@@ -544,6 +553,57 @@ export type Database = {
           name?: string
           priority?: number
           updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      pricing_rules_backup_20250730: {
+        Row: {
+          actions: Json | null
+          category: string | null
+          conditions: Json | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string | null
+          is_active: boolean | null
+          is_editable: boolean | null
+          name: string | null
+          priority: number | null
+          updated_at: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          actions?: Json | null
+          category?: string | null
+          conditions?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_editable?: boolean | null
+          name?: string | null
+          priority?: number | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          actions?: Json | null
+          category?: string | null
+          conditions?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_editable?: boolean | null
+          name?: string | null
+          priority?: number | null
+          updated_at?: string | null
           valid_from?: string | null
           valid_until?: string | null
         }
@@ -712,6 +772,47 @@ export type Database = {
           region: string | null
           speed: string[] | null
           validity_in_days: number | null
+        }
+        Relationships: []
+      }
+      bundles_by_group: {
+        Row: {
+          countries: string[] | null
+          currency: string | null
+          data_amount_mb: number | null
+          data_amount_readable: string | null
+          description: string | null
+          esim_go_name: string | null
+          group_name: string | null
+          is_unlimited: boolean | null
+          price: number | null
+          region: string | null
+          speed: string[] | null
+          validity_in_days: number | null
+        }
+        Relationships: []
+      }
+      pricing_rules_field_audit: {
+        Row: {
+          category: string | null
+          conditions: Json | null
+          field_status: string | null
+          id: string | null
+          name: string | null
+        }
+        Insert: {
+          category?: string | null
+          conditions?: Json | null
+          field_status?: never
+          id?: string | null
+          name?: string | null
+        }
+        Update: {
+          category?: string | null
+          conditions?: Json | null
+          field_status?: never
+          id?: string | null
+          name?: string | null
         }
         Relationships: []
       }

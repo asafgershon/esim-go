@@ -6,6 +6,7 @@ import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import { ESimGoClient } from "@esim-go/client";
+import { AirHaloClient } from "@airhalo/client";
 import { mergeTypeDefs } from "@graphql-tools/merge";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { cleanEnv, port, str } from "envalid";
@@ -59,16 +60,25 @@ const rulesEngineSchema = readFileSync(
   "utf-8"
 );
 
+const airHaloSchema = readFileSync(
+  join(__dirname, "../schemas/airhalo.graphql"),
+  "utf-8"
+);
+
 const typeDefs = mergeTypeDefs([
   authDirectiveTypeDefs,
   mainSchema,
   rulesEngineSchema,
+  airHaloSchema,
 ]);
 
 const env = cleanEnv(process.env, {
   PORT: port({ default: 5001 }),
   CORS_ORIGINS: str({ default: "http://localhost:3000" }),
   ESIM_GO_API_KEY: str({ desc: "eSIM Go API key for V2 sync service" }),
+  AIRHALO_CLIENT_ID: str({ default: "", desc: "AirHalo API client ID (optional)" }),
+  AIRHALO_CLIENT_SECRET: str({ default: "", desc: "AirHalo API client secret (optional)" }),
+  AIRHALO_BASE_URL: str({ default: "https://api.airalo.com", desc: "AirHalo API base URL" }),
 });
 
 async function startServer() {
@@ -95,6 +105,21 @@ async function startServer() {
       baseUrl: "https://api.esim-go.com/v2.5",
       retryAttempts: 3,
     });
+
+    // Initialize AirHalo client (optional)
+    let airHaloClient: AirHaloClient | undefined;
+    if (env.AIRHALO_CLIENT_ID && env.AIRHALO_CLIENT_SECRET) {
+      console.log("Initializing AirHalo client...");
+      airHaloClient = new AirHaloClient({
+        clientId: env.AIRHALO_CLIENT_ID,
+        clientSecret: env.AIRHALO_CLIENT_SECRET,
+        baseUrl: env.AIRHALO_BASE_URL,
+        timeout: 30000,
+      });
+      console.log("✅ AirHalo client initialized successfully");
+    } else {
+      console.log("⚠️ AirHalo credentials not provided - AirHalo features will be disabled");
+    }
 
     // Initialize repositories
     const checkoutSessionRepository = new CheckoutSessionRepository();
@@ -141,6 +166,7 @@ async function startServer() {
               db: supabaseAdmin,
               syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
               esimGoClient,
+              airHaloClient,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -373,6 +399,7 @@ async function startServer() {
               pubsub,
               syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
               esimGoClient,
+              airHaloClient,
               db: supabaseAdmin,
             },
             repositories: {

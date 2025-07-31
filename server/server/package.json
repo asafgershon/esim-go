@@ -35,6 +35,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@airhalo/client": "workspace:*",
     "@apollo/datasource-rest": "^6.4.1",
     "@apollo/server": "^4.12.2",
     "@apollo/utils.keyvadapter": "^4.0.1",

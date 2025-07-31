@@ -12,6 +12,7 @@ import { pricingRulesResolvers } from "./resolvers/pricing-rules-resolvers";
 import { pricingResolvers } from "./resolvers/pricing-resolvers";
 import { tripsResolvers } from "./resolvers/trips-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
+import { airHaloResolvers } from "./resolvers/airhalo-resolvers";
 import type { Resolvers } from "./types";
 import * as countriesList from "countries-list";
 
@@ -48,6 +49,9 @@ export const resolvers: Resolvers = {
 
     // Checkout resolvers (getCheckoutSession, etc.)
     ...checkoutResolvers.Query!,
+
+    // AirHalo resolvers
+    ...airHaloResolvers.Query!,
 
     // Countries resolvers
     countries: async (_, __, context: Context) => {

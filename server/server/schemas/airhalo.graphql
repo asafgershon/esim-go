@@ -1,0 +1,146 @@
+# AirHalo GraphQL Schema Types
+# These types mirror the AirHalo API response structures for pricing data
+
+# AirHalo Package/Bundle Types
+type AirHaloPackage {
+  id: String!
+  type: String!
+  title: String!
+  shortInfo: String
+  data: String!
+  amount: Float!
+  day: Int!
+  isUnlimited: Boolean!
+  voice: Int
+  text: Int
+  price: AirHaloPrice!
+  netPrice: AirHaloPrice!
+  prices: AirHaloPrices!
+  qrInstallation: String!
+  manualInstallation: String!
+  isFairUsagePolicy: Boolean
+  fairUsagePolicy: String
+}
+
+type AirHaloPrice {
+  value: Float!
+  currency: String!
+}
+
+type AirHaloPrices {
+  netPrice: AirHaloPrice!
+  recommendedRetailPrice: AirHaloPrice!
+}
+
+type AirHaloOperator {
+  id: String!
+  title: String!
+  type: String!
+  countries: [AirHaloCountry!]!
+  packages: [AirHaloPackage!]!
+  coverages: [AirHaloCoverage!]!
+  apn: AirHaloAPN
+}
+
+type AirHaloCountry {
+  id: String!
+  title: String!
+  slug: String!
+}
+
+type AirHaloCoverage {
+  networks: [AirHaloNetwork!]!
+}
+
+type AirHaloNetwork {
+  name: String!
+  type: String!
+}
+
+type AirHaloAPN {
+  name: String
+  username: String
+  password: String
+  ios: AirHaloAPNIOS
+}
+
+type AirHaloAPNIOS {
+  name: String
+  username: String
+  password: String
+}
+
+type AirHaloPackageData {
+  id: String!
+  title: String!
+  slug: String!
+  image: AirHaloImage
+  operators: [AirHaloOperator!]!
+}
+
+type AirHaloImage {
+  url: String!
+  width: Int
+  height: Int
+}
+
+# Response wrapper types
+type AirHaloPackagesResponse {
+  data: [AirHaloPackageData!]!
+  links: AirHaloLinks
+  meta: AirHaloMeta
+}
+
+type AirHaloLinks {
+  first: String
+  last: String
+  prev: String
+  next: String
+}
+
+type AirHaloMeta {
+  currentPage: Int
+  from: Int
+  lastPage: Int
+  path: String
+  perPage: Int
+  to: Int
+  total: Int
+}
+
+# Compatible devices
+type AirHaloCompatibleDevice {
+  manufacturer: String!
+  model: String!
+  esimSupport: Boolean!
+}
+
+type AirHaloCompatibleDevicesResponse {
+  data: [AirHaloCompatibleDevice!]!
+}
+
+# Input types for filtering
+input AirHaloPackageFilter {
+  type: AirHaloPackageType
+  countries: [String!]
+  limit: Int
+  page: Int
+  includeTopup: Boolean
+}
+
+enum AirHaloPackageType {
+  LOCAL
+  REGIONAL
+  GLOBAL
+}
+
+# Query extensions
+extend type Query {
+  # AirHalo package queries
+  airHaloPackages(filter: AirHaloPackageFilter): AirHaloPackagesResponse!
+  airHaloCompatibleDevices: AirHaloCompatibleDevicesResponse!
+  
+  # Pricing comparison queries
+  compareAirHaloPackages(countryCode: String!): [AirHaloPackageData!]!
+  airHaloPricingData(packageIds: [String!]!): [AirHaloPackage!]!
+}
