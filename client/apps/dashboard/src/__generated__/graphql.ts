@@ -97,6 +97,151 @@ export type AdminEsimUser = {
   lastName?: Maybe<Scalars['String']['output']>;
 };
 
+export type AirHaloApn = {
+  __typename?: 'AirHaloAPN';
+  ios?: Maybe<AirHaloApnios>;
+  name?: Maybe<Scalars['String']['output']>;
+  password?: Maybe<Scalars['String']['output']>;
+  username?: Maybe<Scalars['String']['output']>;
+};
+
+export type AirHaloApnios = {
+  __typename?: 'AirHaloAPNIOS';
+  name?: Maybe<Scalars['String']['output']>;
+  password?: Maybe<Scalars['String']['output']>;
+  username?: Maybe<Scalars['String']['output']>;
+};
+
+export type AirHaloCompatibleDevice = {
+  __typename?: 'AirHaloCompatibleDevice';
+  esimSupport: Scalars['Boolean']['output'];
+  manufacturer: Scalars['String']['output'];
+  model: Scalars['String']['output'];
+};
+
+export type AirHaloCompatibleDevicesResponse = {
+  __typename?: 'AirHaloCompatibleDevicesResponse';
+  data: Array<AirHaloCompatibleDevice>;
+};
+
+export type AirHaloCountry = {
+  __typename?: 'AirHaloCountry';
+  id: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type AirHaloCoverage = {
+  __typename?: 'AirHaloCoverage';
+  networks: Array<AirHaloNetwork>;
+};
+
+export type AirHaloImage = {
+  __typename?: 'AirHaloImage';
+  height?: Maybe<Scalars['Int']['output']>;
+  url: Scalars['String']['output'];
+  width?: Maybe<Scalars['Int']['output']>;
+};
+
+export type AirHaloLinks = {
+  __typename?: 'AirHaloLinks';
+  first?: Maybe<Scalars['String']['output']>;
+  last?: Maybe<Scalars['String']['output']>;
+  next?: Maybe<Scalars['String']['output']>;
+  prev?: Maybe<Scalars['String']['output']>;
+};
+
+export type AirHaloMeta = {
+  __typename?: 'AirHaloMeta';
+  currentPage?: Maybe<Scalars['Int']['output']>;
+  from?: Maybe<Scalars['Int']['output']>;
+  lastPage?: Maybe<Scalars['Int']['output']>;
+  path?: Maybe<Scalars['String']['output']>;
+  perPage?: Maybe<Scalars['Int']['output']>;
+  to?: Maybe<Scalars['Int']['output']>;
+  total?: Maybe<Scalars['Int']['output']>;
+};
+
+export type AirHaloNetwork = {
+  __typename?: 'AirHaloNetwork';
+  name: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type AirHaloOperator = {
+  __typename?: 'AirHaloOperator';
+  apn?: Maybe<AirHaloApn>;
+  countries: Array<AirHaloCountry>;
+  coverages: Array<AirHaloCoverage>;
+  id: Scalars['String']['output'];
+  packages: Array<AirHaloPackage>;
+  title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type AirHaloPackage = {
+  __typename?: 'AirHaloPackage';
+  amount: Scalars['Float']['output'];
+  data: Scalars['String']['output'];
+  day: Scalars['Int']['output'];
+  fairUsagePolicy?: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  isFairUsagePolicy?: Maybe<Scalars['Boolean']['output']>;
+  isUnlimited: Scalars['Boolean']['output'];
+  manualInstallation: Scalars['String']['output'];
+  netPrice: AirHaloPrice;
+  price: AirHaloPrice;
+  prices: AirHaloPrices;
+  qrInstallation: Scalars['String']['output'];
+  shortInfo?: Maybe<Scalars['String']['output']>;
+  text?: Maybe<Scalars['Int']['output']>;
+  title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+  voice?: Maybe<Scalars['Int']['output']>;
+};
+
+export type AirHaloPackageData = {
+  __typename?: 'AirHaloPackageData';
+  id: Scalars['String']['output'];
+  image?: Maybe<AirHaloImage>;
+  operators: Array<AirHaloOperator>;
+  slug: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type AirHaloPackageFilter = {
+  countries?: InputMaybe<Array<Scalars['String']['input']>>;
+  includeTopup?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  type?: InputMaybe<AirHaloPackageType>;
+};
+
+export enum AirHaloPackageType {
+  Global = 'GLOBAL',
+  Local = 'LOCAL',
+  Regional = 'REGIONAL'
+}
+
+export type AirHaloPackagesResponse = {
+  __typename?: 'AirHaloPackagesResponse';
+  data: Array<AirHaloPackageData>;
+  links?: Maybe<AirHaloLinks>;
+  meta?: Maybe<AirHaloMeta>;
+};
+
+export type AirHaloPrice = {
+  __typename?: 'AirHaloPrice';
+  currency: Scalars['String']['output'];
+  value: Scalars['Float']['output'];
+};
+
+export type AirHaloPrices = {
+  __typename?: 'AirHaloPrices';
+  netPrice: AirHaloPrice;
+  recommendedRetailPrice: AirHaloPrice;
+};
+
 export type AppliedRule = {
   __typename?: 'AppliedRule';
   category: RuleCategory;
@@ -1184,6 +1329,9 @@ export type PurchaseEsimResponse = {
 export type Query = {
   __typename?: 'Query';
   activePricingRules: Array<PricingRule>;
+  airHaloCompatibleDevices: AirHaloCompatibleDevicesResponse;
+  airHaloPackages: AirHaloPackagesResponse;
+  airHaloPricingData: Array<AirHaloPackage>;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
   bundles: BundleConnection;
@@ -1197,6 +1345,7 @@ export type Query = {
   calculatePrices: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
+  compareAirHaloPackages: Array<AirHaloPackageData>;
   conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   esimDetails?: Maybe<Esim>;
@@ -1219,6 +1368,16 @@ export type Query = {
   simulatePricingRule: PricingBreakdown;
   trips: Array<Trip>;
   users: Array<User>;
+};
+
+
+export type QueryAirHaloPackagesArgs = {
+  filter?: InputMaybe<AirHaloPackageFilter>;
+};
+
+
+export type QueryAirHaloPricingDataArgs = {
+  packageIds: Array<Scalars['String']['input']>;
 };
 
 
@@ -1284,6 +1443,11 @@ export type QueryCatalogBundlesArgs = {
 
 export type QueryCatalogSyncHistoryArgs = {
   params?: InputMaybe<SyncHistoryParams>;
+};
+
+
+export type QueryCompareAirHaloPackagesArgs = {
+  countryCode: Scalars['String']['input'];
 };
 
 
@@ -1889,6 +2053,32 @@ export type TriggerCatalogSyncMutationVariables = Exact<{
 
 export type TriggerCatalogSyncMutation = { __typename?: 'Mutation', triggerCatalogSync?: { __typename?: 'TriggerSyncResponse', success: boolean, jobId?: string | null, message?: string | null, error?: string | null, conflictingJob?: { __typename?: 'ConflictingJobInfo', id: string, jobType: string, status: string, createdAt: string, startedAt?: string | null } | null } | null };
 
+export type GetAirHaloPackagesQueryVariables = Exact<{
+  filter?: InputMaybe<AirHaloPackageFilter>;
+}>;
+
+
+export type GetAirHaloPackagesQuery = { __typename?: 'Query', airHaloPackages: { __typename?: 'AirHaloPackagesResponse', data: Array<{ __typename?: 'AirHaloPackageData', id: string, title: string, slug: string, image?: { __typename?: 'AirHaloImage', url: string, width?: number | null, height?: number | null } | null, operators: Array<{ __typename?: 'AirHaloOperator', id: string, title: string, type: string, countries: Array<{ __typename?: 'AirHaloCountry', id: string, title: string, slug: string }>, packages: Array<{ __typename?: 'AirHaloPackage', id: string, type: string, title: string, shortInfo?: string | null, data: string, amount: number, day: number, isUnlimited: boolean, voice?: number | null, text?: number | null, qrInstallation: string, manualInstallation: string, isFairUsagePolicy?: boolean | null, fairUsagePolicy?: string | null, price: { __typename?: 'AirHaloPrice', value: number, currency: string }, netPrice: { __typename?: 'AirHaloPrice', value: number, currency: string }, prices: { __typename?: 'AirHaloPrices', netPrice: { __typename?: 'AirHaloPrice', value: number, currency: string }, recommendedRetailPrice: { __typename?: 'AirHaloPrice', value: number, currency: string } } }>, coverages: Array<{ __typename?: 'AirHaloCoverage', networks: Array<{ __typename?: 'AirHaloNetwork', name: string, type: string }> }>, apn?: { __typename?: 'AirHaloAPN', name?: string | null, username?: string | null, password?: string | null, ios?: { __typename?: 'AirHaloAPNIOS', name?: string | null, username?: string | null, password?: string | null } | null } | null }> }>, links?: { __typename?: 'AirHaloLinks', first?: string | null, last?: string | null, prev?: string | null, next?: string | null } | null, meta?: { __typename?: 'AirHaloMeta', currentPage?: number | null, from?: number | null, lastPage?: number | null, path?: string | null, perPage?: number | null, to?: number | null, total?: number | null } | null } };
+
+export type GetAirHaloCompatibleDevicesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetAirHaloCompatibleDevicesQuery = { __typename?: 'Query', airHaloCompatibleDevices: { __typename?: 'AirHaloCompatibleDevicesResponse', data: Array<{ __typename?: 'AirHaloCompatibleDevice', manufacturer: string, model: string, esimSupport: boolean }> } };
+
+export type CompareAirHaloPackagesQueryVariables = Exact<{
+  countryCode: Scalars['String']['input'];
+}>;
+
+
+export type CompareAirHaloPackagesQuery = { __typename?: 'Query', compareAirHaloPackages: Array<{ __typename?: 'AirHaloPackageData', id: string, title: string, slug: string, image?: { __typename?: 'AirHaloImage', url: string, width?: number | null, height?: number | null } | null, operators: Array<{ __typename?: 'AirHaloOperator', id: string, title: string, type: string, countries: Array<{ __typename?: 'AirHaloCountry', id: string, title: string, slug: string }>, packages: Array<{ __typename?: 'AirHaloPackage', id: string, type: string, title: string, shortInfo?: string | null, data: string, amount: number, day: number, isUnlimited: boolean, voice?: number | null, text?: number | null, qrInstallation: string, manualInstallation: string, isFairUsagePolicy?: boolean | null, fairUsagePolicy?: string | null, price: { __typename?: 'AirHaloPrice', value: number, currency: string }, netPrice: { __typename?: 'AirHaloPrice', value: number, currency: string }, prices: { __typename?: 'AirHaloPrices', netPrice: { __typename?: 'AirHaloPrice', value: number, currency: string }, recommendedRetailPrice: { __typename?: 'AirHaloPrice', value: number, currency: string } } }>, coverages: Array<{ __typename?: 'AirHaloCoverage', networks: Array<{ __typename?: 'AirHaloNetwork', name: string, type: string }> }> }> }> };
+
+export type GetAirHaloPricingDataQueryVariables = Exact<{
+  packageIds: Array<Scalars['String']['input']> | Scalars['String']['input'];
+}>;
+
+
+export type GetAirHaloPricingDataQuery = { __typename?: 'Query', airHaloPricingData: Array<{ __typename?: 'AirHaloPackage', id: string, type: string, title: string, shortInfo?: string | null, data: string, amount: number, day: number, isUnlimited: boolean, voice?: number | null, text?: number | null, qrInstallation: string, manualInstallation: string, isFairUsagePolicy?: boolean | null, fairUsagePolicy?: string | null, price: { __typename?: 'AirHaloPrice', value: number, currency: string }, netPrice: { __typename?: 'AirHaloPrice', value: number, currency: string }, prices: { __typename?: 'AirHaloPrices', netPrice: { __typename?: 'AirHaloPrice', value: number, currency: string }, recommendedRetailPrice: { __typename?: 'AirHaloPrice', value: number, currency: string } } }> };
+
 export type GetBundlesQueryVariables = Exact<{
   filter?: InputMaybe<BundleFilter>;
   pagination?: InputMaybe<PaginationInput>;
@@ -1943,5 +2133,9 @@ export const GetHighDemandCountriesDocument = {"kind":"Document","definitions":[
 export const ToggleHighDemandCountryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ToggleHighDemandCountry"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"countryId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"toggleHighDemandCountry"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"countryId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"countryId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"countryId"}},{"kind":"Field","name":{"kind":"Name","value":"isHighDemand"}},{"kind":"Field","name":{"kind":"Name","value":"error"}}]}}]}}]} as unknown as DocumentNode<ToggleHighDemandCountryMutation, ToggleHighDemandCountryMutationVariables>;
 export const GetCatalogSyncHistoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCatalogSyncHistory"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"params"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"SyncHistoryParams"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"catalogSyncHistory"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"params"},"value":{"kind":"Variable","name":{"kind":"Name","value":"params"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"jobs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"jobType"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"group"}},{"kind":"Field","name":{"kind":"Name","value":"countryId"}},{"kind":"Field","name":{"kind":"Name","value":"bundlesProcessed"}},{"kind":"Field","name":{"kind":"Name","value":"bundlesAdded"}},{"kind":"Field","name":{"kind":"Name","value":"bundlesUpdated"}},{"kind":"Field","name":{"kind":"Name","value":"errorMessage"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"startedAt"}},{"kind":"Field","name":{"kind":"Name","value":"completedAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}}]}}]}}]} as unknown as DocumentNode<GetCatalogSyncHistoryQuery, GetCatalogSyncHistoryQueryVariables>;
 export const TriggerCatalogSyncDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"TriggerCatalogSync"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"params"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TriggerSyncParams"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"triggerCatalogSync"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"params"},"value":{"kind":"Variable","name":{"kind":"Name","value":"params"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"jobId"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"conflictingJob"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"jobType"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"startedAt"}}]}}]}}]}}]} as unknown as DocumentNode<TriggerCatalogSyncMutation, TriggerCatalogSyncMutationVariables>;
+export const GetAirHaloPackagesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAirHaloPackages"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"AirHaloPackageFilter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"airHaloPackages"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"filter"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"data"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"slug"}},{"kind":"Field","name":{"kind":"Name","value":"image"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}}]}},{"kind":"Field","name":{"kind":"Name","value":"operators"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"countries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"slug"}}]}},{"kind":"Field","name":{"kind":"Name","value":"packages"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"shortInfo"}},{"kind":"Field","name":{"kind":"Name","value":"data"}},{"kind":"Field","name":{"kind":"Name","value":"amount"}},{"kind":"Field","name":{"kind":"Name","value":"day"}},{"kind":"Field","name":{"kind":"Name","value":"isUnlimited"}},{"kind":"Field","name":{"kind":"Name","value":"voice"}},{"kind":"Field","name":{"kind":"Name","value":"text"}},{"kind":"Field","name":{"kind":"Name","value":"price"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"netPrice"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"prices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"netPrice"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recommendedRetailPrice"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"qrInstallation"}},{"kind":"Field","name":{"kind":"Name","value":"manualInstallation"}},{"kind":"Field","name":{"kind":"Name","value":"isFairUsagePolicy"}},{"kind":"Field","name":{"kind":"Name","value":"fairUsagePolicy"}}]}},{"kind":"Field","name":{"kind":"Name","value":"coverages"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"networks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"apn"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"password"}},{"kind":"Field","name":{"kind":"Name","value":"ios"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"password"}}]}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"links"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"first"}},{"kind":"Field","name":{"kind":"Name","value":"last"}},{"kind":"Field","name":{"kind":"Name","value":"prev"}},{"kind":"Field","name":{"kind":"Name","value":"next"}}]}},{"kind":"Field","name":{"kind":"Name","value":"meta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"currentPage"}},{"kind":"Field","name":{"kind":"Name","value":"from"}},{"kind":"Field","name":{"kind":"Name","value":"lastPage"}},{"kind":"Field","name":{"kind":"Name","value":"path"}},{"kind":"Field","name":{"kind":"Name","value":"perPage"}},{"kind":"Field","name":{"kind":"Name","value":"to"}},{"kind":"Field","name":{"kind":"Name","value":"total"}}]}}]}}]}}]} as unknown as DocumentNode<GetAirHaloPackagesQuery, GetAirHaloPackagesQueryVariables>;
+export const GetAirHaloCompatibleDevicesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAirHaloCompatibleDevices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"airHaloCompatibleDevices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"data"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"manufacturer"}},{"kind":"Field","name":{"kind":"Name","value":"model"}},{"kind":"Field","name":{"kind":"Name","value":"esimSupport"}}]}}]}}]}}]} as unknown as DocumentNode<GetAirHaloCompatibleDevicesQuery, GetAirHaloCompatibleDevicesQueryVariables>;
+export const CompareAirHaloPackagesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CompareAirHaloPackages"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"countryCode"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"compareAirHaloPackages"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"countryCode"},"value":{"kind":"Variable","name":{"kind":"Name","value":"countryCode"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"slug"}},{"kind":"Field","name":{"kind":"Name","value":"image"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"width"}},{"kind":"Field","name":{"kind":"Name","value":"height"}}]}},{"kind":"Field","name":{"kind":"Name","value":"operators"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"countries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"slug"}}]}},{"kind":"Field","name":{"kind":"Name","value":"packages"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"shortInfo"}},{"kind":"Field","name":{"kind":"Name","value":"data"}},{"kind":"Field","name":{"kind":"Name","value":"amount"}},{"kind":"Field","name":{"kind":"Name","value":"day"}},{"kind":"Field","name":{"kind":"Name","value":"isUnlimited"}},{"kind":"Field","name":{"kind":"Name","value":"voice"}},{"kind":"Field","name":{"kind":"Name","value":"text"}},{"kind":"Field","name":{"kind":"Name","value":"price"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"netPrice"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"prices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"netPrice"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recommendedRetailPrice"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"qrInstallation"}},{"kind":"Field","name":{"kind":"Name","value":"manualInstallation"}},{"kind":"Field","name":{"kind":"Name","value":"isFairUsagePolicy"}},{"kind":"Field","name":{"kind":"Name","value":"fairUsagePolicy"}}]}},{"kind":"Field","name":{"kind":"Name","value":"coverages"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"networks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<CompareAirHaloPackagesQuery, CompareAirHaloPackagesQueryVariables>;
+export const GetAirHaloPricingDataDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAirHaloPricingData"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"packageIds"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"airHaloPricingData"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"packageIds"},"value":{"kind":"Variable","name":{"kind":"Name","value":"packageIds"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"shortInfo"}},{"kind":"Field","name":{"kind":"Name","value":"data"}},{"kind":"Field","name":{"kind":"Name","value":"amount"}},{"kind":"Field","name":{"kind":"Name","value":"day"}},{"kind":"Field","name":{"kind":"Name","value":"isUnlimited"}},{"kind":"Field","name":{"kind":"Name","value":"voice"}},{"kind":"Field","name":{"kind":"Name","value":"text"}},{"kind":"Field","name":{"kind":"Name","value":"price"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"netPrice"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"prices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"netPrice"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recommendedRetailPrice"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"qrInstallation"}},{"kind":"Field","name":{"kind":"Name","value":"manualInstallation"}},{"kind":"Field","name":{"kind":"Name","value":"isFairUsagePolicy"}},{"kind":"Field","name":{"kind":"Name","value":"fairUsagePolicy"}}]}}]}}]} as unknown as DocumentNode<GetAirHaloPricingDataQuery, GetAirHaloPricingDataQueryVariables>;
 export const GetBundlesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetBundles"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"filter"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"BundleFilter"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"pagination"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"PaginationInput"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bundles"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"filter"},"value":{"kind":"Variable","name":{"kind":"Name","value":"filter"}}},{"kind":"Argument","name":{"kind":"Name","value":"pagination"},"value":{"kind":"Variable","name":{"kind":"Name","value":"pagination"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"nodes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"CatalogBundle"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"esimGoName"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"groups"}},{"kind":"Field","name":{"kind":"Name","value":"validityInDays"}},{"kind":"Field","name":{"kind":"Name","value":"dataAmountMB"}},{"kind":"Field","name":{"kind":"Name","value":"dataAmountReadable"}},{"kind":"Field","name":{"kind":"Name","value":"isUnlimited"}},{"kind":"Field","name":{"kind":"Name","value":"countries"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"basePrice"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"syncedAt"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasPreviousPage"}}]}}]}}]}}]} as unknown as DocumentNode<GetBundlesQuery, GetBundlesQueryVariables>;
 export const GetAllEsiMsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAllESIMs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getAllESIMs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"iccid"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"apiStatus"}},{"kind":"Field","name":{"kind":"Name","value":"userId"}},{"kind":"Field","name":{"kind":"Name","value":"orderId"}},{"kind":"Field","name":{"kind":"Name","value":"customerRef"}},{"kind":"Field","name":{"kind":"Name","value":"assignedDate"}},{"kind":"Field","name":{"kind":"Name","value":"lastAction"}},{"kind":"Field","name":{"kind":"Name","value":"actionDate"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"order"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"reference"}},{"kind":"Field","name":{"kind":"Name","value":"bundleName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"usage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalUsed"}},{"kind":"Field","name":{"kind":"Name","value":"totalRemaining"}}]}}]}}]}}]} as unknown as DocumentNode<GetAllEsiMsQuery, GetAllEsiMsQueryVariables>;

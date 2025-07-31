@@ -56,7 +56,8 @@ export class RuleBuilder {
   }
 
   immutable(): this {
-    this.rule.category = RuleCategoryEnum.BundleAdjustment; // System rules are immutable
+    // Mark as immutable but don't change category - preserve the original category
+    // this.rule.category = RuleCategoryEnum.BundleAdjustment; // System rules are immutable
     return this;
   }
 

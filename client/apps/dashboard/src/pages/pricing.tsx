@@ -1,6 +1,6 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui';
-import { Calculator, Layers, Settings } from 'lucide-react';
+import { Calculator, Layers, Settings, Globe } from 'lucide-react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 
@@ -27,6 +27,11 @@ const PricingPage: React.FC = () => {
       title: 'Simulator Pricing',
       icon: <Calculator className="h-5 w-5" />,
       description: 'Simulate pricing for any country and duration combination'
+    },
+    '/pricing/airhalo': {
+      title: 'AirHalo Pricing',
+      icon: <Globe className="h-5 w-5" />,
+      description: 'View and compare AirHalo competitor pricing data across different packages and countries'
     }
   };
 
@@ -88,6 +93,17 @@ const PricingPage: React.FC = () => {
               <Calculator className="h-4 w-4" />
               Simulator Pricing
             </Link>
+            <Link
+              to="/pricing/airhalo"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                currentPath === '/pricing/airhalo'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Globe className="h-4 w-4" />
+              AirHalo Pricing
+            </Link>
           </div>
 
           {/* Mobile Dropdown - shown on mobile and tablet, hidden on desktop */}
@@ -113,6 +129,12 @@ const PricingPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Calculator className="h-4 w-4" />
                   <span>Simulator Pricing</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="/pricing/airhalo">
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  <span>AirHalo Pricing</span>
                 </div>
               </SelectItem>
             </SelectContent>

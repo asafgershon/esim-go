@@ -770,3 +770,212 @@ export const TRIGGER_CATALOG_SYNC = gql(`
     }
   }
 `);
+
+// AirHalo Queries
+export const GET_AIRHALO_PACKAGES = gql(`
+  query GetAirHaloPackages($filter: AirHaloPackageFilter) {
+    airHaloPackages(filter: $filter) {
+      data {
+        id
+        title
+        slug
+        image {
+          url
+          width
+          height
+        }
+        operators {
+          id
+          title
+          type
+          countries {
+            id
+            title
+            slug
+          }
+          packages {
+            id
+            type
+            title
+            shortInfo
+            data
+            amount
+            day
+            isUnlimited
+            voice
+            text
+            price {
+              value
+              currency
+            }
+            netPrice {
+              value
+              currency
+            }
+            prices {
+              netPrice {
+                value
+                currency
+              }
+              recommendedRetailPrice {
+                value
+                currency
+              }
+            }
+            qrInstallation
+            manualInstallation
+            isFairUsagePolicy
+            fairUsagePolicy
+          }
+          coverages {
+            networks {
+              name
+              type
+            }
+          }
+          apn {
+            name
+            username
+            password
+            ios {
+              name
+              username
+              password
+            }
+          }
+        }
+      }
+      links {
+        first
+        last
+        prev
+        next
+      }
+      meta {
+        currentPage
+        from
+        lastPage
+        path
+        perPage
+        to
+        total
+      }
+    }
+  }
+`);
+
+export const GET_AIRHALO_COMPATIBLE_DEVICES = gql(`
+  query GetAirHaloCompatibleDevices {
+    airHaloCompatibleDevices {
+      data {
+        manufacturer
+        model
+        esimSupport
+      }
+    }
+  }
+`);
+
+export const COMPARE_AIRHALO_PACKAGES = gql(`
+  query CompareAirHaloPackages($countryCode: String!) {
+    compareAirHaloPackages(countryCode: $countryCode) {
+      id
+      title
+      slug
+      image {
+        url
+        width
+        height
+      }
+      operators {
+        id
+        title
+        type
+        countries {
+          id
+          title
+          slug
+        }
+        packages {
+          id
+          type
+          title
+          shortInfo
+          data
+          amount
+          day
+          isUnlimited
+          voice
+          text
+          price {
+            value
+            currency
+          }
+          netPrice {
+            value
+            currency
+          }
+          prices {
+            netPrice {
+              value
+              currency
+            }
+            recommendedRetailPrice {
+              value
+              currency
+            }
+          }
+          qrInstallation
+          manualInstallation
+          isFairUsagePolicy
+          fairUsagePolicy
+        }
+        coverages {
+          networks {
+            name
+            type
+          }
+        }
+      }
+    }
+  }
+`);
+
+export const GET_AIRHALO_PRICING_DATA = gql(`
+  query GetAirHaloPricingData($packageIds: [String!]!) {
+    airHaloPricingData(packageIds: $packageIds) {
+      id
+      type
+      title
+      shortInfo
+      data
+      amount
+      day
+      isUnlimited
+      voice
+      text
+      price {
+        value
+        currency
+      }
+      netPrice {
+        value
+        currency
+      }
+      prices {
+        netPrice {
+          value
+          currency
+        }
+        recommendedRetailPrice {
+          value
+          currency
+        }
+      }
+      qrInstallation
+      manualInstallation
+      isFairUsagePolicy
+      fairUsagePolicy
+    }
+  }
+`);
