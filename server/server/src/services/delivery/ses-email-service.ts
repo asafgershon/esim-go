@@ -17,8 +17,13 @@ const env = cleanEnv(process.env, {
     desc: 'AWS secret access key',
     default: ''
   }),
+  SES_EMAIL_DOMAIN: str({
+    desc: 'Domain for sending emails via SES',
+    default: 'hiiloworld.com',
+    devDefault: 'hiiilo.yarinsa.me'
+  }),
   SES_FROM_EMAIL: str({ 
-    desc: 'From email address for SES', 
+    desc: 'From email address for SES (deprecated, use SES_EMAIL_DOMAIN)', 
     default: 'noreply@esim-go.com' 
   }),
   SES_CONFIGURATION_SET: str({ 
@@ -43,7 +48,15 @@ export class SESEmailService implements EmailService {
       } : undefined, // Use default credentials chain if not provided
     });
     
-    this.fromEmail = env.SES_FROM_EMAIL;
+    // Use domain from env to construct from email
+    const emailDomain = env.SES_EMAIL_DOMAIN;
+    this.fromEmail = `noreply@${emailDomain}`;
+    
+    // Fall back to SES_FROM_EMAIL if explicitly set
+    if (env.SES_FROM_EMAIL && env.SES_FROM_EMAIL !== 'noreply@esim-go.com') {
+      this.fromEmail = env.SES_FROM_EMAIL;
+    }
+    
     this.configurationSet = env.SES_CONFIGURATION_SET || undefined;
   }
 
