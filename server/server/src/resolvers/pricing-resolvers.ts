@@ -3,6 +3,11 @@ import {
   type PricingEngineInput,
   type PricingEngineOutput,
 } from "@esim-go/rules-engine";
+import {
+  calculatePricing as calculatePricingV2,
+  type RequestFacts,
+  type PricingEngineV2Result,
+} from "@esim-go/rules-engine-2";
 import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
@@ -131,7 +136,9 @@ export async function calculatePricingForBundle(
         duration: bundle.validityInDays,
         paymentMethod,
         countryISO: bundle.countries?.[0] || "",
-        dataType: (bundle.isUnlimited ? "unlimited" : "fixed") as "unlimited" | "fixed",
+        dataType: (bundle.isUnlimited ? "unlimited" : "fixed") as
+          | "unlimited"
+          | "fixed",
       },
       metadata: {
         correlationId: finalCorrelationId,
@@ -139,7 +146,6 @@ export async function calculatePricingForBundle(
         userId: context.auth?.user?.id,
       },
     };
-
 
     // Also log what will be available in the engine state structure
     logger.info("Engine input structure for field matching", {
@@ -508,7 +514,12 @@ export const pricingQueries: QueryResolvers = {
           duration: numOfDays,
           paymentMethod: mapPaymentMethodEnum(paymentMethod),
           countryISO: countryId || "",
-          dataType: (groups?.map(g=>g.toLowerCase().includes('unlimited'))?.includes(true) || false) ? "unlimited" : "fixed" as "unlimited" | "fixed",
+          dataType:
+            groups
+              ?.map((g) => g.toLowerCase().includes("unlimited"))
+              ?.includes(true) || false
+              ? "unlimited"
+              : ("fixed" as "unlimited" | "fixed"),
         },
         metadata: {
           correlationId,
@@ -527,7 +538,8 @@ export const pricingQueries: QueryResolvers = {
         selectedBundleGroups: result.response.selectedBundle?.groups,
         processingGroup: result.processing.group,
         appliedRulesCount: result.response.appliedRules?.length || 0,
-        appliedRuleNames: result.response.appliedRules?.map((r: PricingRule) => r.name) || [],
+        appliedRuleNames:
+          result.response.appliedRules?.map((r: PricingRule) => r.name) || [],
         pricing: {
           cost: result.response.pricing?.cost,
           markup: result.response.pricing?.markup,
@@ -664,10 +676,12 @@ export const pricingQueries: QueryResolvers = {
             duration: input.numOfDays,
             paymentMethod: mapPaymentMethodEnum(input.paymentMethod),
             countryISO: input.countryId || "",
-            dataType: (input.groups?.includes("Standard Unlimited Essential") || 
-                       input.groups?.includes("Standard Unlimited Plus") || 
-                       input.groups?.includes("Standard Unlimited Lite")) 
-                       ? "unlimited" : "fixed" as "unlimited" | "fixed",
+            dataType:
+              input.groups?.includes("Standard Unlimited Essential") ||
+              input.groups?.includes("Standard Unlimited Plus") ||
+              input.groups?.includes("Standard Unlimited Lite")
+                ? "unlimited"
+                : ("fixed" as "unlimited" | "fixed"),
           },
           metadata: {
             correlationId: `${correlationId}-${results.length}`,
@@ -859,6 +873,292 @@ export const pricingQueries: QueryResolvers = {
     // Return the configured payment methods
     // In the future, this will be fetched from the rules system
     return PAYMENT_METHODS_CONFIG;
+  },
+
+  /**
+   * Calculate pricing using the new rules-engine-2
+   * Supports both country and region-based pricing
+   */
+  calculatePrice2: async (
+    _: any,
+    { input }: { input: CalculatePriceInput },
+    context: Context
+  ): Promise<PricingBreakdown> => {
+    const correlationId = getCorrelationId(context);
+
+    logger.info("Calculating price with rules-engine-2", {
+      input,
+      correlationId,
+      operationType: "calculate-price-v2",
+    });
+
+    try {
+      const { numOfDays, countryId, regionId, groups } = input;
+      // Validate input
+      if (!numOfDays || numOfDays < 1) {
+        throw new GraphQLError("Invalid number of days", {
+          extensions: { code: "INVALID_INPUT" },
+        });
+      }
+
+      if (!countryId && !regionId) {
+        throw new GraphQLError("Either countryId or regionId is required", {
+          extensions: { code: "INVALID_INPUT" },
+        });
+      }
+
+      // Get the group - for now using the first group or a default
+      const group = input.groups?.[0] || "Standard Unlimited Essential";
+
+      // Prepare request facts for the engine
+      const requestFacts = {
+        group,
+        days: numOfDays,
+        ...(countryId ? { country: countryId! } : {}),
+        ...(regionId ? { region: regionId! } : {}),
+      } as RequestFacts;
+
+      // Run the v2 engine
+      const result = await calculatePricingV2(requestFacts);
+
+      // Map the result to PricingBreakdown format
+      const pricingBreakdown: PricingBreakdown = {
+        __typename: "PricingBreakdown",
+
+        // Bundle Information
+        bundle: {
+          __typename: "CountryBundle",
+          id:
+            result.selectedBundle?.esim_go_name ||
+            `bundle_${countryId || regionId}_${numOfDays}d`,
+          name: result.selectedBundle?.esim_go_name || "",
+          duration: numOfDays,
+          data: result.selectedBundle?.data_amount_mb || 0,
+          isUnlimited: result.selectedBundle?.is_unlimited || false,
+          currency: "USD",
+          group,
+          country: {
+            __typename: "Country",
+            iso: result.selectedBundle?.countries?.[0] || "",
+          } as Country,
+        },
+
+        country: {
+          iso: countryId || "",
+          name: countryId || "",
+          region: regionId || "",
+        },
+
+        duration: input.numOfDays,
+        currency: "USD",
+
+        // Public pricing fields
+        totalCost: result.priceWithMarkup,
+        discountValue: 0, // V2 doesn't provide discounts yet
+        priceAfterDiscount: result.finalPrice,
+
+        // Admin-only fields
+        cost: result.cost || 0,
+        markup: result.markup,
+        discountRate: 0,
+        processingRate: 0,
+        processingCost: 0,
+        finalRevenue: result.finalPrice,
+        revenueAfterProcessing: result.finalPrice,
+        netProfit: result.finalPrice - (result.cost || 0),
+        discountPerDay: 0,
+
+        // Rule-based pricing breakdown
+        appliedRules: [], // V2 doesn't expose applied rules yet
+        discounts: [],
+
+        // Pipeline metadata
+        unusedDays: result.unusedDays,
+        selectedReason: "calculated",
+
+        // Additional fields
+        totalCostBeforeProcessing: result.priceWithMarkup,
+      };
+
+      logger.info("Price calculated with rules-engine-2", {
+        correlationId,
+        selectedBundle: result.selectedBundle,
+        finalPrice: result.finalPrice,
+        operationType: "calculate-price-v2-success",
+      });
+
+      return pricingBreakdown;
+    } catch (error) {
+      logger.error(
+        "Failed to calculate price with rules-engine-2",
+        error as Error,
+        {
+          correlationId,
+          input,
+          operationType: "calculate-price-v2-error",
+        }
+      );
+      throw new GraphQLError("Failed to calculate pricing", {
+        extensions: {
+          code: "PRICING_ERROR",
+          originalError: (error as Error).message,
+        },
+      });
+    }
+  },
+
+  /**
+   * Calculate multiple prices using the new rules-engine-2
+   * Batch processing for multiple input combinations
+   */
+  calculatePrices2: async (
+    _: any,
+    { inputs }: { inputs: CalculatePriceInput[] },
+    context: Context
+  ): Promise<PricingBreakdown[]> => {
+    const correlationId = getCorrelationId(context);
+
+    logger.info("Calculating batch prices with rules-engine-2", {
+      requestCount: inputs.length,
+      correlationId,
+      operationType: "calculate-prices-v2",
+    });
+
+    try {
+      const results: PricingBreakdown[] = [];
+
+      // Process each input request
+      for (const input of inputs) {
+        // Validate input
+        if (!input.numOfDays || input.numOfDays < 1) {
+          logger.warn("Skipping invalid input in batch", {
+            input,
+            correlationId,
+            operationType: "calculate-prices-v2-skip",
+          });
+          continue;
+        }
+
+        if (!input.countryId && !input.regionId) {
+          logger.warn("Skipping input without country or region", {
+            input,
+            correlationId,
+            operationType: "calculate-prices-v2-skip",
+          });
+          continue;
+        }
+
+        const group = input.groups?.[0] || "Standard Unlimited Essential";
+
+        // Prepare request facts for the engine
+        const requestFacts = {
+          group,
+          days: input.numOfDays,
+          ...(input.countryId ? { country: input.countryId } : {}),
+          ...(input.regionId ? { region: input.regionId } : {}),
+        } as RequestFacts;
+
+        try {
+          // Run the v2 engine for this input
+          const result = await calculatePricingV2(requestFacts);
+
+          // Map the result to PricingBreakdown format
+          results.push({
+            __typename: "PricingBreakdown",
+
+            bundle: {
+              __typename: "CountryBundle",
+              id:
+                result.selectedBundle?.esim_go_name ||
+                `bundle_${input.countryId || input.regionId}_${
+                  input.numOfDays
+                }d` ||
+                "",
+              name:
+                result.selectedBundle?.esim_go_name ||
+                `${input.numOfDays} Day Plan`,
+              duration: input.numOfDays,
+              data: result.selectedBundle?.data_amount_mb || 0,
+              isUnlimited: result.selectedBundle?.is_unlimited || false,
+              currency: "USD",
+              group: group,
+              country: {
+                iso: input.countryId || "",
+                name: input.countryId || "",
+                region: input.regionId || "",
+              } as Country,
+            },
+
+            country: {
+              iso: input.countryId || "",
+              name: input.countryId || "",
+              region: input.regionId || "",
+            },
+
+            duration: input.numOfDays,
+            currency: "USD",
+
+            totalCost: result.priceWithMarkup,
+            discountValue: 0,
+            priceAfterDiscount: result.finalPrice,
+
+            cost: result.cost || 0,
+            markup: result.markup,
+            discountRate: 0,
+            processingRate: 0,
+            processingCost: 0,
+            finalRevenue: result.finalPrice,
+            revenueAfterProcessing: result.finalPrice,
+            netProfit: result.finalPrice - (result.cost || 0),
+            discountPerDay: 0,
+
+            appliedRules: [],
+            discounts: [],
+
+            unusedDays: result.unusedDays,
+            selectedReason: "calculated",
+
+            totalCostBeforeProcessing: result.priceWithMarkup,
+          });
+        } catch (error) {
+          logger.error(
+            "Failed to calculate price for input in batch",
+            error as Error,
+            {
+              correlationId,
+              input,
+              operationType: "calculate-prices-v2-item-error",
+            }
+          );
+          // Continue processing other inputs even if one fails
+        }
+      }
+
+      logger.info("Batch prices calculated with rules-engine-2", {
+        correlationId,
+        requestCount: inputs.length,
+        resultCount: results.length,
+        operationType: "calculate-prices-v2-success",
+      });
+
+      return results;
+    } catch (error) {
+      logger.error(
+        "Failed to calculate batch prices with rules-engine-2",
+        error as Error,
+        {
+          correlationId,
+          inputCount: inputs.length,
+          operationType: "calculate-prices-v2-error",
+        }
+      );
+      throw new GraphQLError("Failed to calculate pricing", {
+        extensions: {
+          code: "PRICING_ERROR",
+          originalError: (error as Error).message,
+        },
+      });
+    }
   },
 };
 

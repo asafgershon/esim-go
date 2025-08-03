@@ -1,30 +1,22 @@
-import { SupabaseClient } from "@supabase/supabase-js";
-import { stringify } from "csv";
-import { writeFileSync } from "fs";
 import { Engine } from "json-rules-engine";
 import { addMarkup } from "./add-markup";
-import { fixedPriceRule } from "./blocks/fixed-price";
-import { keepProfit, KeepProfitEvent } from "./blocks/keep-profit";
-import { MarkupEvent, rules } from "./blocks/markups";
+import { KeepProfitEvent } from "./blocks/keep-profit";
+import { MarkupEvent } from "./blocks/markups";
 import {
-  applyPsychologicalRounding,
-  psychologicalRounding,
-  PsychologicalRoundingEvent,
+    applyPsychologicalRounding,
+    PsychologicalRoundingEvent,
 } from "./blocks/psychological-rounding";
-import { regionRoundingRule } from "./blocks/region-rounding";
 import { availableBundles } from "./facts/available-bundles";
 import {
-  previousBundle,
-  selectBundle,
-  SelectedBundleFact,
-  unusedDays,
+    previousBundle,
+    selectBundle,
+    SelectedBundleFact,
+    unusedDays,
 } from "./facts/bundle-facts";
 import { durations } from "./facts/durations";
-import { getSupabaseClient } from "./supabase";
 import { defaultPricingStrategy } from "./strategies/default-pricing";
 
 let engine: Engine;
-let supabase: SupabaseClient = getSupabaseClient();
 
 export type RequestFacts = {
   group: string;
@@ -40,11 +32,22 @@ export type RequestFacts = {
     }
 );
 
-type DerivedFacts = {
-  selectedBundle: string;
+export type PricingEngineV2Result = {
+  selectedBundle: SelectedBundleFact | undefined;
+  cost: number | undefined;
+  markup: number;
+  priceWithMarkup: number;
+  finalPrice: number;
+  unusedDays: number;
+  requestedDays: number;
 };
 
-async function run({ days, group, country, region }: RequestFacts) {
+export async function calculatePricing({
+  days,
+  group,
+  country,
+  region,
+}: RequestFacts): Promise<PricingEngineV2Result> {
   // Get markups
 
   engine = new Engine();
@@ -121,8 +124,8 @@ async function run({ days, group, country, region }: RequestFacts) {
   const eventsEmitted = result.events.map((e) => e.type);
   console.log(eventsEmitted);
   return {
-    selectedBundle: selectedBundle?.esim_go_name,
-    cost: selectedBundle?.price,
+    selectedBundle: selectedBundle?.esim_go_name ?? undefined,
+    cost: selectedBundle?.price ?? undefined,
     markup,
     priceWithMarkup,
     finalPrice,
@@ -131,17 +134,15 @@ async function run({ days, group, country, region }: RequestFacts) {
   };
 }
 
-// By Country
-(async () => {
-  const results = await Promise.all(
-    new Array(30).fill(0).map((_, i) => {
-      return run({
-        group: "Standard Unlimited Essential",
-        days: i + 1,
-        country: "UA",
-      });
-    })
-  );
-  //   console.log(results);
-  return;
-})();
+// Export main types and interfaces
+export { KeepProfitEvent } from "./blocks/keep-profit";
+export { MarkupEvent } from "./blocks/markups";
+export { PsychologicalRoundingEvent } from "./blocks/psychological-rounding";
+export { SelectedBundleFact } from "./facts/bundle-facts";
+export { DefaultPricingStrategy } from "./strategies/default-pricing";
+
+// Export strategy
+export { defaultPricingStrategy } from "./strategies/default-pricing";
+
+// Export action and condition types from generated files
+export { ActionType, ConditionOperator } from "./generated/types";

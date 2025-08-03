@@ -28,8 +28,14 @@ type Query {
     groups: [String!]
   ): PricingBreakdown!
 
+  # Calculate price using rules-engine-2 (supports regions)
+  calculatePrice2(input: CalculatePriceInput!): PricingBreakdown!
+
   # Batch calculate prices for multiple bundles
   calculatePrices(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
+
+  # Calculate multiple prices using rules-engine-2 (batch processing)
+  calculatePrices2(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
 
   # Main bundles resolver with optional filtering
   bundle(id: String!): Bundle!
@@ -287,6 +293,9 @@ type Mutation {
   sendPhoneOTP(phoneNumber: String!): SendOTPResponse
   verifyPhoneOTP(input: VerifyOTPInput!): SignInResponse
 
+  # Profile Management
+  updateProfile(input: UpdateProfileInput!): UpdateProfileResponse @auth
+
   # User Management
   updateUserRole(userId: ID!, role: String!): User @auth(role: "ADMIN")
   inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse
@@ -498,6 +507,18 @@ input VerifyOTPInput {
   otp: String!
   firstName: String # For first-time users
   lastName: String # For first-time users
+}
+
+input UpdateProfileInput {
+  firstName: String
+  lastName: String
+  phoneNumber: String
+}
+
+type UpdateProfileResponse {
+  success: Boolean!
+  error: String
+  user: User
 }
 
 type SendOTPResponse {

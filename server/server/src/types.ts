@@ -722,6 +722,7 @@ export type Mutation = {
   updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
   updatePricingRule: PricingRule;
   updatePricingRulePriorities: Array<PricingRule>;
+  updateProfile?: Maybe<UpdateProfileResponse>;
   updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
   validateOrder: ValidateOrderResponse;
@@ -876,6 +877,11 @@ export type MutationUpdatePricingRuleArgs = {
 
 export type MutationUpdatePricingRulePrioritiesArgs = {
   updates: Array<PricingRulePriorityUpdate>;
+};
+
+
+export type MutationUpdateProfileArgs = {
+  input: UpdateProfileInput;
 };
 
 
@@ -1196,7 +1202,9 @@ export type Query = {
   bundlesForGroup?: Maybe<BundlesForGroup>;
   bundlesForRegion?: Maybe<BundlesForRegion>;
   calculatePrice: PricingBreakdown;
+  calculatePrice2: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
+  calculatePrices2: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
   conflictingPricingRules: Array<PricingRule>;
@@ -1274,7 +1282,17 @@ export type QueryCalculatePriceArgs = {
 };
 
 
+export type QueryCalculatePrice2Args = {
+  input: CalculatePriceInput;
+};
+
+
 export type QueryCalculatePricesArgs = {
+  inputs: Array<CalculatePriceInput>;
+};
+
+
+export type QueryCalculatePrices2Args = {
   inputs: Array<CalculatePriceInput>;
 };
 
@@ -1575,6 +1593,19 @@ export type UpdatePricingRuleInput = {
   validUntil?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateProfileInput = {
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+  phoneNumber?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateProfileResponse = {
+  __typename?: 'UpdateProfileResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  user?: Maybe<User>;
+};
+
 export type UpdateTripInput = {
   countryIds: Array<Scalars['ISOCountryCode']['input']>;
   description: Scalars['String']['input'];
@@ -1824,6 +1855,8 @@ export type ResolversTypes = {
   UpdatePricingConfigurationInput: UpdatePricingConfigurationInput;
   UpdatePricingConfigurationResponse: ResolverTypeWrapper<UpdatePricingConfigurationResponse>;
   UpdatePricingRuleInput: UpdatePricingRuleInput;
+  UpdateProfileInput: UpdateProfileInput;
+  UpdateProfileResponse: ResolverTypeWrapper<UpdateProfileResponse>;
   UpdateTripInput: UpdateTripInput;
   UpdateTripResponse: ResolverTypeWrapper<UpdateTripResponse>;
   User: ResolverTypeWrapper<User>;
@@ -1945,6 +1978,8 @@ export type ResolversParentTypes = {
   UpdatePricingConfigurationInput: UpdatePricingConfigurationInput;
   UpdatePricingConfigurationResponse: UpdatePricingConfigurationResponse;
   UpdatePricingRuleInput: UpdatePricingRuleInput;
+  UpdateProfileInput: UpdateProfileInput;
+  UpdateProfileResponse: UpdateProfileResponse;
   UpdateTripInput: UpdateTripInput;
   UpdateTripResponse: UpdateTripResponse;
   User: User;
@@ -2488,6 +2523,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   updatePricingConfiguration?: Resolver<Maybe<ResolversTypes['UpdatePricingConfigurationResponse']>, ParentType, ContextType, RequireFields<MutationUpdatePricingConfigurationArgs, 'input'>>;
   updatePricingRule?: Resolver<ResolversTypes['PricingRule'], ParentType, ContextType, RequireFields<MutationUpdatePricingRuleArgs, 'id' | 'input'>>;
   updatePricingRulePriorities?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<MutationUpdatePricingRulePrioritiesArgs, 'updates'>>;
+  updateProfile?: Resolver<Maybe<ResolversTypes['UpdateProfileResponse']>, ParentType, ContextType, RequireFields<MutationUpdateProfileArgs, 'input'>>;
   updateTrip?: Resolver<Maybe<ResolversTypes['UpdateTripResponse']>, ParentType, ContextType, RequireFields<MutationUpdateTripArgs, 'input'>>;
   updateUserRole?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<MutationUpdateUserRoleArgs, 'role' | 'userId'>>;
   validateOrder?: Resolver<ResolversTypes['ValidateOrderResponse'], ParentType, ContextType, RequireFields<MutationValidateOrderArgs, 'input'>>;
@@ -2712,7 +2748,9 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   bundlesForGroup?: Resolver<Maybe<ResolversTypes['BundlesForGroup']>, ParentType, ContextType, RequireFields<QueryBundlesForGroupArgs, 'group'>>;
   bundlesForRegion?: Resolver<Maybe<ResolversTypes['BundlesForRegion']>, ParentType, ContextType, RequireFields<QueryBundlesForRegionArgs, 'region'>>;
   calculatePrice?: Resolver<ResolversTypes['PricingBreakdown'], ParentType, ContextType, RequireFields<QueryCalculatePriceArgs, 'countryId' | 'numOfDays'>>;
+  calculatePrice2?: Resolver<ResolversTypes['PricingBreakdown'], ParentType, ContextType, RequireFields<QueryCalculatePrice2Args, 'input'>>;
   calculatePrices?: Resolver<Array<ResolversTypes['PricingBreakdown']>, ParentType, ContextType, RequireFields<QueryCalculatePricesArgs, 'inputs'>>;
+  calculatePrices2?: Resolver<Array<ResolversTypes['PricingBreakdown']>, ParentType, ContextType, RequireFields<QueryCalculatePrices2Args, 'inputs'>>;
   catalogBundles?: Resolver<ResolversTypes['CatalogBundleConnection'], ParentType, ContextType, Partial<QueryCatalogBundlesArgs>>;
   catalogSyncHistory?: Resolver<ResolversTypes['CatalogSyncHistoryConnection'], ParentType, ContextType, Partial<QueryCatalogSyncHistoryArgs>>;
   conflictingPricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<QueryConflictingPricingRulesArgs, 'ruleId'>>;
@@ -2830,6 +2868,13 @@ export type UpdatePricingConfigurationResponseResolvers<ContextType = Context, P
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type UpdateProfileResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['UpdateProfileResponse'] = ResolversParentTypes['UpdateProfileResponse']> = {
+  error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type UpdateTripResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['UpdateTripResponse'] = ResolversParentTypes['UpdateTripResponse']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -2941,6 +2986,7 @@ export type Resolvers<ContextType = Context> = {
   Trip?: TripResolvers<ContextType>;
   UpdateCheckoutStepResponse?: UpdateCheckoutStepResponseResolvers<ContextType>;
   UpdatePricingConfigurationResponse?: UpdatePricingConfigurationResponseResolvers<ContextType>;
+  UpdateProfileResponse?: UpdateProfileResponseResolvers<ContextType>;
   UpdateTripResponse?: UpdateTripResponseResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
   ValidateOrderResponse?: ValidateOrderResponseResolvers<ContextType>;

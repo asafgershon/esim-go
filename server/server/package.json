@@ -42,6 +42,7 @@
     "@aws-sdk/client-ses": "^3.855.0",
     "@esim-go/client": "workspace:*",
     "@esim-go/rules-engine": "workspace:*",
+    "@esim-go/rules-engine-2": "workspace:*",
     "@esim-go/utils": "workspace:*",
     "@graphql-tools/merge": "^9.1.1",
     "@keyv/redis": "^4.6.0",
