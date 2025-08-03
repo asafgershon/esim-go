@@ -1,6 +1,6 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui';
-import { Calculator, Layers, Settings, Globe } from 'lucide-react';
+import { Calculator, Layers, Settings, Globe, Workflow } from 'lucide-react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 
@@ -32,6 +32,11 @@ const PricingPage: React.FC = () => {
       title: 'AirHalo Pricing',
       icon: <Globe className="h-5 w-5" />,
       description: 'View and compare AirHalo competitor pricing data across different packages and countries'
+    },
+    '/pricing/strategy': {
+      title: 'Strategy',
+      icon: <Workflow className="h-5 w-5" />,
+      description: 'Build and manage pricing strategies with visual flow builder'
     }
   };
 
@@ -104,6 +109,17 @@ const PricingPage: React.FC = () => {
               <Globe className="h-4 w-4" />
               AirHalo Pricing
             </Link>
+            <Link
+              to="/pricing/strategy"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                currentPath === '/pricing/strategy'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Workflow className="h-4 w-4" />
+              Strategy
+            </Link>
           </div>
 
           {/* Mobile Dropdown - shown on mobile and tablet, hidden on desktop */}
@@ -135,6 +151,12 @@ const PricingPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Globe className="h-4 w-4" />
                   <span>AirHalo Pricing</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="/pricing/strategy">
+                <div className="flex items-center gap-2">
+                  <Workflow className="h-4 w-4" />
+                  <span>Strategy</span>
                 </div>
               </SelectItem>
             </SelectContent>

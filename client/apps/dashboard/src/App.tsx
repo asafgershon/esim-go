@@ -19,6 +19,7 @@ import { PricingSummaryPage } from '@/pages/pricing/summary'
 import { PricingSimulatorPage } from '@/pages/pricing/simulator'
 import UnifiedPricingRulesPage from '@/pages/pricing/rules-unified'
 import { AirHaloPricingPage } from '@/pages/pricing/airhalo'
+import StrategyPage from '@/pages/pricing/strategy'
 import { apolloClient } from '@/lib/apollo-client'
 
 
@@ -54,6 +55,7 @@ function App() {
                     <Route path="simulator" element={<PricingSimulatorPage />} />
                     <Route path="rules" element={<UnifiedPricingRulesPage />} />
                     <Route path="airhalo" element={<AirHaloPricingPage />} />
+                    <Route path="strategy" element={<StrategyPage />} />
                   </Route>
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
