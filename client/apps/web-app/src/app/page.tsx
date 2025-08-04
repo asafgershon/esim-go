@@ -1,5 +1,3 @@
-"use client";
-
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { BackgroundSection } from "@/components/background-section";
 import { CompatibilitySection } from "@/components/compatibility-section";
@@ -9,7 +7,6 @@ import { FeaturesSection } from "@/components/features-section";
 import { Header } from "@/components/header";
 import { HeroSection } from "@/components/hero-section";
 import { HowToSection } from "@/components/how-to-section";
-import { LoginModalWrapper } from "@/components/login-modal-wrapper";
 import { LogoRounded } from "@/components/logo-rounded";
 import { PromoBanner } from "@/components/promo-banner";
 import { ReviewsSection } from "@/components/reviews-section";
@@ -17,30 +14,28 @@ import { WhySwitchSection } from "@/components/why-switch-section";
 import { Button, Card } from "@workspace/ui";
 import { ArrowLeft, Check, Shield } from "lucide-react";
 import Link from "next/link";
-import { parseAsBoolean, useQueryState } from "nuqs";
+import { Suspense } from "react";
+import { HomeWithState } from "@/components/home-with-state";
+
+// Disable static generation for this page
+export const dynamic = 'force-dynamic';
 
 export default function Home() {
-  const [showLogin] = useQueryState(
-    "showLogin",
-    parseAsBoolean.withDefault(false)
-  );
-
-  // Handle successful login - just navigate directly
-  const handleLoginSuccess = () => {
-    // Use the most direct navigation method
-    window.location.href = "/profile";
-  };
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      {/* Login Modal - now with callback */}
-      {showLogin && <LoginModalWrapper onLoginSuccess={handleLoginSuccess} />}
+      {/* Login Modal - wrapped in Suspense */}
+      <Suspense fallback={null}>
+        <HomeWithState />
+      </Suspense>
 
       {/* Announcement Banner */}
       <AnnouncementBanner />
 
       {/* Navigation Header */}
-      <Header />
+      <Suspense fallback={<div className="h-16" />}>
+        <Header />
+      </Suspense>
 
       {/* Hero Section */}
       <HeroSection />
@@ -48,7 +43,9 @@ export default function Home() {
       {/* eSIM Selector Section - Overlapping Hero */}
       <section id="esim-selector" className="relative -mt-[200px] z-20">
         <div className="container mx-auto px-4">
-          <EsimSelector />
+          <Suspense fallback={<div className="h-96" />}>
+            <EsimSelector />
+          </Suspense>
         </div>
       </section>
 
