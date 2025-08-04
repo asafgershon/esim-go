@@ -56,12 +56,6 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Hiiilo Brand Colors
-        "brand-green": "#00E095",
-        "brand-purple": "#535FC8",
-        "brand-dark": "#0A232E",
-        "brand-light-blue": "#F8FAFC",
-        "brand-white": "#FEFEFE",
       },
       borderRadius: {
         lg: "var(--radius)",

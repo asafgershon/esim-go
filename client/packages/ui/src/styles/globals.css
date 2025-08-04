@@ -5,6 +5,13 @@
 
 @theme {
   /* Hiiilo Brand Colors - Primary Theme */
+  --color-brand-green: #00E095;           /* Vibrant green accent */
+  --color-brand-purple: #535FC8;          /* Brand purple */
+  --color-brand-dark: #0A232E;            /* Dark blue/black for headers */
+  --color-brand-light-blue: #F8FAFC;      /* Light blue background */
+  --color-brand-white: #FEFEFE;           /* Off-white */
+  
+  /* Legacy color names (for compatibility) */
   --color-hiiilo-teal: oklch(0.32 0.05 205);        /* #2a4a5a - Dark teal from logo background */
   --color-hiiilo-teal-dark: oklch(0.22 0.05 205);   /* #1a3a4a - Darker teal variation */
   --color-hiiilo-green: oklch(0.72 0.15 166);       /* #00d4aa - Vibrant green accent */

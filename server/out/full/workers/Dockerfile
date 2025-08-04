@@ -11,10 +11,6 @@ RUN bun add -g turbo
 
 # Prune the monorepo for the workers package
 WORKDIR /app/server
-
-# Remove 'server' workspace from root package.json workspaces
-RUN sed -i '/"server"/d' package.json
-RUN bun install --ignore-scripts
 RUN turbo prune @hiilo/workers --docker
 
 # Stage 2: Build the application
@@ -26,7 +22,6 @@ WORKDIR /app
 COPY --from=pruner /app/server/out/json/ .
 COPY --from=pruner /app/server/out/bun.lock ./bun.lock
 
-
 # Install dependencies
 RUN bun install --frozen-lockfile --ignore-scripts
 
@@ -35,7 +30,7 @@ COPY --from=pruner /app/server/out/full/ .
 
 # Build the workspace packages that workers depends on
 WORKDIR /app/server
-RUN bunx turbo run build --filter=...@hiilo/workers
+RUN turbo run build --filter=...@hiilo/workers
 
 # Stage 3: Runtime
 FROM oven/bun:1-alpine AS runner

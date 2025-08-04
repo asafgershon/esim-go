@@ -1,0 +1,29 @@
+{
+  "name": "esim-go-server-workspace",
+  "private": true,
+  "packageManager": "bun@1.2.9",
+  "workspaces": [
+    "packages/*",
+    "server",
+    "workers"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:all": "turbo run dev:server dev:workers --parallel",
+    "dev:server": "bun run --filter ./server dev",
+    "dev:workers": "bun run --filter ./workers dev",
+    "build": "turbo run build",
+    "build:packages": "turbo run build:packages",
+    "build:all": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "workers:start": "bun run --filter ./workers start"
+  },
+  "devDependencies": {
+    "@apollo/client": "^3.13.8",
+    "concurrently": "^9.2.0",
+    "graphql": "^16.11.0",
+    "turbo": "^2.5.5"
+  }
+}
