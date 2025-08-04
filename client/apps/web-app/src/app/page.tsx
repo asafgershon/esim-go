@@ -1,9 +1,9 @@
 "use client";
 
 import { AnnouncementBanner } from "@/components/announcement-banner";
+import { Header } from "@/components/header";
 import { EsimExperienceSelector } from "@/components/esim-experience-selector";
 import { EsimSkeleton } from "@/components/esim-skeleton";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Button, Card } from "@workspace/ui";
 import {
   ArrowLeft,
@@ -30,18 +30,8 @@ export default function Home() {
       {/* Announcement Banner */}
       <AnnouncementBanner />
       
-      {/* Header */}
-      <header className="container mx-auto px-4 py-6 relative z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <span className="text-3xl font-bold">
-              <span className="text-brand-green font-extrabold">Hiii</span>
-              <span className="text-brand-dark font-medium">lo</span>
-            </span>
-          </div>
-          <ThemeToggle />
-        </div>
-      </header>
+      {/* Navigation Header */}
+      <Header />
 
       {/* Hero Section with Background */}
       <section className="relative overflow-hidden bg-gradient-to-b from-brand-light-blue to-white">
