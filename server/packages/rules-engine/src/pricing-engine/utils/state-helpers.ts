@@ -85,6 +85,7 @@ export const initializePricing = (bundle: Bundle): PricingBreakdown => {
     revenueAfterProcessing: bundle.basePrice,
     totalCostBeforeProcessing: bundle.basePrice,
     netProfit: 0,
+    finalPrice: 0,
     discountPerDay: 0,
     bundle: null as any,
     country: null as any,

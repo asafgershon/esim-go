@@ -269,6 +269,7 @@ export class StateBuilder {
       processingRate: 0,
       finalRevenue: bundle.basePrice,
       revenueAfterProcessing: bundle.basePrice,
+      finalPrice: bundle.basePrice,
       totalCostBeforeProcessing: bundle.basePrice,
       netProfit: 0,
       discountPerDay: 0,
