@@ -169,16 +169,13 @@ export const ReviewsSection = () => {
   }, []);
 
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-b from-brand-dark to-brand-dark relative overflow-hidden">
+    <section className="py-16 md:py-24 relative overflow-hidden">
       <div className="container mx-auto px-4">
         {/* Section header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-5xl font-bold text-brand-green mb-4">
             הלקוחות שלנו מספרים
           </h2>
-          <p className="text-xl text-gray-400">
-            אלפי ישראלים כבר נהנים מהשירות שלנו ברחבי העולם
-          </p>
         </div>
 
         {/* Desktop Grid - Show only first 6 reviews */}

@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@workspace/ui";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
@@ -11,7 +12,7 @@ export function LogoRounded({ className }: LogoRoundedProps) {
   return (
     <>
       {/* Logo container - Desktop */}
-      <div className="hidden md:flex justify-center">
+      <div className={cn("hidden md:flex justify-center", className)}>
         <motion.div
           animate={{ rotate: 360 }}
           transition={{
@@ -25,7 +26,7 @@ export function LogoRounded({ className }: LogoRoundedProps) {
             alt="Logo"
             width={320}
             height={320}
-            className="w-[320px] h-[320px]"
+            className="w-[320px] h-[320px] max-w-[320px] max-h-[320px]"
             priority
           />
         </motion.div>
@@ -46,7 +47,7 @@ export function LogoRounded({ className }: LogoRoundedProps) {
             alt="Logo"
             width={160}
             height={160}
-            className="w-[160px] h-[160px]"
+            className="w-[160px] h-[160px] max-w-[160px] max-h-[160px]"
             priority
           />
         </motion.div>
