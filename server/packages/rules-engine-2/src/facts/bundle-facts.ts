@@ -94,3 +94,16 @@ export const unusedDays = async (
   );
   return (selectedBundle?.validity_in_days ?? 0) - requestedDays;
 };
+
+export const isExactMatch = async (
+  _params: Record<string, any>,
+  almanac: Almanac
+): Promise<boolean> => {
+  const selectedBundle = await almanac.factValue<SelectedBundleFact>(
+    "selectedBundle"
+  );
+  const requestedDays = await almanac.factValue<number>(
+    "requestedValidityDays"
+  );
+  return selectedBundle?.validity_in_days === requestedDays;
+};

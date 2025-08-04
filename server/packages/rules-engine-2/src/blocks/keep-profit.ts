@@ -1,6 +1,6 @@
-import { Rule } from "json-rules-engine";
+import { Event, Rule } from "json-rules-engine";
 
-export interface KeepProfitEvent {
+export type KeepProfitEvent = Event & {
   type: "keep-profit";
   params: {
     ruleId: string;

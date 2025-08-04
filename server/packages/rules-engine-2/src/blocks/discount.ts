@@ -1,7 +1,7 @@
 import { Event, Rule } from "json-rules-engine";
 import { ActionType } from "src/generated/types";
 
-type DiscountEvent = Event & {
+export type DiscountEvent = Event & {
   type: "apply-discount";
   params: {
     ruleId: string;

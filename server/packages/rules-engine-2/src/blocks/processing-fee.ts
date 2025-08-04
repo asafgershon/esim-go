@@ -17,8 +17,7 @@ export const israeliCardRule = new Rule({
   conditions: {
     all: [
         {
-            fact: 'request',
-            path: '$.paymentMethod',
+            fact: 'paymentMethod',
             value: 'ISRAELI_CARD',
             operator: 'equal'
         }
@@ -31,6 +30,30 @@ export const israeliCardRule = new Rule({
       actions: {
         type: ActionType.SetProcessingRate,
         value: 1.4,
+      },
+    },
+  } satisfies ProcessingFeeEvent,
+});
+
+export const internationalCardRule = new Rule({
+  name: "Processing fee for international credit cards",
+  priority: 30,
+  conditions: {
+    all: [
+        {
+            fact: 'paymentMethod',
+            value: 'INTERNATIONAL_CARD',
+            operator: 'equal'
+        }
+    ],
+  },
+  event: {
+    type: "apply-fee",
+    params: {
+      ruleId: "international-card-fee",
+      actions: {
+        type: ActionType.SetProcessingRate,
+        value: 2.9,
       },
     },
   } satisfies ProcessingFeeEvent,
