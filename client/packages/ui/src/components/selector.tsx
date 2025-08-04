@@ -117,25 +117,43 @@ SelectorLabel.displayName = "SelectorLabel";
 // Selector Button (Primary CTA) - supports both purple and green variants
 const SelectorButton = React.forwardRef<
   HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement>
->(({ className, ...props }, ref) => (
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { style?: React.CSSProperties }
+>(({ className, style, ...props }, ref) => (
   <button
     ref={ref}
     data-name="SelectorButton"
     className={cn(
       "w-full h-9 md:h-[66px] rounded-lg md:rounded-[10px]",
-      "border-[0.5px] border-[#0A232E]",
-      "shadow-[0px_3px_0px_0px_#2E2E31]",
-      "text-[#FEFEFE] text-[12px] md:text-[22px] font-medium",
-      "hover:translate-y-[1px] hover:shadow-[0px_2px_0px_0px_#2E2E31]",
-      "active:translate-y-[2px] active:shadow-[0px_1px_0px_0px_#2E2E31]",
+      "bg-[#535FC8] hover:bg-[#535FC8]/90",
+      "border border-[#0A232E]",
+      "text-white text-[12px] md:text-[22px] font-medium",
+      "hover:translate-y-[1px]",
+      "active:translate-y-[2px]",
       "transition-all duration-100",
       "flex items-center justify-center gap-3",
       "cursor-pointer",
-      // Default purple background if no custom background class is provided
-      !className?.includes('bg-') && "bg-[#535FC8] hover:bg-[#535FC8]/90",
       className
     )}
+    style={{
+      boxShadow: "2px 3px 0px 0px #0A232E",
+      ...style
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
+      props.onMouseEnter?.(e);
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.boxShadow = "2px 3px 0px 0px #0A232E";
+      props.onMouseLeave?.(e);
+    }}
+    onMouseDown={(e) => {
+      e.currentTarget.style.boxShadow = "1px 1px 0px 0px #0A232E";
+      props.onMouseDown?.(e);
+    }}
+    onMouseUp={(e) => {
+      e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
+      props.onMouseUp?.(e);
+    }}
     {...props}
   />
 ));

@@ -22,17 +22,26 @@ export const CalendarIcon = ({ className = "" }: { className?: string }) => (
 
 export const ChevronsUpDownIcon = () => (
   <svg 
-    width="11" 
-    height="6" 
-    viewBox="0 0 11 6" 
+    width="10" 
+    height="17" 
+    viewBox="0 0 10 17" 
     fill="none" 
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
   >
     <path 
-      d="M10 1L5.5 5.5L1 1" 
-      stroke="#0A232E" 
-      strokeOpacity="0.5" 
+      d="M0.759766 11.3636L4.75765 15.9091L8.75553 11.3636" 
+      stroke="#0B232E" 
+      strokeOpacity="0.4" 
+      strokeWidth="1.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+    <path 
+      d="M8.75586 5.81818L4.75798 1.27272L0.760096 5.81818" 
+      stroke="#0B232E" 
+      strokeOpacity="0.4" 
+      strokeWidth="1.5" 
       strokeLinecap="round" 
       strokeLinejoin="round"
     />
