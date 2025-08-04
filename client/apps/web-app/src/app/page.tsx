@@ -17,8 +17,6 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { HomeWithState } from "@/components/home-with-state";
 
-// Disable static generation for this page
-export const dynamic = 'force-dynamic';
 
 export default function Home() {
 
@@ -138,7 +136,9 @@ export default function Home() {
                   size="lg"
                   className="mt-8 bg-gradient-to-r from-[brand-green] to-[brand-green] hover:from-[brand-green] hover:to-[brand-green] text-white font-semibold px-8 py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all"
                   onClick={() => {
-                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    if (typeof window !== 'undefined') {
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }
                   }}
                 >
                   בחרו חבילה עכשיו
@@ -195,7 +195,9 @@ export default function Home() {
               size="lg"
               className="bg-gradient-to-r from-[brand-green] to-[brand-green] hover:from-[brand-green] hover:to-[brand-green] text-white font-bold px-12 py-8 text-xl rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all"
               onClick={() => {
-                window.scrollTo({ top: 0, behavior: "smooth" });
+                if (typeof window !== 'undefined') {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
               }}
             >
               קנו eSIM עכשיו

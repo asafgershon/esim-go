@@ -25,15 +25,17 @@ export const useAuth = () => {
   // Check for auth token on mount and when it changes
   useEffect(() => {
     const checkToken = () => {
-      const token = typeof window !== 'undefined' && localStorage.getItem('authToken');
+      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
       setHasToken(!!token);
     };
     
     checkToken();
     
-    // Listen for storage events (from other tabs)
-    window.addEventListener('storage', checkToken);
-    return () => window.removeEventListener('storage', checkToken);
+    // Only add event listener if we're in the browser
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', checkToken);
+      return () => window.removeEventListener('storage', checkToken);
+    }
   }, []);
   
   const { data, loading, error, refetch } = useQuery(ME, {
@@ -43,7 +45,7 @@ export const useAuth = () => {
   });
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
     
     // If no token, set unauthenticated state immediately
     if (!token) {
@@ -66,8 +68,10 @@ export const useAuth = () => {
     if (error) {
       // If there's an auth error, clear the token
       if (error.graphQLErrors.some(e => e.extensions?.code === 'UNAUTHORIZED')) {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
+        }
         setAuthState({
           user: null,
           isAuthenticated: false,
@@ -105,10 +109,12 @@ export const useAuth = () => {
   }, [data, loading, error, hasToken]);
 
   const signOut = useCallback(() => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('rememberLogin');
-    localStorage.removeItem('lastPhoneNumber');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('rememberLogin');
+      localStorage.removeItem('lastPhoneNumber');
+    }
     setAuthState({
       user: null,
       isAuthenticated: false,
@@ -117,12 +123,14 @@ export const useAuth = () => {
     });
     
     // Reload the page to clear any cached data
-    window.location.href = '/';
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   }, []);
 
   const refreshAuth = useCallback(() => {
     // Re-check if we have a token
-    const token = typeof window !== 'undefined' && localStorage.getItem('authToken');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
     setHasToken(!!token);
     
     // If we have a token, refetch the user data
@@ -137,7 +145,7 @@ export const useAuth = () => {
 
   // Helper to check if current session is valid
   const isSessionValid = useCallback(() => {
-    const token = localStorage.getItem('authToken');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
     return !!(token && authState.isAuthenticated && !authState.error);
   }, [authState.isAuthenticated, authState.error]);
 

@@ -227,12 +227,14 @@ export function EnhancedLoginForm({
 
   // Load remembered phone number
   useEffect(() => {
-    const rememberLogin = localStorage.getItem("rememberLogin") === "true";
-    const lastPhone = localStorage.getItem("lastPhoneNumber");
+    if (typeof window !== 'undefined') {
+      const rememberLogin = localStorage.getItem("rememberLogin") === "true";
+      const lastPhone = localStorage.getItem("lastPhoneNumber");
 
-    if (rememberLogin && lastPhone) {
-      phoneForm.setValue("phoneNumber", formatPhoneNumber(lastPhone));
-      phoneForm.setValue("rememberMe", true);
+      if (rememberLogin && lastPhone) {
+        phoneForm.setValue("phoneNumber", formatPhoneNumber(lastPhone));
+        phoneForm.setValue("rememberMe", true);
+      }
     }
   }, [phoneForm]);
 
