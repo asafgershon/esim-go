@@ -8,10 +8,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { User } from "lucide-react";
 
 const navigation = [
-  { title: "ראשי לתוך היעד", href: "/" },
-  { title: "שאלות ותשובות", href: "/faq" },
-  { title: "מי אנו eSIM", href: "/about" },
-  { title: "עברית", href: "#" },
+  { title: "Hiilo לחברות", href: "/" },
+  { title: "שאלות ותשובות", href: "#faq" },
+  { title: "מה זה ESIM?", href: "#what-is-esim" },
+  { title: "עלינו", href: "#about" },
   { title: "ביקורות", href: "#reviews" },
 ];
 

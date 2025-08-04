@@ -1,24 +1,13 @@
 "use client";
 
 import { X } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export function AnnouncementBanner() {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    // Check if banner was previously dismissed
-    const isDismissed = localStorage.getItem("announcement-banner-dismissed");
-    if (!isDismissed) {
-      setIsVisible(true);
-    }
-  }, []);
+  const [isVisible, setIsVisible] = useState(true);
 
   const handleDismiss = () => {
     setIsVisible(false);
-    // Store dismissal in localStorage with timestamp
-    localStorage.setItem("announcement-banner-dismissed", new Date().toISOString());
   };
 
   if (!isVisible) return null;
@@ -30,23 +19,17 @@ export function AnnouncementBanner() {
           {/* Desktop Content */}
           <div className="hidden md:flex items-center gap-1">
             <span>שירות 24/7 בעברית סכל סכום בחגים.</span>
-            <Link 
-              href="/support" 
-              className="text-brand-green hover:text-brand-green/80 transition-colors font-semibold underline"
-            >
+            <span className="text-brand-green font-semibold">
               בני הבצבת, בני הפטחות
-            </Link>
+            </span>
           </div>
           
           {/* Mobile Content */}
           <div className="flex md:hidden items-center gap-1 text-xs">
             <span>שירות 24/7 בעברית מכל מקום בעולם.</span>
-            <Link 
-              href="/support" 
-              className="text-brand-green hover:text-brand-green/80 transition-colors font-semibold underline"
-            >
-             בלי הגבלות, בלי הפתעות
-            </Link>
+            <span className="text-brand-green font-semibold">
+              בלי הגבלות, בלי הפתעות
+            </span>
           </div>
 
           {/* Close Button */}
