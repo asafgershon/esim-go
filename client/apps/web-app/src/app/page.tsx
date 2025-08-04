@@ -13,12 +13,9 @@ import { LoginModalWrapper } from "@/components/login-modal-wrapper";
 import { LogoRounded } from "@/components/logo-rounded";
 import { PromoBanner } from "@/components/promo-banner";
 import { ReviewsSection } from "@/components/reviews-section";
+import { WhySwitchSection } from "@/components/why-switch-section";
 import { Button, Card } from "@workspace/ui";
-import {
-  ArrowLeft,
-  Check,
-  Shield
-} from "lucide-react";
+import { ArrowLeft, Check, Shield } from "lucide-react";
 import Link from "next/link";
 import { parseAsBoolean, useQueryState } from "nuqs";
 
@@ -66,16 +63,20 @@ export default function Home() {
 
       {/* Background Section with eSIM Compatibility Check */}
       <BackgroundSection>
-        <>
-          <LogoRounded />
+        <div className="flex flex-col md:flex-row-reverse">
+
+          <LogoRounded  />
           <CompatibilitySection />
-        </>
+        </div>
         {/* Customer Reviews */}
         <ReviewsSection />
       </BackgroundSection>
 
       {/* How To Section */}
       <HowToSection />
+
+      {/* Why Switch Section */}
+      <WhySwitchSection />
 
       {/* Unique Value Proposition */}
       <section className="py-16 md:py-24 bg-gradient-to-b from-white to-[brand-light-blue]">
