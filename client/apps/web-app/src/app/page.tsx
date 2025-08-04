@@ -6,6 +6,7 @@ import { HeroSection } from "@/components/hero-section";
 import { EsimSelectorNew } from "@/components/esim-selector-new";
 import { EsimExperienceSelector } from "@/components/esim-experience-selector";
 import { DestinationsGallery } from "@/components/destinations-gallery";
+import { PromoBanner } from "@/components/promo-banner";
 import { LoginModalWrapper } from "@/components/login-modal-wrapper";
 import { Button, Card } from "@workspace/ui";
 import { useRouter } from "next/navigation";
@@ -77,6 +78,9 @@ export default function Home() {
 
       {/* Destinations Gallery */}
       <DestinationsGallery />
+
+      {/* Promo Banner */}
+      <PromoBanner />
 
       {/* Trust Indicators */}
       <section className="py-8 bg-white">

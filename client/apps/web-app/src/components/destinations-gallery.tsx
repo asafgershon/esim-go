@@ -177,7 +177,7 @@ export function DestinationsGallery() {
   }, [data]);
 
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-b from-white to-[#F8FAFC]">
+    <section className="pt-16 pb-[60px] md:pt-24 md:pb-[100px] bg-gradient-to-b from-white to-[#F8FAFC]">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-right mb-12 max-w-4xl mx-auto">
