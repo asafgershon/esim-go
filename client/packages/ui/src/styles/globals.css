@@ -51,7 +51,7 @@
 
 
 :root {
-  --radius: 0.625rem;
+  --radius: 1rem;
   
   /* Light theme - CSS variables for shadcn/ui components - Hiiilo Branding */
   --background: 0 0% 100%;
