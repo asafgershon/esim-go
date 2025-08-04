@@ -11,8 +11,11 @@ const PricingPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Check if we're in production
+  const isProduction = import.meta.env.PROD;
+
   // Tab configuration with titles, icons, descriptions, and routes
-  const tabConfig = {
+  const allTabs = {
     '/pricing/summary': {
       title: 'Summary',
       icon: <Layers className="h-5 w-5" />,
@@ -21,7 +24,8 @@ const PricingPage: React.FC = () => {
     '/pricing/rules': {
       title: 'Rules Management',
       icon: <Settings className="h-5 w-5" />,
-      description: 'Comprehensive pricing rule management including system rules, markup configuration, and processing fees'
+      description: 'Comprehensive pricing rule management including system rules, markup configuration, and processing fees',
+      hideInProduction: true
     },
     '/pricing/simulator': {
       title: 'Simulator Pricing',
@@ -36,9 +40,15 @@ const PricingPage: React.FC = () => {
     '/pricing/strategy': {
       title: 'Strategy',
       icon: <Workflow className="h-5 w-5" />,
-      description: 'Build and manage pricing strategies with visual flow builder'
+      description: 'Build and manage pricing strategies with visual flow builder',
+      hideInProduction: true
     }
   };
+
+  // Filter tabs based on environment
+  const tabConfig = Object.fromEntries(
+    Object.entries(allTabs).filter(([_, tab]) => !isProduction || !tab.hideInProduction)
+  ) as typeof allTabs;
 
   // Get current tab based on route, default to summary
   const currentPath = location.pathname === '/pricing' ? '/pricing/summary' : location.pathname;
@@ -65,61 +75,24 @@ const PricingPage: React.FC = () => {
         <div>
           {/* Desktop Tabs - hidden on mobile, shown on desktop */}
           <div className="hidden md:flex space-x-1 bg-muted p-1 rounded-lg w-fit">
-            <Link
-              to="/pricing/summary"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                currentPath === '/pricing/summary'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Layers className="h-4 w-4" />
-              Summary
-            </Link>
-            <Link
-              to="/pricing/rules"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                currentPath === '/pricing/rules'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Settings className="h-4 w-4" />
-              Rules
-            </Link>
-            <Link
-              to="/pricing/simulator"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                currentPath === '/pricing/simulator'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Calculator className="h-4 w-4" />
-              Simulator Pricing
-            </Link>
-            <Link
-              to="/pricing/airhalo"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                currentPath === '/pricing/airhalo'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Globe className="h-4 w-4" />
-              AirHalo Pricing
-            </Link>
-            <Link
-              to="/pricing/strategy"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                currentPath === '/pricing/strategy'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Workflow className="h-4 w-4" />
-              Strategy
-            </Link>
+            {Object.entries(tabConfig).map(([path, tab]) => {
+              const Icon = tab.icon.type;
+              const title = tab.title.replace(' Management', '').replace(' Pricing', '');
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                    currentPath === path
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tab.icon}
+                  {title}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Mobile Dropdown - shown on mobile and tablet, hidden on desktop */}
@@ -128,39 +101,20 @@ const PricingPage: React.FC = () => {
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a view" />
               </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="/pricing/summary">
-                <div className="flex items-center gap-2">
-                  <Layers className="h-4 w-4" />
-                  <span>Summary</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="/pricing/rules">
-                <div className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  <span>Rules</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="/pricing/simulator">
-                <div className="flex items-center gap-2">
-                  <Calculator className="h-4 w-4" />
-                  <span>Simulator Pricing</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="/pricing/airhalo">
-                <div className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  <span>AirHalo Pricing</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="/pricing/strategy">
-                <div className="flex items-center gap-2">
-                  <Workflow className="h-4 w-4" />
-                  <span>Strategy</span>
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+              <SelectContent>
+                {Object.entries(tabConfig).map(([path, tab]) => {
+                  const title = tab.title.replace(' Management', '').replace(' Pricing', '');
+                  return (
+                    <SelectItem key={path} value={path}>
+                      <div className="flex items-center gap-2">
+                        {tab.icon}
+                        <span>{title}</span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
