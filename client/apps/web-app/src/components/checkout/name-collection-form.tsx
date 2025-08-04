@@ -6,7 +6,7 @@ import { Input } from "@workspace/ui";
 import { Label } from "@workspace/ui";
 import { useMutation } from "@apollo/client";
 import { UPDATE_PROFILE } from "@/lib/graphql/mutations";
-import { UpdateProfileResponse } from "@/lib/types";
+import { UpdateProfileResponse } from "@/__generated__/graphql";
 
 interface NameCollectionFormProps {
   onComplete: () => void;
