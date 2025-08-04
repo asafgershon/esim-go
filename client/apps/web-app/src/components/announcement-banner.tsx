@@ -18,9 +18,9 @@ export function AnnouncementBanner() {
         <div className="flex items-center justify-center py-2 text-sm">
           {/* Desktop Content */}
           <div className="hidden md:flex items-center gap-1">
-            <span>שירות 24/7 בעברית סכל סכום בחגים.</span>
+            <span>שירות 24/7 בעברית מכל מקום בעולם.</span>
             <span className="text-brand-green font-semibold">
-              בני הבצבת, בני הפטחות
+              בלי הגבלות, בלי הפתעות
             </span>
           </div>
           
