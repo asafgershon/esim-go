@@ -12,6 +12,8 @@ const config: Config = {
         'english': ['Agency FB', 'Agency', 'Arial', 'sans-serif'],
         'fallback': ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
+      // Note: Colors are defined via @theme directive in src/styles/globals.css for Tailwind v4
+      // Keeping semantic color references for compatibility
       colors: {
         border: "border",
         input: "input",
@@ -46,12 +48,6 @@ const config: Config = {
           DEFAULT: "card",
           foreground: "card-foreground",
         },
-        // Hiiilo Brand Colors
-        "brand-green": "#00E095",
-        "brand-purple": "#535FC8",
-        "brand-dark": "#0A232E",
-        "brand-light-blue": "#F8FAFC",
-        "brand-white": "#FEFEFE",
       },
       borderRadius: {
         lg: "var(--radius)",

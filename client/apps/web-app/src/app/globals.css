@@ -2,16 +2,6 @@
 @import "../../../../packages/ui/dist/globals.css";
 @import "tw-animate-css";
 
-/* Brand Colors for Tailwind v4 */
-@theme {
-  /* Hiiilo Brand Colors */
-  --color-brand-green: #00E095;           /* Vibrant green accent */
-  --color-brand-purple: #535FC8;          /* Brand purple */
-  --color-brand-dark: #0A232E;            /* Dark blue/black for headers */
-  --color-brand-light-blue: #F8FAFC;      /* Light blue background */
-  --color-brand-white: #FEFEFE;           /* Off-white */
-}
-
 /* Font System - Hebrew (Rubik) & English (Agency) */
 @layer base {
   :root {
