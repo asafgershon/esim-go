@@ -178,12 +178,18 @@ export function EnhancedLoginForm({
       setIsLoading(true);
       setError(null);
 
-      const result =
-        provider === "apple"
-          ? await signInWithApple(false)
-          : await signInWithGoogle(false);
+      let result;
+      try {
+        result =
+          provider === "apple"
+            ? await signInWithApple(false)
+            : await signInWithGoogle(false);
+      } catch (signInError) {
+        // Handle promise rejection as a failed sign-in
+        result = { success: false, error: (signInError as Error).message };
+      }
 
-      if (result.success) {
+      if (result && result.success) {
         if (onSuccess) {
           onSuccess();
         } else {
@@ -194,7 +200,10 @@ export function EnhancedLoginForm({
           provider === "apple"
             ? "התחברות עם Apple נכשלה"
             : "התחברות עם Google נכשלה";
-        setError(`${errorMessage}: ${result.error}`);
+        if (result?.error && !result.error.includes("dismissed") && !result.error.includes("skipped")) {
+          setError(`${errorMessage}: ${result.error}`);
+        }
+        // Don't show error for user dismissing the popup
       }
     } catch (error) {
       const errorMessage =

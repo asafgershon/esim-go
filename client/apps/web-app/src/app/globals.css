@@ -12,17 +12,74 @@
 @import "../../../../packages/ui/src/styles/globals.css";
 @import "tw-animate-css";
 
-/* Font System - Hebrew (Rubik) & English (Agency) */
+/* Birzia Font Family */
+@font-face {
+  font-family: 'Birzia';
+  src: url('/fonts/birzia/Birzia-Light.woff2') format('woff2'),
+       url('/fonts/birzia/Birzia-Light.woff') format('woff'),
+       url('/fonts/birzia/Birzia-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Birzia';
+  src: url('/fonts/birzia/Birzia-Regular.woff2') format('woff2'),
+       url('/fonts/birzia/Birzia-Regular.woff') format('woff'),
+       url('/fonts/birzia/Birzia-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Birzia';
+  src: url('/fonts/birzia/Birzia-Medium.woff2') format('woff2'),
+       url('/fonts/birzia/Birzia-Medium.woff') format('woff'),
+       url('/fonts/birzia/Birzia-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Birzia';
+  src: url('/fonts/birzia/Birzia-Bold.woff2') format('woff2'),
+       url('/fonts/birzia/Birzia-Bold.woff') format('woff'),
+       url('/fonts/birzia/Birzia-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Birzia';
+  src: url('/fonts/birzia/Birzia-Black.woff2') format('woff2'),
+       url('/fonts/birzia/Birzia-Black.woff') format('woff'),
+       url('/fonts/birzia/Birzia-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Agency Font */
+@font-face {
+  font-family: 'Agency';
+  src: url('/fonts/agency/Agency.woff2') format('woff2'),
+       url('/fonts/agency/Agency.woff') format('woff'),
+       url('/fonts/agency/Agency.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Font System - Hebrew (Birzia) & English (Agency) */
 @layer base {
   :root {
-    --font-hebrew: 'Rubik', system-ui, -apple-system, sans-serif;
-    --font-english: 'Agency FB', 'Agency', Arial, sans-serif;
+    --font-hebrew: 'Birzia', 'Rubik', system-ui, -apple-system, sans-serif;
+    --font-english: 'Agency', Arial, sans-serif;
     --font-fallback: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-  
-  /* Ensure the Next.js Rubik variable is also used when available */
-  :root:has(.rubik-loaded) {
-    --font-hebrew: var(--font-rubik, 'Rubik'), system-ui, -apple-system, sans-serif;
   }
 }
 

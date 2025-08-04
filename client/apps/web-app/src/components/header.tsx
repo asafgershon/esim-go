@@ -2,10 +2,13 @@
 
 import { Navbar } from "@workspace/ui";
 import { Button } from "@workspace/ui";
+import { IconButton } from "@workspace/ui";
+import { UserIcon } from "@workspace/ui";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
-import { User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { parseAsBoolean, useQueryState } from "nuqs";
 
 const navigation = [
   { title: "Hiilo לחברות", href: "/" },
@@ -17,6 +20,11 @@ const navigation = [
 
 export function Header() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const router = useRouter();
+  const [showLogin, setShowLogin] = useQueryState(
+    "showLogin",
+    parseAsBoolean.withDefault(false)
+  );
 
   const logo = (
     <Link href="/" className="flex items-center">
@@ -31,41 +39,67 @@ export function Header() {
     </Link>
   );
 
-  // Desktop actions (right side)
+  const handleUserClick = () => {
+    if (isAuthenticated) {
+      router.push("/profile");
+    } else {
+      // Show the login modal
+      setShowLogin(true);
+    }
+  };
+
+  // Desktop actions (right side) 
   const desktopActions = (
     <>
-      {isLoading ? null : isAuthenticated && user ? (
-        <Link href="/profile">
-          <Button variant="outline" size="sm" className="gap-2">
-            <User className="h-4 w-4" />
-            אזור אישי
-          </Button>
-        </Link>
-      ) : (
-        <Link href="/register">
-          <Button 
-            variant="primary-brand"
-            size="sm" 
-            className="px-6"
-          >
-            כניסה לeSIM
-          </Button>
-        </Link>
-      )}
+      <div className="flex items-center gap-2">
+        <IconButton 
+          variant="primary-brand" 
+          size="sm"
+          onClick={handleUserClick}
+        >
+          <UserIcon />
+        </IconButton>
+        <Button 
+          variant="primary-brand"
+          size="sm" 
+          className="px-6"
+          onClick={() => {
+            document.getElementById('esim-selector')?.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }}
+        >
+          לרכישת ESIM
+        </Button>
+      </div>
     </>
   );
 
   // Mobile action (center)
   const mobileAction = (
-    <Link href="/register">
+    <div className="flex items-center gap-2">
+      <IconButton 
+        variant="primary-brand" 
+        size="sm"
+        onClick={handleUserClick}
+      >
+        <UserIcon />
+      </IconButton>
       <Button 
         variant="primary-brand"
         size="sm" 
         className="px-6 text-xs"
+        onClick={() => {
+          document.getElementById('esim-selector')?.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }}
       >
-        כניסה לeSIM
+        לרכישת ESIM
       </Button>
-    </Link>
+    </div>
   );
 
   return (

@@ -9,7 +9,10 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
+  DialogTitle,
+  DialogDescription,
 } from "@workspace/ui/components/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -40,11 +43,6 @@ export function EnhancedLoginModal({
 
   if (!mounted) {
     return null; // Prevent SSR issues
-  }
-
-  // If user is already authenticated, don't show login
-  if (isAuthenticated) {
-    return null;
   }
 
   const handleLoginSuccess = () => {
@@ -110,6 +108,10 @@ export function EnhancedLoginModal({
           getModalSize()
         )}
       >
+        <VisuallyHidden>
+          <DialogTitle>התחברות</DialogTitle>
+          <DialogDescription>התחבר לחשבון שלך</DialogDescription>
+        </VisuallyHidden>
         <div className="bg-background rounded-xl border shadow-lg overflow-hidden">
           {/* Custom header with close button */}
           <div className="flex justify-end p-4 pb-0">

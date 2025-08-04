@@ -12,11 +12,21 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        'hebrew': ['Rubik', 'system-ui', '-apple-system', 'sans-serif'],
-        'english': ['Agency FB', 'Agency', 'Arial', 'sans-serif'],
+        'birzia': ['Birzia', 'Rubik', 'system-ui', '-apple-system', 'sans-serif'],
+        'agency': ['Agency', 'Arial', 'sans-serif'],
+        'hebrew': ['Birzia', 'Rubik', 'system-ui', '-apple-system', 'sans-serif'],
+        'english': ['Agency', 'Arial', 'sans-serif'],
         'fallback': ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
       colors: {
+        // Brand colors
+        'brand': {
+          'green': '#00E095',
+          'purple': '#535FC8',
+          'dark': '#0A232E',
+          'light-blue': '#F8FAFC',
+          'white': '#FEFEFE',
+        },
         // Updated semantic colors using CSS variables
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

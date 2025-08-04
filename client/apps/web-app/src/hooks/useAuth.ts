@@ -18,14 +18,28 @@ export const useAuth = () => {
     isLoading: true,
     error: null,
   });
+  
+  // Track auth token in state to trigger re-evaluation
+  const [hasToken, setHasToken] = useState(false);
 
-  // Only run the ME query if there's an auth token
-  const hasAuthToken = typeof window !== 'undefined' && localStorage.getItem('authToken');
+  // Check for auth token on mount and when it changes
+  useEffect(() => {
+    const checkToken = () => {
+      const token = typeof window !== 'undefined' && localStorage.getItem('authToken');
+      setHasToken(!!token);
+    };
+    
+    checkToken();
+    
+    // Listen for storage events (from other tabs)
+    window.addEventListener('storage', checkToken);
+    return () => window.removeEventListener('storage', checkToken);
+  }, []);
   
   const { data, loading, error, refetch } = useQuery(ME, {
     errorPolicy: 'all',
     fetchPolicy: 'cache-and-network',
-    skip: !hasAuthToken, // Skip the query if no auth token
+    skip: !hasToken, // Skip the query if no auth token
   });
 
   useEffect(() => {
@@ -79,7 +93,7 @@ export const useAuth = () => {
         isLoading: false,
         error: null,
       });
-    } else if (hasAuthToken) {
+    } else if (hasToken) {
       // We have a token but no user data - this shouldn't happen
       setAuthState({
         user: null,
@@ -88,7 +102,7 @@ export const useAuth = () => {
         error: null,
       });
     }
-  }, [data, loading, error, hasAuthToken]);
+  }, [data, loading, error, hasToken]);
 
   const signOut = useCallback(() => {
     localStorage.removeItem('authToken');
@@ -107,7 +121,14 @@ export const useAuth = () => {
   }, []);
 
   const refreshAuth = useCallback(() => {
-    refetch();
+    // Re-check if we have a token
+    const token = typeof window !== 'undefined' && localStorage.getItem('authToken');
+    setHasToken(!!token);
+    
+    // If we have a token, refetch the user data
+    if (token) {
+      refetch();
+    }
   }, [refetch]);
 
   const clearError = useCallback(() => {

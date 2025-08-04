@@ -2,9 +2,12 @@
 
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { Header } from "@/components/header";
-import { EsimExperienceSelector } from "@/components/esim-experience-selector";
-import { EsimSkeleton } from "@/components/esim-skeleton";
+import { HeroSection } from "@/components/hero-section";
+import { EsimSelectorNew } from "@/components/esim-selector-new";
+import { LoginModalWrapper } from "@/components/login-modal-wrapper";
 import { Button, Card } from "@workspace/ui";
+import { useRouter } from "next/navigation";
+import { parseAsBoolean, useQueryState } from "nuqs";
 import {
   ArrowLeft,
   Check,
@@ -20,49 +23,42 @@ import {
   Download,
   ScanLine
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
 
 export default function Home() {
+  const router = useRouter();
+  const [showLogin, setShowLogin] = useQueryState(
+    "showLogin",
+    parseAsBoolean.withDefault(false)
+  );
+
+  // Handle successful login - just navigate directly
+  const handleLoginSuccess = () => {
+    // Use the most direct navigation method
+    window.location.href = "/profile";
+  };
+
   return (
     <div className="min-h-screen bg-background" dir="rtl">
+      {/* Login Modal - now with callback */}
+      {showLogin && (
+        <LoginModalWrapper onLoginSuccess={handleLoginSuccess} />
+      )}
+      
       {/* Announcement Banner */}
       <AnnouncementBanner />
       
       {/* Navigation Header */}
       <Header />
 
-      {/* Hero Section with Background */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-light-blue to-white">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-30">
-          <Image
-            src="/hero-leaves.svg"
-            alt=""
-            fill
-            className="object-cover"
-            priority
-          />
-        </div>
-        
-        <div className="container mx-auto px-4 py-12 md:py-20 relative z-10">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold text-brand-dark mb-4 tracking-tight font-hebrew">
-              בחירת חבילת גלישה בחו״ל
-            </h1>
-            <p className="text-lg md:text-xl text-gray-600 mb-8 font-hebrew">
-              קנו עכשיו והתקינו מיד לפני הטיסה או הפעילו בהגעה ליעד
-            </p>
-          </div>
+      {/* Hero Section */}
+      <HeroSection />
 
-          {/* eSIM Selector */}
-          <div className="flex justify-center mt-12">
-            <div className="w-full max-w-2xl">
-              <Suspense fallback={<EsimSkeleton />}>
-                <EsimExperienceSelector />
-              </Suspense>
-            </div>
+      {/* eSIM Selector Section - Overlapping Hero */}
+      <section id="esim-selector" className="relative -mt-[200px] z-20">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-center">
+            <EsimSelectorNew />
           </div>
         </div>
       </section>

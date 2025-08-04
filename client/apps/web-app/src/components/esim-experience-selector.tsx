@@ -182,7 +182,7 @@ export function EsimExperienceSelector() {
       dir="rtl"
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-muted to-secondary p-6 text-center">
+      <div className="bg-gradient-to-r from-muted to-secondary py-6 px-5 text-center">
         <div className="text-2xl mb-2">🌍</div>
         <h1 className="text-xl font-bold text-card-foreground mb-1 font-hebrew">
           חבילות eSIM לטיולים
