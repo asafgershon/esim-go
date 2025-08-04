@@ -2,24 +2,22 @@
 
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { BackgroundSection } from "@/components/background-section";
+import { CompatibilitySection } from "@/components/compatibility-section";
 import { DestinationsGallery } from "@/components/destinations-gallery";
 import { EsimSelector } from "@/components/esim-selector";
 import { FeaturesSection } from "@/components/features-section";
 import { Header } from "@/components/header";
 import { HeroSection } from "@/components/hero-section";
+import { HowToSection } from "@/components/how-to-section";
 import { LoginModalWrapper } from "@/components/login-modal-wrapper";
+import { LogoRounded } from "@/components/logo-rounded";
 import { PromoBanner } from "@/components/promo-banner";
+import { ReviewsSection } from "@/components/reviews-section";
 import { Button, Card } from "@workspace/ui";
 import {
   ArrowLeft,
   Check,
-  CreditCard,
-  Download,
-  Globe,
-  Headphones,
-  MapPin,
-  Shield,
-  Wifi
+  Shield
 } from "lucide-react";
 import Link from "next/link";
 import { parseAsBoolean, useQueryState } from "nuqs";
@@ -66,179 +64,18 @@ export default function Home() {
       {/* Features Section */}
       <FeaturesSection />
 
-      {/* Background Section */}
-      <BackgroundSection />
+      {/* Background Section with eSIM Compatibility Check */}
+      <BackgroundSection>
+        <>
+          <LogoRounded />
+          <CompatibilitySection />
+        </>
+        {/* Customer Reviews */}
+        <ReviewsSection />
+      </BackgroundSection>
 
-      {/* Benefits Section */}
-      <section className="py-16 md:py-24 bg-gradient-to-b from-white to-[brand-light-blue]">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Benefit 1 */}
-            <Card className="p-8 text-center border-0 shadow-xl bg-white rounded-2xl hover:shadow-2xl transition-shadow">
-              <div className="bg-gradient-to-br from-[brand-green]/20 to-[brand-green]/10 rounded-2xl p-4 w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                <Globe className="h-10 w-10 text-[brand-green]" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4 text-[brand-dark]">
-                עד 50 יעדים במנוי אחד
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                חבילה אחת לכל היעדים שלכם - פשוט, נוח וחסכוני
-              </p>
-            </Card>
-
-            {/* Benefit 2 */}
-            <Card className="p-8 text-center border-0 shadow-xl bg-white rounded-2xl hover:shadow-2xl transition-shadow">
-              <div className="bg-gradient-to-br from-[brand-purple]/20 to-[brand-purple]/10 rounded-2xl p-4 w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                <Shield className="h-10 w-10 text-[brand-purple]" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4 text-[brand-dark]">
-                חסכו בעלויות נדידה
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                עד 90% חיסכון לעומת חבילות נדידה רגילות
-              </p>
-            </Card>
-
-            {/* Benefit 3 */}
-            <Card className="p-8 text-center border-0 shadow-xl bg-white rounded-2xl hover:shadow-2xl transition-shadow">
-              <div className="bg-gradient-to-br from-[brand-green]/20 to-[brand-green]/10 rounded-2xl p-4 w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                <Headphones className="h-10 w-10 text-[brand-green]" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4 text-[brand-dark]">
-                תמיכה 24/7
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                צוות תמיכה ישראלי זמין בכל שעה ובכל מקום
-              </p>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Statistics Section - Dark Theme */}
-      <section className="py-20 md:py-32 bg-gradient-to-br from-[brand-dark] to-[brand-dark] relative overflow-hidden">
-        {/* Decorative Elements */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-[brand-green]/20 to-transparent rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-[brand-purple]/20 to-transparent rounded-full blur-3xl"></div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-              נתונים שמדברים בעד עצמם
-            </h2>
-            <p className="text-xl text-gray-300">
-              אלפי ישראלים כבר נהנים מחופש הגלישה שלנו
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="text-5xl md:text-6xl font-bold text-[brand-green] mb-2">
-                100K+
-              </div>
-              <p className="text-lg text-gray-300">חבילות נמכרו</p>
-            </div>
-            <div className="text-center">
-              <div className="text-5xl md:text-6xl font-bold text-[brand-green] mb-2">
-                4.9/5
-              </div>
-              <p className="text-lg text-gray-300">דירוג ממוצע</p>
-            </div>
-            <div className="text-center">
-              <div className="text-5xl md:text-6xl font-bold text-[brand-green] mb-2">
-                190+
-              </div>
-              <p className="text-lg text-gray-300">מדינות זמינות</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-16 md:py-24 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-5xl font-bold text-[brand-dark] mb-4">
-              איך זה עובד?
-            </h2>
-            <p className="text-xl text-gray-600">4 צעדים פשוטים לחיבור מושלם</p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {/* Step 1 */}
-            <div className="relative">
-              <Card className="p-6 border-2 border-gray-100 hover:border-[brand-green] transition-colors rounded-2xl">
-                <div className="absolute -top-3 -right-3 w-8 h-8 bg-[brand-green] text-white rounded-full flex items-center justify-center font-bold text-sm">
-                  1
-                </div>
-                <div className="mb-4">
-                  <MapPin className="h-8 w-8 text-[brand-green]" />
-                </div>
-                <h4 className="font-bold text-lg mb-2 text-[brand-dark]">
-                  בחרו יעד
-                </h4>
-                <p className="text-sm text-gray-600">
-                  בחרו את המדינה או האזור לטיול שלכם
-                </p>
-              </Card>
-            </div>
-
-            {/* Step 2 */}
-            <div className="relative">
-              <Card className="p-6 border-2 border-gray-100 hover:border-[brand-green] transition-colors rounded-2xl">
-                <div className="absolute -top-3 -right-3 w-8 h-8 bg-[brand-green] text-white rounded-full flex items-center justify-center font-bold text-sm">
-                  2
-                </div>
-                <div className="mb-4">
-                  <CreditCard className="h-8 w-8 text-[brand-green]" />
-                </div>
-                <h4 className="font-bold text-lg mb-2 text-[brand-dark]">
-                  רכשו חבילה
-                </h4>
-                <p className="text-sm text-gray-600">
-                  תשלום מאובטח ומהיר בכרטיס אשראי
-                </p>
-              </Card>
-            </div>
-
-            {/* Step 3 */}
-            <div className="relative">
-              <Card className="p-6 border-2 border-gray-100 hover:border-[brand-green] transition-colors rounded-2xl">
-                <div className="absolute -top-3 -right-3 w-8 h-8 bg-[brand-green] text-white rounded-full flex items-center justify-center font-bold text-sm">
-                  3
-                </div>
-                <div className="mb-4">
-                  <Download className="h-8 w-8 text-[brand-green]" />
-                </div>
-                <h4 className="font-bold text-lg mb-2 text-[brand-dark]">
-                  התקינו
-                </h4>
-                <p className="text-sm text-gray-600">
-                  סרקו QR או התקינו ישירות במכשיר
-                </p>
-              </Card>
-            </div>
-
-            {/* Step 4 */}
-            <div className="relative">
-              <Card className="p-6 border-2 border-gray-100 hover:border-[brand-green] transition-colors rounded-2xl">
-                <div className="absolute -top-3 -right-3 w-8 h-8 bg-[brand-green] text-white rounded-full flex items-center justify-center font-bold text-sm">
-                  4
-                </div>
-                <div className="mb-4">
-                  <Wifi className="h-8 w-8 text-[brand-green]" />
-                </div>
-                <h4 className="font-bold text-lg mb-2 text-[brand-dark]">
-                  גלשו
-                </h4>
-                <p className="text-sm text-gray-600">
-                  נחתתם? אתם מחוברים אוטומטית!
-                </p>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* How To Section */}
+      <HowToSection />
 
       {/* Unique Value Proposition */}
       <section className="py-16 md:py-24 bg-gradient-to-b from-white to-[brand-light-blue]">
@@ -337,88 +174,6 @@ export default function Home() {
                 <div className="absolute -z-10 -top-4 -left-4 w-full h-full bg-gradient-to-br from-[brand-green]/20 to-[brand-purple]/20 rounded-3xl blur-2xl"></div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-16 md:py-24 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-5xl font-bold text-[brand-dark] mb-4">
-              לקוחות מרוצים מספרים
-            </h2>
-            <p className="text-xl text-gray-600">
-              אלפי ישראלים כבר נהנים מהשירות שלנו
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Testimonial 1 */}
-            <Card className="p-8 border-0 shadow-xl rounded-2xl bg-gradient-to-b from-white to-gray-50">
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-2xl text-yellow-400">
-                    ★
-                  </span>
-                ))}
-              </div>
-              <p className="text-gray-700 mb-6 leading-relaxed italic">
-                "הייתי בטיול של 3 שבועות באירופה. ה-eSIM עבד מושלם בכל מדינה.
-                החיסכון היה משמעותי והשירות מעולה!"
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[brand-green] to-[brand-purple] rounded-full"></div>
-                <div>
-                  <p className="font-bold text-[brand-dark]">יעל כהן</p>
-                  <p className="text-sm text-gray-500">טיול באירופה</p>
-                </div>
-              </div>
-            </Card>
-
-            {/* Testimonial 2 */}
-            <Card className="p-8 border-0 shadow-xl rounded-2xl bg-gradient-to-b from-white to-gray-50">
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-2xl text-yellow-400">
-                    ★
-                  </span>
-                ))}
-              </div>
-              <p className="text-gray-700 mb-6 leading-relaxed italic">
-                "התקנה פשוטה ומהירה. תוך 2 דקות הייתי מחובר. התמיכה בעברית עזרה
-                לי מאוד כשהיתה לי שאלה."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[brand-purple] to-[brand-green] rounded-full"></div>
-                <div>
-                  <p className="font-bold text-[brand-dark]">דוד לוי</p>
-                  <p className="text-sm text-gray-500">טיול בארה״ב</p>
-                </div>
-              </div>
-            </Card>
-
-            {/* Testimonial 3 */}
-            <Card className="p-8 border-0 shadow-xl rounded-2xl bg-gradient-to-b from-white to-gray-50">
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-2xl text-yellow-400">
-                    ★
-                  </span>
-                ))}
-              </div>
-              <p className="text-gray-700 mb-6 leading-relaxed italic">
-                "סוף סוף פתרון שעובד! אין יותר חיפוש אחר WiFi או דאגה מחשבונות
-                מנופחים. ממליצה בחום!"
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[brand-green] to-[brand-green] rounded-full"></div>
-                <div>
-                  <p className="font-bold text-[brand-dark]">מיכל ברק</p>
-                  <p className="text-sm text-gray-500">טיול בתאילנד</p>
-                </div>
-              </div>
-            </Card>
           </div>
         </div>
       </section>
