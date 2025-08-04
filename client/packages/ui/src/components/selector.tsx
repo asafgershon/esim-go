@@ -20,7 +20,7 @@ const Selector = React.forwardRef<
 ));
 Selector.displayName = "Selector";
 
-// Selector Card
+// Selector Card with responsive padding and border radius
 const SelectorCard = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -29,22 +29,17 @@ const SelectorCard = React.forwardRef<
     ref={ref}
     data-name="SelectorCard"
     className={cn(
-      "bg-white rounded-[20px] shadow-[0px_4px_28px_-6px_rgba(0,0,0,0.08)] relative",
+      "bg-white rounded-[20px] md:rounded-[30px] shadow-[0px_4px_28px_-6px_rgba(0,0,0,0.08)] relative",
+      "px-5 py-6 md:px-11 md:py-11",
       className
     )}
-    style={{
-      paddingLeft: '20px',
-      paddingRight: '20px',
-      paddingTop: '24px',
-      paddingBottom: '24px',
-      ...style
-    }}
+    style={style}
     {...props}
   />
 ));
 SelectorCard.displayName = "SelectorCard";
 
-// Selector Header (replaceable)
+// Selector Header with responsive margin
 const SelectorHeader = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -52,13 +47,13 @@ const SelectorHeader = React.forwardRef<
   <div
     ref={ref}
     data-name="SelectorHeader"
-    className={cn("text-right mb-10", className)}
+    className={cn("text-right mb-6 md:mb-10", className)}
     {...props}
   />
 ));
 SelectorHeader.displayName = "SelectorHeader";
 
-// Selector Content (replaceable)
+// Selector Content with responsive gap
 const SelectorContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -66,7 +61,7 @@ const SelectorContent = React.forwardRef<
   <div
     ref={ref}
     data-name="SelectorContent"
-    className={cn("flex flex-col gap-6", className)}
+    className={cn("flex flex-col gap-4 md:gap-6", className)}
     {...props}
   />
 ));
@@ -86,7 +81,7 @@ const SelectorAction = React.forwardRef<
 ));
 SelectorAction.displayName = "SelectorAction";
 
-// Selector Section (for grouping related content)
+// Selector Section with responsive gap
 const SelectorSection = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -94,13 +89,13 @@ const SelectorSection = React.forwardRef<
   <div
     ref={ref}
     data-name="SelectorSection"
-    className={cn("flex flex-col gap-4", className)}
+    className={cn("flex flex-col gap-2 md:gap-4", className)}
     {...props}
   />
 ));
 SelectorSection.displayName = "SelectorSection";
 
-// Selector Label
+// Selector Label with responsive text size
 const SelectorLabel = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
@@ -108,7 +103,7 @@ const SelectorLabel = React.forwardRef<
   <p
     ref={ref}
     data-name="SelectorLabel"
-    className={cn("text-[14px] text-[#0A232E] text-right", className)}
+    className={cn("text-[12px] md:text-[20px] text-[#0A232E] text-right", className)}
     {...props}
   />
 ));
