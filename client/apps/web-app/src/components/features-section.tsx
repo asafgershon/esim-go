@@ -3,6 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { Button } from "@workspace/ui";
 
 interface FeatureCardProps {
   text: string;
@@ -12,8 +13,8 @@ interface FeatureCardProps {
 
 function FeatureCard({ text, highlight, iconUrl }: FeatureCardProps) {
   return (
-    <div className="bg-[#0A232E] rounded-[20px] p-6 h-[200px] flex flex-col items-center justify-center text-white">
-      <div className="w-20 h-20 mb-4 relative">
+    <div className="bg-[#0A232E] rounded-[20px] p-6 h-[200px] flex flex-col md:flex-row items-center justify-center text-white gap-4">
+      <div className="w-20 h-20 relative flex-shrink-0">
         <Image
           src={iconUrl}
           alt={text}
@@ -21,15 +22,16 @@ function FeatureCard({ text, highlight, iconUrl }: FeatureCardProps) {
           className="object-contain"
         />
       </div>
-      <div className="text-center">
+      <div className="text-center md:text-right">
         <p className="text-sm leading-tight" dir="rtl">
-          {text}
+          <span className="font-medium">{highlight}</span>
+          {text && (
+            <>
+              {" "}
+              <span className="font-light">{text}</span>
+            </>
+          )}
         </p>
-        {highlight && (
-          <p className="text-xs text-gray-400 mt-1" dir="rtl">
-            {highlight}
-          </p>
-        )}
       </div>
     </div>
   );
@@ -111,6 +113,22 @@ const titleVariants = {
   },
 };
 
+const ctaVariants = {
+  hidden: { 
+    opacity: 0, 
+    y: 20,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      delay: 0.4,
+      ease: "easeOut",
+    },
+  },
+};
+
 export function FeaturesSection() {
   return (
     <section className="w-full px-4 py-16 md:py-24">
@@ -135,7 +153,7 @@ export function FeaturesSection() {
         </motion.div>
 
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-6xl mx-auto"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
@@ -157,6 +175,42 @@ export function FeaturesSection() {
               />
             </motion.div>
           ))}
+        </motion.div>
+
+        {/* CTA Section */}
+        <motion.div 
+          className="mt-12 flex flex-col md:flex-row items-center justify-center md:justify-between gap-6 max-w-6xl mx-auto"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={ctaVariants}
+        >
+          {/* Description - hidden on mobile, visible on desktop */}
+          <div className="hidden md:block text-right order-1">
+            <p className="text-[#0A232E] max-w-md" dir="rtl">
+              <span className="font-bold text-[22px]">אתם טסים ל־8 ימים? תקבלו חבילה ל־8 ימים.</span>
+              <span className="font-normal text-base md:text-lg"> בלי לבחור נפח גלישה, בלי להטעין, בלי לחדש.</span>
+              <span className="text-[#535FC8] font-bold text-base md:text-lg"> שירות פשוט בגובה העיניים.</span>
+            </p>
+          </div>
+
+          {/* Button Container */}
+          <div className="flex items-center order-2">
+            <Button 
+              variant="primary-brand"
+              size="lg"
+              // Brand purple background, white text, dark border - update if brand colors change
+              className="bg-[#535FC8] hover:bg-[#535FC8]/90 text-white w-[220px] border border-[#0A232E] outline-none"
+              onClick={() => {
+                const selector = document.getElementById('esim-selector');
+                if (selector) {
+                  selector.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+            >
+              לרכישת Esim
+            </Button>
+          </div>
         </motion.div>
       </div>
     </section>
