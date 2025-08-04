@@ -1,5 +1,6 @@
 "use client";
 
+import { AnnouncementBanner } from "@/components/announcement-banner";
 import { EsimExperienceSelector } from "@/components/esim-experience-selector";
 import { EsimSkeleton } from "@/components/esim-skeleton";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -26,6 +27,9 @@ import { Suspense } from "react";
 export default function Home() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
+      {/* Announcement Banner */}
+      <AnnouncementBanner />
+      
       {/* Header */}
       <header className="container mx-auto px-4 py-6 relative z-10">
         <div className="flex items-center justify-between">
