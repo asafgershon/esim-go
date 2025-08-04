@@ -19,3 +19,6 @@ server/packages/utils/dist/
 *.tsbuildinfo
 */.turbo
 *.log
+
+# AWS credentials
+.env.aws
