@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Card } from "@workspace/ui";
 import dynamic from "next/dynamic";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { ImageWithFallback } from "./image-with-fallback";
 
 // Lazy load the scrollbar component
@@ -76,9 +76,54 @@ const destinations: Destination[] = [
     image: "/images/destinations/new-york.png",
     priceFrom: "החל מ- 22 ₪"
   },
+  {
+    id: "barcelona",
+    name: "Barcelona",
+    nameHebrew: "ברצלונה",
+    countryIso: "ES",
+    image: "/images/destinations/barcelona.png",
+    priceFrom: "החל מ- 16 ₪"
+  },
+  {
+    id: "amsterdam",
+    name: "Amsterdam",
+    nameHebrew: "אמסטרדם",
+    countryIso: "NL",
+    image: "/images/destinations/amsterdam.png",
+    priceFrom: "החל מ- 19 ₪"
+  },
+  {
+    id: "berlin",
+    name: "Berlin",
+    nameHebrew: "ברלין",
+    countryIso: "DE",
+    image: "/images/destinations/berlin.png",
+    priceFrom: "החל מ- 17 ₪"
+  },
 ];
 
 export function DestinationsGallery() {
+  useEffect(() => {
+    // Add global styles to hide scrollbars
+    const style = document.createElement('style');
+    style.textContent = `
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none !important;  /* IE and Edge */
+        scrollbar-width: none !important;  /* Firefox */
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   return (
     <section className="py-16 md:py-24 bg-gradient-to-b from-white to-[#F8FAFC]">
       <div className="container mx-auto px-4">
@@ -99,20 +144,33 @@ export function DestinationsGallery() {
           </p>
         </div>
 
-        {/* Desktop Grid */}
+        {/* Desktop Grid - Show only first 8 countries */}
         <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-          {destinations.map((destination) => (
+          {destinations.slice(0, 8).map((destination) => (
             <DestinationCard key={destination.id} destination={destination} />
           ))}
         </div>
 
         {/* Mobile Horizontal Scroll with Custom Scrollbar */}
-        <div className="md:hidden" style={{ height: '304px' }}>
+        <div className="md:hidden relative" style={{ height: '304px', overflow: 'hidden' }}>
           <Scrollbars
             style={{ width: '100%', height: '100%' }}
             autoHide
             autoHideTimeout={1000}
             autoHideDuration={200}
+            renderView={props => (
+              <div 
+                {...props} 
+                style={{
+                  ...props.style,
+                  overflowX: 'scroll',
+                  overflowY: 'hidden',
+                  marginBottom: '-20px',
+                  paddingBottom: '20px'
+                }}
+                className="hide-scrollbar"
+              />
+            )}
             renderTrackHorizontal={props => (
               <div {...props} className="track-horizontal" style={{
                 ...props.style,
