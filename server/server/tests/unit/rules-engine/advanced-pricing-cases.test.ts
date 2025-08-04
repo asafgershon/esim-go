@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PricingRuleEngine } from '../../../src/rules-engine/rule-engine';
-import type { PricingEngineState } from '@esim-go/rules-engine';
+import type { PricingEngineState } from '@hiilo/rules-engine';
 import type { CreatePricingRuleInput } from '../../../src/types';
 import type { RuleType } from '../../../src/types';
 

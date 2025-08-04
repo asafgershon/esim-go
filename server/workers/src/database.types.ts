@@ -507,54 +507,96 @@ export type Database = {
         }
         Relationships: []
       }
-      pricing_rules: {
+      pricing_blocks: {
         Row: {
-          actions: Json
+          action: Json
           category: string
           conditions: Json
-          created_at: string
-          created_by: string
+          created_at: string | null
+          created_by: string | null
           description: string | null
           id: string
-          is_active: boolean
-          is_editable: boolean
+          is_active: boolean | null
+          is_editable: boolean | null
           name: string
-          priority: number
-          updated_at: string
+          priority: number | null
+          updated_at: string | null
           valid_from: string | null
           valid_until: string | null
         }
         Insert: {
-          actions?: Json
+          action: Json
           category: string
-          conditions?: Json
-          created_at?: string
-          created_by: string
+          conditions: Json
+          created_at?: string | null
+          created_by?: string | null
           description?: string | null
           id?: string
-          is_active?: boolean
-          is_editable?: boolean
+          is_active?: boolean | null
+          is_editable?: boolean | null
           name: string
-          priority?: number
-          updated_at?: string
+          priority?: number | null
+          updated_at?: string | null
           valid_from?: string | null
           valid_until?: string | null
         }
         Update: {
-          actions?: Json
+          action?: Json
           category?: string
           conditions?: Json
-          created_at?: string
-          created_by?: string
+          created_at?: string | null
+          created_by?: string | null
           description?: string | null
           id?: string
-          is_active?: boolean
-          is_editable?: boolean
+          is_active?: boolean | null
+          is_editable?: boolean | null
           name?: string
-          priority?: number
-          updated_at?: string
+          priority?: number | null
+          updated_at?: string | null
           valid_from?: string | null
           valid_until?: string | null
+        }
+        Relationships: []
+      }
+      pricing_rules: {
+        Row: {
+          code: string
+          conditions: Json
+          created_at: string | null
+          description: string | null
+          event_params: Json
+          event_type: string
+          id: string
+          is_active: boolean | null
+          name: string
+          rule_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          conditions?: Json
+          created_at?: string | null
+          description?: string | null
+          event_params?: Json
+          event_type: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          rule_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          conditions?: Json
+          created_at?: string | null
+          description?: string | null
+          event_params?: Json
+          event_type?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          rule_type?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -609,6 +651,71 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_strategies: {
+        Row: {
+          activation_count: number | null
+          archived_at: string | null
+          code: string
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          is_default: boolean | null
+          last_activated_at: string | null
+          name: string
+          parent_strategy_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+          validated_at: string | null
+          validation_errors: Json | null
+          version: number
+        }
+        Insert: {
+          activation_count?: number | null
+          archived_at?: string | null
+          code: string
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          last_activated_at?: string | null
+          name: string
+          parent_strategy_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_errors?: Json | null
+          version?: number
+        }
+        Update: {
+          activation_count?: number | null
+          archived_at?: string | null
+          code?: string
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          last_activated_at?: string | null
+          name?: string
+          parent_strategy_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_errors?: Json | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_strategies_parent_strategy_id_fkey"
+            columns: ["parent_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           first_name: string | null
@@ -629,6 +736,54 @@ export type Database = {
           phone?: string | null
         }
         Relationships: []
+      }
+      strategy_blocks: {
+        Row: {
+          added_at: string | null
+          added_by: string | null
+          block_id: string
+          config_overrides: Json | null
+          id: string
+          is_enabled: boolean | null
+          priority: number
+          strategy_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          added_by?: string | null
+          block_id: string
+          config_overrides?: Json | null
+          id?: string
+          is_enabled?: boolean | null
+          priority: number
+          strategy_id: string
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string | null
+          block_id?: string
+          config_overrides?: Json | null
+          id?: string
+          is_enabled?: boolean | null
+          priority?: number
+          strategy_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_blocks_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_blocks_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trips: {
         Row: {
@@ -792,30 +947,6 @@ export type Database = {
         }
         Relationships: []
       }
-      pricing_rules_field_audit: {
-        Row: {
-          category: string | null
-          conditions: Json | null
-          field_status: string | null
-          id: string | null
-          name: string | null
-        }
-        Insert: {
-          category?: string | null
-          conditions?: Json | null
-          field_status?: never
-          id?: string | null
-          name?: string | null
-        }
-        Update: {
-          category?: string | null
-          conditions?: Json | null
-          field_status?: never
-          id?: string | null
-          name?: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       cleanup_expired_checkout_sessions: {
@@ -967,6 +1098,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_unique_durations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          validity_in_days: number
+        }[]
+      }
       get_unique_groups_from_bundles: {
         Args: Record<PropertyKey, never>
         Returns: string[]
@@ -1022,7 +1159,25 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      block_type:
+        | "cost"
+        | "markup"
+        | "discount"
+        | "unused_days_discount"
+        | "psychological_rounding"
+        | "region_rounding"
+        | "profit_constraint"
+        | "processing_fee"
+        | "custom"
+      event_type:
+        | "set-base-price"
+        | "apply-markup"
+        | "apply-discount"
+        | "apply-unused-days-discount"
+        | "apply-psychological-rounding"
+        | "apply-region-rounding"
+        | "apply-profit-constraint"
+        | "apply-processing-fee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1149,6 +1304,28 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      block_type: [
+        "cost",
+        "markup",
+        "discount",
+        "unused_days_discount",
+        "psychological_rounding",
+        "region_rounding",
+        "profit_constraint",
+        "processing_fee",
+        "custom",
+      ],
+      event_type: [
+        "set-base-price",
+        "apply-markup",
+        "apply-discount",
+        "apply-unused-days-discount",
+        "apply-psychological-rounding",
+        "apply-region-rounding",
+        "apply-profit-constraint",
+        "apply-processing-fee",
+      ],
+    },
   },
 } as const

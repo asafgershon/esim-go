@@ -1,5 +1,5 @@
-import { ESimGoClient } from "@esim-go/client";
-import { SyncJobType } from "@esim-go/rules-engine";
+import { ESimGoClient } from "@hiilo/client";
+import { SyncJobType } from "@hiilo/rules-engine";
 import { createLogger, withPerformanceLogging } from "../lib/logger";
 import {
   BundleRepository,

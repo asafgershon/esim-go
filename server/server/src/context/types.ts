@@ -23,7 +23,7 @@ import { TripRepository } from "../repositories/trip.repository";
 import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CatalogSyncServiceV2 } from "../services";
-import type { ESimGoClient } from "@esim-go/client";
+import type { ESimGoClient } from "@hiilo/client";
 import type { AirHaloClient } from "@airhalo/client";
 
 export type Context = {

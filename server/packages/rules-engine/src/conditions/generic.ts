@@ -1,5 +1,5 @@
 import type { RuleCondition } from "../generated/types";
-import { getDeepValue } from "@esim-go/utils";
+import { getDeepValue } from "@hiilo/utils";
 import { BaseConditionEvaluator } from "./base";
 import { PricingEngineState } from "src/rules-engine-types";
 

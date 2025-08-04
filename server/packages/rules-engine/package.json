@@ -1,5 +1,5 @@
 {
-  "name": "@esim-go/rules-engine",
+  "name": "@hiilo/rules-engine",
   "version": "1.0.0",
   "description": "Pure pricing rules engine for eSIM Go",
   "main": "dist/index.js",
@@ -20,7 +20,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@esim-go/utils": "workspace:*",
+    "@hiilo/utils": "workspace:*",
     "dot-object": "^2.1.5",
     "immer": "^10.1.1"
   },

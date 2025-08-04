@@ -239,7 +239,10 @@ export function CheckoutContainer() {
   }, [session, clearCheckoutState, router]);
 
   // UI helpers
-  const canSubmitPayment = session?.steps.authentication?.completed && validationStatus === "valid";
+  const canSubmitPayment = session?.steps.authentication?.completed && 
+    validationStatus === "valid" && 
+    user?.firstName && 
+    user?.lastName;
 
   // Session creation is now handled server-side
   // If we don't have a token, the server should have redirected us

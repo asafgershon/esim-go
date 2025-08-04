@@ -1,4 +1,4 @@
-import { ActionType, ConditionOperator } from "@esim-go/rules-engine";
+import { ActionType, ConditionOperator } from "@hiilo/rules-engine";
 import type { Database } from "../database.types";
 import { createLogger } from "../lib/logger";
 import type {

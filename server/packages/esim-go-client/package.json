@@ -1,5 +1,5 @@
 {
-  "name": "@esim-go/client",
+  "name": "@hiilo/client",
   "version": "1.0.0",
   "description": "Type-safe eSIM Go API client",
   "main": "dist/index.js",

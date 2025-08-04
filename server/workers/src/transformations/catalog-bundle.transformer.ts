@@ -134,7 +134,13 @@ export function transformAndValidateCatalogBundle(
     // Transform to catalog bundle format
     const transformed: CatalogBundleSchema = {
       esim_go_name: validated.name,
-      groups: (validated.groups || []).map(g => g.replace(/-/g, '')), // Remove hyphens from group names
+      groups: (validated.groups || []).map(
+        (g) =>
+          g
+            .replace(/-/g, " ") // Replace hyphens with spaces
+            .replace(/\s+/g, " ") // Replace multiple spaces with single space
+            .trim() // Remove leading/trailing spaces
+      ),
       description: validated.description || null,
       validity_in_days: validated.duration,
       data_amount_mb: isUnlimited ? null : validated.dataAmount || null,

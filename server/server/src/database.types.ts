@@ -507,6 +507,57 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_blocks: {
+        Row: {
+          action: Json
+          category: string
+          conditions: Json
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_editable: boolean | null
+          name: string
+          priority: number | null
+          updated_at: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          action: Json
+          category: string
+          conditions: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_editable?: boolean | null
+          name: string
+          priority?: number | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          action?: Json
+          category?: string
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_editable?: boolean | null
+          name?: string
+          priority?: number | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       pricing_rules: {
         Row: {
           actions: Json
@@ -966,6 +1017,12 @@ export type Database = {
       get_regions_with_bundles: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      get_unique_durations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          validity_in_days: number
+        }[]
       }
       get_unique_groups_from_bundles: {
         Args: Record<PropertyKey, never>

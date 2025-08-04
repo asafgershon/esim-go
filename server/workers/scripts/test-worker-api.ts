@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import 'dotenv/config';
-import { ESimGoClient } from '@esim-go/client';
-import { createLogger } from '@esim-go/utils';
+import { ESimGoClient } from '@hiilo/client';
+import { createLogger } from '@hiilo/utils';
 import { config } from '../src/config/index.js';
 
 const logger = createLogger({ component: 'test-worker-api' });

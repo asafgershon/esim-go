@@ -1,5 +1,5 @@
 import { Worker } from 'bullmq';
-import { createLogger } from '@esim-go/utils';
+import { createLogger } from '@hiilo/utils';
 import { config } from '../config/index.js';
 import { catalogSyncQueueManager } from '../queues/catalog-sync.queue.js';
 import { CatalogSyncService } from '../services/catalog-sync.service.js';

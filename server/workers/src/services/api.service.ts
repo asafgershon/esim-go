@@ -1,6 +1,6 @@
 import { catalogSyncQueueManager } from '../queues/catalog-sync.queue.js';
 import { syncJobRepository, catalogMetadataRepository } from './supabase.service.js';
-import { createLogger } from '@esim-go/utils';
+import { createLogger } from '@hiilo/utils';
 import { SyncJobType } from '../generated/types.js';
 
 const logger = createLogger({ 

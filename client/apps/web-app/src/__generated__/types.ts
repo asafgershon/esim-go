@@ -34,6 +34,212 @@ export type ActivateEsimResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type AdminEsim = {
+  __typename?: 'AdminESIM';
+  actionDate?: Maybe<Scalars['String']['output']>;
+  activationCode?: Maybe<Scalars['String']['output']>;
+  apiStatus?: Maybe<Scalars['String']['output']>;
+  assignedDate?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  customerRef?: Maybe<Scalars['String']['output']>;
+  esim_bundles?: Maybe<Array<Maybe<Scalars['JSON']['output']>>>;
+  iccid: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  lastAction?: Maybe<Scalars['String']['output']>;
+  matchingId?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<AdminEsimOrder>;
+  orderId: Scalars['String']['output'];
+  qrCodeUrl?: Maybe<Scalars['String']['output']>;
+  smdpAddress?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  usage?: Maybe<EsimUsage>;
+  user?: Maybe<AdminEsimUser>;
+  userId: Scalars['String']['output'];
+};
+
+export type AdminEsimDetails = {
+  __typename?: 'AdminESIMDetails';
+  actionDate?: Maybe<Scalars['String']['output']>;
+  activationCode?: Maybe<Scalars['String']['output']>;
+  apiDetails?: Maybe<Scalars['JSON']['output']>;
+  assignedDate?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  customerRef?: Maybe<Scalars['String']['output']>;
+  iccid: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  lastAction?: Maybe<Scalars['String']['output']>;
+  matchingId?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<Order>;
+  orderId: Scalars['String']['output'];
+  qrCodeUrl?: Maybe<Scalars['String']['output']>;
+  smdpAddress?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  usage?: Maybe<EsimUsage>;
+  userId: Scalars['String']['output'];
+};
+
+export type AdminEsimOrder = {
+  __typename?: 'AdminESIMOrder';
+  bundleName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  reference: Scalars['String']['output'];
+};
+
+export type AdminEsimUser = {
+  __typename?: 'AdminESIMUser';
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  lastName?: Maybe<Scalars['String']['output']>;
+};
+
+export type AirHaloApn = {
+  __typename?: 'AirHaloAPN';
+  ios?: Maybe<AirHaloApnios>;
+  name?: Maybe<Scalars['String']['output']>;
+  password?: Maybe<Scalars['String']['output']>;
+  username?: Maybe<Scalars['String']['output']>;
+};
+
+export type AirHaloApnios = {
+  __typename?: 'AirHaloAPNIOS';
+  name?: Maybe<Scalars['String']['output']>;
+  password?: Maybe<Scalars['String']['output']>;
+  username?: Maybe<Scalars['String']['output']>;
+};
+
+export type AirHaloCompatibleDevice = {
+  __typename?: 'AirHaloCompatibleDevice';
+  esimSupport: Scalars['Boolean']['output'];
+  manufacturer: Scalars['String']['output'];
+  model: Scalars['String']['output'];
+};
+
+export type AirHaloCompatibleDevicesResponse = {
+  __typename?: 'AirHaloCompatibleDevicesResponse';
+  data: Array<AirHaloCompatibleDevice>;
+};
+
+export type AirHaloCountry = {
+  __typename?: 'AirHaloCountry';
+  id: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type AirHaloCoverage = {
+  __typename?: 'AirHaloCoverage';
+  networks: Array<AirHaloNetwork>;
+};
+
+export type AirHaloImage = {
+  __typename?: 'AirHaloImage';
+  height?: Maybe<Scalars['Int']['output']>;
+  url: Scalars['String']['output'];
+  width?: Maybe<Scalars['Int']['output']>;
+};
+
+export type AirHaloLinks = {
+  __typename?: 'AirHaloLinks';
+  first?: Maybe<Scalars['String']['output']>;
+  last?: Maybe<Scalars['String']['output']>;
+  next?: Maybe<Scalars['String']['output']>;
+  prev?: Maybe<Scalars['String']['output']>;
+};
+
+export type AirHaloMeta = {
+  __typename?: 'AirHaloMeta';
+  currentPage?: Maybe<Scalars['Int']['output']>;
+  from?: Maybe<Scalars['Int']['output']>;
+  lastPage?: Maybe<Scalars['Int']['output']>;
+  path?: Maybe<Scalars['String']['output']>;
+  perPage?: Maybe<Scalars['Int']['output']>;
+  to?: Maybe<Scalars['Int']['output']>;
+  total?: Maybe<Scalars['Int']['output']>;
+};
+
+export type AirHaloNetwork = {
+  __typename?: 'AirHaloNetwork';
+  name: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type AirHaloOperator = {
+  __typename?: 'AirHaloOperator';
+  apn?: Maybe<AirHaloApn>;
+  countries: Array<AirHaloCountry>;
+  coverages: Array<AirHaloCoverage>;
+  id: Scalars['String']['output'];
+  packages: Array<AirHaloPackage>;
+  title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type AirHaloPackage = {
+  __typename?: 'AirHaloPackage';
+  amount: Scalars['Float']['output'];
+  data: Scalars['String']['output'];
+  day: Scalars['Int']['output'];
+  fairUsagePolicy?: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  isFairUsagePolicy?: Maybe<Scalars['Boolean']['output']>;
+  isUnlimited: Scalars['Boolean']['output'];
+  manualInstallation: Scalars['String']['output'];
+  netPrice: AirHaloPrice;
+  price: AirHaloPrice;
+  prices: AirHaloPrices;
+  qrInstallation: Scalars['String']['output'];
+  shortInfo?: Maybe<Scalars['String']['output']>;
+  text?: Maybe<Scalars['Int']['output']>;
+  title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+  voice?: Maybe<Scalars['Int']['output']>;
+};
+
+export type AirHaloPackageData = {
+  __typename?: 'AirHaloPackageData';
+  id: Scalars['String']['output'];
+  image?: Maybe<AirHaloImage>;
+  operators: Array<AirHaloOperator>;
+  slug: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type AirHaloPackageFilter = {
+  countries?: InputMaybe<Array<Scalars['String']['input']>>;
+  includeTopup?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  type?: InputMaybe<AirHaloPackageType>;
+};
+
+export enum AirHaloPackageType {
+  Global = 'GLOBAL',
+  Local = 'LOCAL',
+  Regional = 'REGIONAL'
+}
+
+export type AirHaloPackagesResponse = {
+  __typename?: 'AirHaloPackagesResponse';
+  data: Array<AirHaloPackageData>;
+  links?: Maybe<AirHaloLinks>;
+  meta?: Maybe<AirHaloMeta>;
+};
+
+export type AirHaloPrice = {
+  __typename?: 'AirHaloPrice';
+  currency: Scalars['String']['output'];
+  value: Scalars['Float']['output'];
+};
+
+export type AirHaloPrices = {
+  __typename?: 'AirHaloPrices';
+  netPrice: AirHaloPrice;
+  recommendedRetailPrice: AirHaloPrice;
+};
+
 export type AppliedRule = {
   __typename?: 'AppliedRule';
   category: RuleCategory;
@@ -657,6 +863,7 @@ export type Mutation = {
   updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
   updatePricingRule: PricingRule;
   updatePricingRulePriorities: Array<PricingRule>;
+  updateProfile?: Maybe<UpdateProfileResponse>;
   updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
   validateOrder: ValidateOrderResponse;
@@ -811,6 +1018,11 @@ export type MutationUpdatePricingRuleArgs = {
 
 export type MutationUpdatePricingRulePrioritiesArgs = {
   updates: Array<PricingRulePriorityUpdate>;
+};
+
+
+export type MutationUpdateProfileArgs = {
+  input: UpdateProfileInput;
 };
 
 
@@ -1121,6 +1333,9 @@ export type PurchaseEsimResponse = {
 export type Query = {
   __typename?: 'Query';
   activePricingRules: Array<PricingRule>;
+  airHaloCompatibleDevices: AirHaloCompatibleDevicesResponse;
+  airHaloPackages: AirHaloPackagesResponse;
+  airHaloPricingData: Array<AirHaloPackage>;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
   bundles: BundleConnection;
@@ -1131,13 +1346,19 @@ export type Query = {
   bundlesForGroup?: Maybe<BundlesForGroup>;
   bundlesForRegion?: Maybe<BundlesForRegion>;
   calculatePrice: PricingBreakdown;
+  calculatePrice2: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
+  calculatePrices2: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
+  compareAirHaloPackages: Array<AirHaloPackageData>;
   conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   esimDetails?: Maybe<Esim>;
+  getAdminESIMDetails: AdminEsimDetails;
+  getAllESIMs: Array<AdminEsim>;
   getCheckoutSession: GetCheckoutSessionResponse;
+  getCustomerESIMs: Array<AdminEsim>;
   getUserOrders: Array<Order>;
   hello: Scalars['String']['output'];
   highDemandCountries: Array<Scalars['String']['output']>;
@@ -1153,6 +1374,16 @@ export type Query = {
   simulatePricingRule: PricingBreakdown;
   trips: Array<Trip>;
   users: Array<User>;
+};
+
+
+export type QueryAirHaloPackagesArgs = {
+  filter?: InputMaybe<AirHaloPackageFilter>;
+};
+
+
+export type QueryAirHaloPricingDataArgs = {
+  packageIds: Array<Scalars['String']['input']>;
 };
 
 
@@ -1206,7 +1437,17 @@ export type QueryCalculatePriceArgs = {
 };
 
 
+export type QueryCalculatePrice2Args = {
+  input: CalculatePriceInput;
+};
+
+
 export type QueryCalculatePricesArgs = {
+  inputs: Array<CalculatePriceInput>;
+};
+
+
+export type QueryCalculatePrices2Args = {
   inputs: Array<CalculatePriceInput>;
 };
 
@@ -1221,6 +1462,11 @@ export type QueryCatalogSyncHistoryArgs = {
 };
 
 
+export type QueryCompareAirHaloPackagesArgs = {
+  countryCode: Scalars['String']['input'];
+};
+
+
 export type QueryConflictingPricingRulesArgs = {
   ruleId: Scalars['ID']['input'];
 };
@@ -1231,8 +1477,18 @@ export type QueryEsimDetailsArgs = {
 };
 
 
+export type QueryGetAdminEsimDetailsArgs = {
+  iccid: Scalars['String']['input'];
+};
+
+
 export type QueryGetCheckoutSessionArgs = {
   token: Scalars['String']['input'];
+};
+
+
+export type QueryGetCustomerEsiMsArgs = {
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -1497,6 +1753,19 @@ export type UpdatePricingRuleInput = {
   validUntil?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateProfileInput = {
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+  phoneNumber?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateProfileResponse = {
+  __typename?: 'UpdateProfileResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  user?: Maybe<User>;
+};
+
 export type UpdateTripInput = {
   countryIds: Array<Scalars['ISOCountryCode']['input']>;
   description: Scalars['String']['input'];
@@ -1674,7 +1943,7 @@ export type CalculatePricesBatchQueryVariables = Exact<{
 }>;
 
 
-export type CalculatePricesBatchQuery = { __typename?: 'Query', calculatePrices: Array<{ __typename?: 'PricingBreakdown', duration: number, currency: string, totalCost: number, discountValue: number, priceAfterDiscount: number, bundle: { __typename?: 'CountryBundle', id: string, name: string, duration: number, isUnlimited: boolean, data?: number | null, group?: string | null, country: { __typename?: 'Country', iso: any, name: string } }, country: { __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region?: string | null, flag?: string | null } }> };
+export type CalculatePricesBatchQuery = { __typename?: 'Query', calculatePrices2: Array<{ __typename?: 'PricingBreakdown', duration: number, currency: string, totalCost: number, discountValue: number, priceAfterDiscount: number, bundle: { __typename?: 'CountryBundle', id: string, name: string, duration: number, isUnlimited: boolean, data?: number | null, group?: string | null, country: { __typename?: 'Country', iso: any, name: string } }, country: { __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region?: string | null, flag?: string | null } }> };
 
 export type GetMyEsiMsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1685,3 +1954,10 @@ export type GetActiveEsimPlanQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetActiveEsimPlanQuery = { __typename?: 'Query', myESIMs: Array<{ __typename?: 'ESIM', id: string, iccid: string, qrCode?: string | null, status: EsimStatus, assignedDate?: string | null, bundleId: string, bundleName: string, usage: { __typename?: 'ESIMUsage', totalUsed: number, totalRemaining?: number | null, activeBundles: Array<{ __typename?: 'ESIMBundle', name: string, state: BundleState, dataUsed: number, dataRemaining?: number | null, startDate?: string | null, endDate?: string | null }> }, bundles: Array<{ __typename?: 'ESIMBundle', name: string, state: BundleState, dataUsed: number, dataRemaining?: number | null, startDate?: string | null, endDate?: string | null }> }> };
+
+export type UpdateProfileMutationVariables = Exact<{
+  input: UpdateProfileInput;
+}>;
+
+
+export type UpdateProfileMutation = { __typename?: 'Mutation', updateProfile?: { __typename?: 'UpdateProfileResponse', success: boolean, error?: string | null, user?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, createdAt: string, updatedAt: string } | null } | null };

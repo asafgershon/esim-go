@@ -1,6 +1,6 @@
-import type { CatalogueResponseInner } from "@esim-go/client";
-import { ESimGoClient } from "@esim-go/client";
-import { createLogger, withPerformanceLogging } from "@esim-go/utils";
+import type { CatalogueResponseInner } from "@hiilo/client";
+import { ESimGoClient } from "@hiilo/client";
+import { createLogger, withPerformanceLogging } from "@hiilo/utils";
 import { config } from "../config/index.js";
 import { transformAndValidateCatalogBundle } from "../transformations/catalog-bundle.transformer.js";
 import { BundleDatabaseService } from "./bundle-database.service.js";

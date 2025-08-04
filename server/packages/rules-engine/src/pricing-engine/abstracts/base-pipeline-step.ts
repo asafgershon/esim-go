@@ -1,7 +1,7 @@
 import { produce } from "immer";
 import type { PricingEngineState, PricingRule } from "../../rules-engine-types";
 import type { PipelineStepResult } from "../types";
-import { createLogger } from "@esim-go/utils";
+import { createLogger } from "@hiilo/utils";
 
 /**
  * Configuration for pipeline step execution

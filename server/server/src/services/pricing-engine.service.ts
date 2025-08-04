@@ -2,7 +2,7 @@ import {
   PricingEngine,
   type PricingEngineInput,
   type PricingEngineOutput,
-} from "@esim-go/rules-engine";
+} from "@hiilo/rules-engine";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RedisPubSub } from "graphql-redis-subscriptions";
 import { publishEvent, PubSubEvents } from "../context/pubsub";

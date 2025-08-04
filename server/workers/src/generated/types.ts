@@ -670,6 +670,7 @@ export type Mutation = {
   updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
   updatePricingRule: PricingRule;
   updatePricingRulePriorities: Array<PricingRule>;
+  updateProfile?: Maybe<UpdateProfileResponse>;
   updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
   validateOrder: ValidateOrderResponse;
@@ -824,6 +825,11 @@ export type Mutation_UpdatePricingRuleArgs = {
 
 export type Mutation_UpdatePricingRulePrioritiesArgs = {
   updates: Array<PricingRulePriorityUpdate>;
+};
+
+
+export type Mutation_UpdateProfileArgs = {
+  input: UpdateProfileInput;
 };
 
 
@@ -1128,7 +1134,9 @@ export type Query = {
   bundlesForGroup?: Maybe<BundlesForGroup>;
   bundlesForRegion?: Maybe<BundlesForRegion>;
   calculatePrice: PricingBreakdown;
+  calculatePrice2: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
+  calculatePrices2: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
   conflictingPricingRules: Array<PricingRule>;
@@ -1206,7 +1214,17 @@ export type Query_CalculatePriceArgs = {
 };
 
 
+export type Query_CalculatePrice2Args = {
+  input: CalculatePriceInput;
+};
+
+
 export type Query_CalculatePricesArgs = {
+  inputs: Array<CalculatePriceInput>;
+};
+
+
+export type Query_CalculatePrices2Args = {
   inputs: Array<CalculatePriceInput>;
 };
 
@@ -1494,6 +1512,18 @@ export type UpdatePricingRuleInput = {
   priority?: InputMaybe<Scalars['Int']['input']>;
   validFrom?: InputMaybe<Scalars['String']['input']>;
   validUntil?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateProfileInput = {
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+  phoneNumber?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateProfileResponse = {
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  user?: Maybe<User>;
 };
 
 export type UpdateTripInput = {

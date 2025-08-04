@@ -1,5 +1,5 @@
 {
-  "name": "@esim-go/workers",
+  "name": "@hiilo/workers",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -20,8 +20,8 @@
     "postinstall": "bun run codegen && bun run codegen:dbtypes"
   },
   "dependencies": {
-    "@esim-go/client": "workspace:*",
-    "@esim-go/utils": "workspace:*",
+    "@hiilo/client": "workspace:*",
+    "@hiilo/utils": "workspace:*",
     "@supabase/supabase-js": "^2.38.0",
     "bullmq": "^5.0.0",
     "byte-size": "^9.0.1",

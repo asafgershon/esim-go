@@ -1,5 +1,5 @@
-import { BundleOrderTypeEnum, OrderRequestTypeEnum } from "@esim-go/client";
-import { PricingEngine, type PricingEngineInput } from "@esim-go/rules-engine";
+import { BundleOrderTypeEnum, OrderRequestTypeEnum } from "@hiilo/client";
+import { PricingEngine, type PricingEngineInput } from "@hiilo/rules-engine";
 import crypto from "crypto";
 import { GraphQLError } from "graphql";
 import jwt from "jsonwebtoken";

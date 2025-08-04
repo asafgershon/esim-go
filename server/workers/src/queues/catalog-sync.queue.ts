@@ -1,7 +1,7 @@
 import { Queue, QueueEvents } from 'bullmq';
 import { Redis } from 'ioredis';
 import { config } from '../config/index.js';
-import { createLogger } from '@esim-go/utils';
+import { createLogger } from '@hiilo/utils';
 import { SyncJobType } from '../generated/types.js';
 
 const logger = createLogger({ component: 'CatalogSyncQueue' });
@@ -207,6 +207,19 @@ export const catalogSyncQueueManager = {
     await connection.quit();
     logger.info('Queue connections closed', { operationType: 'queue-control' });
   },
+
+  async listen(callback: (event: 'completed' | 'failed' | 'progress', job: {jobId: string, data: CatalogSyncJobData}) => void) {
+    catalogSyncQueueEvents.on('completed', ({ jobId, returnvalue }) => {
+      const data = JSON.parse(returnvalue as string) as CatalogSyncJobData;
+      callback('completed', {jobId, data});
+    });
+    catalogSyncQueueEvents.on('failed', ({ jobId, failedReason }) => {
+      callback('failed', {jobId, data: {type: SyncJobType.FullSync, triggeredBy: 'manual', metadata: {timestamp: new Date().toISOString()}}});
+    });
+    catalogSyncQueueEvents.on('progress', ({ jobId, data }) => {
+      callback('progress', {jobId, data: JSON.parse(data as string) as CatalogSyncJobData});
+    });
+  }
 };
 
 // Monitor queue events

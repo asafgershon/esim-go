@@ -1,4 +1,4 @@
-import { createLogger } from '@esim-go/utils';
+import { createLogger } from '@hiilo/utils';
 import { config } from './config/index.js';
 import { catalogSyncWorker } from './workers/catalog-sync.worker.js';
 import { startScheduler, stopScheduler } from './workers/scheduler.worker.js';
@@ -102,9 +102,12 @@ if (args.includes('--sync') || args.includes('sync')) {
       // Check job status
       const stats = await catalogSyncQueueManager.getQueueStats();
       logger.info('Queue stats after manual sync', stats);
-      
-      // Exit after creating the job
-      process.exit(0);
+      catalogSyncQueueManager.listen((event, job) => {
+        if (event === 'completed') {
+          logger.info('Manual sync job completed', { jobId: job.jobId });
+          process.exit(0);
+        }
+      });
     } catch (error) {
       logger.error('Failed to trigger manual sync', error as Error);
       process.exit(1);

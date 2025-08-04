@@ -1,5 +1,5 @@
 {
-  "name": "@esim-go/utils",
+  "name": "@hiilo/utils",
   "version": "1.0.0",
   "description": "Shared utilities for eSIM Go project",
   "main": "dist/index.js",

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../config/index.js';
-import { createLogger } from '@esim-go/utils';
+import { createLogger } from '@hiilo/utils';
 
 // Import repository types
 import type { Database } from '../types/database.types.js';

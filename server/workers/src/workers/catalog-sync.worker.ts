@@ -1,5 +1,5 @@
 import { Worker, Job } from 'bullmq';
-import { createLogger, withPerformanceLogging } from '@esim-go/utils';
+import { createLogger, withPerformanceLogging } from '@hiilo/utils';
 import { config } from '../config/index.js';
 import { CatalogSyncService } from '../services/catalog-sync.service.js';
 import { syncJobRepository } from '../services/supabase.service.js';

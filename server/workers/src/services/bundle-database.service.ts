@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createLogger, withPerformanceLogging } from '@esim-go/utils';
+import { createLogger, withPerformanceLogging } from '@hiilo/utils';
 import { config } from '../config/index.js';
 import type { Database } from '../types/database.types.js';
 

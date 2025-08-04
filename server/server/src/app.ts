@@ -5,7 +5,7 @@ dotenv.config({ path: join(__dirname, "../.env") });
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
-import { ESimGoClient } from "@esim-go/client";
+import { ESimGoClient } from "@hiilo/client";
 import { AirHaloClient } from "@airhalo/client";
 import { mergeTypeDefs } from "@graphql-tools/merge";
 import { makeExecutableSchema } from "@graphql-tools/schema";

@@ -2,12 +2,12 @@ import {
   PricingEngine,
   type PricingEngineInput,
   type PricingEngineOutput,
-} from "@esim-go/rules-engine";
+} from "@hiilo/rules-engine";
 import {
   calculatePricing as calculatePricingV2,
   type RequestFacts,
   type PricingEngineV2Result,
-} from "@esim-go/rules-engine-2";
+} from "@hiilo/rules-engine-2";
 import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";

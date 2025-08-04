@@ -1,4 +1,4 @@
-import { createLogger } from "@esim-go/utils";
+import { createLogger } from "@hiilo/utils";
 import type { BasePipelineStep } from "../abstracts";
 import type { PricingEngineState, PricingRule } from "../../rules-engine-types";
 import type { PipelineStepResult } from "../types";

@@ -7,7 +7,7 @@ import {
   type PricingRule,
 } from "../rules-engine-types";
 import type { PipelineStep, PipelineStepResult } from "./types";
-import { createLogger } from "@esim-go/utils";
+import { createLogger } from "@hiilo/utils";
 
 // Import all pipeline steps
 import { bundleSelectionStep } from "./steps/bundle-selection";

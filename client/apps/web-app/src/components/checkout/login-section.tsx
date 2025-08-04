@@ -11,6 +11,7 @@ import { usePhoneOTP } from "@/hooks/usePhoneOTP";
 import { useAuth } from "@/hooks/useAuth";
 import { User, CheckCircle, LogOut } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { NameCollectionForm } from "./name-collection-form";
 
 interface LoginSectionProps {
   sectionNumber?: number;
@@ -20,6 +21,9 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
+  const [showNameFields, setShowNameFields] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
 
   const { user, isAuthenticated, isLoading, signOut, refreshAuth } = useAuth();
   const { signInWithApple, loading: appleLoading } = useAppleSignIn();
@@ -58,10 +62,22 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
       return;
     }
 
-    const result = await verifyOTP(otp);
+    // Check if we need name fields
+    if (showNameFields && (!firstName.trim() || !lastName.trim())) {
+      setError("אנא הכנס שם פרטי ושם משפחה");
+      return;
+    }
+
+    const result = await verifyOTP(otp, showNameFields ? firstName.trim() : undefined, showNameFields ? lastName.trim() : undefined);
 
     if (!result.success) {
-      setError(result.error || "קוד לא תקין");
+      // Check if the error is because user exists but needs name info
+      if (result.error?.includes("name") || result.error?.includes("missing")) {
+        setShowNameFields(true);
+        setError("אנא הוסף את שמך המלא להשלמת ההרשמה");
+      } else {
+        setError(result.error || "קוד לא תקין");
+      }
     } else {
       // Refresh auth state after successful login
       refreshAuth();
@@ -104,6 +120,9 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
     resetFlow();
     setOtp("");
     setError("");
+    setShowNameFields(false);
+    setFirstName("");
+    setLastName("");
   };
 
   if (isLoading) {
@@ -122,6 +141,21 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
   }
 
   if (isAuthenticated && user) {
+    // Check if user needs to provide name information
+    const needsNameInfo = !user.firstName || !user.lastName;
+    
+    if (needsNameInfo) {
+      return (
+        <Card className="p-6 relative" dir="rtl">
+          <div className="flex items-center gap-2 mb-4">
+            <User className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">השלם את הפרטים</h2>
+          </div>
+          <NameCollectionForm onComplete={refreshAuth} />
+        </Card>
+      );
+    }
+    
     // Format phone number for Israeli numbers
     const formatPhoneNumber = (phoneNumber: string) => {
       try {
@@ -311,6 +345,33 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
               {otpLoading ? "מאמת..." : "אמת קוד"}
             </Button>
           </form>
+
+          {showNameFields && (
+            <div className="space-y-3 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">שם פרטי</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="ישראל"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  disabled={otpLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">שם משפחה</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="ישראלי"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  disabled={otpLoading}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="text-center">
             <Button

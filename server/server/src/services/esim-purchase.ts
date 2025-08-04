@@ -1,6 +1,6 @@
 import type { Context } from '../context/types';
 import { createLogger } from '../lib/logger';
-import { OrderRequestTypeEnum, BundleOrderTypeEnum } from '@esim-go/client';
+import { OrderRequestTypeEnum, BundleOrderTypeEnum } from '@hiilo/client';
 import { cleanEnv, str } from 'envalid';
 import { createDeliveryService, type ESIMDeliveryData } from './delivery';
 
