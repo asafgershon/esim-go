@@ -3,8 +3,10 @@
 import Image from "next/image";
 import { Card } from "@workspace/ui";
 import dynamic from "next/dynamic";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 import { ImageWithFallback } from "./image-with-fallback";
+import { useQuery } from "@apollo/client";
+import { CALCULATE_DESTINATION_PRICES } from "@/lib/graphql/pricing";
 
 // Lazy load the scrollbar component
 const Scrollbars = dynamic(
@@ -116,6 +118,26 @@ export function DestinationsGallery() {
         -ms-overflow-style: none !important;  /* IE and Edge */
         scrollbar-width: none !important;  /* Firefox */
       }
+      @keyframes shimmer {
+        0% {
+          background-position: -200px 0;
+        }
+        100% {
+          background-position: calc(200px + 100%) 0;
+        }
+      }
+      .skeleton-shimmer {
+        background: linear-gradient(
+          90deg,
+          #d4d4d4 0%,
+          #f0f0f0 20%,
+          #ffffff 50%,
+          #f0f0f0 80%,
+          #d4d4d4 100%
+        );
+        background-size: 200px 100%;
+        animation: shimmer 1.2s ease-in-out infinite;
+      }
     `;
     document.head.appendChild(style);
     
@@ -123,6 +145,36 @@ export function DestinationsGallery() {
       document.head.removeChild(style);
     };
   }, []);
+
+  // Prepare inputs for the pricing query - 1 day for each country
+  const pricingInputs = useMemo(() => {
+    return destinations.map(dest => ({
+      countryId: dest.countryIso,
+      numOfDays: 1
+    }));
+  }, []);
+
+  // Execute the pricing query
+  const { data, loading } = useQuery(CALCULATE_DESTINATION_PRICES, {
+    variables: { inputs: pricingInputs },
+    skip: pricingInputs.length === 0
+  });
+
+  // Map prices to destinations by country ISO
+  const pricesByCountry = useMemo(() => {
+    if (!data?.calculatePrices2) return {};
+    
+    const priceMap: Record<string, { finalPrice: number; currency: string }> = {};
+    data.calculatePrices2.forEach((price: any) => {
+      if (price.country?.iso) {
+        priceMap[price.country.iso] = {
+          finalPrice: price.finalPrice,
+          currency: price.currency
+        };
+      }
+    });
+    return priceMap;
+  }, [data]);
 
   return (
     <section className="py-16 md:py-24 bg-gradient-to-b from-white to-[#F8FAFC]">
@@ -147,7 +199,12 @@ export function DestinationsGallery() {
         {/* Desktop Grid - Show only first 8 countries */}
         <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {destinations.slice(0, 8).map((destination) => (
-            <DestinationCard key={destination.id} destination={destination} />
+            <DestinationCard 
+              key={destination.id} 
+              destination={destination}
+              loading={loading}
+              price={pricesByCountry[destination.countryIso]}
+            />
           ))}
         </div>
 
@@ -197,7 +254,11 @@ export function DestinationsGallery() {
             <div className="flex gap-4 px-4" style={{ width: `${destinations.length * 272}px`, paddingBottom: '28px' }}>
               {destinations.map((destination) => (
                 <div key={destination.id} className="flex-shrink-0 w-64">
-                  <DestinationCard destination={destination} />
+                  <DestinationCard 
+                    destination={destination}
+                    loading={loading}
+                    price={pricesByCountry[destination.countryIso]}
+                  />
                 </div>
               ))}
             </div>
@@ -208,7 +269,13 @@ export function DestinationsGallery() {
   );
 }
 
-function DestinationCard({ destination }: { destination: Destination }) {
+interface DestinationCardProps {
+  destination: Destination;
+  loading?: boolean;
+  price?: { finalPrice: number; currency: string };
+}
+
+function DestinationCard({ destination, loading, price }: DestinationCardProps) {
   // Default fallback image for destinations
   const fallbackImage = "/images/destinations/default.png";
   
@@ -223,6 +290,21 @@ function DestinationCard({ destination }: { destination: Destination }) {
     if (selectorElement) {
       selectorElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  };
+
+  // Format the price text
+  const getPriceText = () => {
+    if (price) {
+      // Format currency symbol
+      const currencySymbol = price.currency === 'ILS' ? '₪' : 
+                            price.currency === 'USD' ? '$' : 
+                            price.currency === 'EUR' ? '€' : 
+                            price.currency;
+      
+      return `החל מ- ${Math.round(price.finalPrice)} ${currencySymbol}`;
+    }
+    // Fallback to hardcoded price
+    return destination.priceFrom;
   };
   
   return (
@@ -250,10 +332,14 @@ function DestinationCard({ destination }: { destination: Destination }) {
             {destination.name}
           </h4>
           
-          {/* Price Badge */}
-          <div className="inline-flex items-center bg-white/90 backdrop-blur-sm text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold">
-            {destination.priceFrom}
-          </div>
+          {/* Price Badge - Shows skeleton or actual price */}
+          {loading ? (
+            <div className="inline-block h-7 w-28 bg-gray-200 rounded-full skeleton-shimmer" />
+          ) : (
+            <div className="inline-flex items-center bg-white/90 backdrop-blur-sm text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold">
+              {getPriceText()}
+            </div>
+          )}
         </div>
       </div>
     </Card>

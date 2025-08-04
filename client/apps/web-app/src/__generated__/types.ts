@@ -1962,3 +1962,10 @@ export type UpdateProfileMutationVariables = Exact<{
 
 
 export type UpdateProfileMutation = { __typename?: 'Mutation', updateProfile?: { __typename?: 'UpdateProfileResponse', success: boolean, error?: string | null, user?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, createdAt: string, updatedAt: string } | null } | null };
+
+export type CalculateDestinationPricesQueryVariables = Exact<{
+  inputs: Array<CalculatePriceInput> | CalculatePriceInput;
+}>;
+
+
+export type CalculateDestinationPricesQuery = { __typename?: 'Query', calculatePrices2: Array<{ __typename?: 'PricingBreakdown', finalPrice: number, currency: string, country: { __typename?: 'Country', iso: any } }> };
