@@ -1,4 +1,14 @@
 @import "tailwindcss" ;
+
+/* Brand Colors for Tailwind v4 - Required for button variants */
+@theme {
+  --color-brand-green: #00E095;
+  --color-brand-purple: #535FC8;
+  --color-brand-dark: #0A232E;
+  --color-brand-light-blue: #F8FAFC;
+  --color-brand-white: #FEFEFE;
+}
+
 @import "../../../../packages/ui/src/styles/globals.css";
 @import "tw-animate-css";
 

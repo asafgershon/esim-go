@@ -22,12 +22,12 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         "primary-brand": 
           "bg-brand-light-blue text-brand-dark font-semibold rounded-[5px] relative " +
-          "border border-solid border-[#0A232E] " +
+          "ring-1 ring-inset ring-brand-dark " +
           "shadow-[1px_2px_0px_rgba(10,35,46,0.15)] " +
-          "hover:shadow-[1px_3px_2px_rgba(10,35,46,0.2)] hover:translate-y-[-1px] hover:border-[#0A232E] " +
-          "active:shadow-[0px_1px_0px_rgba(10,35,46,0.15)] active:translate-y-[1px] active:border-[#0A232E] " +
-          "focus-visible:ring-brand-dark/30 focus-visible:ring-2 focus-visible:outline-none focus-visible:border-[#0A232E] " +
-          "disabled:bg-gray-200 disabled:text-gray-400 disabled:border-gray-300 disabled:shadow-none disabled:translate-y-0 " +
+          "hover:shadow-[1px_3px_2px_rgba(10,35,46,0.2)] hover:translate-y-[-1px] " +
+          "active:shadow-[0px_1px_0px_rgba(10,35,46,0.15)] active:translate-y-[1px] " +
+          "focus-visible:ring-2 focus-visible:ring-brand-dark/30 focus-visible:outline-none " +
+          "disabled:bg-gray-200 disabled:text-gray-400 disabled:ring-gray-300 disabled:shadow-none disabled:translate-y-0 " +
           "transition-all duration-150",
       },
       size: {
