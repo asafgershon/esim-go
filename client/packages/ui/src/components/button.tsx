@@ -21,13 +21,13 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
         "primary-brand": 
-          "bg-brand-light-blue text-brand-dark font-semibold rounded-[5px] relative " +
-          "ring-1 ring-inset ring-brand-dark " +
+          "bg-[#F8FAFC] text-[#0A232E] font-semibold rounded-[5px] relative " +
+          "outline outline-1 outline-[#0A232E] " +
           "shadow-[1px_2px_0px_rgba(10,35,46,0.15)] " +
           "hover:shadow-[1px_3px_2px_rgba(10,35,46,0.2)] hover:translate-y-[-1px] " +
           "active:shadow-[0px_1px_0px_rgba(10,35,46,0.15)] active:translate-y-[1px] " +
-          "focus-visible:ring-2 focus-visible:ring-brand-dark/30 focus-visible:outline-none " +
-          "disabled:bg-gray-200 disabled:text-gray-400 disabled:ring-gray-300 disabled:shadow-none disabled:translate-y-0 " +
+          "focus-visible:outline-2 focus-visible:outline-[#0A232E] " +
+          "disabled:bg-gray-200 disabled:text-gray-400 disabled:outline-gray-300 disabled:shadow-none disabled:translate-y-0 " +
           "transition-all duration-150",
       },
       size: {
