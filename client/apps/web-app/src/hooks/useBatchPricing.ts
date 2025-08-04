@@ -81,10 +81,10 @@ export function useBatchPricing({ regionId, countryId, paymentMethod, maxDays = 
 
   // Process batch data into cache
   useEffect(() => {
-    if (batchData?.calculatePrices) {
+    if (batchData?.calculatePrices2) {
       const newCache = new Map<number, PricingData>();
       
-      batchData.calculatePrices.forEach((result) => {
+      batchData.calculatePrices2.forEach((result) => {
         const originalPrice = result.totalCost;
         const discountAmount = result.discountValue;
         const totalPrice = result.priceAfterDiscount;

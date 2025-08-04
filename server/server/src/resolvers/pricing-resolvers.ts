@@ -953,19 +953,19 @@ export const pricingQueries: QueryResolvers = {
         currency: "USD",
 
         // Public pricing fields
-        totalCost: result.priceWithMarkup,
-        discountValue: 0, // V2 doesn't provide discounts yet
-        priceAfterDiscount: result.finalPrice,
+        totalCost: result.pricing.totalCost,
+        discountValue: result.pricing.discountValue || 0,
+        priceAfterDiscount: result.pricing.priceAfterDiscount,
 
         // Admin-only fields
-        cost: result.cost || 0,
-        markup: result.markup,
+        cost: result.pricing.cost || 0,
+        markup: result.pricing.markup,
         discountRate: 0,
         processingRate: 0,
-        processingCost: 0,
-        finalRevenue: result.finalPrice,
-        revenueAfterProcessing: result.finalPrice,
-        netProfit: result.finalPrice - (result.cost || 0),
+        processingCost: result.pricing.processingCost || 0,
+        finalRevenue: result.pricing.finalRevenue,
+        revenueAfterProcessing: result.pricing.finalRevenue,
+        netProfit: result.pricing.finalRevenue - (result.pricing.cost || 0),
         discountPerDay: 0,
 
         // Rule-based pricing breakdown
@@ -1098,19 +1098,19 @@ export const pricingQueries: QueryResolvers = {
             duration: input.numOfDays,
             currency: "USD",
 
-            totalCost: result.priceWithMarkup,
-            discountValue: 0,
-            priceAfterDiscount: result.finalPrice,
+            totalCost: result.pricing.totalCost,
+            discountValue: result.pricing.discountValue || 0,
+            priceAfterDiscount: result.pricing.priceAfterDiscount,
 
-            cost: result.cost || 0,
-            markup: result.markup,
+            cost: result.pricing.cost || 0,
+            markup: result.pricing.markup,
             discountRate: 0,
             processingRate: 0,
-            processingCost: 0,
-            finalRevenue: result.finalPrice,
-            revenueAfterProcessing: result.finalPrice,
-            netProfit: result.finalPrice - (result.cost || 0),
-            discountPerDay: 0,
+            processingCost: result.pricing.processingCost || 0,
+            finalRevenue: result.pricing.finalRevenue,
+            revenueAfterProcessing: result.pricing.finalRevenue,
+            netProfit: result.pricing.finalRevenue - (result.pricing.cost || 0),
+            discountPerDay: result.pricing.discountPerDay || 0,
 
             appliedRules: [],
             discounts: [],

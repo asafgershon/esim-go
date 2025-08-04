@@ -195,7 +195,7 @@ export const CALCULATE_PRICE = gql`
 
 export const CALCULATE_PRICES_BATCH = gql`
   query CalculatePricesBatch($inputs: [CalculatePriceInput!]!) {
-    calculatePrices(inputs: $inputs) {
+    calculatePrices2(inputs: $inputs) {
       bundle {
         id
         name
@@ -301,3 +301,22 @@ export const GET_ACTIVE_ESIM_PLAN = gql`
     }
   }
 `;
+
+export const UPDATE_PROFILE = gql`
+  mutation UpdateProfile($input: UpdateProfileInput!) {
+    updateProfile(input: $input) {
+      success
+      error
+      user {
+        id
+        email
+        firstName
+        lastName
+        phoneNumber
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
