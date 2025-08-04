@@ -4,6 +4,8 @@ import { AnnouncementBanner } from "@/components/announcement-banner";
 import { Header } from "@/components/header";
 import { HeroSection } from "@/components/hero-section";
 import { EsimSelectorNew } from "@/components/esim-selector-new";
+import { EsimExperienceSelector } from "@/components/esim-experience-selector";
+import { DestinationsGallery } from "@/components/destinations-gallery";
 import { LoginModalWrapper } from "@/components/login-modal-wrapper";
 import { Button, Card } from "@workspace/ui";
 import { useRouter } from "next/navigation";
@@ -57,11 +59,24 @@ export default function Home() {
       {/* eSIM Selector Section - Overlapping Hero */}
       <section id="esim-selector" className="relative -mt-[200px] z-20">
         <div className="container mx-auto px-4">
-          <div className="flex justify-center">
-            <EsimSelectorNew />
+          <div className="flex flex-col items-center gap-8">
+            {/* Current Working Component */}
+            <div className="w-full flex flex-col items-center">
+              <h3 className="text-white text-xl font-bold mb-4 bg-blue-600 px-4 py-2 rounded">Current Working Component:</h3>
+              <EsimExperienceSelector />
+            </div>
+            
+            {/* New Design Component */}
+            <div className="w-full flex flex-col items-center">
+              <h3 className="text-white text-xl font-bold mb-4 bg-green-600 px-4 py-2 rounded">New Design (Target):</h3>
+              <EsimSelectorNew />
+            </div>
           </div>
         </div>
       </section>
+
+      {/* Destinations Gallery */}
+      <DestinationsGallery />
 
       {/* Trust Indicators */}
       <section className="py-8 bg-white">
