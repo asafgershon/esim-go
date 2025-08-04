@@ -1,3 +1,5 @@
+'use client';
+
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { BackgroundSection } from "@/components/background-section";
 import { CompatibilitySection } from "@/components/compatibility-section";
@@ -16,6 +18,8 @@ import { ArrowLeft, Check, Shield } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { HomeWithState } from "@/components/home-with-state";
+
+
 
 
 export default function Home() {
