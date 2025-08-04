@@ -146,13 +146,13 @@ export function withPerformanceLogging<T>(
 
 // Default logger instance
 export const logger = new StructuredLogger({
-  service: 'esim-go-server',
+  service: '@hiilo/apollo-server',
 });
 
 // Logger factory for creating loggers with specific context
 export function createLogger(context: LogContext): StructuredLogger {
   return new StructuredLogger({
-    service: 'esim-go-server',
+    service: '@hiilo/apollo-server',
     ...context,
   });
 }

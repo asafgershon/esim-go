@@ -10,7 +10,7 @@ COPY server ./server
 COPY workers ./workers
 
 # Prune the workspace for just the server
-RUN bunx turbo prune esim-go-server --out-dir=out
+RUN bunx turbo prune @hiilo/apollo-server --out-dir=out
 
 # Stage 2: Build stage
 FROM oven/bun:1-alpine AS builder
@@ -29,8 +29,8 @@ RUN node -e "const pkg = JSON.parse(require('fs').readFileSync('package.json', '
 # Install all dependencies (skip postinstall scripts)
 RUN bun install --ignore-scripts
 
-# Use turbo to build dependencies for esim-go-server
-RUN bunx turbo run build --filter=...esim-go-server
+# Use turbo to build dependencies for @hiilo/apollo-server
+RUN bunx turbo run build --filter=...@hiilo/apollo-server
 
 WORKDIR /app/server
 

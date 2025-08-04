@@ -1,5 +1,5 @@
 {
-  "name": "esim-go-server",
+  "name": "@hiilo/apollo-server",
   "module": "index.ts",
   "type": "module",
   "private": true,
