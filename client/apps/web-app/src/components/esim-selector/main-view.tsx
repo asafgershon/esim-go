@@ -10,11 +10,11 @@ import {
   SelectorLabel,
   SelectorButton 
 } from "@workspace/ui";
-import { AnimatePresence, motion } from "framer-motion";
 import { Suspense, lazy } from "react";
 import { CalendarIcon, ChevronsUpDownIcon } from "./icons";
 import { PricingSkeleton } from "./pricing-skeleton";
-import type { EnhancedCountry, EnhancedTrip } from "@/hooks/useCountries";
+import type { EnhancedCountry } from "@/hooks/useCountries";
+import type { EnhancedTrip } from "@/hooks/useTrips";
 
 const CountUp = lazy(() => import("react-countup"));
 const MobileDestinationDrawer = lazy(() => import("../mobile-destination-drawer"));
@@ -27,7 +27,7 @@ interface MainViewProps {
     type: "country" | "trip";
     data: EnhancedCountry | EnhancedTrip | undefined;
   } | null;
-  pricing: any;
+  pricing: { finalPrice?: number; currency?: string; days?: number; totalPrice?: number; hasDiscount?: boolean; discountAmount?: number } | null;
   comboboxOptions: ComboboxOption[];
   countryId: string | null;
   tripId: string | null;
@@ -57,7 +57,6 @@ export function MainView({
   tripId,
   isMobile,
   showMobileSheet,
-  footerVisible,
   isLoadingPricing = false,
   handleTabChange,
   handleDestinationChange,
@@ -127,7 +126,7 @@ export function MainView({
           id={`${activeTab}-panel`}
           aria-labelledby={`${activeTab}-tab`}
         >
-          <SelectorLabel htmlFor="destination-select">לאן נוסעים?</SelectorLabel>
+          <SelectorLabel>לאן נוסעים?</SelectorLabel>
           {isMobile ? (
             <div className="relative">
               <button
@@ -178,7 +177,6 @@ export function MainView({
           ) : (
             <div className="relative">
               <FuzzyCombobox
-                id="destination-select"
                 options={comboboxOptions}
                 value={
                   countryId
@@ -268,7 +266,7 @@ export function MainView({
             <div className="bg-brand-white border border-[rgba(10,35,46,0.2)] rounded-lg md:rounded-[15px] p-3 md:p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl md:text-2xl" role="img" aria-label={selectedDestinationData.data?.nameHebrew}>
+                  <span className="text-xl md:text-2xl" role="img" aria-label={selectedDestinationData.data?.nameHebrew || undefined}>
                     {selectedDestinationData.type === "country"
                       ? (selectedDestinationData.data as EnhancedCountry)?.flag || ""
                       : (selectedDestinationData.data as EnhancedTrip)?.icon || ""}
@@ -321,7 +319,7 @@ export function MainView({
                     role="status"
                     aria-live="polite"
                   >
-                    חסכת ${pricing.discountAmount.toFixed(2)}!
+                    חסכת ${pricing.discountAmount?.toFixed(2) || 0}!
                   </div>
                 )}
               </div>

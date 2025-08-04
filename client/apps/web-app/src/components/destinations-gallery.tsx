@@ -1,9 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { Card } from "@workspace/ui";
 import dynamic from "next/dynamic";
-import { Suspense, useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { ImageWithFallback } from "./image-with-fallback";
 import { useQuery } from "@apollo/client";
 import { CALCULATE_DESTINATION_PRICES } from "@/lib/graphql/pricing";
@@ -165,7 +164,7 @@ export function DestinationsGallery() {
     if (!data?.calculatePrices2) return {};
     
     const priceMap: Record<string, { finalPrice: number; currency: string }> = {};
-    data.calculatePrices2.forEach((price: any) => {
+    data.calculatePrices2.forEach((price: { country?: { iso?: string }; finalPrice: number; currency: string }) => {
       if (price.country?.iso) {
         priceMap[price.country.iso] = {
           finalPrice: price.finalPrice,

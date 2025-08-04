@@ -72,16 +72,16 @@ export function EsimSelector() {
     if (activeTab === "countries") {
       return countries.map((country) => ({
         value: `country-${country.id}`,
-        label: country.nameHebrew,
+        label: country.nameHebrew || country.name || '',
         icon: country.flag || undefined,
-        keywords: [country.nameHebrew, country.name], // Hebrew and English names
+        keywords: [country.nameHebrew, country.name].filter(Boolean) as string[], // Hebrew and English names
       }));
     } else {
       return trips.map((trip) => ({
         value: `trip-${trip.id}`,
-        label: trip.nameHebrew,
+        label: trip.nameHebrew || trip.name || '',
         icon: trip.icon,
-        keywords: [trip.nameHebrew, trip.name], // Hebrew and English names
+        keywords: [trip.nameHebrew, trip.name].filter(Boolean) as string[], // Hebrew and English names
       }));
     }
   }, [activeTab, countries, trips]);
@@ -125,7 +125,7 @@ export function EsimSelector() {
   
   // Check if pricing is loading for current selection
   const isLoadingPricing = useMemo(() => {
-    return selectedDestinationData && pricingLoading && !pricing;
+    return Boolean(selectedDestinationData && pricingLoading && !pricing);
   }, [selectedDestinationData, pricingLoading, pricing]);
   
   const handleTabChange = (tab: "countries" | "trips") => {
@@ -195,7 +195,7 @@ export function EsimSelector() {
       }
       
       // Arrow keys for slider when focused
-      if (document.activeElement?.type === 'range') {
+      if ((document.activeElement as HTMLInputElement)?.type === 'range') {
         if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
           e.preventDefault();
           setNumOfDays(Math.max(1, numOfDays - 1));

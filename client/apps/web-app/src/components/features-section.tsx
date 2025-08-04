@@ -93,7 +93,6 @@ const cardVariants = {
     scale: 1,
     transition: {
       duration: 0.5,
-      ease: "easeOut",
     },
   },
 };
@@ -106,10 +105,6 @@ const titleVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.6,
-      ease: "easeOut",
-    },
   },
 };
 
@@ -124,7 +119,6 @@ const ctaVariants = {
     transition: {
       duration: 0.6,
       delay: 0.4,
-      ease: "easeOut",
     },
   },
 };
@@ -148,7 +142,7 @@ export function FeaturesSection() {
             dir="rtl"
           >
             פיתחנו טכנולוגיה חכמה שמאפשרת לכם להתחבר לאינטרנט מכל מקום בעולם,
-            בלי לחשוב על "כמה ג'יגה נשארו לי" או "מתי החבילה נגמרת".
+            בלי לחשוב על &ldquo;כמה ג&apos;יגה נשארו לי&rdquo; או &ldquo;מתי החבילה נגמרת&rdquo;.
           </p>
         </motion.div>
 
@@ -159,7 +153,7 @@ export function FeaturesSection() {
           viewport={{ once: true, amount: 0.2 }}
           variants={containerVariants}
         >
-          {features.map((feature, index) => (
+          {features.map((feature) => (
             <motion.div
               key={feature.id}
               variants={cardVariants}

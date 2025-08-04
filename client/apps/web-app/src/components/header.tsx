@@ -19,9 +19,9 @@ const navigation = [
 ];
 
 export function Header() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
-  const [showLogin, setShowLogin] = useQueryState(
+  const [, setShowLogin] = useQueryState(
     "showLogin",
     parseAsBoolean.withDefault(false)
   );

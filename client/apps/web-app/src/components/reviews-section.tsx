@@ -70,7 +70,7 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
 
       {/* Review text */}
       <p className="text-gray-300 mb-4 leading-relaxed text-sm">
-        "{review.text}"
+        &ldquo;{review.text}&rdquo;
       </p>
 
       {/* Author */}

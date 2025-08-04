@@ -34,7 +34,7 @@ export function EnhancedLoginModal({
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   // Prevent hydration mismatch
   useEffect(() => {
