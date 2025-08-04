@@ -22,7 +22,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         "primary-brand": 
           "bg-brand-light-blue text-brand-dark font-semibold rounded-[5px] relative " +
-          "border border-brand-dark/20 " +
+          "border border-brand-dark " +
           "shadow-[1px_2px_0px_rgba(10,35,46,0.15)] " +
           "hover:shadow-[1px_3px_2px_rgba(10,35,46,0.2)] hover:translate-y-[-1px] " +
           "active:shadow-[0px_1px_0px_rgba(10,35,46,0.15)] active:translate-y-[1px] " +
