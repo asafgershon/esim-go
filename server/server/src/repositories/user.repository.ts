@@ -79,6 +79,59 @@ export class UserRepository extends BaseSupabaseRepository<UserRow, never, UserU
     }
   }
 
+  async updateProfile(userId: string, updates: { firstName?: string; lastName?: string; phoneNumber?: string }): Promise<{ success: boolean; user?: any }> {
+    try {
+      // Get current user to preserve existing metadata
+      const { data: currentUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+      
+      if (getUserError) {
+        throw new GraphQLError(`Failed to get user: ${getUserError.message}`, {
+          extensions: { code: 'USER_NOT_FOUND' },
+        });
+      }
+
+      // Update user metadata with new profile info
+      const updateData: any = {
+        user_metadata: {
+          ...currentUser.user.user_metadata,
+        }
+      };
+
+      if (updates.firstName !== undefined) {
+        updateData.user_metadata.first_name = updates.firstName;
+      }
+      if (updates.lastName !== undefined) {
+        updateData.user_metadata.last_name = updates.lastName;
+      }
+      if (updates.phoneNumber !== undefined) {
+        updateData.phone = updates.phoneNumber;
+        updateData.user_metadata.phone_number = updates.phoneNumber;
+      }
+
+      const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, updateData);
+
+      if (error) {
+        throw new GraphQLError(`Failed to update user profile: ${error.message}`, {
+          extensions: { code: 'UPDATE_FAILED' },
+        });
+      }
+
+      return {
+        success: true,
+        user: data.user
+      };
+
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      if (error instanceof GraphQLError) {
+        throw error;
+      }
+      throw new GraphQLError('Failed to update user profile', {
+        extensions: { code: 'INTERNAL_ERROR' },
+      });
+    }
+  }
+
   async getAllUsers(): Promise<UserRow[]> {
     try {
       const { data, error } = await supabaseAdmin.auth.admin.listUsers();

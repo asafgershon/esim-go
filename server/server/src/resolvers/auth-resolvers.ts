@@ -314,5 +314,61 @@ export const authResolvers: Partial<Resolvers> = {
         };
       }
     },
+
+    updateProfile: async (_, { input }, context: Context) => {
+      try {
+        // Ensure user is authenticated
+        if (!context.auth.isAuthenticated || !context.auth.user) {
+          return {
+            success: false,
+            error: "You must be logged in to update your profile",
+            user: null,
+          };
+        }
+
+        const userId = context.auth.user.id;
+        
+        // Update profile using repository
+        const result = await context.repositories.users.updateProfile(userId, {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          phoneNumber: input.phoneNumber,
+        });
+
+        if (!result.success) {
+          return {
+            success: false,
+            error: "Failed to update profile",
+            user: null,
+          };
+        }
+
+        // Map updated user to GraphQL User type
+        const user = {
+          id: result.user!.id,
+          email: result.user!.email || "",
+          firstName: result.user!.user_metadata?.first_name || "",
+          lastName: result.user!.user_metadata?.last_name || "",
+          phoneNumber: result.user!.phone || result.user!.user_metadata?.phone_number || null,
+          role: result.user!.app_metadata?.role || result.user!.user_metadata?.role || "USER",
+          createdAt: result.user!.created_at,
+          updatedAt: result.user!.updated_at || result.user!.created_at,
+          orderCount: 0, // Will be resolved by field resolver
+        };
+
+        return {
+          success: true,
+          error: null,
+          user,
+        };
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to update profile",
+          user: null,
+        };
+      }
+    },
   },
 };
