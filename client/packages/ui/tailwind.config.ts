@@ -15,6 +15,14 @@ const config: Config = {
       // Note: Colors are defined via @theme directive in src/styles/globals.css for Tailwind v4
       // Keeping semantic color references for compatibility
       colors: {
+        // Brand colors
+        'brand': {
+          'green': '#00E095',
+          'purple': '#535FC8',
+          'dark': '#0A232E',
+          'light-blue': '#F8FAFC',
+          'white': '#FEFEFE',
+        },
         border: "border",
         input: "input",
         ring: "ring",

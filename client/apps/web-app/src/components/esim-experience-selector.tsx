@@ -1,11 +1,9 @@
 "use client";
 
-import { Button, ComboboxOption } from "@workspace/ui";
-import { Card } from "@workspace/ui";
-import { FuzzyCombobox, SliderWithValue } from "@workspace/ui";
+import { ComboboxOption } from "@workspace/ui";
+import { FuzzyCombobox } from "@workspace/ui";
+import { Selector, SelectorCard, SelectorHeader, SelectorAction, SelectorButton } from "@workspace/ui";
 import type { CountryISOCode } from "@/lib/types";
-import { cn } from "@/lib/utils";
-import { Calendar, Info } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   parseAsInteger,
@@ -22,10 +20,28 @@ import { EnhancedTrip, useTrips } from "@/hooks/useTrips";
 import { useBatchPricing } from "@/hooks/useBatchPricing";
 
 const CountUp = lazy(() => import("react-countup"));
-// Backend handles discount logic, so this is no longer needed
 
 // Lazy load the mobile bottom sheet
 const MobileDestinationDrawer = lazy(() => import("./mobile-destination-drawer"));
+
+// SVG Icons as components for pixel-perfect rendering
+const CalendarIcon = () => (
+  <svg width="12" height="11" viewBox="0 0 12 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4.125 0.5V2M7.875 0.5V2M1.5 4.025H10.5M10.5 3.5V8C10.5 9.5 9.75 10.5 7.875 10.5H4.125C2.25 10.5 1.5 9.5 1.5 8V3.5C1.5 2 2.25 1 4.125 1H7.875C9.75 1 10.5 2 10.5 3.5Z" stroke="#0A232E" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const ChevronsUpDownIcon = () => (
+  <svg width="11" height="6" viewBox="0 0 11 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 1L5.5 5.5L1 1" stroke="#0A232E" strokeOpacity="0.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const ArrowIcon = () => (
+  <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg" className="rotate-180">
+    <path d="M0.646447 3.64645C0.451184 3.84171 0.451184 4.15829 0.646447 4.35355L3.82843 7.53553C4.02369 7.7308 4.34027 7.7308 4.53553 7.53553C4.7308 7.34027 4.7308 7.02369 4.53553 6.82843L1.70711 4L4.53553 1.17157C4.7308 0.976311 4.7308 0.659728 4.53553 0.464466C4.34027 0.269204 4.02369 0.269204 3.82843 0.464466L0.646447 3.64645ZM14 3.5L1 3.5V4.5L14 4.5V3.5Z" fill="#FEFEFE"/>
+  </svg>
+);
 
 export function EsimExperienceSelector() {
   const router = useRouter();
@@ -177,78 +193,97 @@ export function EsimExperienceSelector() {
   }
 
   return (
-    <div
-      className="w-full mx-auto max-w-xl bg-card rounded-2xl shadow-lg overflow-hidden font-hebrew"
-      dir="rtl"
-    >
-      {/* Header */}
-      <div className="bg-gradient-to-r from-muted to-secondary py-6 px-5 text-center">
-        <div className="text-2xl mb-2">🌍</div>
-        <h1 className="text-xl font-bold text-card-foreground mb-1 font-hebrew">
-          חבילות eSIM לטיולים
-        </h1>
-        <p className="text-sm text-muted-foreground font-hebrew">
-          חיבור מושלם בכל מקום בעולם
-        </p>
-      </div>
+    <Selector>
+      <SelectorCard>
+        <SelectorHeader>
+          <h2 className="text-lg md:text-3xl font-medium text-brand-dark">
+            איזה כיף! לאן טסים? 🌏
+          </h2>
+        </SelectorHeader>
 
-      {/* Tabs */}
-      <div className="flex bg-muted p-1 m-4 rounded-xl">
-        <button
-          onClick={() => handleTabChange("countries")}
-          className={cn(
-            "flex-1 py-3 px-4 text-sm font-medium rounded-lg transition-all duration-200 font-hebrew",
-            activeTab === "countries"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          מדינות
-        </button>
-        <button
-          onClick={() => handleTabChange("trips")}
-          className={cn(
-            "flex-1 py-3 px-4 text-sm font-medium rounded-lg transition-all duration-200 font-hebrew",
-            activeTab === "trips"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          טיולים
-        </button>
-      </div>
+        {/* Content */}
+        <div>
+          {/* Tab Container */}
+          <div className="bg-[#F1F5FA] rounded-[10px] md:rounded-2xl p-[2px] md:p-1 mb-4">
+            <div className="flex">
+              <button
+                onClick={() => handleTabChange("trips")}
+                className={`
+                  flex-1 h-[34px] md:h-[60px] text-[12px] md:text-lg leading-[26px] md:leading-normal font-medium rounded-lg transition-all duration-200
+                  ${activeTab === "trips" 
+                    ? "bg-[#0A232E] text-[#FEFEFE]" 
+                    : "text-[#0A232E] bg-transparent"
+                  }
+                `}
+              >
+                טיולים
+              </button>
+              <button
+                onClick={() => handleTabChange("countries")}
+                className={`
+                  flex-1 h-[34px] md:h-[60px] text-[12px] md:text-lg leading-[26px] md:leading-normal font-medium rounded-lg transition-all duration-200
+                  ${activeTab === "countries" 
+                    ? "bg-[#0A232E] text-[#FEFEFE]" 
+                    : "text-[#0A232E] bg-transparent"
+                  }
+                `}
+              >
+                מדינות
+              </button>
+            </div>
+          </div>
 
-      {/* Destination Selection */}
-      <div className="px-4 mb-6">
-        {isMobile ? (
-          <div className="relative">
-            <FuzzyCombobox
-              options={comboboxOptions as ComboboxOption[]}
-              value={
-                countryId
-                  ? `country-${countryId}`
-                  : tripId
-                  ? `trip-${tripId}`
-                  : ""
-              }
-              onValueChange={() => {}} // No-op, selection handled by sheet
-              placeholder={countryId || tripId ? "שנה יעד..." : "לאן נוסעים?"}
-              searchPlaceholder="חפש..."
-              emptyMessage="לא נמצאו תוצאות"
-              className="border-border focus:border-ring focus:ring-ring/20 pointer-events-none select-none"
-              disabled
-            />
-            {/* Overlay button to open sheet */}
-            <div
-              className="absolute inset-0 z-10 cursor-pointer"
-              onClick={(e) => {
-                e.preventDefault();
-                setShowMobileSheet(true);
-              }}
-            />
-            <Suspense fallback={<div>...</div>}>
-              {showMobileSheet && (
-                <MobileDestinationDrawer
+          {/* Destination Selection */}
+          <div className="mb-5">
+            <label className="block text-[12px] md:text-xl leading-[26px] md:leading-normal text-[#0A232E] mb-2 md:mb-4">
+              לאן נוסעים?
+            </label>
+            {isMobile ? (
+              <div className="relative">
+                <div className="
+                  bg-[#FEFEFE] border border-[rgba(10,35,46,0.2)] rounded-lg 
+                  h-[34px] px-3 flex items-center cursor-pointer
+                  hover:border-[#535FC8] transition-colors relative
+                ">
+                  <span className="text-[#0A232E] text-[12px] leading-[26px] opacity-50">
+                    {selectedDestinationData?.data?.nameHebrew || "לאן נוסעים?"}
+                  </span>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <ChevronsUpDownIcon />
+                  </div>
+                </div>
+                {/* Overlay button to open sheet */}
+                <div
+                  className="absolute inset-0 z-10 cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowMobileSheet(true);
+                  }}
+                />
+                <Suspense fallback={<div>...</div>}>
+                  {showMobileSheet && (
+                    <MobileDestinationDrawer
+                      options={comboboxOptions as ComboboxOption[]}
+                      value={
+                        countryId
+                          ? `country-${countryId}`
+                          : tripId
+                          ? `trip-${tripId}`
+                          : ""
+                      }
+                      onValueChange={(v) => {
+                        handleDestinationChange(v);
+                        setShowMobileSheet(false);
+                      }}
+                      onClose={() => setShowMobileSheet(false)}
+                      isOpen={showMobileSheet}
+                    />
+                  )}
+                </Suspense>
+              </div>
+            ) : (
+              <div className="relative">
+                <FuzzyCombobox
                   options={comboboxOptions as ComboboxOption[]}
                   value={
                     countryId
@@ -257,182 +292,106 @@ export function EsimExperienceSelector() {
                       ? `trip-${tripId}`
                       : ""
                   }
-                  onValueChange={(v) => {
-                    handleDestinationChange(v);
-                    setShowMobileSheet(false);
-                  }}
-                  onClose={() => setShowMobileSheet(false)}
-                  isOpen={showMobileSheet}
+                  onValueChange={handleDestinationChange}
+                  placeholder="לאן נוסעים?"
+                  searchPlaceholder="חפש..."
+                  emptyMessage="לא נמצאו תוצאות"
+                  className="[&>button]:bg-[#FEFEFE] [&>button]:border [&>button]:border-[rgba(10,35,46,0.2)] [&>button]:rounded-lg [&>button]:h-[34px] [&>button]:hover:border-[#535FC8] [&>button]:transition-colors [&>button]:text-[12px]"
                 />
-              )}
-            </Suspense>
-          </div>
-        ) : (
-          <FuzzyCombobox
-            options={comboboxOptions as ComboboxOption[]}
-            value={
-              countryId
-                ? `country-${countryId}`
-                : tripId
-                ? `trip-${tripId}`
-                : ""
-            }
-            onValueChange={handleDestinationChange}
-            placeholder={countryId || tripId ? "שנה יעד..." : "לאן נוסעים?"}
-            searchPlaceholder="חפש..."
-            emptyMessage="לא נמצאו תוצאות"
-            className="border-border focus:border-ring focus:ring-ring/20"
-          />
-        )}
-      </div>
-
-      {/* Duration Selection - Always Visible */}
-      <div className="px-4 mb-6">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-muted-foreground" />
-            <h3 className="font-medium text-card-foreground">כמה ימים?</h3>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-4">
-            <div className="px-2">
-              <SliderWithValue
-                value={[numOfDays]}
-                onValueChange={(value) => setNumOfDays(value[0])}
-                max={30}
-                min={1}
-                className={`w-full ${isMobile ? "slider-thumb-lg" : ""}`}
-                dir="rtl"
+          {/* Days Selection */}
+          <div className="mb-4">
+            <div className="flex items-center gap-[4px] mb-2 md:mb-4">
+              <CalendarIcon />
+              <p className="text-[12px] md:text-xl leading-[26px] md:leading-normal text-[#0A232E]">כמה ימים?</p>
+            </div>
+
+            {/* Slider Container */}
+            <div className="relative h-[21px]">
+              {/* Track Background */}
+              <div className="absolute top-[9px] bg-[rgba(10,35,46,0.05)] h-[3px] rounded-[50px] w-full" />
+              
+              {/* Track Fill */}
+              <div 
+                className="absolute top-[9px] right-0 bg-[#0A232E] h-[3px] rounded-[50px] transition-all duration-150"
+                style={{ width: `${(numOfDays / 30) * 100}%` }}
+              />
+              
+              {/* Thumb */}
+              <div 
+                className="absolute top-0 transition-all duration-150"
+                style={{ right: `calc(${(numOfDays / 30) * 100}% - 10.5px)` }}
+              >
+                <div className="
+                  w-[21px] h-[21px] bg-[#FEFEFE] rounded-full 
+                  border border-[#0A232E] shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]
+                  flex items-center justify-center cursor-pointer
+                ">
+                  <span className="text-[8px] leading-[20px] font-bold text-[#0A232E]">{numOfDays}</span>
+                </div>
+              </div>
+
+              <input
+                type="range"
+                min="1"
+                max="30"
+                value={numOfDays}
+                onChange={(e) => setNumOfDays(Number(e.target.value))}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Selected Destination and Pricing */}
-      {selectedDestinationData && (
-        <div className="px-4 mb-6">
-          <Card className="p-4 border-primary bg-primary/5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">
-                  {selectedDestinationData.type === "country"
-                    ? (selectedDestinationData.data as EnhancedCountry)?.flag ||
-                      ""
-                    : (selectedDestinationData.data as EnhancedTrip)?.icon ||
-                      ""}
-                </span>
-                <div>
-                  <h3 className="font-medium text-card-foreground">
-                    {selectedDestinationData.data?.nameHebrew}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedDestinationData.type === "country"
-                      ? (selectedDestinationData.data as EnhancedCountry)
-                          ?.tagline
-                      : (selectedDestinationData.data as EnhancedTrip)
-                          ?.description}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setCountryId(null);
-                  setTripId(null);
-                }}
-                className="text-muted-foreground hover:text-foreground p-1"
-              >
-                ✕
+            {/* Date Selection Link */}
+            <div className="text-right">
+              <button className="text-[10px] leading-[26px] font-bold text-[#0A232E] hover:text-[#535FC8] transition-colors">
+                לבחירת תאריכים מדויקים »
               </button>
             </div>
+          </div>
 
-            {/* Pricing Summary */}
-            {!isReady || !pricing ? (
-              <div className="space-y-3 pt-3 border-t">
-                {/* Days skeleton */}
-                <div className="flex items-center justify-between">
-                  <div className="h-4 w-32 bg-muted animate-pulse rounded"></div>
-                </div>
-
-                {/* Daily price skeleton */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-8 bg-muted animate-pulse rounded"></div>
-                    <div className="h-2 w-4 bg-muted animate-pulse rounded"></div>
-                  </div>
-                </div>
-
-                {/* Discount message skeleton */}
-                <div className="h-4 w-40 bg-muted animate-pulse rounded"></div>
-
-                {/* Total price skeleton */}
-                <div className="border-t pt-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="h-6 w-12 bg-muted animate-pulse rounded"></div>
-                      <div className="h-6 w-20 bg-muted animate-pulse rounded"></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Loading indicator */}
-                <div className="text-center">
-                  <span className="text-sm text-muted-foreground">
-                    מחשב מחיר...
+          {/* Selected Destination and Pricing */}
+          {selectedDestinationData && pricing && (
+            <div className="bg-[#FEFEFE] border border-[rgba(10,35,46,0.2)] rounded-lg p-3 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">
+                    {selectedDestinationData.type === "country"
+                      ? (selectedDestinationData.data as EnhancedCountry)?.flag || ""
+                      : (selectedDestinationData.data as EnhancedTrip)?.icon || ""}
                   </span>
+                  <div>
+                    <h3 className="text-[14px] font-medium text-[#0A232E]">
+                      {selectedDestinationData.data?.nameHebrew}
+                    </h3>
+                    <p className="text-[10px] text-[#0A232E] opacity-50">
+                      {selectedDestinationData.type === "country"
+                        ? (selectedDestinationData.data as EnhancedCountry)?.tagline
+                        : (selectedDestinationData.data as EnhancedTrip)?.description}
+                    </p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => {
+                    setCountryId(null);
+                    setTripId(null);
+                  }}
+                  className="text-[#0A232E] opacity-50 hover:opacity-100 text-sm p-1"
+                >
+                  ✕
+                </button>
               </div>
-            ) : (
-              <div className="space-y-3 pt-3 border-t">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">
+
+              {/* Pricing Summary */}
+              <div className="pt-3 border-t border-[rgba(10,35,46,0.1)]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] text-[#0A232E] opacity-50">
                     {pricing?.days} ימים ללא הגבלה
                   </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-lg">
-                      <CountUp
-                        key={`daily-${countryId || tripId}-${numOfDays}`}
-                        end={pricing?.dailyPrice || 0}
-                        decimals={2}
-                        enableScrollSpy
-                        prefix="$"
-                        duration={0.2}
-                        preserveValue
-                      />
-                    </span>
-                    <span className="text-sm text-muted-foreground">ליום</span>
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-
-                <div className="border-t pt-3 space-y-2">
-                  {/* Show original price if discounted */}
-                  {pricing?.hasDiscount && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">מחיר מקורי:</span>
-                      <span className="line-through text-muted-foreground">
-                        ${pricing.originalPrice.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Show discount amount */}
-                  {pricing?.hasDiscount && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-green-600">הנחה:</span>
-                      <span className="text-green-600 font-medium">
-                        -${pricing.discountAmount.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Final total price */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold">
-                      סה״כ:{" "}
+                  <span className="text-[14px] font-bold text-[#0A232E]">
+                    <Suspense fallback={<span>${pricing?.totalPrice?.toFixed(2) || 0}</span>}>
                       <CountUp
                         key={`total-${countryId || tripId}-${numOfDays}`}
                         end={pricing?.totalPrice || 0}
@@ -441,44 +400,37 @@ export function EsimExperienceSelector() {
                         duration={0.2}
                         preserveValue
                       />
-                    </span>
-                  </div>
-                  
-                  {/* You save message */}
-                  {pricing?.hasDiscount && (
-                    <div className="text-center py-1 text-xs bg-green-50 dark:bg-green-900/20 rounded text-green-700 dark:text-green-300">
-                      חסכת ${pricing.discountAmount.toFixed(2)}!
-                    </div>
-                  )}
+                    </Suspense>
+                  </span>
                 </div>
+                {pricing?.hasDiscount && (
+                  <div className="text-center py-1 text-[8px] bg-green-50 rounded text-green-600">
+                    חסכת ${pricing.discountAmount.toFixed(2)}!
+                  </div>
+                )}
               </div>
-            )}
-          </Card>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Animated Purchase Button/Footer */}
-      <AnimatePresence>
-        {footerVisible && (
-          <motion.div
-            key="footer"
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            transition={{ duration: 0.3 }}
-            className="p-4 border-t bg-muted"
-          >
-            <Button
-              className={cn(
-                "w-full h-12 font-medium transition-all duration-200 bg-primary hover:bg-primary/90 text-primary-foreground"
-              )}
-              onClick={handlePurchase}
+        {/* Purchase Button */}
+        <AnimatePresence>
+          {footerVisible && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.2 }}
             >
-              קנה עכשיו
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+              <SelectorAction>
+                <SelectorButton onClick={handlePurchase}>
+                  לצפייה בחבילה המשתלמת ביותר
+                </SelectorButton>
+              </SelectorAction>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </SelectorCard>
+    </Selector>
   );
 }

@@ -10,8 +10,9 @@ const Selector = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
+    data-name="Selector"
     className={cn(
-      "w-full max-w-[853px] mx-auto font-birzia",
+      "w-full mx-auto",
       className
     )}
     {...props}
@@ -23,13 +24,21 @@ Selector.displayName = "Selector";
 const SelectorCard = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <div
     ref={ref}
+    data-name="SelectorCard"
     className={cn(
-      "bg-white rounded-[30px] shadow-[0px_4px_28px_-6px_rgba(0,0,0,0.08)] py-6 px-5 relative",
+      "bg-white rounded-[20px] shadow-[0px_4px_28px_-6px_rgba(0,0,0,0.08)] relative",
       className
     )}
+    style={{
+      paddingLeft: '20px',
+      paddingRight: '20px',
+      paddingTop: '24px',
+      paddingBottom: '24px',
+      ...style
+    }}
     {...props}
   />
 ));
@@ -42,7 +51,8 @@ const SelectorHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-center mb-10", className)}
+    data-name="SelectorHeader"
+    className={cn("text-right mb-10", className)}
     {...props}
   />
 ));
@@ -55,6 +65,7 @@ const SelectorContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
+    data-name="SelectorContent"
     className={cn("flex flex-col gap-6", className)}
     {...props}
   />
@@ -68,7 +79,8 @@ const SelectorAction = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("mt-10", className)}
+    data-name="SelectorAction"
+    className={cn("", className)}
     {...props}
   />
 ));
@@ -81,6 +93,7 @@ const SelectorSection = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
+    data-name="SelectorSection"
     className={cn("flex flex-col gap-4", className)}
     {...props}
   />
@@ -94,6 +107,7 @@ const SelectorLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
+    data-name="SelectorLabel"
     className={cn("text-[14px] text-[#0A232E] text-right", className)}
     {...props}
   />
@@ -107,14 +121,16 @@ const SelectorButton = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <button
     ref={ref}
+    data-name="SelectorButton"
     className={cn(
-      "w-full h-[66px] bg-brand-purple rounded-[10px]",
-      "border-[0.5px] border-brand-dark",
-      "shadow-[0px_3px_0px_0px_#2e2e31]",
-      "text-brand-white text-[22px] font-medium",
-      "hover:bg-opacity-90 hover:translate-y-[1px] hover:shadow-[0px_2px_0px_0px_#2e2e31]",
-      "transition-all duration-200",
-      "flex items-center justify-center",
+      "w-full h-9 md:h-[66px] bg-[#535FC8] rounded-lg md:rounded-[10px]",
+      "border-[0.5px] border-[#0A232E]",
+      "shadow-[0px_3px_0px_0px_#2E2E31]",
+      "text-[#FEFEFE] text-[12px] md:text-[22px] font-medium",
+      "hover:translate-y-[1px] hover:shadow-[0px_2px_0px_0px_#2E2E31]",
+      "active:translate-y-[2px] active:shadow-[0px_1px_0px_0px_#2E2E31]",
+      "transition-all duration-100",
+      "flex items-center justify-center gap-3",
       "cursor-pointer",
       className
     )}
