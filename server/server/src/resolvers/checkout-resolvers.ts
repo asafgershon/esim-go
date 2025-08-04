@@ -1,5 +1,5 @@
 import { BundleOrderTypeEnum, OrderRequestTypeEnum } from "@hiilo/client";
-import { PricingEngine, type PricingEngineInput } from "@hiilo/rules-engine";
+import { calculatePricing, type RequestFacts, type PricingEngineV2Result } from "@hiilo/rules-engine-2";
 import crypto from "crypto";
 import { GraphQLError } from "graphql";
 import jwt from "jsonwebtoken";
@@ -261,133 +261,35 @@ export const checkoutResolvers: Partial<Resolvers> = {
         );
         console.log(`Requested duration: ${numOfDays} days`);
 
-        // Validate and transform bundle data - fail if any required data missing
-        const validatedBundles = bundleResults.data.map((bundle, index) => {
-          // Get price from price_cents field (stored in cents)
-          const bundlePrice = bundle.price ? bundle.price : 0;
-          if (!bundlePrice || bundlePrice <= 0) {
-            throw new Error(
-              `Bundle ${index} (${
-                bundle.esim_go_name || "unknown"
-              }): Invalid or missing price: ${bundlePrice}`
-            );
-          }
-          if (!bundle.validity_in_days || bundle.validity_in_days <= 0) {
-            throw new Error(
-              `Bundle ${index} (${
-                bundle.esim_go_name || "unknown"
-              }): Invalid or missing duration: ${bundle.validity_in_days}`
-            );
-          }
-          if (!bundle.esim_go_name) {
-            throw new Error(
-              `Bundle ${index}: Missing bundle name (name)`
-            );
-          }
-
-          // Extract countries - this is stored as JSON array
-          let primaryCountry = countryId;
-          try {
-            if (bundle.countries) {
-              const countries = Array.isArray(bundle.countries)
-                ? bundle.countries
-                : [];
-              if (countries.length > 0 && typeof countries[0] === "string") {
-                primaryCountry = countries[0];
-              }
-            }
-          } catch (error) {
-            // Use fallback if countries parsing fails
-            primaryCountry = countryId;
-          }
-
-          return {
-            id:  bundle.esim_go_name,
-            name: bundle.esim_go_name,
-            cost: bundlePrice,
-            duration: bundle.validity_in_days,
-            countryId: primaryCountry,
-            countryName: primaryCountry, // We don't have country names in bundle data
-            regionId: regionId || "",
-            regionName: "Unknown",
-            group: bundle.groups?.[0] || WEB_APP_BUNDLE_GROUP,
-            speed: bundle.speed,
-            isUnlimited: bundle.is_unlimited || false,
-            dataAmount: bundle.data_amount_mb ? `${bundle.data_amount_mb}GB` : "0GB",
-          };
-        });
-
-        // Use pricing engine directly
-        const pricingEngine = new PricingEngine();
-        
-        // Get active pricing rules
-        const rules = await context.repositories.pricingRules.findActiveRules();
-        pricingEngine.clearRules();
-        pricingEngine.addRules(rules);
-
-        // Debug: Log what we're passing to the pricing engine
-        console.log(
-          `Passing ${validatedBundles.length} validated bundles to pricing engine:`
-        );
-        console.log(
-          "Bundle durations:",
-          validatedBundles.map((b) => `${b.name}: ${b.duration}d`)
-        );
-
-        // Create pricing input with validated data
-        const pricingInput: PricingEngineInput = {
-          context: {
-            bundles: validatedBundles.map(bundle => ({
-              name: bundle.name,
-              basePrice: bundle.cost,
-              validityInDays: bundle.duration,
-              countries: [bundle.countryId],
-              currency: 'USD',
-              dataAmountReadable: bundle.dataAmount,
-              groups: [bundle.group],
-              isUnlimited: bundle.isUnlimited,
-              speed: bundle.speed,
-            })),
-            costumer: {
-              id: context.auth?.user?.id || 'anonymous',
-              segment: 'default'
-            },
-            payment: {
-              method: PaymentMethod.IsraeliCard
-            },
-            rules: [], // Will be loaded by pricing engine
-            date: new Date()
-          },
-          request: {
-            duration: numOfDays,
-            paymentMethod: PaymentMethod.IsraeliCard,
-            countryISO: countryId,
-            region: regionId || '',
-            group: WEB_APP_BUNDLE_GROUP,
-            dataType: 'fixed'
-          },
-          metadata: {
-            correlationId: `checkout-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
-          }
+        // Use the new simplified pricing engine
+        // Build request facts based on location criteria
+        const requestFacts: RequestFacts = {
+          group: group || WEB_APP_BUNDLE_GROUP,
+          days: numOfDays,
+          paymentMethod: PaymentMethod.IsraeliCard,
+          ...(countryId ? { country: countryId } : { region: regionId || '' })
         };
 
-        // Calculate pricing with the engine
-        let pricingResult;
+        // Debug: Log what we're passing to the pricing engine
+        console.log("Calling calculatePricing with facts:", requestFacts);
+
+        // Calculate pricing with the new engine
+        let pricingResult: PricingEngineV2Result;
         try {
-          pricingResult = await pricingEngine.calculatePrice(pricingInput);
+          pricingResult = await calculatePricing(requestFacts);
         } catch (error) {
           // If no bundles are available for the requested duration, provide helpful info
           if (
             error instanceof Error &&
-            error.message.includes("No bundles available for")
+            error.message.includes("No bundles available")
           ) {
-            const availableDurations = validatedBundles
-              .map((b) => b.duration)
-              .filter((d) => d > 0)
+            const availableDurations = bundleResults.data
+              .map((b) => b.validity_in_days)
+              .filter((d) => d && d > 0)
               .sort((a, b) => a - b);
 
             throw new Error(
-              `No bundles available for ${numOfDays} days or longer for ${countryId}. ` +
+              `No bundles available for ${numOfDays} days or longer for ${countryId || regionId}. ` +
                 `Available durations: ${availableDurations.join(", ")} days. ` +
                 `Please select a different duration or choose the longest available option.`
             );
@@ -399,38 +301,29 @@ export const checkoutResolvers: Partial<Resolvers> = {
         if (!pricingResult) {
           throw new Error("Pricing calculation failed - no result returned");
         }
-        if (!pricingResult.response?.pricing?.priceAfterDiscount || pricingResult.response.pricing.priceAfterDiscount <= 0) {
+        if (!pricingResult.pricing?.finalPrice || pricingResult.pricing.finalPrice <= 0) {
           throw new Error(
-            `Invalid final price calculated: ${pricingResult.response?.pricing?.priceAfterDiscount}`
+            `Invalid final price calculated: ${pricingResult.pricing?.finalPrice}`
           );
         }
-        if (!pricingResult.response?.selectedBundle) {
+        if (!pricingResult.selectedBundle) {
           throw new Error("No bundle selected by pricing engine");
         }
 
         // Use the bundle selected by the pricing engine
-        const selectedBundleName = pricingResult.response.selectedBundle.name;
-        const selectedBundle = validatedBundles.find(
-          (b) => b.name === selectedBundleName
-        );
-
-        if (!selectedBundle) {
-          throw new Error(
-            `Pricing engine selected bundle '${selectedBundleName}' not found in validated bundles`
-          );
-        }
+        const selectedBundle = pricingResult.selectedBundle;
 
         // Construct plan data from selected bundle and pricing result
         const plan = {
-          id: selectedBundle.id,
-          name: selectedBundle.name,
-          duration: selectedBundle.duration,
-          price: pricingResult.response.pricing.priceAfterDiscount,
+          id: selectedBundle.esim_go_name,
+          name: selectedBundle.esim_go_name,
+          duration: selectedBundle.validity_in_days,
+          price: pricingResult.pricing.finalPrice,
           currency: "USD",
-          countries: [countryId],
-          bundleGroup: selectedBundle.group,
-          dataAmount: selectedBundle.dataAmount,
-          isUnlimited: selectedBundle.isUnlimited,
+          countries: selectedBundle.countries || [countryId],
+          bundleGroup: (selectedBundle as any).groups?.[0] || WEB_APP_BUNDLE_GROUP,
+          dataAmount: selectedBundle.data_amount_mb ? `${selectedBundle.data_amount_mb}MB` : "0MB",
+          isUnlimited: selectedBundle.is_unlimited || false,
         };
 
         // Final validation of plan data before creating checkout session
@@ -440,7 +333,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           );
         }
 
-        const pricing = pricingResult.response;
+        const pricing = pricingResult;
 
         // Create session in database using repository
         const session = await context.repositories.checkoutSessions.create({
@@ -982,66 +875,43 @@ async function simulateWebhookProcessing(
         throw new Error("Cannot create order without a user ID");
       }
 
-      // Calculate detailed pricing breakdown for the order using the pricing engine
-      const pricingEngine = new PricingEngine();
-      
-      // Get active pricing rules
-      const rules = await context.repositories.pricingRules.findActiveRules();
-      pricingEngine.clearRules();
-      pricingEngine.addRules(rules);
-
+      // Calculate detailed pricing breakdown for the order using the new pricing engine
       const firstCountry = planSnapshot.countries[0] || "";
-      const pricingInput: PricingEngineInput = {
-        context: {
-          bundles: [{
-            name: planSnapshot.name,
-            basePrice: planSnapshot.price,
-            validityInDays: planSnapshot.duration,
-            countries: [firstCountry],
-            currency: 'USD',
-            dataAmountReadable: '0GB', // TODO: Get actual data amount
-            groups: [WEB_APP_BUNDLE_GROUP],
-            isUnlimited: false,
-            speed: ['4G', '5G']
-          }],
-          costumer: {
-            id: steps.authentication.userId,
-            segment: 'default'
-          },
-          payment: {
-            method: PaymentMethod.IsraeliCard
-          },
-          rules: [],
-          date: new Date()
-        },
-        request: {
-          duration: planSnapshot.duration,
-          paymentMethod: PaymentMethod.IsraeliCard,
-          countryISO: firstCountry,
-          region: '',
-          group: 'Standard Fixed',
-          dataType: 'fixed'
-        },
-        metadata: {
-          correlationId: `webhook-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
-        }
+      const requestFacts: RequestFacts = {
+        group: WEB_APP_BUNDLE_GROUP,
+        days: planSnapshot.duration,
+        paymentMethod: PaymentMethod.IsraeliCard,
+        country: firstCountry
       };
 
-      const detailedPricing = await pricingEngine.calculatePrice(pricingInput);
+      const detailedPricing = await calculatePricing(requestFacts);
 
       // Step 1: Create Order record using repository with detailed pricing
-      // TODO: Update order repository to accept PricingEngineOutput instead of legacy format
+      // Adapt new pricing format to old format expected by repository
+      const pricingBreakdownForOrder = {
+        baseCost: detailedPricing.pricing.cost,
+        priceAfterDiscount: detailedPricing.pricing.finalPrice,
+        finalPrice: detailedPricing.pricing.finalPrice,
+        finalRevenue: detailedPricing.pricing.netProfit,
+        markup: detailedPricing.pricing.markup,
+        maxDiscountPercentage: detailedPricing.pricing.discountRate,
+        maxRecommendedPrice: detailedPricing.pricing.finalPrice, // Using finalPrice as there's no costumerPrice field
+        processingFee: detailedPricing.pricing.processingCost,
+        appliedRules: detailedPricing.appliedRules || [],
+        discounts: []
+      };
+      
       const orderRecord =
         await context.repositories.orders.createOrderWithPricing(
           {
             user_id: steps.authentication.userId,
-            total_price: detailedPricing.response.pricing.priceAfterDiscount,
+            total_price: detailedPricing.pricing.finalPrice,
             reference: orderId, // This becomes the order reference
             status: "PROCESSING" as OrderStatus, // Start as PROCESSING, will be updated to COMPLETED after eSIM delivery
             plan_data: planSnapshot, // Store plan info in JSONB field
             quantity: 1,
           },
-          detailedPricing.response.pricing as any // TODO: Update repository to accept new format
+          pricingBreakdownForOrder as any
         );
 
       console.log("Order record created:", orderRecord.id);
