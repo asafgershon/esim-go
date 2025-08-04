@@ -44,8 +44,9 @@ export function Header() {
       ) : (
         <Link href="/register">
           <Button 
+            variant="primary-brand"
             size="sm" 
-            className="bg-brand-green hover:bg-brand-green/90 text-white rounded-full px-6"
+            className="px-6"
           >
             כניסה לeSIM
           </Button>
@@ -58,8 +59,9 @@ export function Header() {
   const mobileAction = (
     <Link href="/register">
       <Button 
+        variant="primary-brand"
         size="sm" 
-        className="bg-brand-green hover:bg-brand-green/90 text-white rounded-full px-6 text-xs"
+        className="px-6 text-xs"
       >
         כניסה לeSIM
       </Button>
