@@ -910,6 +910,7 @@ export type Order = {
   bundleId?: Maybe<Scalars['String']['output']>;
   bundleName?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
+  currency: Scalars['String']['output'];
   esims: Array<Esim>;
   id: Scalars['ID']['output'];
   quantity: Scalars['Int']['output'];
@@ -2535,6 +2536,7 @@ export type OrderResolvers<ContextType = Context, ParentType extends ResolversPa
   bundleId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   bundleName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  currency?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   esims?: Resolver<Array<ResolversTypes['ESIM']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;

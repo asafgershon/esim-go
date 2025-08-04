@@ -1051,6 +1051,7 @@ export type Order = {
   bundleId?: Maybe<Scalars['String']['output']>;
   bundleName?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
+  currency: Scalars['String']['output'];
   esims: Array<Esim>;
   id: Scalars['ID']['output'];
   quantity: Scalars['Int']['output'];
@@ -1857,7 +1858,7 @@ export type OrderDetailsQuery = { __typename?: 'Query', orderDetails?: { __typen
 export type GetUserOrdersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetUserOrdersQuery = { __typename?: 'Query', myOrders: Array<{ __typename?: 'Order', id: string, reference: string, status: OrderStatus, totalPrice: number, createdAt: string, esims: Array<{ __typename?: 'ESIM', id: string, status: EsimStatus }> }> };
+export type GetUserOrdersQuery = { __typename?: 'Query', myOrders: Array<{ __typename?: 'Order', id: string, reference: string, status: OrderStatus, totalPrice: number, currency: string, createdAt: string, esims: Array<{ __typename?: 'ESIM', id: string, status: EsimStatus }> }> };
 
 export type ValidateOrderMutationVariables = Exact<{
   input: ValidateOrderInput;

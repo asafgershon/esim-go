@@ -105,6 +105,7 @@ query GetUserOrders {
     reference
     status
     totalPrice
+    currency
     createdAt
     esims {
       id

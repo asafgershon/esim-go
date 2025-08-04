@@ -266,31 +266,20 @@ export const esimResolvers: Partial<Resolvers> = {
           return [];
         }
 
-        return dbOrders;
-        // Get order details from eSIM Go API
-        const orders = await Promise.all(
-          dbOrders.map(async (dbOrder) => {
-            const apiOrder = await context.dataSources.orders.getOrder(
-              dbOrder.reference
-            );
-            if (!apiOrder) return null;
-
-            // Get data plan
-            const { data: dbPlan } = await supabaseAdmin
-              .from("data_plans")
-              .select("*")
-              .eq("id", dbOrder.data_plan_id)
-              .single();
-
-            const plan = await context.dataSources.catalogue.getPlanByName(
-              dbPlan.name
-            );
-
-            return mapOrder(apiOrder, dbOrder, plan);
-          })
-        );
-
-        return orders.filter(Boolean);
+        // Map database orders to GraphQL Order type
+        return dbOrders.map(dbOrder => ({
+          id: dbOrder.id,
+          reference: dbOrder.reference,
+          status: dbOrder.status,
+          bundleId: dbOrder.data_plan_id || null,
+          bundleName: dbOrder.plan_data?.name || null,
+          quantity: dbOrder.quantity,
+          totalPrice: parseFloat(dbOrder.total_price) || 0, // Convert numeric to float, default to 0 if null
+          currency: dbOrder.pricing_breakdown?.currency || dbOrder.plan_data?.currency || 'USD', // Get currency from pricing_breakdown or plan_data, default to USD
+          esims: [], // Will be populated by field resolver if needed
+          createdAt: dbOrder.created_at,
+          updatedAt: dbOrder.updated_at,
+        }));
       } catch (error) {
         console.error("Error fetching orders:", error);
         throw new GraphQLError("Failed to fetch orders", {

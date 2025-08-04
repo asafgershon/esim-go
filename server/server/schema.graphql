@@ -638,6 +638,7 @@ type Order {
   bundleName: String
   quantity: Int!
   totalPrice: Float!
+  currency: String! # Currency code (USD, ILS, EUR, etc.)
   esims: [ESIM!]!
   user: User # User who placed the order
   createdAt: String!

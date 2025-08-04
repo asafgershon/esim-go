@@ -25,6 +25,18 @@ import { GetUserOrders } from "@/lib/graphql/checkout";
 import { ME, GET_ACTIVE_ESIM_PLAN } from "@/lib/graphql/mutations";
 import { Esim, EsimBundle, Order } from "@/__generated__/graphql";
 
+// Currency symbol mapping
+const getCurrencySymbol = (currency: string) => {
+  const symbols: Record<string, string> = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    ILS: '₪',
+    NIS: '₪', // Support both ILS and NIS
+  };
+  return symbols[currency?.toUpperCase()] || currency || '$';
+};
+
 
 export default function ProfilePage() {
   const { data: userData, loading: userLoading } = useQuery(ME);
@@ -177,11 +189,11 @@ export default function ProfilePage() {
                 </>
               ) : (
                 <>
-                  <h2 className="text-xl font-semibold">
+                  <h2 className="text-xl font-semibold truncate">
                     {userData?.me?.firstName} {userData?.me?.lastName}
                   </h2>
-                  <p className="text-muted-foreground">{userData?.me?.email}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground truncate">{userData?.me?.email}</p>
+                  <p className="text-sm text-muted-foreground truncate">
                     {userData?.me?.phoneNumber}
                   </p>
                 </>
@@ -202,9 +214,9 @@ export default function ProfilePage() {
           ) : currentPlan ? (
             <>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Wifi className="h-5 w-5" />
-                  החבילה שלי - {currentPlan.country}
+                <h3 className="text-lg font-semibold flex items-center gap-2 truncate min-w-0">
+                  <Wifi className="h-5 w-5 flex-shrink-0" />
+                  <span className="truncate">החבילה שלי - {currentPlan.country}</span>
                 </h3>
                 <div className="flex items-center gap-2">
                   <Button
@@ -318,9 +330,9 @@ export default function ProfilePage() {
                   className="block"
                 >
                   <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
-                        <h4 className="font-medium">
+                        <h4 className="font-medium truncate">
                           הזמנה #{order.reference}
                         </h4>
                         <Badge variant={getStatusColor(order.status)}>
@@ -328,8 +340,8 @@ export default function ProfilePage() {
                         </Badge>
                       </div>
                       <div className="text-sm text-muted-foreground space-y-1">
-                        <p>{order.esims?.length || 0} eSIM(s)</p>
-                        <p>
+                        <p className="truncate">{order.esims?.length || 0} eSIM(s)</p>
+                        <p className="truncate">
                           הוזמן:{" "}
                           {new Date(order.createdAt).toLocaleDateString(
                             "he-IL"
@@ -338,11 +350,13 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-shrink-0">
                       <div className="text-left">
-                        <p className="font-semibold">₪{order.totalPrice}</p>
-                        <p className="text-xs text-muted-foreground">
-                          #{order.id}
+                        <p className="font-semibold">
+                          {getCurrencySymbol(order.currency)}{order.totalPrice}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate max-w-20">
+                          #{order.id.slice(-8)}
                         </p>
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
