@@ -7,6 +7,7 @@ import { EsimSelector } from "@/components/esim-selector";
 import { DestinationsGallery } from "@/components/destinations-gallery";
 import { PromoBanner } from "@/components/promo-banner";
 import { FeaturesSection } from "@/components/features-section";
+import { BackgroundSection } from "@/components/background-section";
 import { LoginModalWrapper } from "@/components/login-modal-wrapper";
 import { Button, Card } from "@workspace/ui";
 import { useRouter } from "next/navigation";
@@ -72,6 +73,9 @@ export default function Home() {
 
       {/* Features Section */}
       <FeaturesSection />
+
+      {/* Background Section */}
+      <BackgroundSection />
 
       {/* Trust Indicators */}
       <section className="py-8 bg-white">

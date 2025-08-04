@@ -20,7 +20,7 @@ const Selector = React.forwardRef<
 ));
 Selector.displayName = "Selector";
 
-// Selector Card with responsive padding and border radius
+// Selector Card with consistent padding and responsive border radius
 const SelectorCard = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -30,10 +30,15 @@ const SelectorCard = React.forwardRef<
     data-name="SelectorCard"
     className={cn(
       "bg-white rounded-[20px] md:rounded-[30px] shadow-[0px_4px_28px_-6px_rgba(0,0,0,0.08)] relative",
-      "px-5 py-6 md:px-11 md:py-11",
       className
     )}
-    style={style}
+    style={{
+      paddingTop: '24px',
+      paddingBottom: '24px',
+      paddingLeft: '20px',
+      paddingRight: '20px',
+      ...style
+    }}
     {...props}
   />
 ));
@@ -109,7 +114,7 @@ const SelectorLabel = React.forwardRef<
 ));
 SelectorLabel.displayName = "SelectorLabel";
 
-// Selector Button (Primary CTA)
+// Selector Button (Primary CTA) - supports both purple and green variants
 const SelectorButton = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement>
@@ -118,7 +123,7 @@ const SelectorButton = React.forwardRef<
     ref={ref}
     data-name="SelectorButton"
     className={cn(
-      "w-full h-9 md:h-[66px] bg-[#535FC8] rounded-lg md:rounded-[10px]",
+      "w-full h-9 md:h-[66px] rounded-lg md:rounded-[10px]",
       "border-[0.5px] border-[#0A232E]",
       "shadow-[0px_3px_0px_0px_#2E2E31]",
       "text-[#FEFEFE] text-[12px] md:text-[22px] font-medium",
@@ -127,6 +132,8 @@ const SelectorButton = React.forwardRef<
       "transition-all duration-100",
       "flex items-center justify-center gap-3",
       "cursor-pointer",
+      // Default purple background if no custom background class is provided
+      !className?.includes('bg-') && "bg-[#535FC8] hover:bg-[#535FC8]/90",
       className
     )}
     {...props}
