@@ -1,27 +1,40 @@
-import { Engine, TopLevelCondition } from "json-rules-engine";
+import { createLogger } from "@hiilo/utils/src/logger";
+import { Engine } from "json-rules-engine";
+import { markupRule } from "./blocks/markups";
+import { rules as processingFeeRules } from "./blocks/processing-fee";
+import { unusedDaysDiscountRule } from "./blocks/unused-days";
 import { availableBundles } from "./facts/available-bundles";
 import {
   isExactMatch,
-  previousBundle,
+  PreviousBundleFact,
+  previousBundle as previousBundleFact,
+  previousBundleMarkup,
   selectBundle,
   SelectedBundleFact,
-  unusedDays,
+  selectedBundleMarkup,
+  unusedDays as unusedDaysFact,
 } from "./facts/bundle-facts";
 import { durations } from "./facts/durations";
-import { AppliedRule, PricingBreakdown } from "./generated/types";
 import {
-  calculateFinalPrice,
-  defaultPricingStrategy,
-} from "./strategies/default-pricing";
-import { loadStrategy } from "./strategies";
-import { TopLevelConditionSchema } from "./types";
+  AppliedRule,
+  PaymentMethod,
+  PricingBreakdown,
+} from "./generated/types";
+import { processEventType } from "./processors/process";
+import { selectEvents } from "./strategies/process-events";
+import { costBlockRule } from "./blocks/cost";
 
 let engine: Engine;
+
+const logger = createLogger({
+  name: "pricing-engine-v2",
+  level: "info",
+});
 
 export type RequestFacts = {
   group: string;
   days: number;
-  paymentMethod?: string;
+  paymentMethod?: PaymentMethod;
   strategyId?: string;
 } & (
   | {
@@ -38,17 +51,7 @@ export type PricingEngineV2Result = {
   selectedBundle: SelectedBundleFact | undefined;
   unusedDays: number;
   requestedDays: number;
-  pricing: Pick<
-    PricingBreakdown,
-    | "cost"
-    | "markup"
-    | "totalCost"
-    | "discountPerDay"
-    | "discountValue"
-    | "priceAfterDiscount"
-    | "processingCost"
-    | "finalRevenue"
-  >;
+  pricing: Omit<PricingBreakdown, "bundle" | "country" | "duration">;
   appliedRules: AppliedRule[];
 };
 
@@ -57,40 +60,12 @@ export async function calculatePricing({
   group,
   country,
   region,
-  paymentMethod = "ISRAELI_CARD",
+  paymentMethod = PaymentMethod.IsraeliCard,
   strategyId,
 }: RequestFacts): Promise<PricingEngineV2Result> {
   engine = new Engine();
 
-//   const strategy = await loadStrategy(strategyId);
-
-//   if (!strategy) {
-//     throw new Error("Strategy not found");
-//   }
-
-//   strategy.strategy_blocks
-//     .sort((a, b) => a.priority - b.priority)
-//     .forEach((b) => {
-//       console.log(b);
-//       const { block } = b;
-//       engine.addRule({
-//         conditions: TopLevelConditionSchema.parse(block.conditions),
-//         event: {
-//           type: block.action.type,
-//           params: { ...block.action.params },
-//         },
-//         name: block.name
-//       })
-//       // engine.addRule({
-//       //   conditions: b.block.conditions as TopLevelCondition,
-//       //   event: {
-//       //     type: b.block.action.type,
-//       //     params: { ...b.block.action.params },
-//       //   },
-//       //   name: b.name,
-//       //   priority: b.priority || 0,
-//       // });
-//     });
+  const startTime = performance.now();
 
   // Add static facts
   engine.addFact("durations", durations);
@@ -98,87 +73,177 @@ export async function calculatePricing({
 
   // Add calculated dynamic facts to be used in rules
   engine.addFact("selectedBundle", selectBundle);
-  engine.addFact("previousBundle", previousBundle);
-  engine.addFact("unusedDays", unusedDays);
+  engine.addFact("previousBundle", previousBundleFact);
+  engine.addFact("unusedDays", unusedDaysFact);
   engine.addFact("isExactMatch", isExactMatch);
+  engine.addFact("markupRule", markupRule);
+  engine.addFact("selectedBundleMarkup", selectedBundleMarkup);
+  engine.addFact("previousBundleMarkup", previousBundleMarkup);
   // Load rules from strategy
-//   defaultPricingStrategy.strategy_blocks.forEach((r) => engine.addRule(r));
+  //   defaultPricingStrategy.strategy_blocks.forEach((r) => engine.addRule(r));
 
-  // Run the engine
-  const result = await engine.run({
+  // Load rules:
+  engine.addRule(costBlockRule);
+  engine.addRule(markupRule);
+  processingFeeRules.forEach((r) => engine.addRule(r));
+  const request = {
     requestedGroup: group,
     requestedValidityDays: days,
     country,
     region,
     paymentMethod,
+  };
+  engine.addRule(unusedDaysDiscountRule);
+  logger.debug("Running engine", request);
+  const { almanac, events, results } = await engine.run({
+    ...request,
   });
+  const endTime = performance.now();
+  logger.debug(
+    `Time taken: ${((endTime - startTime) * 1000).toFixed(2)} seconds`
+  );
+  console.log(results[0].result);
+  // const finalPrice = await processEvents(
+  //   result.events,
+  //   result.almanac,
+  //   defaultPricingStrategy
+  // );
 
-  const finalPrice = await calculateFinalPrice(
-    result.events,
-    result.almanac,
-    defaultPricingStrategy
+  let costumerPrice = 0;
+
+  const { newPrice: cost } = await processEventType(
+    "set-base-price",
+    selectEvents(events, "set-base-price"),
+    0,
+    almanac
+  );
+  costumerPrice = cost;
+
+  const markups = selectEvents(events, "apply-markup");
+  const { change: markup, newPrice: priceWithMarkup } = await processEventType(
+    "apply-markup",
+    markups,
+    cost,
+    almanac
+  );
+  costumerPrice = priceWithMarkup;
+
+  const discount = selectEvents(events, "apply-unused-days-discount");
+  const {
+    change: discountValue,
+    newPrice: priceAfterDiscount,
+    details: { valuePerDay, discountRate, unusedDays },
+  } = await processEventType(
+    "apply-unused-days-discount",
+    discount,
+    priceWithMarkup,
+    almanac
+  );
+  costumerPrice = priceAfterDiscount;
+
+  const processingFees = selectEvents(events, "apply-processing-fee");
+  const {
+    change: processingFee,
+    details: { rate },
+  } = await processEventType(
+    "apply-processing-fee",
+    processingFees,
+    priceAfterDiscount,
+    almanac
   );
 
-  const selectedBundle = await result.almanac.factValue<SelectedBundleFact>(
-    "selectedBundle"
+  const keepProfit = selectEvents(events, "apply-profit-constraint");
+  const { newPrice: priceAfterKeepProfit } = await processEventType(
+    "apply-profit-constraint",
+    keepProfit,
+    priceAfterDiscount,
+    almanac
   );
-  const unusedDaysValue = await result.almanac.factValue<number>("unusedDays");
-  const baseCost = selectedBundle?.price || 0;
 
-//   return {
-//     selectedBundle,
-//     requestedDays: days,
-//     unusedDays: unusedDaysValue,
-//     appliedRules: [],
-//   };
-
-  // Extract values from breakdown steps
-  const markupStep = finalPrice.breakdown.find(
-    (b) => b.step === "apply-markup"
+  const psychologicalRounding = selectEvents(
+    events,
+    "apply-psychological-rounding"
   );
-  const discountStep = finalPrice.breakdown.find(
-    (b) => b.step === "apply-discount"
+  const { newPrice: priceAfterPsychologicalRounding } = await processEventType(
+    "apply-psychological-rounding",
+    psychologicalRounding,
+    priceAfterKeepProfit,
+    almanac
   );
-  const feeStep = finalPrice.breakdown.find((b) => b.step === "apply-fee");
-  const lastStep = finalPrice.breakdown[finalPrice.breakdown.length - 1];
 
-  const markup = markupStep ? markupStep.adjustment : 0;
-  const discountValue = discountStep ? Math.abs(discountStep.adjustment) : 0;
-  const processingCost = feeStep ? feeStep.adjustment : 0;
-  const finalPriceValue = lastStep?.priceAfter || baseCost + markup;
+  const totalCost = Number((cost + processingFee).toFixed(2));
 
-  // Calculate derived values
-  const totalCost = baseCost + markup;
-  const priceAfterDiscount = totalCost - discountValue;
-  const finalRevenue = priceAfterDiscount - processingCost;
-
-  console.log("Pricing breakdown:", {
-    baseCost,
+  const pricing: Omit<PricingBreakdown, "bundle" | "country" | "duration"> = {
+    cost,
     markup,
-    totalCost,
+    currency: "USD",
+    unusedDays,
+    processingCost: processingFee,
+    discountPerDay: valuePerDay,
     discountValue,
     priceAfterDiscount,
-    processingCost,
-    finalRevenue,
-  });
-
-  return {
-    appliedRules: [],
-    pricing: {
-      cost: baseCost,
-      markup: markup,
-      totalCost: totalCost,
-      discountPerDay: days > 0 ? discountValue / days : 0,
-      discountValue: discountValue,
-      priceAfterDiscount: priceAfterDiscount,
-      processingCost: processingCost,
-      finalRevenue: finalRevenue,
-    },
-    selectedBundle,
-    unusedDays: await result.almanac.factValue<number>("unusedDays"),
-    requestedDays: days,
+    discountRate,
+    totalCost,
+    processingRate: rate,
+    finalRevenue: Number(priceAfterPsychologicalRounding.toFixed(2)), // TODO: rename to revenue
+    revenueAfterProcessing: Number((costumerPrice - processingFee).toFixed(2)),
+    netProfit: Number((costumerPrice - totalCost).toFixed(2)),
+    totalCostBeforeProcessing: totalCost,
+    finalPrice: Number(priceAfterPsychologicalRounding.toFixed(2)),
   };
+  return {
+    pricing,
+    selectedBundle: await almanac.factValue<SelectedBundleFact>(
+      "selectedBundle"
+    ),
+    unusedDays: await almanac.factValue<number>("unusedDays"),
+    requestedDays: days,
+    appliedRules: [],
+  };
+
+  //   return {
+  //     selectedBundle,
+  //     requestedDays: days,
+  //     unusedDays: unusedDaysValue,
+  //     appliedRules: [],
+  //   };
+  // const {} = processEvents(result.events, result.almanac);
+  // // Extract values from breakdown steps
+  // const markupStep = finalPrice.breakdown.find(
+  //   (b) => b.step === "apply-markup"
+  // );
+  // const discountStep = finalPrice.breakdown.find(
+  //   (b) => b.step === "apply-discount"
+  // );
+  // const feeStep = finalPrice.breakdown.find((b) => b.step === "apply-fee");
+  // const lastStep = finalPrice.breakdown[finalPrice.breakdown.length - 1];
+
+  // const markup = markupStep ? markupStep.adjustment : 0;
+  // const discountValue = discountStep ? Math.abs(discountStep.adjustment) : 0;
+  // const processingCost = feeStep ? feeStep.adjustment : 0;
+  // const finalPriceValue = lastStep?.priceAfter || cost + markup;
+
+  // // Calculate derived values
+  // const totalCost = cost + markup;
+  // const priceAfterDiscount = totalCost - discountValue;
+  // const finalRevenue = priceAfterDiscount - processingCost;
+
+  // console.log("Pricing breakdown:", {
+  //   baseCost: cost,
+  //   markup,
+  //   totalCost,
+  //   discountValue,
+  //   priceAfterDiscount,
+  //   processingCost,
+  //   finalRevenue,
+  // });
 }
+
+// calculatePricing({
+//   days: 8,
+//   country: "AU",
+//   group: "Standard Unlimited Essential",
+// });
 
 // const results = Promise.all(
 //   new Array(10).fill(0).map((_, index) => {
@@ -210,3 +275,33 @@ export { defaultPricingStrategy } from "./strategies/default-pricing";
 
 // Export action and condition types from generated files
 export { ActionType, ConditionOperator } from "./generated/types";
+
+//   const strategy = await loadStrategy(strategyId);
+
+//   if (!strategy) {
+//     throw new Error("Strategy not found");
+//   }
+
+//   strategy.strategy_blocks
+//     .sort((a, b) => a.priority - b.priority)
+//     .forEach((b) => {
+//       console.log(b);
+//       const { block } = b;
+//       engine.addRule({
+//         conditions: TopLevelConditionSchema.parse(block.conditions),
+//         event: {
+//           type: block.action.type,
+//           params: { ...block.action.params },
+//         },
+//         name: block.name
+//       })
+//       // engine.addRule({
+//       //   conditions: b.block.conditions as TopLevelCondition,
+//       //   event: {
+//       //     type: b.block.action.type,
+//       //     params: { ...b.block.action.params },
+//       //   },
+//       //   name: b.name,
+//       //   priority: b.priority || 0,
+//       // });
+//     });

@@ -207,6 +207,7 @@ export const CALCULATE_PRICES_BATCH = gql`
         isUnlimited
         data
         group
+
       }
       country {
         iso
@@ -220,6 +221,7 @@ export const CALCULATE_PRICES_BATCH = gql`
       # Public pricing fields (what users pay)
       totalCost
       discountValue
+      finalPrice
       priceAfterDiscount
     }
   }

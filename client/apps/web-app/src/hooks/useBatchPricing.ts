@@ -87,7 +87,7 @@ export function useBatchPricing({ regionId, countryId, paymentMethod, maxDays = 
       batchData.calculatePrices2.forEach((result) => {
         const originalPrice = result.totalCost;
         const discountAmount = result.discountValue;
-        const totalPrice = result.priceAfterDiscount;
+        const totalPrice = result.finalPrice;
         const dailyPrice = totalPrice / result.duration;
         const hasDiscount = discountAmount > 0;
 

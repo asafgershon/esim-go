@@ -1146,6 +1146,7 @@ export type PricingBreakdown = {
   discountValue: Scalars['Float']['output'];
   discounts?: Maybe<Array<DiscountApplication>>;
   duration: Scalars['Int']['output'];
+  finalPrice: Scalars['Float']['output'];
   finalRevenue: Scalars['Float']['output'];
   markup: Scalars['Float']['output'];
   netProfit: Scalars['Float']['output'];
@@ -1943,7 +1944,7 @@ export type CalculatePricesBatchQueryVariables = Exact<{
 }>;
 
 
-export type CalculatePricesBatchQuery = { __typename?: 'Query', calculatePrices2: Array<{ __typename?: 'PricingBreakdown', duration: number, currency: string, totalCost: number, discountValue: number, priceAfterDiscount: number, bundle: { __typename?: 'CountryBundle', id: string, name: string, duration: number, isUnlimited: boolean, data?: number | null, group?: string | null, country: { __typename?: 'Country', iso: any, name: string } }, country: { __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region?: string | null, flag?: string | null } }> };
+export type CalculatePricesBatchQuery = { __typename?: 'Query', calculatePrices2: Array<{ __typename?: 'PricingBreakdown', duration: number, currency: string, totalCost: number, discountValue: number, finalPrice: number, priceAfterDiscount: number, bundle: { __typename?: 'CountryBundle', id: string, name: string, duration: number, isUnlimited: boolean, data?: number | null, group?: string | null, country: { __typename?: 'Country', iso: any, name: string } }, country: { __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region?: string | null, flag?: string | null } }> };
 
 export type GetMyEsiMsQueryVariables = Exact<{ [key: string]: never; }>;
 

@@ -1,13 +1,14 @@
-import { Event, Rule } from "json-rules-engine";
+import { Rule } from "json-rules-engine";
+import { z } from "zod";
 
-export type KeepProfitEvent = Event & {
-  type: "keep-profit";
-  params: {
-    ruleId: string;
-    value: number;
-  };
-}
+export const KeepProfitEventSchema = z.object({
+  type: z.literal("apply-profit-constraint"),
+  params: z.object({
+    value: z.number(),
+  }),
+});
 
+export type KeepProfitEvent = z.infer<typeof KeepProfitEventSchema>;
 export const keepProfit = new Rule({
   name: "Minimum 1.5$ profit",
   priority: 100,
@@ -15,9 +16,8 @@ export const keepProfit = new Rule({
     all: [],
   },
   event: {
-    type: "keep-profit",
+    type: "apply-profit-constraint",
     params: {
-      ruleId: "02187861-2fee-4485-bfba-c5ab6e1c6943",
       value: 1.5,
     },
   } satisfies KeepProfitEvent,

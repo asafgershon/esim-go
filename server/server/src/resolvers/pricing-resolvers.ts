@@ -7,6 +7,7 @@ import {
   calculatePricing as calculatePricingV2,
   type RequestFacts,
   type PricingEngineV2Result,
+  calculatePricing,
 } from "@hiilo/rules-engine-2";
 import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
@@ -255,7 +256,7 @@ function mapEngineToPricingBreakdown(
     totalCost: pricing?.totalCost || 0, // Total cost (cost + markup) before discounts
     discountValue: pricing?.discountValue || 0, // Total discount amount
     priceAfterDiscount: pricing?.priceAfterDiscount || 0, // Final price users pay
-
+    finalPrice: pricing?.finalPrice || 0, // Final price users pay
     // Admin-only business sensitive fields (auto-hidden by @auth directive)
     cost: pricing?.cost || 0, // Base cost from supplier
     markup: pricing?.markup || 0, // Markup amount added to cost
@@ -925,6 +926,7 @@ export const pricingQueries: QueryResolvers = {
       const pricingBreakdown: PricingBreakdown = {
         __typename: "PricingBreakdown",
 
+        ...result.pricing,
         // Bundle Information
         bundle: {
           __typename: "CountryBundle",
@@ -950,40 +952,24 @@ export const pricingQueries: QueryResolvers = {
         },
 
         duration: input.numOfDays,
-        currency: "USD",
-
-        // Public pricing fields
-        totalCost: result.pricing.totalCost,
-        discountValue: result.pricing.discountValue || 0,
-        priceAfterDiscount: result.pricing.priceAfterDiscount,
 
         // Admin-only fields
-        cost: result.pricing.cost || 0,
-        markup: result.pricing.markup,
-        discountRate: 0,
-        processingRate: 0,
-        processingCost: result.pricing.processingCost || 0,
-        finalRevenue: result.pricing.finalRevenue,
-        revenueAfterProcessing: result.pricing.finalRevenue,
-        netProfit: result.pricing.finalRevenue - (result.pricing.cost || 0),
-        discountPerDay: 0,
 
         // Rule-based pricing breakdown
-        appliedRules: [], // V2 doesn't expose applied rules yet
-        discounts: [],
+        appliedRules: result.appliedRules,
 
         // Pipeline metadata
         unusedDays: result.unusedDays,
         selectedReason: "calculated",
 
         // Additional fields
-        totalCostBeforeProcessing: result.priceWithMarkup,
+        totalCostBeforeProcessing: result.pricing.totalCostBeforeProcessing,
       };
 
       logger.info("Price calculated with rules-engine-2", {
         correlationId,
         selectedBundle: result.selectedBundle,
-        finalPrice: result.finalPrice,
+        finalPrice: result.pricing.finalRevenue,
         operationType: "calculate-price-v2-success",
       });
 
@@ -1025,9 +1011,10 @@ export const pricingQueries: QueryResolvers = {
     });
 
     try {
-      const results: PricingBreakdown[] = [];
-
-      // Process each input request
+      // Process each input request and build valid requests array
+      const requests: RequestFacts[] = [];
+      const validInputs: CalculatePriceInput[] = [];
+      
       for (const input of inputs) {
         // Validate input
         if (!input.numOfDays || input.numOfDays < 1) {
@@ -1051,97 +1038,107 @@ export const pricingQueries: QueryResolvers = {
         const group = input.groups?.[0] || "Standard Unlimited Essential";
 
         // Prepare request facts for the engine
-        const requestFacts = {
+        requests.push({
           group,
           days: input.numOfDays,
           ...(input.countryId ? { country: input.countryId } : {}),
           ...(input.regionId ? { region: input.regionId } : {}),
-        } as RequestFacts;
-
-        try {
-          // Run the v2 engine for this input
-          const result = await calculatePricingV2(requestFacts);
-
-          // Map the result to PricingBreakdown format
-          results.push({
-            __typename: "PricingBreakdown",
-
-            bundle: {
-              __typename: "CountryBundle",
-              id:
-                result.selectedBundle?.esim_go_name ||
-                `bundle_${input.countryId || input.regionId}_${
-                  input.numOfDays
-                }d` ||
-                "",
-              name:
-                result.selectedBundle?.esim_go_name ||
-                `${input.numOfDays} Day Plan`,
-              duration: input.numOfDays,
-              data: result.selectedBundle?.data_amount_mb || 0,
-              isUnlimited: result.selectedBundle?.is_unlimited || false,
-              currency: "USD",
-              group: group,
-              country: {
-                iso: input.countryId || "",
-                name: input.countryId || "",
-                region: input.regionId || "",
-              } as Country,
-            },
-
-            country: {
-              iso: input.countryId || "",
-              name: input.countryId || "",
-              region: input.regionId || "",
-            },
-
-            duration: input.numOfDays,
-            currency: "USD",
-
-            totalCost: result.pricing.totalCost,
-            discountValue: result.pricing.discountValue || 0,
-            priceAfterDiscount: result.pricing.priceAfterDiscount,
-
-            cost: result.pricing.cost || 0,
-            markup: result.pricing.markup,
-            discountRate: 0,
-            processingRate: 0,
-            processingCost: result.pricing.processingCost || 0,
-            finalRevenue: result.pricing.finalRevenue,
-            revenueAfterProcessing: result.pricing.finalRevenue,
-            netProfit: result.pricing.finalRevenue - (result.pricing.cost || 0),
-            discountPerDay: result.pricing.discountPerDay || 0,
-
-            appliedRules: [],
-            discounts: [],
-
-            unusedDays: result.unusedDays,
-            selectedReason: "calculated",
-
-            totalCostBeforeProcessing: result.priceWithMarkup,
-          });
-        } catch (error) {
-          logger.error(
-            "Failed to calculate price for input in batch",
-            error as Error,
-            {
-              correlationId,
-              input,
-              operationType: "calculate-prices-v2-item-error",
-            }
-          );
-          // Continue processing other inputs even if one fails
-        }
+        } as RequestFacts);
+        
+        // Keep track of valid inputs that passed validation
+        validInputs.push(input);
       }
+
+      // Process all valid requests in parallel with error handling
+      const response = await Promise.allSettled(requests.map(calculatePricing));
+      
+      // Process responses and map to PricingBreakdown format
+      const pricingBreakdowns: PricingBreakdown[] = [];
+      
+      response.forEach((promiseResult, index) => {
+        const input = validInputs[index];
+        
+        if (promiseResult.status === 'rejected') {
+          logger.error("Failed to calculate price for input", promiseResult.reason as Error, {
+            input,
+            correlationId: `${correlationId}-${index}`,
+            operationType: "calculate-price-v2-individual-error",
+          });
+          return; // Skip this failed calculation
+        }
+        
+        // Process successful result
+        const result = promiseResult.value;
+        console.log("result", result.pricing);
+        const countryId = input?.countryId;
+        const regionId = input?.regionId;
+        
+        const pricingBreakdown: PricingBreakdown = {
+          __typename: "PricingBreakdown",
+
+          // Core pricing fields from V2 engine
+          ...result.pricing,
+          
+          // Bundle Information
+          bundle: {
+            __typename: "CountryBundle",
+            id:
+              result.selectedBundle?.esim_go_name ||
+              `bundle_${countryId || regionId}_${input?.numOfDays || 7}d`,
+            name: result.selectedBundle?.esim_go_name || `${input?.numOfDays || 7} Day Plan`,
+            duration: result.selectedBundle?.validity_in_days || input?.numOfDays || 7,
+            data: result.selectedBundle?.data_amount_mb || null,
+            isUnlimited: result.selectedBundle?.is_unlimited || false,
+            currency: "USD",
+            price: result.pricing.finalRevenue,
+            group: input?.groups?.[0] || "Standard Unlimited Essential",
+            country: {
+              __typename: "Country",
+              iso: countryId || result.selectedBundle?.countries?.[0] || "",
+              name: countryId || result.selectedBundle?.countries?.[0] || "",
+              region: regionId || result.selectedBundle?.region || "",
+            } as Country,
+          },
+
+          // Country information
+          country: {
+            iso: countryId || "",
+            name: countryId || "",
+            region: regionId || "",
+          },
+
+          duration: input?.numOfDays || 7,
+          currency: "USD",
+
+          // Admin-only fields from V2 result
+          appliedRules: result.appliedRules || [],
+          discounts: [],
+          
+          // Pipeline metadata
+          unusedDays: result.unusedDays || 0,
+          selectedReason: "calculated",
+
+          // Additional fields
+          totalCostBeforeProcessing: result.pricing.totalCostBeforeProcessing || result.pricing.totalCost,
+          
+          // Internal caching for field resolvers
+          _pricingCalculation: {
+            appliedRules: result.appliedRules || [],
+            discounts: [],
+          },
+        } as PricingBreakdown;
+        
+        pricingBreakdowns.push(pricingBreakdown);
+      });
 
       logger.info("Batch prices calculated with rules-engine-2", {
         correlationId,
         requestCount: inputs.length,
-        resultCount: results.length,
+        resultCount: pricingBreakdowns.length,
         operationType: "calculate-prices-v2-success",
       });
 
-      return results;
+      return pricingBreakdowns;
     } catch (error) {
       logger.error(
         "Failed to calculate batch prices with rules-engine-2",

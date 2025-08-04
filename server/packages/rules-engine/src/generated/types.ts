@@ -33,6 +33,63 @@ export type ActivateEsimResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type AdminEsim = {
+  actionDate?: Maybe<Scalars['String']['output']>;
+  activationCode?: Maybe<Scalars['String']['output']>;
+  apiStatus?: Maybe<Scalars['String']['output']>;
+  assignedDate?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  customerRef?: Maybe<Scalars['String']['output']>;
+  esim_bundles?: Maybe<Array<Maybe<Scalars['JSON']['output']>>>;
+  iccid: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  lastAction?: Maybe<Scalars['String']['output']>;
+  matchingId?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<AdminEsimOrder>;
+  orderId: Scalars['String']['output'];
+  qrCodeUrl?: Maybe<Scalars['String']['output']>;
+  smdpAddress?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  usage?: Maybe<EsimUsage>;
+  user?: Maybe<AdminEsimUser>;
+  userId: Scalars['String']['output'];
+};
+
+export type AdminEsimDetails = {
+  actionDate?: Maybe<Scalars['String']['output']>;
+  activationCode?: Maybe<Scalars['String']['output']>;
+  apiDetails?: Maybe<Scalars['JSON']['output']>;
+  assignedDate?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  customerRef?: Maybe<Scalars['String']['output']>;
+  iccid: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  lastAction?: Maybe<Scalars['String']['output']>;
+  matchingId?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<Order>;
+  orderId: Scalars['String']['output'];
+  qrCodeUrl?: Maybe<Scalars['String']['output']>;
+  smdpAddress?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  usage?: Maybe<EsimUsage>;
+  userId: Scalars['String']['output'];
+};
+
+export type AdminEsimOrder = {
+  bundleName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  reference: Scalars['String']['output'];
+};
+
+export type AdminEsimUser = {
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  lastName?: Maybe<Scalars['String']['output']>;
+};
+
 export type AppliedRule = {
   category: RuleCategory;
   id: Scalars['ID']['output'];
@@ -360,6 +417,7 @@ export type CountryBundle = {
 
 export type CreateCheckoutSessionInput = {
   countryId?: InputMaybe<Scalars['String']['input']>;
+  group?: InputMaybe<Scalars['String']['input']>;
   numOfDays: Scalars['Int']['input'];
   regionId?: InputMaybe<Scalars['String']['input']>;
 };
@@ -471,6 +529,7 @@ export type Esim = {
   customerRef?: Maybe<Scalars['String']['output']>;
   iccid: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  installationLinks?: Maybe<InstallationLinks>;
   lastAction?: Maybe<Scalars['String']['output']>;
   matchingId?: Maybe<Scalars['String']['output']>;
   order: Order;
@@ -544,6 +603,17 @@ export type GroupDataStats = {
   unlimited: Scalars['Int']['output'];
 };
 
+export type InstallationLinks = {
+  /** LPA scheme for Android/Windows direct activation */
+  lpaScheme: Scalars['String']['output'];
+  /** Manual entry components for all devices */
+  manual: ManualInstallation;
+  /** QR code data string (LPA format) for fallback */
+  qrCodeData: Scalars['String']['output'];
+  /** iOS 17.4+ direct activation link (no QR scanning needed) */
+  universalLink: Scalars['String']['output'];
+};
+
 export type IntRange = {
   max?: InputMaybe<Scalars['Int']['input']>;
   min?: InputMaybe<Scalars['Int']['input']>;
@@ -559,6 +629,15 @@ export type InviteAdminUserResponse = {
   error?: Maybe<Scalars['String']['output']>;
   invitedEmail?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type ManualInstallation = {
+  /** Activation code */
+  activationCode: Scalars['String']['output'];
+  /** Optional confirmation code */
+  confirmationCode?: Maybe<Scalars['String']['output']>;
+  /** SM-DP+ server address */
+  smDpAddress: Scalars['String']['output'];
 };
 
 export type Mutation = {
@@ -591,6 +670,7 @@ export type Mutation = {
   updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
   updatePricingRule: PricingRule;
   updatePricingRulePriorities: Array<PricingRule>;
+  updateProfile?: Maybe<UpdateProfileResponse>;
   updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
   validateOrder: ValidateOrderResponse;
@@ -748,6 +828,11 @@ export type Mutation_UpdatePricingRulePrioritiesArgs = {
 };
 
 
+export type Mutation_UpdateProfileArgs = {
+  input: UpdateProfileInput;
+};
+
+
 export type Mutation_UpdateTripArgs = {
   input: UpdateTripInput;
 };
@@ -862,6 +947,7 @@ export type PricingBreakdown = {
   discountValue: Scalars['Float']['output'];
   discounts?: Maybe<Array<DiscountApplication>>;
   duration: Scalars['Int']['output'];
+  finalPrice: Scalars['Float']['output'];
   finalRevenue: Scalars['Float']['output'];
   markup: Scalars['Float']['output'];
   netProfit: Scalars['Float']['output'];
@@ -1049,13 +1135,18 @@ export type Query = {
   bundlesForGroup?: Maybe<BundlesForGroup>;
   bundlesForRegion?: Maybe<BundlesForRegion>;
   calculatePrice: PricingBreakdown;
+  calculatePrice2: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
+  calculatePrices2: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
   conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   esimDetails?: Maybe<Esim>;
+  getAdminESIMDetails: AdminEsimDetails;
+  getAllESIMs: Array<AdminEsim>;
   getCheckoutSession: GetCheckoutSessionResponse;
+  getCustomerESIMs: Array<AdminEsim>;
   getUserOrders: Array<Order>;
   hello: Scalars['String']['output'];
   highDemandCountries: Array<Scalars['String']['output']>;
@@ -1124,7 +1215,17 @@ export type Query_CalculatePriceArgs = {
 };
 
 
+export type Query_CalculatePrice2Args = {
+  input: CalculatePriceInput;
+};
+
+
 export type Query_CalculatePricesArgs = {
+  inputs: Array<CalculatePriceInput>;
+};
+
+
+export type Query_CalculatePrices2Args = {
   inputs: Array<CalculatePriceInput>;
 };
 
@@ -1149,8 +1250,18 @@ export type Query_EsimDetailsArgs = {
 };
 
 
+export type Query_GetAdminEsimDetailsArgs = {
+  iccid: Scalars['String']['input'];
+};
+
+
 export type Query_GetCheckoutSessionArgs = {
   token: Scalars['String']['input'];
+};
+
+
+export type Query_GetCustomerEsiMsArgs = {
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -1402,6 +1513,18 @@ export type UpdatePricingRuleInput = {
   priority?: InputMaybe<Scalars['Int']['input']>;
   validFrom?: InputMaybe<Scalars['String']['input']>;
   validUntil?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateProfileInput = {
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+  phoneNumber?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateProfileResponse = {
+  error?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  user?: Maybe<User>;
 };
 
 export type UpdateTripInput = {

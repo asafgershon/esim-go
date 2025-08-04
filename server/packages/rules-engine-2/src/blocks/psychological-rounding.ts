@@ -1,45 +1,27 @@
 import { Event, Rule } from "json-rules-engine";
+import { z } from "zod";
 
-export type PsychologicalRoundingEvent = Event & {
-  type: "apply-psychological-rounding";
-  params: {
-    ruleId: string;
-    action: {
-      strategy: "nearest-0.99";
-    };
-  };
-};
+export const PsychologicalRoundingEventSchema = z.object({
+  type: z.literal("apply-psychological-rounding"),
+  params: z.object({
+    strategy: z.literal("nearest-whole"),
+  }),
+});
+
+export type PsychologicalRoundingEvent = z.infer<
+  typeof PsychologicalRoundingEventSchema
+>;
 
 export const psychologicalRounding: Rule = new Rule({
   name: "Premium Bundle Psychological Pricing",
-  priority: 50,
+  priority: 1, // Run last
   conditions: {
     all: [],
   },
   event: {
     type: "apply-psychological-rounding",
     params: {
-      ruleId: "premium-0.99-pricing",
-      action: {
-        strategy: "nearest-0.99",
-      },
+      strategy: "nearest-whole",
     },
   } satisfies PsychologicalRoundingEvent,
 });
-
-export const applyPsychologicalRounding = (
-  priceWithMarkup: number,
-  roundingEvents: PsychologicalRoundingEvent[] = []
-) => {
-  const price = priceWithMarkup;
-  const [roundingEvent] = roundingEvents;
-  if (!roundingEvent) return price;
-
-  const strategy = roundingEvent.params.action.strategy;
-
-  if (strategy === "nearest-0.99") {
-    return Math.floor(price) + 0.99;
-  }
-
-  return Math.round(price);
-};

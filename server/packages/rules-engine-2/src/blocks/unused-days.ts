@@ -1,14 +1,14 @@
 // blocks/unused-days-discount.ts
 import { Rule } from 'json-rules-engine';
+import { z } from 'zod';
 
-export type UnusedDaysDiscountEvent = Event & {
-  type: "apply-unused-days-discount";
-  params: {
-    calculation: "per-day";
-    discountPerDay: number;
-    maxDiscountPercent?: number;
-  };
-};
+export  const UnusedDaysDiscountEvent = z.object({
+  type: z.literal("apply-unused-days-discount"),
+  params: z.object({
+    type: z.literal("APPLY_UNUSED_DAYS_DISCOUNT"),
+    unusedDays: z.number(),
+  }),
+});
 
 export const unusedDaysDiscountRule = new Rule({
   name: "Unused Days Discount",
@@ -33,7 +33,8 @@ export const unusedDaysDiscountRule = new Rule({
     event: {
       type: 'apply-unused-days-discount',
       params: {
-        calculation: 'per-day',
+        type: 'APPLY_UNUSED_DAYS_DISCOUNT',
+        unusedDays: "$unusedDays",
       }
     }
   }

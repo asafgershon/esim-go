@@ -66,7 +66,7 @@ export const defaultPricingStrategy: Strategy = {
   })),
 };
 
-export const calculateFinalPrice = async (
+export const processEvents = async (
   events: Event[],
   almanac: Almanac,
   strategy: Strategy

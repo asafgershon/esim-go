@@ -1,36 +1,36 @@
-import { Rule ,Event} from "json-rules-engine";
-import { ActionType } from "src/generated/types";
+import { Rule, Event } from "json-rules-engine";
+import { ActionType, PaymentMethod } from "src/generated/types";
+import { z } from "zod";
 
-export type ProcessingFeeEvent = Event & {
-  type: "apply-fee";
-  params: {
-    ruleId: string;
-    actions: {
-      type: ActionType.SetProcessingRate;
-      value: number;
-    };
-  };
-};
+export const ProcessingFeeEventSchema = z.object({
+  type: z.literal("apply-processing-fee"),
+  params: z.object({
+    type: z.literal("SET_PROCESSING_RATE"),
+    value: z.number(),
+    method: z.nativeEnum(PaymentMethod),
+  }),
+});
+
+export type ProcessingFeeEvent = z.infer<typeof ProcessingFeeEventSchema>;
+
 export const israeliCardRule = new Rule({
   name: "Processing fee for israeli credit cards",
   priority: 30,
   conditions: {
     all: [
-        {
-            fact: 'paymentMethod',
-            value: 'ISRAELI_CARD',
-            operator: 'equal'
-        }
+      {
+        fact: "paymentMethod",
+        value: PaymentMethod.IsraeliCard,
+        operator: "equal",
+      },
     ],
   },
   event: {
-    type: "apply-fee",
+    type: "apply-processing-fee",
     params: {
-      ruleId: "763d1a34-de86-4c13-84ab-d43f3c805708",
-      actions: {
-        type: ActionType.SetProcessingRate,
-        value: 1.4,
-      },
+      type: "SET_PROCESSING_RATE",
+      value: 1.4,
+      method: PaymentMethod.IsraeliCard,
     },
   } satisfies ProcessingFeeEvent,
 });
@@ -40,21 +40,22 @@ export const internationalCardRule = new Rule({
   priority: 30,
   conditions: {
     all: [
-        {
-            fact: 'paymentMethod',
-            value: 'INTERNATIONAL_CARD',
-            operator: 'equal'
-        }
+      {
+        fact: "paymentMethod",
+        value: PaymentMethod.Diners,
+        operator: "equal",
+      },
     ],
   },
+
   event: {
-    type: "apply-fee",
+    type: "apply-processing-fee",
     params: {
-      ruleId: "international-card-fee",
-      actions: {
-        type: ActionType.SetProcessingRate,
-        value: 2.9,
-      },
+      type: "SET_PROCESSING_RATE",
+      value: 3.9,
+      method: PaymentMethod.Diners,
     },
   } satisfies ProcessingFeeEvent,
 });
+
+export const rules: Rule[] = [israeliCardRule, internationalCardRule];

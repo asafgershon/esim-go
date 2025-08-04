@@ -1,5 +1,6 @@
 import { Almanac } from "json-rules-engine";
 import { Database } from "../generated/database.types";
+import { MarkupRule } from "src/blocks/markups";
 
 type BundleByGroupRow = Database["public"]["Views"]["bundles_by_group"]["Row"];
 export type SelectedBundleFact = BundleByGroupRow | null;
@@ -106,4 +107,34 @@ export const isExactMatch = async (
     "requestedValidityDays"
   );
   return selectedBundle?.validity_in_days === requestedDays;
+};
+
+export const selectedBundleMarkup = async (
+  _params: Record<string, any>,
+  almanac: Almanac
+): Promise<number> => {
+  const selectedBundle = await almanac.factValue<SelectedBundleFact>(
+    "selectedBundle"
+  );
+  const markupRule = await almanac.factValue<MarkupRule>("markupRule");
+  const markup =
+    markupRule?.event.params.markupMatrix[selectedBundle?.group_name || ""]?.[
+      selectedBundle?.validity_in_days || 0
+    ];
+  return markup ?? 0;
+};
+
+export const previousBundleMarkup = async (
+  _params: Record<string, any>,
+  almanac: Almanac
+): Promise<number> => {
+  const previousBundle = await almanac.factValue<PreviousBundleFact>(
+    "previousBundle"
+  );
+  const markupRule = await almanac.factValue<MarkupRule>("markupRule");
+  const markup =
+    markupRule?.event.params.markupMatrix[previousBundle?.group_name || ""]?.[
+      previousBundle?.validity_in_days || 0
+    ];
+  return markup ?? 0;
 };

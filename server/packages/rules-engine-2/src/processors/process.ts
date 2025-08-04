@@ -1,23 +1,51 @@
 import { Almanac, Event } from "json-rules-engine";
+import { MarkUpEventSchema } from "src/blocks/markups";
+import { ProcessingFeeEventSchema } from "src/blocks/processing-fee";
 import { PreviousBundleFact, SelectedBundleFact } from "src/facts/bundle-facts";
+import { PaymentMethod } from "src/generated/types";
+
+type ProcessingFeeDetails = {
+  method: PaymentMethod;
+  rate: number;
+};
+
+type UnusedDaysDiscountDetails = {
+  unusedDays: number;
+  valuePerDay: number;
+  discountRate: number;
+};
+
+type PsychologicalRoundingDetails = {
+  strategy: "nearest-whole";
+  adjustment: number;
+};
 
 export async function processEventType(
   eventType: string,
   events: Event[],
   currentPrice: number,
-  almanac: Almanac,
-  selectedBundle: SelectedBundleFact
+  almanac: Almanac
 ): Promise<{
+  change: number;
   newPrice: number;
   description: string;
-  details: any;
+  details:
+    | any
+    | ProcessingFeeDetails
+    | UnusedDaysDiscountDetails
+    | PsychologicalRoundingDetails;
 }> {
+  const [selectedBundle, previousBundle] = await Promise.all([
+    almanac.factValue<SelectedBundleFact>("selectedBundle"),
+    almanac.factValue<PreviousBundleFact>("previousBundle"),
+  ]);
   switch (eventType) {
-    case "initialize-base-price":
+    case "set-base-price":
       // This is special - it sets our starting point
       // We're not adding to the price, we're establishing it
       const basePrice = selectedBundle?.price || 0; // Using cost as base
       return {
+        change: basePrice - currentPrice,
         newPrice: basePrice,
         description: `Base price set from bundle cost`,
         details: {
@@ -32,19 +60,38 @@ export async function processEventType(
       let totalMarkup = 0;
 
       for (const event of events) {
-        console.log(event);
-        const markupAction = event.params?.action;
-        if (markupAction.type === "ADD_MARKUP") {
-          totalMarkup += markupAction.markupValue;
+        const { params } = MarkUpEventSchema.parse(event);
+        const { markupMatrix } = params;
+        const markupValue =
+          markupMatrix[selectedBundle?.group_name || ""]?.[
+            selectedBundle?.validity_in_days || 0
+          ];
+        if (markupValue) {
+          totalMarkup += markupValue;
         }
       }
 
       return {
         newPrice: currentPrice + totalMarkup,
+        change: totalMarkup,
         description: `Applied markup of $${totalMarkup}`,
         details: {
           markupCount: events.length,
           totalMarkup,
+        },
+      };
+
+    case "apply-processing-fee":
+      const { params } = ProcessingFeeEventSchema.parse(events[0]);
+      const { value: rate } = params;
+      const processingFee = (currentPrice * rate) / 100;
+      return {
+        newPrice: currentPrice,
+        change: Number(processingFee.toFixed(2)),
+        description: `Applied processing fee of $${processingFee}`,
+        details: {
+          rate,
+          method: params.method,
         },
       };
 
@@ -55,6 +102,7 @@ export async function processEventType(
       if (unusedDays <= 0) {
         return {
           newPrice: currentPrice,
+          change: 0,
           description: "No unused days discount (exact match)",
           details: { unusedDays: 0 },
         };
@@ -69,6 +117,7 @@ export async function processEventType(
       if (!previousBundle) {
         return {
           newPrice: currentPrice,
+          change: 0,
           description: "No unused days discount (no previous bundle)",
           details: { unusedDays },
         };
@@ -78,31 +127,42 @@ export async function processEventType(
       const daysDiff =
         (selectedBundle?.validity_in_days || 0) -
         (previousBundle?.validity_in_days || 0);
-      const priceDiff =
-        (selectedBundle?.price || 0) - (previousBundle?.price || 0);
-      const valuePerDay = daysDiff > 0 ? priceDiff / daysDiff : 0;
+
+      const [selectedBundleMarkup, previousBundleMarkup] = await Promise.all([
+        almanac.factValue<number>("selectedBundleMarkup"),
+        almanac.factValue<number>("previousBundleMarkup"),
+      ]);
+      // TODO: change calculation to be: discountPerDay = (selectedBundle markup) - (previousBundle markup)/ (selectedBundle.validity_in_days - previousBundle.validity_in_days)
+      const discountPerDay =
+        (selectedBundleMarkup - previousBundleMarkup) / daysDiff;
 
       // Apply the discount
-      const discountAmount = valuePerDay * unusedDays * 0.8; // 80% of unused value
+      const discountAmount = Number((discountPerDay * unusedDays).toFixed(2));
 
       return {
         newPrice: currentPrice - discountAmount,
+        change: -discountAmount,
         description: `Unused days discount: $${discountAmount.toFixed(
           2
         )} for ${unusedDays} days`,
         details: {
           unusedDays,
-          valuePerDay,
-          discountPercentage: 80,
+          valuePerDay: Number(discountPerDay.toFixed(2)),
+          discountRate: Number(
+            (((discountAmount || 0) / currentPrice) * 100).toFixed(2)
+          ),
         },
       };
 
     case "apply-psychological-rounding":
       // This makes prices "feel" better to customers
-      const roundingStrategy = events[0]?.params?.strategy || "nearest-99";
+      const roundingStrategy = events[0]?.params?.strategy || "nearest-whole";
       let roundedPrice = currentPrice;
 
       switch (roundingStrategy) {
+        case "nearest-whole":
+          roundedPrice = Math.round(currentPrice);
+          break;
         case "nearest-99":
           roundedPrice = Math.floor(currentPrice) + 0.99;
           break;
@@ -116,6 +176,7 @@ export async function processEventType(
 
       return {
         newPrice: roundedPrice,
+        change: roundedPrice - currentPrice,
         description: `Applied ${roundingStrategy} rounding`,
         details: {
           strategy: roundingStrategy,
@@ -131,6 +192,7 @@ export async function processEventType(
       if (currentPrice < minimumPrice) {
         return {
           newPrice: minimumPrice,
+          change: minimumPrice - currentPrice,
           description: `Adjusted to meet minimum profit of $${minimumProfit}`,
           details: {
             originalPrice: currentPrice,
@@ -142,6 +204,7 @@ export async function processEventType(
 
       return {
         newPrice: currentPrice,
+        change: 0,
         description: "Profit constraint satisfied",
         details: {
           profit: currentPrice - (selectedBundle?.price || 0),
@@ -153,6 +216,7 @@ export async function processEventType(
       // For any unknown event types, pass through unchanged
       return {
         newPrice: currentPrice,
+        change: 0,
         description: `Unknown event type: ${eventType}`,
         details: { eventType },
       };

@@ -1005,6 +1005,7 @@ export type PricingBreakdown = {
   discountValue: Scalars['Float']['output'];
   discounts?: Maybe<Array<DiscountApplication>>;
   duration: Scalars['Int']['output'];
+  finalPrice: Scalars['Float']['output'];
   finalRevenue: Scalars['Float']['output'];
   markup: Scalars['Float']['output'];
   netProfit: Scalars['Float']['output'];
@@ -2598,6 +2599,7 @@ export type PricingBreakdownResolvers<ContextType = Context, ParentType extends 
   discountValue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   discounts?: Resolver<Maybe<Array<ResolversTypes['DiscountApplication']>>, ParentType, ContextType>;
   duration?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  finalPrice?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   finalRevenue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   markup?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   netProfit?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;

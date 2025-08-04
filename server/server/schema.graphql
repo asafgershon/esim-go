@@ -985,6 +985,7 @@ type PricingBreakdown {
   totalCost: Float! # Total cost (cost + markup) before discounts
   discountValue: Float! # Total discount amount
   priceAfterDiscount: Float! # Final price users pay
+  finalPrice: Float! # Final price users pay
   # Admin-only business sensitive fields
   cost: Float! @auth(role: "ADMIN") # Base cost from supplier
   markup: Float! @auth(role: "ADMIN") # Markup amount added to cost

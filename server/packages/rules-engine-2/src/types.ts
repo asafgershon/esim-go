@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Tables } from "./generated/database.types";
+import { Constants, Database, Tables } from "./generated/database.types";
 import { TopLevelCondition } from "json-rules-engine";
 
 type BlockSchema = Tables<"pricing_blocks">;
@@ -31,3 +31,6 @@ export type Strategy = z.infer<typeof StrategySchema>;
 export const TopLevelConditionSchema = z.custom<TopLevelCondition>();
 
 export type Action = z.infer<typeof ActionSchema>;
+
+export const EventTypeSchema = z.enum(Constants.public.Enums.event_type);
+export type EventType = z.infer<typeof EventTypeSchema>;

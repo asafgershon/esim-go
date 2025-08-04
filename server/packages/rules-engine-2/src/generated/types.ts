@@ -947,6 +947,7 @@ export type PricingBreakdown = {
   discountValue: Scalars['Float']['output'];
   discounts?: Maybe<Array<DiscountApplication>>;
   duration: Scalars['Int']['output'];
+  finalPrice: Scalars['Float']['output'];
   finalRevenue: Scalars['Float']['output'];
   markup: Scalars['Float']['output'];
   netProfit: Scalars['Float']['output'];
@@ -1134,7 +1135,9 @@ export type Query = {
   bundlesForGroup?: Maybe<BundlesForGroup>;
   bundlesForRegion?: Maybe<BundlesForRegion>;
   calculatePrice: PricingBreakdown;
+  calculatePrice2: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
+  calculatePrices2: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
   conflictingPricingRules: Array<PricingRule>;
@@ -1212,7 +1215,17 @@ export type Query_CalculatePriceArgs = {
 };
 
 
+export type Query_CalculatePrice2Args = {
+  input: CalculatePriceInput;
+};
+
+
 export type Query_CalculatePricesArgs = {
+  inputs: Array<CalculatePriceInput>;
+};
+
+
+export type Query_CalculatePrices2Args = {
   inputs: Array<CalculatePriceInput>;
 };
 
