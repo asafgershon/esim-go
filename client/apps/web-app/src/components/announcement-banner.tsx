@@ -40,12 +40,12 @@ export function AnnouncementBanner() {
           
           {/* Mobile Content */}
           <div className="flex md:hidden items-center gap-1 text-xs">
-            <span>שירות 24/7 בעברית.</span>
+            <span>שירות 24/7 בעברית מכל מקום בעולם.</span>
             <Link 
               href="/support" 
               className="text-brand-green hover:text-brand-green/80 transition-colors font-semibold underline"
             >
-              בני הפטחות
+             בלי הגבלות, בלי הפתעות
             </Link>
           </div>
 
