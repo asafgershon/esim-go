@@ -30,6 +30,7 @@ export default function RootLayout({
           href="https://fonts.cdnfonts.com/css/agency-fb" 
           rel="stylesheet"
         />
+        <meta name="apple-mobile-web-app-title" content="Hiilo ESIM" />
       </head>
       <body
         className={`${rubik.variable} antialiased font-hebrew`}
