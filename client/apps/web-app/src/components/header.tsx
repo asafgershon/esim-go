@@ -27,7 +27,7 @@ export function Header() {
   );
 
   // Smooth scroll function with accessibility support
-  const handleSmoothScroll = (href: string, external: boolean) => {
+  const handleSmoothScroll = (href: string, external?: boolean) => {
     if (external) {
       router.push(href);
       return;
