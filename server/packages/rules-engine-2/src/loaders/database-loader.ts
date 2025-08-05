@@ -46,7 +46,7 @@ function convertBlockToRule(block: PricingBlock): Rule {
       validatedParams = paramSchema.parse(params || {});
       logger.debug(`Validated params for ${name} (${event_type})`);
     } catch (error) {
-      logger.warn(`Invalid params for ${name} (${event_type}):`, error);
+      logger.warn(`Invalid params for ${name} (${event_type}):`, error instanceof Error ? error : new Error(String(error)));
       // Use original params if validation fails, but log the warning
     }
   } else {
@@ -156,7 +156,7 @@ export async function loadStrategyBlocks(strategyId: string): Promise<Rule[]> {
         try {
           validatedParams = paramSchema.parse(paramsWithOverrides);
         } catch (error) {
-          logger.warn(`Invalid params for strategy block ${block.name}:`, error);
+          logger.warn(`Invalid params for strategy block ${block.name}:`, error instanceof Error ? error : new Error(String(error)));
         }
       }
 

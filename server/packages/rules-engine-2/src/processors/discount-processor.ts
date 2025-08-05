@@ -14,7 +14,7 @@ export interface DiscountProcessorResult {
   newPrice: number;
   description: string;
   details: {
-    discountType: 'percentage' | 'fixed_amount' | 'bundle-specific';
+    discountType: 'percentage' | 'fixed' | 'bundle-specific';
     originalPercentage?: number;
     actualPercentage?: number;
     maxDiscountApplied?: boolean;
@@ -65,7 +65,7 @@ export async function processDiscountEvents(
       case 'percentage':
         return await processPercentageDiscount(params, currentPrice, almanac);
       
-      case 'fixed_amount':
+      case 'fixed':
         return await processFixedAmountDiscount(params, currentPrice, almanac);
       
       case 'bundle-specific':
@@ -84,7 +84,7 @@ export async function processDiscountEvents(
     }
 
   } catch (error) {
-    logger.error("Error processing discount events", { error, eventsCount: events.length });
+    logger.error("Error processing discount events", error instanceof Error ? error : new Error(String(error)));
     return {
       change: 0,
       newPrice: currentPrice,

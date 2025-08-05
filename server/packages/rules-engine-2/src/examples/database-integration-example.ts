@@ -72,7 +72,7 @@ async function demonstrateCouponUsage() {
     logger.info(`Coupon savings: $${savings.toFixed(2)}`);
 
   } catch (error) {
-    logger.error('Error in coupon demonstration:', error);
+    logger.error('Error in coupon demonstration:', error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -129,7 +129,7 @@ async function demonstrateCorporateEmailDiscounts() {
     logger.info(`Corporate email savings: $${corporateSavings.toFixed(2)}`);
 
   } catch (error) {
-    logger.error('Error in corporate email demonstration:', error);
+    logger.error('Error in corporate email demonstration:', error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -156,7 +156,7 @@ async function demonstrateCombinedDiscounts() {
     });
 
   } catch (error) {
-    logger.error('Error in combined discount demonstration:', error);
+    logger.error('Error in combined discount demonstration:', error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -176,7 +176,7 @@ async function demonstrateCacheClearing() {
     logger.info('Cache demonstration completed');
 
   } catch (error) {
-    logger.error('Error in cache demonstration:', error);
+    logger.error('Error in cache demonstration:', error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -194,7 +194,7 @@ export async function runDatabaseIntegrationExamples() {
     
     logger.info('All database integration examples completed successfully!');
   } catch (error) {
-    logger.error('Error running database integration examples:', error);
+    logger.error('Error running database integration examples:', error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
@@ -207,7 +207,7 @@ if (require.main === module) {
       process.exit(0);
     })
     .catch((error) => {
-      logger.error('Examples failed:', error);
+      logger.error('Examples failed:', error instanceof Error ? error : new Error(String(error)));
       process.exit(1);
     });
 }

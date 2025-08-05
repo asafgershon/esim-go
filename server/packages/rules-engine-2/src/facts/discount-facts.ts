@@ -97,6 +97,7 @@ export interface VolumeDiscountTier {
 export interface EmailDomainDiscount {
   isEligible: boolean;
   domain: string;
+  companyName?: string;
   discountType: 'percentage';
   discountValue: number;
   maxDiscount?: number;
@@ -503,6 +504,7 @@ export const emailDomainDiscount = async (
     return {
       isEligible: true,
       domain,
+      companyName: undefined, // Not available in current schema
       discountType: 'percentage',
       discountValue: corporateDomain.discount_percentage,
       maxDiscount: corporateDomain.max_discount || undefined,

@@ -50,7 +50,7 @@ export async function loadCouponByCode(couponCode: string): Promise<CouponRow | 
         logger.debug(`Coupon ${code} not found`);
         return null;
       }
-      logger.error('Error loading coupon:', error);
+      logger.error('Error loading coupon:', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
 
@@ -72,7 +72,7 @@ export async function loadCouponByCode(couponCode: string): Promise<CouponRow | 
     logger.debug(`Successfully loaded coupon ${code}`);
     return coupon;
   } catch (error) {
-    logger.error(`Failed to load coupon ${couponCode}:`, error);
+    logger.error(`Failed to load coupon ${couponCode}:`, error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
@@ -120,7 +120,7 @@ export async function getCouponUsageCount(couponId: string, userId?: string): Pr
       userUsage,
     };
   } catch (error) {
-    logger.error(`Failed to get coupon usage for ${couponId}:`, error);
+    logger.error(`Failed to get coupon usage for ${couponId}:`, error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
@@ -151,13 +151,13 @@ export async function logCouponUsage(params: {
       });
 
     if (error) {
-      logger.error('Error logging coupon usage:', error);
+      logger.error('Error logging coupon usage:', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
 
     logger.info(`Logged coupon usage for coupon ${params.couponId} by user ${params.userId}`);
   } catch (error) {
-    logger.error('Failed to log coupon usage:', error);
+    logger.error('Failed to log coupon usage:', error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
@@ -184,7 +184,7 @@ export async function loadCorporateEmailDomains(): Promise<CorporateEmailDomainR
       .order('discount_percentage', { ascending: false }); // Higher discounts first
 
     if (error) {
-      logger.error('Error loading corporate email domains:', error);
+      logger.error('Error loading corporate email domains:', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
 
@@ -194,7 +194,7 @@ export async function loadCorporateEmailDomains(): Promise<CorporateEmailDomainR
     logger.debug(`Successfully loaded ${domains?.length || 0} corporate email domains`);
     return domains || [];
   } catch (error) {
-    logger.error('Failed to load corporate email domains:', error);
+    logger.error('Failed to load corporate email domains:', error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
@@ -217,7 +217,7 @@ export async function findCorporateEmailDomain(domain: string): Promise<Corporat
     
     return matchingDomain || null;
   } catch (error) {
-    logger.error(`Failed to find corporate email domain ${domain}:`, error);
+    logger.error(`Failed to find corporate email domain ${domain}:`, error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }

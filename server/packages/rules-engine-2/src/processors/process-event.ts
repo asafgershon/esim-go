@@ -1,7 +1,7 @@
 import { Event } from "json-rules-engine";
 import { AppliedRule, RuleCategory } from "../generated/types";
 import { SelectedBundleFact, PreviousBundleFact } from "../facts/bundle-facts";
-import type { Logger } from "pino";
+import type { StructuredLogger } from "@hiilo/utils/src/logger";
 
 interface ProcessContext {
   selectedBundle: SelectedBundleFact | null;
@@ -40,7 +40,7 @@ export function processEventType(
   currentPrice: number,
   appliedRules: AppliedRule[],
   context: ProcessContext,
-  logger: Logger
+  logger: StructuredLogger
 ): number {
   const { selectedBundle, previousBundle, unusedDays } = context;
   
