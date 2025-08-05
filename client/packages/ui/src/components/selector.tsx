@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@workspace/ui/lib/utils";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 // Main Selector Container
 const Selector = React.forwardRef<
@@ -24,52 +25,65 @@ Selector.displayName = "Selector";
 const SelectorCard = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, style, ...props }, ref) => (
-  <div
-    ref={ref}
-    data-name="SelectorCard"
-    className={cn(
-      "bg-white rounded-[20px] md:rounded-[30px] shadow-[0px_4px_28px_-6px_rgba(0,0,0,0.08)] relative",
-      className
-    )}
-    style={{
-      paddingTop: '24px',
-      paddingBottom: '24px',
-      paddingLeft: '20px',
-      paddingRight: '20px',
-      ...style
-    }}
-    {...props}
-  />
-));
+>(({ className, style, ...props }, ref) => {
+  const isMobile = useIsMobile();
+  
+  return (
+    <div
+      ref={ref}
+      data-name="SelectorCard"
+      className={cn(
+        "bg-white shadow-[0px_4px_28px_-6px_rgba(0,0,0,0.08)] relative",
+        isMobile ? "rounded-[20px]" : "rounded-[30px]",
+        className
+      )}
+      style={{
+        paddingTop: isMobile ? '20px' : '24px',
+        paddingBottom: isMobile ? '20px' : '24px',
+        paddingLeft: isMobile ? '16px' : '20px',
+        paddingRight: isMobile ? '16px' : '20px',
+        ...style
+      }}
+      {...props}
+    />
+  );
+});
 SelectorCard.displayName = "SelectorCard";
 
 // Selector Header with responsive margin
 const SelectorHeader = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    data-name="SelectorHeader"
-    className={cn("text-right mb-6 md:mb-10", className)}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const isMobile = useIsMobile();
+  
+  return (
+    <div
+      ref={ref}
+      data-name="SelectorHeader"
+      className={cn("text-right", isMobile ? "mb-6" : "mb-10", className)}
+      {...props}
+    />
+  );
+});
 SelectorHeader.displayName = "SelectorHeader";
 
 // Selector Content with responsive gap
 const SelectorContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    data-name="SelectorContent"
-    className={cn("flex flex-col gap-4 md:gap-6", className)}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const isMobile = useIsMobile();
+  
+  return (
+    <div
+      ref={ref}
+      data-name="SelectorContent"
+      className={cn("flex flex-col", isMobile ? "gap-4" : "gap-6", className)}
+      {...props}
+    />
+  );
+});
 SelectorContent.displayName = "SelectorContent";
 
 // Selector Action (CTA button area)
@@ -90,73 +104,87 @@ SelectorAction.displayName = "SelectorAction";
 const SelectorSection = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    data-name="SelectorSection"
-    className={cn("flex flex-col gap-2 md:gap-4", className)}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const isMobile = useIsMobile();
+  
+  return (
+    <div
+      ref={ref}
+      data-name="SelectorSection"
+      className={cn("flex flex-col", isMobile ? "gap-2" : "gap-4", className)}
+      {...props}
+    />
+  );
+});
 SelectorSection.displayName = "SelectorSection";
 
 // Selector Label with responsive text size
 const SelectorLabel = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    data-name="SelectorLabel"
-    className={cn("text-[12px] md:text-[20px] text-[#0A232E] text-right", className)}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const isMobile = useIsMobile();
+  
+  return (
+    <p
+      ref={ref}
+      data-name="SelectorLabel"
+      className={cn(isMobile ? "text-[12px]" : "text-[20px]", "text-[#0A232E] text-right", className)}
+      {...props}
+    />
+  );
+});
 SelectorLabel.displayName = "SelectorLabel";
 
 // Selector Button (Primary CTA) - supports both purple and green variants
 const SelectorButton = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { style?: React.CSSProperties }
->(({ className, style, ...props }, ref) => (
-  <button
-    ref={ref}
-    data-name="SelectorButton"
-    className={cn(
-      "w-full h-9 md:h-[66px] rounded-lg md:rounded-[10px]",
-      "bg-[#535FC8] hover:bg-[#535FC8]/90",
-      "border border-[#0A232E]",
-      "text-white text-[12px] md:text-[22px] font-medium",
-      "hover:translate-y-[1px]",
-      "active:translate-y-[2px]",
-      "transition-all duration-100",
-      "flex items-center justify-center gap-3",
-      "cursor-pointer",
-      className
-    )}
-    style={{
-      boxShadow: "2px 3px 0px 0px #0A232E",
-      ...style
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
-      props.onMouseEnter?.(e);
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.boxShadow = "2px 3px 0px 0px #0A232E";
-      props.onMouseLeave?.(e);
-    }}
-    onMouseDown={(e) => {
-      e.currentTarget.style.boxShadow = "1px 1px 0px 0px #0A232E";
-      props.onMouseDown?.(e);
-    }}
-    onMouseUp={(e) => {
-      e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
-      props.onMouseUp?.(e);
-    }}
-    {...props}
-  />
-));
+>(({ className, style, ...props }, ref) => {
+  const isMobile = useIsMobile();
+  
+  return (
+    <button
+      ref={ref}
+      data-name="SelectorButton"
+      className={cn(
+        "w-full rounded-lg",
+        isMobile ? "h-9" : "h-[66px]",
+        "bg-[#535FC8] hover:bg-[#535FC8]/90",
+        "border border-[#0A232E]",
+        isMobile ? "text-[12px]" : "text-[22px]",
+        "text-white font-medium",
+        "hover:translate-y-[1px]",
+        "active:translate-y-[2px]",
+        "transition-all duration-100",
+        "flex items-center justify-center gap-3",
+        "cursor-pointer",
+        className
+      )}
+      style={{
+        boxShadow: "2px 3px 0px 0px #0A232E",
+        ...style
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
+        props.onMouseEnter?.(e);
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = "2px 3px 0px 0px #0A232E";
+        props.onMouseLeave?.(e);
+      }}
+      onMouseDown={(e) => {
+        e.currentTarget.style.boxShadow = "1px 1px 0px 0px #0A232E";
+        props.onMouseDown?.(e);
+      }}
+      onMouseUp={(e) => {
+        e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
+        props.onMouseUp?.(e);
+      }}
+      {...props}
+    />
+  );
+});
 SelectorButton.displayName = "SelectorButton";
 
 // Country/Region Selector with flags and search
@@ -184,6 +212,7 @@ const CountrySelector = React.forwardRef<
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
   
   const selectedCountry = countries.find(c => c.id === value);
   
@@ -242,10 +271,12 @@ const CountrySelector = React.forwardRef<
         aria-haspopup="listbox"
         aria-label={selectedCountry ? `Selected country: ${selectedCountry.name}` : placeholder}
         className={cn(
-          "w-full h-10 md:h-12 px-3 md:px-4 rounded-lg md:rounded-[10px]",
+          "w-full rounded-lg",
+          isMobile ? "h-10 px-3" : "h-12 px-4",
           "bg-white border border-[#0A232E]",
           "flex items-center justify-between gap-2",
-          "text-[12px] md:text-[16px] text-[#0A232E]",
+          isMobile ? "text-[12px]" : "text-[16px]",
+          "text-[#0A232E]",
           "hover:bg-gray-50 transition-colors",
           "focus:outline-none focus:ring-2 focus:ring-[#535FC8] focus:ring-offset-2",
           disabled && "opacity-50 cursor-not-allowed"
@@ -318,7 +349,8 @@ const CountrySelector = React.forwardRef<
                   }}
                   className={cn(
                     "w-full px-3 py-2 text-left hover:bg-gray-100 transition-colors",
-                    "flex items-center gap-2 text-[12px] md:text-[14px]",
+                    "flex items-center gap-2",
+                    isMobile ? "text-[12px]" : "text-[14px]",
                     "focus:outline-none focus:bg-gray-100",
                     value === country.id && "bg-[#535FC8]/10 text-[#535FC8]"
                   )}
@@ -356,12 +388,14 @@ const DurationSelector = React.forwardRef<
   HTMLDivElement,
   DurationSelectorProps
 >(({ options, value, onValueChange, className, disabled }, ref) => {
+  const isMobile = useIsMobile();
+  
   return (
     <div 
       ref={ref} 
       role="radiogroup"
       aria-label="Select duration"
-      className={cn("flex flex-wrap gap-2 md:gap-3", className)}
+      className={cn("flex flex-wrap", isMobile ? "gap-2" : "gap-3", className)}
     >
       {options.map((option) => (
         <button
@@ -378,8 +412,10 @@ const DurationSelector = React.forwardRef<
             }
           }}
           className={cn(
-            "px-4 py-2 md:px-6 md:py-3 rounded-lg md:rounded-[10px]",
-            "text-[12px] md:text-[16px] font-medium",
+            "rounded-lg",
+            isMobile ? "px-4 py-2" : "px-6 py-3",
+            isMobile ? "text-[12px]" : "text-[16px]",
+            "font-medium",
             "border border-[#0A232E] transition-all duration-200",
             "hover:translate-y-[-1px] active:translate-y-[1px]",
             "focus:outline-none focus:ring-2 focus:ring-[#535FC8] focus:ring-offset-2",
@@ -420,12 +456,18 @@ const BundleTypeSelector = React.forwardRef<
   HTMLDivElement,
   BundleTypeSelectorProps
 >(({ options, value, onValueChange, className, disabled }, ref) => {
+  const isMobile = useIsMobile();
+  
   return (
     <div 
       ref={ref} 
       role="radiogroup"
       aria-label="Select bundle type"
-      className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4", className)}
+      className={cn(
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+        isMobile ? "gap-3" : "gap-4",
+        className
+      )}
     >
       {options.map((option) => (
         <button
@@ -443,7 +485,8 @@ const BundleTypeSelector = React.forwardRef<
             }
           }}
           className={cn(
-            "relative p-4 md:p-6 rounded-lg md:rounded-[15px] text-right",
+            "relative text-right",
+            isMobile ? "p-4 rounded-lg" : "p-6 rounded-[15px]",
             "border border-[#0A232E] transition-all duration-200",
             "hover:translate-y-[-1px] active:translate-y-[1px]",
             "focus:outline-none focus:ring-2 focus:ring-[#535FC8] focus:ring-offset-2",
@@ -454,23 +497,26 @@ const BundleTypeSelector = React.forwardRef<
           )}
         >
           {option.isPopular && (
-            <div className="absolute top-2 left-2 bg-[#535FC8] text-white text-[10px] md:text-[12px] px-2 py-1 rounded-md">
+            <div className={cn(
+              "absolute top-2 left-2 bg-[#535FC8] text-white px-2 py-1 rounded-md",
+              isMobile ? "text-[10px]" : "text-[12px]"
+            )}>
               פופולרי
             </div>
           )}
           <div className="space-y-2">
-            <div className="text-[18px] md:text-[24px] font-bold">{option.data}</div>
-            <div className="text-[12px] md:text-[14px] text-gray-600">{option.title}</div>
+            <div className={cn("font-bold", isMobile ? "text-[18px]" : "text-[24px]")}>{option.data}</div>
+            <div className={cn("text-gray-600", isMobile ? "text-[12px]" : "text-[14px]")}>{option.title}</div>
             {option.description && (
-              <div className="text-[10px] md:text-[12px] text-gray-500">{option.description}</div>
+              <div className={cn("text-gray-500", isMobile ? "text-[10px]" : "text-[12px]")}>{option.description}</div>
             )}
             <div className="flex items-center justify-end gap-2">
               {option.originalPrice && (
-                <span className="text-[12px] md:text-[14px] text-gray-400 line-through">
+                <span className={cn("text-gray-400 line-through", isMobile ? "text-[12px]" : "text-[14px]")}>
                   {option.originalPrice}
                 </span>
               )}
-              <span className="text-[14px] md:text-[18px] font-bold text-[#535FC8]">
+              <span className={cn("font-bold text-[#535FC8]", isMobile ? "text-[14px]" : "text-[18px]")}>
                 {option.price}
               </span>
             </div>
@@ -501,6 +547,7 @@ const PaymentMethodSelector = React.forwardRef<
   });
 
   const [cardType, setCardType] = React.useState<'visa' | 'mastercard' | 'amex' | null>(null);
+  const isMobile = useIsMobile();
 
   const detectCardType = (number: string) => {
     const cleaned = number.replace(/\s/g, '');
@@ -569,9 +616,11 @@ const PaymentMethodSelector = React.forwardRef<
           inputMode="numeric"
           aria-describedby={cardType ? "card-type" : undefined}
           className={cn(
-            "w-full h-12 md:h-14 px-4 rounded-lg md:rounded-[10px]",
+            "w-full px-4 rounded-lg",
+            isMobile ? "h-12" : "h-14",
             "bg-white border border-[#0A232E]",
-            "text-[14px] md:text-[16px] text-[#0A232E]",
+            isMobile ? "text-[14px]" : "text-[16px]",
+            "text-[#0A232E]",
             "focus:outline-none focus:ring-2 focus:ring-[#535FC8]",
             "placeholder:text-gray-400",
             disabled && "opacity-50 cursor-not-allowed",
@@ -614,9 +663,11 @@ const PaymentMethodSelector = React.forwardRef<
             autoComplete="cc-exp"
             inputMode="numeric"
             className={cn(
-              "w-full h-12 md:h-14 px-4 rounded-lg md:rounded-[10px]",
+              "w-full px-4 rounded-lg",
+              isMobile ? "h-12" : "h-14",
               "bg-white border border-[#0A232E]",
-              "text-[14px] md:text-[16px] text-[#0A232E]",
+              isMobile ? "text-[14px]" : "text-[16px]",
+              "text-[#0A232E]",
               "focus:outline-none focus:ring-2 focus:ring-[#535FC8]",
               "placeholder:text-gray-400",
               disabled && "opacity-50 cursor-not-allowed"
@@ -637,9 +688,11 @@ const PaymentMethodSelector = React.forwardRef<
             autoComplete="cc-csc"
             inputMode="numeric"
             className={cn(
-              "w-full h-12 md:h-14 px-4 rounded-lg md:rounded-[10px]",
+              "w-full px-4 rounded-lg",
+              isMobile ? "h-12" : "h-14",
               "bg-white border border-[#0A232E]",
-              "text-[14px] md:text-[16px] text-[#0A232E]",
+              isMobile ? "text-[14px]" : "text-[16px]",
+              "text-[#0A232E]",
               "focus:outline-none focus:ring-2 focus:ring-[#535FC8]",
               "placeholder:text-gray-400",
               disabled && "opacity-50 cursor-not-allowed"
