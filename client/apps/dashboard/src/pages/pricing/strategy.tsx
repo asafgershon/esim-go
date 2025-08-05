@@ -139,6 +139,22 @@ const MarkupConfigurationModal: React.FC<MarkupConfigurationModalProps> = ({
 }) => {
   const { data, loading, error } = useQuery(GET_PRICING_FILTERS);
 
+  // Add console logging for debugging
+  React.useEffect(() => {
+    console.log('MarkupConfigurationModal - Query state:', { data, loading, error });
+    if (data) {
+      console.log('Pricing filters data:', data.pricingFilters);
+      console.log('Groups:', data.pricingFilters?.groups);
+      console.log('Durations:', data.pricingFilters?.durations);
+    }
+    if (error) {
+      console.error('GraphQL Error details:', error);
+      console.error('Error message:', error.message);
+      console.error('Network error:', error.networkError);
+      console.error('GraphQL errors:', error.graphQLErrors);
+    }
+  }, [data, loading, error]);
+
   const groups = data?.pricingFilters?.groups || [];
   const durations = data?.pricingFilters?.durations || [];
 
@@ -215,12 +231,14 @@ const MarkupConfigurationModal: React.FC<MarkupConfigurationModalProps> = ({
               // Initialize with some default data
               const defaultGroups = ['Standard Fixed', 'Standard Unlimited Lite', 'Standard Unlimited Essential'];
               const defaultDurations = [
-                { value: '1', label: '1 day' },
-                { value: '3', label: '3 days' },
-                { value: '5', label: '5 days' },
-                { value: '7', label: '7 days' },
-                { value: '15', label: '15 days' },
-                { value: '30', label: '30 days' }
+                { value: '1', label: '1 day', minDays: 1, maxDays: 1 },
+                { value: '3', label: '3 days', minDays: 3, maxDays: 3 },
+                { value: '5', label: '5 days', minDays: 5, maxDays: 5 },
+                { value: '7', label: '7 days', minDays: 7, maxDays: 7 },
+                { value: '10', label: '10 days', minDays: 10, maxDays: 10 },
+                { value: '15', label: '15 days', minDays: 15, maxDays: 15 },
+                { value: '21', label: '21 days', minDays: 21, maxDays: 21 },
+                { value: '30', label: '30 days', minDays: 30, maxDays: 30 }
               ];
               
               const initialConfigs: { [key: string]: { [key: string]: { markupValue: number } } } = {};
@@ -298,7 +316,7 @@ const MarkupConfigurationModal: React.FC<MarkupConfigurationModalProps> = ({
                       {duration.value} {duration.value === 1 ? 'day' : 'days'}
                     </th>
                   )) : (
-                    // Default columns if no durations loaded
+                    // Default columns if no durations loaded - using the exact durations: 1, 3, 5, 7, 10, 15, 21, 30
                     [1, 3, 5, 7, 10, 15, 21, 30].map(days => (
                       <th key={days} className="border border-gray-300 bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700 text-center" style={{ minWidth: '100px' }}>
                         {days} {days === 1 ? 'day' : 'days'}
