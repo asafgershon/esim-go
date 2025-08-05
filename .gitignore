@@ -20,5 +20,15 @@ server/packages/utils/dist/
 */.turbo
 *.log
 
-# AWS credentials
+# Environment files
+.env
+.env.*
 .env.aws
+
+# Supabase local files
+.supabase/
+supabase/.temp/
+supabase/.branches/
+
+# Logs
+logs/

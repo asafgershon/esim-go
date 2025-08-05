@@ -1,0 +1,428 @@
+{
+  "pricing_blocks": [
+    {
+      "id": "02187861-2fee-4485-bfba-c5ab6e1c6943",
+      "name": "Discount",
+      "description": "Apply percentage discount for unlimited data plans",
+      "category": "discount",
+      "ui_mapping": {
+        "block_type": "discount",
+        "icon": "Percent",
+        "color": "green"
+      },
+      "conditions": {
+        "all": [
+          {
+            "fact": "request",
+            "path": "$.dataType",
+            "value": "unlimited",
+            "operator": "equal"
+          }
+        ]
+      },
+      "action": {
+        "type": "apply-discount",
+        "params": {
+          "ruleId": "02187861-2fee-4485-bfba-c5ab6e1c6943",
+          "actions": {
+            "type": "APPLY_DISCOUNT_PERCENTAGE",
+            "value": 10
+          }
+        }
+      },
+      "priority": 100,
+      "configurable_params": {
+        "discount_type": ["APPLY_DISCOUNT_PERCENTAGE", "APPLY_FIXED_DISCOUNT"],
+        "value": "number",
+        "condition": ["always", "min-days", "dataType"],
+        "dataType": ["unlimited", "limited"]
+      }
+    },
+    {
+      "id": "a1b2c3d4-5678-90ab-cdef-fixed-price-ua",
+      "name": "Set Fixed Price",
+      "description": "Set fixed price for specific countries",
+      "category": "fixed-price",
+      "ui_mapping": {
+        "block_type": "fixed-price",
+        "icon": "DollarSign",
+        "color": "purple"
+      },
+      "conditions": {
+        "all": [
+          {
+            "fact": "country",
+            "path": "$.country",
+            "value": "UA",
+            "operator": "equal"
+          }
+        ]
+      },
+      "action": {
+        "type": "apply-fixed-price",
+        "params": {
+          "ruleId": "fixed-price",
+          "actions": {
+            "type": "set-fixed-price",
+            "value": 88
+          }
+        }
+      },
+      "priority": 100,
+      "configurable_params": {
+        "country": "string (country code)",
+        "value": "number (price)",
+        "currency": ["USD", "EUR", "GBP"]
+      }
+    },
+    {
+      "id": "b2c3d4e5-6789-01bc-defg-cost-block-01",
+      "name": "Initialize Base Price from Cost",
+      "description": "Sets the initial base price from the selected bundle cost",
+      "category": "cost",
+      "ui_mapping": {
+        "block_type": "cost",
+        "icon": "Calculator",
+        "color": "gray"
+      },
+      "conditions": {
+        "all": [
+          {
+            "fact": "selectedBundle",
+            "operator": "notEqual",
+            "value": null
+          },
+          {
+            "fact": "selectedBundle",
+            "path": "$.price",
+            "operator": "greaterThan",
+            "value": 0
+          },
+          {
+            "fact": "selectedBundle",
+            "path": "$.esim_go_name",
+            "operator": "notEqual",
+            "value": null
+          }
+        ]
+      },
+      "action": {
+        "type": "set-base-price",
+        "params": {
+          "source": "bundle-cost"
+        }
+      },
+      "priority": 100,
+      "configurable_params": {
+        "source": ["bundle-cost", "custom-value"],
+        "custom_value": "number (optional)"
+      }
+    },
+    {
+      "id": "c3d4e5f6-7890-12cd-efgh-keep-profit-01",
+      "name": "Minimum Profit",
+      "description": "Ensures minimum profit margin",
+      "category": "keep-profit",
+      "ui_mapping": {
+        "block_type": "keep-profit",
+        "icon": "Target",
+        "color": "red"
+      },
+      "conditions": {
+        "all": []
+      },
+      "action": {
+        "type": "apply-profit-constraint",
+        "params": {
+          "value": 1.5
+        }
+      },
+      "priority": 100,
+      "configurable_params": {
+        "value": "number (minimum profit amount)",
+        "type": ["fixed", "percentage"]
+      }
+    },
+    {
+      "id": "d4e5f6g7-8901-23de-fghi-israeli-card-01",
+      "name": "Processing fee for israeli credit cards",
+      "description": "Apply processing fee for specific payment methods",
+      "category": "processing-fee",
+      "ui_mapping": {
+        "block_type": "processing-fee",
+        "icon": "CreditCard",
+        "color": "orange"
+      },
+      "conditions": {
+        "all": [
+          {
+            "fact": "paymentMethod",
+            "value": "ISRAELI_CARD",
+            "operator": "equal"
+          }
+        ]
+      },
+      "action": {
+        "type": "apply-processing-fee",
+        "params": {
+          "type": "SET_PROCESSING_RATE",
+          "value": 1.4,
+          "method": "ISRAELI_CARD"
+        }
+      },
+      "priority": 30,
+      "configurable_params": {
+        "method": ["ISRAELI_CARD", "DINERS", "VISA", "MASTERCARD", "AMEX", "PAYPAL", "APPLE_PAY", "GOOGLE_PAY"],
+        "value": "number (fee percentage)",
+        "fixed_fee": "number (optional fixed fee)"
+      }
+    },
+    {
+      "id": "e5f6g7h8-9012-34ef-ghij-diners-card-01",
+      "name": "Processing fee for international credit cards",
+      "description": "Apply processing fee for Diners cards",
+      "category": "processing-fee",
+      "ui_mapping": {
+        "block_type": "processing-fee",
+        "icon": "CreditCard",
+        "color": "orange"
+      },
+      "conditions": {
+        "all": [
+          {
+            "fact": "paymentMethod",
+            "value": "DINERS",
+            "operator": "equal"
+          }
+        ]
+      },
+      "action": {
+        "type": "apply-processing-fee",
+        "params": {
+          "type": "SET_PROCESSING_RATE",
+          "value": 3.9,
+          "method": "DINERS"
+        }
+      },
+      "priority": 30,
+      "configurable_params": {
+        "method": ["ISRAELI_CARD", "DINERS", "VISA", "MASTERCARD", "AMEX", "PAYPAL", "APPLE_PAY", "GOOGLE_PAY"],
+        "value": "number (fee percentage)",
+        "fixed_fee": "number (optional fixed fee)"
+      }
+    },
+    {
+      "id": "f6g7h8i9-0123-45fg-hijk-psych-round-01",
+      "name": "Premium Bundle Psychological Pricing",
+      "description": "Apply psychological rounding strategies",
+      "category": "psychological-rounding",
+      "ui_mapping": {
+        "block_type": "psychological-rounding",
+        "icon": "Calculator",
+        "color": "indigo"
+      },
+      "conditions": {
+        "all": []
+      },
+      "action": {
+        "type": "apply-psychological-rounding",
+        "params": {
+          "strategy": "nearest-whole"
+        }
+      },
+      "priority": 1,
+      "configurable_params": {
+        "strategy": ["nearest-whole", "charm", "prestige", "odd"],
+        "round_to": "number (e.g., 0.99, 0.95)"
+      }
+    },
+    {
+      "id": "g7h8i9j0-1234-56gh-ijkl-region-round-01",
+      "name": "Region Rounding",
+      "description": "Apply region-specific price rounding",
+      "category": "region-rounding",
+      "ui_mapping": {
+        "block_type": "region-rounding",
+        "icon": "Globe",
+        "color": "teal"
+      },
+      "conditions": {
+        "all": []
+      },
+      "action": {
+        "type": "apply-region-rounding",
+        "params": {
+          "ruleId": "region-rounding",
+          "actions": {
+            "type": "set-region-rounding",
+            "value": 0.99
+          }
+        }
+      },
+      "priority": 100,
+      "configurable_params": {
+        "region": ["us", "eu", "uk", "asia"],
+        "rounding_rule": ["nearest-dollar", "nearest-five", "nearest-ten"],
+        "value": "number"
+      }
+    },
+    {
+      "id": "h8i9j0k1-2345-67hi-jklm-unused-days-01",
+      "name": "Unused Days Discount",
+      "description": "Apply discount for unused days when exact duration match not found",
+      "category": "unused-days",
+      "ui_mapping": {
+        "block_type": "unused-days",
+        "icon": "Calendar",
+        "color": "yellow"
+      },
+      "conditions": {
+        "all": [
+          {
+            "fact": "isExactMatch",
+            "path": "$.isExactMatch",
+            "operator": "equal",
+            "value": false
+          },
+          {
+            "fact": "unusedDays",
+            "operator": "greaterThan",
+            "value": 0
+          }
+        ]
+      },
+      "action": {
+        "type": "apply-unused-days-discount",
+        "params": {
+          "type": "APPLY_UNUSED_DAYS_DISCOUNT",
+          "unusedDays": "$unusedDays"
+        }
+      },
+      "priority": 85,
+      "configurable_params": {
+        "discount_per_day": "number (percentage or fixed amount)",
+        "max_discount": "number (optional cap)"
+      }
+    },
+    {
+      "id": "i9j0k1l2-3456-78ij-klmn-markup-main-01",
+      "name": "Unlimited Bundle Markup",
+      "description": "Apply markup matrix for unlimited bundles",
+      "category": "markup",
+      "ui_mapping": {
+        "block_type": "markup",
+        "icon": "TrendingUp",
+        "color": "blue"
+      },
+      "conditions": {
+        "any": [
+          {
+            "all": [
+              {
+                "fact": "selectedBundle",
+                "value": null,
+                "operator": "notEqual"
+              },
+              {
+                "fact": "selectedBundle",
+                "path": "$.is_unlimited",
+                "value": true,
+                "operator": "equal"
+              }
+            ]
+          },
+          {
+            "all": [
+              {
+                "fact": "previousBundle",
+                "value": null,
+                "operator": "notEqual"
+              },
+              {
+                "fact": "previousBundle",
+                "path": "$.is_unlimited",
+                "value": true,
+                "operator": "equal"
+              }
+            ]
+          }
+        ]
+      },
+      "action": {
+        "type": "apply-markup",
+        "params": {
+          "type": "ADD_MARKUP",
+          "markupMatrix": {
+            "Standard Unlimited Lite": {
+              "1": 3,
+              "3": 5,
+              "5": 9,
+              "7": 12,
+              "10": 15,
+              "15": 17,
+              "30": 20
+            },
+            "Standard Unlimited Plus": {
+              "1": 4,
+              "3": 6,
+              "5": 10,
+              "7": 13,
+              "10": 16,
+              "15": 18,
+              "30": 21
+            },
+            "Standard Unlimited Essential": {
+              "1": 3,
+              "3": 5,
+              "5": 9,
+              "7": 12,
+              "10": 15,
+              "15": 17,
+              "30": 20
+            }
+          }
+        }
+      },
+      "priority": 50,
+      "configurable_params": {
+        "type": ["percentage", "fixed"],
+        "value": "number or markup matrix object",
+        "apply_to": ["all", "unlimited", "limited", "specific-bundles"]
+      }
+    }
+  ],
+  "metadata": {
+    "total_rules": 10,
+    "categories": {
+      "discount": 1,
+      "fixed-price": 1,
+      "cost": 1,
+      "keep-profit": 1,
+      "processing-fee": 2,
+      "psychological-rounding": 1,
+      "region-rounding": 1,
+      "unused-days": 1,
+      "markup": 1
+    },
+    "facts_used": [
+      "request",
+      "country",
+      "selectedBundle",
+      "previousBundle",
+      "paymentMethod",
+      "isExactMatch",
+      "unusedDays"
+    ],
+    "action_types": [
+      "apply-discount",
+      "apply-fixed-price",
+      "set-base-price",
+      "apply-profit-constraint",
+      "apply-processing-fee",
+      "apply-psychological-rounding",
+      "apply-region-rounding",
+      "apply-unused-days-discount",
+      "apply-markup"
+    ]
+  }
+}

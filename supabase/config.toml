@@ -1,0 +1,11 @@
+[global]
+project_id = "esim-go"
+database_type = "postgresql"
+
+[local]
+database_user = "postgres"
+database_password = "postgres"
+database_port = 54322
+
+[migrations]
+dir = "server/db/migrations"
