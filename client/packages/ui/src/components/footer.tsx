@@ -32,7 +32,7 @@ export function Footer({
   links = defaultLinks,
   copyrightText = "© 2025 Hiilo. All rights reserved.",
   onNavigate,
-}: FooterProps): JSX.Element {
+}: FooterProps) {
   
   // Smooth scroll function for footer navigation
   const handleFooterNavigation = (href: string) => {

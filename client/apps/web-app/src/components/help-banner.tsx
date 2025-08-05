@@ -3,7 +3,7 @@
 import { Button } from "@workspace/ui";
 import Image from "next/image";
 
-export function HelpBanner(): JSX.Element {
+export function HelpBanner() {
   const handleContactSupport = () => {
     // This could open a chat widget, redirect to WhatsApp, or open a support form
     // For now, we'll use a WhatsApp link
