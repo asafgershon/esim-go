@@ -161,10 +161,10 @@ export function DestinationsGallery() {
 
   // Map prices to destinations by country ISO
   const pricesByCountry = useMemo(() => {
-    if (!data?.calculatePrices2) return {};
+    if (!data?.calculatePrices) return {};
     
     const priceMap: Record<string, { finalPrice: number; currency: string }> = {};
-    data.calculatePrices2.forEach((price: { country?: { iso?: string }; finalPrice: number; currency: string }) => {
+    data.calculatePrices.forEach((price: { country?: { iso?: string }; finalPrice: number; currency: string }) => {
       if (price.country?.iso) {
         priceMap[price.country.iso] = {
           finalPrice: price.finalPrice,

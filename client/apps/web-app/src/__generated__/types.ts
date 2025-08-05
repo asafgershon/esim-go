@@ -95,151 +95,6 @@ export type AdminEsimUser = {
   lastName?: Maybe<Scalars['String']['output']>;
 };
 
-export type AirHaloApn = {
-  __typename?: 'AirHaloAPN';
-  ios?: Maybe<AirHaloApnios>;
-  name?: Maybe<Scalars['String']['output']>;
-  password?: Maybe<Scalars['String']['output']>;
-  username?: Maybe<Scalars['String']['output']>;
-};
-
-export type AirHaloApnios = {
-  __typename?: 'AirHaloAPNIOS';
-  name?: Maybe<Scalars['String']['output']>;
-  password?: Maybe<Scalars['String']['output']>;
-  username?: Maybe<Scalars['String']['output']>;
-};
-
-export type AirHaloCompatibleDevice = {
-  __typename?: 'AirHaloCompatibleDevice';
-  esimSupport: Scalars['Boolean']['output'];
-  manufacturer: Scalars['String']['output'];
-  model: Scalars['String']['output'];
-};
-
-export type AirHaloCompatibleDevicesResponse = {
-  __typename?: 'AirHaloCompatibleDevicesResponse';
-  data: Array<AirHaloCompatibleDevice>;
-};
-
-export type AirHaloCountry = {
-  __typename?: 'AirHaloCountry';
-  id: Scalars['String']['output'];
-  slug: Scalars['String']['output'];
-  title: Scalars['String']['output'];
-};
-
-export type AirHaloCoverage = {
-  __typename?: 'AirHaloCoverage';
-  networks: Array<AirHaloNetwork>;
-};
-
-export type AirHaloImage = {
-  __typename?: 'AirHaloImage';
-  height?: Maybe<Scalars['Int']['output']>;
-  url: Scalars['String']['output'];
-  width?: Maybe<Scalars['Int']['output']>;
-};
-
-export type AirHaloLinks = {
-  __typename?: 'AirHaloLinks';
-  first?: Maybe<Scalars['String']['output']>;
-  last?: Maybe<Scalars['String']['output']>;
-  next?: Maybe<Scalars['String']['output']>;
-  prev?: Maybe<Scalars['String']['output']>;
-};
-
-export type AirHaloMeta = {
-  __typename?: 'AirHaloMeta';
-  currentPage?: Maybe<Scalars['Int']['output']>;
-  from?: Maybe<Scalars['Int']['output']>;
-  lastPage?: Maybe<Scalars['Int']['output']>;
-  path?: Maybe<Scalars['String']['output']>;
-  perPage?: Maybe<Scalars['Int']['output']>;
-  to?: Maybe<Scalars['Int']['output']>;
-  total?: Maybe<Scalars['Int']['output']>;
-};
-
-export type AirHaloNetwork = {
-  __typename?: 'AirHaloNetwork';
-  name: Scalars['String']['output'];
-  type: Scalars['String']['output'];
-};
-
-export type AirHaloOperator = {
-  __typename?: 'AirHaloOperator';
-  apn?: Maybe<AirHaloApn>;
-  countries: Array<AirHaloCountry>;
-  coverages: Array<AirHaloCoverage>;
-  id: Scalars['String']['output'];
-  packages: Array<AirHaloPackage>;
-  title: Scalars['String']['output'];
-  type: Scalars['String']['output'];
-};
-
-export type AirHaloPackage = {
-  __typename?: 'AirHaloPackage';
-  amount: Scalars['Float']['output'];
-  data: Scalars['String']['output'];
-  day: Scalars['Int']['output'];
-  fairUsagePolicy?: Maybe<Scalars['String']['output']>;
-  id: Scalars['String']['output'];
-  isFairUsagePolicy?: Maybe<Scalars['Boolean']['output']>;
-  isUnlimited: Scalars['Boolean']['output'];
-  manualInstallation: Scalars['String']['output'];
-  netPrice: AirHaloPrice;
-  price: AirHaloPrice;
-  prices: AirHaloPrices;
-  qrInstallation: Scalars['String']['output'];
-  shortInfo?: Maybe<Scalars['String']['output']>;
-  text?: Maybe<Scalars['Int']['output']>;
-  title: Scalars['String']['output'];
-  type: Scalars['String']['output'];
-  voice?: Maybe<Scalars['Int']['output']>;
-};
-
-export type AirHaloPackageData = {
-  __typename?: 'AirHaloPackageData';
-  id: Scalars['String']['output'];
-  image?: Maybe<AirHaloImage>;
-  operators: Array<AirHaloOperator>;
-  slug: Scalars['String']['output'];
-  title: Scalars['String']['output'];
-};
-
-export type AirHaloPackageFilter = {
-  countries?: InputMaybe<Array<Scalars['String']['input']>>;
-  includeTopup?: InputMaybe<Scalars['Boolean']['input']>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  type?: InputMaybe<AirHaloPackageType>;
-};
-
-export enum AirHaloPackageType {
-  Global = 'GLOBAL',
-  Local = 'LOCAL',
-  Regional = 'REGIONAL'
-}
-
-export type AirHaloPackagesResponse = {
-  __typename?: 'AirHaloPackagesResponse';
-  data: Array<AirHaloPackageData>;
-  links?: Maybe<AirHaloLinks>;
-  meta?: Maybe<AirHaloMeta>;
-};
-
-export type AirHaloPrice = {
-  __typename?: 'AirHaloPrice';
-  currency: Scalars['String']['output'];
-  value: Scalars['Float']['output'];
-};
-
-export type AirHaloPrices = {
-  __typename?: 'AirHaloPrices';
-  netPrice: AirHaloPrice;
-  recommendedRetailPrice: AirHaloPrice;
-};
-
 export type AppliedRule = {
   __typename?: 'AppliedRule';
   category: RuleCategory;
@@ -680,7 +535,8 @@ export type DeleteUserResponse = {
 export type DiscountApplication = {
   __typename?: 'DiscountApplication';
   amount: Scalars['Float']['output'];
-  ruleName: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  percentage?: Maybe<Scalars['Float']['output']>;
   type: Scalars['String']['output'];
 };
 
@@ -847,7 +703,6 @@ export type Mutation = {
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
-  reorderPricingRules: Array<PricingRule>;
   restoreESIM?: Maybe<EsimActionResponse>;
   sendPhoneOTP?: Maybe<SendOtpResponse>;
   signIn?: Maybe<SignInResponse>;
@@ -936,11 +791,6 @@ export type MutationProcessCheckoutPaymentArgs = {
 export type MutationPurchaseEsimArgs = {
   input: PurchaseEsimInput;
   planId: Scalars['ID']['input'];
-};
-
-
-export type MutationReorderPricingRulesArgs = {
-  updates: Array<PricingRulePriorityUpdate>;
 };
 
 
@@ -1220,26 +1070,6 @@ export type PricingRule = {
   validUntil?: Maybe<Scalars['String']['output']>;
 };
 
-export type PricingRuleCalculation = {
-  __typename?: 'PricingRuleCalculation';
-  appliedRules: Array<AppliedRule>;
-  baseCost: Scalars['Float']['output'];
-  discounts: Array<DiscountApplication>;
-  finalPrice: Scalars['Float']['output'];
-  finalRevenue: Scalars['Float']['output'];
-  markup: Scalars['Float']['output'];
-  maxDiscountPercentage: Scalars['Float']['output'];
-  maxRecommendedPrice: Scalars['Float']['output'];
-  priceAfterDiscount: Scalars['Float']['output'];
-  processingFee: Scalars['Float']['output'];
-  processingRate: Scalars['Float']['output'];
-  profit: Scalars['Float']['output'];
-  revenueAfterProcessing: Scalars['Float']['output'];
-  selectedBundle: CountryBundle;
-  subtotal: Scalars['Float']['output'];
-  totalDiscount: Scalars['Float']['output'];
-};
-
 export type PricingRuleFilter = {
   category?: InputMaybe<RuleCategory>;
   isActive?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1335,9 +1165,6 @@ export type PurchaseEsimResponse = {
 export type Query = {
   __typename?: 'Query';
   activePricingRules: Array<PricingRule>;
-  airHaloCompatibleDevices: AirHaloCompatibleDevicesResponse;
-  airHaloPackages: AirHaloPackagesResponse;
-  airHaloPricingData: Array<AirHaloPackage>;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
   bundles: BundleConnection;
@@ -1348,12 +1175,9 @@ export type Query = {
   bundlesForGroup?: Maybe<BundlesForGroup>;
   bundlesForRegion?: Maybe<BundlesForRegion>;
   calculatePrice: PricingBreakdown;
-  calculatePrice2: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
-  calculatePrices2: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
-  compareAirHaloPackages: Array<AirHaloPackageData>;
   conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   esimDetails?: Maybe<Esim>;
@@ -1376,16 +1200,6 @@ export type Query = {
   simulatePricingRule: PricingBreakdown;
   trips: Array<Trip>;
   users: Array<User>;
-};
-
-
-export type QueryAirHaloPackagesArgs = {
-  filter?: InputMaybe<AirHaloPackageFilter>;
-};
-
-
-export type QueryAirHaloPricingDataArgs = {
-  packageIds: Array<Scalars['String']['input']>;
 };
 
 
@@ -1431,25 +1245,11 @@ export type QueryBundlesForRegionArgs = {
 
 
 export type QueryCalculatePriceArgs = {
-  countryId: Scalars['String']['input'];
-  groups?: InputMaybe<Array<Scalars['String']['input']>>;
-  numOfDays: Scalars['Int']['input'];
-  paymentMethod?: InputMaybe<PaymentMethod>;
-  regionId?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type QueryCalculatePrice2Args = {
   input: CalculatePriceInput;
 };
 
 
 export type QueryCalculatePricesArgs = {
-  inputs: Array<CalculatePriceInput>;
-};
-
-
-export type QueryCalculatePrices2Args = {
   inputs: Array<CalculatePriceInput>;
 };
 
@@ -1461,11 +1261,6 @@ export type QueryCatalogBundlesArgs = {
 
 export type QueryCatalogSyncHistoryArgs = {
   params?: InputMaybe<SyncHistoryParams>;
-};
-
-
-export type QueryCompareAirHaloPackagesArgs = {
-  countryCode: Scalars['String']['input'];
 };
 
 
@@ -1930,11 +1725,7 @@ export type GetTripsQueryVariables = Exact<{ [key: string]: never; }>;
 export type GetTripsQuery = { __typename?: 'Query', trips: Array<{ __typename?: 'Trip', name: string, description: string, region: string, countryIds: Array<any> }> };
 
 export type CalculatePriceQueryVariables = Exact<{
-  numOfDays: Scalars['Int']['input'];
-  countryId: Scalars['String']['input'];
-  paymentMethod?: InputMaybe<PaymentMethod>;
-  regionId?: InputMaybe<Scalars['String']['input']>;
-  groups?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+  input: CalculatePriceInput;
 }>;
 
 
@@ -1945,7 +1736,7 @@ export type CalculatePricesBatchQueryVariables = Exact<{
 }>;
 
 
-export type CalculatePricesBatchQuery = { __typename?: 'Query', calculatePrices2: Array<{ __typename?: 'PricingBreakdown', duration: number, currency: string, totalCost: number, discountValue: number, finalPrice: number, priceAfterDiscount: number, bundle: { __typename?: 'CountryBundle', id: string, name: string, duration: number, isUnlimited: boolean, data?: number | null, group?: string | null, country: { __typename?: 'Country', iso: any, name: string } }, country: { __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region?: string | null, flag?: string | null } }> };
+export type CalculatePricesBatchQuery = { __typename?: 'Query', calculatePrices: Array<{ __typename?: 'PricingBreakdown', duration: number, currency: string, totalCost: number, discountValue: number, finalPrice: number, priceAfterDiscount: number, bundle: { __typename?: 'CountryBundle', id: string, name: string, duration: number, isUnlimited: boolean, data?: number | null, group?: string | null, country: { __typename?: 'Country', iso: any, name: string } }, country: { __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region?: string | null, flag?: string | null } }> };
 
 export type GetMyEsiMsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1969,4 +1760,4 @@ export type CalculateDestinationPricesQueryVariables = Exact<{
 }>;
 
 
-export type CalculateDestinationPricesQuery = { __typename?: 'Query', calculatePrices2: Array<{ __typename?: 'PricingBreakdown', finalPrice: number, currency: string, country: { __typename?: 'Country', iso: any } }> };
+export type CalculateDestinationPricesQuery = { __typename?: 'Query', calculatePrices: Array<{ __typename?: 'PricingBreakdown', finalPrice: number, currency: string, country: { __typename?: 'Country', iso: any } }> };

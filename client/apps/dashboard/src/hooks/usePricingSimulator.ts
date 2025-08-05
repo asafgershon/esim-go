@@ -219,10 +219,12 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
     try {
       await simulateQuery({
         variables: {
-          numOfDays: params.numOfDays,
-          countryId: params.countryId.toUpperCase(),
-          paymentMethod: params.paymentMethod,
-          groups: params.groups,
+          input: {
+            numOfDays: params.numOfDays,
+            countryId: params.countryId.toUpperCase(),
+            paymentMethod: params.paymentMethod,
+            groups: params.groups,
+          }
         },
         context: {
           headers: {
@@ -259,9 +261,11 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
       try {
         const { data } = await simulateQuery({
           variables: {
-            numOfDays: params.numOfDays,
-            countryId: params.countryId.toUpperCase(),
-            paymentMethod: method,
+            input: {
+              numOfDays: params.numOfDays,
+              countryId: params.countryId.toUpperCase(),
+              paymentMethod: method,
+            }
           },
         });
 

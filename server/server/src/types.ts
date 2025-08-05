@@ -539,6 +539,8 @@ export type DeleteUserResponse = {
 export type DiscountApplication = {
   __typename?: 'DiscountApplication';
   amount: Scalars['Float']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  percentage?: Maybe<Scalars['Float']['output']>;
   ruleName: Scalars['String']['output'];
   type: Scalars['String']['output'];
 };
@@ -1204,9 +1206,7 @@ export type Query = {
   bundlesForGroup?: Maybe<BundlesForGroup>;
   bundlesForRegion?: Maybe<BundlesForRegion>;
   calculatePrice: PricingBreakdown;
-  calculatePrice2: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
-  calculatePrices2: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
   conflictingPricingRules: Array<PricingRule>;
@@ -1276,25 +1276,11 @@ export type QueryBundlesForRegionArgs = {
 
 
 export type QueryCalculatePriceArgs = {
-  countryId: Scalars['String']['input'];
-  groups?: InputMaybe<Array<Scalars['String']['input']>>;
-  numOfDays: Scalars['Int']['input'];
-  paymentMethod?: InputMaybe<PaymentMethod>;
-  regionId?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type QueryCalculatePrice2Args = {
   input: CalculatePriceInput;
 };
 
 
 export type QueryCalculatePricesArgs = {
-  inputs: Array<CalculatePriceInput>;
-};
-
-
-export type QueryCalculatePrices2Args = {
   inputs: Array<CalculatePriceInput>;
 };
 
@@ -2366,6 +2352,8 @@ export type DeleteUserResponseResolvers<ContextType = Context, ParentType extend
 
 export type DiscountApplicationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['DiscountApplication'] = ResolversParentTypes['DiscountApplication']> = {
   amount?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  percentage?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   ruleName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -2751,10 +2739,8 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   bundlesForCountry?: Resolver<Maybe<ResolversTypes['BundlesForCountry']>, ParentType, ContextType, RequireFields<QueryBundlesForCountryArgs, 'countryCode'>>;
   bundlesForGroup?: Resolver<Maybe<ResolversTypes['BundlesForGroup']>, ParentType, ContextType, RequireFields<QueryBundlesForGroupArgs, 'group'>>;
   bundlesForRegion?: Resolver<Maybe<ResolversTypes['BundlesForRegion']>, ParentType, ContextType, RequireFields<QueryBundlesForRegionArgs, 'region'>>;
-  calculatePrice?: Resolver<ResolversTypes['PricingBreakdown'], ParentType, ContextType, RequireFields<QueryCalculatePriceArgs, 'countryId' | 'numOfDays'>>;
-  calculatePrice2?: Resolver<ResolversTypes['PricingBreakdown'], ParentType, ContextType, RequireFields<QueryCalculatePrice2Args, 'input'>>;
+  calculatePrice?: Resolver<ResolversTypes['PricingBreakdown'], ParentType, ContextType, RequireFields<QueryCalculatePriceArgs, 'input'>>;
   calculatePrices?: Resolver<Array<ResolversTypes['PricingBreakdown']>, ParentType, ContextType, RequireFields<QueryCalculatePricesArgs, 'inputs'>>;
-  calculatePrices2?: Resolver<Array<ResolversTypes['PricingBreakdown']>, ParentType, ContextType, RequireFields<QueryCalculatePrices2Args, 'inputs'>>;
   catalogBundles?: Resolver<ResolversTypes['CatalogBundleConnection'], ParentType, ContextType, Partial<QueryCatalogBundlesArgs>>;
   catalogSyncHistory?: Resolver<ResolversTypes['CatalogSyncHistoryConnection'], ParentType, ContextType, Partial<QueryCatalogSyncHistoryArgs>>;
   conflictingPricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<QueryConflictingPricingRulesArgs, 'ruleId'>>;

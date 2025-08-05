@@ -359,8 +359,8 @@ export const ASSIGN_PACKAGE_TO_USER = gql(`
 
 // Admin Pricing Queries - Full access to all pricing data
 export const CALCULATE_ADMIN_PRICE = gql(`
-  query CalculateAdminPrice($numOfDays: Int!, $countryId: String!, $paymentMethod: PaymentMethod, $regionId: String) {
-    calculatePrice(numOfDays: $numOfDays, countryId: $countryId, paymentMethod: $paymentMethod, regionId: $regionId) {
+  query CalculateAdminPrice($input: CalculatePriceInput!) {
+    calculatePrice(input: $input) {
       bundle {
         id
         name
@@ -481,8 +481,8 @@ export const CALCULATE_BATCH_ADMIN_PRICING = gql(`
 `);
 
 export const SIMULATE_PRICING = gql(`
-  query SimulatePricing($numOfDays: Int!, $countryId: String!, $paymentMethod: PaymentMethod, $groups: [String!]) {
-    calculatePrice(numOfDays: $numOfDays, countryId: $countryId, paymentMethod: $paymentMethod, groups: $groups) {
+  query SimulatePricing($input: CalculatePriceInput!) {
+    calculatePrice(input: $input) {
       bundle {
         id
         name
@@ -705,6 +705,28 @@ export const GET_PRICING_FILTERS = gql(`
         isUnlimited
       }
     }
+  }
+`);
+
+// Dedicated query for markup configuration modal
+export const GET_MARKUP_CONFIG_DATA = gql(`
+  query GetMarkupConfigData {
+    pricingFilters {
+      groups
+      durations {
+        label
+        value
+        minDays
+        maxDays
+      }
+    }
+    # We can also fetch existing markup configurations if needed
+    # markupConfigurations {
+    #   group
+    #   duration
+    #   markupValue
+    #   markupType
+    # }
   }
 `);
 

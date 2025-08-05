@@ -2,7 +2,7 @@ import { gql } from '@apollo/client';
 
 export const CALCULATE_DESTINATION_PRICES = gql`
   query CalculateDestinationPrices($inputs: [CalculatePriceInput!]!) {
-    calculatePrices2(inputs: $inputs) {
+    calculatePrices(inputs: $inputs) {
       finalPrice
       currency
       country {

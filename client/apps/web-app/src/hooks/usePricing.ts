@@ -61,10 +61,12 @@ export function usePricing({ numOfDays, regionId, countryId, paymentMethod, debo
       debounceTimerRef.current = setTimeout(() => {
         calculatePrice({
           variables: {
-            numOfDays,
-            countryId: countryId.toUpperCase(),
-            paymentMethod,
-            regionId,
+            input: {
+              numOfDays,
+              countryId: countryId.toUpperCase(),
+              paymentMethod,
+              regionId,
+            }
           },
         });
       }, debounceMs);

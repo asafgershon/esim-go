@@ -20,22 +20,10 @@ type Query {
   trips: [Trip!]!
 
   # Calculate price - Public access, sensitive fields protected at field level
-  calculatePrice(
-    numOfDays: Int!
-    countryId: String!
-    paymentMethod: PaymentMethod
-    regionId: String
-    groups: [String!]
-  ): PricingBreakdown!
-
-  # Calculate price using rules-engine-2 (supports regions)
-  calculatePrice2(input: CalculatePriceInput!): PricingBreakdown!
+  calculatePrice(input: CalculatePriceInput!): PricingBreakdown!
 
   # Batch calculate prices for multiple bundles
   calculatePrices(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
-
-  # Calculate multiple prices using rules-engine-2 (batch processing)
-  calculatePrices2(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
 
   # Main bundles resolver with optional filtering
   bundle(id: String!): Bundle!
@@ -1152,6 +1140,14 @@ type AppliedRule {
   name: String!
   category: RuleCategory!
   impact: Float!
+}
+
+# Represents a discount that was applied during pricing calculation
+type DiscountApplication {
+  type: String!          # The type of discount (e.g., "unused-days", "coupon", "corporate")
+  amount: Float!         # The discount amount in currency
+  percentage: Float      # The discount percentage (if applicable)
+  description: String    # Human-readable description of the discount
 }
 
 # Batch pricing input
