@@ -1,4 +1,5 @@
 // Components
+export * from './components/accordion'
 export * from './components/alert'
 export * from './components/avatar'
 export * from './components/badge'
@@ -15,6 +16,7 @@ export * from './components/dialog'
 export * from './components/drawer'
 export * from './components/dropdown-menu'
 export * from './components/filter-bar'
+export * from './components/footer'
 export * from './components/input-otp'
 export * from './components/input'
 export * from './components/radio-group'
