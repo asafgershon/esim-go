@@ -28,6 +28,7 @@ import {
   getSupabaseTokenFromConnectionParams,
   supabaseAdmin,
 } from "./context/supabase-auth";
+import { createPricingDataLoader } from "./dataloaders/pricing-dataloader";
 import {
   CatalogueDataSourceV2,
   ESIMsDataSource,
@@ -158,7 +159,8 @@ async function startServer() {
           // Create Supabase auth context
           const auth = await createSupabaseAuthContext(token);
 
-          return {
+          // Create context with auth for DataLoader
+          const baseContext = {
             auth,
             services: {
               redis,
@@ -189,6 +191,13 @@ async function startServer() {
             },
             // Legacy support
             token,
+          };
+
+          return {
+            ...baseContext,
+            dataLoaders: {
+              pricing: createPricingDataLoader(baseContext),
+            },
           };
         },
       },
@@ -392,7 +401,8 @@ async function startServer() {
           // Create Supabase auth context
           const auth = await createSupabaseAuthContext(token);
 
-          return {
+          // Create context with auth for DataLoader
+          const baseContext = {
             auth,
             services: {
               redis,
@@ -424,6 +434,13 @@ async function startServer() {
             // Legacy support
             req,
             token,
+          };
+
+          return {
+            ...baseContext,
+            dataLoaders: {
+              pricing: createPricingDataLoader(baseContext),
+            },
           };
         },
       })

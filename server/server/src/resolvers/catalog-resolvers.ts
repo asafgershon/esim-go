@@ -7,9 +7,9 @@ import type {
   CustomerBundle,
   Resolvers,
   SyncJobType,
+  PaymentMethod,
 } from "../types";
-import { calculatePricingForBundle } from "./pricing-resolvers";
-import type Redis from "ioredis";
+import { extractPricingKey } from "../dataloaders/pricing-dataloader";
 
 const logger = createLogger({
   component: "CatalogResolvers",
@@ -30,25 +30,36 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Get all filter data from repository methods
+        logger.info("Fetching groups...", { operationType: "pricing-filters-fetch" });
         const groups = (await context.repositories.bundles.getGroups()).map(
           (g) => g.replace("-", "")
         );
+        logger.info("Groups fetched", { groups, operationType: "pricing-filters-fetch" });
+
+        logger.info("Fetching data types...", { operationType: "pricing-filters-fetch" });
         const dataTypes = await context.repositories.bundles.getDataTypes();
+        logger.info("Data types fetched", { dataTypes, operationType: "pricing-filters-fetch" });
+
+        logger.info("Fetching distinct durations...", { operationType: "pricing-filters-fetch" });
         const durations =
-          await context.repositories.bundles.getDurationRanges();
+          await context.repositories.bundles.getDistinctDurations();
+        logger.info("Distinct durations fetched", { durations, operationType: "pricing-filters-fetch" });
+
+        const result = {
+          groups,
+          durations,
+          dataTypes,
+        };
 
         logger.info("Pricing filters fetched successfully", {
           bundleGroupCount: groups.length,
           durationCount: durations.length,
           dataTypeCount: dataTypes.length,
+          fullResult: result,
           operationType: "pricing-filters-fetch",
         });
 
-        return {
-          groups,
-          durations,
-          dataTypes,
-        };
+        return result;
       } catch (error) {
         logger.error("Error fetching pricing filters", error as Error, {
           operationType: "pricing-filters-fetch",
@@ -396,23 +407,21 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   CountryBundle: {
-    pricingBreakdown: async (parent, {}, context: Context) => {
+    pricingBreakdown: async (parent, { paymentMethod }, context: Context) => {
       try {
-        // CountryBundle already has all the bundle data we need
-        const bundle = {
-          ...parent,
-          __typename: "CountryBundle",
-          basePrice: parent.price || 0,
-          validityInDays: parent.duration,
-          countries: parent.country ? [parent.country.iso] : [],
-          region: parent.country?.region,
-        };
-
-        return calculatePricingForBundle(
-          bundle as any,
-          mapPaymentMethodEnum(parent),
+        // Use DataLoader to batch pricing calculations
+        const pricingKey = extractPricingKey(
+          {
+            ...parent,
+            validityInDays: parent.duration,
+            countries: parent.country ? [parent.country.iso] : [],
+            region: parent.country?.region,
+          },
+          mapPaymentMethodEnum(paymentMethod) as PaymentMethod,
           context
         );
+
+        return context.dataLoaders.pricing.load(pricingKey);
       } catch (error) {
         logger.error("Failed to calculate pricing breakdown", error as Error, {
           bundleName: parent.name,
@@ -423,24 +432,21 @@ export const catalogResolvers: Partial<Resolvers> = {
     },
 
     // Field resolver for appliedRules (rules that affected the pricing)
-    appliedRules: async (parent: any, _, context: Context) => {
+    appliedRules: async (parent: any, { paymentMethod }, context: Context) => {
       try {
-        // To get applied rules, we need to calculate pricing for this bundle
-        const bundle = {
-          ...parent,
-          __typename: "CountryBundle",
-          basePrice: parent.price || 0,
-          validityInDays: parent.duration,
-          countries: parent.country ? [parent.country.iso] : [],
-          region: parent.country?.region,
-        };
-
-        const pricingBreakdown = await calculatePricingForBundle(
-          bundle as any,
-          mapPaymentMethodEnum(parent),
+        // Use DataLoader to get pricing breakdown with applied rules
+        const pricingKey = extractPricingKey(
+          {
+            ...parent,
+            validityInDays: parent.duration,
+            countries: parent.country ? [parent.country.iso] : [],
+            region: parent.country?.region,
+          },
+          mapPaymentMethodEnum(paymentMethod) as PaymentMethod,
           context
         );
 
+        const pricingBreakdown = await context.dataLoaders.pricing.load(pricingKey);
         return pricingBreakdown.appliedRules || [];
       } catch (error) {
         logger.error("Failed to get applied rules for bundle", error as Error, {
@@ -459,21 +465,14 @@ export const catalogResolvers: Partial<Resolvers> = {
       context: Context
     ) => {
       try {
-        // CatalogBundle has the complete bundle data
-        const bundle = {
-          ...parent,
-          __typename: "CatalogBundle",
-          basePrice: parent.basePrice || 0,
-          validityInDays: parent.validityInDays || 1,
-          countries: parent.countries || [],
-          region: parent.region,
-        };
-
-        return calculatePricingForBundle(
-          bundle,
-          mapPaymentMethodEnum(paymentMethod),
+        // Use DataLoader to batch pricing calculations
+        const pricingKey = extractPricingKey(
+          parent,
+          mapPaymentMethodEnum(paymentMethod) as PaymentMethod,
           context
         );
+
+        return context.dataLoaders.pricing.load(pricingKey);
       } catch (error) {
         logger.error("Failed to calculate pricing breakdown", error as Error, {
           bundleName: parent.esimGoName || parent.name,
@@ -491,21 +490,17 @@ export const catalogResolvers: Partial<Resolvers> = {
       context: Context
     ) => {
       try {
-        // CustomerBundle is for specific customer purchases
-        const bundle = {
-          ...parent,
-          __typename: "CustomerBundle",
-          basePrice: parent.price || parent.originalPrice || 0,
-          validityInDays: parent.durationInDays || parent.validityInDays || 1,
-          countries: parent.countries || [],
-          region: parent.region,
-        };
-
-        return calculatePricingForBundle(
-          bundle,
-          mapPaymentMethodEnum(paymentMethod),
+        // Use DataLoader to batch pricing calculations
+        const pricingKey = extractPricingKey(
+          {
+            ...parent,
+            validityInDays: parent.durationInDays || parent.validityInDays || 1,
+          },
+          mapPaymentMethodEnum(paymentMethod) as PaymentMethod,
           context
         );
+
+        return context.dataLoaders.pricing.load(pricingKey);
       } catch (error) {
         logger.error("Failed to calculate pricing breakdown", error as Error, {
           bundleName: parent.name,

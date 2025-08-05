@@ -25,6 +25,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CatalogSyncServiceV2 } from "../services";
 import type { ESimGoClient } from "@hiilo/client";
 import type { AirHaloClient } from "@airhalo/client";
+import type DataLoader from "dataloader";
+import type { PricingKey, PricingResult } from "../dataloaders/pricing-dataloader";
 
 export type Context = {
   auth: SupabaseAuthContext;
@@ -54,6 +56,9 @@ export type Context = {
     regions: RegionsDataSource;
     inventory: InventoryDataSource;
     pricing: PricingDataSource;
+  };
+  dataLoaders: {
+    pricing: DataLoader<PricingKey, PricingResult>;
   };
   // Legacy for backward compatibility during migration
   token?: string;

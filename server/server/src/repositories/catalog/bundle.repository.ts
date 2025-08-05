@@ -400,6 +400,71 @@ export class BundleRepository extends BaseSupabaseRepository<
     }
   }
 
+  async getDistinctDurations(): Promise<Array<{
+    label: string;
+    value: string;
+    minDays: number;
+    maxDays: number;
+  }>> {
+    try {
+      this.logger.info('Calling get_distinct_durations Supabase function', {
+        operationType: 'bundle-distinct-durations-fetch'
+      });
+
+      const { data, error } = await this.supabase
+        .rpc('get_distinct_durations');
+
+      if (error) {
+        this.logger.error('Supabase RPC error for get_distinct_durations', error, {
+          operationType: 'bundle-distinct-durations-fetch',
+          errorCode: error.code,
+          errorMessage: error.message,
+          errorDetails: error.details
+        });
+        throw error;
+      }
+
+      this.logger.info('Raw Supabase RPC response', {
+        rawData: data,
+        dataType: typeof data,
+        dataLength: data?.length || 0,
+        operationType: 'bundle-distinct-durations-fetch'
+      });
+
+      // The function returns the data in the correct format
+      // Map the database response to ensure consistent format
+      const durations = (data || []).map((item, index) => {
+        this.logger.debug(`Mapping duration item ${index}`, {
+          rawItem: item,
+          operationType: 'bundle-distinct-durations-fetch'
+        });
+        
+        return {
+          label: item.label,
+          value: item.value,
+          minDays: item.min_days,
+          maxDays: item.max_days
+        };
+      });
+
+      this.logger.info('Successfully mapped distinct durations', {
+        durationsCount: durations.length,
+        mappedData: durations,
+        operationType: 'bundle-distinct-durations-fetch'
+      });
+
+      return durations;
+    } catch (error) {
+      this.logger.error('Failed to get distinct durations from bundles', error as Error, {
+        operationType: 'bundle-distinct-durations-fetch',
+        errorName: (error as Error).name,
+        errorMessage: (error as Error).message,
+        errorStack: (error as Error).stack
+      });
+      throw error;
+    }
+  }
+
   // ========== Bundle Transformation ==========
   // This is kept in the repository as a utility function
   static transformCatalogToBundle(dbBundle: CatalogBundle) {
