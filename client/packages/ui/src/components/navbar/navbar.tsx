@@ -24,6 +24,7 @@ interface NavbarProps {
   actions?: React.ReactNode;
   mobileActions?: React.ReactNode;
   className?: string;
+  onNavigate?: (href: string, external?: boolean) => void;
 }
 
 export function Navbar({
@@ -32,6 +33,7 @@ export function Navbar({
   actions,
   mobileActions,
   className,
+  onNavigate,
 }: NavbarProps) {
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -65,17 +67,37 @@ export function Navbar({
               {/* Mobile Navigation Items */}
               <nav className="flex flex-col gap-4">
                 {items.map((item) => (
-                  <Link
-                    dir="rtl"
-                    key={item.href}
-                    href={item.href}
-                    target={item.external ? "_blank" : undefined}
-                    rel={item.external ? "noopener noreferrer" : undefined}
-                    onClick={() => setIsOpen(false)}
-                    className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors py-2 border-b border-border last:border-b-0"
-                  >
-                    {item.title}
-                  </Link>
+                  onNavigate && !item.external && item.href.startsWith('#') ? (
+                    <button
+                      dir="rtl"
+                      key={item.href}
+                      onClick={() => {
+                        onNavigate(item.href, item.external);
+                        setIsOpen(false);
+                      }}
+                      className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors py-2 border-b border-border last:border-b-0 text-right w-full"
+                      aria-label={`נווט לשל ${item.title}`}
+                    >
+                      {item.title}
+                    </button>
+                  ) : (
+                    <Link
+                      dir="rtl"
+                      key={item.href}
+                      href={item.href}
+                      target={item.external ? "_blank" : undefined}
+                      rel={item.external ? "noopener noreferrer" : undefined}
+                      onClick={() => {
+                        if (onNavigate && !item.external && item.href.startsWith('#')) {
+                          onNavigate(item.href, item.external);
+                        }
+                        setIsOpen(false);
+                      }}
+                      className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors py-2 border-b border-border last:border-b-0"
+                    >
+                      {item.title}
+                    </Link>
+                  )
                 ))}
               </nav>
 
@@ -107,14 +129,29 @@ export function Navbar({
               {items.map((item) => (
                 <NavigationMenuItem key={item.href}>
                   <NavigationMenuLink asChild>
-                    <Link
-                      href={item.href}
-                      target={item.external ? "_blank" : undefined}
-                      rel={item.external ? "noopener noreferrer" : undefined}
-                      className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
-                    >
-                      {item.title}
-                    </Link>
+                    {onNavigate && !item.external && item.href.startsWith('#') ? (
+                      <button
+                        onClick={() => onNavigate(item.href, item.external)}
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
+                        aria-label={`נווט לשל ${item.title}`}
+                      >
+                        {item.title}
+                      </button>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        target={item.external ? "_blank" : undefined}
+                        rel={item.external ? "noopener noreferrer" : undefined}
+                        onClick={() => {
+                          if (onNavigate && !item.external && item.href.startsWith('#')) {
+                            onNavigate(item.href, item.external);
+                          }
+                        }}
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
+                      >
+                        {item.title}
+                      </Link>
+                    )}
                   </NavigationMenuLink>
                 </NavigationMenuItem>
               ))}

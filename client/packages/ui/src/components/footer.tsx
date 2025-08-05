@@ -13,24 +13,65 @@ interface FooterProps {
   className?: string;
   links?: FooterLink[];
   copyrightText?: string;
+  onNavigate?: (href: string) => void;
 }
 
 const defaultLinks: FooterLink[] = [
   { href: "/other", label: "תקנון אתר" },
   { href: "/privacy", label: "הצהרת נגישות" },
-  { href: "/cookies", label: "ביקורת" },
-  { href: "/about", label: "עלינו" },
-  { href: "/esim", label: "מה זה eSIM?" },
-  { href: "/faq", label: "שאלות ותשובות" },
+  { href: "#reviews", label: "ביקורת" },
+  { href: "#about", label: "עלינו" },
+  { href: "#what-is-esim", label: "מה זה eSIM?" },
+  { href: "#faq", label: "שאלות ותשובות" },
   { href: "/company", label: "HIILO החברה" },
-  { href: "/contact", label: "צרו קשר" },
+  { href: "#contact", label: "צרו קשר" },
 ];
 
 export function Footer({
   className,
   links = defaultLinks,
   copyrightText = "© 2025 Hiilo. All rights reserved.",
+  onNavigate,
 }: FooterProps): JSX.Element {
+  
+  // Smooth scroll function for footer navigation
+  const handleFooterNavigation = (href: string) => {
+    if (href.startsWith('#')) {
+      const targetId = href.substring(1);
+      const targetElement = document.getElementById(targetId);
+      
+      if (targetElement) {
+        // Calculate offset to account for header height
+        const headerHeight = 64; // 16 * 4 = 64px (h-16)
+        const elementPosition = targetElement.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+        
+        // Update URL without page reload
+        window.history.pushState(null, '', href);
+        
+        // Set focus for accessibility
+        targetElement.setAttribute('tabindex', '-1');
+        targetElement.focus();
+        
+        // Remove tabindex after focus
+        setTimeout(() => {
+          targetElement.removeAttribute('tabindex');
+        }, 100);
+      }
+    } else {
+      // Handle external navigation
+      if (onNavigate) {
+        onNavigate(href);
+      } else {
+        window.location.href = href;
+      }
+    }
+  };
   return (
     <footer className={cn("relative bg-[#1B2B3A] text-white rounded-t-[2.5rem] overflow-hidden", className)}>
       {/* Background Images */}
@@ -108,16 +149,32 @@ export function Footer({
           </div>
 
           {/* Navigation Links */}
-          <nav className="mb-12">
+          <nav className="mb-12" aria-label="ניווט פוטר">
             <ul className="flex flex-col items-center gap-4 text-center">
               {links.map((link, index) => (
                 <li key={index}>
-                  <Link
-                    href={link.href}
-                    className="text-white hover:text-[#2EE59D] transition-colors text-base"
-                  >
-                    {link.label}
-                  </Link>
+                  {link.href.startsWith('#') ? (
+                    <button
+                      onClick={() => handleFooterNavigation(link.href)}
+                      className="text-white hover:text-[#2EE59D] transition-colors text-base"
+                      aria-label={`נווט לשל ${link.label}`}
+                    >
+                      {link.label}
+                    </button>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-white hover:text-[#2EE59D] transition-colors text-base"
+                      onClick={(e) => {
+                        if (!link.href.startsWith('http') && !link.href.startsWith('/')) {
+                          e.preventDefault();
+                          handleFooterNavigation(link.href);
+                        }
+                      }}
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

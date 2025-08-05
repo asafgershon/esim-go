@@ -1001,3 +1001,230 @@ export const GET_AIRHALO_PRICING_DATA = gql(`
     }
   }
 `);
+
+// Coupon Management Queries
+export const GET_COUPONS = gql(`
+  query GetCoupons($filter: CouponFilter) {
+    coupons(filter: $filter) {
+      id
+      code
+      description
+      couponType
+      value
+      validFrom
+      validUntil
+      maxTotalUsage
+      maxPerUser
+      minSpend
+      maxDiscount
+      applicability
+      allowedRegions
+      allowedBundleIds
+      corporateDomain
+      isActive
+      createdAt
+      updatedAt
+      usageCount
+      usageStats {
+        totalUsages
+        totalDiscountAmount
+        uniqueUsers
+      }
+    }
+  }
+`);
+
+export const GET_COUPON = gql(`
+  query GetCoupon($id: ID!) {
+    coupon(id: $id) {
+      id
+      code
+      description
+      couponType
+      value
+      validFrom
+      validUntil
+      maxTotalUsage
+      maxPerUser
+      minSpend
+      maxDiscount
+      applicability
+      allowedRegions
+      allowedBundleIds
+      corporateDomain
+      isActive
+      createdAt
+      updatedAt
+      usageCount
+      usageStats {
+        totalUsages
+        totalDiscountAmount
+        uniqueUsers
+      }
+    }
+  }
+`);
+
+export const CREATE_COUPON = gql(`
+  mutation CreateCoupon($input: CreateCouponInput!) {
+    createCoupon(input: $input) {
+      id
+      code
+      description
+      couponType
+      value
+      validFrom
+      validUntil
+      maxTotalUsage
+      maxPerUser
+      minSpend
+      maxDiscount
+      applicability
+      allowedRegions
+      allowedBundleIds
+      corporateDomain
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`);
+
+export const UPDATE_COUPON = gql(`
+  mutation UpdateCoupon($id: ID!, $input: UpdateCouponInput!) {
+    updateCoupon(id: $id, input: $input) {
+      id
+      code
+      description
+      couponType
+      value
+      validFrom
+      validUntil
+      maxTotalUsage
+      maxPerUser
+      minSpend
+      maxDiscount
+      applicability
+      allowedRegions
+      allowedBundleIds
+      corporateDomain
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`);
+
+export const DELETE_COUPON = gql(`
+  mutation DeleteCoupon($id: ID!) {
+    deleteCoupon(id: $id) {
+      success
+      error
+    }
+  }
+`);
+
+export const TOGGLE_COUPON = gql(`
+  mutation ToggleCoupon($id: ID!) {
+    toggleCoupon(id: $id) {
+      id
+      isActive
+    }
+  }
+`);
+
+export const GET_COUPON_USAGE_LOGS = gql(`
+  query GetCouponUsageLogs($couponId: ID, $userId: ID, $pagination: PaginationInput) {
+    couponUsageLogs(couponId: $couponId, userId: $userId, pagination: $pagination) {
+      logs {
+        id
+        couponId
+        userId
+        orderId
+        originalAmount
+        discountedAmount
+        discountAmount
+        usedAt
+        coupon {
+          code
+          description
+        }
+        user {
+          email
+          firstName
+          lastName
+        }
+      }
+      totalCount
+    }
+  }
+`);
+
+// Corporate Email Domains Queries
+export const GET_CORPORATE_EMAIL_DOMAINS = gql(`
+  query GetCorporateEmailDomains {
+    corporateEmailDomains {
+      id
+      domain
+      discountPercentage
+      maxDiscount
+      minSpend
+      isActive
+      createdAt
+      updatedAt
+      usageStats {
+        totalUsages
+        totalDiscountAmount
+        uniqueUsers
+      }
+    }
+  }
+`);
+
+export const CREATE_CORPORATE_EMAIL_DOMAIN = gql(`
+  mutation CreateCorporateEmailDomain($input: CreateCorporateEmailDomainInput!) {
+    createCorporateEmailDomain(input: $input) {
+      id
+      domain
+      discountPercentage
+      maxDiscount
+      minSpend
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`);
+
+export const UPDATE_CORPORATE_EMAIL_DOMAIN = gql(`
+  mutation UpdateCorporateEmailDomain($id: ID!, $input: UpdateCorporateEmailDomainInput!) {
+    updateCorporateEmailDomain(id: $id, input: $input) {
+      id
+      domain
+      discountPercentage
+      maxDiscount
+      minSpend
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`);
+
+export const DELETE_CORPORATE_EMAIL_DOMAIN = gql(`
+  mutation DeleteCorporateEmailDomain($id: ID!) {
+    deleteCorporateEmailDomain(id: $id) {
+      success
+      error
+    }
+  }
+`);
+
+export const TOGGLE_CORPORATE_EMAIL_DOMAIN = gql(`
+  mutation ToggleCorporateEmailDomain($id: ID!) {
+    toggleCorporateEmailDomain(id: $id) {
+      id
+      isActive
+    }
+  }
+`);

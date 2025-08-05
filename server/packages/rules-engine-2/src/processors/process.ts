@@ -1,8 +1,9 @@
 import { Almanac, Event } from "json-rules-engine";
-import { MarkUpEventSchema } from "src/blocks/markups";
-import { ProcessingFeeEventSchema } from "src/blocks/processing-fee";
-import { PreviousBundleFact, SelectedBundleFact } from "src/facts/bundle-facts";
-import { PaymentMethod } from "src/generated/types";
+import { MarkUpEventSchema } from "../blocks/markups";
+import { ProcessingFeeEventSchema } from "../blocks/processing-fee";
+import { DiscountEventSchema } from "../blocks/discount";
+import { PreviousBundleFact, SelectedBundleFact } from "../facts/bundle-facts";
+import { PaymentMethod, ActionType } from "../generated/types";
 
 type ProcessingFeeDetails = {
   method: PaymentMethod;
@@ -13,6 +14,15 @@ type UnusedDaysDiscountDetails = {
   unusedDays: number;
   valuePerDay: number;
   discountRate: number;
+};
+
+type DiscountDetails = {
+  discountType: 'percentage' | 'fixed' | 'bundle-specific';
+  discountValue: number;
+  discountAmount: number;
+  reason: string;
+  ruleId: string;
+  ruleName: string;
 };
 
 type PsychologicalRoundingDetails = {
@@ -33,6 +43,7 @@ export async function processEventType(
     | any
     | ProcessingFeeDetails
     | UnusedDaysDiscountDetails
+    | DiscountDetails
     | PsychologicalRoundingDetails;
 }> {
   const [selectedBundle, previousBundle] = await Promise.all([
@@ -78,6 +89,52 @@ export async function processEventType(
         details: {
           markupCount: events.length,
           totalMarkup,
+        },
+      };
+
+    case "apply-discount":
+      // Process coupon codes, email domain discounts, and other general discounts
+      let totalDiscountAmount = 0;
+      let discountDetails: DiscountDetails | null = null;
+
+      for (const event of events) {
+        const { params } = DiscountEventSchema.parse(event);
+        const { discountType, discountValue, actions, ruleId, ruleName, reason } = params;
+        
+        let eventDiscountAmount = 0;
+        
+        if (actions.type === ActionType.ApplyDiscountPercentage) {
+          eventDiscountAmount = currentPrice * (actions.value / 100);
+        } else if (actions.type === ActionType.ApplyFixedDiscount) {
+          eventDiscountAmount = actions.value;
+        }
+        
+        totalDiscountAmount += eventDiscountAmount;
+        
+        // Store details from the first (highest priority) discount rule
+        if (!discountDetails) {
+          discountDetails = {
+            discountType: discountType || 'percentage',
+            discountValue: discountValue || actions.value,
+            discountAmount: eventDiscountAmount,
+            reason: reason || 'Discount applied',
+            ruleId: ruleId || 'unknown',
+            ruleName: ruleName || 'Unknown Discount',
+          };
+        }
+      }
+
+      return {
+        newPrice: currentPrice - totalDiscountAmount,
+        change: -totalDiscountAmount,
+        description: discountDetails?.reason || `Applied discount of $${totalDiscountAmount.toFixed(2)}`,
+        details: discountDetails || {
+          discountType: 'percentage',
+          discountValue: 0,
+          discountAmount: totalDiscountAmount,
+          reason: 'Combined discounts',
+          ruleId: 'combined',
+          ruleName: 'Combined Discounts',
         },
       };
 

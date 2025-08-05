@@ -3,7 +3,9 @@ import { Engine } from "json-rules-engine";
 import { markupRule } from "./blocks/markups";
 import { rules as processingFeeRules } from "./blocks/processing-fee";
 import { unusedDaysDiscountRule } from "./blocks/unused-days";
+import { discountRules } from "./blocks/discount";
 import { availableBundles } from "./facts/available-bundles";
+export { calculatePricing as calculatePricingWithDB } from "./index-with-db";
 import {
   isExactMatch,
   PreviousBundleFact,
@@ -15,6 +17,16 @@ import {
   unusedDays as unusedDaysFact,
 } from "./facts/bundle-facts";
 import { durations } from "./facts/durations";
+import {
+  userSegment,
+  userPurchaseHistory,
+  couponValidation,
+  emailDomainDiscount,
+  timeContext,
+  marketTier,
+  volumeDiscountTiers,
+  bundleDiscountEligibility,
+} from "./facts/discount-facts";
 import {
   AppliedRule,
   PaymentMethod,
@@ -36,6 +48,9 @@ export type RequestFacts = {
   days: number;
   paymentMethod?: PaymentMethod;
   strategyId?: string;
+  couponCode?: string;
+  userEmail?: string;
+  userId?: string;
 } & (
   | {
       country: string;
@@ -62,6 +77,9 @@ export async function calculatePricing({
   region,
   paymentMethod = PaymentMethod.IsraeliCard,
   strategyId,
+  couponCode,
+  userEmail,
+  userId,
 }: RequestFacts): Promise<PricingEngineV2Result> {
   engine = new Engine();
 
@@ -79,6 +97,16 @@ export async function calculatePricing({
   engine.addFact("markupRule", markupRule);
   engine.addFact("selectedBundleMarkup", selectedBundleMarkup);
   engine.addFact("previousBundleMarkup", previousBundleMarkup);
+  
+  // Add discount-related facts
+  engine.addFact("userSegment", userSegment);
+  engine.addFact("userPurchaseHistory", userPurchaseHistory);
+  engine.addFact("couponValidation", couponValidation);
+  engine.addFact("emailDomainDiscount", emailDomainDiscount);
+  engine.addFact("timeContext", timeContext);
+  engine.addFact("marketTier", marketTier);
+  engine.addFact("volumeDiscountTiers", volumeDiscountTiers);
+  engine.addFact("bundleDiscountEligibility", bundleDiscountEligibility);
   // Load rules from strategy
   //   defaultPricingStrategy.strategy_blocks.forEach((r) => engine.addRule(r));
 
@@ -92,8 +120,15 @@ export async function calculatePricing({
     country,
     region,
     paymentMethod,
+    couponCode,
+    userEmail,
+    userId,
   };
   engine.addRule(unusedDaysDiscountRule);
+  
+  // Add discount rules - these have high priority and need to be loaded
+  discountRules.forEach((rule) => engine.addRule(rule));
+  
   logger.debug("Running engine", request);
   const { almanac, events, results } = await engine.run({
     ...request,
@@ -141,6 +176,35 @@ export async function calculatePricing({
   );
   costumerPrice = priceAfterDiscount;
 
+  // Process new discount rules (coupon codes, email domain discounts, etc.)
+  const generalDiscounts = selectEvents(events, "apply-discount");
+  let additionalDiscountValue = 0;
+  let priceAfterGeneralDiscounts = priceAfterDiscount;
+  
+  if (generalDiscounts.length > 0) {
+    const {
+      change: generalDiscountChange,
+      newPrice: priceAfterGeneralDiscount,
+      details: generalDiscountDetails,
+    } = await processEventType(
+      "apply-discount",
+      generalDiscounts,
+      priceAfterDiscount,
+      almanac
+    );
+    additionalDiscountValue = -generalDiscountChange; // Change is negative for discounts
+    priceAfterGeneralDiscounts = priceAfterGeneralDiscount;
+    costumerPrice = priceAfterGeneralDiscounts;
+  }
+
+  const keepProfit = selectEvents(events, "apply-profit-constraint");
+  const { newPrice: priceAfterKeepProfit } = await processEventType(
+    "apply-profit-constraint",
+    keepProfit,
+    priceAfterGeneralDiscounts,
+    almanac
+  );
+
   const processingFees = selectEvents(events, "apply-processing-fee");
   const {
     change: processingFee,
@@ -148,15 +212,7 @@ export async function calculatePricing({
   } = await processEventType(
     "apply-processing-fee",
     processingFees,
-    priceAfterDiscount,
-    almanac
-  );
-
-  const keepProfit = selectEvents(events, "apply-profit-constraint");
-  const { newPrice: priceAfterKeepProfit } = await processEventType(
-    "apply-profit-constraint",
-    keepProfit,
-    priceAfterDiscount,
+    priceAfterGeneralDiscounts,
     almanac
   );
 
@@ -173,6 +229,9 @@ export async function calculatePricing({
 
   const totalCost = Number((cost + processingFee).toFixed(2));
 
+  const totalDiscountValue = discountValue + additionalDiscountValue;
+  const finalPriceAfterDiscounts = priceAfterGeneralDiscounts;
+
   const pricing: Omit<PricingBreakdown, "bundle" | "country" | "duration"> = {
     cost,
     markup,
@@ -180,9 +239,9 @@ export async function calculatePricing({
     unusedDays,
     processingCost: processingFee,
     discountPerDay: valuePerDay,
-    discountValue,
-    priceAfterDiscount,
-    discountRate,
+    discountValue: totalDiscountValue,
+    priceAfterDiscount: finalPriceAfterDiscounts,
+    discountRate: Number(((totalDiscountValue / (cost + markup)) * 100).toFixed(2)),
     totalCost,
     processingRate: rate,
     finalRevenue: Number(priceAfterPsychologicalRounding.toFixed(2)), // TODO: rename to revenue
