@@ -79,19 +79,7 @@ export default function Home() {
       <HelpBanner />
 
       {/* Footer */}
-      <Footer
-        tagline="חופש הגלישה שלכם בחו״ל"
-        links={[
-          { href: "/about", label: "תמכון אותי" },
-          { href: "/privacy", label: "הכרת נגישות" },
-          { href: "/contact", label: "אודותינו" },
-          { href: "/support", label: "עזרה" },
-          { href: "/faq", label: "מה זה eSIM?" },
-          { href: "/company", label: "שאלות ותשובות" },
-          { href: "/terms", label: "HIILO החברה" },
-          { href: "/contact", label: "צרו קשר" },
-        ]}
-      />
+      <Footer />
     </div>
   );
 }
