@@ -115,6 +115,7 @@
         "byte-size": "^9.0.1",
         "cors": "^2.8.5",
         "countries-list": "^3.1.1",
+        "dataloader": "^2.2.3",
         "envalid": "^8.0.0",
         "express": "^4.19.2",
         "filesize": "^11.0.2",

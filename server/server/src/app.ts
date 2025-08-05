@@ -66,11 +66,17 @@ const airHaloSchema = readFileSync(
   "utf-8"
 );
 
+const pricingManagementSchema = readFileSync(
+  join(__dirname, "../schemas/pricing-management.graphql"),
+  "utf-8"
+);
+
 const typeDefs = mergeTypeDefs([
   authDirectiveTypeDefs,
   mainSchema,
   rulesEngineSchema,
   airHaloSchema,
+  pricingManagementSchema,
 ]);
 
 const env = cleanEnv(process.env, {

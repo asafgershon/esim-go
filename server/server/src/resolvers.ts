@@ -13,6 +13,7 @@ import { pricingResolvers } from "./resolvers/pricing-resolvers";
 import { tripsResolvers } from "./resolvers/trips-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import { airHaloResolvers } from "./resolvers/airhalo-resolvers";
+import { pricingManagementResolvers } from "./resolvers/pricing-management-resolvers";
 import type { Resolvers } from "./types";
 import * as countriesList from "countries-list";
 
@@ -52,6 +53,9 @@ export const resolvers: Resolvers = {
 
     // AirHalo resolvers
     ...airHaloResolvers.Query!,
+
+    // Pricing management resolvers (admin only)
+    ...pricingManagementResolvers.Query!,
 
     // Countries resolvers
     countries: async (_, __, context: Context) => {
@@ -151,6 +155,9 @@ export const resolvers: Resolvers = {
     // Auth resolvers are merged from auth-resolvers.ts
     ...authResolvers.Mutation!,
 
+    // Pricing management resolvers (admin only)
+    ...pricingManagementResolvers.Mutation!,
+
     // High demand countries management
     toggleHighDemandCountry: async (_, { countryId }, context: Context) => {
       // This will be protected by @auth(role: "ADMIN") directive
@@ -230,6 +237,9 @@ export const resolvers: Resolvers = {
   CountryBundle: {
     ...catalogResolvers.CountryBundle!,
   },
+  CatalogBundle: {
+    ...catalogResolvers.CatalogBundle!,
+  },
   PricingBreakdown: {
     ...catalogResolvers.PricingBreakdown!,
   },
@@ -255,5 +265,6 @@ export const resolvers: Resolvers = {
   },
   CustomerBundle: {
     ...bundlesResolvers.CustomerBundle!,
+    ...catalogResolvers.CustomerBundle!,
   },
 };

@@ -1,0 +1,139 @@
+# Pricing Management Schema Extensions
+# These types and resolvers are for administrative functions only
+
+extend type Query {
+  """
+  Get current pricing performance metrics (Admin only)
+  """
+  pricingPerformanceMetrics: PricingPerformanceMetrics @auth(role:"ADMIN")
+  
+  """
+  Get pricing cache statistics (Admin only)
+  """
+  pricingCacheStats: PricingCacheStats @auth(role:"ADMIN")
+}
+
+extend type Mutation {
+  """
+  Clear all pricing cache (Admin only)
+  """
+  clearPricingCache: CacheOperationResult @auth(role:"ADMIN")
+  
+  """
+  Clear pricing cache for a specific bundle (Admin only)
+  """
+  clearBundlePricingCache(bundleId: String!): CacheOperationResult @auth(role:"ADMIN")
+  
+  """
+  Clear pricing cache for a specific country (Admin only)
+  """
+  clearCountryPricingCache(countryId: String!): CacheOperationResult @auth(role:"ADMIN")
+  
+  """
+  Perform cache cleanup - remove expired entries (Admin only)
+  """
+  cleanupPricingCache: CacheOperationResult @auth(role:"ADMIN")
+  
+  """
+  Reset pricing performance metrics (Admin only)
+  """
+  resetPricingMetrics: CacheOperationResult @auth(role:"ADMIN")
+  
+  """
+  Smart cache invalidation based on rule changes (Admin only)
+  """
+  invalidateCacheByRuleChange(
+    ruleType: String!
+    affectedEntities: [String!]!
+  ): CacheOperationResult @auth(role:"ADMIN")
+}
+
+"""
+Performance metrics for pricing calculations
+"""
+type PricingPerformanceMetrics {
+  """
+  Recent average duration per batch (ms)
+  """
+  recentAvgDuration: Float!
+  
+  """
+  Recent average batch size
+  """
+  recentAvgBatchSize: Float!
+  
+  """
+  Recent cache hit rate (0-1)
+  """
+  recentCacheHitRate: Float!
+  
+  """
+  Total number of pricing calculations performed
+  """
+  totalCalculations: Int!
+  
+  """
+  Error rate (0-1)
+  """
+  errorRate: Float!
+  
+  """
+  Timestamp when metrics were collected
+  """
+  timestamp: String!
+}
+
+"""
+Statistics about the pricing cache
+"""
+type PricingCacheStats {
+  """
+  Total number of cache keys
+  """
+  totalKeys: Int!
+  
+  """
+  Estimated total cache size in MB
+  """
+  estimatedSizeMB: Float!
+  
+  """
+  Number of valid (non-expired) keys
+  """
+  validKeys: Int!
+  
+  """
+  Number of expired keys
+  """
+  expiredKeys: Int!
+  
+  """
+  Average key size in KB
+  """
+  avgKeySizeKB: Float!
+  
+  """
+  Timestamp when stats were collected
+  """
+  timestamp: String!
+}
+
+"""
+Result of a cache operation
+"""
+type CacheOperationResult {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  
+  """
+  Human-readable message about the operation
+  """
+  message: String!
+  
+  """
+  Number of cache entries affected (optional)
+  """
+  clearedCount: Int
+}
