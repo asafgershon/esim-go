@@ -16,7 +16,12 @@ import { PromoBanner } from "@/components/promo-banner";
 import { QASection } from "@/components/qa-section";
 import { ReviewsSection } from "@/components/reviews-section";
 import { WhySwitchSection } from "@/components/why-switch-section";
-import { Footer, useScrollTo, SmoothScrollContainer, type SmoothScrollHandle } from "@workspace/ui";
+import {
+  Footer,
+  useScrollTo,
+  SmoothScrollContainer,
+  type SmoothScrollHandle,
+} from "@workspace/ui";
 import { Suspense, useRef } from "react";
 
 export default function Home() {
@@ -90,8 +95,14 @@ export default function Home() {
           </section>
 
           {/* Destinations Gallery */}
-          <section id="destinations" aria-label="גלריית יעדים" data-speed="0.98">
-            <DestinationsGallery />
+          <section
+            id="destinations"
+            aria-label="גלריית יעדים"
+            data-speed="0.98"
+          >
+            <Suspense fallback={<div className="h-16" />}>
+              <DestinationsGallery />
+            </Suspense>
           </section>
 
           {/* Promo Banner */}
