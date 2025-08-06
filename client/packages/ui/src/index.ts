@@ -48,10 +48,12 @@ export * from './components/column-context-menu'
 export { CountrySelect, type CountrySelectProps } from './components/country-select'
 export { MultiCountrySelect, type MultiCountrySelectProps, type Country } from './components/multi-country-select'
 export * from './components/navbar'
+export * from './components/smooth-scroll-container'
 // Hooks
 export * from './hooks/use-countries'
 export * from './hooks/use-media-query'
 export * from './hooks/use-esim-detection'
+export * from './hooks/use-scroll-to'
 // Utils
 export * from "./lib/utils" 
 export * from "./lib/font-utils" 

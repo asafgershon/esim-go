@@ -34,42 +34,13 @@ export function Footer({
   onNavigate,
 }: FooterProps) {
   
-  // Smooth scroll function for footer navigation
+  // Handle navigation - simplified since scroll logic is now in parent
   const handleFooterNavigation = (href: string) => {
-    if (href.startsWith('#')) {
-      const targetId = href.substring(1);
-      const targetElement = document.getElementById(targetId);
-      
-      if (targetElement) {
-        // Calculate offset to account for header height
-        const headerHeight = 64; // 16 * 4 = 64px (h-16)
-        const elementPosition = targetElement.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
-        
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
-        
-        // Update URL without page reload
-        window.history.pushState(null, '', href);
-        
-        // Set focus for accessibility
-        targetElement.setAttribute('tabindex', '-1');
-        targetElement.focus();
-        
-        // Remove tabindex after focus
-        setTimeout(() => {
-          targetElement.removeAttribute('tabindex');
-        }, 100);
-      }
-    } else {
+    if (onNavigate) {
+      onNavigate(href);
+    } else if (!href.startsWith('#')) {
       // Handle external navigation
-      if (onNavigate) {
-        onNavigate(href);
-      } else {
-        window.location.href = href;
-      }
+      window.location.href = href;
     }
   };
   return (

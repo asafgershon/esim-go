@@ -1,11 +1,13 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { Button, IconButton, Navbar, UserIcon } from "@workspace/ui";
+import { Button, IconButton, Navbar, UserIcon, useScrollTo } from "@workspace/ui";
+import type { SmoothScrollHandle } from "@workspace/ui";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { parseAsBoolean, useQueryState } from "nuqs";
+import type { RefObject } from "react";
 
 const navigation = [
   { title: "Hiilo לחברות", href: "/", external: true },
@@ -15,15 +17,20 @@ const navigation = [
   { title: "ביקורות", href: "#reviews", external: false },
 ];
 
-export function Header() {
+interface HeaderProps {
+  scrollContainerRef?: RefObject<SmoothScrollHandle | null>;
+}
+
+export function Header({ scrollContainerRef }: HeaderProps = {}) {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const [, setShowLogin] = useQueryState(
     "showLogin",
     parseAsBoolean.withDefault(false)
   );
+  const { scrollTo } = useScrollTo({ scrollContainerRef });
 
-  // Smooth scroll function with accessibility support
+  // Handle navigation
   const handleSmoothScroll = (href: string, external?: boolean) => {
     if (external) {
       router.push(href);
@@ -31,33 +38,7 @@ export function Header() {
     }
 
     if (href.startsWith("#")) {
-      const targetId = href.substring(1);
-      const targetElement = document.getElementById(targetId);
-
-      if (targetElement) {
-        // Calculate offset to account for header height
-        const headerHeight = 64; // 16 * 4 = 64px (h-16)
-        const elementPosition = targetElement.getBoundingClientRect().top;
-        const offsetPosition =
-          elementPosition + window.pageYOffset - headerHeight;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
-
-        // Update URL without page reload
-        window.history.pushState(null, "", href);
-
-        // Set focus for accessibility
-        targetElement.setAttribute("tabindex", "-1");
-        targetElement.focus();
-
-        // Remove tabindex after focus
-        setTimeout(() => {
-          targetElement.removeAttribute("tabindex");
-        }, 100);
-      }
+      scrollTo(href);
     }
   };
 
@@ -93,12 +74,7 @@ export function Header() {
         variant="primary-brand"
         size="sm"
         className="px-6"
-        onClick={() => {
-          document.getElementById("esim-selector")?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }}
+        onClick={() => scrollTo("#esim-selector")}
       >
         לרכישת ESIM
       </Button>
@@ -116,12 +92,7 @@ export function Header() {
           variant="primary-brand"
           size="sm"
           className="px-6 text-xs"
-          onClick={() => {
-            document.getElementById("esim-selector")?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }}
+          onClick={() => scrollTo("#esim-selector")}
         >
           לרכישת ESIM
         </Button>

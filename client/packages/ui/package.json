@@ -50,6 +50,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "fuse.js": "^7.1.0",
+    "gsap": "^3.13.0",
     "is-mobile": "^5.0.0",
     "lucide-react": "^0.468.0",
     "overlayscrollbars": "^2.11.4",
