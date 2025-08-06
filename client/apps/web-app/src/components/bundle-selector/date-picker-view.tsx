@@ -6,289 +6,220 @@ import {
   SelectorContent,
   SelectorAction, 
   SelectorSection,
-  SelectorButton,
-  Calendar 
+  SelectorButton
 } from "@workspace/ui";
 import { CalendarIcon, CloseIcon } from "./icons";
-import { format } from "date-fns";
+import { format, differenceInDays, addDays } from "date-fns";
 import { he } from "date-fns/locale";
 import { useBundleSelector } from "@/contexts/bundle-selector-context";
-import type { DateRange } from "react-day-picker";
 
 export function DatePickerView() {
-  // Get setCurrentView and setNumOfDays from context instead of props
+  // Get setCurrentView and setNumOfDays from context
   const { setCurrentView, setNumOfDays } = useBundleSelector();
   
-  // State for date range selection
-  const [selectedRange, setSelectedRange] = useState<DateRange | undefined>();
-  const [activeCalendar, setActiveCalendar] = useState<"from" | "to" | null>(null);
-
-  // Validation: disable dates before today
-  const today = new Date();
-  const disabledDays = { before: today };
-
+  // State for native date inputs
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const today = format(new Date(), "yyyy-MM-dd");
+  
+  // Calculate max date (30 days from start date)
+  const maxEndDate = useMemo(() => {
+    if (!startDate) return "";
+    return format(addDays(new Date(startDate), 30), "yyyy-MM-dd");
+  }, [startDate]);
+  
   // Calculate the number of days between selected dates
   const numberOfDays = useMemo(() => {
-    if (!selectedRange?.from || !selectedRange?.to) return 0;
-    const diffTime = selectedRange.to.getTime() - selectedRange.from.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
-    return diffDays;
-  }, [selectedRange]);
-
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return differenceInDays(end, start) + 1; // +1 to include both days
+  }, [startDate, endDate]);
+  
   // Format dates for display
-  const formatDate = useCallback((date: Date | undefined) => {
-    if (!date) return null;
-    return format(date, "d בMMM yyyy", { locale: he });
+  const formatDisplayDate = useCallback((dateString: string) => {
+    if (!dateString) return "";
+    return format(new Date(dateString), "d בMMM yyyy", { locale: he });
   }, []);
-
-  // Handle date range selection
-  const handleDateSelect = useCallback((range: DateRange | undefined) => {
-    setSelectedRange(range);
+  
+  // Handle start date change
+  const handleStartDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStartDate = e.target.value;
+    setStartDate(newStartDate);
+    
+    // If end date is before new start date, clear it
+    if (endDate && new Date(endDate) < new Date(newStartDate)) {
+      setEndDate("");
+    }
+  }, [endDate]);
+  
+  // Handle end date change
+  const handleEndDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEndDate(e.target.value);
   }, []);
-
-  // Handle calendar click for mobile UX
-  const handleCalendarClick = useCallback((type: "from" | "to") => {
-    setActiveCalendar(type);
-  }, []);
-
-  // Clear active calendar when clicking outside
-  const handleCalendarBlur = useCallback(() => {
-    setTimeout(() => setActiveCalendar(null), 200);
-  }, []);
-
-  // Validate selection and proceed
+  
+  // Handle back navigation
+  const handleBack = useCallback(() => {
+    setCurrentView('main');
+  }, [setCurrentView]);
+  
+  // Handle confirm selection
   const handleConfirm = useCallback(() => {
-    if (!selectedRange?.from || !selectedRange?.to) {
-      // Show error - could integrate with toast system in the future
-      alert("אנא בחר תאריך התחלה ותאריך סיום");
-      return;
-    }
-
-    // Validate date range isn't too long (max 30 days for eSIM packages)
-    if (numberOfDays > 30) {
-      alert("מקסימום 30 ימים לחבילת eSIM");
-      return;
-    }
-
-    // Validate from date is not after to date (should not happen with range picker, but good to validate)
-    if (selectedRange.from > selectedRange.to) {
-      alert("תאריך התחלה חייב להיות לפני תאריך הסיום");
-      return;
-    }
-
-    // TODO: Pass selected dates to the bundle selector context
-    // This would integrate with the existing numOfDays state and possibly 
-    // add startDate/endDate to the context for precise date-based pricing
-    console.log("Selected date range:", {
-      from: selectedRange.from,
-      to: selectedRange.to,
-      numberOfDays,
-    });
-
-    // Update the number of days in the bundle selector to match the selected range
-    // This ensures consistency between date picker and slider selection
     if (numberOfDays > 0) {
       setNumOfDays(numberOfDays);
+      setCurrentView('main');
     }
-
-    setCurrentView('main');
-  }, [selectedRange, numberOfDays, setCurrentView, setNumOfDays]);
-
-  const isValidSelection = selectedRange?.from && selectedRange?.to;
-
-  // Keyboard support
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape key to close calendar or go back to main view
-      if (e.key === "Escape") {
-        if (activeCalendar) {
-          setActiveCalendar(null);
-        } else {
-          setCurrentView('main');
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeCalendar, setCurrentView]);
-
+  }, [numberOfDays, setCurrentView, setNumOfDays]);
+  
+  // Check if selection is valid
+  const isValidSelection = startDate && endDate && numberOfDays > 0 && numberOfDays <= 30;
+  const isInvalidRange = numberOfDays > 30;
+  
   return (
     <>
-      <SelectorHeader className="mb-0 min-h-10 relative">
-        {/* Close button */}
-        <button
-          onClick={() => setCurrentView('main')}
-          className="absolute top-0 left-0 md:left-auto md:right-0 p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
-          aria-label="חזור לבחירת ימים"
-        >
-          <CloseIcon />
-        </button>
-      </SelectorHeader>
-
+      <SelectorHeader
+        title="בחר תאריכי נסיעה"
+        onBack={handleBack}
+        backIcon={<CloseIcon />}
+      />
+      
       <SelectorContent>
-        {/* Title */}
-        <h2 className="text-[20px] md:text-[28px] font-medium text-brand-dark text-right">
-          בחרו תאריך רלוונטי
-        </h2>
-        
-        {/* Selected dates summary */}
-        {isValidSelection && (
-          <div className={`mb-4 p-3 rounded-lg border ${
-            numberOfDays > 30 
-              ? "bg-red-50 border-red-200" 
-              : "bg-blue-50 border-blue-200"
-          }`}>
-            <div className={`text-sm text-right ${
-              numberOfDays > 30 ? "text-red-800" : "text-blue-800"
-            }`}>
-              <span className="font-medium">תאריכים נבחרו: </span>
-              {formatDate(selectedRange.from)} - {formatDate(selectedRange.to)}
-              <span className="block mt-1">
-                <span className="font-medium">משך הטיול: </span>
-                {numberOfDays} ימים
-                {numberOfDays > 30 && (
-                  <span className="block mt-1 text-red-600 text-xs">
-                    ⚠️ חבילות eSIM זמינות עד 30 ימים בלבד
-                  </span>
-                )}
-              </span>
-            </div>
-          </div>
-        )}
-        
-        <div className="flex flex-col md:flex-row gap-4 md:gap-8">
-          {/* From Date */}
-          <SelectorSection className="flex-1 gap-3">
-            <div className="flex items-center gap-2 justify-start">
-              <CalendarIcon className="w-[14px] h-[14px] md:w-[17px] md:h-[17px]" />
-              <label className="text-[14px] md:text-[20px] text-brand-dark">
-                ממתי?
+        <div className="space-y-6 px-4 py-2">
+          {/* Native Date Inputs Section */}
+          <div className="space-y-4">
+            {/* Start Date Input */}
+            <div className="space-y-2">
+              <label 
+                htmlFor="start-date" 
+                className="text-sm font-medium text-gray-700 block"
+              >
+                תאריך התחלה
               </label>
-            </div>
-            <div 
-              className={`bg-brand-white border rounded-[15px] md:rounded-[20px] min-h-[174px] p-3 transition-colors ${
-                activeCalendar === "from" 
-                  ? "border-brand-purple ring-2 ring-brand-purple/20" 
-                  : "border-[rgba(10,35,46,0.2)] hover:border-[rgba(10,35,46,0.3)]"
-              }`}
-              role="group"
-              aria-label="בחר תאריך התחלה"
-              onClick={() => handleCalendarClick("from")}
-              onBlur={handleCalendarBlur}
-              tabIndex={0}
-            >
-              {selectedRange?.from ? (
-                <div className="flex flex-col items-center justify-center h-full min-h-[150px]">
-                  <div className="text-[16px] md:text-[20px] font-medium text-brand-dark mb-2">
-                    {formatDate(selectedRange.from)}
-                  </div>
-                  <div className="text-[12px] md:text-[14px] text-gray-500">
-                    תאריך התחלה
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full min-h-[150px]">
-                  <span className="text-gray-400 text-[12px] md:text-[14px]">לחץ לבחירת תאריך התחלה</span>
-                </div>
-              )}
-            </div>
-          </SelectorSection>
-
-          {/* To Date */}
-          <SelectorSection className="flex-1 gap-3">
-            <div className="flex items-center gap-2 justify-start">
-              <CalendarIcon className="w-[14px] h-[14px] md:w-[17px] md:h-[17px]" />
-              <label className="text-[14px] md:text-[20px] text-brand-dark">
-                עד מתי?
-              </label>
-            </div>
-            <div 
-              className={`bg-brand-white border rounded-[15px] md:rounded-[20px] min-h-[174px] p-3 transition-colors ${
-                activeCalendar === "to" 
-                  ? "border-brand-purple ring-2 ring-brand-purple/20" 
-                  : "border-[rgba(10,35,46,0.2)] hover:border-[rgba(10,35,46,0.3)]"
-              }`}
-              role="group"
-              aria-label="בחר תאריך סיום"
-              onClick={() => handleCalendarClick("to")}
-              onBlur={handleCalendarBlur}
-              tabIndex={0}
-            >
-              {selectedRange?.to ? (
-                <div className="flex flex-col items-center justify-center h-full min-h-[150px]">
-                  <div className="text-[16px] md:text-[20px] font-medium text-brand-dark mb-2">
-                    {formatDate(selectedRange.to)}
-                  </div>
-                  <div className="text-[12px] md:text-[14px] text-gray-500">
-                    תאריך הסיום
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full min-h-[150px]">
-                  <span className="text-gray-400 text-[12px] md:text-[14px]">לחץ לבחירת תאריך סיום</span>
-                </div>
-              )}
-            </div>
-          </SelectorSection>
-        </div>
-
-        {/* Calendar component - shown when a calendar is active */}
-        {activeCalendar && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 md:relative md:inset-auto md:bg-transparent md:flex-none md:p-0 md:z-auto md:mt-6">
-            <div className="bg-white border border-gray-200 rounded-xl shadow-lg w-full max-w-sm md:max-w-none">
-              <div className="flex justify-between items-center mb-4 p-4 pb-2">
-                <h3 className="text-[16px] md:text-[18px] font-medium text-brand-dark">
-                  {activeCalendar === "from" ? "בחר תאריך התחלה" : "בחר תאריך הסיום"}
-                </h3>
-                <button
-                  onClick={() => setActiveCalendar(null)}
-                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                  aria-label="סגור לוח שנה"
-                >
-                  <CloseIcon />
-                </button>
-              </div>
-              
-              <div className="flex justify-center p-4">
-                <Calendar
-                  mode="range"
-                  selected={selectedRange}
-                  onSelect={handleDateSelect}
-                  disabled={disabledDays}
-                  numberOfMonths={1}
-                  className="border-0"
-                  dir="rtl"
-                  locale={he}
-                  showOutsideDays={false}
-                  weekStartsOn={0} // Sunday
-                  onDayClick={() => {
-                    // Auto-close calendar after second date selection on mobile
-                    if (selectedRange?.from && !selectedRange?.to) {
-                      setTimeout(() => setActiveCalendar(null), 300);
-                    }
-                  }}
+              <div className="relative">
+                <input
+                  id="start-date"
+                  type="date"
+                  value={startDate}
+                  onChange={handleStartDateChange}
+                  min={today}
+                  className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-lg 
+                           text-base focus:outline-none focus:ring-2 focus:ring-primary-500 
+                           focus:border-transparent appearance-none
+                           [&::-webkit-calendar-picker-indicator]:opacity-0
+                           [&::-webkit-calendar-picker-indicator]:absolute
+                           [&::-webkit-calendar-picker-indicator]:inset-0
+                           [&::-webkit-calendar-picker-indicator]:w-full
+                           [&::-webkit-calendar-picker-indicator]:h-full
+                           [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                  dir="ltr"
                 />
+                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                {startDate && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-600">
+                    {formatDisplayDate(startDate)}
+                  </div>
+                )}
               </div>
             </div>
+            
+            {/* End Date Input */}
+            <div className="space-y-2">
+              <label 
+                htmlFor="end-date" 
+                className="text-sm font-medium text-gray-700 block"
+              >
+                תאריך סיום
+              </label>
+              <div className="relative">
+                <input
+                  id="end-date"
+                  type="date"
+                  value={endDate}
+                  onChange={handleEndDateChange}
+                  min={startDate || today}
+                  max={maxEndDate}
+                  disabled={!startDate}
+                  className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-lg 
+                           text-base focus:outline-none focus:ring-2 focus:ring-primary-500 
+                           focus:border-transparent appearance-none
+                           disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed
+                           [&::-webkit-calendar-picker-indicator]:opacity-0
+                           [&::-webkit-calendar-picker-indicator]:absolute
+                           [&::-webkit-calendar-picker-indicator]:inset-0
+                           [&::-webkit-calendar-picker-indicator]:w-full
+                           [&::-webkit-calendar-picker-indicator]:h-full
+                           [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                  dir="ltr"
+                />
+                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                {endDate && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-600">
+                    {formatDisplayDate(endDate)}
+                  </div>
+                )}
+              </div>
+              {!startDate && (
+                <p className="text-xs text-gray-500">
+                  בחר תאריך התחלה תחילה
+                </p>
+              )}
+            </div>
           </div>
-        )}
+          
+          {/* Summary Section */}
+          {startDate && endDate && (
+            <div className={`p-4 rounded-lg border ${
+              isInvalidRange 
+                ? 'bg-red-50 border-red-200' 
+                : 'bg-blue-50 border-blue-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-700">
+                    סה״כ ימי נסיעה
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {numberOfDays} {numberOfDays === 1 ? 'יום' : 'ימים'}
+                  </p>
+                </div>
+                {isInvalidRange && (
+                  <div className="text-sm text-red-600">
+                    <p className="font-medium">מעל 30 יום</p>
+                    <p className="text-xs">נא לבחור טווח קצר יותר</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Helper Text */}
+          <div className="space-y-2 text-sm text-gray-600">
+            <p className="flex items-center gap-2">
+              <span className="text-blue-500">💡</span>
+              בחר תאריכי נסיעה עד 30 יום
+            </p>
+            {startDate && !endDate && (
+              <p className="flex items-center gap-2">
+                <span className="text-green-500">✓</span>
+                עכשיו בחר תאריך סיום
+              </p>
+            )}
+          </div>
+        </div>
       </SelectorContent>
-
+      
       <SelectorAction>
-        <SelectorButton 
-          className="flex items-center justify-center gap-3"
+        <SelectorButton
           onClick={handleConfirm}
           disabled={!isValidSelection}
-          aria-label="אשר בחירת תאריכים"
+          className="w-full"
         >
-          <span>
-            {isValidSelection 
-              ? `לצפייה בחבילת ${numberOfDays} ימים` 
-              : "בחר תאריכים להמשך"
-            }
-          </span>
-          <span className="rotate-180" aria-hidden="true">←</span>
+          {isValidSelection 
+            ? `אישור - ${numberOfDays} ${numberOfDays === 1 ? 'יום' : 'ימים'}`
+            : 'בחר תאריכי נסיעה'
+          }
         </SelectorButton>
       </SelectorAction>
     </>
