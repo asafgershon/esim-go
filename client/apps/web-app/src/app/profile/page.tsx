@@ -175,8 +175,8 @@ export default function ProfilePage() {
         <Card className="p-6 mb-6">
           <div className="flex items-center gap-4 mb-4">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={""} />
-              <AvatarFallback>
+              <AvatarImage className="" src={""} />
+              <AvatarFallback className="">
                 <User className="h-8 w-8" />
               </AvatarFallback>
             </Avatar>
@@ -227,6 +227,7 @@ export default function ProfilePage() {
                     <QrCode className="h-4 w-4" />
                   </Button>
                   <Badge
+                    className=""
                     variant={currentPlan.isActive ? "default" : "secondary"}
                   >
                     {currentPlan.isActive ? "פעיל" : "לא פעיל"}
@@ -335,7 +336,7 @@ export default function ProfilePage() {
                         <h4 className="font-medium truncate">
                           הזמנה #{order.reference}
                         </h4>
-                        <Badge variant={getStatusColor(order.status)}>
+                        <Badge className="" variant={getStatusColor(order.status)}>
                           {getStatusText(order.status)}
                         </Badge>
                       </div>

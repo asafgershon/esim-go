@@ -109,8 +109,8 @@ export function LoginModal({
         )}
       >
         <VisuallyHidden>
-          <DialogTitle>התחברות</DialogTitle>
-          <DialogDescription>התחבר לחשבון שלך</DialogDescription>
+          <DialogTitle className="">התחברות</DialogTitle>
+          <DialogDescription className="">התחבר לחשבון שלך</DialogDescription>
         </VisuallyHidden>
         <div className="bg-background rounded-xl border shadow-lg overflow-hidden">
           {/* Custom header with close button */}

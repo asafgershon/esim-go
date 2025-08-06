@@ -13,7 +13,7 @@ import {
   InputOTPSlot,
   Label,
 } from "@workspace/ui";
-import { Checkbox } from "@workspace/ui/components/checkbox";
+import { Checkbox } from "@workspace/ui";
 import { Smartphone } from "lucide-react";
 import { useEffect } from "react";
 
@@ -150,13 +150,12 @@ export function LoginForm({
             {/* Remember Me Checkbox */}
             <div className="flex items-center space-x-2 space-x-reverse gap-1">
               <Checkbox
-                id="rememberMe"
                 checked={phoneForm.watch("rememberMe")}
                 onCheckedChange={(checked) =>
                   phoneForm.setValue("rememberMe", !!checked)
                 }
               />
-              <Label htmlFor="rememberMe" className="text-sm cursor-pointer">
+              <Label className="text-sm cursor-pointer">
                 זכור אותי במכשיר זה
               </Label>
             </div>

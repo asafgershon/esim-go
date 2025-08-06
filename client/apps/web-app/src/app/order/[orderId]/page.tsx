@@ -160,7 +160,7 @@ export default function OrderPage() {
               <p className="text-sm text-muted-foreground">מזהה: {order.id}</p>
             </div>
             <div className="text-left">
-              <Badge variant={getStatusColor(order.status)}>
+              <Badge className="" variant={getStatusColor(order.status)}>
                 {getStatusText(order.status)}
               </Badge>
               <p className="text-lg font-semibold mt-1">${order.totalPrice}</p>
@@ -236,7 +236,7 @@ export default function OrderPage() {
                         ICCID: {esim.iccid}
                       </p>
                     </div>
-                    <Badge variant={getStatusColor(esim.status)}>
+                    <Badge className="" variant={getStatusColor(esim.status)}>
                       {getStatusText(esim.status)}
                     </Badge>
                   </div>

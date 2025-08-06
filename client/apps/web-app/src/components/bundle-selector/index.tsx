@@ -11,9 +11,11 @@ import { MainView } from "./main-view";
 import { PricingSkeleton, SelectorSkeleton } from "./skeleton";
 import { BundleSelectorRoot } from "./root";
 import { useBundleSelector } from "@/contexts/bundle-selector-context";
+import type { Destination } from "@/contexts/bundle-selector-context";
 
-// Re-export the hook for convenience
+// Re-export the hook and types for convenience
 export { useBundleSelector } from "@/contexts/bundle-selector-context";
+export type { Destination } from "@/contexts/bundle-selector-context";
 
 function BundleSelectorInternal() {
   // Get UI state from context
@@ -77,18 +79,26 @@ function BundleSelectorInternal() {
     }
   }, [activeTab, countries, trips]);
 
-  // Get selected destination details
-  const selectedDestinationData = useMemo(() => {
+  // Compute destination from current selection
+  const destination: Destination | null = useMemo(() => {
     if (countryId) {
-      return {
-        type: "country" as const,
-        data: countries.find((c) => c.id === countryId),
-      };
+      const country = countries.find((c) => c.id === countryId);
+      if (country) {
+        return {
+          id: country.iso.toLowerCase(), // ISO code for countries
+          name: country.nameHebrew || country.name || "",
+          icon: country.flag || "",
+        };
+      }
     } else if (tripId) {
-      return {
-        type: "trip" as const,
-        data: trips.find((t) => t.id === tripId),
-      };
+      const trip = trips.find((t) => t.id === tripId);
+      if (trip) {
+        return {
+          id: trip.id, // Region ID for trips
+          name: trip.nameHebrew || trip.name || "",
+          icon: trip.icon || "",
+        };
+      }
     }
     return null;
   }, [countryId, tripId, countries, trips]);
@@ -99,14 +109,8 @@ function BundleSelectorInternal() {
     loading: pricingLoading,
     error: pricingError,
   } = useBatchPricing({
-    regionId:
-      selectedDestinationData?.type === "trip"
-        ? selectedDestinationData.data?.id
-        : undefined,
-    countryId:
-      selectedDestinationData?.type === "country"
-        ? selectedDestinationData.data?.id
-        : undefined,
+    regionId: tripId || undefined,
+    countryId: countryId || undefined,
   });
 
   // Get pricing for current number of days
@@ -116,8 +120,8 @@ function BundleSelectorInternal() {
 
   // Check if pricing is loading for current selection
   const isLoadingPricing = useMemo(() => {
-    return Boolean(selectedDestinationData && pricingLoading && !pricing);
-  }, [selectedDestinationData, pricingLoading, pricing]);
+    return Boolean(destination && pricingLoading && !pricing);
+  }, [destination, pricingLoading, pricing]);
 
   // Sync pricing with context
   useEffect(() => {
@@ -203,7 +207,7 @@ function BundleSelectorInternal() {
   }
 
   // Pricing error state (shown inline)
-  if (pricingError && selectedDestinationData) {
+  if (pricingError && destination) {
     console.error("Pricing error:", pricingError);
   }
 
@@ -215,11 +219,11 @@ function BundleSelectorInternal() {
           <DatePickerView />
         ) : (
           <MainView
-            selectedDestinationData={selectedDestinationData}
             pricing={pricing}
             comboboxOptions={comboboxOptions}
             isLoadingPricing={isLoadingPricing}
             handlePurchase={() => handlePurchase(pricing)}
+            destination={destination}
           />
         )}
       </SelectorCard>

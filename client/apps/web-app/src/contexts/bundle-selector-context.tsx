@@ -26,6 +26,13 @@ export type UnusedDayDiscountCalculator = (
 export type ViewState = "main" | "datePicker";
 export type ActiveTab = "countries" | "trips";
 
+// Clean destination type
+export interface Destination {
+  id: string; // ISO code for countries, region id for trips
+  name: string; // Display name (preferably Hebrew)
+  icon: string; // Emoji or icon
+}
+
 // Context interface
 interface BundleSelectorContextValue {
   // Bundle selector functions
@@ -48,6 +55,9 @@ interface BundleSelectorContextValue {
   setTripId: (id: string | null) => void;
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+  
+  // Destination State (will be computed from queryStates in the component that has access to countries/trips data)
+  destination: Destination | null;
   
   // Pricing State
   pricing: { totalPrice?: number } | null;
@@ -307,6 +317,9 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
     setTripId,
     activeTab,
     setActiveTab,
+    
+    // Destination State (computed - null for now, will be set by parent component)
+    destination: null,
     
     // Pricing State
     pricing,

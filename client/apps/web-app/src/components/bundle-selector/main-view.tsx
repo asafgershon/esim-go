@@ -1,32 +1,26 @@
 "use client";
 
-import { ComboboxOption } from "@workspace/ui";
-import { FuzzyCombobox } from "@workspace/ui";
+import { useBundleSelector } from "@/contexts/bundle-selector-context";
+import type { Destination } from "@/contexts/bundle-selector-context";
 import {
-  SelectorHeader,
-  SelectorContent,
+  ComboboxOption,
+  FuzzyCombobox,
   SelectorAction,
-  SelectorSection,
-  SelectorLabel,
   SelectorButton,
+  SelectorContent,
+  SelectorHeader,
+  SelectorLabel,
+  SelectorSection,
 } from "@workspace/ui";
 import { Suspense, lazy } from "react";
+import { CountUp } from "../ui/count-up";
 import { CalendarIcon, ChevronsUpDownIcon } from "./icons";
 import { PricingSkeleton } from "./skeleton";
-import { CountUp } from "../ui/count-up";
-import { useBundleSelector } from "@/contexts/bundle-selector-context";
-import type { EnhancedCountry } from "@/hooks/useCountries";
-import type { EnhancedTrip } from "@/hooks/useTrips";
 const MobileDestinationDrawer = lazy(
   () => import("../mobile-destination-drawer")
 );
 
 interface MainViewProps {
-  // Only data that comes from external sources (not UI state)
-  selectedDestinationData: {
-    type: "country" | "trip";
-    data: EnhancedCountry | EnhancedTrip | undefined;
-  } | null;
   pricing: {
     finalPrice?: number;
     currency?: string;
@@ -38,14 +32,15 @@ interface MainViewProps {
   comboboxOptions: ComboboxOption[];
   isLoadingPricing?: boolean;
   handlePurchase: () => void;
+  destination: Destination | null;
 }
 
 export function MainView({
-  selectedDestinationData,
   pricing,
   comboboxOptions,
   isLoadingPricing = false,
   handlePurchase,
+  destination,
 }: MainViewProps) {
   // Get UI state and handlers from context
   const {
@@ -145,7 +140,7 @@ export function MainView({
                 "
               >
                 <span className="text-brand-dark text-[12px] leading-[26px] opacity-50">
-                  {selectedDestinationData?.data?.nameHebrew || "לאן נוסעים?"}
+                  {destination?.name || "לאן נוסעים?"}
                 </span>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   <ChevronsUpDownIcon />
@@ -264,7 +259,7 @@ export function MainView({
         </SelectorSection>
 
         {/* Selected Destination and Pricing */}
-        {selectedDestinationData &&
+        {destination &&
           (isLoadingPricing ? (
             <PricingSkeleton />
           ) : pricing ? (
@@ -274,26 +269,16 @@ export function MainView({
                   <span
                     className="text-xl md:text-2xl"
                     role="img"
-                    aria-label={
-                      selectedDestinationData.data?.nameHebrew || undefined
-                    }
+                    aria-label={destination.name || undefined}
                   >
-                    {selectedDestinationData.type === "country"
-                      ? (selectedDestinationData.data as EnhancedCountry)
-                          ?.flag || ""
-                      : (selectedDestinationData.data as EnhancedTrip)?.icon ||
-                        ""}
+                    {destination.icon}
                   </span>
                   <div>
                     <h3 className="text-[14px] md:text-[18px] font-medium text-brand-dark">
-                      {selectedDestinationData.data?.nameHebrew}
+                      {destination.name}
                     </h3>
                     <p className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
-                      {selectedDestinationData.type === "country"
-                        ? (selectedDestinationData.data as EnhancedCountry)
-                            ?.tagline
-                        : (selectedDestinationData.data as EnhancedTrip)
-                            ?.description}
+                      {/* We can add tagline/description here if needed in the future */}
                     </p>
                   </div>
                 </div>
@@ -348,19 +333,11 @@ export function MainView({
         <SelectorButton
           onClick={handlePurchase}
           aria-label={
-            isPricingValid
-              ? "המשך לרכישת חבילת eSIM"
-              : "בחר יעד לצפייה בחבילות"
+            isPricingValid ? "המשך לרכישת חבילת eSIM" : "בחר יעד לצפייה בחבילות"
           }
-          className={
-            isPricingValid
-              ? "bg-[#00E095] hover:bg-[#00E095]/90"
-              : ""
-          }
+          className={isPricingValid ? "bg-[#00E095] hover:bg-[#00E095]/90" : ""}
         >
-          {isPricingValid
-            ? "לרכישת החבילה"
-            : "לצפייה בחבילה המשתלמת ביותר"}
+          {isPricingValid ? "לרכישת החבילה" : "לצפייה בחבילה המשתלמת ביותר"}
         </SelectorButton>
       </SelectorAction>
     </>
