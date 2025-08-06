@@ -2,23 +2,20 @@
 
 import { useBundleSelector } from "@/contexts/bundle-selector-context";
 import type { Destination } from "@/contexts/bundle-selector-context";
+import { useCountries } from "@/hooks/useCountries";
+import { useTrips } from "@/hooks/useTrips";
+import { useMemo } from "react";
 import {
-  ComboboxOption,
-  FuzzyCombobox,
   SelectorAction,
   SelectorButton,
   SelectorContent,
   SelectorHeader,
-  SelectorLabel,
   SelectorSection,
 } from "@workspace/ui";
-import { Suspense, lazy } from "react";
 import { CountUp } from "../ui/count-up";
-import { CalendarIcon, ChevronsUpDownIcon } from "./icons";
+import { CalendarIcon } from "./icons";
 import { PricingSkeleton } from "./skeleton";
-const MobileDestinationDrawer = lazy(
-  () => import("../mobile-destination-drawer")
-);
+import { DestinationSelector } from "./destination-selector";
 
 interface MainViewProps {
   pricing: {
@@ -29,18 +26,14 @@ interface MainViewProps {
     hasDiscount?: boolean;
     discountAmount?: number;
   } | null;
-  comboboxOptions: ComboboxOption[];
   isLoadingPricing?: boolean;
   handlePurchase: () => void;
-  destination: Destination | null;
 }
 
 export function MainView({
   pricing,
-  comboboxOptions,
   isLoadingPricing = false,
   handlePurchase,
-  destination,
 }: MainViewProps) {
   // Get UI state and handlers from context
   const {
@@ -49,16 +42,41 @@ export function MainView({
     countryId,
     tripId,
     isMobile,
-    showMobileSheet,
     handleTabChange,
-    handleDestinationChange,
     setNumOfDays,
     setCurrentView,
-    setShowMobileSheet,
     setCountryId,
     setTripId,
     isPricingValid,
   } = useBundleSelector();
+
+  // Fetch data for destination display
+  const { countries = [] } = useCountries();
+  const { trips = [] } = useTrips();
+
+  // Compute destination for display in pricing section
+  const destination: Destination | null = useMemo(() => {
+    if (countryId) {
+      const country = countries.find((c) => c.id === countryId);
+      if (country) {
+        return {
+          id: country.iso.toLowerCase(),
+          name: country.nameHebrew || country.name || "",
+          icon: country.flag || "",
+        };
+      }
+    } else if (tripId) {
+      const trip = trips.find((t) => t.id === tripId);
+      if (trip) {
+        return {
+          id: trip.id,
+          name: trip.nameHebrew || trip.name || "",
+          icon: trip.icon || "",
+        };
+      }
+    }
+    return null;
+  }, [countryId, tripId, countries, trips]);
   return (
     <>
       <SelectorHeader>
@@ -115,79 +133,7 @@ export function MainView({
         </div>
 
         {/* Destination Selection */}
-        <SelectorSection
-          role="tabpanel"
-          id={`${activeTab}-panel`}
-          aria-labelledby={`${activeTab}-tab`}
-        >
-          <SelectorLabel>לאן נוסעים?</SelectorLabel>
-          {isMobile ? (
-            <div className="relative">
-              <button
-                id="destination-select"
-                aria-label="בחר יעד"
-                aria-expanded={showMobileSheet}
-                aria-haspopup="dialog"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowMobileSheet(true);
-                }}
-                className="
-                  w-full bg-brand-white border border-[rgba(10,35,46,0.2)] rounded-lg 
-                  h-[34px] px-3 flex items-center cursor-pointer
-                  hover:border-brand-purple transition-colors relative
-                  focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2
-                "
-              >
-                <span className="text-brand-dark text-[12px] leading-[26px] opacity-50">
-                  {destination?.name || "לאן נוסעים?"}
-                </span>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <ChevronsUpDownIcon />
-                </div>
-              </button>
-
-              <Suspense fallback={<div>...</div>}>
-                {showMobileSheet && (
-                  <MobileDestinationDrawer
-                    options={comboboxOptions}
-                    value={
-                      countryId
-                        ? `country-${countryId}`
-                        : tripId
-                        ? `trip-${tripId}`
-                        : ""
-                    }
-                    onValueChange={(v) => {
-                      handleDestinationChange(v);
-                      setShowMobileSheet(false);
-                    }}
-                    onClose={() => setShowMobileSheet(false)}
-                    isOpen={showMobileSheet}
-                  />
-                )}
-              </Suspense>
-            </div>
-          ) : (
-            <div className="relative">
-              <FuzzyCombobox
-                options={comboboxOptions}
-                value={
-                  countryId
-                    ? `country-${countryId}`
-                    : tripId
-                    ? `trip-${tripId}`
-                    : ""
-                }
-                onValueChange={handleDestinationChange}
-                placeholder="לאן נוסעים?"
-                searchPlaceholder="חפש..."
-                emptyMessage="לא נמצאו תוצאות"
-                className="[&>button]:bg-brand-white [&>button]:border [&>button]:border-[rgba(10,35,46,0.2)] [&>button]:rounded-lg [&>button]:md:rounded-[15px] [&>button]:h-[34px] [&>button]:md:h-[60px] [&>button]:hover:border-brand-purple [&>button]:transition-colors [&>button]:text-[12px] [&>button]:md:text-[18px] [&>button:focus]:outline-none [&>button:focus]:ring-2 [&>button:focus]:ring-brand-purple [&>button:focus]:ring-offset-2"
-              />
-            </div>
-          )}
-        </SelectorSection>
+        <DestinationSelector />
 
         {/* Days Selection */}
         <SelectorSection>
