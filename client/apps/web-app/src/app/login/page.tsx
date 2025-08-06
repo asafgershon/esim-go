@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { EnhancedLoginForm } from "@/components/enhanced-login-form";
+import { LoginForm } from "@/components/login-form";
 import { Button } from "@workspace/ui";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -26,7 +26,7 @@ export default function LoginPage() {
         </div>
         
         <div className="bg-white rounded-xl border shadow-lg p-6">
-          <EnhancedLoginForm
+          <LoginForm
             onSuccess={handleLoginSuccess}
             redirectTo="/profile"
           />

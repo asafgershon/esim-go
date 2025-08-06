@@ -1,6 +1,6 @@
 "use client";
 
-import { EnhancedLoginForm } from "@/components/enhanced-login-form";
+import { LoginForm } from "@/components/login-form";
 import { X } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
@@ -59,7 +59,7 @@ export function LoginModalWrapper({ onLoginSuccess }: LoginModalWrapperProps) {
           </button>
           
           {/* Login form */}
-          <EnhancedLoginForm
+          <LoginForm
             onSuccess={handleLoginSuccess}
             redirectTo="/profile"
           />

@@ -1,6 +1,6 @@
 "use client";
 
-import { EnhancedLoginForm } from "@/components/enhanced-login-form";
+import { LoginForm } from "@/components/login-form";
 import { ErrorDisplay } from "@/components/error-display";
 import { useAuth } from "@/hooks/useAuth";
 import { ErrorType } from "@/lib/error-types";
@@ -37,7 +37,7 @@ function DefaultAuthFallback({ onLogin }: { onLogin: () => void }) {
           אנא התחבר כדי לגשת לתוכן זה
         </p>
         
-        <EnhancedLoginForm onSuccess={onLogin} />
+        <LoginForm onSuccess={onLogin} />
       </Card>
     </div>
   );

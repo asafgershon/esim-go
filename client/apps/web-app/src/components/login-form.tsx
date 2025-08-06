@@ -1,19 +1,28 @@
 "use client";
 
-import { GalleryVerticalEnd } from "lucide-react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { cn } from "@/lib/utils";
-import { Button } from "@workspace/ui";
-import { Input } from "@workspace/ui";
-import { Label, InputOTP, InputOTPGroup, InputOTPSlot } from "@workspace/ui";
+import { ErrorDisplay } from "@/components/error-display";
 import { useAppleSignIn } from "@/hooks/useAppleSignIn";
 import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 import { usePhoneOTP } from "@/hooks/usePhoneOTP";
+import { ErrorType } from "@/lib/error-types";
+import { cn } from "@/lib/utils";
+import {
+  Button,
+  Input,
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+  Label,
+} from "@workspace/ui";
+import { Checkbox } from "@workspace/ui/components/checkbox";
+import { Smartphone } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 // Form validation schemas
 interface PhoneFormData {
   phoneNumber: string;
+  rememberMe: boolean;
 }
 
 interface OTPFormData {
@@ -22,12 +31,20 @@ interface OTPFormData {
 
 interface LoginFormProps extends React.ComponentProps<"div"> {
   onSuccess?: () => void;
+  redirectTo?: string;
 }
 
-export function LoginForm({ className, onSuccess, ...props }: LoginFormProps) {
+export function LoginForm({
+  className,
+  onSuccess,
+  redirectTo = "/profile",
+  ...props
+}: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [otp, setOtp] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [showPhoneHelper, setShowPhoneHelper] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const { signInWithApple, loading: appleLoading } = useAppleSignIn();
   const { signInWithGoogle, loading: googleLoading } = useGoogleSignIn();
@@ -44,6 +61,7 @@ export function LoginForm({ className, onSuccess, ...props }: LoginFormProps) {
   const phoneForm = useForm<PhoneFormData>({
     defaultValues: {
       phoneNumber: "",
+      rememberMe: true, // Default to remembering user
     },
     mode: "onChange",
   });
@@ -56,73 +74,143 @@ export function LoginForm({ className, onSuccess, ...props }: LoginFormProps) {
     mode: "onChange",
   });
 
-  const handlePhoneSubmit = async (data: PhoneFormData) => {
-    setError("");
+  const handleOTPSubmit = useCallback(
+    async (data: OTPFormData) => {
+      setError(null);
 
-    const result = await sendOTP(data.phoneNumber);
+      const result = await verifyOTP(data.otp);
 
-    if (!result.success) {
-      setError(result.error || "Failed to send OTP");
+      if (result.success) {
+        // Clear any pending errors
+        setError(null);
+
+        // Success callback
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          window.location.href = redirectTo;
+        }
+      } else {
+        setError(result.error || "קוד האימות שגוי");
+        setOtp("");
+        otpForm.setValue("otp", "");
+      }
+    },
+    [onSuccess, otpForm, redirectTo, verifyOTP]
+  );
+
+  // Resend cooldown timer
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
     }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  // Auto-submit OTP when complete
+  useEffect(() => {
+    if (otp.length === 6 && !otpLoading) {
+      handleOTPSubmit({ otp });
+    }
+  }, [handleOTPSubmit, otp, otpLoading]);
+
+  const formatPhoneNumber = (value: string) => {
+    // Remove all non-digits except +
+    const cleaned = value.replace(/[^\d+]/g, "");
+
+    // If it starts with +972, format as Israeli number
+    if (cleaned.startsWith("+972")) {
+      const rest = cleaned.slice(4);
+      if (rest.length <= 9) {
+        return `+972 ${rest.replace(/(\d{2})(\d{3})(\d{4})/, "$1-$2-$3")}`;
+      }
+    }
+
+    // If it starts with 05, assume Israeli mobile
+    if (cleaned.startsWith("05")) {
+      return `+972 ${cleaned
+        .slice(1)
+        .replace(/(\d{2})(\d{3})(\d{4})/, "$1-$2-$3")}`;
+    }
+
+    return cleaned;
   };
 
-  const handleOTPSubmit = async (data: OTPFormData) => {
-    setError("");
+  const handlePhoneSubmit = async (data: PhoneFormData) => {
+    setError(null);
 
-    const result = await verifyOTP(data.otp);
+    // Clean and validate phone number
+    const cleanedPhone = data.phoneNumber.replace(/[^\d+]/g, "");
+
+    const result = await sendOTP(cleanedPhone);
 
     if (result.success) {
-      if (onSuccess) {
-        onSuccess();
+      setResendCooldown(60); // 60 second cooldown
+      // Save preference if remember me is checked
+      if (data.rememberMe) {
+        localStorage.setItem("rememberLogin", "true");
+        localStorage.setItem("lastPhoneNumber", cleanedPhone);
       } else {
-        window.location.href = "/";
+        localStorage.removeItem("rememberLogin");
+        localStorage.removeItem("lastPhoneNumber");
       }
     } else {
-      setError(result.error || "Invalid OTP");
-      setOtp("");
-      otpForm.setValue("otp", "");
+      setError(result.error || "שליחת קוד האימות נכשלה");
     }
   };
 
-  const handleAppleSignIn = async () => {
-    try {
-      setIsLoading(true);
-      setError("");
-      const result = await signInWithApple(false); // false for manual trigger
+  const handleResendOTP = async () => {
+    if (resendCooldown > 0) return;
 
-      if (result.success) {
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          window.location.href = "/";
-        }
-      } else {
-        setError("Apple Sign-In failed: " + result.error);
-      }
-    } catch (error) {
-      setError("Apple Sign-In failed: " + (error as Error).message);
-    } finally {
-      setIsLoading(false);
+    setError(null);
+    const result = await sendOTP(phoneNumber);
+
+    if (result.success) {
+      setResendCooldown(60);
+    } else {
+      setError(result.error || "שליחת קוד חוזרת נכשלה");
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleSocialSignIn = async (provider: "apple" | "google") => {
     try {
       setIsLoading(true);
-      setError("");
-      const result = await signInWithGoogle(false); // false for manual trigger
+      setError(null);
 
-      if (result.success) {
+      let result;
+      try {
+        result =
+          provider === "apple"
+            ? await signInWithApple(false)
+            : await signInWithGoogle(false);
+      } catch (signInError) {
+        // Handle promise rejection as a failed sign-in
+        result = { success: false, error: (signInError as Error).message };
+      }
+
+      if (result && result.success) {
         if (onSuccess) {
           onSuccess();
         } else {
-          window.location.href = "/";
+          window.location.href = redirectTo;
         }
       } else {
-        setError("Google Sign-In failed: " + result.error);
+        const errorMessage =
+          provider === "apple"
+            ? "התחברות עם Apple נכשלה"
+            : "התחברות עם Google נכשלה";
+        if (result?.error && !result.error.includes("dismissed") && !result.error.includes("skipped")) {
+          setError(`${errorMessage}: ${result.error}`);
+        }
+        // Don't show error for user dismissing the popup
       }
     } catch (error) {
-      setError("Google Sign-In failed: " + (error as Error).message);
+      const errorMessage =
+        provider === "apple"
+          ? "התחברות עם Apple נכשלה"
+          : "התחברות עם Google נכשלה";
+      setError(`${errorMessage}: ${(error as Error).message}`);
     } finally {
       setIsLoading(false);
     }
@@ -131,141 +219,204 @@ export function LoginForm({ className, onSuccess, ...props }: LoginFormProps) {
   const handleBackToPhone = () => {
     resetFlow();
     setOtp("");
-    setError("");
+    setError(null);
+    setResendCooldown(0);
     otpForm.reset();
     phoneForm.clearErrors();
   };
 
+  // Load remembered phone number
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const rememberLogin = localStorage.getItem("rememberLogin") === "true";
+      const lastPhone = localStorage.getItem("lastPhoneNumber");
+
+      if (rememberLogin && lastPhone) {
+        phoneForm.setValue("phoneNumber", formatPhoneNumber(lastPhone));
+        phoneForm.setValue("rememberMe", true);
+      }
+    }
+  }, [phoneForm]);
+
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn("flex flex-col gap-6", className)} dir="rtl" {...props}>
+      {/* Header */}
       <div className="flex flex-col items-center text-center">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent">
-          <GalleryVerticalEnd className="h-5 w-5 text-accent-foreground" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+          <Smartphone className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="mt-4 text-xl font-semibold">Sign in to your account</h1>
-        <p className="text-balance text-muted-foreground">
-          Choose your preferred sign-in method
+        <h1 className="mt-4 text-2xl font-bold text-foreground">
+          {step === "phone" ? "התחברות לחשבון" : "אימות מספר טלפון"}
+        </h1>
+        <p className="text-balance text-muted-foreground mt-2">
+          {step === "phone"
+            ? "בחר את דרך ההתחברות המועדפת עליך"
+            : `הזנו את הקוד שנשלח ל-${phoneNumber}`}
         </p>
       </div>
 
+      {/* Error Display */}
       {error && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-          <p className="text-sm text-destructive">{error}</p>
-        </div>
+        <ErrorDisplay
+          error={{
+            type: ErrorType.AUTH_INVALID,
+            message: error,
+            retryable: true,
+          }}
+          onRetry={() => setError(null)}
+          compact
+        />
       )}
 
+      {/* Phone Number Step */}
       {step === "phone" && (
         <div className="grid gap-6">
           <form
             onSubmit={phoneForm.handleSubmit(handlePhoneSubmit)}
-            className="grid gap-2"
+            className="grid gap-4"
           >
-            <Label htmlFor="phone">Phone number</Label>
-            <Input
-              id="phone"
-              placeholder="+1 (555) 123-4567"
-              type="tel"
-              {...phoneForm.register("phoneNumber", {
-                required: "Phone number is required",
-                pattern: {
-                  value: /^\+?[\d\s\-\(\)]+$/,
-                  message: "Please enter a valid phone number",
-                },
-                minLength: {
-                  value: 10,
-                  message: "Phone number must be at least 10 digits",
-                },
-                validate: (value) => {
-                  const digitsOnly = value.replace(/\D/g, "");
-                  if (digitsOnly.length < 10) {
-                    return "Phone number must have at least 10 digits";
-                  }
-                  return true;
-                },
-              })}
-              autoComplete="tel"
-              disabled={otpLoading}
-              className={
-                phoneForm.formState.errors.phoneNumber
-                  ? "border-destructive"
-                  : ""
-              }
-            />
-            {phoneForm.formState.errors.phoneNumber && (
-              <p className="text-sm text-destructive">
-                {phoneForm.formState.errors.phoneNumber.message}
-              </p>
-            )}
+            <div className="grid gap-2">
+              <Label htmlFor="phone" className="text-right">
+                מספר טלפון
+              </Label>
+              <Input
+                id="phone"
+                placeholder="+972 50-123-4567"
+                type="tel"
+                dir="ltr"
+                {...phoneForm.register("phoneNumber", {
+                  required: "מספר טלפון נדרש",
+                  pattern: {
+                    value: /^\+?[\d\s\-\(\)]+$/,
+                    message: "אנא הזן מספר טלפון תקין",
+                  },
+                  minLength: {
+                    value: 10,
+                    message: "מספר הטלפון חייב להכיל לפחות 10 ספרות",
+                  },
+                  validate: (value) => {
+                    const digitsOnly = value.replace(/\D/g, "");
+                    if (digitsOnly.length < 10) {
+                      return "מספר הטלפון חייב להכיל לפחות 10 ספרות";
+                    }
+                    return true;
+                  },
+                })}
+                onChange={(e) => {
+                  const formatted = formatPhoneNumber(e.target.value);
+                  phoneForm.setValue("phoneNumber", formatted);
+                }}
+                onFocus={() => setShowPhoneHelper(true)}
+                onBlur={() => setTimeout(() => setShowPhoneHelper(false), 200)}
+                autoComplete="tel"
+                disabled={otpLoading}
+                className={
+                  (phoneForm.formState.errors.phoneNumber
+                    ? "border-destructive"
+                    : "") + " text-left"
+                }
+              />
+
+              {/* Phone number helper */}
+              {showPhoneHelper && (
+                <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                  <p>דוגמאות תקינות:</p>
+                  <p>• +972-50-123-4567</p>
+                  <p>• 050-123-4567</p>
+                  <p>• +1-555-123-4567</p>
+                </div>
+              )}
+
+              {phoneForm.formState.errors.phoneNumber && (
+                <p className="text-sm text-destructive text-right">
+                  {phoneForm.formState.errors.phoneNumber.message}
+                </p>
+              )}
+            </div>
+
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center space-x-2 space-x-reverse gap-1">
+              <Checkbox
+                id="rememberMe"
+                checked={phoneForm.watch("rememberMe")}
+                onCheckedChange={(checked) =>
+                  phoneForm.setValue("rememberMe", !!checked)
+                }
+              />
+              <Label htmlFor="rememberMe" className="text-sm cursor-pointer">
+                זכור אותי במכשיר זה
+              </Label>
+            </div>
+
             <Button
               type="submit"
               disabled={otpLoading || !phoneForm.formState.isValid}
+              className="w-full"
             >
-              {otpLoading ? "Sending..." : "Send verification code"}
+              {otpLoading ? "שולח..." : "שלח קוד אימות"}
             </Button>
           </form>
 
-          <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-            <span className="bg-background text-muted-foreground relative z-10 px-2">
-              Or
+          {/* Divider */}
+          <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+            <span className="bg-background text-muted-foreground relative z-10 px-4">
+              או
             </span>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-1 w-full">
+          {/* Social Sign-In */}
+          <div className="grid gap-3">
             <Button
               variant="outline"
               type="button"
-              onClick={handleAppleSignIn}
+              onClick={() => handleSocialSignIn("apple")}
               disabled={isLoading || appleLoading || otpLoading}
+              className="w-full"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                className="mr-2 h-4 w-4"
+                className="ml-2 h-5 w-5"
               >
                 <path
                   d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
                   fill="currentColor"
                 />
               </svg>
-              {appleLoading ? "Signing in..." : "Continue with Apple"}
+              {appleLoading ? "מתחבר..." : "המשך עם Apple"}
             </Button>
 
             <Button
               variant="outline"
               type="button"
-              className="w-full"
-              onClick={handleGoogleSignIn}
+              onClick={() => handleSocialSignIn("google")}
               disabled={isLoading || googleLoading || otpLoading}
+              className="w-full"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                className="mr-2 h-4 w-4"
+                className="ml-2 h-5 w-5"
               >
                 <path
                   d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
                   fill="currentColor"
                 />
               </svg>
-              {googleLoading ? "Signing in..." : "Continue with Google"}
+              {googleLoading ? "מתחבר..." : "המשך עם Google"}
             </Button>
           </div>
         </div>
       )}
 
+      {/* OTP Verification Step */}
       {step === "otp" && (
         <div className="grid gap-6">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold">Enter verification code</h2>
-            <p className="text-sm text-muted-foreground">
-              We sent a 6-digit code to {phoneNumber}
-            </p>
-          </div>
-
           <form
             onSubmit={otpForm.handleSubmit(handleOTPSubmit)}
-            className="grid gap-4"
+            className="grid gap-6"
           >
+            {/* OTP Input */}
             <div className="flex justify-center">
               <InputOTP
                 maxLength={6}
@@ -275,6 +426,7 @@ export function LoginForm({ className, onSuccess, ...props }: LoginFormProps) {
                   otpForm.setValue("otp", value, { shouldValidate: true });
                 }}
                 disabled={otpLoading}
+                dir="ltr"
               >
                 <InputOTPGroup>
                   <InputOTPSlot index={0} />
@@ -287,18 +439,21 @@ export function LoginForm({ className, onSuccess, ...props }: LoginFormProps) {
               </InputOTP>
             </div>
 
-            {/* Hidden input for react-hook-form validation */}
+            {/* Auto-submit message */}
+            {otp.length === 6 && (
+              <p className="text-xs text-center text-muted-foreground">
+                מאמת אוטומטית...
+              </p>
+            )}
+
+            {/* Hidden input for validation */}
             <input
               type="hidden"
               {...otpForm.register("otp", {
-                required: "Verification code is required",
+                required: "קוד אימות נדרש",
                 minLength: {
                   value: 6,
-                  message: "Please enter the complete 6-digit code",
-                },
-                maxLength: {
-                  value: 6,
-                  message: "Code must be exactly 6 digits",
+                  message: "אנא הזן קוד של 6 ספרות",
                 },
               })}
             />
@@ -309,47 +464,55 @@ export function LoginForm({ className, onSuccess, ...props }: LoginFormProps) {
               </p>
             )}
 
-            <Button
-              type="submit"
-              disabled={
-                otpLoading || !otpForm.formState.isValid || otp.length !== 6
-              }
-            >
-              {otpLoading ? "Verifying..." : "Verify code"}
-            </Button>
+            {/* Resend Code */}
+            <div className="text-center">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleResendOTP}
+                disabled={resendCooldown > 0 || otpLoading}
+                className="text-sm"
+              >
+                {resendCooldown > 0
+                  ? `שלח שוב בעוד ${resendCooldown} שניות`
+                  : "שלח קוד חדש"}
+              </Button>
+            </div>
 
+            {/* Back Button */}
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={handleBackToPhone}
               disabled={otpLoading}
             >
-              Back to phone number
+              חזור למספר הטלפון
             </Button>
           </form>
         </div>
       )}
 
+      {/* Terms */}
       <div className="text-muted-foreground text-center text-xs text-balance">
-        By clicking continue, you agree to our{" "}
-        <a 
+        על ידי המשך, אתה מסכים ל
+        <a
           href="/docs/terms.pdf"
           target="_blank"
           rel="noopener noreferrer"
-          className="underline underline-offset-4 hover:text-primary"
+          className="underline underline-offset-4 hover:text-primary mx-1"
         >
-          Terms of Service
-        </a>{" "}
-        and{" "}
-        <a 
+          תנאי השימוש
+        </a>
+        ו
+        <a
           href="/docs/privacy.pdf"
           target="_blank"
           rel="noopener noreferrer"
-          className="underline underline-offset-4 hover:text-primary"
+          className="underline underline-offset-4 hover:text-primary mx-1"
         >
-          Privacy Policy
+          מדיניות הפרטיות
         </a>
-        .
+        שלנו.
       </div>
     </div>
   );
