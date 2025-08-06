@@ -82,7 +82,8 @@
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist node_modules/.vite tsconfig.tsbuildinfo .turbo"
   },
   "dependencies": {
     "@dnd-kit/modifiers": "^9.0.0",

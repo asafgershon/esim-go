@@ -196,6 +196,7 @@ Remember: The agents are here to help you build faster and better. Trust their e
 ## Testing Best Practices
 
 - Always use vitest for testing 'bun run test' and not 'bun test'!
+- Add --run to vitest to avoid watch mode
 
 ## Type Checking
 

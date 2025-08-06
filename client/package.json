@@ -9,7 +9,8 @@
     "build:web-app": "turbo build --filter=...web-app",
     "build:dashboard": "turbo build --filter=...dashboard",
     "dev": "turbo dev",
-    "lint": "turbo lint"
+    "lint": "turbo lint",
+    "clean": "turbo clean"
   },
   "workspaces": [
     "packages/*",
