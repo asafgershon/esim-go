@@ -1,11 +1,11 @@
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
 
-import { cn } from "../lib/utils"
+import { cn } from "../lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-[#0a232e] focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
   {
     variants: {
       variant: {
@@ -25,8 +25,8 @@ const buttonVariants = cva(
         "brand-primary":
           "bg-[#535fc8] text-[#fefefe] border border-[#fefefe] rounded-[10px] text-[22px] px-5 py-4 hover:bg-[#535fc8]/90",
         "brand-success":
-          "bg-[#00e095] text-[#fefefe] border border-[#fefefe] rounded-[10px] text-[22px] px-5 py-4 hover:bg-[#00e095]/90",
-        "primary-brand": 
+          "bg-[#00e095] text-[#0a232e] border border-[#fefefe] rounded-[10px] text-[22px] px-5 py-4 hover:bg-[#00e095]/90",
+        "primary-brand":
           "bg-[#F8FAFC] text-[#0A232E] font-medium rounded-[5px] border border-[#0A232E] shadow-[2px_3px_0px_0px_#0A232E] hover:shadow-[2px_2px_0px_0px_#0A232E] active:shadow-[1px_1px_0px_0px_#0A232E] hover:translate-y-[-1px] active:translate-y-[1px] transition-all duration-150",
       },
       size: {
@@ -65,7 +65,7 @@ const buttonVariants = cva(
       emphasized: false,
     },
   }
-)
+);
 
 function Button({
   className,
@@ -77,10 +77,10 @@ function Button({
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-    emphasized?: boolean
+    asChild?: boolean;
+    emphasized?: boolean;
   }) {
-  const Comp = asChild ? Slot : "button"
+  const Comp = asChild ? Slot : "button";
 
   return (
     <Comp
@@ -89,7 +89,7 @@ function Button({
       style={style}
       {...props}
     />
-  )
+  );
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants };

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "@workspace/ui/lib/utils"
+import { cn } from "../lib/utils"
 import { Input, type InputProps } from "./input"
 
 export interface InputWithAdornmentProps extends InputProps {
