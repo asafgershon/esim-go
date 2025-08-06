@@ -7,9 +7,16 @@
   --color-brand-dark: #0A232E;
   --color-brand-light-blue: #F8FAFC;
   --color-brand-white: #FEFEFE;
+  
+  /* Direct button colors for immediate fix */
+  --color-purple-brand: #535FC8;
+  --color-green-brand: #00E095;
+  --color-dark-brand: #0A232E;
+  --color-white-brand: #FEFEFE;
+  --color-light-blue-brand: #F8FAFC;
 }
 
-@import "../../../../packages/ui/src/styles/globals.css";
+@import "@workspace/ui/styles.css";
 @import "tw-animate-css";
 
 /* Birzia Font Family */

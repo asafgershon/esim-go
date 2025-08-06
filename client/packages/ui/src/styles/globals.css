@@ -11,6 +11,13 @@
   --color-brand-light-blue: #F8FAFC;      /* Light blue background */
   --color-brand-white: #FEFEFE;           /* Off-white */
   
+  /* Tailwind v4 Direct Color Definitions for Button Variants */
+  --color-purple-brand: #535FC8;          /* For bg-purple-brand */
+  --color-green-brand: #00E095;           /* For bg-green-brand */
+  --color-dark-brand: #0A232E;            /* For bg-dark-brand */
+  --color-white-brand: #FEFEFE;           /* For bg-white-brand */
+  --color-light-blue-brand: #F8FAFC;      /* For bg-light-blue-brand */
+  
   /* Legacy color names (for compatibility) */
   --color-hiiilo-teal: oklch(0.32 0.05 205);        /* #2a4a5a - Dark teal from logo background */
   --color-hiiilo-teal-dark: oklch(0.22 0.05 205);   /* #1a3a4a - Darker teal variation */
