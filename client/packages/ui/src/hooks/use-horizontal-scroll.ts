@@ -2,12 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Draggable } from "gsap/Draggable";
 
 // Register GSAP plugins
 if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger, Draggable);
+  gsap.registerPlugin(Draggable);
 }
 
 export interface UseHorizontalScrollOptions {
@@ -32,9 +31,9 @@ export interface UseHorizontalScrollOptions {
 }
 
 export interface UseHorizontalScrollReturn {
-  containerRef: React.RefObject<HTMLDivElement>;
-  contentRef: React.RefObject<HTMLDivElement>;
-  progressRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  contentRef: React.RefObject<HTMLDivElement | null>;
+  progressRef: React.RefObject<HTMLDivElement | null>;
 }
 
 /**
@@ -52,8 +51,6 @@ export function useHorizontalScroll(
     animationDuration = 0.5,
     animationEase = "power2.out",
     startFromRight = true,
-    progressColor = "#00E095",
-    progressTrackColor = "rgba(255, 255, 255, 0.1)",
   } = options;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -71,6 +68,7 @@ export function useHorizontalScroll(
 
     const container = containerRef.current;
     const content = contentRef.current;
+    const progressBar = progressRef.current;
 
     // Calculate scroll bounds
     const updateBounds = () => {
@@ -86,7 +84,7 @@ export function useHorizontalScroll(
     gsap.set(content, { x: initialPosition });
     
     // Initialize progress bar
-    gsap.set(progressRef.current, {
+    gsap.set(progressBar, {
       scaleX: 0,
       transformOrigin: "left center",
     });
@@ -105,10 +103,10 @@ export function useHorizontalScroll(
 
     // Update progress bar
     function updateProgress() {
-      if (!progressRef.current || bounds >= 0) return;
+      if (!progressBar || bounds >= 0 || !draggable) return;
       
       const progress = Math.abs(draggable.x / bounds);
-      gsap.set(progressRef.current, {
+      gsap.set(progressBar, {
         scaleX: progress,
         transformOrigin: "left center",
       });
@@ -116,28 +114,32 @@ export function useHorizontalScroll(
 
     // Mouse wheel support
     const handleWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        e.preventDefault();
-        const delta = e.deltaX * wheelSpeed;
-        const newX = draggable.x - delta;
-        const clampedX = Math.max(bounds, Math.min(0, newX));
-        
-        gsap.to(content, {
-          x: clampedX,
-          duration: animationDuration,
-          ease: animationEase,
-          onUpdate: () => {
+      if (!draggable || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      
+      e.preventDefault();
+      const delta = e.deltaX * wheelSpeed;
+      const newX = draggable.x - delta;
+      const clampedX = Math.max(bounds, Math.min(0, newX));
+      
+      gsap.to(content, {
+        x: clampedX,
+        duration: animationDuration,
+        ease: animationEase,
+        onUpdate: () => {
+          if (draggable) {
             draggable.update();
             updateProgress();
-          },
-        });
-      }
+          }
+        },
+      });
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
 
     // Handle resize
     const handleResize = () => {
+      if (!draggable) return;
+      
       bounds = updateBounds();
       draggable.applyBounds({ minX: bounds, maxX: 0 });
       
@@ -157,11 +159,14 @@ export function useHorizontalScroll(
     let startX = 0;
 
     const handleTouchStart = (e: TouchEvent) => {
+      if (!draggable || !e.touches[0]) return;
       touchStartX = e.touches[0].clientX;
       startX = draggable.x;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      if (!draggable || !e.touches[0]) return;
+      
       const touchX = e.touches[0].clientX;
       const diff = touchX - touchStartX;
       const newX = startX + diff;
@@ -182,7 +187,9 @@ export function useHorizontalScroll(
 
     // Cleanup
     return () => {
-      draggable.kill();
+      if (draggable) {
+        draggable.kill();
+      }
       container.removeEventListener("wheel", handleWheel);
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchmove", handleTouchMove);
@@ -196,8 +203,6 @@ export function useHorizontalScroll(
     animationDuration,
     animationEase,
     startFromRight,
-    progressColor,
-    progressTrackColor,
   ]);
 
   return {

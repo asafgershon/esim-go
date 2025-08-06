@@ -30,6 +30,7 @@ module.exports = defineConfig({
         'cmdk',
         'date-fns',
         'fuse.js',
+        /^gsap/,
         'is-mobile',
         'lucide-react',
         'overlayscrollbars',
