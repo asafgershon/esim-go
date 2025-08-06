@@ -1,32 +1,15 @@
 "use client";
 
 import { Star } from "lucide-react";
-import dynamic from "next/dynamic";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Draggable } from "gsap/Draggable";
 
-// Lazy load the scrollbar component
-const Scrollbars = dynamic(
-  () => import("react-custom-scrollbars-2").then((mod) => mod.Scrollbars),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="md:hidden overflow-x-auto">
-        <div className="flex gap-4 min-w-max px-4">
-          {/* Skeleton loader while scrollbar loads */}
-          <div className="animate-pulse flex gap-6">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="flex-shrink-0 bg-gray-700 rounded-[30px]"
-                style={{ width: "320px", height: "116px" }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    ),
-  }
-);
+// Register GSAP plugins
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger, Draggable);
+}
 
 interface Review {
   id: string;
@@ -46,7 +29,7 @@ interface ReviewCardProps {
 const ReviewCard = ({ review }: ReviewCardProps) => {
   return (
     <div
-      className="w-full max-w-[480px] h-[180px] rounded-[30px] border border-solid border-[#fefefe] hover:bg-white/10 transition-all duration-300 flex justify-between p-5 gap-20"
+      className="w-full h-[180px] rounded-[30px] border border-solid border-[#fefefe] hover:bg-white/10 transition-all duration-300 flex justify-between p-5 gap-20"
       style={{ backgroundColor: "rgba(254,254,254,0.08)" }}
     >
       {/* Right section with text */}
@@ -163,29 +146,135 @@ const reviews: Review[] = [
 ];
 
 export const ReviewsSection = () => {
-  useEffect(() => {
-    // Add global styles to hide scrollbars
-    const style = document.createElement("style");
-    style.textContent = `
-      .hide-scrollbar::-webkit-scrollbar {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
-      }
-      .hide-scrollbar {
-        -ms-overflow-style: none !important;  /* IE and Edge */
-        scrollbar-width: none !important;  /* Firefox */
-      }
-    `;
-    document.head.appendChild(style);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (
+      !containerRef.current ||
+      !trackRef.current ||
+      !contentRef.current ||
+      !progressRef.current
+    )
+      return;
+
+    const container = containerRef.current;
+    const content = contentRef.current;
+
+    // Calculate scroll bounds
+    const updateBounds = () => {
+      const containerWidth = container.offsetWidth;
+      const contentWidth = content.scrollWidth;
+      return Math.min(0, containerWidth - contentWidth - 32); // 32px for padding
+    };
+
+    let bounds = updateBounds();
+    
+    // Start from the rightmost position (RTL initial position)
+    gsap.set(content, { x: bounds });
+    
+    // Initialize progress bar at 0% (empty at start)
+    gsap.set(progressRef.current, {
+      scaleX: 0,
+      transformOrigin: "left center",
+    });
+
+    // Create draggable (drag right to scroll left - RTL feel)
+    const draggable = Draggable.create(content, {
+      type: "x",
+      bounds: { minX: bounds, maxX: 0 },
+      inertia: true,
+      edgeResistance: 0.85,
+      onDrag: updateProgress,
+      onThrowUpdate: updateProgress,
+      cursor: "grab",
+      activeCursor: "grabbing",
+    })[0];
+
+    // Update progress bar (fills as you scroll)
+    function updateProgress() {
+      const progress = Math.abs(draggable.x / bounds);
+      gsap.set(progressRef.current, {
+        scaleX: progress,
+        transformOrigin: "left center",
+      });
+    }
+
+    // Mouse wheel support (inverted for RTL feel)
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        e.preventDefault();
+        const newX = draggable.x - e.deltaX; // Scroll left moves content right
+        const clampedX = Math.max(bounds, Math.min(0, newX));
+        gsap.to(content, {
+          x: clampedX,
+          duration: 0.5,
+          ease: "power2.out",
+          onUpdate: () => {
+            draggable.update();
+            updateProgress();
+          },
+        });
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+
+    // Handle resize
+    const handleResize = () => {
+      bounds = updateBounds();
+      draggable.applyBounds({ minX: bounds, maxX: 0 });
+      if (draggable.x < bounds) {
+        gsap.set(content, { x: bounds });
+        draggable.update();
+      }
+      updateProgress();
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    // Touch support for mobile (drag left to right)
+    let touchStartX = 0;
+    let startX = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.touches[0].clientX;
+      startX = draggable.x;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const touchX = e.touches[0].clientX;
+      const diff = touchX - touchStartX; // Swipe left to scroll right
+      const newX = startX + diff;
+      const clampedX = Math.max(bounds, Math.min(0, newX));
+      gsap.set(content, { x: clampedX });
+      draggable.update();
+      updateProgress();
+    };
+
+    container.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    });
+    container.addEventListener("touchmove", handleTouchMove, { passive: true });
+
+    // Cleanup
     return () => {
-      document.head.removeChild(style);
+      draggable.kill();
+      container.removeEventListener("wheel", handleWheel);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
   return (
-    <section className="py-16 md:py-24 relative overflow-hidden w-full" id="reviews" aria-label="ביקורות לקוחות">
+    <section
+      className="py-16 md:py-24 relative overflow-hidden w-full"
+      id="reviews"
+      aria-label="ביקורות לקוחות"
+    >
       <div className="container mx-auto px-4 w-full">
         {/* Section header */}
         <div className="text-center mb-12">
@@ -194,76 +283,54 @@ export const ReviewsSection = () => {
           </h2>
         </div>
 
-        {/* Horizontal Scroll with Custom Scrollbar - Both Desktop and Mobile */}
+        {/* Horizontal Scroll Container */}
         <div
-          className="relative"
-          style={{ height: "200px", overflow: "hidden" }}
+          ref={containerRef}
+          className="relative overflow-hidden"
+          style={{ height: "200px" }}
         >
-          <Scrollbars
-            style={{ width: "100%", height: "100%" }}
-            autoHide
-            autoHideTimeout={1000}
-            autoHideDuration={200}
-            renderView={(props) => (
-              <div
-                {...props}
-                style={{
-                  ...props.style,
-                  overflowX: "scroll",
-                  overflowY: "hidden",
-                  marginBottom: "-20px",
-                  paddingBottom: "20px",
-                }}
-                className="hide-scrollbar"
-              />
-            )}
-            renderTrackHorizontal={(props) => (
-              <div
-                {...props}
-                className="track-horizontal"
-                style={{
-                  ...props.style,
-                  height: 6,
-                  bottom: 16,
-                  left: 16,
-                  right: 16,
-                  borderRadius: 3,
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                }}
-              />
-            )}
-            renderThumbHorizontal={(props) => (
-              <div
-                {...props}
-                className="thumb-horizontal"
-                style={{
-                  ...props.style,
-                  height: 6,
-                  backgroundColor: "#00E095",
-                  borderRadius: 3,
-                  cursor: "pointer",
-                }}
-              />
-            )}
-            renderTrackVertical={() => <div style={{ display: "none" }} />}
-            renderThumbVertical={() => <div style={{ display: "none" }} />}
+          <div
+            ref={contentRef}
+            className="flex gap-6 px-4 absolute top-0 left-0"
+            style={{
+              cursor: "grab",
+              userSelect: "none",
+              WebkitUserSelect: "none",
+            }}
           >
-            <div
-              className="flex gap-6 px-4"
-              style={{
-                paddingBottom: "28px",
-              }}
-            >
-              {reviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="flex-shrink-0"
-                >
-                  <ReviewCard review={review} />
-                </div>
-              ))}
-            </div>
-          </Scrollbars>
+            {reviews.map((review) => (
+              <div
+                key={review.id}
+                className="flex-shrink-0"
+                style={{ width: "480px" }}
+              >
+                <ReviewCard review={review} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Progress Track */}
+        <div
+          ref={trackRef}
+          className="relative mx-auto mt-6"
+          style={{
+            height: "4px",
+            width: "200px",
+            backgroundColor: "rgba(255, 255, 255, 0.1)",
+            borderRadius: "2px",
+          }}
+        >
+          <div
+            ref={progressRef}
+            className="absolute top-0 left-0 h-full"
+            style={{
+              width: "100%",
+              backgroundColor: "#00E095",
+              borderRadius: "2px",
+              transform: "scaleX(0)",
+            }}
+          />
         </div>
       </div>
     </section>

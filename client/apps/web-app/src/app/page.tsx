@@ -16,16 +16,8 @@ import { PromoBanner } from "@/components/promo-banner";
 import { QASection } from "@/components/qa-section";
 import { ReviewsSection } from "@/components/reviews-section";
 import { WhySwitchSection } from "@/components/why-switch-section";
-import { Footer, useScrollTo } from "@workspace/ui";
-import { Suspense, useRef, lazy } from "react";
-import type { SmoothScrollHandle } from "@workspace/ui";
-
-// Lazy load the SmoothScrollContainer for better initial load performance
-const SmoothScrollContainer = lazy(() => 
-  import("@workspace/ui").then(module => ({ 
-    default: module.SmoothScrollContainer 
-  }))
-);
+import { Footer, useScrollTo, SmoothScrollContainer, type SmoothScrollHandle } from "@workspace/ui";
+import { Suspense, useRef } from "react";
 
 export default function Home() {
   const scrollContainerRef = useRef<SmoothScrollHandle>(null);
@@ -42,23 +34,16 @@ export default function Home() {
   };
 
   return (
-    <Suspense fallback={
+    <SmoothScrollContainer
+      ref={scrollContainerRef}
+      speed={1}
+      smooth={1.5}
+      effects={true}
+      fixedHeader={true}
+      headerHeight={64}
+      className="bg-background"
+    >
       <div className="min-h-screen bg-background" dir="rtl">
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
-      </div>
-    }>
-      <SmoothScrollContainer
-        ref={scrollContainerRef}
-        speed={1}
-        smooth={1.5}
-        effects={true}
-        fixedHeader={true}
-        headerHeight={64}
-        className="bg-background"
-      >
-        <div className="min-h-screen bg-background" dir="rtl">
         {/* Skip Navigation Link */}
         <a
           href="#main-content"
@@ -156,6 +141,5 @@ export default function Home() {
         <Footer onNavigate={handleFooterNavigation} />
       </div>
     </SmoothScrollContainer>
-    </Suspense>
   );
 }
