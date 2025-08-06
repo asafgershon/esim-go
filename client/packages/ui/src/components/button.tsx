@@ -21,18 +21,17 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 rounded-md text-sm",
         link: "text-primary underline-offset-4 hover:underline text-sm",
         "brand-secondary":
-          "bg-white-brand text-dark-brand border border-dark-brand rounded-[10px] text-[22px] px-5 py-5 hover:bg-light-blue-brand",
+          "bg-white-brand text-dark-brand border border-dark-brand hover:bg-light-blue-brand",
         "brand-primary":
-          "bg-purple-brand text-white-brand border border-dark-brand rounded-[10px] text-[22px] px-5 py-5 hover:bg-purple-brand/90",
+          "bg-purple-brand text-white-brand border border-dark-brand hover:bg-purple-brand/90",
         "brand-success":
-          "bg-green-brand text-dark-brand border border-dark-brand rounded-[10px] text-[22px] px-5 py-5 hover:bg-green-brand/90",
+          "bg-green-brand text-dark-brand border border-dark-brand hover:bg-green-brand/90",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
         sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 text-sm",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         icon: "size-8",
-        brand: "px-5 py-4", // Special size for brand variants
       },
       emphasized: {
         true: "",
@@ -55,6 +54,22 @@ const buttonVariants = cva(
         variant: "brand-success",
         emphasized: true,
         class: "shadow-[1px_2px_0px_0px_#0a232e] hover:shadow-[2px_2px_0px_0px_#0a232e] active:shadow-[1px_1px_0px_0px_#0a232e]",
+      },
+      // Brand variants use specific brand sizes instead of default sizes
+      {
+        variant: ["brand-secondary", "brand-primary", "brand-success"],
+        size: "sm",
+        class: "px-5 py-4 rounded-[5px] text-xs gap-1.5 [&_svg]:size-3",
+      },
+      {
+        variant: ["brand-secondary", "brand-primary", "brand-success"],
+        size: "default",
+        class: "px-5 py-4 rounded-[5px] text-sm gap-1.5 [&_svg]:size-3.5",
+      },
+      {
+        variant: ["brand-secondary", "brand-primary", "brand-success"],
+        size: "lg",
+        class: "px-5 py-4 rounded-[10px] text-[22px] gap-2 [&_svg]:size-7",
       },
     ],
     defaultVariants: {

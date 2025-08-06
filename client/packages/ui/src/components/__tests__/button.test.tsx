@@ -13,19 +13,19 @@ describe('Button', () => {
   it('renders brand-secondary variant', () => {
     render(<Button variant="brand-secondary">Secondary</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-[#fefefe]', 'text-[#0a232e]', 'border-[#0a232e]');
+    expect(button).toHaveClass('bg-white-brand', 'text-dark-brand', 'border-dark-brand');
   });
 
   it('renders brand-primary variant', () => {
     render(<Button variant="brand-primary">Primary</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-[#535fc8]', 'text-[#fefefe]');
+    expect(button).toHaveClass('bg-purple-brand', 'text-white-brand');
   });
 
   it('renders brand-success variant', () => {
     render(<Button variant="brand-success">Success</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-[#00e095]', 'text-[#fefefe]');
+    expect(button).toHaveClass('bg-green-brand', 'text-dark-brand');
   });
 
   it('applies emphasized shadow to brand variants', () => {
@@ -40,10 +40,21 @@ describe('Button', () => {
     expect(button).not.toHaveClass('shadow-[1px_2px_0px_0px_#0a232e]');
   });
 
-  it('maintains backward compatibility with brand-primary variant', () => {
-    render(<Button variant="brand-primary">Legacy</Button>);
-    const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-[#F8FAFC]', 'text-[#0A232E]');
+  it('applies correct sizing for brand variants', () => {
+    // Test small size
+    const { rerender } = render(<Button variant="brand-primary" size="sm">Small</Button>);
+    let button = screen.getByRole('button');
+    expect(button).toHaveClass('text-xs', 'rounded-[5px]');
+
+    // Test default size (medium)
+    rerender(<Button variant="brand-primary" size="default">Medium</Button>);
+    button = screen.getByRole('button');
+    expect(button).toHaveClass('text-sm', 'rounded-[5px]');
+
+    // Test large size
+    rerender(<Button variant="brand-primary" size="lg">Large</Button>);
+    button = screen.getByRole('button');
+    expect(button).toHaveClass('text-[22px]', 'rounded-[10px]');
   });
 
   it('applies custom className', () => {

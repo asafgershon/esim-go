@@ -73,12 +73,12 @@ export function Header({ scrollContainerRef }: HeaderProps = {}) {
   // Desktop actions (right side) - No logout button on desktop
   const desktopActions = (
     <div className="flex items-center gap-2">
-      <IconButton variant="brand-primary" size="sm" onClick={handleUserClick}>
+      <IconButton variant="brand-primary" size="default" onClick={handleUserClick}>
         <UserIcon />
       </IconButton>
       <Button
         variant="brand-secondary"
-        size="sm"
+        size="default"
         emphasized
         onClick={() => scrollTo("#esim-selector")}
       >
