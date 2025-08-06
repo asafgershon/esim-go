@@ -55,6 +55,7 @@ export * from './hooks/use-countries'
 export * from './hooks/use-media-query'
 export * from './hooks/use-esim-detection'
 export * from './hooks/use-scroll-to'
+export * from './hooks/use-horizontal-scroll'
 export * from './hooks/useIsMobile'
 // Utils
 export * from "./lib/utils" 

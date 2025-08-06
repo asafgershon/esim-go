@@ -1,32 +1,15 @@
 "use client";
 
-import { Card } from "@workspace/ui";
-import dynamic from "next/dynamic";
-import { useEffect, useMemo } from "react";
-import { ImageWithFallback } from "./image-with-fallback";
-import { useQuery } from "@apollo/client";
+import {
+  useSelectorQueryState,
+  type ActiveTab,
+} from "@/hooks/useSelectorQueryState";
 import { CALCULATE_DESTINATION_PRICES } from "@/lib/graphql/pricing";
-import { useSelectorQueryState, type ActiveTab } from '@/hooks/useSelectorQueryState';
+import { useQuery } from "@apollo/client";
+import { Card, useHorizontalScroll } from "@workspace/ui";
+import { useMemo } from "react";
+import { ImageWithFallback } from "./image-with-fallback";
 
-// Lazy load the scrollbar component
-const Scrollbars = dynamic(
-  () => import("react-custom-scrollbars-2").then(mod => mod.Scrollbars),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="md:hidden overflow-x-auto pb-4">
-        <div className="flex gap-4 min-w-max px-4">
-          {/* Skeleton loader while scrollbar loads */}
-          <div className="animate-pulse flex gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex-shrink-0 w-64 h-72 bg-gray-200 rounded-3xl" />
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
-);
 
 interface Destination {
   id: string;
@@ -44,7 +27,7 @@ const destinations: Destination[] = [
     nameHebrew: "רומא",
     countryIso: "IT",
     image: "/images/destinations/italy.webp",
-    priceFrom: "החל מ- $5"
+    priceFrom: "החל מ- $5",
   },
   {
     id: "usa",
@@ -52,7 +35,7 @@ const destinations: Destination[] = [
     nameHebrew: "ארצות הברית",
     countryIso: "US",
     image: "/images/destinations/america.webp",
-    priceFrom: "החל מ- $7"
+    priceFrom: "החל מ- $7",
   },
   {
     id: "greece",
@@ -60,7 +43,7 @@ const destinations: Destination[] = [
     nameHebrew: "יוון",
     countryIso: "GR",
     image: "/images/destinations/greec.webp",
-    priceFrom: "החל מ- $6"
+    priceFrom: "החל מ- $6",
   },
   {
     id: "thailand",
@@ -68,7 +51,7 @@ const destinations: Destination[] = [
     nameHebrew: "תאילנד",
     countryIso: "TH",
     image: "/images/destinations/thailand.webp",
-    priceFrom: "החל מ- $8"
+    priceFrom: "החל מ- $8",
   },
   {
     id: "dubai",
@@ -76,7 +59,7 @@ const destinations: Destination[] = [
     nameHebrew: "דובאי",
     countryIso: "AE",
     image: "/images/destinations/dubai.webp",
-    priceFrom: "החל מ- $6"
+    priceFrom: "החל מ- $6",
   },
   {
     id: "brazil",
@@ -84,7 +67,7 @@ const destinations: Destination[] = [
     nameHebrew: "ברזיל",
     countryIso: "BR",
     image: "/images/destinations/brazil.webp",
-    priceFrom: "החל מ- $5"
+    priceFrom: "החל מ- $5",
   },
   {
     id: "canada",
@@ -92,7 +75,7 @@ const destinations: Destination[] = [
     nameHebrew: "קנדה",
     countryIso: "CA",
     image: "/images/destinations/canada.webp",
-    priceFrom: "החל מ- $6"
+    priceFrom: "החל מ- $6",
   },
   {
     id: "china",
@@ -100,82 +83,54 @@ const destinations: Destination[] = [
     nameHebrew: "סין",
     countryIso: "CN",
     image: "/images/destinations/china.webp",
-    priceFrom: "החל מ- $5"
+    priceFrom: "החל מ- $5",
   },
 ];
 
 export function DestinationsGallery() {
   // URL state management for bundle selector navigation
   const { setQueryStates } = useSelectorQueryState();
-
-  useEffect(() => {
-    // Add global styles to hide scrollbars
-    const style = document.createElement('style');
-    style.textContent = `
-      .hide-scrollbar::-webkit-scrollbar {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
-      }
-      .hide-scrollbar {
-        -ms-overflow-style: none !important;  /* IE and Edge */
-        scrollbar-width: none !important;  /* Firefox */
-      }
-      @keyframes shimmer {
-        0% {
-          background-position: -200px 0;
-        }
-        100% {
-          background-position: calc(200px + 100%) 0;
-        }
-      }
-      .skeleton-shimmer {
-        background: linear-gradient(
-          90deg,
-          #d4d4d4 0%,
-          #f0f0f0 20%,
-          #ffffff 50%,
-          #f0f0f0 80%,
-          #d4d4d4 100%
-        );
-        background-size: 200px 100%;
-        animation: shimmer 1.2s ease-in-out infinite;
-      }
-    `;
-    document.head.appendChild(style);
-    
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
+  
+  // GSAP horizontal scroll hook for mobile
+  const { containerRef, contentRef, progressRef } = useHorizontalScroll({
+    progressColor: "#535FC8",
+    progressTrackColor: "rgba(83, 95, 200, 0.2)",
+  });
 
   // Prepare inputs for the pricing query - 1 day for each country
   const pricingInputs = useMemo(() => {
-    return destinations.map(dest => ({
+    return destinations.map((dest) => ({
       countryId: dest.countryIso,
-      numOfDays: 1
+      numOfDays: 1,
     }));
   }, []);
 
   // Execute the pricing query
   const { data, loading } = useQuery(CALCULATE_DESTINATION_PRICES, {
     variables: { inputs: pricingInputs },
-    skip: pricingInputs.length === 0
+    skip: pricingInputs.length === 0,
   });
 
   // Map prices to destinations by country ISO
   const pricesByCountry = useMemo(() => {
     if (!data?.calculatePrices) return {};
-    
-    const priceMap: Record<string, { finalPrice: number; currency: string }> = {};
-    data.calculatePrices.forEach((price: { country?: { iso?: string }; finalPrice: number; currency: string }) => {
-      if (price.country?.iso) {
-        priceMap[price.country.iso] = {
-          finalPrice: price.finalPrice,
-          currency: price.currency
-        };
+
+    const priceMap: Record<string, { finalPrice: number; currency: string }> =
+      {};
+    data.calculatePrices.forEach(
+      (price: {
+        country?: { iso?: string };
+        finalPrice: number;
+        currency: string;
+      }) => {
+        if (price.country?.iso) {
+          priceMap[price.country.iso] = {
+            finalPrice: price.finalPrice,
+            currency: price.currency,
+          };
+        }
       }
-    });
+    );
     return priceMap;
   }, [data]);
 
@@ -202,8 +157,8 @@ export function DestinationsGallery() {
         {/* Desktop Grid - Show only first 8 countries */}
         <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {destinations.slice(0, 8).map((destination) => (
-            <DestinationCard 
-              key={destination.id} 
+            <DestinationCard
+              key={destination.id}
               destination={destination}
               loading={loading}
               price={pricesByCountry[destination.countryIso]}
@@ -212,62 +167,58 @@ export function DestinationsGallery() {
           ))}
         </div>
 
-        {/* Mobile Horizontal Scroll with Custom Scrollbar */}
-        <div className="md:hidden relative" style={{ height: '304px', overflow: 'hidden' }}>
-          <Scrollbars
-            style={{ width: '100%', height: '100%' }}
-            autoHide
-            autoHideTimeout={1000}
-            autoHideDuration={200}
-            renderView={props => (
-              <div 
-                {...props} 
-                style={{
-                  ...props.style,
-                  overflowX: 'scroll',
-                  overflowY: 'hidden',
-                  marginBottom: '-20px',
-                  paddingBottom: '20px'
-                }}
-                className="hide-scrollbar"
-              />
-            )}
-            renderTrackHorizontal={props => (
-              <div {...props} className="track-horizontal" style={{
-                ...props.style,
-                height: 6,
-                bottom: 16,
-                left: 16,
-                right: 16,
-                borderRadius: 3,
-                backgroundColor: 'rgba(0, 0, 0, 0.1)'
-              }} />
-            )}
-            renderThumbHorizontal={props => (
-              <div {...props} className="thumb-horizontal" style={{
-                ...props.style,
-                height: 6,
-                backgroundColor: '#535FC8',
-                borderRadius: 3,
-                cursor: 'pointer'
-              }} />
-            )}
-            renderTrackVertical={() => <div style={{ display: 'none' }} />}
-            renderThumbVertical={() => <div style={{ display: 'none' }} />}
+        {/* Mobile Horizontal Scroll with GSAP */}
+        <div
+          ref={containerRef}
+          className="md:hidden relative overflow-hidden"
+          style={{ height: "304px" }}
+        >
+          <div
+            ref={contentRef}
+            className="flex gap-6 px-4 absolute top-0 left-0"
+            style={{
+              cursor: "grab",
+              userSelect: "none",
+              WebkitUserSelect: "none",
+            }}
           >
-            <div className="flex gap-4 px-4" style={{ width: `${destinations.length * 272}px`, paddingBottom: '28px' }}>
-              {destinations.map((destination) => (
-                <div key={destination.id} className="flex-shrink-0 w-64">
-                  <DestinationCard 
-                    destination={destination}
-                    loading={loading}
-                    price={pricesByCountry[destination.countryIso]}
-                    onSelect={setQueryStates}
-                  />
-                </div>
-              ))}
-            </div>
-          </Scrollbars>
+            {destinations.map((destination) => (
+              <div
+                key={destination.id}
+                className="flex-shrink-0"
+                style={{ width: "256px" }}
+              >
+                <DestinationCard
+                  destination={destination}
+                  loading={loading}
+                  price={pricesByCountry[destination.countryIso]}
+                  onSelect={setQueryStates}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Progress Track for Mobile */}
+        <div
+          className="md:hidden relative mx-auto mt-6"
+          style={{
+            height: "4px",
+            width: "200px",
+            backgroundColor: "rgba(83, 95, 200, 0.2)",
+            borderRadius: "2px",
+          }}
+        >
+          <div
+            ref={progressRef}
+            className="absolute top-0 left-0 h-full"
+            style={{
+              width: "100%",
+              backgroundColor: "#535FC8",
+              borderRadius: "2px",
+              transform: "scaleX(0)",
+            }}
+          />
         </div>
       </div>
     </section>
@@ -281,21 +232,26 @@ interface DestinationCardProps {
   onSelect: (values: { countryId: string; activeTab: ActiveTab }) => void;
 }
 
-function DestinationCard({ destination, loading, price, onSelect }: DestinationCardProps) {
+function DestinationCard({
+  destination,
+  loading,
+  price,
+  onSelect,
+}: DestinationCardProps) {
   // Default fallback image for destinations
   const fallbackImage = "/images/destinations/default.png";
-  
+
   const handleClick = () => {
     // Update URL state using nuqs
     onSelect({
       countryId: destination.countryIso.toLowerCase(),
-      activeTab: "countries"
+      activeTab: "countries",
     });
-    
+
     // Scroll to the esim-selector section
-    const selectorElement = document.getElementById('esim-selector');
+    const selectorElement = document.getElementById("esim-selector");
     if (selectorElement) {
-      selectorElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      selectorElement.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
@@ -303,21 +259,26 @@ function DestinationCard({ destination, loading, price, onSelect }: DestinationC
   const getPriceText = () => {
     if (price) {
       // Format currency symbol
-      const currencySymbol = price.currency === 'ILS' ? '₪' : 
-                            price.currency === 'USD' ? '$' : 
-                            price.currency === 'EUR' ? '€' : 
-                            price.currency;
-      
+      const currencySymbol =
+        price.currency === "ILS"
+          ? "₪"
+          : price.currency === "USD"
+          ? "$"
+          : price.currency === "EUR"
+          ? "€"
+          : price.currency;
+
       return `החל מ- ${Math.round(price.finalPrice)} ${currencySymbol}`;
     }
     // Fallback to hardcoded price
     return destination.priceFrom;
   };
-  
+
   return (
-    <Card 
+    <Card
       onClick={handleClick}
-      className="relative overflow-hidden rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer group">
+      className="relative overflow-hidden rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer group"
+    >
       <div className="relative h-64 md:h-72">
         {/* Background Image with Fallback */}
         <ImageWithFallback
@@ -329,16 +290,16 @@ function DestinationCard({ destination, loading, price, onSelect }: DestinationC
           placeholder="blur"
           blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k="
         />
-        
+
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-        
+
         {/* Content Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
           <h4 className="text-2xl font-bold mb-2 font-birzia">
             {destination.name}
           </h4>
-          
+
           {/* Price Badge - Shows skeleton or actual price */}
           {loading ? (
             <div className="inline-block h-7 w-28 bg-gray-200 rounded-full skeleton-shimmer" />

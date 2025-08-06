@@ -1,15 +1,7 @@
 "use client";
 
 import { Star } from "lucide-react";
-import { useEffect, useRef } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Draggable } from "gsap/Draggable";
-
-// Register GSAP plugins
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger, Draggable);
-}
+import { useHorizontalScroll } from "@workspace/ui";
 
 interface Review {
   id: string;
@@ -146,128 +138,11 @@ const reviews: Review[] = [
 ];
 
 export const ReviewsSection = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
+  const { containerRef, contentRef, progressRef } = useHorizontalScroll({
+    progressColor: "#00E095",
+    progressTrackColor: "rgba(255, 255, 255, 0.1)",
+  });
 
-  useEffect(() => {
-    if (
-      !containerRef.current ||
-      !trackRef.current ||
-      !contentRef.current ||
-      !progressRef.current
-    )
-      return;
-
-    const container = containerRef.current;
-    const content = contentRef.current;
-
-    // Calculate scroll bounds
-    const updateBounds = () => {
-      const containerWidth = container.offsetWidth;
-      const contentWidth = content.scrollWidth;
-      return Math.min(0, containerWidth - contentWidth - 32); // 32px for padding
-    };
-
-    let bounds = updateBounds();
-    
-    // Start from the rightmost position (RTL initial position)
-    gsap.set(content, { x: bounds });
-    
-    // Initialize progress bar at 0% (empty at start)
-    gsap.set(progressRef.current, {
-      scaleX: 0,
-      transformOrigin: "left center",
-    });
-
-    // Create draggable (drag right to scroll left - RTL feel)
-    const draggable = Draggable.create(content, {
-      type: "x",
-      bounds: { minX: bounds, maxX: 0 },
-      inertia: true,
-      edgeResistance: 0.85,
-      onDrag: updateProgress,
-      onThrowUpdate: updateProgress,
-      cursor: "grab",
-      activeCursor: "grabbing",
-    })[0];
-
-    // Update progress bar (fills as you scroll)
-    function updateProgress() {
-      const progress = Math.abs(draggable.x / bounds);
-      gsap.set(progressRef.current, {
-        scaleX: progress,
-        transformOrigin: "left center",
-      });
-    }
-
-    // Mouse wheel support (inverted for RTL feel)
-    const handleWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        e.preventDefault();
-        const newX = draggable.x - e.deltaX; // Scroll left moves content right
-        const clampedX = Math.max(bounds, Math.min(0, newX));
-        gsap.to(content, {
-          x: clampedX,
-          duration: 0.5,
-          ease: "power2.out",
-          onUpdate: () => {
-            draggable.update();
-            updateProgress();
-          },
-        });
-      }
-    };
-
-    container.addEventListener("wheel", handleWheel, { passive: false });
-
-    // Handle resize
-    const handleResize = () => {
-      bounds = updateBounds();
-      draggable.applyBounds({ minX: bounds, maxX: 0 });
-      if (draggable.x < bounds) {
-        gsap.set(content, { x: bounds });
-        draggable.update();
-      }
-      updateProgress();
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    // Touch support for mobile (drag left to right)
-    let touchStartX = 0;
-    let startX = 0;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartX = e.touches[0].clientX;
-      startX = draggable.x;
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      const touchX = e.touches[0].clientX;
-      const diff = touchX - touchStartX; // Swipe left to scroll right
-      const newX = startX + diff;
-      const clampedX = Math.max(bounds, Math.min(0, newX));
-      gsap.set(content, { x: clampedX });
-      draggable.update();
-      updateProgress();
-    };
-
-    container.addEventListener("touchstart", handleTouchStart, {
-      passive: true,
-    });
-    container.addEventListener("touchmove", handleTouchMove, { passive: true });
-
-    // Cleanup
-    return () => {
-      draggable.kill();
-      container.removeEventListener("wheel", handleWheel);
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
 
   return (
     <section
@@ -312,7 +187,6 @@ export const ReviewsSection = () => {
 
         {/* Progress Track */}
         <div
-          ref={trackRef}
           className="relative mx-auto mt-6"
           style={{
             height: "4px",
