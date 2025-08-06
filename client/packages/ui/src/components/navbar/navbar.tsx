@@ -61,13 +61,10 @@ export function Navbar({
                 isOpen && "opacity-100"
               )}
             >
-              {/* Mobile Logo */}
-              <div className="mb-8 mt-4">{logo}</div>
-
               {/* Mobile Navigation Items */}
-              <nav className="flex flex-col gap-4">
-                {items.map((item) => (
-                  onNavigate && !item.external && item.href.startsWith('#') ? (
+              <nav className="flex flex-col gap-4 mt-8">
+                {items.map((item) =>
+                  onNavigate && !item.external && item.href.startsWith("#") ? (
                     <button
                       dir="rtl"
                       key={item.href}
@@ -75,7 +72,7 @@ export function Navbar({
                         onNavigate(item.href, item.external);
                         setIsOpen(false);
                       }}
-                      className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors py-2 border-b border-border last:border-b-0 text-right w-full"
+                      className="text-lg font-medium cursor-pointer text-muted-foreground hover:text-foreground transition-colors py-2 border-b border-border last:border-b-0 text-right w-full"
                       aria-label={`נווט לשל ${item.title}`}
                     >
                       {item.title}
@@ -88,7 +85,11 @@ export function Navbar({
                       target={item.external ? "_blank" : undefined}
                       rel={item.external ? "noopener noreferrer" : undefined}
                       onClick={() => {
-                        if (onNavigate && !item.external && item.href.startsWith('#')) {
+                        if (
+                          onNavigate &&
+                          !item.external &&
+                          item.href.startsWith("#")
+                        ) {
                           onNavigate(item.href, item.external);
                         }
                         setIsOpen(false);
@@ -98,12 +99,12 @@ export function Navbar({
                       {item.title}
                     </Link>
                   )
-                ))}
+                )}
               </nav>
 
               {/* Mobile Actions */}
               {(mobileActions || actions) && (
-                <div className="mt-8 pt-4  border-border mt-auto">
+                <div className="mt-8 pt-4  border-border border-t">
                   {mobileActions || actions}
                 </div>
               )}
@@ -129,7 +130,9 @@ export function Navbar({
               {items.map((item) => (
                 <NavigationMenuItem key={item.href}>
                   <NavigationMenuLink asChild>
-                    {onNavigate && !item.external && item.href.startsWith('#') ? (
+                    {onNavigate &&
+                    !item.external &&
+                    item.href.startsWith("#") ? (
                       <button
                         onClick={() => onNavigate(item.href, item.external)}
                         className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
@@ -143,7 +146,11 @@ export function Navbar({
                         target={item.external ? "_blank" : undefined}
                         rel={item.external ? "noopener noreferrer" : undefined}
                         onClick={() => {
-                          if (onNavigate && !item.external && item.href.startsWith('#')) {
+                          if (
+                            onNavigate &&
+                            !item.external &&
+                            item.href.startsWith("#")
+                          ) {
                             onNavigate(item.href, item.external);
                           }
                         }}
