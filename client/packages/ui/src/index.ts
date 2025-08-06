@@ -11,6 +11,7 @@ export * from './components/card'
 export * from './components/collapsible'
 export * from './components/combobox'
 export * from './components/command'
+export * from './components/calendar'
 export * from './components/data-table'
 export * from './components/dialog'
 export * from './components/drawer'
@@ -50,6 +51,7 @@ export * from './components/navbar'
 // Hooks
 export * from './hooks/use-countries'
 export * from './hooks/use-media-query'
+export * from './hooks/use-esim-detection'
 // Utils
 export * from "./lib/utils" 
 export * from "./lib/font-utils" 

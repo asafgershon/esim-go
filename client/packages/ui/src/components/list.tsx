@@ -1,6 +1,7 @@
 "use client";
 
-import React, { ReactNode, createContext, useContext, forwardRef } from 'react';
+import React, { createContext, useContext, forwardRef } from 'react';
+import type { ReactNode } from 'react';
 import { ScrollArea } from './scroll-area';
 import { Skeleton } from './skeleton';
 import { InputWithAdornment } from './input-with-adornment';

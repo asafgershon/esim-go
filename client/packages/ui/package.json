@@ -16,7 +16,10 @@
   "scripts": {
     "build": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts",
     "dev": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts --watch",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@dnd-kit/modifiers": "^9.0.0",
@@ -45,11 +48,13 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "date-fns": "^4.1.0",
     "fuse.js": "^7.1.0",
     "lucide-react": "^0.468.0",
     "overlayscrollbars": "^2.11.4",
     "overlayscrollbars-react": "^0.5.6",
     "react": "^19.1.0",
+    "react-day-picker": "^9.8.1",
     "react-dom": "^19.1.0",
     "tailwind-merge": "^2.5.4",
     "vaul": "^1.1.2"
@@ -57,13 +62,21 @@
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.11",
     "@tailwindcss/vite": "^4.1.11",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/user-event": "^14.5.1",
     "@types/bun": "latest",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/ui": "^2.1.8",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^25.0.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
   },
   "peerDependencies": {
     "react": "^19.1.0",

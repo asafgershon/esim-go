@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { FuzzyCombobox, ComboboxOption } from "./combobox";
+import { FuzzyCombobox } from "./combobox";
+import type { ComboboxOption } from "./combobox";
 import { useMediaQuery } from "../hooks/use-media-query";
 import { useCountries } from "../hooks/use-countries";
 import { Drawer } from "vaul";

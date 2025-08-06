@@ -188,3 +188,7 @@ For complex scenarios not covered by agents, refer to:
 - eSIM Go API documentation
 
 Remember: The agents are here to help you build faster and better. Trust their expertise in their domains!
+
+## Package Management
+
+- We are using zbunz as package manager in all projects
