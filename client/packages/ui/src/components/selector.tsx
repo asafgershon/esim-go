@@ -3,6 +3,7 @@
 import * as React from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { Button } from "./button";
 
 // Main Selector Container
 const Selector = React.forwardRef<
@@ -137,19 +138,21 @@ const SelectorLabel = React.forwardRef<
 });
 SelectorLabel.displayName = "SelectorLabel";
 
-// Selector Button (Primary CTA) - supports both purple and green variants
+// Selector Button (Primary CTA) - extends base Button with selector-specific styling
 const SelectorButton = React.forwardRef<
   HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  React.ComponentProps<typeof Button> & {
     style?: React.CSSProperties;
   }
->(({ className, style, ...props }, ref) => {
+>(({ className, style, variant, size, onMouseEnter, onMouseLeave, onMouseDown, onMouseUp, ...props }, ref) => {
   const isMobile = useIsMobile();
 
   return (
-    <button
+    <Button
       ref={ref}
       data-name="SelectorButton"
+      variant={variant} // Allow variant to be overridden
+      size={size} // Allow size to be overridden
       className={cn(
         "w-full rounded-lg",
         isMobile ? "h-9" : "h-[66px]",
@@ -170,19 +173,19 @@ const SelectorButton = React.forwardRef<
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
-        props.onMouseEnter?.(e);
+        onMouseEnter?.(e);
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.boxShadow = "2px 3px 0px 0px #0A232E";
-        props.onMouseLeave?.(e);
+        onMouseLeave?.(e);
       }}
       onMouseDown={(e) => {
         e.currentTarget.style.boxShadow = "1px 1px 0px 0px #0A232E";
-        props.onMouseDown?.(e);
+        onMouseDown?.(e);
       }}
       onMouseUp={(e) => {
         e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
-        props.onMouseUp?.(e);
+        onMouseUp?.(e);
       }}
       {...props}
     />
