@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import isMobile from 'is-mobile';
 
 export interface ESIMDetectionResult {
   isSupported: boolean;
@@ -100,6 +101,39 @@ const cancelIdleCallbackPolyfill = (handle: number) => {
     return window.cancelIdleCallback(handle);
   }
   return clearTimeout(handle);
+};
+
+// New detection method using is-mobile library
+const detectMobileDeviceType = (): DetectionMethod => {
+  if (typeof navigator === 'undefined') {
+    return { name: 'mobileDeviceType', result: false, confidence: 0 };
+  }
+
+  const isMobileDevice = isMobile();
+  const isTablet = isMobile({ tablet: true });
+  
+  // Higher confidence for tablets as they're more likely to have eSIM
+  if (isTablet) {
+    return {
+      name: 'mobileDeviceType',
+      result: true,
+      confidence: 0.6
+    };
+  }
+  
+  if (isMobileDevice) {
+    return {
+      name: 'mobileDeviceType',
+      result: true,
+      confidence: 0.4
+    };
+  }
+
+  return {
+    name: 'mobileDeviceType',
+    result: false,
+    confidence: 0.1
+  };
 };
 
 // Detection functions
@@ -219,10 +253,23 @@ const detectPlatformBehavior = (): DetectionMethod => {
     return { name: 'platformBehavior', result: false, confidence: 0 };
   }
 
+  // Use is-mobile for basic mobile detection
+  const isMobileDevice = isMobile();
+  
+  if (!isMobileDevice) {
+    return {
+      name: 'platformBehavior',
+      result: false,
+      confidence: 0.1
+    };
+  }
+
+  // Mobile device detected, now check for eSIM capabilities
   const userAgent = navigator.userAgent;
   const isIOS = /iPad|iPhone|iPod/.test(userAgent);
   
   if (isIOS) {
+    // Check iOS version for web eSIM activation support
     const iosVersion = userAgent.match(/OS (\d+)_(\d+)/);
     const supportsWebESIM = iosVersion && 
       parseFloat(`${iosVersion[1]}.${iosVersion[2]}`) >= 17.5;
@@ -230,24 +277,37 @@ const detectPlatformBehavior = (): DetectionMethod => {
     return {
       name: 'platformBehavior',
       result: !!supportsWebESIM,
-      confidence: supportsWebESIM ? 0.8 : 0.2
+      confidence: supportsWebESIM ? 0.9 : 0.3 // Higher confidence with is-mobile
     };
   }
 
+  // Check for known Android eSIM-capable devices
+  const androidESIMPatterns = [
+    /Pixel [2-9]/i,
+    /Pixel \d{2}/i, // Pixel 10+
+    /SM-[SG]9[0-9]{2}/i, // Samsung Galaxy S9xx series
+    /SM-[SG]2[0-9]{2}/i, // Samsung Galaxy S20+ series
+    /SM-F9[0-9]{2}/i, // Samsung Galaxy Fold series
+    /SM-F7[0-9]{2}/i, // Samsung Galaxy Flip series
+  ];
+
+  const hasAndroidESIM = androidESIMPatterns.some(pattern => pattern.test(userAgent));
+
   return {
     name: 'platformBehavior',
-    result: false,
-    confidence: 0.1
+    result: hasAndroidESIM,
+    confidence: hasAndroidESIM ? 0.7 : 0.2
   };
 };
 
 const calculateConfidence = (methods: DetectionMethod[]): number => {
   const weights: Record<string, number> = {
-    screenPattern: 0.3,
-    canvasFingerprint: 0.25,
-    webglFingerprint: 0.25,
+    screenPattern: 0.25,
+    canvasFingerprint: 0.2,
+    webglFingerprint: 0.2,
     performanceProfile: 0.1,
-    platformBehavior: 0.1
+    platformBehavior: 0.15, // Increased weight due to is-mobile integration
+    mobileDeviceType: 0.1
   };
 
   // Weighted average calculation
@@ -328,8 +388,9 @@ export function useESIMDetection(
       // These are very fast (<1ms total)
       const screenResult = detectByScreenPattern();
       const platformResult = detectPlatformBehavior();
+      const mobileTypeResult = detectMobileDeviceType();
       
-      lightweightMethods.push(screenResult, platformResult);
+      lightweightMethods.push(screenResult, platformResult, mobileTypeResult);
 
       // Set initial results immediately
       const initialConfidence = calculateConfidence(lightweightMethods);
@@ -462,5 +523,6 @@ export const detectionUtils = {
   getWebGLFingerprint,
   detectPerformanceCharacteristics,
   detectPlatformBehavior,
+  detectMobileDeviceType,
   calculateConfidence
 };

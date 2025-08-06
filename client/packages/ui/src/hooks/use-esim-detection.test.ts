@@ -24,6 +24,23 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { useESIMDetection, detectionUtils } from './use-esim-detection';
 import '@testing-library/jest-dom';
 
+// Mock is-mobile library
+vi.mock('is-mobile', () => ({
+  default: vi.fn((options?: { tablet?: boolean }) => {
+    // Mock based on the current user agent
+    if (typeof navigator === 'undefined') return false;
+    
+    const ua = navigator.userAgent;
+    const isMobile = /iPhone|iPad|iPod|Android|Pixel/.test(ua);
+    
+    if (options?.tablet) {
+      return /iPad/.test(ua);
+    }
+    
+    return isMobile;
+  })
+}));
+
 // Setup DOM environment for tests
 beforeAll(async () => {
   if (typeof document === 'undefined') {
@@ -148,6 +165,9 @@ describe('useESIMDetection', () => {
     expect(typeof result.current.confidence).toBe('number');
     expect(typeof result.current.isSupported).toBe('boolean');
     expect(typeof result.current.start).toBe('function');
+    
+    // Should include the new mobileDeviceType method
+    expect(result.current.methods.some(m => m.name === 'mobileDeviceType')).toBe(true);
   });
 
   it('should detect eSIM support on iPhone with correct screen pattern', async () => {
@@ -163,6 +183,7 @@ describe('useESIMDetection', () => {
     expect(result.current.confidence).toBeGreaterThan(0.6);
     expect(result.current.methods.some(m => m.name === 'screenPattern')).toBe(true);
     expect(result.current.methods.some(m => m.name === 'platformBehavior')).toBe(true);
+    expect(result.current.methods.some(m => m.name === 'mobileDeviceType')).toBe(true);
   });
 
   // TODO: Fix requestIdleCallback mock - the polyfill in use-esim-detection.ts
@@ -509,7 +530,8 @@ describe('detectionUtils', () => {
   it('should calculate weighted confidence correctly', () => {
     const methods = [
       { name: 'screenPattern', result: true, confidence: 0.7 },
-      { name: 'platformBehavior', result: false, confidence: 0.2 }
+      { name: 'platformBehavior', result: false, confidence: 0.2 },
+      { name: 'mobileDeviceType', result: true, confidence: 0.4 }
     ];
     
     const confidence = detectionUtils.calculateConfidence(methods);
@@ -539,6 +561,14 @@ describe('detectionUtils', () => {
     const result = detectionUtils.detectPlatformBehavior();
     
     expect(result.name).toBe('platformBehavior');
+    expect(typeof result.result).toBe('boolean');
+    expect(typeof result.confidence).toBe('number');
+  });
+
+  it('should detect mobile device type', () => {
+    const result = detectionUtils.detectMobileDeviceType();
+    
+    expect(result.name).toBe('mobileDeviceType');
     expect(typeof result.result).toBe('boolean');
     expect(typeof result.confidence).toBe('number');
   });
