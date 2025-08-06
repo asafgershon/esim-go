@@ -144,75 +144,69 @@ const SelectorButton = React.forwardRef<
   React.ComponentProps<typeof Button> & {
     style?: React.CSSProperties;
   }
->(({ className, style, variant, size, onMouseEnter, onMouseLeave, onMouseDown, onMouseUp, ...props }, ref) => {
-  const isMobile = useIsMobile();
+>(
+  (
+    {
+      className,
+      style,
+      variant = "brand-primary",
+      size,
+      onMouseEnter,
+      onMouseLeave,
+      onMouseDown,
+      onMouseUp,
+      ...props
+    },
+    ref
+  ) => {
+    const isMobile = useIsMobile();
 
-  return (
-    <Button
-      ref={ref}
-      data-name="SelectorButton"
-      variant={variant} // Allow variant to be overridden
-      size={size} // Allow size to be overridden
-      className={cn(
-        "w-full rounded-lg",
-        isMobile ? "h-9" : "h-[66px]",
-        "bg-[#535FC8] hover:bg-[#535FC8]/90",
-        "border border-[#0A232E]",
-        isMobile ? "text-[12px]" : "text-[22px]",
-        "text-white font-medium",
-        "hover:translate-y-[1px]",
-        "active:translate-y-[2px]",
-        "transition-all duration-100",
-        "flex items-center justify-center gap-3",
-        "cursor-pointer",
-        className
-      )}
-      style={{
-        boxShadow: "2px 3px 0px 0px #0A232E",
-        ...style,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
-        onMouseEnter?.(e);
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = "2px 3px 0px 0px #0A232E";
-        onMouseLeave?.(e);
-      }}
-      onMouseDown={(e) => {
-        e.currentTarget.style.boxShadow = "1px 1px 0px 0px #0A232E";
-        onMouseDown?.(e);
-      }}
-      onMouseUp={(e) => {
-        e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
-        onMouseUp?.(e);
-      }}
-      {...props}
-    />
-  );
-});
+    return (
+      <Button
+        ref={ref}
+        data-name="SelectorButton"
+        variant={variant} // Allow variant to be overridden
+        size={size} // Allow size to be overridden
+        className={cn(
+          "w-full rounded-lg",
+          isMobile ? "h-9" : "h-[66px]",
+          "bg-[#535FC8] hover:bg-[#535FC8]/90",
+          "border border-[#0A232E]",
+          isMobile ? "text-[12px]" : "text-[22px]",
+          "text-white font-medium",
+          "hover:translate-y-[1px]",
+          "active:translate-y-[2px]",
+          "transition-all duration-100",
+          "flex items-center justify-center gap-3",
+          "cursor-pointer",
+          className
+        )}
+        style={{
+          boxShadow: "2px 3px 0px 0px #0A232E",
+          ...style,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
+          onMouseEnter?.(e);
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = "2px 3px 0px 0px #0A232E";
+          onMouseLeave?.(e);
+        }}
+        onMouseDown={(e) => {
+          e.currentTarget.style.boxShadow = "1px 1px 0px 0px #0A232E";
+          onMouseDown?.(e);
+        }}
+        onMouseUp={(e) => {
+          e.currentTarget.style.boxShadow = "2px 2px 0px 0px #0A232E";
+          onMouseUp?.(e);
+        }}
+        {...props}
+      />
+    );
+  }
+);
 SelectorButton.displayName = "SelectorButton";
-
-// Country/Region Selector with flags and search
-interface Country {
-  id: string;
-  name: string;
-  iso: string;
-  flag: string;
-  keywords?: string[];
-}
-
-interface CountrySelectorProps {
-  countries: Country[];
-  value?: string;
-  onValueChange?: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-  disabled?: boolean;
-}
-
-// Export types for external usage
-export type { Country, CountrySelectorProps };
 
 export {
   Selector,
