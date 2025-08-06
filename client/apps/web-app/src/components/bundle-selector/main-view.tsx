@@ -76,26 +76,6 @@ export function MainView({
         <div className="bg-[#F1F5FA] rounded-[10px] md:rounded-2xl p-[2px] md:p-1">
           <div className="flex" role="tablist" aria-label="בחירת סוג יעד">
             <button
-              onClick={() => handleTabChange("trips")}
-              role="tab"
-              aria-selected={activeTab === "trips"}
-              aria-controls="trips-panel"
-              id="trips-tab"
-              className={`
-                flex-1 h-[34px] md:h-[60px] text-[12px] md:text-[18px] 
-                leading-[26px] md:leading-normal font-medium 
-                rounded-lg md:rounded-xl transition-all duration-200
-                focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2
-                ${
-                  activeTab === "trips"
-                    ? "bg-brand-dark text-brand-white"
-                    : "text-brand-dark bg-transparent hover:bg-gray-100"
-                }
-              `}
-            >
-              טיולים
-            </button>
-            <button
               onClick={() => handleTabChange("countries")}
               role="tab"
               aria-selected={activeTab === "countries"}
@@ -114,6 +94,26 @@ export function MainView({
               `}
             >
               מדינות
+            </button>
+            <button
+              onClick={() => handleTabChange("trips")}
+              role="tab"
+              aria-selected={activeTab === "trips"}
+              aria-controls="trips-panel"
+              id="trips-tab"
+              className={`
+                flex-1 h-[34px] md:h-[60px] text-[12px] md:text-[18px] 
+                leading-[26px] md:leading-normal font-medium 
+                rounded-lg md:rounded-xl transition-all duration-200
+                focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2
+                ${
+                  activeTab === "trips"
+                    ? "bg-brand-dark text-brand-white"
+                    : "text-brand-dark bg-transparent hover:bg-gray-100"
+                }
+              `}
+            >
+              טיולים
             </button>
           </div>
         </div>
@@ -322,7 +322,9 @@ export function MainView({
                       prefix="$"
                       duration={0.2}
                       preserveValue
-                      fallback={<span>${pricing?.totalPrice?.toFixed(2) || 0}</span>}
+                      fallback={
+                        <span>${pricing?.totalPrice?.toFixed(2) || 0}</span>
+                      }
                     />
                   </span>
                 </div>

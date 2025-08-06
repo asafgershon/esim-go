@@ -119,8 +119,10 @@ function BundleSelectorInternal() {
     return Boolean(selectedDestinationData && pricingLoading && !pricing);
   }, [selectedDestinationData, pricingLoading, pricing]);
 
-
-
+  // Sync pricing with context
+  useEffect(() => {
+    setPricing(pricing);
+  }, [pricing, setPricing]);
 
   // Handle retry
   const handleRetry = () => {
