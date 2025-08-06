@@ -192,3 +192,7 @@ Remember: The agents are here to help you build faster and better. Trust their e
 ## Package Management
 
 - We are using zbunz as package manager in all projects
+
+## Testing Best Practices
+
+- Always use vitest for testing 'bun run test' and not 'bun test'!
