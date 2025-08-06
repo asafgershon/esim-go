@@ -32,8 +32,8 @@ export function BackgroundSection({ children }: BackgroundSectionProps) {
         <Image
           src="/images/bgs/mobile-mid.svg"
           alt="Background decoration"
-          width={415}
-          height={1787}
+          width={375}
+          height={1300}
           className="w-full h-auto absolute inset-0"
           priority
         />

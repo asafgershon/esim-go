@@ -19,7 +19,7 @@ const navigation = [
 ];
 
 export function Header() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, signOut } = useAuth();
   const router = useRouter();
   const [, setShowLogin] = useQueryState(
     "showLogin",
@@ -85,36 +85,8 @@ export function Header() {
     }
   };
 
-  // Desktop actions (right side) 
+  // Desktop actions (right side) - No logout button on desktop
   const desktopActions = (
-    <>
-      <div className="flex items-center gap-2">
-        <IconButton 
-          variant="primary-brand" 
-          size="sm"
-          onClick={handleUserClick}
-        >
-          <UserIcon />
-        </IconButton>
-        <Button 
-          variant="primary-brand"
-          size="sm" 
-          className="px-6"
-          onClick={() => {
-            document.getElementById('esim-selector')?.scrollIntoView({ 
-              behavior: 'smooth',
-              block: 'start'
-            });
-          }}
-        >
-          לרכישת ESIM
-        </Button>
-      </div>
-    </>
-  );
-
-  // Mobile action (center)
-  const mobileAction = (
     <div className="flex items-center gap-2">
       <IconButton 
         variant="primary-brand" 
@@ -126,7 +98,7 @@ export function Header() {
       <Button 
         variant="primary-brand"
         size="sm" 
-        className="px-6 text-xs"
+        className="px-6"
         onClick={() => {
           document.getElementById('esim-selector')?.scrollIntoView({ 
             behavior: 'smooth',
@@ -136,6 +108,50 @@ export function Header() {
       >
         לרכישת ESIM
       </Button>
+    </div>
+  );
+
+  const handleSignOut = () => {
+    signOut();
+    router.push('/');
+  };
+
+  // Mobile action (center) - With logout button only on mobile
+  const mobileAction = (
+    <div className="w-full">
+      <div className="flex items-center gap-2 justify-center">
+        <IconButton 
+          variant="primary-brand" 
+          size="sm"
+          onClick={handleUserClick}
+        >
+          <UserIcon />
+        </IconButton>
+        <Button 
+          variant="primary-brand"
+          size="sm" 
+          className="px-6 text-xs"
+          onClick={() => {
+            document.getElementById('esim-selector')?.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }}
+        >
+          לרכישת ESIM
+        </Button>
+      </div>
+      {/* Sign out button - Mobile only */}
+      {isAuthenticated && (
+        <div className="mt-4 text-center md:hidden">
+          <button
+            onClick={handleSignOut}
+            className="text-[12px] leading-[26px] font-bold text-brand-dark hover:text-brand-purple transition-colors cursor-pointer focus:outline-none focus:underline"
+          >
+            התנתקות »
+          </button>
+        </div>
+      )}
     </div>
   );
 

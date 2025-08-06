@@ -7,8 +7,8 @@ import { useEffect } from "react";
 
 // Lazy load the scrollbar component
 const Scrollbars = dynamic(
-  () => import("react-custom-scrollbars-2").then(mod => mod.Scrollbars),
-  { 
+  () => import("react-custom-scrollbars-2").then((mod) => mod.Scrollbars),
+  {
     ssr: false,
     loading: () => (
       <div className="md:hidden overflow-x-auto pb-4">
@@ -16,12 +16,15 @@ const Scrollbars = dynamic(
           {/* Skeleton loader while scrollbar loads */}
           <div className="animate-pulse flex gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex-shrink-0 w-80 h-48 bg-gray-700 rounded-2xl" />
+              <div
+                key={i}
+                className="flex-shrink-0 w-80 h-48 bg-gray-700 rounded-2xl"
+              />
             ))}
           </div>
         </div>
       </div>
-    )
+    ),
   }
 );
 
@@ -42,24 +45,26 @@ interface ReviewCardProps {
 
 const ReviewCard = ({ review }: ReviewCardProps) => {
   return (
-    <Card className="min-w-[320px] md:min-w-[380px] p-6 bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 transition-all duration-300">
-      {/* Header with country and rating */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <span className="text-4xl">{review.flag}</span>
-          <div>
-            <p className="text-white font-semibold">{review.countryName}</p>
-            <p className="text-gray-400 text-sm">{review.tripType}</p>
-          </div>
-        </div>
+    <div className="relative w-[678px] h-[247px] min-w-[320px] md:min-w-[678px] md:h-[247px]">
+      {/* Main card background with border */}
+      <div 
+        className="absolute inset-0 rounded-[30px] border border-solid border-[#fefefe]"
+        style={{ backgroundColor: 'rgba(254,254,254,0.08)' }}
+      />
+      
+      {/* Country flag */}
+      <div className="absolute left-[27px] top-[27px] w-[67px] h-[50px] rounded-lg overflow-hidden">
+        <span className="text-[40px] leading-[50px] block w-full h-full flex items-center justify-center">
+          {review.flag}
+        </span>
       </div>
 
-      {/* Rating stars */}
-      <div className="flex gap-1 mb-4">
+      {/* Star rating - positioned at bottom left */}
+      <div className="absolute bottom-[41px] left-[78px] flex gap-1">
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`h-5 w-5 ${
+            className={`h-[16.64px] w-[16.64px] ${
               i < review.rating
                 ? "fill-yellow-400 text-yellow-400"
                 : "text-gray-600"
@@ -68,88 +73,105 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
         ))}
       </div>
 
-      {/* Review text */}
-      <p className="text-gray-300 mb-4 leading-relaxed text-sm">
-        &ldquo;{review.text}&rdquo;
-      </p>
-
-      {/* Author */}
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-green to-brand-purple"></div>
-        <p className="text-white font-medium">{review.author}</p>
+      {/* Review title */}
+      <div 
+        className="absolute top-[64px] right-[27px] text-right text-[#fefefe] text-[24px] leading-[22px] font-medium"
+        style={{ fontFamily: 'Birzia, sans-serif' }}
+      >
+        {review.tripType}
       </div>
-    </Card>
+
+      {/* Review text */}
+      <div 
+        className="absolute top-[96px] right-[27px] text-right text-[#fefefe] text-[18px] leading-[22px] font-light max-w-[374px]"
+        style={{ fontFamily: 'Birzia, sans-serif' }}
+      >
+        &ldquo;{review.text}&rdquo;
+      </div>
+
+      {/* Author name */}
+      <div 
+        className="absolute bottom-[41px] right-[27px] text-center text-[#fefefe] text-[18px] leading-[22px] font-medium"
+        style={{ fontFamily: 'Birzia, sans-serif' }}
+      >
+        {review.author}
+      </div>
+
+      {/* Author avatar - positioned at bottom right */}
+      <div className="absolute bottom-[40px] right-[72px] w-[21px] h-[21px]">
+        <div className="w-full h-full rounded-full bg-gradient-to-br from-brand-green to-brand-purple"></div>
+      </div>
+    </div>
   );
 };
 
+const reviews: Review[] = [
+  {
+    id: "1",
+    countryCode: "BR",
+    countryName: "ברזיל",
+    flag: "🇧🇷",
+    rating: 5,
+    text: "נחתתי באמסטרדם וכבר הייתי מחוברת! אף פעם לא הרגשתי כל כך חופשיה בטיול. התמיכה בעברית באמצע הלילה? פשוט מושלם!",
+    author: "שרה כ.",
+    tripType: "שירות נהדר, ממליצה בחום!",
+  },
+  {
+    id: "2",
+    countryCode: "US",
+    countryName: "ארצות הברית",
+    flag: "🇺🇸",
+    rating: 5,
+    text: "חסכתי המון כסף בטיול המשפחתי לארה״ב. הילדים היו מחוברים כל הזמן והכל עבד חלק",
+    author: "דוד לוי",
+    tripType: "טיול משפחתי",
+  },
+  {
+    id: "3",
+    countryCode: "TH",
+    countryName: "תאילנד",
+    flag: "🇹🇭",
+    rating: 5,
+    text: "החבילה לתאילנד הייתה מושלמת! גלישה מהירה בכל האיים, ווייז עבד מצוין וחסכתי המון על מוניות",
+    author: "מיכל ברק",
+    tripType: "טיול תרמילאים",
+  },
+  {
+    id: "4",
+    countryCode: "FR",
+    countryName: "צרפת",
+    flag: "🇫🇷",
+    rating: 5,
+    text: "טיול רומנטי בפריז עם אינטרנט מהיר בכל מקום. התמיכה בעברית עזרה מאוד!",
+    author: "יעל אברהם",
+    tripType: "ירח דבש",
+  },
+  {
+    id: "5",
+    countryCode: "JP",
+    countryName: "יפן",
+    flag: "🇯🇵",
+    rating: 5,
+    text: "טכנולוגיה ברמה הכי גבוהה! עבד מצוין בטוקיו ובכל הכפרים המרוחקים",
+    author: "רון שפירא",
+    tripType: "טיול עסקים",
+  },
+  {
+    id: "6",
+    countryCode: "AU",
+    countryName: "אוסטרליה",
+    flag: "🇦🇺",
+    rating: 5,
+    text: "3 שבועות באוסטרליה עם גלישה ללא הגבלה. מושלם לשיתוף תמונות מהחופים המדהימים!",
+    author: "נועה כהן",
+    tripType: "טיול אקסטרים",
+  },
+];
+
 export const ReviewsSection = () => {
-
-  const reviews: Review[] = [
-    {
-      id: "1",
-      countryCode: "BR",
-      countryName: "ברזיל",
-      flag: "🇧🇷",
-      rating: 5,
-      text: "נסעתי לברזיל לחודש, ה-eSIM עבד מושלם בכל מקום - מריו ועד לאמזונס. התקנה פשוטה ומהירות מעולה!",
-      author: "שירה כהן",
-      tripType: "טיול נחלי"
-    },
-    {
-      id: "2",
-      countryCode: "US",
-      countryName: "ארצות הברית",
-      flag: "🇺🇸",
-      rating: 5,
-      text: "חסכתי המון כסף בטיול המשפחתי לארה״ב. הילדים היו מחוברים כל הזמן והכל עבד חלק",
-      author: "דוד לוי",
-      tripType: "טיול משפחתי"
-    },
-    {
-      id: "3",
-      countryCode: "TH",
-      countryName: "תאילנד",
-      flag: "🇹🇭",
-      rating: 5,
-      text: "החבילה לתאילנד הייתה מושלמת! גלישה מהירה בכל האיים, ווייז עבד מצוין וחסכתי המון על מוניות",
-      author: "מיכל ברק",
-      tripType: "טיול תרמילאים"
-    },
-    {
-      id: "4",
-      countryCode: "FR",
-      countryName: "צרפת",
-      flag: "🇫🇷",
-      rating: 5,
-      text: "טיול רומנטי בפריז עם אינטרנט מהיר בכל מקום. התמיכה בעברית עזרה מאוד!",
-      author: "יעל אברהם",
-      tripType: "ירח דבש"
-    },
-    {
-      id: "5",
-      countryCode: "JP",
-      countryName: "יפן",
-      flag: "🇯🇵",
-      rating: 5,
-      text: "טכנולוגיה ברמה הכי גבוהה! עבד מצוין בטוקיו ובכל הכפרים המרוחקים",
-      author: "רון שפירא",
-      tripType: "טיול עסקים"
-    },
-    {
-      id: "6",
-      countryCode: "AU",
-      countryName: "אוסטרליה",
-      flag: "🇦🇺",
-      rating: 5,
-      text: "3 שבועות באוסטרליה עם גלישה ללא הגבלה. מושלם לשיתוף תמונות מהחופים המדהימים!",
-      author: "נועה כהן",
-      tripType: "טיול אקסטרים"
-    }
-  ];
-
   useEffect(() => {
     // Add global styles to hide scrollbars
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = `
       .hide-scrollbar::-webkit-scrollbar {
         display: none !important;
@@ -162,7 +184,7 @@ export const ReviewsSection = () => {
       }
     `;
     document.head.appendChild(style);
-    
+
     return () => {
       document.head.removeChild(style);
     };
@@ -179,56 +201,73 @@ export const ReviewsSection = () => {
         </div>
 
         {/* Desktop Grid - Show only first 6 reviews */}
-        <div className="hidden md:grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {reviews.slice(0, 6).map((review) => (
+        <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-2 gap-8 max-w-[1400px] mx-auto">
+          {reviews.slice(0, 4).map((review) => (
             <ReviewCard key={review.id} review={review} />
           ))}
         </div>
 
         {/* Mobile Horizontal Scroll with Custom Scrollbar */}
-        <div className="md:hidden relative" style={{ height: '240px', overflow: 'hidden' }}>
+        <div
+          className="md:hidden relative"
+          style={{ height: "280px", overflow: "hidden" }}
+        >
           <Scrollbars
-            style={{ width: '100%', height: '100%' }}
+            style={{ width: "100%", height: "100%" }}
             autoHide
             autoHideTimeout={1000}
             autoHideDuration={200}
-            renderView={props => (
-              <div 
-                {...props} 
+            renderView={(props) => (
+              <div
+                {...props}
                 style={{
                   ...props.style,
-                  overflowX: 'scroll',
-                  overflowY: 'hidden',
-                  marginBottom: '-20px',
-                  paddingBottom: '20px'
+                  overflowX: "scroll",
+                  overflowY: "hidden",
+                  marginBottom: "-20px",
+                  paddingBottom: "20px",
                 }}
                 className="hide-scrollbar"
               />
             )}
-            renderTrackHorizontal={props => (
-              <div {...props} className="track-horizontal" style={{
-                ...props.style,
-                height: 6,
-                bottom: 16,
-                left: 16,
-                right: 16,
-                borderRadius: 3,
-                backgroundColor: 'rgba(255, 255, 255, 0.1)'
-              }} />
+            renderTrackHorizontal={(props) => (
+              <div
+                {...props}
+                className="track-horizontal"
+                style={{
+                  ...props.style,
+                  height: 6,
+                  bottom: 16,
+                  left: 16,
+                  right: 16,
+                  borderRadius: 3,
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                }}
+              />
             )}
-            renderThumbHorizontal={props => (
-              <div {...props} className="thumb-horizontal" style={{
-                ...props.style,
-                height: 6,
-                backgroundColor: '#00E095',
-                borderRadius: 3,
-                cursor: 'pointer'
-              }} />
+            renderThumbHorizontal={(props) => (
+              <div
+                {...props}
+                className="thumb-horizontal"
+                style={{
+                  ...props.style,
+                  height: 6,
+                  backgroundColor: "#00E095",
+                  borderRadius: 3,
+                  cursor: "pointer",
+                }}
+              />
             )}
-            renderTrackVertical={() => <div style={{ display: 'none' }} />}
-            renderThumbVertical={() => <div style={{ display: 'none' }} />}
+            renderTrackVertical={() => <div style={{ display: "none" }} />}
+            renderThumbVertical={() => <div style={{ display: "none" }} />}
           >
-            <div className="flex gap-4 px-4" style={{ width: `${reviews.length * 352}px`, paddingBottom: '28px' }}>
+            <div
+              className="flex gap-4 px-4"
+              style={{
+                width: `${reviews.length * 352}px`,
+                paddingBottom: "28px",
+              }}
+            >
               {reviews.map((review) => (
                 <div key={review.id} className="flex-shrink-0 w-80">
                   <ReviewCard review={review} />
@@ -237,7 +276,6 @@ export const ReviewsSection = () => {
             </div>
           </Scrollbars>
         </div>
-
       </div>
     </section>
   );

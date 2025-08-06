@@ -42,7 +42,7 @@ export function LogoRounded({ className }: LogoRoundedProps) {
       </div>
 
       {/* Logo container - Mobile */}
-      <div className="flex md:hidden justify-center relative h-[160px] w-[160px]">
+      <div className={cn("flex md:hidden justify-center relative h-[160px] w-[160px]", className)}>
         <Image
           src="/images/logos/logo-rounded-center.svg"
           alt="Logo"

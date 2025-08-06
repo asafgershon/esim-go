@@ -1,11 +1,10 @@
 "use client";
 
 import { ErrorDisplay } from "@/components/error-display";
-import { useAppleSignIn } from "@/hooks/useAppleSignIn";
-import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
-import { usePhoneOTP } from "@/hooks/usePhoneOTP";
+import { useLoginForm } from "@/hooks/useLoginForm";
 import { ErrorType } from "@/lib/error-types";
 import { cn } from "@/lib/utils";
+import { formatPhoneForDisplay } from "@/lib/validation/auth-schemas";
 import {
   Button,
   Input,
@@ -16,18 +15,7 @@ import {
 } from "@workspace/ui";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { Smartphone } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-
-// Form validation schemas
-interface PhoneFormData {
-  phoneNumber: string;
-  rememberMe: boolean;
-}
-
-interface OTPFormData {
-  otp: string;
-}
+import { useEffect } from "react";
 
 interface LoginFormProps extends React.ComponentProps<"div"> {
   onSuccess?: () => void;
@@ -40,203 +28,48 @@ export function LoginForm({
   redirectTo = "/profile",
   ...props
 }: LoginFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [showPhoneHelper, setShowPhoneHelper] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-
-  const { signInWithApple, loading: appleLoading } = useAppleSignIn();
-  const { signInWithGoogle, loading: googleLoading } = useGoogleSignIn();
   const {
-    loading: otpLoading,
+    // Form instances
+    phoneForm,
+    otpForm,
+    
+    // State
+    error,
+    isLoading,
+    otp,
+    showPhoneHelper,
+    resendCooldown,
+    
+    // OTP hook state
     step,
     phoneNumber,
-    sendOTP,
-    verifyOTP,
-    resetFlow,
-  } = usePhoneOTP();
+    otpLoading,
+    
+    // Social sign-in loading states
+    appleLoading,
+    googleLoading,
+    
+    // Handlers
+    handlePhoneSubmit,
+    handleOTPSubmit,
+    handleResendOTP,
+    handleSocialSignIn,
+    handleBackToPhone,
+    handlePhoneInputChange,
+    handleOTPChange,
+    
+    // State setters
+    setShowPhoneHelper,
+    setError,
+  } = useLoginForm({ onSuccess, redirectTo });
 
-  // Phone form with react-hook-form
-  const phoneForm = useForm<PhoneFormData>({
-    defaultValues: {
-      phoneNumber: "",
-      rememberMe: true, // Default to remembering user
-    },
-    mode: "onChange",
-  });
-
-  // OTP form with react-hook-form
-  const otpForm = useForm<OTPFormData>({
-    defaultValues: {
-      otp: "",
-    },
-    mode: "onChange",
-  });
-
-  const handleOTPSubmit = useCallback(
-    async (data: OTPFormData) => {
-      setError(null);
-
-      const result = await verifyOTP(data.otp);
-
-      if (result.success) {
-        // Clear any pending errors
-        setError(null);
-
-        // Success callback
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          window.location.href = redirectTo;
-        }
-      } else {
-        setError(result.error || "קוד האימות שגוי");
-        setOtp("");
-        otpForm.setValue("otp", "");
-      }
-    },
-    [onSuccess, otpForm, redirectTo, verifyOTP]
-  );
-
-  // Resend cooldown timer
+  // Auto-clear error when user starts typing
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (resendCooldown > 0) {
-      timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [resendCooldown]);
-
-  // Auto-submit OTP when complete
-  useEffect(() => {
-    if (otp.length === 6 && !otpLoading) {
-      handleOTPSubmit({ otp });
-    }
-  }, [handleOTPSubmit, otp, otpLoading]);
-
-  const formatPhoneNumber = (value: string) => {
-    // Remove all non-digits except +
-    const cleaned = value.replace(/[^\d+]/g, "");
-
-    // If it starts with +972, format as Israeli number
-    if (cleaned.startsWith("+972")) {
-      const rest = cleaned.slice(4);
-      if (rest.length <= 9) {
-        return `+972 ${rest.replace(/(\d{2})(\d{3})(\d{4})/, "$1-$2-$3")}`;
-      }
-    }
-
-    // If it starts with 05, assume Israeli mobile
-    if (cleaned.startsWith("05")) {
-      return `+972 ${cleaned
-        .slice(1)
-        .replace(/(\d{2})(\d{3})(\d{4})/, "$1-$2-$3")}`;
-    }
-
-    return cleaned;
-  };
-
-  const handlePhoneSubmit = async (data: PhoneFormData) => {
-    setError(null);
-
-    // Clean and validate phone number
-    const cleanedPhone = data.phoneNumber.replace(/[^\d+]/g, "");
-
-    const result = await sendOTP(cleanedPhone);
-
-    if (result.success) {
-      setResendCooldown(60); // 60 second cooldown
-      // Save preference if remember me is checked
-      if (data.rememberMe) {
-        localStorage.setItem("rememberLogin", "true");
-        localStorage.setItem("lastPhoneNumber", cleanedPhone);
-      } else {
-        localStorage.removeItem("rememberLogin");
-        localStorage.removeItem("lastPhoneNumber");
-      }
-    } else {
-      setError(result.error || "שליחת קוד האימות נכשלה");
-    }
-  };
-
-  const handleResendOTP = async () => {
-    if (resendCooldown > 0) return;
-
-    setError(null);
-    const result = await sendOTP(phoneNumber);
-
-    if (result.success) {
-      setResendCooldown(60);
-    } else {
-      setError(result.error || "שליחת קוד חוזרת נכשלה");
-    }
-  };
-
-  const handleSocialSignIn = async (provider: "apple" | "google") => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      let result;
-      try {
-        result =
-          provider === "apple"
-            ? await signInWithApple(false)
-            : await signInWithGoogle(false);
-      } catch (signInError) {
-        // Handle promise rejection as a failed sign-in
-        result = { success: false, error: (signInError as Error).message };
-      }
-
-      if (result && result.success) {
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          window.location.href = redirectTo;
-        }
-      } else {
-        const errorMessage =
-          provider === "apple"
-            ? "התחברות עם Apple נכשלה"
-            : "התחברות עם Google נכשלה";
-        if (result?.error && !result.error.includes("dismissed") && !result.error.includes("skipped")) {
-          setError(`${errorMessage}: ${result.error}`);
-        }
-        // Don't show error for user dismissing the popup
-      }
-    } catch (error) {
-      const errorMessage =
-        provider === "apple"
-          ? "התחברות עם Apple נכשלה"
-          : "התחברות עם Google נכשלה";
-      setError(`${errorMessage}: ${(error as Error).message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleBackToPhone = () => {
-    resetFlow();
-    setOtp("");
-    setError(null);
-    setResendCooldown(0);
-    otpForm.reset();
-    phoneForm.clearErrors();
-  };
-
-  // Load remembered phone number
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const rememberLogin = localStorage.getItem("rememberLogin") === "true";
-      const lastPhone = localStorage.getItem("lastPhoneNumber");
-
-      if (rememberLogin && lastPhone) {
-        phoneForm.setValue("phoneNumber", formatPhoneNumber(lastPhone));
-        phoneForm.setValue("rememberMe", true);
-      }
-    }
-  }, [phoneForm]);
+    const subscription = phoneForm.watch(() => {
+      if (error) setError(null);
+    });
+    return () => subscription.unsubscribe();
+  }, [error, phoneForm, setError]);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} dir="rtl" {...props}>
@@ -251,7 +84,7 @@ export function LoginForm({
         <p className="text-balance text-muted-foreground mt-2">
           {step === "phone"
             ? "בחר את דרך ההתחברות המועדפת עליך"
-            : `הזנו את הקוד שנשלח ל-${phoneNumber}`}
+            : `הזנו את הקוד שנשלח ל-${formatPhoneForDisplay(phoneNumber)}`}
         </p>
       </div>
 
@@ -284,28 +117,8 @@ export function LoginForm({
                 placeholder="+972 50-123-4567"
                 type="tel"
                 dir="ltr"
-                {...phoneForm.register("phoneNumber", {
-                  required: "מספר טלפון נדרש",
-                  pattern: {
-                    value: /^\+?[\d\s\-\(\)]+$/,
-                    message: "אנא הזן מספר טלפון תקין",
-                  },
-                  minLength: {
-                    value: 10,
-                    message: "מספר הטלפון חייב להכיל לפחות 10 ספרות",
-                  },
-                  validate: (value) => {
-                    const digitsOnly = value.replace(/\D/g, "");
-                    if (digitsOnly.length < 10) {
-                      return "מספר הטלפון חייב להכיל לפחות 10 ספרות";
-                    }
-                    return true;
-                  },
-                })}
-                onChange={(e) => {
-                  const formatted = formatPhoneNumber(e.target.value);
-                  phoneForm.setValue("phoneNumber", formatted);
-                }}
+                {...phoneForm.register("phoneNumber")}
+                onChange={(e) => handlePhoneInputChange(e.target.value)}
                 onFocus={() => setShowPhoneHelper(true)}
                 onBlur={() => setTimeout(() => setShowPhoneHelper(false), 200)}
                 autoComplete="tel"
@@ -411,30 +224,28 @@ export function LoginForm({
 
       {/* OTP Verification Step */}
       {step === "otp" && (
-        <div className="grid gap-6">
+        <div className="grid gap-6" dir="ltr">
           <form
             onSubmit={otpForm.handleSubmit(handleOTPSubmit)}
             className="grid gap-6"
           >
             {/* OTP Input */}
-            <div className="flex justify-center">
+            <div className="flex justify-center" dir="ltr">
               <InputOTP
                 maxLength={6}
                 value={otp}
-                onChange={(value) => {
-                  setOtp(value);
-                  otpForm.setValue("otp", value, { shouldValidate: true });
-                }}
+                onChange={handleOTPChange}
                 disabled={otpLoading}
                 dir="ltr"
+                className="gap-2"
               >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
+                <InputOTPGroup className="gap-1" dir="ltr">
+                  <InputOTPSlot index={0} className="border-2 border-brand-dark bg-white w-[28px] rounded-md" />
+                  <InputOTPSlot index={1} className="border-2 border-brand-dark bg-white w-[28px] rounded-md" />
+                  <InputOTPSlot index={2} className="border-2 border-brand-dark bg-white w-[28px] rounded-md" />
+                  <InputOTPSlot index={3} className="border-2 border-brand-dark bg-white w-[28px] rounded-md" />
+                  <InputOTPSlot index={4} className="border-2 border-brand-dark bg-white w-[28px] rounded-md" />
+                  <InputOTPSlot index={5} className="border-2 border-brand-dark bg-white w-[28px] rounded-md" />
                 </InputOTPGroup>
               </InputOTP>
             </div>
@@ -446,17 +257,6 @@ export function LoginForm({
               </p>
             )}
 
-            {/* Hidden input for validation */}
-            <input
-              type="hidden"
-              {...otpForm.register("otp", {
-                required: "קוד אימות נדרש",
-                minLength: {
-                  value: 6,
-                  message: "אנא הזן קוד של 6 ספרות",
-                },
-              })}
-            />
 
             {otpForm.formState.errors.otp && (
               <p className="text-sm text-destructive text-center">
