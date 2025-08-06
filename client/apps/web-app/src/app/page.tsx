@@ -129,9 +129,7 @@ export default function Home() {
             <CompatibilitySection />
           </section>
           {/* Customer Reviews */}
-          <section id="reviews" aria-label="ביקורות לקוחות">
             <ReviewsSection />
-          </section>
         </BackgroundSection>
 
         {/* How To Section */}
