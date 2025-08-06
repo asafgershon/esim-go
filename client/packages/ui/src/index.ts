@@ -48,7 +48,8 @@ export * from './components/column-context-menu'
 export { CountrySelect, type CountrySelectProps } from './components/country-select'
 export { MultiCountrySelect, type MultiCountrySelectProps, type Country } from './components/multi-country-select'
 export * from './components/navbar'
-export * from './components/smooth-scroll-container'
+// smooth-scroll-container is exported separately due to GSAP dependency
+export { SmoothScrollContainer, type SmoothScrollHandle } from './components/smooth-scroll-container'
 // Hooks
 export * from './hooks/use-countries'
 export * from './hooks/use-media-query'

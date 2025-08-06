@@ -2,20 +2,83 @@
   "name": "@workspace/ui",
   "version": "0.0.0",
   "private": true,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./components/*": "./src/components/*.tsx",
-    "./hooks/*": "./src/hooks/*.ts",
-    "./lib/*": "./src/lib/*.ts",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./components/badge": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./components/skeleton": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./components/avatar": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./components/dialog": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./components/checkbox": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./components/tabs": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./components/smooth-scroll-container": {
+      "types": "./dist/components/smooth-scroll-container.d.ts",
+      "import": "./dist/components/smooth-scroll-container.mjs",
+      "require": "./dist/components/smooth-scroll-container.cjs"
+    },
+    "./components/*": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./hooks/*": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./lib/*": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
     "./styles/*": "./src/styles/*.css",
     "./styles.css": "./dist/globals.css"
   },
   "sideEffects": [
     "**/*.css"
   ],
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts",
-    "dev": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts --watch",
+    "build": "bun run build:lib && bun run build:css && bun run build:types",
+    "build:lib": "vite build",
+    "build:css": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts",
+    "build:types": "tsc --emitDeclarationOnly --declaration --declarationMap --outDir dist",
+    "dev": "concurrently \"bun run dev:lib\" \"bun run dev:css\"",
+    "dev:lib": "vite build --watch",
+    "dev:css": "tailwindcss -i ./src/styles/globals.css -o ./dist/styles.css -c ./tailwind.config.ts --watch",
+    "prepublishOnly": "bun run build",
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -70,11 +133,15 @@
     "@testing-library/user-event": "^14.5.1",
     "@types/bun": "latest",
     "@types/jsdom": "^21.1.7",
+    "@types/node": "^24.2.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react-swc": "^3.11.0",
     "@vitest/ui": "^2.1.8",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.0",
+    "glob": "^11.0.3",
     "happy-dom": "^18.0.1",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.6",

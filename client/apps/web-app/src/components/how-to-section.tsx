@@ -1,10 +1,9 @@
 "use client";
 
-import { Button } from "@workspace/ui";
-import { useIsMobile } from "@workspace/ui/hooks/useIsMobile";
+import { Button, useMediaQuery } from "@workspace/ui";
 
 export function HowToSection() {
-  const isMobile = useIsMobile()
+  const isMobile = useMediaQuery("(max-width: 768px)")
   const steps = [
     {
       number: 1,
