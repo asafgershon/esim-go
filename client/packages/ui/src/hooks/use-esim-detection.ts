@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 export interface ESIMDetectionResult {
   isSupported: boolean;
@@ -7,6 +7,7 @@ export interface ESIMDetectionResult {
   methods: DetectionMethod[];
   loading: boolean;
   error: Error | null;
+  start: () => void;
 }
 
 export interface DetectionMethod {
@@ -21,41 +22,43 @@ export interface DetectionConfig {
   enableWebGLDetection?: boolean;
   confidenceThreshold?: number;
   cacheDuration?: number;
+  autoStart?: boolean;
+  delay?: number;
 }
 
-interface ESIMDatabase {
-  apple: {
-    iphone: string[];
-    ipad: string[];
-  };
-  samsung: {
-    models: string[];
-  };
-  google: {
-    models: string[];
-  };
-}
+// Reserved for future use: database of known eSIM devices
+// interface ESIMDatabase {
+//   apple: {
+//     iphone: string[];
+//     ipad: string[];
+//   };
+//   samsung: {
+//     models: string[];
+//   };
+//   google: {
+//     models: string[];
+//   };
+// }
 
-// eSIM capable device database
-const esimDatabase: ESIMDatabase = {
-  apple: {
-    // iPhone models with eSIM (XS/XR 2018+)
-    iphone: ['iPhone14,6', 'iPhone14,2', 'iPhone14,3', 'iPhone14,7',
-             'iPhone15,2', 'iPhone16,1', 'iPhone17,1'],
-    ipad: ['iPad13,1', 'iPad14,3', 'iPad15,3']
-  },
-  samsung: {
-    // Galaxy S20+ series, Note 20+, Z Fold/Flip series
-    models: ['SM-S931', 'SM-S928', 'SM-S926', 'SM-S921', 'SM-G998',
-             'SM-F956', 'SM-A546']
-  },
-  google: {
-    // Pixel 2 and newer
-    models: ['Pixel 2', 'Pixel 3', 'Pixel 4', 'Pixel 5', 'Pixel 6',
-            'Pixel 7', 'Pixel 8', 'Pixel 9']
-  }
-};
-
+// eSIM capable device database (reserved for future use)
+// const esimDatabase: ESIMDatabase = {
+//   apple: {
+//     // iPhone models with eSIM (XS/XR 2018+)
+//     iphone: ['iPhone14,6', 'iPhone14,2', 'iPhone14,3', 'iPhone14,7',
+//              'iPhone15,2', 'iPhone16,1', 'iPhone17,1'],
+//     ipad: ['iPad13,1', 'iPad14,3', 'iPad15,3']
+//   },
+//   samsung: {
+//     // Galaxy S20+ series, Note 20+, Z Fold/Flip series
+//     models: ['SM-S931', 'SM-S928', 'SM-S926', 'SM-S921', 'SM-G998',
+//              'SM-F956', 'SM-A546']
+//   },
+//   google: {
+//     // Pixel 2 and newer
+//     models: ['Pixel 2', 'Pixel 3', 'Pixel 4', 'Pixel 5', 'Pixel 6',
+//             'Pixel 7', 'Pixel 8', 'Pixel 9']
+//   }
+// };
 
 // Screen resolution patterns for known eSIM devices
 const ESIM_DEVICE_PATTERNS = {
@@ -76,6 +79,28 @@ const ESIM_GPU_PATTERNS = [
   /Adreno \(TM\) 6[7-9]\d/i, // High-end Qualcomm
   /Mali-G\d+/i // Samsung Exynos
 ];
+
+// Polyfill for requestIdleCallback
+const requestIdleCallbackPolyfill = (callback: IdleRequestCallback, options?: IdleRequestOptions) => {
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    return window.requestIdleCallback(callback, options);
+  }
+  // Fallback to setTimeout
+  const start = Date.now();
+  return setTimeout(() => {
+    callback({
+      didTimeout: false,
+      timeRemaining: () => Math.max(0, 50 - (Date.now() - start))
+    } as IdleDeadline);
+  }, 1) as unknown as number;
+};
+
+const cancelIdleCallbackPolyfill = (handle: number) => {
+  if (typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+    return window.cancelIdleCallback(handle);
+  }
+  return clearTimeout(handle);
+};
 
 // Detection functions
 const detectByScreenPattern = (): DetectionMethod => {
@@ -242,93 +267,192 @@ const calculateConfidence = (methods: DetectionMethod[]): number => {
 export function useESIMDetection(
   config: DetectionConfig = {}
 ): ESIMDetectionResult {
-  const [result, setResult] = useState<ESIMDetectionResult>({
+  const {
+    enablePerformanceTest = false,
+    enableCanvasFingerprint = false,
+    enableWebGLDetection = false,
+    confidenceThreshold = 0.6,
+    autoStart = true,
+    delay = 0
+  } = config;
+
+  const [result, setResult] = useState<Omit<ESIMDetectionResult, 'start'>>({
     isSupported: false,
     confidence: 0,
     methods: [],
-    loading: true,
+    loading: autoStart,
     error: null
   });
 
-  // Use ref to store abort controller
+  // Refs for cleanup
   const abortControllerRef = useRef<AbortController | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const idleCallbackRef = useRef<number | null>(null);
+  const hasStartedRef = useRef(false);
 
-  useEffect(() => {
-    // Create new abort controller for this effect
+  // Cleanup function
+  const cleanup = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (idleCallbackRef.current) {
+      cancelIdleCallbackPolyfill(idleCallbackRef.current);
+      idleCallbackRef.current = null;
+    }
+  }, []);
+
+  const runDetection = useCallback(async () => {
+    // Prevent multiple simultaneous detections
+    if (hasStartedRef.current && result.loading) {
+      return;
+    }
+
+    hasStartedRef.current = true;
+    cleanup();
+
+    // Create new abort controller
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    const runDetection = async () => {
-      try {
-        setResult(prev => ({ ...prev, loading: true, error: null }));
+    try {
+      setResult(prev => ({ ...prev, loading: true, error: null }));
 
-        const methods: DetectionMethod[] = [];
+      // Phase 1: Immediate lightweight detection
+      const lightweightMethods: DetectionMethod[] = [];
+      
+      // These are very fast (<1ms total)
+      const screenResult = detectByScreenPattern();
+      const platformResult = detectPlatformBehavior();
+      
+      lightweightMethods.push(screenResult, platformResult);
 
-        // Run detection methods
-        const screenResult = detectByScreenPattern();
-        methods.push(screenResult);
+      // Set initial results immediately
+      const initialConfidence = calculateConfidence(lightweightMethods);
+      const initialSupported = initialConfidence >= confidenceThreshold;
 
-        if (config.enableCanvasFingerprint && !abortController.signal.aborted) {
-          const canvasResult = generateCanvasFingerprint();
-          if (canvasResult) methods.push(canvasResult);
-        }
-
-        if (config.enableWebGLDetection && !abortController.signal.aborted) {
-          const webglResult = getWebGLFingerprint();
-          if (webglResult) methods.push(webglResult);
-        }
-
-        if (config.enablePerformanceTest && !abortController.signal.aborted) {
-          const perfResult = await detectPerformanceCharacteristics();
-          methods.push(perfResult);
-        }
-
-        const platformResult = detectPlatformBehavior();
-        methods.push(platformResult);
-
-        // Check if aborted before setting results
-        if (abortController.signal.aborted) {
-          return;
-        }
-
-        // Calculate weighted confidence score
-        const totalConfidence = calculateConfidence(methods);
-        const isSupported = totalConfidence >= 
-          (config.confidenceThreshold || 0.6);
-
+      if (!abortController.signal.aborted) {
         setResult({
-          isSupported,
-          confidence: totalConfidence,
-          methods,
+          isSupported: initialSupported,
+          confidence: initialConfidence,
+          methods: lightweightMethods,
           loading: false,
           error: null
         });
-      } catch (error) {
-        if (!abortController.signal.aborted) {
-          setResult(prev => ({
-            ...prev,
-            loading: false,
-            error: error as Error
-          }));
-        }
       }
-    };
 
-    runDetection();
+      // Phase 2: Heavy operations (deferred)
+      const heavyOperations = enableCanvasFingerprint || enableWebGLDetection;
+      
+      if (heavyOperations && !abortController.signal.aborted) {
+        idleCallbackRef.current = requestIdleCallbackPolyfill(() => {
+          if (abortController.signal.aborted) return;
 
-    // Cleanup function
-    return () => {
-      abortController.abort();
-      abortControllerRef.current = null;
-    };
+          const allMethods = [...lightweightMethods];
+
+          // Canvas and WebGL operations
+          if (enableCanvasFingerprint) {
+            const canvasResult = generateCanvasFingerprint();
+            if (canvasResult) allMethods.push(canvasResult);
+          }
+
+          if (enableWebGLDetection) {
+            const webglResult = getWebGLFingerprint();
+            if (webglResult) allMethods.push(webglResult);
+          }
+
+          const updatedConfidence = calculateConfidence(allMethods);
+          const updatedSupported = updatedConfidence >= confidenceThreshold;
+
+          if (!abortController.signal.aborted) {
+            setResult({
+              isSupported: updatedSupported,
+              confidence: updatedConfidence,
+              methods: allMethods,
+              loading: false,
+              error: null
+            });
+          }
+        }, { timeout: 1000 }); // Give up after 1 second
+      }
+
+      // Phase 3: Performance test (optional, async)
+      if (enablePerformanceTest && !abortController.signal.aborted) {
+        // Run performance test after a small delay to not block initial results
+        setTimeout(async () => {
+          if (abortController.signal.aborted) return;
+
+          const perfResult = await detectPerformanceCharacteristics();
+          
+          if (!abortController.signal.aborted) {
+            setResult(prev => {
+              const allMethods = [...prev.methods, perfResult];
+              const finalConfidence = calculateConfidence(allMethods);
+              const finalSupported = finalConfidence >= confidenceThreshold;
+
+              return {
+                isSupported: finalSupported,
+                confidence: finalConfidence,
+                methods: allMethods,
+                loading: false,
+                error: null
+              };
+            });
+          }
+        }, 100);
+      }
+
+    } catch (error) {
+      if (!abortController.signal.aborted) {
+        setResult(prev => ({
+          ...prev,
+          loading: false,
+          error: error as Error
+        }));
+      }
+    }
   }, [
-    config.enablePerformanceTest,
-    config.enableCanvasFingerprint,
-    config.enableWebGLDetection,
-    config.confidenceThreshold
+    enablePerformanceTest,
+    enableCanvasFingerprint,
+    enableWebGLDetection,
+    confidenceThreshold,
+    result.loading
   ]);
 
-  return result;
+  // Manual start function
+  const start = useCallback(() => {
+    hasStartedRef.current = false;
+    runDetection();
+  }, [runDetection]);
+
+  // Auto-start effect
+  useEffect(() => {
+    if (autoStart && !hasStartedRef.current) {
+      if (delay > 0) {
+        timeoutRef.current = setTimeout(() => {
+          runDetection();
+        }, delay);
+      } else {
+        runDetection();
+      }
+    }
+
+    return cleanup;
+  }, [autoStart, delay, runDetection, cleanup]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return cleanup;
+  }, [cleanup]);
+
+  return {
+    ...result,
+    start
+  };
 }
 
 // Export utility functions for testing

@@ -42,64 +42,64 @@ const destinations: Destination[] = [
     name: "Rome",
     nameHebrew: "רומא",
     countryIso: "IT",
-    image: "/images/destinations/rome.png",
-    priceFrom: "החל מ- 15 ₪"
+    image: "/images/destinations/italy.webp",
+    priceFrom: "החל מ- $5"
   },
   {
-    id: "paris",
-    name: "Paris",
-    nameHebrew: "פריז",
-    countryIso: "FR",
-    image: "/images/destinations/paris.png",
-    priceFrom: "החל מ- 18 ₪"
-  },
-  {
-    id: "london",
-    name: "London",
-    nameHebrew: "לונדון",
-    countryIso: "GB",
-    image: "/images/destinations/london.png",
-    priceFrom: "החל מ- 20 ₪"
-  },
-  {
-    id: "tokyo",
-    name: "Tokyo",
-    nameHebrew: "טוקיו",
-    countryIso: "JP",
-    image: "/images/destinations/tokyo.png",
-    priceFrom: "החל מ- 25 ₪"
-  },
-  {
-    id: "new-york",
-    name: "New York",
-    nameHebrew: "ניו יורק",
+    id: "usa",
+    name: "USA",
+    nameHebrew: "ארצות הברית",
     countryIso: "US",
-    image: "/images/destinations/new-york.png",
-    priceFrom: "החל מ- 22 ₪"
+    image: "/images/destinations/america.webp",
+    priceFrom: "החל מ- $7"
   },
   {
-    id: "barcelona",
-    name: "Barcelona",
-    nameHebrew: "ברצלונה",
-    countryIso: "ES",
-    image: "/images/destinations/barcelona.png",
-    priceFrom: "החל מ- 16 ₪"
+    id: "greece",
+    name: "Greece",
+    nameHebrew: "יוון",
+    countryIso: "GR",
+    image: "/images/destinations/greec.webp",
+    priceFrom: "החל מ- $6"
   },
   {
-    id: "amsterdam",
-    name: "Amsterdam",
-    nameHebrew: "אמסטרדם",
-    countryIso: "NL",
-    image: "/images/destinations/amsterdam.png",
-    priceFrom: "החל מ- 19 ₪"
+    id: "thailand",
+    name: "Thailand",
+    nameHebrew: "תאילנד",
+    countryIso: "TH",
+    image: "/images/destinations/thailand.webp",
+    priceFrom: "החל מ- $8"
   },
   {
-    id: "berlin",
-    name: "Berlin",
-    nameHebrew: "ברלין",
-    countryIso: "DE",
-    image: "/images/destinations/berlin.png",
-    priceFrom: "החל מ- 17 ₪"
+    id: "dubai",
+    name: "Dubai",
+    nameHebrew: "דובאי",
+    countryIso: "AE",
+    image: "/images/destinations/dubai.webp",
+    priceFrom: "החל מ- $6"
+  },
+  {
+    id: "brazil",
+    name: "Brazil",
+    nameHebrew: "ברזיל",
+    countryIso: "BR",
+    image: "/images/destinations/brazil.webp",
+    priceFrom: "החל מ- $5"
+  },
+  {
+    id: "canada",
+    name: "Canada",
+    nameHebrew: "קנדה",
+    countryIso: "CA",
+    image: "/images/destinations/canada.webp",
+    priceFrom: "החל מ- $6"
+  },
+  {
+    id: "china",
+    name: "China",
+    nameHebrew: "סין",
+    countryIso: "CN",
+    image: "/images/destinations/china.webp",
+    priceFrom: "החל מ- $5"
   },
 ];
 
