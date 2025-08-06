@@ -15,7 +15,7 @@ import {
   Label,
 } from "@workspace/ui";
 import { Checkbox } from "@workspace/ui/components/checkbox";
-import { ArrowRight, Smartphone } from "lucide-react";
+import { ArrowLeft, ArrowRight, Smartphone } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -335,7 +335,7 @@ export function EnhancedLoginForm({
             </div>
 
             {/* Remember Me Checkbox */}
-            <div className="flex items-center space-x-2 space-x-reverse">
+            <div className="flex items-center space-x-2 space-x-reverse gap-1">
               <Checkbox
                 id="rememberMe"
                 checked={phoneForm.watch("rememberMe")}
@@ -354,7 +354,6 @@ export function EnhancedLoginForm({
               className="w-full"
             >
               {otpLoading ? "שולח..." : "שלח קוד אימות"}
-              <ArrowRight className="h-4 w-4 mr-2" />
             </Button>
           </form>
 
@@ -497,14 +496,18 @@ export function EnhancedLoginForm({
       <div className="text-muted-foreground text-center text-xs text-balance">
         על ידי המשך, אתה מסכים ל
         <a
-          href="#"
+          href="/docs/terms.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
           className="underline underline-offset-4 hover:text-primary mx-1"
         >
           תנאי השימוש
         </a>
         ו
         <a
-          href="#"
+          href="/docs/privacy.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
           className="underline underline-offset-4 hover:text-primary mx-1"
         >
           מדיניות הפרטיות
