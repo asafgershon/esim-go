@@ -62,7 +62,7 @@
       "require": "./dist/index.cjs"
     },
     "./styles/*": "./src/styles/*.css",
-    "./styles.css": "./dist/globals.css"
+    "./globals.css": "./dist/globals.css"
   },
   "sideEffects": [
     "**/*.css"

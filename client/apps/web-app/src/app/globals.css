@@ -16,7 +16,7 @@
   --color-light-blue-brand: #F8FAFC;
 }
 
-@import "@workspace/ui/styles.css";
+@import "../../../../packages/ui/dist/styles.css";
 @import "tw-animate-css";
 
 /* Birzia Font Family */
