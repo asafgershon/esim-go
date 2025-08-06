@@ -62,6 +62,7 @@ export function MainView({
     setShowMobileSheet,
     setCountryId,
     setTripId,
+    isPricingValid,
   } = useBundleSelector();
   return (
     <>
@@ -347,17 +348,17 @@ export function MainView({
         <SelectorButton
           onClick={handlePurchase}
           aria-label={
-            selectedDestinationData
+            isPricingValid
               ? "המשך לרכישת חבילת eSIM"
               : "בחר יעד לצפייה בחבילות"
           }
           className={
-            selectedDestinationData && pricing
+            isPricingValid
               ? "bg-[#00E095] hover:bg-[#00E095]/90"
               : ""
           }
         >
-          {selectedDestinationData && pricing
+          {isPricingValid
             ? "לרכישת החבילה"
             : "לצפייה בחבילה המשתלמת ביותר"}
         </SelectorButton>

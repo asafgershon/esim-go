@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { 
-  SelectorHeader, 
-  SelectorContent,
-  SelectorAction, 
-  SelectorSection,
-  SelectorButton
-} from "@workspace/ui";
-import { CalendarIcon, CloseIcon } from "./icons";
-import { format, differenceInDays, addDays } from "date-fns";
-import { he } from "date-fns/locale";
 import { useBundleSelector } from "@/contexts/bundle-selector-context";
+import {
+  SelectorAction,
+  SelectorButton,
+  SelectorContent,
+  SelectorHeader
+} from "@workspace/ui";
+import { addDays, differenceInDays, format } from "date-fns";
+import { he } from "date-fns/locale";
+import { useCallback, useMemo, useState } from "react";
+import { CalendarIcon, CloseIcon } from "./icons";
 
 export function DatePickerView() {
   // Get setCurrentView and setNumOfDays from context
@@ -79,11 +78,19 @@ export function DatePickerView() {
   
   return (
     <>
-      <SelectorHeader
-        title="בחר תאריכי נסיעה"
-        onBack={handleBack}
-        backIcon={<CloseIcon />}
-      />
+      <SelectorHeader className="mb-0 min-h-10 relative">
+        {/* Close button */}
+        <button
+          onClick={handleBack}
+          className="absolute top-0 left-0 md:left-auto md:right-0 p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+          aria-label="חזור לבחירת ימים"
+        >
+          <CloseIcon />
+        </button>
+        <h2 className="text-[18px] md:text-[30px] font-medium text-brand-dark text-center">
+          בחר תאריכי נסיעה
+        </h2>
+      </SelectorHeader>
       
       <SelectorContent>
         <div className="space-y-6 px-4 py-2">
