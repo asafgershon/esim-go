@@ -1,6 +1,5 @@
 "use client";
 
-import { Card } from "@workspace/ui";
 import { Star } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
@@ -11,14 +10,15 @@ const Scrollbars = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="md:hidden overflow-x-auto pb-4">
+      <div className="md:hidden overflow-x-auto">
         <div className="flex gap-4 min-w-max px-4">
           {/* Skeleton loader while scrollbar loads */}
-          <div className="animate-pulse flex gap-4">
+          <div className="animate-pulse flex gap-6">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="flex-shrink-0 w-80 h-48 bg-gray-700 rounded-2xl"
+                className="flex-shrink-0 bg-gray-700 rounded-[30px]"
+                style={{ width: "320px", height: "116px" }}
               />
             ))}
           </div>
@@ -45,61 +45,55 @@ interface ReviewCardProps {
 
 const ReviewCard = ({ review }: ReviewCardProps) => {
   return (
-    <div className="relative w-[678px] h-[247px] min-w-[320px] md:min-w-[678px] md:h-[247px]">
-      {/* Main card background with border */}
-      <div 
-        className="absolute inset-0 rounded-[30px] border border-solid border-[#fefefe]"
-        style={{ backgroundColor: 'rgba(254,254,254,0.08)' }}
-      />
-      
-      {/* Country flag */}
-      <div className="absolute left-[27px] top-[27px] w-[67px] h-[50px] rounded-lg overflow-hidden">
-        <span className="text-[40px] leading-[50px] block w-full h-full flex items-center justify-center">
-          {review.flag}
-        </span>
+    <div
+      className="w-full max-w-[480px] h-[180px] rounded-[30px] border border-solid border-[#fefefe] hover:bg-white/10 transition-all duration-300 flex justify-between p-5 gap-20"
+      style={{ backgroundColor: "rgba(254,254,254,0.08)" }}
+    >
+      {/* Right section with text */}
+      <div className="flex flex-col justify-between flex-1">
+        {/* Top: Title and review text */}
+        <div className="space-y-2">
+          <h3
+            className="text-right text-[#fefefe] text-lg font-medium"
+            style={{ fontFamily: "Birzia, sans-serif" }}
+          >
+            {review.tripType}
+          </h3>
+          <p
+            className="text-right text-[#fefefe] text-sm font-light leading-relaxed line-clamp-3"
+            style={{ fontFamily: "Birzia, sans-serif" }}
+          >
+            &ldquo;{review.text}&rdquo;
+          </p>
+        </div>
+
+        {/* Bottom: Author name and avatar */}
+        <div className="flex items-center justify-start gap-2">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-brand-green to-brand-purple"></div>
+          <span className="text-[#fefefe] text-sm font-medium">
+            {review.author}
+          </span>
+        </div>
       </div>
 
-      {/* Star rating - positioned at bottom left */}
-      <div className="absolute bottom-[41px] left-[78px] flex gap-1">
-        {[...Array(5)].map((_, i) => (
-          <Star
-            key={i}
-            className={`h-[16.64px] w-[16.64px] ${
-              i < review.rating
-                ? "fill-yellow-400 text-yellow-400"
-                : "text-gray-600"
-            }`}
-          />
-        ))}
-      </div>
+      {/* Left section with flag and stars */}
+      <div className="flex flex-col justify-between flex-shrink-0">
+        {/* Country flag */}
+        <span className="text-[32px] self-end">{review.flag}</span>
 
-      {/* Review title */}
-      <div 
-        className="absolute top-[64px] right-[27px] text-right text-[#fefefe] text-[24px] leading-[22px] font-medium"
-        style={{ fontFamily: 'Birzia, sans-serif' }}
-      >
-        {review.tripType}
-      </div>
-
-      {/* Review text */}
-      <div 
-        className="absolute top-[96px] right-[27px] text-right text-[#fefefe] text-[18px] leading-[22px] font-light max-w-[374px]"
-        style={{ fontFamily: 'Birzia, sans-serif' }}
-      >
-        &ldquo;{review.text}&rdquo;
-      </div>
-
-      {/* Author name */}
-      <div 
-        className="absolute bottom-[41px] right-[27px] text-center text-[#fefefe] text-[18px] leading-[22px] font-medium"
-        style={{ fontFamily: 'Birzia, sans-serif' }}
-      >
-        {review.author}
-      </div>
-
-      {/* Author avatar - positioned at bottom right */}
-      <div className="absolute bottom-[40px] right-[72px] w-[21px] h-[21px]">
-        <div className="w-full h-full rounded-full bg-gradient-to-br from-brand-green to-brand-purple"></div>
+        {/* Star rating */}
+        <div className="flex gap-1">
+          {[...Array(5)].map((_, i) => (
+            <Star
+              key={i}
+              className={`h-4 w-4 ${
+                i < review.rating
+                  ? "fill-brand-white text-brand-white"
+                  : "text-gray-600"
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -191,8 +185,8 @@ export const ReviewsSection = () => {
   }, []);
 
   return (
-    <section className="py-16 md:py-24 relative overflow-hidden">
-      <div className="container mx-auto px-4">
+    <section className="py-16 md:py-24 relative overflow-hidden w-full" id="reviews" aria-label="ביקורות לקוחות">
+      <div className="container mx-auto px-4 w-full">
         {/* Section header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-5xl font-bold text-brand-green mb-4">
@@ -200,17 +194,10 @@ export const ReviewsSection = () => {
           </h2>
         </div>
 
-        {/* Desktop Grid - Show only first 6 reviews */}
-        <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-2 gap-8 max-w-[1400px] mx-auto">
-          {reviews.slice(0, 4).map((review) => (
-            <ReviewCard key={review.id} review={review} />
-          ))}
-        </div>
-
-        {/* Mobile Horizontal Scroll with Custom Scrollbar */}
+        {/* Horizontal Scroll with Custom Scrollbar - Both Desktop and Mobile */}
         <div
-          className="md:hidden relative"
-          style={{ height: "280px", overflow: "hidden" }}
+          className="relative"
+          style={{ height: "200px", overflow: "hidden" }}
         >
           <Scrollbars
             style={{ width: "100%", height: "100%" }}
@@ -262,14 +249,16 @@ export const ReviewsSection = () => {
             renderThumbVertical={() => <div style={{ display: "none" }} />}
           >
             <div
-              className="flex gap-4 px-4"
+              className="flex gap-6 px-4"
               style={{
-                width: `${reviews.length * 352}px`,
                 paddingBottom: "28px",
               }}
             >
               {reviews.map((review) => (
-                <div key={review.id} className="flex-shrink-0 w-80">
+                <div
+                  key={review.id}
+                  className="flex-shrink-0"
+                >
                   <ReviewCard review={review} />
                 </div>
               ))}
