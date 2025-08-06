@@ -1,8 +1,62 @@
 "use client";
 
-import { Button } from "@workspace/ui";
+import { Button, useESIMDetection } from "@workspace/ui";
+import { Check, X, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 export function CompatibilitySection() {
+  // Use the eSIM detection hook with manual start
+  const { isSupported, loading, start } = useESIMDetection({
+    autoStart: false,
+    enableCanvasFingerprint: true,
+    enableWebGLDetection: true,
+    confidenceThreshold: 0.5
+  });
+
+  // Track if detection has been started
+  const [hasStarted, setHasStarted] = useState(false);
+
+  const handleDetection = () => {
+    if (!loading) {
+      setHasStarted(true);
+      start();
+    }
+  };
+
+  const getButtonState = () => {
+    if (!hasStarted) {
+      return {
+        text: "לחצו לבדיקה",
+        icon: null,
+        className: "bg-[#535FC8] hover:bg-[#535FC8]/90 text-white border border-[#0A232E]"
+      };
+    }
+    
+    if (loading) {
+      return {
+        text: "בודק...",
+        icon: <Loader2 className="w-5 h-5 animate-spin" />,
+        className: "bg-[#535FC8]/70 text-white border border-[#0A232E] cursor-not-allowed"
+      };
+    }
+    
+    if (isSupported) {
+      return {
+        text: "המכשיר תומך",
+        icon: <Check className="w-5 h-5" />,
+        className: "bg-green-600 hover:bg-green-700 text-white border border-green-500"
+      };
+    }
+    
+    return {
+      text: "המכשיר לא תומך",
+      icon: <X className="w-5 h-5" />,
+      className: "bg-red-600 hover:bg-red-700 text-white border border-red-500"
+    };
+  };
+
+  const buttonState = getButtonState();
+
   return (
     <>
       {/* Text container - Desktop */}
@@ -27,9 +81,14 @@ export function CompatibilitySection() {
           <Button
             variant="primary-brand"
             size="lg"
-            className="bg-[#535FC8] hover:bg-[#535FC8]/90 text-white w-[220px] border border-[#0A232E] outline-none shadow-none"
+            className={`w-[220px] outline-none shadow-none ${buttonState.className}`}
+            onClick={handleDetection}
+            disabled={loading}
           >
-            לחצו לבדיקה
+            <div className="flex items-center justify-center gap-2">
+              <span>{buttonState.text}</span>
+              {buttonState.icon}
+            </div>
           </Button>
         </div>
       </div>
@@ -56,9 +115,14 @@ export function CompatibilitySection() {
           <Button
             variant="primary-brand"
             size="lg"
-            className="bg-[#535FC8] hover:bg-[#535FC8]/90 text-white w-[220px] border border-[#0A232E] outline-none shadow-none"
+            className={`w-[220px] outline-none shadow-none ${buttonState.className}`}
+            onClick={handleDetection}
+            disabled={loading}
           >
-            לחצו לבדיקה
+            <div className="flex items-center justify-center gap-2">
+              {buttonState.icon}
+              <span>{buttonState.text}</span>
+            </div>
           </Button>
         </div>
       </div>
