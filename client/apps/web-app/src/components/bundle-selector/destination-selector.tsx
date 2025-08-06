@@ -6,16 +6,17 @@ import type { Destination } from "@/contexts/bundle-selector-context";
 import { useCountries } from "@/hooks/useCountries";
 import { useTrips } from "@/hooks/useTrips";
 import {
+  cn,
   ComboboxOption,
   FuzzyCombobox,
   SelectorLabel,
   SelectorSection,
 } from "@workspace/ui";
-import { ChevronsUpDownIcon } from "./icons";
-import { 
-  DESTINATION_PLACEHOLDER, 
-  SEARCH_PLACEHOLDER, 
-  NO_RESULTS_MESSAGE 
+import { ChevronsUpDownIcon } from "lucide-react";
+import {
+  DESTINATION_PLACEHOLDER,
+  SEARCH_PLACEHOLDER,
+  NO_RESULTS_MESSAGE,
 } from "./destination-selector.constants";
 
 const MobileDestinationDrawer = lazy(
@@ -23,23 +24,20 @@ const MobileDestinationDrawer = lazy(
 );
 
 export function DestinationSelector() {
-  const {
-    countryId,
-    tripId,
-    activeTab,
-    isMobile,
-    handleDestinationChange,
-  } = useBundleSelector();
-  
+  const { countryId, tripId, activeTab, isMobile, handleDestinationChange } =
+    useBundleSelector();
+
   // Local state for mobile sheet
   const [showMobileSheet, setShowMobileSheet] = useState(false);
-  
+
   // Shared button styles for consistent appearance across mobile and desktop
-  const sharedButtonStyles = "w-full bg-brand-white border border-[rgba(10,35,46,0.2)] rounded-lg md:rounded-[15px] h-[34px] md:h-[60px] px-3 flex items-center cursor-pointer hover:border-brand-purple transition-colors focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2 text-[12px] md:text-[18px]";
-  
+  const sharedButtonStyles =
+    "w-full bg-brand-white border border-[rgba(10,35,46,0.2)] rounded-lg md:rounded-[15px] h-[34px] md:h-[60px] px-3 flex items-center cursor-pointer hover:border-brand-purple transition-colors focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2 text-[12px] md:text-[18px]";
+
   // FuzzyCombobox button styles using CSS selector targeting
-  const comboboxClassName = "[&>button]:bg-brand-white [&>button]:border [&>button]:border-[rgba(10,35,46,0.2)] [&>button]:rounded-lg [&>button]:md:rounded-[15px] [&>button]:h-[34px] [&>button]:md:h-[60px] [&>button]:px-3 [&>button]:flex [&>button]:items-center [&>button]:cursor-pointer [&>button]:hover:border-brand-purple [&>button]:transition-colors [&>button:focus]:outline-none [&>button:focus]:ring-2 [&>button:focus]:ring-brand-purple [&>button:focus]:ring-offset-2 [&>button]:text-[12px] [&>button]:md:text-[18px]";
-  
+  const comboboxClassName =
+    "[&>button]:bg-brand-white [&>button]:border [&>button]:border-[rgba(10,35,46,0.2)] [&>button]:rounded-lg [&>button]:md:rounded-[15px] [&>button]:h-[34px] [&>button]:md:h-[60px] [&>button]:px-3 [&>button]:flex [&>button]:items-center [&>button]:cursor-pointer [&>button]:hover:border-brand-purple [&>button]:transition-colors [&>button:focus]:outline-none [&>button:focus]:ring-2 [&>button:focus]:ring-brand-purple [&>button:focus]:ring-offset-2 [&>button]:text-[12px] [&>button]:md:text-[18px]";
+
   // Fetch countries and trips data from GraphQL
   const { countries = [] } = useCountries();
   const { trips = [] } = useTrips();
@@ -117,12 +115,16 @@ export function DestinationSelector() {
             }}
             className={`${sharedButtonStyles} relative`}
           >
-            <span className="text-brand-dark text-[12px] md:text-[18px] leading-[26px] opacity-50">
+            <ChevronsUpDownIcon
+              className={cn(
+                "text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2",
+                showMobileSheet && "rotate-180",
+                destination?.name && "opacity-70"
+              )}
+            />
+            <span className="pr-8 text-brand-dark text-md md:text-[18px] leading-[26px] opacity-50">
               {destination?.name || DESTINATION_PLACEHOLDER}
             </span>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <ChevronsUpDownIcon />
-            </div>
           </button>
 
           <Suspense fallback={<div>...</div>}>
