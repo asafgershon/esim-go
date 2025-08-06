@@ -196,3 +196,7 @@ Remember: The agents are here to help you build faster and better. Trust their e
 ## Testing Best Practices
 
 - Always use vitest for testing 'bun run test' and not 'bun test'!
+
+## Type Checking
+
+- We run type-check using 'bun run build' if no type-check script exists

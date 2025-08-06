@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useState } from 'react';
+import { createContext, useContext, ReactNode, useState, useMemo } from 'react';
 import { useQueryStates, parseAsInteger, parseAsString, parseAsStringLiteral } from 'nuqs';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useRouter } from 'next/navigation';
@@ -48,6 +48,11 @@ interface BundleSelectorContextValue {
   setTripId: (id: string | null) => void;
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+  
+  // Pricing State
+  pricing: { totalPrice?: number } | null;
+  setPricing: (pricing: { totalPrice?: number } | null) => void;
+  isPricingValid: boolean;
   
   // Complex handlers
   handleTabChange: (tab: ActiveTab) => void;
@@ -191,6 +196,7 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
   // UI State
   const [currentView, setCurrentView] = useState<ViewState>("main");
   const [showMobileSheet, setShowMobileSheet] = useState(false);
+  const [pricing, setPricing] = useState<{ totalPrice?: number } | null>(null);
   const isMobile = useIsMobile();
   const router = useRouter();
 
@@ -254,8 +260,10 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
     }
   };
 
-  const handlePurchase = (pricing?: { totalPrice?: number } | null) => {
-    const isReadyToPurchase = (countryId || tripId) && pricing && pricing.totalPrice !== undefined;
+  const handlePurchase = (pricingData?: { totalPrice?: number } | null) => {
+    // Use the passed pricing data or fall back to context pricing
+    const effectivePricing = pricingData ?? pricing;
+    const isReadyToPurchase = (countryId || tripId) && effectivePricing && effectivePricing.totalPrice !== undefined;
     if (!isReadyToPurchase) return;
     
     // Navigate to checkout with current parameters
@@ -263,9 +271,20 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
     params.set("numOfDays", numOfDays.toString());
     if (countryId) params.set("countryId", countryId.toUpperCase());
     if (tripId) params.set("tripId", tripId);
-    if (pricing?.totalPrice) params.set("totalPrice", pricing.totalPrice.toString());
+    if (effectivePricing?.totalPrice) params.set("totalPrice", effectivePricing.totalPrice.toString());
     router.push(`/checkout?${params.toString()}`);
   };
+
+  // Computed property: Check if pricing is valid
+  const isPricingValid = useMemo(() => {
+    return Boolean(
+      numOfDays > 0 && 
+      (countryId || tripId) && 
+      pricing && 
+      pricing.totalPrice !== undefined &&
+      pricing.totalPrice > 0
+    );
+  }, [numOfDays, countryId, tripId, pricing]);
 
   const value: BundleSelectorContextValue = {
     // Bundle selector functions
@@ -288,6 +307,11 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
     setTripId,
     activeTab,
     setActiveTab,
+    
+    // Pricing State
+    pricing,
+    setPricing,
+    isPricingValid,
     
     // Complex handlers
     handleTabChange,

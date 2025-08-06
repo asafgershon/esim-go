@@ -4,7 +4,7 @@ import { useBatchPricing } from "@/hooks/useBatchPricing";
 import { useCountries } from "@/hooks/useCountries";
 import { useTrips } from "@/hooks/useTrips";
 import { Selector, SelectorCard } from "@workspace/ui";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { DatePickerView } from "./date-picker-view";
 import { ErrorState } from "./error-state";
 import { MainView } from "./main-view";
@@ -24,6 +24,7 @@ function BundleSelectorInternal() {
     tripId,
     activeTab,
     handlePurchase,
+    setPricing,
   } = useBundleSelector();
 
   // Fetch countries and trips data from GraphQL
