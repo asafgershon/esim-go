@@ -40,8 +40,8 @@ describe('Button', () => {
     expect(button).not.toHaveClass('shadow-[1px_2px_0px_0px_#0a232e]');
   });
 
-  it('maintains backward compatibility with primary-brand variant', () => {
-    render(<Button variant="primary-brand">Legacy</Button>);
+  it('maintains backward compatibility with brand-primary variant', () => {
+    render(<Button variant="brand-primary">Legacy</Button>);
     const button = screen.getByRole('button');
     expect(button).toHaveClass('bg-[#F8FAFC]', 'text-[#0A232E]');
   });

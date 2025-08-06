@@ -21,17 +21,15 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 rounded-md text-sm",
         link: "text-primary underline-offset-4 hover:underline text-sm",
         "brand-secondary":
-          "bg-white-brand text-dark-brand border border-dark-brand rounded-[10px] text-[22px] px-5 py-4 hover:bg-light-blue-brand",
+          "bg-white-brand text-dark-brand border border-dark-brand rounded-[10px] text-[22px] px-5 py-5 hover:bg-light-blue-brand",
         "brand-primary":
-          "bg-purple-brand text-white-brand border border-dark-brand rounded-[10px] text-[22px] px-5 py-4 hover:bg-purple-brand/90",
+          "bg-purple-brand text-white-brand border border-dark-brand rounded-[10px] text-[22px] px-5 py-5 hover:bg-purple-brand/90",
         "brand-success":
-          "bg-green-brand text-dark-brand border border-dark-brand rounded-[10px] text-[22px] px-5 py-4 hover:bg-green-brand/90",
-        "primary-brand":
-          "bg-[#F8FAFC] text-[#0A232E] font-medium rounded-[5px] border border-[#0A232E] shadow-[2px_3px_0px_0px_#0A232E] hover:shadow-[2px_2px_0px_0px_#0A232E] active:shadow-[1px_1px_0px_0px_#0A232E] hover:translate-y-[-1px] active:translate-y-[1px] transition-all duration-150",
+          "bg-green-brand text-dark-brand border border-dark-brand rounded-[10px] text-[22px] px-5 py-5 hover:bg-green-brand/90",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+        sm: "h-10 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 text-sm",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         icon: "size-9",
         brand: "px-5 py-4", // Special size for brand variants
@@ -46,17 +44,17 @@ const buttonVariants = cva(
       {
         variant: "brand-secondary",
         emphasized: true,
-        class: "shadow-[1px_2px_0px_0px_#0a232e]",
+        class: "shadow-[1px_2px_0px_0px_#0a232e] hover:shadow-[2px_2px_0px_0px_#0a232e] active:shadow-[1px_1px_0px_0px_#0a232e]",
       },
       {
         variant: "brand-primary",
         emphasized: true,
-        class: "shadow-[1px_2px_0px_0px_#0a232e]",
+        class: "shadow-[1px_2px_0px_0px_#0a232e] hover:shadow-[2px_2px_0px_0px_#0a232e] active:shadow-[1px_1px_0px_0px_#0a232e]",
       },
       {
         variant: "brand-success",
         emphasized: true,
-        class: "shadow-[1px_2px_0px_0px_#0a232e]",
+        class: "shadow-[1px_2px_0px_0px_#0a232e] hover:shadow-[2px_2px_0px_0px_#0a232e] active:shadow-[1px_1px_0px_0px_#0a232e]",
       },
     ],
     defaultVariants: {
