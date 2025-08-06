@@ -2,7 +2,7 @@
 
 import { createContext, useContext, ReactNode, useState, useMemo } from 'react';
 import { useQueryStates, parseAsInteger, parseAsString, parseAsStringLiteral } from 'nuqs';
-import { useIsMobile } from '@/hooks/useIsMobile';
+import { useIsMobile } from '@workspace/ui';
 import { useRouter } from 'next/navigation';
 import type { Bundle } from '@/__generated__/types';
 import type { CountryISOCode } from '@/lib/types';
@@ -43,8 +43,6 @@ interface BundleSelectorContextValue {
   currentView: ViewState;
   setCurrentView: (view: ViewState) => void;
   isMobile: boolean;
-  showMobileSheet: boolean;
-  setShowMobileSheet: (show: boolean) => void;
   
   // Query State (from URL)
   numOfDays: number;
@@ -205,9 +203,8 @@ interface BundleSelectorProviderProps {
 export function BundleSelectorProvider({ children }: BundleSelectorProviderProps) {
   // UI State
   const [currentView, setCurrentView] = useState<ViewState>("main");
-  const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [pricing, setPricing] = useState<{ totalPrice?: number } | null>(null);
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile({ tablet: true });
   const router = useRouter();
 
   // URL state management
@@ -305,8 +302,6 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
     currentView,
     setCurrentView,
     isMobile,
-    showMobileSheet,
-    setShowMobileSheet,
     
     // Query State
     numOfDays,

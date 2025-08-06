@@ -1,10 +1,29 @@
 import { useEffect, useState } from "react";
 
-export function useIsMobile(breakpoint: number = 768) {
+interface UseIsMobileOptions {
+  breakpoint?: number;
+  tablet?: boolean;
+}
+
+export function useIsMobile(options: UseIsMobileOptions | number = {}) {
+  // Handle backward compatibility with number parameter
+  const config = typeof options === 'number' 
+    ? { breakpoint: options, tablet: false }
+    : { breakpoint: 768, tablet: false, ...options };
+    
   const [isMobile, setIsMobile] = useState(false);
   
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= breakpoint);
+    const check = () => {
+      const width = window.innerWidth;
+      if (config.tablet) {
+        // Include tablets (up to 1024px) as mobile
+        setIsMobile(width <= 1024);
+      } else {
+        // Original mobile-only behavior
+        setIsMobile(width <= config.breakpoint);
+      }
+    };
     
     // Initial check
     check();
@@ -14,7 +33,7 @@ export function useIsMobile(breakpoint: number = 768) {
     
     // Cleanup
     return () => window.removeEventListener("resize", check);
-  }, [breakpoint]);
+  }, [config.breakpoint, config.tablet]);
   
   return isMobile;
 }
