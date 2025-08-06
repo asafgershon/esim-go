@@ -5,39 +5,64 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 focus-visible:border-ring aria-invalid:border-destructive",
+          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 focus-visible:border-ring aria-invalid:border-destructive rounded-md text-sm",
         destructive:
-          "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 focus-visible:border-ring dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 aria-invalid:border-destructive",
+          "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 focus-visible:border-ring dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 aria-invalid:border-destructive rounded-md text-sm",
         outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 focus-visible:border-ring aria-invalid:border-destructive",
+          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 focus-visible:border-ring aria-invalid:border-destructive rounded-md text-sm",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 rounded-md text-sm",
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline",
+          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 rounded-md text-sm",
+        link: "text-primary underline-offset-4 hover:underline text-sm",
+        "brand-secondary":
+          "bg-[#fefefe] text-[#0a232e] border border-[#0a232e] rounded-[10px] text-[22px] px-5 py-4 hover:bg-[#f8fafc]",
+        "brand-primary":
+          "bg-[#535fc8] text-[#fefefe] border border-[#fefefe] rounded-[10px] text-[22px] px-5 py-4 hover:bg-[#535fc8]/90",
+        "brand-success":
+          "bg-[#00e095] text-[#fefefe] border border-[#fefefe] rounded-[10px] text-[22px] px-5 py-4 hover:bg-[#00e095]/90",
         "primary-brand": 
-          "bg-[#F8FAFC] text-[#0A232E] font-medium rounded-[5px] " +
-          "outline outline-1 outline-[#0A232E] " +
-          "drop-shadow-[0_3px_0_#ff0000] " +
-          "cursor-pointer transition-all duration-150 " +
-          "hover:translate-y-[-1px] " +
-          "active:translate-y-[1px]",
+          "bg-[#F8FAFC] text-[#0A232E] font-medium rounded-[5px] border border-[#0A232E] shadow-[2px_3px_0px_0px_#0A232E] hover:shadow-[2px_2px_0px_0px_#0A232E] active:shadow-[1px_1px_0px_0px_#0A232E] hover:translate-y-[-1px] active:translate-y-[1px] transition-all duration-150",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
         sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         icon: "size-9",
+        brand: "px-5 py-4", // Special size for brand variants
+      },
+      emphasized: {
+        true: "",
+        false: "",
       },
     },
+    compoundVariants: [
+      // Brand variants with emphasized state get shadow
+      {
+        variant: "brand-secondary",
+        emphasized: true,
+        class: "shadow-[1px_2px_0px_0px_#0a232e]",
+      },
+      {
+        variant: "brand-primary",
+        emphasized: true,
+        class: "shadow-[1px_2px_0px_0px_#0a232e]",
+      },
+      {
+        variant: "brand-success",
+        emphasized: true,
+        class: "shadow-[1px_2px_0px_0px_#0a232e]",
+      },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",
+      emphasized: false,
     },
   }
 )
@@ -46,69 +71,22 @@ function Button({
   className,
   variant,
   size,
+  emphasized = false,
   asChild = false,
   style,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    emphasized?: boolean
   }) {
   const Comp = asChild ? Slot : "button"
-  const [isPressed, setIsPressed] = React.useState(false)
-  const [isHovered, setIsHovered] = React.useState(false)
-
-  // Add inline shadow for primary-brand variant
-  const getBoxShadow = () => {
-    if (variant !== "primary-brand") return undefined
-    if (isPressed) return "0 1px 0 #0A232E"
-    if (isHovered) return "2px 4px 0 #0A232E"
-    return "2px 3px 0 #0A232E"
-  }
-
-  const inlineStyle = variant === "primary-brand" 
-    ? { 
-        ...style, 
-        boxShadow: getBoxShadow(),
-        minWidth: "5.5rem",
-        cursor: "pointer",
-        transition: "all 150ms"
-      }
-    : style
-
-  const handleMouseDown = () => {
-    if (variant === "primary-brand") {
-      setIsPressed(true)
-    }
-  }
-
-  const handleMouseUp = () => {
-    if (variant === "primary-brand") {
-      setIsPressed(false)
-    }
-  }
-
-  const handleMouseLeave = () => {
-    if (variant === "primary-brand") {
-      setIsPressed(false)
-      setIsHovered(false)
-    }
-  }
-
-  const handleMouseEnter = () => {
-    if (variant === "primary-brand") {
-      setIsHovered(true)
-    }
-  }
 
   return (
     <Comp
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      style={inlineStyle}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      onMouseEnter={handleMouseEnter}
+      className={cn(buttonVariants({ variant, size, emphasized, className }))}
+      style={style}
       {...props}
     />
   )

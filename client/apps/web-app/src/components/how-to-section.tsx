@@ -61,9 +61,9 @@ export function HowToSection() {
               {/* CTA Button */}
              {!isMobile && <div className="mt-10 flex justify-start">
                 <Button
-                  variant="primary-brand"
-                  size="lg"
-                  className="bg-[#535FC8] hover:bg-[#535FC8]/90 text-white w-[220px] border border-[#0A232E] outline-none"
+                  variant="brand-primary"
+                  emphasized
+                  className="w-[220px]"
                   onClick={() => {
                     const selector = document.getElementById("esim-selector");
                     if (selector) {

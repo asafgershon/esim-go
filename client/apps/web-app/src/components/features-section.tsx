@@ -191,10 +191,9 @@ export function FeaturesSection() {
           {/* Button Container */}
           <div className="flex items-center order-2">
             <Button 
-              variant="primary-brand"
-              size="lg"
-              // Brand purple background, white text, dark border - update if brand colors change
-              className="bg-[#535FC8] hover:bg-[#535FC8]/90 text-white w-[220px] border border-[#0A232E] outline-none"
+              variant="brand-primary"
+              emphasized
+              className="w-[220px]"
               onClick={() => {
                 const selector = document.getElementById('esim-selector');
                 if (selector) {

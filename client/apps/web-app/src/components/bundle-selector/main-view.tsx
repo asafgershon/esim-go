@@ -281,7 +281,8 @@ export function MainView({
           aria-label={
             isPricingValid ? "המשך לרכישת חבילת eSIM" : "בחר יעד לצפייה בחבילות"
           }
-          className={isPricingValid ? "bg-[#00E095] hover:bg-[#00E095]/90" : ""}
+          variant={isPricingValid ? "brand-success" : undefined}
+          emphasized={isPricingValid}
         >
           {isPricingValid ? "לרכישת החבילה" : "לצפייה בחבילה המשתלמת ביותר"}
         </SelectorButton>

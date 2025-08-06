@@ -28,7 +28,9 @@ export function CompatibilitySection() {
       return {
         text: "לחצו לבדיקה",
         icon: null,
-        className: "bg-[#535FC8] hover:bg-[#535FC8]/90 text-white border border-[#0A232E]"
+        variant: "brand-primary" as const,
+        emphasized: true,
+        className: ""
       };
     }
     
@@ -36,7 +38,9 @@ export function CompatibilitySection() {
       return {
         text: "בודק...",
         icon: <Loader2 className="w-5 h-5 animate-spin" />,
-        className: "bg-[#535FC8]/70 text-white border border-[#0A232E] cursor-not-allowed"
+        variant: "brand-primary" as const,
+        emphasized: false,
+        className: "opacity-70 cursor-not-allowed"
       };
     }
     
@@ -44,14 +48,18 @@ export function CompatibilitySection() {
       return {
         text: "המכשיר תומך",
         icon: <Check className="w-5 h-5" />,
-        className: "bg-green-600 hover:bg-green-700 text-white border border-green-500"
+        variant: "brand-success" as const,
+        emphasized: true,
+        className: ""
       };
     }
     
     return {
       text: "המכשיר לא תומך",
       icon: <X className="w-5 h-5" />,
-      className: "bg-red-600 hover:bg-red-700 text-white border border-red-500"
+      variant: "destructive" as const,
+      emphasized: false,
+      className: ""
     };
   };
 
@@ -79,9 +87,9 @@ export function CompatibilitySection() {
         {/* Check Button */}
         <div className="mt-4">
           <Button
-            variant="primary-brand"
-            size="lg"
-            className={`w-[220px] outline-none shadow-none ${buttonState.className}`}
+            variant={buttonState.variant}
+            emphasized={buttonState.emphasized}
+            className={`w-[220px] ${buttonState.className}`}
             onClick={handleDetection}
             disabled={loading}
           >
@@ -113,9 +121,9 @@ export function CompatibilitySection() {
         {/* Check Button */}
         <div className="mt-3">
           <Button
-            variant="primary-brand"
-            size="lg"
-            className={`w-[220px] outline-none shadow-none ${buttonState.className}`}
+            variant={buttonState.variant}
+            emphasized={buttonState.emphasized}
+            className={`w-[220px] ${buttonState.className}`}
             onClick={handleDetection}
             disabled={loading}
           >
