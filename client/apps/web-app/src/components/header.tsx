@@ -1,7 +1,13 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { Button, IconButton, Navbar, UserIcon, useScrollTo } from "@workspace/ui";
+import {
+  Button,
+  IconButton,
+  Navbar,
+  UserIcon,
+  useScrollTo,
+} from "@workspace/ui";
 import type { SmoothScrollHandle } from "@workspace/ui";
 import Image from "next/image";
 import Link from "next/link";
@@ -67,13 +73,13 @@ export function Header({ scrollContainerRef }: HeaderProps = {}) {
   // Desktop actions (right side) - No logout button on desktop
   const desktopActions = (
     <div className="flex items-center gap-2">
-      <IconButton variant="primary-brand" size="sm" onClick={handleUserClick}>
+      <IconButton variant="brand-primary" size="sm" onClick={handleUserClick}>
         <UserIcon />
       </IconButton>
       <Button
-        variant="primary-brand"
+        variant="brand-secondary"
         size="sm"
-        className="px-6"
+        emphasized
         onClick={() => scrollTo("#esim-selector")}
       >
         לרכישת ESIM
@@ -85,13 +91,13 @@ export function Header({ scrollContainerRef }: HeaderProps = {}) {
   const mobileAction = (
     <div className="w-full">
       <div className="flex items-center gap-2 justify-center">
-        <IconButton variant="primary-brand" size="sm" onClick={handleUserClick}>
+        <IconButton variant="brand-primary" size="sm" onClick={handleUserClick}>
           <UserIcon />
         </IconButton>
         <Button
-          variant="primary-brand"
+          variant="brand-secondary"
+          emphasized
           size="sm"
-          className="px-6 text-xs"
           onClick={() => scrollTo("#esim-selector")}
         >
           לרכישת ESIM
