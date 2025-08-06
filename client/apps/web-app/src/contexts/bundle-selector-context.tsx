@@ -1,7 +1,11 @@
 "use client";
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useState } from 'react';
+import { useQueryStates, parseAsInteger, parseAsString, parseAsStringLiteral } from 'nuqs';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import { useRouter } from 'next/navigation';
 import type { Bundle } from '@/__generated__/types';
+import type { CountryISOCode } from '@/lib/types';
 
 // Types for the bundle selector functions
 export type BundleSelector = (
@@ -18,10 +22,37 @@ export type UnusedDayDiscountCalculator = (
   requestedDuration: number
 ) => number;
 
+// UI State types
+export type ViewState = "main" | "datePicker";
+export type ActiveTab = "countries" | "trips";
+
 // Context interface
 interface BundleSelectorContextValue {
+  // Bundle selector functions
   findOptimalBundle: BundleSelector;
   calculateUnusedDayDiscount: UnusedDayDiscountCalculator;
+  
+  // UI State
+  currentView: ViewState;
+  setCurrentView: (view: ViewState) => void;
+  isMobile: boolean;
+  showMobileSheet: boolean;
+  setShowMobileSheet: (show: boolean) => void;
+  
+  // Query State (from URL)
+  numOfDays: number;
+  setNumOfDays: (days: number) => void;
+  countryId: string;
+  setCountryId: (id: string | null) => void;
+  tripId: string;
+  setTripId: (id: string | null) => void;
+  activeTab: ActiveTab;
+  setActiveTab: (tab: ActiveTab) => void;
+  
+  // Complex handlers
+  handleTabChange: (tab: ActiveTab) => void;
+  handleDestinationChange: (value: string) => void;
+  handlePurchase: (pricing?: { totalPrice?: number } | null) => void;
 }
 
 // Create the context
@@ -157,9 +188,111 @@ interface BundleSelectorProviderProps {
 }
 
 export function BundleSelectorProvider({ children }: BundleSelectorProviderProps) {
+  // UI State
+  const [currentView, setCurrentView] = useState<ViewState>("main");
+  const [showMobileSheet, setShowMobileSheet] = useState(false);
+  const isMobile = useIsMobile();
+  const router = useRouter();
+
+  // URL state management
+  const [queryStates, setQueryStates] = useQueryStates(
+    {
+      numOfDays: parseAsInteger.withDefault(7),
+      countryId: parseAsString.withDefault(""),
+      tripId: parseAsString.withDefault(""),
+      activeTab: parseAsStringLiteral(["countries", "trips"]).withDefault("countries"),
+    },
+    { shallow: true }
+  );
+
+  const { numOfDays, countryId, tripId, activeTab } = queryStates;
+
+  // State setters that work with query states
+  const setNumOfDays = (days: number) => {
+    setQueryStates((state) => ({ ...state, numOfDays: days }));
+  };
+
+  const setCountryId = (id: string | null) => {
+    setQueryStates((state) => ({ ...state, countryId: id || "" }));
+  };
+
+  const setTripId = (id: string | null) => {
+    setQueryStates((state) => ({ ...state, tripId: id || "" }));
+  };
+
+  const setActiveTab = (tab: ActiveTab) => {
+    setQueryStates((state) => ({ ...state, activeTab: tab }));
+  };
+
+  // Complex handlers
+  const handleTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab);
+  };
+
+  const handleDestinationChange = (value: string) => {
+    if (!value) {
+      setQueryStates((state) => ({
+        ...state,
+        countryId: "",
+        tripId: "",
+      }));
+      return;
+    }
+    const [type, id] = value.split("-");
+    if (type === "country") {
+      setQueryStates((state) => ({
+        ...state,
+        countryId: id as CountryISOCode,
+        tripId: "",
+      }));
+    } else if (type === "trip") {
+      setQueryStates((state) => ({
+        ...state,
+        tripId: id,
+        countryId: "",
+      }));
+    }
+  };
+
+  const handlePurchase = (pricing?: { totalPrice?: number } | null) => {
+    const isReadyToPurchase = (countryId || tripId) && pricing && pricing.totalPrice !== undefined;
+    if (!isReadyToPurchase) return;
+    
+    // Navigate to checkout with current parameters
+    const params = new URLSearchParams();
+    params.set("numOfDays", numOfDays.toString());
+    if (countryId) params.set("countryId", countryId.toUpperCase());
+    if (tripId) params.set("tripId", tripId);
+    if (pricing?.totalPrice) params.set("totalPrice", pricing.totalPrice.toString());
+    router.push(`/checkout?${params.toString()}`);
+  };
+
   const value: BundleSelectorContextValue = {
+    // Bundle selector functions
     findOptimalBundle,
     calculateUnusedDayDiscount,
+    
+    // UI State
+    currentView,
+    setCurrentView,
+    isMobile,
+    showMobileSheet,
+    setShowMobileSheet,
+    
+    // Query State
+    numOfDays,
+    setNumOfDays,
+    countryId,
+    setCountryId,
+    tripId,
+    setTripId,
+    activeTab,
+    setActiveTab,
+    
+    // Complex handlers
+    handleTabChange,
+    handleDestinationChange,
+    handlePurchase,
   };
 
   return (

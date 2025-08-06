@@ -2,43 +2,29 @@
 
 import { useBatchPricing } from "@/hooks/useBatchPricing";
 import { useCountries } from "@/hooks/useCountries";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { useTrips } from "@/hooks/useTrips";
-import type { CountryISOCode } from "@/lib/types";
 import { Selector, SelectorCard } from "@workspace/ui";
-import { useRouter } from "next/navigation";
-import {
-  parseAsInteger,
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryStates,
-} from "nuqs";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { DatePickerView } from "./date-picker-view";
 import { ErrorState } from "./error-state";
 import { MainView } from "./main-view";
 import { PricingSkeleton, SelectorSkeleton } from "./skeleton";
+import { BundleSelectorRoot } from "./root";
+import { useBundleSelector } from "@/contexts/bundle-selector-context";
+
+// Re-export the hook for convenience
+export { useBundleSelector } from "@/contexts/bundle-selector-context";
 
 function BundleSelectorInternal() {
-  const router = useRouter();
-
-  // View state
-  const [currentView, setCurrentView] = useState<"main" | "datePicker">("main");
-
-  // URL state management
-  const [queryStates, setQueryStates] = useQueryStates(
-    {
-      numOfDays: parseAsInteger.withDefault(7),
-      countryId: parseAsString.withDefault(""),
-      tripId: parseAsString.withDefault(""),
-      activeTab: parseAsStringLiteral(["countries", "trips"]).withDefault(
-        "countries"
-      ),
-    },
-    { shallow: true }
-  );
-
-  const { numOfDays, countryId, tripId, activeTab } = queryStates;
+  // Get UI state from context
+  const {
+    currentView,
+    numOfDays,
+    countryId,
+    tripId,
+    activeTab,
+    handlePurchase,
+  } = useBundleSelector();
 
   // Fetch countries and trips data from GraphQL
   const {
@@ -132,47 +118,8 @@ function BundleSelectorInternal() {
     return Boolean(selectedDestinationData && pricingLoading && !pricing);
   }, [selectedDestinationData, pricingLoading, pricing]);
 
-  const handleDestinationChange = (value: string) => {
-    if (!value) {
-      setQueryStates((state) => ({
-        ...state,
-        countryId: "",
-        tripId: "",
-      }));
-      return;
-    }
-    const [type, id] = value.split("-");
-    if (type === "country") {
-      setQueryStates((state) => ({
-        ...state,
-        countryId: id as CountryISOCode,
-        tripId: "",
-      }));
-    } else if (type === "trip") {
-      setQueryStates((state) => ({
-        ...state,
-        tripId: id,
-        countryId: "",
-      }));
-    }
-  };
 
-  const isReadyToPurchase = (countryId || tripId) && pricing && !pricingError;
 
-  const handlePurchase = () => {
-    if (!isReadyToPurchase) return;
-    // Navigate to checkout with current parameters
-    const params = new URLSearchParams();
-    params.set("numOfDays", numOfDays.toString());
-    if (countryId) params.set("countryId", countryId.toUpperCase());
-    if (tripId) params.set("tripId", tripId);
-    if (pricing?.totalPrice)
-      params.set("totalPrice", pricing.totalPrice.toString());
-    router.push(`/checkout?${params.toString()}`);
-  };
-
-  const isMobile = useIsMobile();
-  const [showMobileSheet, setShowMobileSheet] = useState(false);
 
   // Handle retry
   const handleRetry = () => {
@@ -257,60 +204,19 @@ function BundleSelectorInternal() {
     console.error("Pricing error:", pricingError);
   }
 
-  const handleTabChange = (tab: "countries" | "trips") => {
-    setQueryStates((state) => ({
-      ...state,
-      activeTab: tab,
-    }));
-  };
-
-  const setNumOfDays = (days: number) => {
-    setQueryStates((state) => ({
-      ...state,
-      numOfDays: days,
-    }));
-  };
-
-  const setCountryId = (id: string | null) => {
-    setQueryStates((state) => ({
-      ...state,
-      countryId: id || "",
-    }));
-  };
-
-  const setTripId = (id: string | null) => {
-    setQueryStates((state) => ({
-      ...state,
-      tripId: id || "",
-    }));
-  };
 
   return (
     <Selector>
       <SelectorCard>
         {currentView === "datePicker" ? (
-          <DatePickerView setCurrentView={setCurrentView} />
+          <DatePickerView />
         ) : (
           <MainView
-            activeTab={activeTab}
-            numOfDays={numOfDays}
             selectedDestinationData={selectedDestinationData}
             pricing={pricing}
             comboboxOptions={comboboxOptions}
-            countryId={countryId}
-            tripId={tripId}
-            isMobile={isMobile}
-            showMobileSheet={showMobileSheet}
-            footerVisible={true} // Always show footer
             isLoadingPricing={isLoadingPricing}
-            handleTabChange={handleTabChange}
-            handleDestinationChange={handleDestinationChange}
-            setNumOfDays={setNumOfDays}
-            setCurrentView={setCurrentView}
-            setShowMobileSheet={setShowMobileSheet}
-            setCountryId={setCountryId}
-            setTripId={setTripId}
-            handlePurchase={handlePurchase}
+            handlePurchase={() => handlePurchase(pricing)}
           />
         )}
       </SelectorCard>
@@ -318,7 +224,21 @@ function BundleSelectorInternal() {
   );
 }
 
-export const BundleSelector = Object.assign(BundleSelectorInternal, {
+// Main BundleSelector component that includes the provider
+function BundleSelector() {
+  return (
+    <BundleSelectorRoot>
+      <BundleSelectorInternal />
+    </BundleSelectorRoot>
+  );
+}
+
+// Export with subcomponents
+export default Object.assign(BundleSelector, {
+  Root: BundleSelectorRoot,
   Skeleton: SelectorSkeleton,
   PricingSkeleton,
 });
+
+// Also export as named export for backwards compatibility
+export { BundleSelector };

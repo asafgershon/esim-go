@@ -13,18 +13,16 @@ import {
 import { Suspense, lazy } from "react";
 import { CalendarIcon, ChevronsUpDownIcon } from "./icons";
 import { PricingSkeleton } from "./skeleton";
+import { CountUp } from "../ui/count-up";
+import { useBundleSelector } from "@/contexts/bundle-selector-context";
 import type { EnhancedCountry } from "@/hooks/useCountries";
 import type { EnhancedTrip } from "@/hooks/useTrips";
-
-const CountUp = lazy(() => import("react-countup"));
 const MobileDestinationDrawer = lazy(
   () => import("../mobile-destination-drawer")
 );
 
 interface MainViewProps {
-  // State
-  activeTab: "countries" | "trips";
-  numOfDays: number;
+  // Only data that comes from external sources (not UI state)
   selectedDestinationData: {
     type: "country" | "trip";
     data: EnhancedCountry | EnhancedTrip | undefined;
@@ -38,44 +36,33 @@ interface MainViewProps {
     discountAmount?: number;
   } | null;
   comboboxOptions: ComboboxOption[];
-  countryId: string | null;
-  tripId: string | null;
-  isMobile: boolean;
-  showMobileSheet: boolean;
-  footerVisible: boolean;
   isLoadingPricing?: boolean;
-
-  // Handlers
-  handleTabChange: (tab: "countries" | "trips") => void;
-  handleDestinationChange: (value: string) => void;
-  setNumOfDays: (days: number) => void;
-  setCurrentView: (view: "main" | "datePicker") => void;
-  setShowMobileSheet: (show: boolean) => void;
-  setCountryId: (id: string | null) => void;
-  setTripId: (id: string | null) => void;
   handlePurchase: () => void;
 }
 
 export function MainView({
-  activeTab,
-  numOfDays,
   selectedDestinationData,
   pricing,
   comboboxOptions,
-  countryId,
-  tripId,
-  isMobile,
-  showMobileSheet,
   isLoadingPricing = false,
-  handleTabChange,
-  handleDestinationChange,
-  setNumOfDays,
-  setCurrentView,
-  setShowMobileSheet,
-  setCountryId,
-  setTripId,
   handlePurchase,
 }: MainViewProps) {
+  // Get UI state and handlers from context
+  const {
+    activeTab,
+    numOfDays,
+    countryId,
+    tripId,
+    isMobile,
+    showMobileSheet,
+    handleTabChange,
+    handleDestinationChange,
+    setNumOfDays,
+    setCurrentView,
+    setShowMobileSheet,
+    setCountryId,
+    setTripId,
+  } = useBundleSelector();
   return (
     <>
       <SelectorHeader>
@@ -328,20 +315,15 @@ export function MainView({
                     {pricing?.days} ימים ללא הגבלה
                   </span>
                   <span className="text-[14px] md:text-[18px] font-bold text-brand-dark">
-                    <Suspense
-                      fallback={
-                        <span>${pricing?.totalPrice?.toFixed(2) || 0}</span>
-                      }
-                    >
-                      <CountUp
-                        key={`total-${countryId || tripId}-${numOfDays}`}
-                        end={pricing?.totalPrice || 0}
-                        decimals={2}
-                        prefix="$"
-                        duration={0.2}
-                        preserveValue
-                      />
-                    </Suspense>
+                    <CountUp
+                      key={`total-${countryId || tripId}-${numOfDays}`}
+                      end={pricing?.totalPrice || 0}
+                      decimals={2}
+                      prefix="$"
+                      duration={0.2}
+                      preserveValue
+                      fallback={<span>${pricing?.totalPrice?.toFixed(2) || 0}</span>}
+                    />
                   </span>
                 </div>
                 {pricing?.hasDiscount && (
