@@ -9,7 +9,7 @@ import {
 } from "@workspace/ui";
 import { addDays, differenceInDays, format } from "date-fns";
 import { he } from "date-fns/locale";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { CalendarIcon, CloseIcon } from "./icons";
 
 export function DatePickerView() {
@@ -36,6 +36,13 @@ export function DatePickerView() {
     const end = new Date(endDate);
     return differenceInDays(end, start) + 1; // +1 to include both days
   }, [startDate, endDate]);
+
+  // Automatically update numOfDays in context when dates change
+  useEffect(() => {
+    if (numberOfDays > 0 && numberOfDays <= 30) {
+      setNumOfDays(numberOfDays);
+    }
+  }, [numberOfDays, setNumOfDays]);
   
   // Format dates for display
   const formatDisplayDate = useCallback((dateString: string) => {
@@ -66,11 +73,11 @@ export function DatePickerView() {
   
   // Handle confirm selection
   const handleConfirm = useCallback(() => {
-    if (numberOfDays > 0) {
-      setNumOfDays(numberOfDays);
+    if (numberOfDays > 0 && numberOfDays <= 30) {
+      // numOfDays is already updated via useEffect, just navigate back
       setCurrentView('main');
     }
-  }, [numberOfDays, setCurrentView, setNumOfDays]);
+  }, [numberOfDays, setCurrentView]);
   
   // Check if selection is valid
   const isValidSelection = startDate && endDate && numberOfDays > 0 && numberOfDays <= 30;
