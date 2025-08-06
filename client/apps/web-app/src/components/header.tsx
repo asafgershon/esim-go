@@ -1,12 +1,9 @@
 "use client";
 
-import { Navbar } from "@workspace/ui";
-import { Button } from "@workspace/ui";
-import { IconButton } from "@workspace/ui";
-import { UserIcon } from "@workspace/ui";
-import Link from "next/link";
-import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
+import { Button, IconButton, Navbar, UserIcon } from "@workspace/ui";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { parseAsBoolean, useQueryState } from "nuqs";
 
@@ -19,7 +16,7 @@ const navigation = [
 ];
 
 export function Header() {
-  const { isAuthenticated, signOut } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const [, setShowLogin] = useQueryState(
     "showLogin",
