@@ -12,9 +12,18 @@ export function LogoRounded({ className }: LogoRoundedProps) {
   return (
     <>
       {/* Logo container - Desktop */}
-      <div className={cn("hidden md:flex justify-center", className)}>
+      <div className={cn("hidden md:flex justify-center relative h-[320px] w-[320px]", className)}>
+        <Image
+          src="/images/logos/logo-rounded-center.svg"
+          alt="Logo"
+          width={160}
+          height={160}
+          className="w-[160px] h-[160px] max-w-[160px] max-h-[160px] absolute top-[80px] left-[80px]"
+          priority
+        />
         <motion.div
           animate={{ rotate: 360 }}
+          className="absolute top-0 left-0"
           transition={{
             duration: 20,
             repeat: Infinity,
@@ -22,7 +31,7 @@ export function LogoRounded({ className }: LogoRoundedProps) {
           }}
         >
           <Image
-            src="/images/logos/logo-rounded-textsvg.svg"
+            src="/images/logos/logo-rounded-text.svg"
             alt="Logo"
             width={320}
             height={320}
@@ -33,9 +42,18 @@ export function LogoRounded({ className }: LogoRoundedProps) {
       </div>
 
       {/* Logo container - Mobile */}
-      <div className="flex md:hidden justify-center">
+      <div className="flex md:hidden justify-center relative h-[160px] w-[160px]">
+        <Image
+          src="/images/logos/logo-rounded-center.svg"
+          alt="Logo"
+          width={80}
+          height={80}
+          className="w-[80px] h-[80px] max-w-[80px] max-h-[80px] absolute top-[40px] left-[40px]"
+          priority
+        />
         <motion.div
           animate={{ rotate: 360 }}
+          className="absolute top-0 left-0"
           transition={{
             duration: 20,
             repeat: Infinity,
@@ -43,7 +61,7 @@ export function LogoRounded({ className }: LogoRoundedProps) {
           }}
         >
           <Image
-            src="/images/logos/logo-rounded-textsvg.svg"
+            src="/images/logos/logo-rounded-text.svg"
             alt="Logo"
             width={160}
             height={160}

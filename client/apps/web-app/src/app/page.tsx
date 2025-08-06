@@ -125,7 +125,7 @@ export default function Home() {
         {/* Background Section with eSIM Compatibility Check */}
         <BackgroundSection>
           <section id="what-is-esim" className="flex flex-col md:flex-row-reverse" aria-label="מה זה eSIM ותאימות">
-            <LogoRounded />
+            <LogoRounded className="self-end" />
             <CompatibilitySection />
           </section>
           {/* Customer Reviews */}
