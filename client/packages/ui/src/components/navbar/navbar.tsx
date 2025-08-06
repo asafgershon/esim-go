@@ -57,7 +57,7 @@ export function Navbar({
             <SheetContent
               side="right"
               className={cn(
-                "w-[300px] absolute top-0 right-0 opacity-0 p-6",
+                "w-[300px] absolute top-0 opacity-0 p-6",
                 isOpen && "opacity-100"
               )}
             >

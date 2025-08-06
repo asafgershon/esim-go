@@ -33,31 +33,32 @@ export function Header() {
       return;
     }
 
-    if (href.startsWith('#')) {
+    if (href.startsWith("#")) {
       const targetId = href.substring(1);
       const targetElement = document.getElementById(targetId);
-      
+
       if (targetElement) {
         // Calculate offset to account for header height
         const headerHeight = 64; // 16 * 4 = 64px (h-16)
         const elementPosition = targetElement.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
-        
+        const offsetPosition =
+          elementPosition + window.pageYOffset - headerHeight;
+
         window.scrollTo({
           top: offsetPosition,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
-        
+
         // Update URL without page reload
-        window.history.pushState(null, '', href);
-        
+        window.history.pushState(null, "", href);
+
         // Set focus for accessibility
-        targetElement.setAttribute('tabindex', '-1');
+        targetElement.setAttribute("tabindex", "-1");
         targetElement.focus();
-        
+
         // Remove tabindex after focus
         setTimeout(() => {
-          targetElement.removeAttribute('tabindex');
+          targetElement.removeAttribute("tabindex");
         }, 100);
       }
     }
@@ -65,10 +66,10 @@ export function Header() {
 
   const logo = (
     <Link href="/" className="flex items-center">
-      <Image 
-        src="/images/logos/logo-header.svg" 
-        alt="Hiilo" 
-        width={60} 
+      <Image
+        src="/images/logos/logo-header.svg"
+        alt="Hiilo"
+        width={60}
         height={20}
         className="h-5 w-auto"
         priority
@@ -88,21 +89,17 @@ export function Header() {
   // Desktop actions (right side) - No logout button on desktop
   const desktopActions = (
     <div className="flex items-center gap-2">
-      <IconButton 
-        variant="primary-brand" 
-        size="sm"
-        onClick={handleUserClick}
-      >
+      <IconButton variant="primary-brand" size="sm" onClick={handleUserClick}>
         <UserIcon />
       </IconButton>
-      <Button 
+      <Button
         variant="primary-brand"
-        size="sm" 
+        size="sm"
         className="px-6"
         onClick={() => {
-          document.getElementById('esim-selector')?.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
+          document.getElementById("esim-selector")?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
           });
         }}
       >
@@ -111,47 +108,27 @@ export function Header() {
     </div>
   );
 
-  const handleSignOut = () => {
-    signOut();
-    router.push('/');
-  };
-
   // Mobile action (center) - With logout button only on mobile
   const mobileAction = (
     <div className="w-full">
       <div className="flex items-center gap-2 justify-center">
-        <IconButton 
-          variant="primary-brand" 
-          size="sm"
-          onClick={handleUserClick}
-        >
+        <IconButton variant="primary-brand" size="sm" onClick={handleUserClick}>
           <UserIcon />
         </IconButton>
-        <Button 
+        <Button
           variant="primary-brand"
-          size="sm" 
+          size="sm"
           className="px-6 text-xs"
           onClick={() => {
-            document.getElementById('esim-selector')?.scrollIntoView({ 
-              behavior: 'smooth',
-              block: 'start'
+            document.getElementById("esim-selector")?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
             });
           }}
         >
           לרכישת ESIM
         </Button>
       </div>
-      {/* Sign out button - Mobile only */}
-      {isAuthenticated && (
-        <div className="mt-4 text-center md:hidden">
-          <button
-            onClick={handleSignOut}
-            className="text-[12px] leading-[26px] font-bold text-brand-dark hover:text-brand-purple transition-colors cursor-pointer focus:outline-none focus:underline"
-          >
-            התנתקות »
-          </button>
-        </div>
-      )}
     </div>
   );
 
