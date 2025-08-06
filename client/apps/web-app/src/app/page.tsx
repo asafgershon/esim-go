@@ -82,7 +82,7 @@ export default function Home() {
             aria-label="בחירת חבילת eSIM"
             data-speed="0.95"
           >
-            <div className="container mx-auto px-4">
+            <div className="container mx-auto px-4 max-w-[880px]">
               <Suspense fallback={<BundleSelector.Skeleton />}>
                 <BundleSelector />
               </Suspense>
