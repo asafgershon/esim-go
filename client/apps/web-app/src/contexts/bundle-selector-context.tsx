@@ -1,11 +1,11 @@
 "use client";
 
 import { createContext, useContext, ReactNode, useState, useMemo } from 'react';
-import { useQueryStates, parseAsInteger, parseAsString, parseAsStringLiteral } from 'nuqs';
 import { useIsMobile } from '@workspace/ui';
 import { useRouter } from 'next/navigation';
 import type { Bundle } from '@/__generated__/types';
 import type { CountryISOCode } from '@/lib/types';
+import { useSelectorQueryState, type ActiveTab } from '@/hooks/useSelectorQueryState';
 
 // Types for the bundle selector functions
 export type BundleSelector = (
@@ -24,7 +24,6 @@ export type UnusedDayDiscountCalculator = (
 
 // UI State types
 export type ViewState = "main" | "datePicker";
-export type ActiveTab = "countries" | "trips";
 
 // Clean destination type
 export interface Destination {
@@ -207,35 +206,18 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
   const isMobile = useIsMobile({ tablet: true });
   const router = useRouter();
 
-  // URL state management
-  const [queryStates, setQueryStates] = useQueryStates(
-    {
-      numOfDays: parseAsInteger.withDefault(7),
-      countryId: parseAsString.withDefault(""),
-      tripId: parseAsString.withDefault(""),
-      activeTab: parseAsStringLiteral(["countries", "trips"]).withDefault("countries"),
-    },
-    { shallow: true }
-  );
-
-  const { numOfDays, countryId, tripId, activeTab } = queryStates;
-
-  // State setters that work with query states
-  const setNumOfDays = (days: number) => {
-    setQueryStates((state) => ({ ...state, numOfDays: days }));
-  };
-
-  const setCountryId = (id: string | null) => {
-    setQueryStates((state) => ({ ...state, countryId: id || "" }));
-  };
-
-  const setTripId = (id: string | null) => {
-    setQueryStates((state) => ({ ...state, tripId: id || "" }));
-  };
-
-  const setActiveTab = (tab: ActiveTab) => {
-    setQueryStates((state) => ({ ...state, activeTab: tab }));
-  };
+  // URL state management using custom hook
+  const {
+    numOfDays,
+    countryId,
+    tripId,
+    activeTab,
+    setNumOfDays,
+    setCountryId,
+    setTripId,
+    setActiveTab,
+    setQueryStates,
+  } = useSelectorQueryState();
 
   // Complex handlers
   const handleTabChange = (tab: ActiveTab) => {
@@ -244,26 +226,23 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
 
   const handleDestinationChange = (value: string) => {
     if (!value) {
-      setQueryStates((state) => ({
-        ...state,
+      setQueryStates({
         countryId: "",
         tripId: "",
-      }));
+      });
       return;
     }
     const [type, id] = value.split("-");
     if (type === "country") {
-      setQueryStates((state) => ({
-        ...state,
+      setQueryStates({
         countryId: id as CountryISOCode,
         tripId: "",
-      }));
+      });
     } else if (type === "trip") {
-      setQueryStates((state) => ({
-        ...state,
+      setQueryStates({
         tripId: id,
         countryId: "",
-      }));
+      });
     }
   };
 

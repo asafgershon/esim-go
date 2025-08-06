@@ -6,6 +6,7 @@ import { useEffect, useMemo } from "react";
 import { ImageWithFallback } from "./image-with-fallback";
 import { useQuery } from "@apollo/client";
 import { CALCULATE_DESTINATION_PRICES } from "@/lib/graphql/pricing";
+import { useSelectorQueryState, type ActiveTab } from '@/hooks/useSelectorQueryState';
 
 // Lazy load the scrollbar component
 const Scrollbars = dynamic(
@@ -104,6 +105,9 @@ const destinations: Destination[] = [
 ];
 
 export function DestinationsGallery() {
+  // URL state management for bundle selector navigation
+  const { setQueryStates } = useSelectorQueryState();
+
   useEffect(() => {
     // Add global styles to hide scrollbars
     const style = document.createElement('style');
@@ -203,6 +207,7 @@ export function DestinationsGallery() {
               destination={destination}
               loading={loading}
               price={pricesByCountry[destination.countryIso]}
+              onSelect={setQueryStates}
             />
           ))}
         </div>
@@ -257,6 +262,7 @@ export function DestinationsGallery() {
                     destination={destination}
                     loading={loading}
                     price={pricesByCountry[destination.countryIso]}
+                    onSelect={setQueryStates}
                   />
                 </div>
               ))}
@@ -272,17 +278,19 @@ interface DestinationCardProps {
   destination: Destination;
   loading?: boolean;
   price?: { finalPrice: number; currency: string };
+  onSelect: (values: { countryId: string; activeTab: ActiveTab }) => void;
 }
 
-function DestinationCard({ destination, loading, price }: DestinationCardProps) {
+function DestinationCard({ destination, loading, price, onSelect }: DestinationCardProps) {
   // Default fallback image for destinations
   const fallbackImage = "/images/destinations/default.png";
   
   const handleClick = () => {
-    // Update URL with country ISO parameter
-    const url = new URL(window.location.href);
-    url.searchParams.set('country', destination.countryIso);
-    window.history.pushState({}, '', url);
+    // Update URL state using nuqs
+    onSelect({
+      countryId: destination.countryIso.toLowerCase(),
+      activeTab: "countries"
+    });
     
     // Scroll to the esim-selector section
     const selectorElement = document.getElementById('esim-selector');
