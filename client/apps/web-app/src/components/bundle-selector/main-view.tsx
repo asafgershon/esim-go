@@ -2,22 +2,24 @@
 
 import { ComboboxOption } from "@workspace/ui";
 import { FuzzyCombobox } from "@workspace/ui";
-import { 
-  SelectorHeader, 
+import {
+  SelectorHeader,
   SelectorContent,
-  SelectorAction, 
+  SelectorAction,
   SelectorSection,
   SelectorLabel,
-  SelectorButton 
+  SelectorButton,
 } from "@workspace/ui";
 import { Suspense, lazy } from "react";
 import { CalendarIcon, ChevronsUpDownIcon } from "./icons";
-import { PricingSkeleton } from "./pricing-skeleton";
+import { PricingSkeleton } from "./skeleton";
 import type { EnhancedCountry } from "@/hooks/useCountries";
 import type { EnhancedTrip } from "@/hooks/useTrips";
 
 const CountUp = lazy(() => import("react-countup"));
-const MobileDestinationDrawer = lazy(() => import("../mobile-destination-drawer"));
+const MobileDestinationDrawer = lazy(
+  () => import("../mobile-destination-drawer")
+);
 
 interface MainViewProps {
   // State
@@ -27,7 +29,14 @@ interface MainViewProps {
     type: "country" | "trip";
     data: EnhancedCountry | EnhancedTrip | undefined;
   } | null;
-  pricing: { finalPrice?: number; currency?: string; days?: number; totalPrice?: number; hasDiscount?: boolean; discountAmount?: number } | null;
+  pricing: {
+    finalPrice?: number;
+    currency?: string;
+    days?: number;
+    totalPrice?: number;
+    hasDiscount?: boolean;
+    discountAmount?: number;
+  } | null;
   comboboxOptions: ComboboxOption[];
   countryId: string | null;
   tripId: string | null;
@@ -35,7 +44,7 @@ interface MainViewProps {
   showMobileSheet: boolean;
   footerVisible: boolean;
   isLoadingPricing?: boolean;
-  
+
   // Handlers
   handleTabChange: (tab: "countries" | "trips") => void;
   handleDestinationChange: (value: string) => void;
@@ -90,9 +99,10 @@ export function MainView({
                 leading-[26px] md:leading-normal font-medium 
                 rounded-lg md:rounded-xl transition-all duration-200
                 focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2
-                ${activeTab === "trips" 
-                  ? "bg-brand-dark text-brand-white" 
-                  : "text-brand-dark bg-transparent hover:bg-gray-100"
+                ${
+                  activeTab === "trips"
+                    ? "bg-brand-dark text-brand-white"
+                    : "text-brand-dark bg-transparent hover:bg-gray-100"
                 }
               `}
             >
@@ -109,9 +119,10 @@ export function MainView({
                 leading-[26px] md:leading-normal font-medium 
                 rounded-lg md:rounded-xl transition-all duration-200
                 focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2
-                ${activeTab === "countries" 
-                  ? "bg-brand-dark text-brand-white" 
-                  : "text-brand-dark bg-transparent hover:bg-gray-100"
+                ${
+                  activeTab === "countries"
+                    ? "bg-brand-dark text-brand-white"
+                    : "text-brand-dark bg-transparent hover:bg-gray-100"
                 }
               `}
             >
@@ -152,7 +163,7 @@ export function MainView({
                   <ChevronsUpDownIcon />
                 </div>
               </button>
-              
+
               <Suspense fallback={<div>...</div>}>
                 {showMobileSheet && (
                   <MobileDestinationDrawer
@@ -208,23 +219,29 @@ export function MainView({
           <div className="relative h-[21px] md:h-[38px]">
             {/* Track Background */}
             <div className="absolute top-[9px] md:top-[15px] bg-[rgba(10,35,46,0.05)] h-[3px] md:h-[9px] rounded-[50px] w-full" />
-            
+
             {/* Track Fill */}
-            <div 
+            <div
               className="absolute top-[9px] md:top-[15px] right-0 bg-brand-dark h-[3px] md:h-[9px] rounded-[50px] transition-all duration-150"
               style={{ width: `${(numOfDays / 30) * 100}%` }}
             />
-            
+
             {/* Thumb */}
-            <div 
+            <div
               className="absolute top-0 transition-all duration-150"
-              style={{ right: `calc(${(numOfDays / 30) * 100}% - ${isMobile ? '10.5px' : '19px'})` }}
+              style={{
+                right: `calc(${(numOfDays / 30) * 100}% - ${
+                  isMobile ? "10.5px" : "19px"
+                })`,
+              }}
             >
-              <div className="
+              <div
+                className="
                 w-[21px] h-[21px] md:w-[38px] md:h-[38px] bg-brand-white rounded-full 
                 border border-brand-dark shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]
                 flex items-center justify-center cursor-pointer
-              ">
+              "
+              >
                 <span className="text-[8px] md:text-[16px] leading-[20px] font-bold text-brand-dark">
                   {numOfDays}
                 </span>
@@ -248,9 +265,9 @@ export function MainView({
 
           {/* Date Selection Link */}
           <div className="text-right">
-            <button 
+            <button
               className="text-[10px] md:text-[12px] leading-[26px] font-bold text-brand-dark hover:text-brand-purple transition-colors cursor-pointer focus:outline-none focus:underline"
-              onClick={() => setCurrentView('datePicker')}
+              onClick={() => setCurrentView("datePicker")}
               aria-label="עבור לבחירת תאריכים מדויקים"
             >
               לבחירת תאריכים מדויקים »
@@ -259,17 +276,25 @@ export function MainView({
         </SelectorSection>
 
         {/* Selected Destination and Pricing */}
-        {selectedDestinationData && (
-          isLoadingPricing ? (
+        {selectedDestinationData &&
+          (isLoadingPricing ? (
             <PricingSkeleton />
           ) : pricing ? (
             <div className="bg-brand-white border border-[rgba(10,35,46,0.2)] rounded-lg md:rounded-[15px] p-3 md:p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl md:text-2xl" role="img" aria-label={selectedDestinationData.data?.nameHebrew || undefined}>
+                  <span
+                    className="text-xl md:text-2xl"
+                    role="img"
+                    aria-label={
+                      selectedDestinationData.data?.nameHebrew || undefined
+                    }
+                  >
                     {selectedDestinationData.type === "country"
-                      ? (selectedDestinationData.data as EnhancedCountry)?.flag || ""
-                      : (selectedDestinationData.data as EnhancedTrip)?.icon || ""}
+                      ? (selectedDestinationData.data as EnhancedCountry)
+                          ?.flag || ""
+                      : (selectedDestinationData.data as EnhancedTrip)?.icon ||
+                        ""}
                   </span>
                   <div>
                     <h3 className="text-[14px] md:text-[18px] font-medium text-brand-dark">
@@ -277,8 +302,10 @@ export function MainView({
                     </h3>
                     <p className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
                       {selectedDestinationData.type === "country"
-                        ? (selectedDestinationData.data as EnhancedCountry)?.tagline
-                        : (selectedDestinationData.data as EnhancedTrip)?.description}
+                        ? (selectedDestinationData.data as EnhancedCountry)
+                            ?.tagline
+                        : (selectedDestinationData.data as EnhancedTrip)
+                            ?.description}
                     </p>
                   </div>
                 </div>
@@ -301,7 +328,11 @@ export function MainView({
                     {pricing?.days} ימים ללא הגבלה
                   </span>
                   <span className="text-[14px] md:text-[18px] font-bold text-brand-dark">
-                    <Suspense fallback={<span>${pricing?.totalPrice?.toFixed(2) || 0}</span>}>
+                    <Suspense
+                      fallback={
+                        <span>${pricing?.totalPrice?.toFixed(2) || 0}</span>
+                      }
+                    >
                       <CountUp
                         key={`total-${countryId || tripId}-${numOfDays}`}
                         end={pricing?.totalPrice || 0}
@@ -314,7 +345,7 @@ export function MainView({
                   </span>
                 </div>
                 {pricing?.hasDiscount && (
-                  <div 
+                  <div
                     className="text-center py-1 text-[8px] md:text-[10px] bg-green-50 rounded text-green-600"
                     role="status"
                     aria-live="polite"
@@ -324,18 +355,27 @@ export function MainView({
                 )}
               </div>
             </div>
-          ) : null
-        )}
+          ) : null)}
       </SelectorContent>
 
       {/* Purchase Button - Always visible */}
       <SelectorAction className="mt-5">
-        <SelectorButton 
+        <SelectorButton
           onClick={handlePurchase}
-          aria-label={selectedDestinationData ? "המשך לרכישת חבילת eSIM" : "בחר יעד לצפייה בחבילות"}
-          className={selectedDestinationData && pricing ? "bg-[#00E095] hover:bg-[#00E095]/90" : ""}
+          aria-label={
+            selectedDestinationData
+              ? "המשך לרכישת חבילת eSIM"
+              : "בחר יעד לצפייה בחבילות"
+          }
+          className={
+            selectedDestinationData && pricing
+              ? "bg-[#00E095] hover:bg-[#00E095]/90"
+              : ""
+          }
         >
-          {selectedDestinationData && pricing ? "לרכישת החבילה" : "לצפייה בחבילה המשתלמת ביותר"}
+          {selectedDestinationData && pricing
+            ? "לרכישת החבילה"
+            : "לצפייה בחבילה המשתלמת ביותר"}
         </SelectorButton>
       </SelectorAction>
     </>

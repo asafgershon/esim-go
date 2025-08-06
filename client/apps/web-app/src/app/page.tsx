@@ -4,7 +4,7 @@ import { AnnouncementBanner } from "@/components/announcement-banner";
 import { BackgroundSection } from "@/components/background-section";
 import { CompatibilitySection } from "@/components/compatibility-section";
 import { DestinationsGallery } from "@/components/destinations-gallery";
-import { EsimSelector } from "@/components/esim-selector";
+import { BundleSelector } from "@/components/bundle-selector";
 import { FeaturesSection } from "@/components/features-section";
 import { Header } from "@/components/header";
 import { HelpBanner } from "@/components/help-banner";
@@ -22,31 +22,32 @@ import { Suspense } from "react";
 export default function Home() {
   // Smooth scroll function for footer navigation
   const handleFooterNavigation = (href: string) => {
-    if (href.startsWith('#')) {
+    if (href.startsWith("#")) {
       const targetId = href.substring(1);
       const targetElement = document.getElementById(targetId);
-      
+
       if (targetElement) {
         // Calculate offset to account for header height
         const headerHeight = 64; // 16 * 4 = 64px (h-16)
         const elementPosition = targetElement.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
-        
+        const offsetPosition =
+          elementPosition + window.pageYOffset - headerHeight;
+
         window.scrollTo({
           top: offsetPosition,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
-        
+
         // Update URL without page reload
-        window.history.pushState(null, '', href);
-        
+        window.history.pushState(null, "", href);
+
         // Set focus for accessibility
-        targetElement.setAttribute('tabindex', '-1');
+        targetElement.setAttribute("tabindex", "-1");
         targetElement.focus();
-        
+
         // Remove tabindex after focus
         setTimeout(() => {
-          targetElement.removeAttribute('tabindex');
+          targetElement.removeAttribute("tabindex");
         }, 100);
       }
     } else {
@@ -58,22 +59,23 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Skip Navigation Link */}
-      <a 
-        href="#main-content" 
+      <a
+        href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded"
         onClick={(e) => {
           e.preventDefault();
-          const mainContent = document.getElementById('main-content');
+          const mainContent = document.getElementById("main-content");
           if (mainContent) {
             const headerHeight = 64;
             const elementPosition = mainContent.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
-            
+            const offsetPosition =
+              elementPosition + window.pageYOffset - headerHeight;
+
             window.scrollTo({
               top: offsetPosition,
-              behavior: 'smooth'
+              behavior: "smooth",
             });
-            
+
             mainContent.focus();
           }
         }}
@@ -101,10 +103,14 @@ export default function Home() {
         </section>
 
         {/* eSIM Selector Section - Overlapping Hero */}
-        <section id="esim-selector" className="relative -mt-[200px] z-20" aria-label="בחירת חבילת eSIM">
+        <section
+          id="esim-selector"
+          className="relative -mt-[200px] z-20"
+          aria-label="בחירת חבילת eSIM"
+        >
           <div className="container mx-auto px-4">
-            <Suspense fallback={<div className="h-96" />}>
-              <EsimSelector />
+            <Suspense  fallback={<BundleSelector.Skeleton />}>
+              <BundleSelector />
             </Suspense>
           </div>
         </section>
@@ -124,12 +130,16 @@ export default function Home() {
 
         {/* Background Section with eSIM Compatibility Check */}
         <BackgroundSection>
-          <section id="what-is-esim" className="flex flex-col md:flex-row-reverse" aria-label="מה זה eSIM ותאימות">
+          <section
+            id="what-is-esim"
+            className="flex flex-col md:flex-row-reverse"
+            aria-label="מה זה eSIM ותאימות"
+          >
             <LogoRounded className="self-end" />
             <CompatibilitySection />
           </section>
           {/* Customer Reviews */}
-            <ReviewsSection />
+          <ReviewsSection />
         </BackgroundSection>
 
         {/* How To Section */}

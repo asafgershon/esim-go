@@ -104,7 +104,7 @@ export const otpSchema = z
  */
 export const phoneFormSchema = z.object({
   phoneNumber: phoneNumberSchema,
-  rememberMe: z.boolean().default(true),
+  rememberMe: z.boolean().optional().default(true),
 });
 
 /**
