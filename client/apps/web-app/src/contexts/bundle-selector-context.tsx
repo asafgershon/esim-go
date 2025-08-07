@@ -1,11 +1,13 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useState, useMemo } from 'react';
-import { useIsMobile } from '@workspace/ui';
-import { useRouter } from 'next/navigation';
-import type { Bundle } from '@/__generated__/types';
-import type { CountryISOCode } from '@/lib/types';
-import { useSelectorQueryState, type ActiveTab } from '@/hooks/useSelectorQueryState';
+import { createContext, useContext, ReactNode, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import type { Bundle } from "@/__generated__/types";
+import type { CountryISOCode } from "@/lib/types";
+import {
+  useSelectorQueryState,
+  type ActiveTab,
+} from "@/hooks/useSelectorQueryState";
 
 // Types for the bundle selector functions
 export type BundleSelector = (
@@ -37,12 +39,11 @@ interface BundleSelectorContextValue {
   // Bundle selector functions
   findOptimalBundle: BundleSelector;
   calculateUnusedDayDiscount: UnusedDayDiscountCalculator;
-  
+
   // UI State
   currentView: ViewState;
   setCurrentView: (view: ViewState) => void;
-  isMobile: boolean;
-  
+
   // Query State (from URL)
   numOfDays: number;
   setNumOfDays: (days: number) => void;
@@ -52,15 +53,20 @@ interface BundleSelectorContextValue {
   setTripId: (id: string | null) => void;
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
-  
+
   // Destination State (will be computed from queryStates in the component that has access to countries/trips data)
   destination: Destination | null;
-  
+
   // Pricing State
   pricing: { totalPrice?: number } | null;
   setPricing: (pricing: { totalPrice?: number } | null) => void;
   isPricingValid: boolean;
-  
+
+  // Destination selector control
+  shouldFocusDestinationSelector: boolean;
+  setShouldFocusDestinationSelector: (should: boolean) => void;
+  triggerDestinationSelectorFocus: () => void;
+
   // Complex handlers
   handleTabChange: (tab: ActiveTab) => void;
   handleDestinationChange: (value: string) => void;
@@ -68,7 +74,9 @@ interface BundleSelectorContextValue {
 }
 
 // Create the context
-const BundleSelectorContext = createContext<BundleSelectorContextValue | null>(null);
+const BundleSelectorContext = createContext<BundleSelectorContextValue | null>(
+  null
+);
 
 // Bundle selector logic implementation (ported from server package)
 
@@ -93,16 +101,25 @@ const findOptimalBundle: BundleSelector = (bundles, requestedDuration) => {
 
     // Track smallest bundle that covers requested duration
     if (bundle.validityInDays >= requestedDuration) {
-      if (!smallestSuitable || bundle.validityInDays < smallestSuitable.validityInDays) {
+      if (
+        !smallestSuitable ||
+        bundle.validityInDays < smallestSuitable.validityInDays
+      ) {
         smallestSuitable = bundle;
       }
     }
 
     // Track largest bundle overall
-    if (!largestBundle || bundle.validityInDays > largestBundle.validityInDays) {
+    if (
+      !largestBundle ||
+      bundle.validityInDays > largestBundle.validityInDays
+    ) {
       secondLargest = largestBundle;
       largestBundle = bundle;
-    } else if (!secondLargest || bundle.validityInDays > secondLargest.validityInDays) {
+    } else if (
+      !secondLargest ||
+      bundle.validityInDays > secondLargest.validityInDays
+    ) {
       secondLargest = bundle;
     }
   }
@@ -111,7 +128,7 @@ const findOptimalBundle: BundleSelector = (bundles, requestedDuration) => {
   if (exactMatch) {
     return {
       selectedBundle: exactMatch,
-      previousBundle: undefined
+      previousBundle: undefined,
     };
   }
 
@@ -121,15 +138,18 @@ const findOptimalBundle: BundleSelector = (bundles, requestedDuration) => {
     let previousBundle = undefined;
     for (const bundle of bundles) {
       if (bundle.validityInDays < smallestSuitable.validityInDays) {
-        if (!previousBundle || bundle.validityInDays > previousBundle.validityInDays) {
+        if (
+          !previousBundle ||
+          bundle.validityInDays > previousBundle.validityInDays
+        ) {
           previousBundle = bundle;
         }
       }
     }
-    
+
     return {
       selectedBundle: smallestSuitable,
-      previousBundle
+      previousBundle,
     };
   }
 
@@ -139,7 +159,7 @@ const findOptimalBundle: BundleSelector = (bundles, requestedDuration) => {
 
   return {
     selectedBundle: largestBundle,
-    previousBundle: largestBundle === largestBundle ? secondLargest : undefined
+    previousBundle: largestBundle === largestBundle ? secondLargest : undefined,
   };
 };
 
@@ -154,19 +174,21 @@ const calculateUnusedDayDiscount: UnusedDayDiscountCalculator = (
 ) => {
   // Find all bundles in the same group/category
   const sameCategoryBundles = availableBundles.filter(
-    bundle =>
-      bundle.groups.some(group => selectedBundle.groups.includes(group)) &&
-      bundle.countries.some(country => selectedBundle.countries.includes(country))
+    (bundle) =>
+      bundle.groups.some((group) => selectedBundle.groups.includes(group)) &&
+      bundle.countries.some((country) =>
+        selectedBundle.countries.includes(country)
+      )
   );
 
   // Get all available durations, sorted
-  const availableDurations = [...new Set(
-    sameCategoryBundles.map(bundle => bundle.validityInDays)
-  )].sort((a, b) => a - b);
+  const availableDurations = [
+    ...new Set(sameCategoryBundles.map((bundle) => bundle.validityInDays)),
+  ].sort((a, b) => a - b);
 
   // Find the previous duration (closest duration less than requested)
   const previousDuration = availableDurations
-    .filter(duration => duration < requestedDuration)
+    .filter((duration) => duration < requestedDuration)
     .pop();
 
   if (!previousDuration) {
@@ -175,7 +197,7 @@ const calculateUnusedDayDiscount: UnusedDayDiscountCalculator = (
 
   // Find the previous bundle
   const previousBundle = sameCategoryBundles.find(
-    bundle => bundle.validityInDays === previousDuration
+    (bundle) => bundle.validityInDays === previousDuration
   );
 
   if (!previousBundle) {
@@ -184,7 +206,8 @@ const calculateUnusedDayDiscount: UnusedDayDiscountCalculator = (
 
   // Calculate discount per day using the markup difference formula
   const priceDifference = selectedBundle.basePrice - previousBundle.basePrice;
-  const daysDifference = selectedBundle.validityInDays - previousBundle.validityInDays;
+  const daysDifference =
+    selectedBundle.validityInDays - previousBundle.validityInDays;
 
   if (daysDifference <= 0) {
     return 0;
@@ -199,11 +222,13 @@ interface BundleSelectorProviderProps {
   children: ReactNode;
 }
 
-export function BundleSelectorProvider({ children }: BundleSelectorProviderProps) {
+export function BundleSelectorProvider({
+  children,
+}: BundleSelectorProviderProps) {
   // UI State
   const [currentView, setCurrentView] = useState<ViewState>("main");
   const [pricing, setPricing] = useState<{ totalPrice?: number } | null>(null);
-  const isMobile = useIsMobile({ tablet: true });
+  const [shouldFocusDestinationSelector, setShouldFocusDestinationSelector] = useState(false);
   const router = useRouter();
 
   // URL state management using custom hook
@@ -249,26 +274,34 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
   const handlePurchase = (pricingData?: { totalPrice?: number } | null) => {
     // Use the passed pricing data or fall back to context pricing
     const effectivePricing = pricingData ?? pricing;
-    const isReadyToPurchase = (countryId || tripId) && effectivePricing && effectivePricing.totalPrice !== undefined;
+    const isReadyToPurchase =
+      (countryId || tripId) &&
+      effectivePricing &&
+      effectivePricing.totalPrice !== undefined;
     if (!isReadyToPurchase) return;
-    
+
     // Navigate to checkout with current parameters
     const params = new URLSearchParams();
     params.set("numOfDays", numOfDays.toString());
     if (countryId) params.set("countryId", countryId.toUpperCase());
     if (tripId) params.set("tripId", tripId);
-    if (effectivePricing?.totalPrice) params.set("totalPrice", effectivePricing.totalPrice.toString());
+    if (effectivePricing?.totalPrice)
+      params.set("totalPrice", effectivePricing.totalPrice.toString());
     router.push(`/checkout?${params.toString()}`);
+  };
+
+  const triggerDestinationSelectorFocus = () => {
+    setShouldFocusDestinationSelector(true);
   };
 
   // Computed property: Check if pricing is valid
   const isPricingValid = useMemo(() => {
     return Boolean(
-      numOfDays > 0 && 
-      (countryId || tripId) && 
-      pricing && 
-      pricing.totalPrice !== undefined &&
-      pricing.totalPrice > 0
+      numOfDays > 0 &&
+        (countryId || tripId) &&
+        pricing &&
+        pricing.totalPrice !== undefined &&
+        pricing.totalPrice > 0
     );
   }, [numOfDays, countryId, tripId, pricing]);
 
@@ -276,12 +309,11 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
     // Bundle selector functions
     findOptimalBundle,
     calculateUnusedDayDiscount,
-    
+
     // UI State
     currentView,
     setCurrentView,
-    isMobile,
-    
+
     // Query State
     numOfDays,
     setNumOfDays,
@@ -291,15 +323,20 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
     setTripId,
     activeTab,
     setActiveTab,
-    
+
     // Destination State (computed - null for now, will be set by parent component)
     destination: null,
-    
+
     // Pricing State
     pricing,
     setPricing,
     isPricingValid,
-    
+
+    // Destination selector control
+    shouldFocusDestinationSelector,
+    setShouldFocusDestinationSelector,
+    triggerDestinationSelectorFocus,
+
     // Complex handlers
     handleTabChange,
     handleDestinationChange,
@@ -316,10 +353,12 @@ export function BundleSelectorProvider({ children }: BundleSelectorProviderProps
 // Custom hook to use the context
 export function useBundleSelector() {
   const context = useContext(BundleSelectorContext);
-  
+
   if (!context) {
-    throw new Error('useBundleSelector must be used within a BundleSelectorProvider');
+    throw new Error(
+      "useBundleSelector must be used within a BundleSelectorProvider"
+    );
   }
-  
+
   return context;
 }

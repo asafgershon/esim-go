@@ -130,6 +130,8 @@ interface FuzzyComboboxProps extends ComboboxProps {
     distance?: number;
     minMatchCharLength?: number;
   };
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function FuzzyCombobox({
@@ -142,9 +144,23 @@ export function FuzzyCombobox({
   className,
   disabled = false,
   fuseOptions = {},
+  open: controlledOpen,
+  onOpenChange,
 }: FuzzyComboboxProps) {
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
+
+  // Use controlled open state if provided, otherwise use internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = React.useCallback(
+    (newOpen: boolean) => {
+      if (controlledOpen === undefined) {
+        setInternalOpen(newOpen);
+      }
+      onOpenChange?.(newOpen);
+    },
+    [controlledOpen, onOpenChange]
+  );
 
   // Configure Fuse.js for fuzzy search
   const fuse = React.useMemo(() => {

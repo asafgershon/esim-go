@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, lazy, useState, useMemo } from "react";
+import { Suspense, lazy, useState, useMemo, useEffect } from "react";
 import { useBundleSelector } from "@/contexts/bundle-selector-context";
 import type { Destination } from "@/contexts/bundle-selector-context";
 import { useCountries } from "@/hooks/useCountries";
@@ -11,6 +11,7 @@ import {
   FuzzyCombobox,
   SelectorLabel,
   SelectorSection,
+  useIsMobile,
 } from "@workspace/ui";
 import { ChevronsUpDownIcon } from "lucide-react";
 import {
@@ -24,11 +25,19 @@ const MobileDestinationDrawer = lazy(
 );
 
 export function DestinationSelector() {
-  const { countryId, tripId, activeTab, isMobile, handleDestinationChange } =
-    useBundleSelector();
+  const { 
+    countryId, 
+    tripId, 
+    activeTab, 
+    handleDestinationChange,
+    shouldFocusDestinationSelector,
+    setShouldFocusDestinationSelector
+  } = useBundleSelector();
 
-  // Local state for mobile sheet
+  const isMobile = useIsMobile({ tablet: true });
+  // Local state for mobile sheet and desktop combobox
   const [showMobileSheet, setShowMobileSheet] = useState(false);
+  const [comboboxOpen, setComboboxOpen] = useState(false);
 
   // Shared button styles for consistent appearance across mobile and desktop
   const sharedButtonStyles =
@@ -95,6 +104,21 @@ export function DestinationSelector() {
 
   const currentValue = getDestinationValue();
 
+  // Respond to focus trigger from context
+  useEffect(() => {
+    if (shouldFocusDestinationSelector) {
+      if (isMobile) {
+        // Open mobile sheet
+        setShowMobileSheet(true);
+      } else {
+        // Open desktop combobox
+        setComboboxOpen(true);
+      }
+      // Reset the trigger
+      setShouldFocusDestinationSelector(false);
+    }
+  }, [shouldFocusDestinationSelector, isMobile, setShouldFocusDestinationSelector]);
+
   return (
     <SelectorSection
       role="tabpanel"
@@ -153,6 +177,8 @@ export function DestinationSelector() {
             searchPlaceholder={SEARCH_PLACEHOLDER}
             emptyMessage={NO_RESULTS_MESSAGE}
             className={comboboxClassName}
+            open={comboboxOpen}
+            onOpenChange={setComboboxOpen}
           />
         </div>
       )}

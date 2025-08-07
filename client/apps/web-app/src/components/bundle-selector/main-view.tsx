@@ -49,6 +49,7 @@ export function MainView({
     setCountryId,
     setTripId,
     isPricingValid,
+    triggerDestinationSelectorFocus,
   } = useBundleSelector();
 
   // Fetch data for destination display
@@ -81,7 +82,7 @@ export function MainView({
   return (
     <>
       <SelectorHeader>
-        <h2 className="text-[18px] md:text-[30px] font-medium text-brand-dark">
+        <h2 className="text-2xl text-center font-medium text-brand-dark">
           איזה כיף! לאן טסים? 🌏
         </h2>
       </SelectorHeader>
@@ -100,7 +101,7 @@ export function MainView({
         <SelectorSection>
           <div className="flex items-center gap-[4px] md:gap-2 justify-start">
             <CalendarIcon className="w-3 h-3 md:w-[19px] md:h-[19px]" />
-            <p className="text-[12px] md:text-[20px] leading-[26px] md:leading-normal text-brand-dark">
+            <p className="text-base md:text-xl leading-[26px] md:leading-normal text-brand-dark">
               כמה ימים?
             </p>
           </div>
@@ -201,7 +202,14 @@ export function MainView({
       {/* Purchase Button - Always visible */}
       <SelectorAction className="mt-5">
         <SelectorButton
-          onClick={handlePurchase}
+          onClick={() => {
+            // If no destination is selected, focus the destination selector
+            if (!countryId && !tripId) {
+              triggerDestinationSelectorFocus();
+            } else {
+              handlePurchase();
+            }
+          }}
           aria-label={
             isPricingValid ? "המשך לרכישת חבילת eSIM" : "בחר יעד לצפייה בחבילות"
           }
