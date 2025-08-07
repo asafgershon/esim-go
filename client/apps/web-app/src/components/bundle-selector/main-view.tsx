@@ -89,10 +89,7 @@ export function MainView({
 
       <SelectorContent>
         {/* Tab Container with smooth sliding transition */}
-        <DestinationTabs 
-          activeTab={activeTab} 
-          onTabChange={handleTabChange} 
-        />
+        <DestinationTabs activeTab={activeTab} onTabChange={handleTabChange} />
 
         {/* Destination Selection */}
         <DestinationSelector />
@@ -120,7 +117,7 @@ export function MainView({
           {/* Date Selection Link */}
           <div className="text-right">
             <button
-              className="text-[10px] md:text-[12px] leading-[26px] font-bold text-brand-dark hover:text-brand-purple transition-colors cursor-pointer focus:outline-none focus:underline"
+              className="text-sm md:text-[12px] leading-[26px] font-bold text-brand-dark hover:text-brand-purple transition-colors cursor-pointer focus:outline-none focus:underline"
               onClick={() => setCurrentView("datePicker")}
               aria-label="עבור לבחירת תאריכים מדויקים"
             >
@@ -134,7 +131,7 @@ export function MainView({
           (isLoadingPricing ? (
             <PricingSkeleton />
           ) : pricing ? (
-            <div className="bg-brand-white border border-[rgba(10,35,46,0.2)] rounded-lg md:rounded-[15px] p-3 md:p-4">
+            <div className="bg-brand-white border border-brand-dark/10 rounded-lg md:rounded-[15px] p-3 md:p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span
@@ -166,7 +163,7 @@ export function MainView({
               </div>
 
               {/* Pricing Summary */}
-              <div className="pt-3 border-t border-[rgba(10,35,46,0.1)]">
+              <div className="pt-3 border-t border-brand-dark/10">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
                     {pricing?.days} ימים ללא הגבלה
@@ -203,10 +200,11 @@ export function MainView({
       <SelectorAction className="mt-5">
         <SelectorButton
           onClick={() => {
-            // If no destination is selected, focus the destination selector
-            if (!countryId && !tripId) {
-              triggerDestinationSelectorFocus();
-            } else {
+            // Always trigger the destination selector to open
+            triggerDestinationSelectorFocus();
+
+            // If valid pricing, also proceed with purchase
+            if (isPricingValid) {
               handlePurchase();
             }
           }}

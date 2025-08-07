@@ -26,13 +26,13 @@ const MobileDestinationDrawer = lazy(
 );
 
 export function DestinationSelector() {
-  const { 
-    countryId, 
-    tripId, 
-    activeTab, 
+  const {
+    countryId,
+    tripId,
+    activeTab,
     handleDestinationChange,
     shouldFocusDestinationSelector,
-    setShouldFocusDestinationSelector
+    setShouldFocusDestinationSelector,
   } = useBundleSelector();
 
   const isMobile = useIsMobile({ tablet: true });
@@ -125,7 +125,11 @@ export function DestinationSelector() {
       // Reset the trigger
       setShouldFocusDestinationSelector(false);
     }
-  }, [shouldFocusDestinationSelector, isMobile, setShouldFocusDestinationSelector]);
+  }, [
+    shouldFocusDestinationSelector,
+    isMobile,
+    setShouldFocusDestinationSelector,
+  ]);
 
   return (
     <SelectorSection
@@ -148,14 +152,14 @@ export function DestinationSelector() {
             className={`${sharedButtonStyles} relative`}
           >
             <ChevronsUpDownIcon
-              size={20}
+              size={isMobile ? 16 : 20}
               className={cn(
                 "absolute right-3 top-1/2 -translate-y-1/2",
                 showMobileSheet && "rotate-180",
-                !destination?.name && "opacity-30"
+                "opacity-30"
               )}
             />
-            <span className="pr-8 text-brand-dark text-md md:text-[18px] leading-[26px] opacity-30">
+            <span className={cn("pr-8 text-brand-dark text-md md:text-[18px] leading-[26px]", !destination?.name && "opacity-30")}>
               {destination?.name || DESTINATION_PLACEHOLDER}
             </span>
           </button>
