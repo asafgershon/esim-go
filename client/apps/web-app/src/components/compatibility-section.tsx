@@ -4,7 +4,7 @@ import { Button, useESIMDetection } from "@workspace/ui";
 import { Check, X, Loader2 } from "lucide-react";
 import { useState } from "react";
 
-export function CompatibilitySection() {
+export function CompatibilitySection({ id, ariaLabel }: { id: string, ariaLabel: string }) {
   // Use the eSIM detection hook with manual start
   const { isSupported, loading, start } = useESIMDetection({
     autoStart: false,
@@ -66,7 +66,7 @@ export function CompatibilitySection() {
   const buttonState = getButtonState();
 
   return (
-    <>
+    <section id={id} aria-label={ariaLabel} className="flex flex-col md:flex-row-reverse">
       {/* Text container - Desktop */}
       <div className="hidden md:flex flex-col items-center mt-8 gap-4">
         {/* Highlight */}
@@ -134,6 +134,6 @@ export function CompatibilitySection() {
           </Button>
         </div>
       </div>
-    </>
+    </section>
   );
 }

@@ -123,9 +123,9 @@ const ctaVariants = {
   },
 };
 
-export function FeaturesSection() {
+export function FeaturesSection({ id, ariaLabel }: { id: string, ariaLabel: string }) {
   return (
-    <section className="w-full px-4 py-16 md:py-24">
+    <section id={id} aria-label={ariaLabel} className="w-full px-4 py-16 md:py-24">
       <div className="mx-auto max-w-6xl">
         <motion.div 
           className="text-center mb-12"

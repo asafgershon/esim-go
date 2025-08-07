@@ -48,7 +48,7 @@ export function Navbar({
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative p-0 h-auto w-auto"
+                className="relative p-0 h-auto w-auto hover:bg-transparent text-brand-dark hover:text-brand-dark/80 cursor-pointer"
                 aria-label="Toggle menu"
               >
                 <MenuIcon isOpen={isOpen} />

@@ -1,9 +1,9 @@
 "use client";
 
-import { Button, useMediaQuery } from "@workspace/ui";
+import { Button, useIsMobile } from "@workspace/ui";
 
-export function HowToSection() {
-  const isMobile = useMediaQuery("(max-width: 768px)")
+export function HowToSection({ id, ariaLabel }: { id: string, ariaLabel: string }) {
+  const isMobile = useIsMobile();
   const steps = [
     {
       number: 1,
@@ -20,7 +20,7 @@ export function HowToSection() {
   ];
 
   return (
-    <section className="py-16 md:py-24 relative overflow-hidden">
+    <section id={id} aria-label={ariaLabel} className="w-full py-16 md:py-24 relative overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-12 items-center">
@@ -59,22 +59,23 @@ export function HowToSection() {
               </div>
 
               {/* CTA Button */}
-             {!isMobile && <div className="mt-10 flex justify-start">
-                <Button
-                  variant="brand-primary"
-                  emphasized
-                  className="w-[220px]"
-                  onClick={() => {
-                    const selector = document.getElementById("esim-selector");
-                    if (selector) {
-                      selector.scrollIntoView({ behavior: "smooth" });
-                    }
-                  }}
-                >
-                  לרכישת Esim
-                </Button>
-              </div>
-              }
+              {!isMobile && (
+                <div className="mt-10 flex justify-start">
+                  <Button
+                    variant="brand-primary"
+                    emphasized
+                    className="w-[220px]"
+                    onClick={() => {
+                      const selector = document.getElementById("esim-selector");
+                      if (selector) {
+                        selector.scrollIntoView({ behavior: "smooth" });
+                      }
+                    }}
+                  >
+                    לרכישת Esim
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Right side - Phone mockup */}

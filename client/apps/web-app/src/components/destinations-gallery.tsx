@@ -87,7 +87,7 @@ const destinations: Destination[] = [
   },
 ];
 
-export function DestinationsGallery() {
+export function DestinationsGallery({ id, ariaLabel, speed }: { id: string, ariaLabel: string, speed?: string }) {
   // URL state management for bundle selector navigation
   const { setQueryStates } = useSelectorQueryState();
   
@@ -135,7 +135,7 @@ export function DestinationsGallery() {
   }, [data]);
 
   return (
-    <section className="pt-16 pb-[60px] md:pt-24 md:pb-[100px] bg-gradient-to-b from-white to-[#F8FAFC]">
+    <section data-speed={speed} id={id} aria-label={ariaLabel} className="pt-16 pb-[60px] md:pt-24 md:pb-[100px] bg-gradient-to-b from-white to-[#F8FAFC]">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-right mb-12 max-w-4xl mx-auto">

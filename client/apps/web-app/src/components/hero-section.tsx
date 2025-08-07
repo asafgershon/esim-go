@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useMemo } from "react";
 
-export function HeroSection() {
+export function HeroSection({ id, ariaLabel }: { id: string, ariaLabel: string }) {
   // Randomize between image 1 and 2
   const heroImage = useMemo(() => {
     const randomNum = Math.floor(Math.random() * 2) + 1;
@@ -11,7 +11,7 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section className="relative overflow-hidden">
+    <section id={id} aria-label={ariaLabel} className="relative overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image

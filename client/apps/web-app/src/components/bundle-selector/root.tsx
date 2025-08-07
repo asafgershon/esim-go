@@ -9,10 +9,10 @@ export interface BundleSelectorRootProps {
 
 /**
  * BundleSelectorRoot component - provides bundle selector context to children
- * 
+ *
  * This component wraps children with the BundleSelectorProvider to make bundle selection
  * utilities available throughout the component tree without prop drilling.
- * 
+ *
  * @example
  * ```tsx
  * <BundleSelectorRoot>
@@ -21,9 +21,5 @@ export interface BundleSelectorRootProps {
  * ```
  */
 export function BundleSelectorRoot({ children }: BundleSelectorRootProps) {
-  return (
-    <BundleSelectorProvider>
-      {children}
-    </BundleSelectorProvider>
-  );
+  return <BundleSelectorProvider>{children}</BundleSelectorProvider>;
 }

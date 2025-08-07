@@ -109,7 +109,6 @@ function BundleSelectorInternal() {
     console.error("Pricing error:", pricingError);
   }
 
-
   return (
     <Selector>
       <SelectorCard>
@@ -128,10 +127,27 @@ function BundleSelectorInternal() {
 }
 
 // Main BundleSelector component that includes the provider
-function BundleSelector() {
+function BundleSelector({
+  id,
+  ariaLabel,
+  speed,
+}: {
+  id: string;
+  ariaLabel: string;
+  speed?: string;
+}) {
   return (
     <BundleSelectorRoot>
-      <BundleSelectorInternal />
+      <section
+        id={id}
+        aria-label={ariaLabel}
+        className="relative -mt-[200px] z-20"
+        data-speed={speed}
+      >
+        <div className="container mx-auto px-4 max-w-[880px]">
+          <BundleSelectorInternal />
+        </div>
+      </section>
     </BundleSelectorRoot>
   );
 }

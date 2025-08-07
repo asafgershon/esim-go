@@ -3,7 +3,7 @@
 import { LoginModalWrapper } from "@/components/login-modal-wrapper";
 import { parseAsBoolean, useQueryState } from "nuqs";
 
-export function HomeWithState() {
+export function LoginModal() {
   const [showLogin] = useQueryState(
     "showLogin",
     parseAsBoolean.withDefault(false)
