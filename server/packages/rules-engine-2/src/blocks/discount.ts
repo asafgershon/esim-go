@@ -698,7 +698,7 @@ export const discountRules: Rule[] = [
   regionalBundleDiscountRule,
   
   // Quantity discounts
-  volumeDiscountRule,
+  // volumeDiscountRule,
   
   // Fallback discount
   baseValueDiscountRule,

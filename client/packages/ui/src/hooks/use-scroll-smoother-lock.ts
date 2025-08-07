@@ -13,8 +13,37 @@ export interface UseScrollSmootherLockOptions {
 }
 
 /**
- * Hook to lock/unlock scrolling when using ScrollSmoother.
- * Falls back to standard body scroll lock if not within ScrollSmoother context.
+ * useScrollSmootherLock - Manages scroll locking for modals/drawers
+ * 
+ * Works with ScrollSmoother when available, falls back to native body lock.
+ * Handles iOS-specific issues like rubber band scrolling and position preservation.
+ * 
+ * @param options - Configuration options
+ * @param options.autoLock - Automatically lock scroll when true
+ * @param options.preserveScrollPosition - Maintain scroll position on iOS (default: true)
+ * @param options.preventTouchMove - Block touch scrolling on iOS (default: true)
+ * 
+ * @returns Object with scroll control methods and state
+ * @returns returns.lockScroll - Function to lock scrolling
+ * @returns returns.unlockScroll - Function to unlock scrolling  
+ * @returns returns.isLocked - Current lock state
+ * 
+ * @example
+ * ```tsx
+ * // Auto-lock when modal is open
+ * const { lockScroll, unlockScroll } = useScrollSmootherLock({
+ *   autoLock: isModalOpen,
+ *   preserveScrollPosition: true
+ * });
+ * 
+ * // Manual control
+ * const { lockScroll, unlockScroll } = useScrollSmootherLock();
+ * 
+ * const handleOpenModal = () => {
+ *   lockScroll();
+ *   setModalOpen(true);
+ * };
+ * ```
  */
 export function useScrollSmootherLock(options: UseScrollSmootherLockOptions = {}) {
   const { autoLock = false, preserveScrollPosition = true, preventTouchMove = true } = options;
@@ -114,8 +143,27 @@ export function useScrollSmootherLock(options: UseScrollSmootherLockOptions = {}
 }
 
 /**
- * Simple version that only works within ScrollSmoother context.
- * Throws error if used outside of ScrollProvider.
+ * useScrollLock - Simple scroll lock hook for ScrollSmoother context
+ * 
+ * Simpler version of useScrollSmootherLock that only works within
+ * ScrollProvider context. Use this when you know ScrollSmoother is available.
+ * 
+ * @param autoLock - Automatically lock scroll when true (default: false)
+ * 
+ * @returns Object with scroll control methods and state
+ * @returns returns.lockScroll - Function to lock scrolling
+ * @returns returns.unlockScroll - Function to unlock scrolling
+ * @returns returns.isLocked - Current lock state from context
+ * 
+ * @throws Error if used outside of ScrollProvider
+ * 
+ * @example
+ * ```tsx
+ * // Inside a component wrapped with ScrollProvider
+ * const { lockScroll, unlockScroll, isLocked } = useScrollLock(isDrawerOpen);
+ * 
+ * console.log('Scroll is locked:', isLocked);
+ * ```
  */
 export function useScrollLock(autoLock: boolean = false) {
   const { lockScroll, unlockScroll, isScrollLocked } = useScrollContext();

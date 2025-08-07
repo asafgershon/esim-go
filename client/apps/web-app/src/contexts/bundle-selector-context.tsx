@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useState, useMemo } from "react";
+import { createContext, useContext, ReactNode, useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Bundle } from "@/__generated__/types";
 import type { CountryISOCode } from "@/lib/types";
@@ -8,6 +8,7 @@ import {
   useSelectorQueryState,
   type ActiveTab,
 } from "@/hooks/useSelectorQueryState";
+import { useHasScrollContext, useScrollContext } from "@workspace/ui";
 
 // Types for the bundle selector functions
 export type BundleSelector = (
@@ -222,6 +223,25 @@ interface BundleSelectorProviderProps {
   children: ReactNode;
 }
 
+/**
+ * BundleSelectorProvider - Context provider for bundle selector state
+ * 
+ * Manages bundle selection logic, UI state, and URL query parameters.
+ * Automatically scrolls to selector when destination changes.
+ * 
+ * Features:
+ * - Syncs state with URL query parameters
+ * - Manages pricing calculations and bundle selection
+ * - Handles tab switching between countries and trips
+ * - Auto-scrolls to selector on destination change
+ * 
+ * @example
+ * ```tsx
+ * <BundleSelectorProvider>
+ *   <BundleSelector />
+ * </BundleSelectorProvider>
+ * ```
+ */
 export function BundleSelectorProvider({
   children,
 }: BundleSelectorProviderProps) {
@@ -270,6 +290,23 @@ export function BundleSelectorProvider({
       });
     }
   };
+
+  // Check if we have ScrollContext available
+  const hasScrollContext = useHasScrollContext();
+  const scrollContext = hasScrollContext ? useScrollContext() : null;
+
+  // Scroll to selector when country/trip changes
+  useEffect(() => {
+    if ((countryId || tripId) && scrollContext) {
+      // Small delay to ensure the UI has updated
+      setTimeout(() => {
+        scrollContext.scrollTo("#esim-selector", {
+          duration: 0.8,
+          offset: 100, // Additional offset to account for header and visual comfort
+        });
+      }, 100);
+    }
+  }, [countryId, tripId, scrollContext]);
 
   const handlePurchase = (pricingData?: { totalPrice?: number } | null) => {
     // Use the passed pricing data or fall back to context pricing

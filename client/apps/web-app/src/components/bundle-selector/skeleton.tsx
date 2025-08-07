@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 export function PricingSkeleton() {
   return (
     <motion.div
-      className="bg-brand-white border border-brand-dark rounded-lg md:rounded-[15px] p-3 md:p-4"
+      className="bg-brand-white border border-brand-dark/10 rounded-lg md:rounded-[15px] p-3 md:p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -22,7 +22,7 @@ export function PricingSkeleton() {
       </div>
 
       {/* Pricing Summary */}
-      <div className="pt-3 border-t border-[rgba(10,35,46,0.1)]">
+      <div className="pt-3 border-t border-brand-dark/10">
         <div className="flex items-center justify-between">
           {/* Days text placeholder */}
           <div className="h-3 md:h-4 w-20 bg-gray-100 rounded animate-pulse" />
@@ -60,7 +60,7 @@ export function SelectorSkeleton() {
 
       {/* Content Skeleton */}
       <div className="px-4 pb-4 space-y-3">
-        <div className="p-4 border border-border rounded-xl">
+        <div className="p-4 border border-brand-dark/10 rounded-xl">
           <div className="flex items-center justify-between">
             <div className="text-left">
               <div className="w-12 h-4 bg-muted rounded mb-1 animate-pulse"></div>

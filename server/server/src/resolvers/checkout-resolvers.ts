@@ -1,5 +1,9 @@
 import { BundleOrderTypeEnum, OrderRequestTypeEnum } from "@hiilo/client";
-import { calculatePricing, type RequestFacts, type PricingEngineV2Result } from "@hiilo/rules-engine-2";
+import {
+  calculatePricing,
+  type RequestFacts,
+  type PricingEngineV2Result,
+} from "@hiilo/rules-engine-2";
 import crypto from "crypto";
 import { GraphQLError } from "graphql";
 import jwt from "jsonwebtoken";
@@ -9,7 +13,12 @@ import type { Database } from "../database.types";
 import { createLogger } from "../lib/logger";
 import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.repository";
 import { createPaymentService } from "../services/payment";
-import { PaymentMethod, type EsimStatus, type OrderStatus, type Resolvers } from "../types";
+import {
+  PaymentMethod,
+  type EsimStatus,
+  type OrderStatus,
+  type Resolvers,
+} from "../types";
 import type { OrderResponse } from "../datasources/esim-go";
 import { purchaseAndDeliverESIM } from "../services/esim-purchase";
 import { WEB_APP_BUNDLE_GROUP } from "../lib/constants/bundle-groups";
@@ -186,10 +195,12 @@ export const checkoutResolvers: Partial<Resolvers> = {
         if (!numOfDays || numOfDays <= 0) {
           throw new Error(`Invalid requested duration: ${numOfDays}`);
         }
-        
+
         // Ensure we have at least one location criteria
         if (!countryId && !regionId) {
-          throw new Error("Either countryId or regionId is required for checkout");
+          throw new Error(
+            "Either countryId or regionId is required for checkout"
+          );
         }
 
         // Build search parameters based on what's provided
@@ -204,22 +215,29 @@ export const checkoutResolvers: Partial<Resolvers> = {
           searchParams.countries = [countryId];
         }
 
-        // Only add regions if regionId is provided  
+        // Only add regions if regionId is provided
         if (regionId) {
           searchParams.regions = [regionId];
         }
 
         // Debug: Log the search parameters being used
-        console.log("Bundle search parameters:", JSON.stringify(searchParams, null, 2));
+        console.log(
+          "Bundle search parameters:",
+          JSON.stringify(searchParams, null, 2)
+        );
 
         // Debug: Check what countries are available in the database
         try {
-          const availableCountries = await context.repositories.bundles.getCountries();
-          console.log("Available countries in database:", availableCountries.slice(0, 20));
+          const availableCountries =
+            await context.repositories.bundles.getCountries();
+          console.log(
+            "Available countries in database:",
+            availableCountries.slice(0, 20)
+          );
           console.log("Total countries available:", availableCountries.length);
-          
+
           // Check if UZ specifically exists
-          const hasUZ = availableCountries.includes('UZ');
+          const hasUZ = availableCountries.includes("UZ");
           console.log("Database contains UZ bundles:", hasUZ);
         } catch (error) {
           console.error("Error checking available countries:", error);
@@ -227,19 +245,21 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
         // Fetch ALL available bundles for the country/region to allow optimal selection
         // Don't filter by duration - let the pricing engine select the best bundle
-        const bundleResults = await context.repositories.bundles.search(searchParams);
+        const bundleResults = await context.repositories.bundles.search(
+          searchParams
+        );
 
         // Debug: Log the search results
         console.log("Bundle search results:", {
           dataLength: bundleResults?.data?.length || 0,
           count: bundleResults?.count || 0,
           hasNextPage: bundleResults?.hasNextPage,
-          firstFewBundles: bundleResults?.data?.slice(0, 3).map(b => ({
+          firstFewBundles: bundleResults?.data?.slice(0, 3).map((b) => ({
             name: b.esim_go_name,
             countries: b.countries,
             validity: b.validity_in_days,
-            price: b.price
-          }))
+            price: b.price,
+          })),
         });
 
         // STRICT VALIDATION - fail if no bundles available
@@ -267,7 +287,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           group: group || WEB_APP_BUNDLE_GROUP,
           days: numOfDays,
           paymentMethod: PaymentMethod.IsraeliCard,
-          ...(countryId ? { country: countryId } : { region: regionId || '' })
+          ...(countryId ? { country: countryId } : { region: regionId || "" }),
         };
 
         // Debug: Log what we're passing to the pricing engine
@@ -289,7 +309,9 @@ export const checkoutResolvers: Partial<Resolvers> = {
               .sort((a, b) => a - b);
 
             throw new Error(
-              `No bundles available for ${numOfDays} days or longer for ${countryId || regionId}. ` +
+              `No bundles available for ${numOfDays} days or longer for ${
+                countryId || regionId
+              }. ` +
                 `Available durations: ${availableDurations.join(", ")} days. ` +
                 `Please select a different duration or choose the longest available option.`
             );
@@ -301,7 +323,10 @@ export const checkoutResolvers: Partial<Resolvers> = {
         if (!pricingResult) {
           throw new Error("Pricing calculation failed - no result returned");
         }
-        if (!pricingResult.pricing?.finalPrice || pricingResult.pricing.finalPrice <= 0) {
+        if (
+          !pricingResult.pricing?.finalPrice ||
+          pricingResult.pricing.finalPrice <= 0
+        ) {
           throw new Error(
             `Invalid final price calculated: ${pricingResult.pricing?.finalPrice}`
           );
@@ -321,8 +346,11 @@ export const checkoutResolvers: Partial<Resolvers> = {
           price: pricingResult.pricing.finalPrice,
           currency: "USD",
           countries: selectedBundle.countries || [countryId],
-          bundleGroup: (selectedBundle as any).groups?.[0] || WEB_APP_BUNDLE_GROUP,
-          dataAmount: selectedBundle.data_amount_mb ? `${selectedBundle.data_amount_mb}MB` : "0MB",
+          bundleGroup:
+            (selectedBundle as any).groups?.[0] || WEB_APP_BUNDLE_GROUP,
+          dataAmount: selectedBundle.data_amount_mb
+            ? `${selectedBundle.data_amount_mb}MB`
+            : "0MB",
           isUnlimited: selectedBundle.is_unlimited || false,
         };
 
@@ -727,23 +755,21 @@ export const checkoutResolvers: Partial<Resolvers> = {
     // Validate order before purchase (eSIM Go recommended flow)
     validateOrder: async (_, { input }, context: Context) => {
       // Extract parameters outside try block so they're available in catch block
-      const { bundleName, quantity, customerReference } = input;
-      
+      const { bundleName, customerReference } = input;
+
       try {
         logger.info("validateOrder resolver called", {
           input,
-          operationType: "order-validation"
+          operationType: "order-validation",
         });
-        
-        
+
         logger.info("Extracted parameters", {
           bundleName,
           bundleNameType: typeof bundleName,
-          quantity,
           customerReference,
-          operationType: "order-validation"
+          operationType: "order-validation",
         });
-        
+
         if (!bundleName) {
           throw new Error("bundleName is required but was not provided");
         }
@@ -751,34 +777,37 @@ export const checkoutResolvers: Partial<Resolvers> = {
         // Use the eSIM Go client to validate the order
         const orderRequest = {
           type: OrderRequestTypeEnum.VALIDATE,
-          order: [{
-            type: BundleOrderTypeEnum.BUNDLE,
-            item: bundleName,
-            quantity: quantity,
-          }]
+          order: [
+            {
+              type: BundleOrderTypeEnum.BUNDLE,
+              item: bundleName,
+              quantity: 1,
+            },
+          ],
         };
-        
+
         logger.info("Calling eSIM Go API", {
           orderRequest,
-          operationType: "order-validation"
+          operationType: "order-validation",
         });
-        
-        const response = await context.services.esimGoClient.ordersApi.ordersPost({
-          orderRequest
-        });
-        
+
+        const response =
+          await context.services.esimGoClient.ordersApi.ordersPost({
+            orderRequest,
+          });
+
         logger.info("eSIM Go API response", {
           responseData: response.data,
-          operationType: "order-validation"
+          operationType: "order-validation",
         });
 
         const validationResult = {
-          isValid: (response.data).valid || false,
+          isValid: response.data.valid || false,
           bundleDetails: response.data.order?.[0] || null,
           totalPrice: response.data.total || null,
-          currency: response.data.currency || 'USD',
+          currency: response.data.currency || "USD",
           error: response.data.valid ? null : response.data.message,
-          errorCode: response.data.valid ? null : 'VALIDATION_FAILED'
+          errorCode: response.data.valid ? null : "VALIDATION_FAILED",
         };
 
         if (!validationResult.isValid) {
@@ -786,7 +815,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             bundleName,
             error: validationResult.error,
             errorCode: validationResult.errorCode,
-            operationType: "order-validation"
+            operationType: "order-validation",
           });
           return {
             success: true, // API call succeeded
@@ -803,7 +832,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           bundleName,
           totalPrice: validationResult.totalPrice,
           currency: validationResult.currency,
-          operationType: "order-validation"
+          operationType: "order-validation",
         });
         return {
           success: true,
@@ -817,9 +846,8 @@ export const checkoutResolvers: Partial<Resolvers> = {
       } catch (error: any) {
         logger.error("Error in validateOrder", error, {
           bundleName,
-          quantity,
           customerReference,
-          operationType: "order-validation"
+          operationType: "order-validation",
         });
         return {
           success: false,
@@ -881,7 +909,7 @@ async function simulateWebhookProcessing(
         group: WEB_APP_BUNDLE_GROUP,
         days: planSnapshot.duration,
         paymentMethod: PaymentMethod.IsraeliCard,
-        country: firstCountry
+        country: firstCountry,
       };
 
       const detailedPricing = await calculatePricing(requestFacts);
@@ -898,9 +926,9 @@ async function simulateWebhookProcessing(
         maxRecommendedPrice: detailedPricing.pricing.finalPrice, // Using finalPrice as there's no costumerPrice field
         processingFee: detailedPricing.pricing.processingCost,
         appliedRules: detailedPricing.appliedRules || [],
-        discounts: []
+        discounts: [],
       };
-      
+
       const orderRecord =
         await context.repositories.orders.createOrderWithPricing(
           {
@@ -985,22 +1013,23 @@ async function provisionESIM(
   logger.info("Starting eSIM provisioning", {
     bundleName: planSnapshot.name,
     customerReference,
-    operationType: "esim-provisioning"
+    operationType: "esim-provisioning",
   });
-
 
   try {
     const order = await context.services.esimGoClient.ordersApi.ordersPost({
-      contentType: 'application/json',
+      contentType: "application/json",
       orderRequest: {
         type: OrderRequestTypeEnum.TRANSACTION,
         assign: false,
-        order: [{
-          item: planSnapshot.name,
-          quantity: 1,
-        }]
-      }
-    })
+        order: [
+          {
+            item: planSnapshot.name,
+            quantity: 1,
+          },
+        ],
+      },
+    });
 
     // Extract eSIM details from response
     const iccid = order.data?.order?.[0]?.iccids?.[0];
@@ -1012,13 +1041,15 @@ async function provisionESIM(
     logger.info("eSIM created with bundle applied", {
       iccid,
       bundle,
-      operationType: "esim-provisioning"
+      operationType: "esim-provisioning",
     });
 
     // Step 2: Get eSIM details including QR code from eSIM Go
     // The apply bundle response doesn't include QR code details, so we need to fetch them
-    const esimDetails = await context.dataSources.esims.getESIMInstallDetails(iccid);
-    
+    const esimDetails = await context.dataSources.esims.getESIMInstallDetails(
+      iccid
+    );
+
     if (!esimDetails) {
       throw new Error("Failed to get eSIM installation details");
     }
@@ -1026,7 +1057,7 @@ async function provisionESIM(
     logger.info("eSIM details retrieved", {
       iccid,
       hasQR: !!esimDetails.qrCode,
-      operationType: "esim-details-fetch"
+      operationType: "esim-details-fetch",
     });
 
     return {
@@ -1034,22 +1065,25 @@ async function provisionESIM(
       qrCode: esimDetails.qrCode || "",
       matchingId: esimDetails.matchingId || "",
       smdpAddress: esimDetails.smdpAddress || "",
-      activationCode: esimDetails.activationCode || esimDetails.matchingId || "",
+      activationCode:
+        esimDetails.activationCode || esimDetails.matchingId || "",
       activationUrl: esimDetails.activationUrl || null,
       instructions: esimDetails.instructions || generateDefaultInstructions(),
       status: "ASSIGNED",
-      esimGoOrderRef: customerReference // Using customer reference as order ref for now
+      esimGoOrderRef: customerReference, // Using customer reference as order ref for now
     };
   } catch (error) {
     logger.error("Failed to provision eSIM", error as Error, {
       bundleName: planSnapshot.name,
       customerReference,
-      operationType: "esim-provisioning"
+      operationType: "esim-provisioning",
     });
 
     // Re-throw with more context
     if ((error as any).response?.data?.message) {
-      throw new Error(`eSIM provisioning failed: ${(error as any).response.data.message}`);
+      throw new Error(
+        `eSIM provisioning failed: ${(error as any).response.data.message}`
+      );
     }
     throw new Error(`Failed to provision eSIM: ${(error as Error).message}`);
   }

@@ -35,6 +35,10 @@ export interface SmoothScrollContainerProps {
   normalizeScroll?: boolean;
   /** Ignore mobile resize events */
   ignoreMobileResize?: boolean;
+  /** Enable snap points for sections */
+  enableSnap?: boolean;
+  /** Snap duration in seconds */
+  snapDuration?: number;
 }
 
 export interface SmoothScrollHandle {
@@ -53,6 +57,24 @@ export interface ScrollToOptions {
   onComplete?: () => void;
 }
 
+/**
+ * SmoothScrollContainer - GSAP ScrollSmoother wrapper with snap points support
+ * 
+ * Provides smooth scrolling with optional snap points for sections.
+ * Integrates with ScrollContext for centralized scroll management.
+ * 
+ * @example
+ * ```tsx
+ * <SmoothScrollContainer
+ *   ref={scrollRef}
+ *   enableSnap={true}
+ *   snapDuration={0.5}
+ * >
+ *   <section id="section1">...</section>
+ *   <section id="section2">...</section>
+ * </SmoothScrollContainer>
+ * ```
+ */
 const SmoothScrollContainer = React.forwardRef<
   SmoothScrollHandle,
   SmoothScrollContainerProps
@@ -70,6 +92,8 @@ const SmoothScrollContainer = React.forwardRef<
       className,
       normalizeScroll = true,
       ignoreMobileResize = true,
+      enableSnap = false,
+      snapDuration = 0.5,
     },
     ref
   ) => {
@@ -93,6 +117,35 @@ const SmoothScrollContainer = React.forwardRef<
           ignoreMobileResize: ignoreMobileResize,
           speed: speed,
         });
+
+        // Set up snap points for sections if enabled
+        if (enableSnap) {
+          // Wait for content to be rendered
+          setTimeout(() => {
+            const sections = document.querySelectorAll('section[id], div[id="main-content"] > *[id]');
+            
+            sections.forEach((section) => {
+              ScrollTrigger.create({
+                trigger: section,
+                start: "top center", // Snap when section top reaches viewport center
+                end: "bottom center", // End snap range when bottom reaches center
+                snap: {
+                  snapTo: 1, // Snap to the start position
+                  duration: snapDuration,
+                  delay: 0.1,
+                  ease: "power2.inOut"
+                },
+                onSnapComplete: () => {
+                  // Optional: Update URL hash without triggering navigation
+                  const id = section.getAttribute('id');
+                  if (id && id !== 'main-content') {
+                    history.replaceState(null, '', `#${id}`);
+                  }
+                }
+              });
+            });
+          }, 100);
+        }
       });
 
       // Refresh on window resize
@@ -115,6 +168,9 @@ const SmoothScrollContainer = React.forwardRef<
       contentId,
       normalizeScroll,
       ignoreMobileResize,
+      enableSnap,
+      snapDuration,
+      headerHeight,
     ]);
 
     // Expose methods via ref

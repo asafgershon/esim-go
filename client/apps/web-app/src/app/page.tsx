@@ -17,10 +17,9 @@ import { ReviewsSection } from "@/components/reviews-section";
 import { WhySwitchSection } from "@/components/why-switch-section";
 import {
   Footer,
-  SmoothScrollContainer,
   type SmoothScrollHandle,
   cn,
-  useScrollTo,
+  useScrollTo
 } from "@workspace/ui";
 import { Suspense, useRef } from "react";
 
@@ -40,92 +39,83 @@ export default function Home() {
   };
 
   return (
-    <SmoothScrollContainer
-      ref={scrollContainerRef}
-      speed={1}
-      smooth={1.5}
-      effects={true}
-      fixedHeader={true}
-      headerHeight={64}
-    >
-      <div className="min-h-screen bg-background" dir="rtl">
-        {/* Login Modal - wrapped in Suspense */}
-        <Suspense fallback={null}>
-          <LoginModal />
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Login Modal - wrapped in Suspense */}
+      <Suspense fallback={null}>
+        <LoginModal />
+      </Suspense>
+
+      {/* Announcement Banner */}
+      <AnnouncementBanner />
+
+      {/* Navigation Header */}
+      <Suspense fallback={<div className="h-16" />}>
+        <Header scrollContainerRef={scrollContainerRef} />
+      </Suspense>
+
+      {/* Main Content */}
+      <main
+        id="main-content"
+        className="flex flex-col gap-52 mb-[96px]"
+        tabIndex={-1}
+      >
+        {/* Hero Section */}
+        <HeroSection id="home" ariaLabel="עמוד בית" />
+
+        {/* eSIM Selector Section - Overlapping Hero */}
+        <Suspense fallback={<BundleSelector.Skeleton />}>
+          <BundleSelector
+            className={cn(maxContentWidth, "lg:max-w-[800px]")}
+            id="esim-selector"
+            ariaLabel="בחירת חבילת eSIM"
+            speed="0.95"
+          />
         </Suspense>
 
-        {/* Announcement Banner */}
-        <AnnouncementBanner />
-
-        {/* Navigation Header */}
+        {/* Destinations Gallery */}
         <Suspense fallback={<div className="h-16" />}>
-          <Header scrollContainerRef={scrollContainerRef} />
+          <DestinationsGallery
+            speed="0.98"
+            id="destinations"
+            ariaLabel="גלריית יעדים"
+          />
         </Suspense>
 
-        {/* Main Content */}
-        <main
-          id="main-content"
-          className="flex flex-col gap-52 mb-[96px]"
-          tabIndex={-1}
-        >
-          {/* Hero Section */}
-          <HeroSection id="home" ariaLabel="עמוד בית" />
+        {/* Features Section */}
+        <FeaturesSection id="features" ariaLabel="תכונות ויתרונות" />
 
-          {/* eSIM Selector Section - Overlapping Hero */}
-          <Suspense fallback={<BundleSelector.Skeleton />}>
-            <BundleSelector
-              className={cn(maxContentWidth, "lg:max-w-[800px]")}
-              id="esim-selector"
-              ariaLabel="בחירת חבילת eSIM"
-              speed="0.95"
-            />
-          </Suspense>
+        {/* Background Section with eSIM Compatibility Check */}
+        <BackgroundSection className="flex flex-col gap-40 py-40">
+          <LogoRounded className="absolute top-10 left-0" />
 
-          {/* Destinations Gallery */}
-          <Suspense fallback={<div className="h-16" />}>
-            <DestinationsGallery
-              speed="0.98"
-              id="destinations"
-              ariaLabel="גלריית יעדים"
-            />
-          </Suspense>
-
-          {/* Features Section */}
-          <FeaturesSection id="features" ariaLabel="תכונות ויתרונות" />
-
-          {/* Background Section with eSIM Compatibility Check */}
-          <BackgroundSection className="flex flex-col gap-40 py-40">
-            <LogoRounded className="absolute top-10 left-0" />
-
-            <CompatibilitySection
-              id="what-is-esim"
-              ariaLabel="מה זה eSIM ותאימות"
-            />
-
-            {/* Customer Reviews */}
-            <ReviewsSection />
-
-            {/* How To Section */}
-            <HowToSection id="how-to" ariaLabel="כיצד להתקין את ה־eSIM" />
-          </BackgroundSection>
-
-          {/* Why Switch Section */}
-          <WhySwitchSection id="about" ariaLabel="עלינו ולמה לבחור בנו" />
-
-          {/* Q&A Section */}
-          <QASection
-            id="faq"
-            ariaLabel="שאלות ותשובות נפוצות"
-            className="mb-20 sm:mx-10"
+          <CompatibilitySection
+            id="what-is-esim"
+            ariaLabel="מה זה eSIM ותאימות"
           />
 
-          {/* Help Banner */}
-          <HelpBanner id="contact" ariaLabel="צור קשר ועזרה" />
-        </main>
+          {/* Customer Reviews */}
+          <ReviewsSection />
 
-        {/* Footer */}
-        <Footer onNavigate={handleFooterNavigation} />
-      </div>
-    </SmoothScrollContainer>
+          {/* How To Section */}
+          <HowToSection id="how-to" ariaLabel="כיצד להתקין את ה־eSIM" />
+        </BackgroundSection>
+
+        {/* Why Switch Section */}
+        <WhySwitchSection id="about" ariaLabel="עלינו ולמה לבחור בנו" />
+
+        {/* Q&A Section */}
+        <QASection
+          id="faq"
+          ariaLabel="שאלות ותשובות נפוצות"
+          className="mb-20 sm:mx-10"
+        />
+
+        {/* Help Banner */}
+        <HelpBanner id="contact" ariaLabel="צור קשר ועזרה" />
+      </main>
+
+      {/* Footer */}
+      <Footer onNavigate={handleFooterNavigation} />
+    </div>
   );
 }

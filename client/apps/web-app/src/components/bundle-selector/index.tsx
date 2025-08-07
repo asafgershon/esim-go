@@ -90,7 +90,7 @@ function BundleSelector({
         className="relative -mt-[400px] z-20"
         data-speed={speed}
       >
-        <div className={cn("min-w-[400px] mx-auto px-4", className)}>
+        <div className={cn("mx-auto px-4", className)}>
           <BundleSelectorInternal />
         </div>
       </section>
