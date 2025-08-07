@@ -934,6 +934,75 @@ export type Database = {
           },
         ]
       }
+      tenants: {
+        Row: {
+          slug: string
+          name: string
+          img_url: string
+          tenant_type: 'standard' | 'master'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          slug: string
+          name: string
+          img_url: string
+          tenant_type?: 'standard' | 'master'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          slug?: string
+          name?: string
+          img_url?: string
+          tenant_type?: 'standard' | 'master'
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_tenants: {
+        Row: {
+          id: string
+          user_id: string
+          tenant_slug: string
+          role: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          tenant_slug: string
+          role?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          tenant_slug?: string
+          role?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_tenants_tenant_slug_fkey"
+            columns: ["tenant_slug"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "user_tenants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       trips: {
         Row: {
           country_ids: Json
@@ -1101,6 +1170,16 @@ export type Database = {
       cleanup_expired_checkout_sessions: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      is_master_tenant_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_user_master_tenant_admin: {
+        Args: {
+          check_user_id: string
+        }
+        Returns: boolean
       }
       get_bundle_coverage_stats: {
         Args: Record<PropertyKey, never>

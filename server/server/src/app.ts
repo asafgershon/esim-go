@@ -46,6 +46,7 @@ import {
   OrderRepository,
   SyncJobRepository,
   UserRepository,
+  TenantRepository,
 } from "./repositories";
 import { PricingRulesRepository } from "./repositories/pricing-rules.repository";
 import { TripRepository } from "./repositories/trip.repository";
@@ -138,6 +139,7 @@ async function startServer() {
     const syncJobRepository = new SyncJobRepository();
     const pricingRulesRepository = new PricingRulesRepository();
     const bundleRepository = new BundleRepository();
+    const tenantRepository = new TenantRepository(supabaseAdmin);
 
     // Create an Express app and HTTP server
     const app = express();
@@ -186,6 +188,7 @@ async function startServer() {
               syncJob: syncJobRepository,
               bundles: bundleRepository,
               pricingRules: pricingRulesRepository,
+              tenants: tenantRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
@@ -428,6 +431,7 @@ async function startServer() {
               syncJob: syncJobRepository,
               bundles: bundleRepository,
               pricingRules: pricingRulesRepository,
+              tenants: tenantRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),

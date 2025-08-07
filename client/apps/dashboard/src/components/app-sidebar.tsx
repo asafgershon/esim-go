@@ -9,6 +9,8 @@ import {
   DollarSign,
   Database,
   CardSim,
+  Send,
+  Building2,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -51,6 +53,11 @@ const data = {
       icon: CardSim,
     },
     {
+      title: "eSIM Requests",
+      url: "/esim-requests",
+      icon: Send,
+    },
+    {
       title: "Catalog",
       url: "/catalog",
       icon: Database,
@@ -66,6 +73,11 @@ const data = {
       title: "Pricing",
       url: "/pricing",
       icon: DollarSign,
+    },
+    {
+      title: "Tenants",
+      url: "/tenants",
+      icon: Building2,
     },
   ],
 }

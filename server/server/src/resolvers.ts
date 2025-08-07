@@ -14,6 +14,7 @@ import { tripsResolvers } from "./resolvers/trips-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import { airHaloResolvers } from "./resolvers/airhalo-resolvers";
 import { pricingManagementResolvers } from "./resolvers/pricing-management-resolvers";
+import { tenantResolvers } from "./resolvers/tenant-resolvers";
 import type { Resolvers } from "./types";
 import * as countriesList from "countries-list";
 
@@ -56,6 +57,9 @@ export const resolvers: Resolvers = {
 
     // Pricing management resolvers (admin only)
     ...pricingManagementResolvers.Query!,
+
+    // Tenant resolvers
+    ...tenantResolvers.Query!,
 
     // Countries resolvers
     countries: async (_, __, context: Context) => {
@@ -157,6 +161,9 @@ export const resolvers: Resolvers = {
 
     // Pricing management resolvers (admin only)
     ...pricingManagementResolvers.Mutation!,
+
+    // Tenant resolvers (admin mutations)
+    ...tenantResolvers.Mutation!,
 
     // High demand countries management
     toggleHighDemandCountry: async (_, { countryId }, context: Context) => {
@@ -266,5 +273,9 @@ export const resolvers: Resolvers = {
   CustomerBundle: {
     ...bundlesResolvers.CustomerBundle!,
     ...catalogResolvers.CustomerBundle!,
+  },
+  // Tenant field resolvers
+  Tenant: {
+    ...tenantResolvers.Tenant!,
   },
 };

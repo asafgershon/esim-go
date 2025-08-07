@@ -4,6 +4,7 @@ export { OrderRepository } from "./order.repository";
 export { UserRepository } from "./user.repository";
 export { HighDemandCountryRepository } from "./high-demand-country.repository";
 export { PricingRulesRepository } from "./pricing-rules.repository";
+export { TenantRepository } from "./tenant.repository";
 
 // Catalog repositories
 export { 
@@ -29,6 +30,8 @@ export type {
   HighDemandCountryInsert,
   HighDemandCountryUpdate,
 } from "./high-demand-country.repository";
+
+export type { Tenant, UserTenant } from "./tenant.repository";
 
 // Catalog types
 export type { 

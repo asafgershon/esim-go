@@ -1,5 +1,62 @@
 import { gql } from "@apollo/client";
 
+// Tenants Queries
+export const GET_USER_TENANTS = gql(`
+  query GetUserTenants {
+    tenants {
+      slug
+      name
+      imgUrl
+    }
+  }
+`);
+
+export const GET_ALL_TENANTS = gql(`
+  query GetAllTenants {
+    allTenants {
+      nodes {
+        slug
+        name
+        imgUrl
+        tenantType
+        userCount
+      }
+      totalCount
+    }
+  }
+`);
+
+// Tenant Mutations
+export const CREATE_TENANT = gql(`
+  mutation CreateTenant($input: CreateTenantInput!) {
+    createTenant(input: $input) {
+      slug
+      name
+      imgUrl
+      tenantType
+    }
+  }
+`);
+
+export const UPDATE_TENANT = gql(`
+  mutation UpdateTenant($slug: ID!, $input: UpdateTenantInput!) {
+    updateTenant(slug: $slug, input: $input) {
+      slug
+      name
+      imgUrl
+      tenantType
+    }
+  }
+`);
+
+export const DELETE_TENANT = gql(`
+  mutation DeleteTenant($slug: ID!) {
+    deleteTenant(slug: $slug) {
+      success
+    }
+  }
+`);
+
 // Payment Methods Query
 export const GET_PAYMENT_METHODS = gql(`
   query GetPaymentMethods {

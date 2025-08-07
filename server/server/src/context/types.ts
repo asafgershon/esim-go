@@ -18,6 +18,7 @@ import {
   HighDemandCountryRepository,
   PricingRulesRepository,
   BundleRepository,
+  TenantRepository,
 } from "../repositories";
 import { TripRepository } from "../repositories/trip.repository";
 import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
@@ -48,6 +49,7 @@ export type Context = {
     syncJob: SyncJobRepository;
     bundles: BundleRepository;
     pricingRules: PricingRulesRepository;
+    tenants: TenantRepository;
   };
   dataSources: {
     catalogue: CatalogueDataSourceV2;

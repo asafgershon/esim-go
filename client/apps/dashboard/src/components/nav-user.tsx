@@ -1,4 +1,4 @@
-import { LogOut } from 'lucide-react'
+import { LogOut, Building2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar'
 import { Button } from '@workspace/ui/components/button'
 import {
@@ -9,6 +9,8 @@ import {
 } from '@workspace/ui/components/dropdown-menu'
 import { useAuth } from '../contexts/auth-context'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@apollo/client'
+import { GET_USER_TENANTS } from '../lib/graphql/queries'
 
 interface NavUserProps {
   user?: {
@@ -21,6 +23,11 @@ interface NavUserProps {
 export function NavUser({ user: userProp }: NavUserProps) {
   const { user: authUser, signOut } = useAuth()
   const navigate = useNavigate()
+  
+  // Fetch user's tenants
+  const { data: tenantsData } = useQuery(GET_USER_TENANTS, {
+    skip: !authUser, // Only fetch if user is authenticated
+  })
 
   const handleSignOut = async () => {
     await signOut()
@@ -39,6 +46,12 @@ export function NavUser({ user: userProp }: NavUserProps) {
   const initials = userProp?.name 
     ? userProp.name.slice(0, 2).toUpperCase()
     : user.email?.slice(0, 2).toUpperCase() || 'U'
+    
+  // Get the first tenant if available
+  const primaryTenant = tenantsData?.tenants?.[0]
+  
+  // Don't show tenant badge for public B2C users
+  const shouldShowTenant = primaryTenant && primaryTenant.slug !== 'public'
 
   return (
     <DropdownMenu>
@@ -54,6 +67,14 @@ export function NavUser({ user: userProp }: NavUserProps) {
             <p className="text-sm font-medium leading-none truncate">
               {displayName}
             </p>
+            {shouldShowTenant && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Building2 className="h-3 w-3 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground truncate">
+                  {primaryTenant.name}
+                </p>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground truncate">
               {user.email}
             </p>

@@ -12,6 +12,7 @@ import { HomePage } from '@/pages/home'
 import { UsersPage } from '@/pages/users'
 import { OrdersPage } from '@/pages/orders'
 import { ESIMsPage } from '@/pages/esims'
+import ESIMRequestsPage from '@/app/esim-requests/page'
 import { CatalogPage } from '@/pages/catalog'
 import { TripsPage } from '@/pages/trips'
 import PricingPage from '@/pages/pricing'
@@ -20,6 +21,7 @@ import { PricingSimulatorPage } from '@/pages/pricing/simulator'
 import UnifiedPricingRulesPage from '@/pages/pricing/rules-unified'
 import { AirHaloPricingPage } from '@/pages/pricing/airhalo'
 import StrategyPage from '@/pages/pricing/strategy'
+import TenantsPage from '@/pages/tenants'
 import { apolloClient } from '@/lib/apollo-client'
 
 
@@ -47,8 +49,10 @@ function App() {
                   <Route path="users" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><UsersPage /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="orders" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><OrdersPage /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="esims" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><ESIMsPage /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="esim-requests" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><ESIMRequestsPage /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="catalog" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><CatalogPage /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="trips" element={<ErrorBoundary><TripsPage /></ErrorBoundary>} />
+                  <Route path="tenants" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><TenantsPage /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="pricing" element={<ErrorBoundary><ProtectedRoute requiredRole="ADMIN"><PricingPage /></ProtectedRoute></ErrorBoundary>}>
                     <Route index element={<Navigate to="summary" replace />} />
                     <Route path="summary" element={<PricingSummaryPage />} />

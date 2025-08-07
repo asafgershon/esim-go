@@ -6,6 +6,13 @@ type Query {
   me: User @auth
   users: [User!]! @auth(role: "ADMIN")
   orders: [Order!]! @auth(role: "ADMIN")
+  
+  # Tenant management
+  tenants: [Tenant!]! @auth
+  
+  # Master tenant queries
+  allTenants(filter: TenantFilter, pagination: PaginationInput): TenantConnection! @auth
+  tenant(slug: ID!): Tenant @auth
 
   # eSIM queries
   myESIMs: [ESIM!]! @auth
@@ -445,6 +452,23 @@ type User {
   createdAt: String!
   updatedAt: String!
   orderCount: Int!
+}
+
+# Tenant Types
+enum TenantType {
+  STANDARD
+  MASTER
+}
+
+type Tenant {
+  slug: ID!
+  name: String!
+  imgUrl: String!
+  tenantType: TenantType!
+  createdAt: String!
+  updatedAt: String!
+  # Admin only - users assigned to this tenant
+  userCount: Int @auth(role: "ADMIN")
 }
 
 type Country {
@@ -960,6 +984,43 @@ extend type Mutation {
   togglePricingRule(id: ID!): PricingRule!
   updatePricingRulePriorities(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
   clonePricingRule(id: ID!, newName: String!): PricingRule!
+  
+  # Tenant Management (Master tenant only)
+  createTenant(input: CreateTenantInput!): Tenant! @auth
+  updateTenant(slug: ID!, input: UpdateTenantInput!): Tenant! @auth
+  deleteTenant(slug: ID!): TenantOperationResponse! @auth
+  assignUserToTenant(userId: ID!, tenantSlug: ID!, role: String): TenantOperationResponse! @auth
+  removeUserFromTenant(userId: ID!, tenantSlug: ID!): TenantOperationResponse! @auth
+}
+
+# Tenant Management Inputs
+input CreateTenantInput {
+  slug: ID!
+  name: String!
+  imgUrl: String!
+  tenantType: TenantType = STANDARD
+}
+
+input UpdateTenantInput {
+  name: String
+  imgUrl: String
+  tenantType: TenantType
+}
+
+input TenantFilter {
+  tenantType: TenantType
+  search: String
+}
+
+type TenantConnection {
+  nodes: [Tenant!]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type TenantOperationResponse {
+  success: Boolean!
+  message: String
 }
 
 # Pricing Types
