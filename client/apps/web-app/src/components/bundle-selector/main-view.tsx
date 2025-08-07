@@ -16,6 +16,8 @@ import { CountUp } from "../ui/count-up";
 import { CalendarIcon } from "./icons";
 import { PricingSkeleton } from "./skeleton";
 import { DestinationSelector } from "./destination-selector";
+import { DestinationTabs } from "./destination-tabs";
+import { SliderWithValue } from "@workspace/ui";
 
 interface MainViewProps {
   pricing: {
@@ -41,7 +43,6 @@ export function MainView({
     numOfDays,
     countryId,
     tripId,
-    isMobile,
     handleTabChange,
     setNumOfDays,
     setCurrentView,
@@ -86,51 +87,11 @@ export function MainView({
       </SelectorHeader>
 
       <SelectorContent>
-        {/* Tab Container */}
-        <div className="bg-[#F1F5FA] rounded-[10px] md:rounded-2xl p-[2px] md:p-1">
-          <div className="flex" role="tablist" aria-label="בחירת סוג יעד">
-            <button
-              onClick={() => handleTabChange("countries")}
-              role="tab"
-              aria-selected={activeTab === "countries"}
-              aria-controls="countries-panel"
-              id="countries-tab"
-              className={`
-                flex-1 h-[34px] md:h-[60px] text-[12px] md:text-[18px] 
-                leading-[26px] md:leading-normal font-medium 
-                rounded-lg md:rounded-xl transition-all duration-200
-                focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2
-                ${
-                  activeTab === "countries"
-                    ? "bg-brand-dark text-brand-white"
-                    : "text-brand-dark bg-transparent hover:bg-gray-100"
-                }
-              `}
-            >
-              מדינות
-            </button>
-            <button
-              onClick={() => handleTabChange("trips")}
-              role="tab"
-              aria-selected={activeTab === "trips"}
-              aria-controls="trips-panel"
-              id="trips-tab"
-              className={`
-                flex-1 h-[34px] md:h-[60px] text-[12px] md:text-[18px] 
-                leading-[26px] md:leading-normal font-medium 
-                rounded-lg md:rounded-xl transition-all duration-200
-                focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2
-                ${
-                  activeTab === "trips"
-                    ? "bg-brand-dark text-brand-white"
-                    : "text-brand-dark bg-transparent hover:bg-gray-100"
-                }
-              `}
-            >
-              טיולים
-            </button>
-          </div>
-        </div>
+        {/* Tab Container with smooth sliding transition */}
+        <DestinationTabs 
+          activeTab={activeTab} 
+          onTabChange={handleTabChange} 
+        />
 
         {/* Destination Selection */}
         <DestinationSelector />
@@ -146,49 +107,12 @@ export function MainView({
 
           {/* Slider Container */}
           <div className="relative h-[21px] md:h-[38px]">
-            {/* Track Background */}
-            <div className="absolute top-[9px] md:top-[15px] bg-[rgba(10,35,46,0.05)] h-[3px] md:h-[9px] rounded-[50px] w-full" />
-
-            {/* Track Fill */}
-            <div
-              className="absolute top-[9px] md:top-[15px] right-0 bg-brand-dark h-[3px] md:h-[9px] rounded-[50px] transition-all duration-150"
-              style={{ width: `${(numOfDays / 30) * 100}%` }}
-            />
-
-            {/* Thumb */}
-            <div
-              className="absolute top-0 transition-all duration-150"
-              style={{
-                right: `calc(${(numOfDays / 30) * 100}% - ${
-                  isMobile ? "10.5px" : "19px"
-                })`,
-              }}
-            >
-              <div
-                className="
-                w-[21px] h-[21px] md:w-[38px] md:h-[38px] bg-brand-white rounded-full 
-                border border-brand-dark shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]
-                flex items-center justify-center cursor-pointer
-              "
-              >
-                <span className="text-[8px] md:text-[16px] leading-[20px] font-bold text-brand-dark">
-                  {numOfDays}
-                </span>
-              </div>
-            </div>
-
-            <input
-              type="range"
-              min="1"
-              max="30"
-              value={numOfDays}
-              onChange={(e) => setNumOfDays(Number(e.target.value))}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-              aria-label="בחר מספר ימים"
-              aria-valuenow={numOfDays}
-              aria-valuemin={1}
-              aria-valuemax={30}
-              aria-valuetext={`${numOfDays} ימים`}
+            <SliderWithValue
+              dir={"rtl"}
+              value={[numOfDays]}
+              onValueChange={(value) => setNumOfDays(value[0])}
+              min={1}
+              max={30}
             />
           </div>
 
