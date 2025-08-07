@@ -31,7 +31,7 @@ export function QASection({
       id={id}
       aria-label={ariaLabel}
       className={cn(
-        "md:w-3xl max-w-5xl mx-auto bg-white flex flex-col items-center justify-center",
+        "sm:w-full px-5 md:px-0 md:w-3xl max-w-5xl mx-auto flex flex-col items-center justify-center",
         className
       )}
     >

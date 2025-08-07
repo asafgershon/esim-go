@@ -24,9 +24,6 @@ function BundleSelectorInternal() {
     setPricing,
   } = useBundleSelector();
 
-  // Individual components now handle their own data fetching and error states
-
-  // Calculate pricing using backend with batch loading
   const {
     getPricing,
     loading: pricingLoading,
@@ -50,59 +47,6 @@ function BundleSelectorInternal() {
   useEffect(() => {
     setPricing(pricing);
   }, [pricing, setPricing]);
-
-  // Components now handle their own error recovery
-
-  // // Keyboard navigation support
-  // useEffect(() => {
-  //   const handleKeyDown = (e: KeyboardEvent) => {
-  //     // Escape key to close mobile sheet or date picker
-  //     if (e.key === "Escape") {
-  //       if (showMobileSheet) {
-  //         setShowMobileSheet(false);
-  //       } else if (currentView === "datePicker") {
-  //         setCurrentView("main");
-  //       }
-  //     }
-
-  //     // Tab navigation between tabs
-  //     if (
-  //       e.key === "Tab" &&
-  //       !e.shiftKey &&
-  //       document.activeElement?.id === "trips-tab"
-  //     ) {
-  //       e.preventDefault();
-  //       document.getElementById("countries-tab")?.focus();
-  //     } else if (
-  //       e.key === "Tab" &&
-  //       e.shiftKey &&
-  //       document.activeElement?.id === "countries-tab"
-  //     ) {
-  //       e.preventDefault();
-  //       document.getElementById("trips-tab")?.focus();
-  //     }
-
-  //     // Arrow keys for slider when focused
-  //     if ((document.activeElement as HTMLInputElement)?.type === "range") {
-  //       if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
-  //         e.preventDefault();
-  //         setQueryStates((state) => ({
-  //           ...state,
-  //           numOfDays: Math.max(1, state.numOfDays - 1),
-  //         }));
-  //       } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
-  //         e.preventDefault();
-  //         setQueryStates((state) => ({
-  //           ...state,
-  //           numOfDays: Math.min(30, state.numOfDays + 1),
-  //         }));
-  //       }
-  //     }
-  //   };
-
-  //   window.addEventListener("keydown", handleKeyDown);
-  //   return () => window.removeEventListener("keydown", handleKeyDown);
-  // }, [showMobileSheet, currentView, numOfDays, setQueryStates]);
 
   // Pricing error logging (components handle their own loading/error states now)
   if (pricingError) {

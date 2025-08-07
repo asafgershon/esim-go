@@ -95,13 +95,13 @@ export function Header({ scrollContainerRef }: HeaderProps = {}) {
   const mobileAction = (
     <div className="w-full">
       <div className="flex items-center gap-2 justify-center">
-        <IconButton variant="brand-primary" size="sm" onClick={handleUserClick}>
+        <IconButton variant="brand-primary" size="default" onClick={handleUserClick}>
           <UserIcon />
         </IconButton>
         <Button
           variant="brand-secondary"
           emphasized
-          size="sm"
+          size="default"
           onClick={() => scrollTo("#esim-selector")}
         >
           לרכישת ESIM

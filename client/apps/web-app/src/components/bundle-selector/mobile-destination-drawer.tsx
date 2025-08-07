@@ -1,13 +1,13 @@
-'use client'
+"use client";
 
 import React, { useState } from "react";
 import { Drawer } from "vaul";
 import { Input, Button, ComboboxOption } from "@workspace/ui";
 import { Search, X } from "lucide-react";
-import { 
-  SEARCH_DESTINATION_PLACEHOLDER, 
-  NO_RESULTS_MESSAGE, 
-  SELECT_DESTINATION_TITLE 
+import {
+  SEARCH_DESTINATION_PLACEHOLDER,
+  NO_RESULTS_MESSAGE,
+  SELECT_DESTINATION_TITLE,
 } from "./destination-selector.constants";
 
 type MobileDestinationDrawerProps = {
@@ -18,20 +18,24 @@ type MobileDestinationDrawerProps = {
   isOpen: boolean;
 };
 
-export default function MobileDestinationDrawer({ 
-  options, 
-  value, 
-  onValueChange, 
-  onClose, 
-  isOpen 
+export default function MobileDestinationDrawer({
+  options,
+  value,
+  onValueChange,
+  onClose,
+  isOpen,
 }: MobileDestinationDrawerProps) {
   const [search, setSearch] = useState("");
 
   // Filter options by search
   const filtered = search.trim()
-    ? options.filter(opt =>
-        opt.label.toLowerCase().includes(search.toLowerCase()) ||
-        (opt.keywords && opt.keywords.some(k => k.toLowerCase().includes(search.toLowerCase())))
+    ? options.filter(
+        (opt) =>
+          opt.label.toLowerCase().includes(search.toLowerCase()) ||
+          (opt.keywords &&
+            opt.keywords.some((k) =>
+              k.toLowerCase().includes(search.toLowerCase())
+            ))
       )
     : options;
 
@@ -52,7 +56,7 @@ export default function MobileDestinationDrawer({
           <div className="p-4 bg-card rounded-t-[10px] flex-1 flex flex-col">
             {/* Drag Handle */}
             <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4" />
-            
+
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <Drawer.Title className="text-lg font-semibold">
@@ -72,6 +76,7 @@ export default function MobileDestinationDrawer({
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                dir="rtl"
                 className="w-full pl-10 pr-4 border-border bg-background text-foreground placeholder:text-muted-foreground text-right text-base"
                 placeholder={SEARCH_DESTINATION_PLACEHOLDER}
                 value={search}
@@ -93,15 +98,17 @@ export default function MobileDestinationDrawer({
                       key={opt.value}
                       variant={value === opt.value ? "secondary" : "ghost"}
                       className={`w-full flex items-center gap-3 p-4 rounded-lg text-right justify-start min-h-[3rem] ${
-                        value === opt.value 
-                          ? "bg-primary/10 font-bold border border-primary text-primary" 
+                        value === opt.value
+                          ? "bg-primary/10 font-bold border border-primary text-primary"
                           : "hover:bg-muted/50"
                       }`}
                       onClick={() => handleSelect(opt.value)}
                       type="button"
                     >
                       {opt.icon && (
-                        <span className="text-xl flex-shrink-0">{opt.icon}</span>
+                        <span className="text-xl flex-shrink-0">
+                          {opt.icon}
+                        </span>
                       )}
                       <span className="flex-1 text-right">{opt.label}</span>
                       {value === opt.value && (

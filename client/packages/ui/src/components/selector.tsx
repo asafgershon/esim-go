@@ -59,7 +59,7 @@ const SelectorHeader = React.forwardRef<
     <div
       ref={ref}
       data-name="SelectorHeader"
-      className={cn("text-right", isMobile ? "mb-6" : "mb-10", className)}
+      className={cn("text-right", isMobile ? "mb-8" : "mb-10", className)}
       {...props}
     />
   );
@@ -109,7 +109,7 @@ const SelectorSection = React.forwardRef<
     <div
       ref={ref}
       data-name="SelectorSection"
-      className={cn("flex flex-col", isMobile ? "gap-2" : "gap-4", className)}
+      className={cn("flex flex-col", isMobile ? "gap-4" : "gap-6", className)}
       {...props}
     />
   );
@@ -128,7 +128,7 @@ const SelectorLabel = React.forwardRef<
       ref={ref}
       data-name="SelectorLabel"
       className={cn(
-        isMobile ? "text-[12px]" : "text-[20px]",
+        isMobile ? "text-base" : "text-xl",
         "text-[#0A232E] text-right",
         className
       )}

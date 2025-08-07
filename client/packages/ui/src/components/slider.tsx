@@ -1,10 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as SliderPrimitive from "@radix-ui/react-slider"
+import * as React from "react";
+import * as SliderPrimitive from "@radix-ui/react-slider";
 
-import { cn } from "../lib/utils"
-
+import { cn } from "../lib/utils";
 
 function Slider({
   className,
@@ -19,13 +18,15 @@ function Slider({
       Array.isArray(value)
         ? value
         : Array.isArray(defaultValue)
-          ? defaultValue
-          : [min, max],
+        ? defaultValue
+        : [min, max],
     [value, defaultValue, min, max]
   );
 
   // Determine thumb size class
-  const thumbSizeClass = className?.includes('slider-thumb-lg') ? 'h-12 w-12' : 'size-4';
+  const thumbSizeClass = className?.includes("slider-thumb-lg")
+    ? "h-12 w-12"
+    : "size-4";
 
   return (
     <SliderPrimitive.Root
@@ -64,7 +65,7 @@ function Slider({
         />
       ))}
     </SliderPrimitive.Root>
-  )
+  );
 }
 
 function SliderWithValue({
@@ -80,7 +81,10 @@ function SliderWithValue({
   onValueChange?: (value: number[]) => void;
   min?: number;
   max?: number;
-} & Omit<React.ComponentProps<typeof SliderPrimitive.Root>, 'value' | 'onValueChange' | 'min' | 'max'>) {
+} & Omit<
+  React.ComponentProps<typeof SliderPrimitive.Root>,
+  "value" | "onValueChange" | "min" | "max"
+>) {
   return (
     <SliderPrimitive.Root
       value={value}
@@ -94,16 +98,16 @@ function SliderWithValue({
       )}
       {...props}
     >
-      <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-muted">
-        <SliderPrimitive.Range className="absolute h-full bg-primary" />
+      <SliderPrimitive.Track className="relative h-4 w-full grow overflow-hidden rounded-full bg-brand-dark/10">
+        <SliderPrimitive.Range className="absolute h-full bg-brand-dark" />
       </SliderPrimitive.Track>
-      <SliderPrimitive.Thumb className="h-[38px] w-[38px] flex items-center justify-center rounded-full border border-ring bg-background shadow-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
-        <span className="text-[16px] font-bold text-primary">
+      <SliderPrimitive.Thumb className="h-[44px] w-[44px] flex items-center active:ring-2 active:ring-brand-green active:border-brand-green justify-center rounded-full border border-brand-dark bg-brand-white shadow-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green disabled:pointer-events-none disabled:opacity-50">
+        <span className="text-[16px] font-bold text-brand-dark">
           {value[0]}
         </span>
       </SliderPrimitive.Thumb>
     </SliderPrimitive.Root>
-  )
+  );
 }
 
-export { Slider, SliderWithValue }
+export { Slider, SliderWithValue };

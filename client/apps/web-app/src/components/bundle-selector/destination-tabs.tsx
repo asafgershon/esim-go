@@ -6,9 +6,10 @@ import { cn } from "@workspace/ui";
 interface DestinationTabsProps {
   activeTab: "countries" | "trips";
   onTabChange: (tab: "countries" | "trips") => void;
+  className?: string;
 }
 
-export function DestinationTabs({ activeTab, onTabChange }: DestinationTabsProps) {
+export function DestinationTabs({ activeTab, onTabChange, className }: DestinationTabsProps) {
   const [sliderPosition, setSliderPosition] = useState<"left" | "right">(
     activeTab === "countries" ? "right" : "left"  // Reversed for RTL
   );
@@ -21,7 +22,7 @@ export function DestinationTabs({ activeTab, onTabChange }: DestinationTabsProps
   return (
     <div 
       ref={containerRef}
-      className="relative bg-[#F1F5FA] rounded-[10px] md:rounded-2xl p-[2px] md:p-1"
+      className={cn("relative bg-[#F1F5FA] rounded-[10px] md:rounded-2xl p-[2px] md:p-1", className)}
       dir="rtl"
     >
       {/* Sliding background indicator */}

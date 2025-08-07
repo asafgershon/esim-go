@@ -41,12 +41,12 @@ export default function Home() {
   return (
     <SmoothScrollContainer
       ref={scrollContainerRef}
-      speed={2}
+      speed={1}
       smooth={1.5}
       effects={true}
       fixedHeader={true}
       headerHeight={64}
-      className="bg-background"
+      className="bg-brand-white"
     >
       <div className="min-h-screen bg-background" dir="rtl">
         {/* Login Modal - wrapped in Suspense */}
@@ -118,7 +118,7 @@ export default function Home() {
           <QASection
             id="faq"
             ariaLabel="שאלות ותשובות נפוצות"
-            className="mb-20"
+            className="mb-20 sm:mx-10"
           />
 
           {/* Help Banner */}

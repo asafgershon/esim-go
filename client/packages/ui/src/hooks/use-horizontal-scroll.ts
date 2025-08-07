@@ -3,10 +3,11 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { Draggable } from "gsap/Draggable";
+import { InertiaPlugin } from "gsap/InertiaPlugin";
 
 // Register GSAP plugins
 if (typeof window !== "undefined") {
-  gsap.registerPlugin(Draggable);
+  gsap.registerPlugin(Draggable, InertiaPlugin);
 }
 
 export interface UseHorizontalScrollOptions {
@@ -30,14 +31,16 @@ export interface UseHorizontalScrollOptions {
   progressTrackColor?: string;
   /** Inertia settings for mobile momentum scrolling */
   inertiaSettings?: {
-    /** Velocity multiplier (default: 2) */
+    /** Velocity multiplier (default: 1.8) */
     velocityScale?: number;
     /** Minimum duration (default: 0.5) */
     minDuration?: number;
     /** Maximum duration (default: 3) */
     maxDuration?: number;
-    /** Resistance factor (default: 200) */
+    /** Resistance factor (default: 1000) */
     resistance?: number;
+    /** End resistance for natural deceleration (default: 0.98) */
+    endResistance?: number;
   };
 }
 
@@ -66,10 +69,11 @@ export function useHorizontalScroll(
   } = options;
 
   const {
-    velocityScale = 2,
+    velocityScale = 1.8,
     minDuration = 0.5,
     maxDuration = 3,
-    resistance = 200,
+    resistance = 1000,
+    endResistance = 0.98,
   } = inertiaSettings;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -113,11 +117,18 @@ export function useHorizontalScroll(
       type: "x",
       bounds: { minX: bounds, maxX: 0 },
       inertia: inertia ? {
-        velocity: "auto",
-        resistance,
-        minDuration,
-        maxDuration,
-        overshootTolerance: 0,
+        x: {
+          min: bounds,
+          max: 0,
+          resistance,
+          minDuration,
+          maxDuration,
+          velocity: "auto",
+          end: (endValue: number) => {
+            // Snap to bounds if needed
+            return Math.max(bounds, Math.min(0, endValue));
+          }
+        }
       } : false,
       edgeResistance,
       onDrag: updateProgress,
@@ -127,6 +138,7 @@ export function useHorizontalScroll(
       activeCursor: "grabbing",
       allowNativeTouchScrolling: false,
       zIndexBoost: false,
+      dragClickables: false,
     })[0];
 
     // Update progress bar
@@ -285,6 +297,7 @@ export function useHorizontalScroll(
     minDuration,
     maxDuration,
     resistance,
+    endResistance,
   ]);
 
   return {
