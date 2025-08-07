@@ -27,7 +27,7 @@ const iconButtonVariants = cva(
       },
       size: {
         default: "h-9 w-9", // 36px - matches Button default
-        sm: "h-8 w-8 rounded-md", // 32px - matches Button sm with border radius
+        sm: "h-6 w-6 rounded-md", // 24px - matches Button sm with border radius
         lg: "h-10 w-10 rounded-md", // 40px - matches Button lg
       },
     },

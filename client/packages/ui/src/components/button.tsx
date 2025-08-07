@@ -29,7 +29,7 @@ const buttonVariants = cva(
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 text-sm",
+        sm: "h-6 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 text-sm",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         icon: "size-8",
       },
@@ -43,23 +43,26 @@ const buttonVariants = cva(
       {
         variant: "brand-secondary",
         emphasized: true,
-        class: "shadow-[1px_2px_0px_0px_#0a232e] hover:shadow-[2px_2px_0px_0px_#0a232e] active:shadow-[1px_1px_0px_0px_#0a232e]",
+        class:
+          "shadow-[1px_2px_0px_0px_#0a232e] hover:shadow-[2px_2px_0px_0px_#0a232e] active:shadow-[1px_1px_0px_0px_#0a232e]",
       },
       {
         variant: "brand-primary",
         emphasized: true,
-        class: "shadow-[1px_2px_0px_0px_#0a232e] hover:shadow-[2px_2px_0px_0px_#0a232e] active:shadow-[1px_1px_0px_0px_#0a232e]",
+        class:
+          "shadow-[1px_2px_0px_0px_#0a232e] hover:shadow-[2px_2px_0px_0px_#0a232e] active:shadow-[1px_1px_0px_0px_#0a232e]",
       },
       {
         variant: "brand-success",
         emphasized: true,
-        class: "shadow-[1px_2px_0px_0px_#0a232e] hover:shadow-[2px_2px_0px_0px_#0a232e] active:shadow-[1px_1px_0px_0px_#0a232e]",
+        class:
+          "shadow-[1px_2px_0px_0px_#0a232e] hover:shadow-[2px_2px_0px_0px_#0a232e] active:shadow-[1px_1px_0px_0px_#0a232e]",
       },
       // Brand variants use specific brand sizes instead of default sizes
       {
         variant: ["brand-secondary", "brand-primary", "brand-success"],
         size: "sm",
-        class: "px-5 py-4 rounded-[5px] text-xs gap-1.5 [&_svg]:size-3",
+        class: "px-5 py-2 rounded-[5px] text-xs gap-1.5 [&_svg]:size-3",
       },
       {
         variant: ["brand-secondary", "brand-primary", "brand-success"],

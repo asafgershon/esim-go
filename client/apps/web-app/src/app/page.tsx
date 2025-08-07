@@ -115,7 +115,11 @@ export default function Home() {
           <WhySwitchSection id="about" ariaLabel="עלינו ולמה לבחור בנו" />
 
           {/* Q&A Section */}
-          <QASection id="faq" ariaLabel="שאלות ותשובות נפוצות" />
+          <QASection
+            id="faq"
+            ariaLabel="שאלות ותשובות נפוצות"
+            className="mb-20"
+          />
 
           {/* Help Banner */}
           <HelpBanner id="contact" ariaLabel="צור קשר ועזרה" />

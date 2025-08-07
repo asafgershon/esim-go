@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, cn, useIsMobile } from "@workspace/ui";
+import { Button, cn } from "@workspace/ui";
 
 export const handleContactSupport = () => {
   // This could open a chat widget, redirect to WhatsApp, or open a support form
@@ -16,14 +16,12 @@ export function HelpBanner({
   id: string;
   ariaLabel: string;
 }) {
-  const isMobile = useIsMobile();
   return (
     <section
       id={id}
       aria-label={ariaLabel}
       className={cn(
-        "flex flex-col items-center justify-center py-16 md:py-24 w-full px-4 relative z-10 bg-[url('/images/bgs/desktop-bottom.png')] bg-cover bg-center",
-        isMobile ? "rounded-[50px]" : "rounded-[100px]"
+        "rounded-[50px] max-w-3xl mx-auto flex flex-col items-center justify-center py-16 md:py-24 w-full px-4 relative z-10 bg-[url('/images/bgs/desktop-bottom.png')] bg-cover bg-center"
       )}
     >
       <div className="max-w-3xl text-center flex flex-col items-center justify-center">
