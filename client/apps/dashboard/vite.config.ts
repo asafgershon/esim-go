@@ -20,6 +20,10 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     build: {
       rollupOptions: {
+        treeshake: {
+          moduleSideEffects: false,
+          propertyReadSideEffects: false,
+        },
         output: {
           manualChunks: {
             ui: ["@workspace/ui"],
