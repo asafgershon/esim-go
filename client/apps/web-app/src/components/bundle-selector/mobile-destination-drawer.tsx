@@ -72,7 +72,7 @@ export default function MobileDestinationDrawer({
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                className="w-full pl-10 pr-4 border-border bg-background text-foreground placeholder:text-muted-foreground text-right"
+                className="w-full pl-10 pr-4 border-border bg-background text-foreground placeholder:text-muted-foreground text-right text-base"
                 placeholder={SEARCH_DESTINATION_PLACEHOLDER}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
