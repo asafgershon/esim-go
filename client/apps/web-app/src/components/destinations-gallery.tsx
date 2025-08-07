@@ -10,7 +10,6 @@ import { Card, useHorizontalScroll } from "@workspace/ui";
 import { useMemo } from "react";
 import { ImageWithFallback } from "./image-with-fallback";
 
-
 interface Destination {
   id: string;
   name: string;
@@ -87,10 +86,18 @@ const destinations: Destination[] = [
   },
 ];
 
-export function DestinationsGallery({ id, ariaLabel, speed }: { id: string, ariaLabel: string, speed?: string }) {
+export function DestinationsGallery({
+  id,
+  ariaLabel,
+  speed,
+}: {
+  id: string;
+  ariaLabel: string;
+  speed?: string;
+}) {
   // URL state management for bundle selector navigation
   const { setQueryStates } = useSelectorQueryState();
-  
+
   // GSAP horizontal scroll hook for mobile
   const { containerRef, contentRef, progressRef } = useHorizontalScroll({
     progressColor: "#535FC8",
@@ -135,7 +142,12 @@ export function DestinationsGallery({ id, ariaLabel, speed }: { id: string, aria
   }, [data]);
 
   return (
-    <section data-speed={speed} id={id} aria-label={ariaLabel} className="pt-16 pb-[60px] md:pt-24 md:pb-[100px] bg-gradient-to-b from-white to-[#F8FAFC]">
+    <section
+      data-speed={speed}
+      id={id}
+      aria-label={ariaLabel}
+      className="pt-16 pb-[60px] md:pt-24 md:pb-[100px] bg-gradient-to-b from-white to-[#F8FAFC]"
+    >
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-right mb-12 max-w-4xl mx-auto">
@@ -154,23 +166,10 @@ export function DestinationsGallery({ id, ariaLabel, speed }: { id: string, aria
           </p>
         </div>
 
-        {/* Desktop Grid - Show only first 8 countries */}
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-          {destinations.slice(0, 8).map((destination) => (
-            <DestinationCard
-              key={destination.id}
-              destination={destination}
-              loading={loading}
-              price={pricesByCountry[destination.countryIso]}
-              onSelect={setQueryStates}
-            />
-          ))}
-        </div>
-
         {/* Mobile Horizontal Scroll with GSAP */}
         <div
           ref={containerRef}
-          className="md:hidden relative overflow-hidden"
+          className="relative"
           style={{ height: "304px" }}
         >
           <div
@@ -201,7 +200,7 @@ export function DestinationsGallery({ id, ariaLabel, speed }: { id: string, aria
 
         {/* Progress Track for Mobile */}
         <div
-          className="md:hidden relative mx-auto mt-6"
+          className="relative mx-auto mt-6"
           style={{
             height: "4px",
             width: "200px",

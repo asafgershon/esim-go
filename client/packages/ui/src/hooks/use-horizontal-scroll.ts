@@ -17,7 +17,7 @@ export interface UseHorizontalScrollOptions {
   edgeResistance?: number;
   /** Enable inertia for dragging (default: true) */
   inertia?: boolean;
-  /** Mouse wheel scroll speed multiplier (default: 1) */
+  /** Mouse wheel scroll speed multiplier (default: 2) */
   wheelSpeed?: number;
   /** Animation duration for wheel scrolling (default: 0.5) */
   animationDuration?: number;
@@ -61,7 +61,7 @@ export function useHorizontalScroll(
     padding = 32,
     edgeResistance = 0.85,
     inertia = true,
-    wheelSpeed = 1,
+    wheelSpeed = 2,
     animationDuration = 0.5,
     animationEase = "power2.out",
     startFromRight = true,
@@ -154,11 +154,23 @@ export function useHorizontalScroll(
 
     // Mouse wheel support
     const handleWheel = (e: WheelEvent) => {
-      if (!draggable || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      if (!draggable) return;
+      
+      // Support both horizontal and vertical scrolling
+      // Use deltaY for vertical scroll (more common on desktop)
+      // Use deltaX for horizontal scroll (trackpad gestures)
+      const deltaX = e.deltaX;
+      const deltaY = e.deltaY;
+      
+      // If there's no significant scroll, return
+      if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
+      
+      // Prefer horizontal scroll, but use vertical if horizontal is minimal
+      const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
       
       e.preventDefault();
-      const delta = e.deltaX * wheelSpeed;
-      const newX = draggable.x - delta;
+      const scrollDelta = delta * wheelSpeed;
+      const newX = draggable.x - scrollDelta;
       const clampedX = Math.max(bounds, Math.min(0, newX));
       
       gsap.to(content, {
