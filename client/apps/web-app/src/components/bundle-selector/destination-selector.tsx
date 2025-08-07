@@ -101,7 +101,7 @@ export function DestinationSelector() {
       id={`${activeTab}-panel`}
       aria-labelledby={`${activeTab}-tab`}
     >
-      <SelectorLabel>לאן נוסעים?</SelectorLabel>
+      <SelectorLabel>{DESTINATION_PLACEHOLDER}</SelectorLabel>
       {isMobile ? (
         <div className="relative">
           <button
@@ -116,18 +116,19 @@ export function DestinationSelector() {
             className={`${sharedButtonStyles} relative`}
           >
             <ChevronsUpDownIcon
+              size={20}
               className={cn(
-                "text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2",
+                "absolute right-3 top-1/2 -translate-y-1/2",
                 showMobileSheet && "rotate-180",
-                destination?.name && "opacity-70"
+                !destination?.name && "opacity-30"
               )}
             />
-            <span className="pr-8 text-brand-dark text-md md:text-[18px] leading-[26px] opacity-50">
+            <span className="pr-8 text-brand-dark text-md md:text-[18px] leading-[26px] opacity-30">
               {destination?.name || DESTINATION_PLACEHOLDER}
             </span>
           </button>
 
-          <Suspense fallback={<div>...</div>}>
+          <Suspense>
             {showMobileSheet && (
               <MobileDestinationDrawer
                 options={comboboxOptions}

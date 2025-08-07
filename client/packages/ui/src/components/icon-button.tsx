@@ -57,9 +57,9 @@ function IconButton({
   // Add inline shadow and background for brand-primary variant
   const getBoxShadow = () => {
     if (variant !== "brand-primary") return undefined;
-    if (isPressed) return "0 1px 0 #0A232E";
-    if (isHovered) return "2px 4px 0 #0A232E";
-    return "2px 3px 0 #0A232E";
+    if (isPressed) return "1px 2px 0px 0px #0A232E";
+    if (isHovered) return "2px 2px 0px 0px #0A232E";
+    return "2px 3px 0px 0px #0A232E";
   };
 
   const inlineStyle =
