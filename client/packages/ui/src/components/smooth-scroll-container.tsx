@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { cn } from "../lib/utils";
+import { ScrollProvider, type ScrollToOptions as ContextScrollToOptions } from "../contexts/scroll-context";
 
 // Register GSAP plugins
 if (typeof window !== "undefined") {
@@ -233,16 +234,71 @@ const SmoothScrollContainer = React.forwardRef<
       }
     }, [fixedHeader, headerHeight]);
 
+    // Create scrollTo function for the provider
+    const scrollToForProvider = React.useCallback(
+      (target: string | number | HTMLElement, options?: ContextScrollToOptions) => {
+        if (!smootherRef.current) return;
+
+        const defaultOptions = {
+          offset: fixedHeader ? -headerHeight : 0,
+          duration: 1,
+          ease: "power2.inOut",
+        };
+
+        const mergedOptions = { ...defaultOptions, ...options };
+
+        // Handle different target types
+        let targetElement: HTMLElement | null = null;
+        let targetSelector: string = "";
+
+        if (typeof target === "string" && target.startsWith("#")) {
+          targetSelector = target;
+          const element = document.querySelector(target);
+          if (element) {
+            targetElement = element as HTMLElement;
+          }
+        } else if (target instanceof HTMLElement) {
+          targetElement = target;
+        }
+
+        // ScrollSmoother uses its internal method for scrolling
+        if (targetElement || targetSelector) {
+          const elem = targetElement || document.querySelector(targetSelector);
+          if (elem) {
+            gsap.to(window, {
+              duration: mergedOptions.duration,
+              scrollTo: {
+                y: elem,
+                offsetY: -mergedOptions.offset,
+              },
+              ease: mergedOptions.ease,
+              onComplete: mergedOptions.onComplete,
+            });
+          }
+        } else if (typeof target === "number") {
+          gsap.to(window, {
+            duration: mergedOptions.duration,
+            scrollTo: target + mergedOptions.offset,
+            ease: mergedOptions.ease,
+            onComplete: mergedOptions.onComplete,
+          });
+        }
+      },
+      [fixedHeader, headerHeight]
+    );
+
     return (
-      <div
-        id={wrapperId}
-        ref={wrapperRef}
-        className={cn("fixed inset-0 overflow-hidden", className)}
-      >
-        <div id={contentId} ref={contentRef}>
-          {children}
+      <ScrollProvider smootherRef={smootherRef} scrollTo={scrollToForProvider}>
+        <div
+          id={wrapperId}
+          ref={wrapperRef}
+          className={cn("fixed inset-0 overflow-hidden", className)}
+        >
+          <div id={contentId} ref={contentRef}>
+            {children}
+          </div>
         </div>
-      </div>
+      </ScrollProvider>
     );
   }
 );

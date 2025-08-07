@@ -12,6 +12,7 @@ import {
   SelectorLabel,
   SelectorSection,
   useIsMobile,
+  useScrollSmootherLock,
 } from "@workspace/ui";
 import { ChevronsUpDownIcon } from "lucide-react";
 import {
@@ -38,6 +39,13 @@ export function DestinationSelector() {
   // Local state for mobile sheet and desktop combobox
   const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
+
+  // Lock scroll when desktop combobox is open (mobile handled in drawer component)
+  useScrollSmootherLock({
+    autoLock: !isMobile && comboboxOpen,
+    preserveScrollPosition: false, // Not needed for desktop
+    preventTouchMove: false, // Not needed for desktop
+  });
 
   // Shared button styles for consistent appearance across mobile and desktop
   const sharedButtonStyles =

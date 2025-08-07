@@ -1,16 +1,25 @@
 "use client";
 
-import { Button, useESIMDetection } from "@workspace/ui";
+import { Button, cn, useESIMDetection } from "@workspace/ui";
 import { Check, X, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { LogoRounded } from "./logo-rounded";
 
-export function CompatibilitySection({ id, ariaLabel }: { id: string, ariaLabel: string }) {
+export function CompatibilitySection({
+  id,
+  ariaLabel,
+  className,
+}: {
+  id: string;
+  className?: string;
+  ariaLabel: string;
+}) {
   // Use the eSIM detection hook with manual start
   const { isSupported, loading, start } = useESIMDetection({
     autoStart: false,
     enableCanvasFingerprint: true,
     enableWebGLDetection: true,
-    confidenceThreshold: 0.5
+    confidenceThreshold: 0.5,
   });
 
   // Track if detection has been started
@@ -30,43 +39,47 @@ export function CompatibilitySection({ id, ariaLabel }: { id: string, ariaLabel:
         icon: null,
         variant: "brand-primary" as const,
         emphasized: true,
-        className: ""
+        className: "",
       };
     }
-    
+
     if (loading) {
       return {
         text: "בודק...",
         icon: <Loader2 className="w-5 h-5 animate-spin" />,
         variant: "brand-primary" as const,
         emphasized: false,
-        className: "opacity-70 cursor-not-allowed"
+        className: "opacity-70 cursor-not-allowed",
       };
     }
-    
+
     if (isSupported) {
       return {
         text: "המכשיר תומך",
         icon: <Check className="w-5 h-5" />,
         variant: "brand-success" as const,
         emphasized: true,
-        className: ""
+        className: "",
       };
     }
-    
+
     return {
       text: "המכשיר לא תומך",
       icon: <X className="w-5 h-5" />,
       variant: "destructive" as const,
       emphasized: false,
-      className: ""
+      className: "",
     };
   };
 
   const buttonState = getButtonState();
 
   return (
-    <section id={id} aria-label={ariaLabel} className="flex flex-col md:flex-row-reverse">
+    <section
+      id={id}
+      aria-label={ariaLabel}
+      className={cn("flex flex-col md:flex-row-reverse", className)}
+    >
       {/* Text container - Desktop */}
       <div className="hidden md:flex flex-col items-center mt-8 gap-4">
         {/* Highlight */}
@@ -79,8 +92,8 @@ export function CompatibilitySection({ id, ariaLabel }: { id: string, ariaLabel:
         {/* Text */}
         <div className="text-center max-w-2xl px-4">
           <p className="text-lg text-white/90" dir="rtl">
-            רוב המכשירים בישראל תומכים ב־eSIM. לבדיקה ודאית לגבי המכשיר
-            שברשותכם לחצו כאן ובדקו תוך שניות אם אתם מוכנים לגלישה.
+            רוב המכשירים בישראל תומכים ב־eSIM. לבדיקה ודאית לגבי המכשיר שברשותכם
+            לחצו כאן ובדקו תוך שניות אם אתם מוכנים לגלישה.
           </p>
         </div>
 
@@ -113,8 +126,8 @@ export function CompatibilitySection({ id, ariaLabel }: { id: string, ariaLabel:
         {/* Text */}
         <div className="text-center max-w-sm px-4">
           <p className="text-base text-white/90" dir="rtl">
-            רוב המכשירים בישראל תומכים ב־eSIM. לבדיקה ודאית לגבי המכשיר
-            שברשותכם לחצו כאן ובדקו תוך שניות אם אתם מוכנים לגלישה.
+            רוב המכשירים בישראל תומכים ב־eSIM. לבדיקה ודאית לגבי המכשיר שברשותכם
+            לחצו כאן ובדקו תוך שניות אם אתם מוכנים לגלישה.
           </p>
         </div>
 

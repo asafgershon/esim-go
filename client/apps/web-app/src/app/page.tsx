@@ -2,9 +2,9 @@
 
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { BackgroundSection } from "@/components/background-section";
+import BundleSelector from "@/components/bundle-selector";
 import { CompatibilitySection } from "@/components/compatibility-section";
 import { DestinationsGallery } from "@/components/destinations-gallery";
-import BundleSelector from "@/components/bundle-selector";
 import { FeaturesSection } from "@/components/features-section";
 import { Header } from "@/components/header";
 import { HelpBanner } from "@/components/help-banner";
@@ -12,16 +12,15 @@ import { HeroSection } from "@/components/hero-section";
 import { LoginModal } from "@/components/home-with-state";
 import { HowToSection } from "@/components/how-to-section";
 import { LogoRounded } from "@/components/logo-rounded";
-import { PromoBanner } from "@/components/promo-banner";
 import { QASection } from "@/components/qa-section";
 import { ReviewsSection } from "@/components/reviews-section";
 import { WhySwitchSection } from "@/components/why-switch-section";
 import {
   Footer,
-  useScrollTo,
   SmoothScrollContainer,
   type SmoothScrollHandle,
   cn,
+  useScrollTo,
 } from "@workspace/ui";
 import { Suspense, useRef } from "react";
 
@@ -95,14 +94,14 @@ export default function Home() {
           <FeaturesSection id="features" ariaLabel="תכונות ויתרונות" />
 
           {/* Background Section with eSIM Compatibility Check */}
-          <BackgroundSection>
-            <section aria-label="מה זה eSIM ותאימות">
-              <LogoRounded className="self-end" />
-              <CompatibilitySection
-                id="what-is-esim"
-                ariaLabel="מה זה eSIM ותאימות"
-              />
-            </section>
+          <BackgroundSection className="flex flex-col gap-40 py-40">
+            <LogoRounded className="absolute top-10 left-0" />
+
+            <CompatibilitySection
+              id="what-is-esim"
+              ariaLabel="מה זה eSIM ותאימות"
+            />
+
             {/* Customer Reviews */}
             <ReviewsSection />
 

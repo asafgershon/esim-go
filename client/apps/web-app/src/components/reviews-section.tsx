@@ -146,7 +146,7 @@ export const ReviewsSection = () => {
 
   return (
     <section
-      className="py-16 md:py-24 relative overflow-hidden w-full"
+      className="relative overflow-hidden w-full"
       id="reviews"
       aria-label="ביקורות לקוחות"
     >

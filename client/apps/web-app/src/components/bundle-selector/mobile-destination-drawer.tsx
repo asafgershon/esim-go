@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useScrollSmootherLock } from "@workspace/ui";
 import { Drawer } from "vaul";
 import { Input, Button, ComboboxOption } from "@workspace/ui";
 import { Search, X } from "lucide-react";
@@ -26,6 +27,13 @@ export default function MobileDestinationDrawer({
   isOpen,
 }: MobileDestinationDrawerProps) {
   const [search, setSearch] = useState("");
+
+  // Lock scroll when drawer is open
+  useScrollSmootherLock({
+    autoLock: isOpen,
+    preserveScrollPosition: true,
+    preventTouchMove: true,
+  });
 
   // Filter options by search
   const filtered = search.trim()

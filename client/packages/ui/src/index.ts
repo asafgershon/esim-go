@@ -51,12 +51,17 @@ export * from './components/textarea'
 export * from './components/tooltip'
 // smooth-scroll-container is exported separately due to GSAP dependency
 export { SmoothScrollContainer, type SmoothScrollHandle } from './components/smooth-scroll-container'
+// scroll-aware-drawer for ScrollSmoother integration
+export * from './components/scroll-aware-drawer'
+// scroll context for ScrollSmoother management
+export * from './contexts/scroll-context'
 // Hooks
 export * from './hooks/use-countries'
 export * from './hooks/use-esim-detection'
 export * from './hooks/use-horizontal-scroll'
 export * from './hooks/use-media-query'
 export * from './hooks/use-scroll-to'
+export * from './hooks/use-scroll-smoother-lock'
 export * from './hooks/useIsMobile'
 // Utils
 export * from "./lib/font-utils"

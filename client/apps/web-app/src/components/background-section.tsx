@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { cn } from "@workspace/ui";
 
@@ -15,139 +15,164 @@ export function BackgroundSection({
 }: BackgroundSectionProps) {
   const desktopSvgRef = useRef<SVGSVGElement>(null);
   const mobileSvgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const animationContextRef = useRef<gsap.Context | null>(null);
 
+  // Use IntersectionObserver to detect when section is visible
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, []);
+
+  // Animate only when visible
+  useEffect(() => {
+    if (!isVisible) {
+      // Kill all animations when not visible
+      if (animationContextRef.current) {
+        animationContextRef.current.kill();
+        animationContextRef.current = null;
+      }
+      return;
+    }
+
     const desktopSvg = desktopSvgRef.current;
     const mobileSvg = mobileSvgRef.current;
 
     if (!desktopSvg || !mobileSvg) return;
 
-    // Desktop animations
-    if (desktopSvg) {
-      const shapes = desktopSvg.querySelectorAll("path");
-
-      // Initial setup - make shapes invisible
-      gsap.set(shapes, { opacity: 0, scale: 0.8 });
-
-      // Create timeline for desktop
-      const tl = gsap.timeline();
-
-      // Animate shapes in sequence
-      tl.to(shapes[0], {
-        duration: 2,
-        opacity: 1,
-        scale: 1,
-        ease: "back.out(1.7)",
-        delay: 0.2,
-      })
-        .to(
-          shapes[1],
-          {
-            duration: 2,
-            opacity: 1,
-            scale: 1,
-            ease: "back.out(1.7)",
-          },
-          "-=1.5"
-        )
-        .to(
-          shapes[2],
-          {
-            duration: 2,
-            opacity: 1,
-            scale: 1,
-            ease: "back.out(1.7)",
-          },
-          "-=1.5"
-        )
-        .to(
-          shapes[3],
-          {
-            duration: 2,
-            opacity: 1,
-            scale: 1,
-            ease: "back.out(1.7)",
-          },
-          "-=1.5"
-        );
-
-      // Continuous floating animation
-      shapes.forEach((shape, index) => {
-        gsap.to(shape, {
-          duration: 4 + index,
-          rotation: index % 2 === 0 ? 5 : -5,
-          transformOrigin: "center center",
-          repeat: -1,
-          yoyo: true,
-          ease: "sine.inOut",
-          delay: index * 0.5,
-        });
-
-        gsap.to(shape, {
-          duration: 6 + index * 0.5,
-          x: index % 2 === 0 ? 10 : -10,
-          y: index % 2 === 0 ? -5 : 5,
-          repeat: -1,
-          yoyo: true,
-          ease: "sine.inOut",
-          delay: index * 0.3,
-        });
-      });
+    // Check for reduced motion preference
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    if (prefersReducedMotion) {
+      // Just show the shapes without animation
+      gsap.set(
+        [
+          ...desktopSvg.querySelectorAll("path"),
+          ...mobileSvg.querySelectorAll("path"),
+        ],
+        {
+          opacity: 1,
+          scale: 1,
+        }
+      );
+      return;
     }
 
-    // Mobile animations
-    if (mobileSvg) {
-      const shapes = mobileSvg.querySelectorAll("path");
+    // Create GSAP context for better cleanup
+    animationContextRef.current = gsap.context(() => {
+      // Desktop animations with reduced complexity
+      const isMobile = window.innerWidth < 768;
 
-      gsap.set(shapes, { opacity: 0, scale: 0.9 });
+      if (desktopSvg && !isMobile) {
+        const shapes = desktopSvg.querySelectorAll("path");
 
-      const mobileTl = gsap.timeline();
-
-      // Stagger animation for mobile
-      mobileTl.to(shapes, {
-        duration: 1.5,
-        opacity: 1,
-        scale: 1,
-        ease: "back.out(1.2)",
-        stagger: 0.2,
-        delay: 0.1,
-      });
-
-      // Subtle floating for mobile (less intense)
-      shapes.forEach((shape, index) => {
-        gsap.to(shape, {
-          duration: 5 + index * 0.5,
-          rotation: index % 2 === 0 ? 2 : -2,
-          transformOrigin: "center center",
-          repeat: -1,
-          yoyo: true,
-          ease: "sine.inOut",
-          delay: index * 0.4,
+        // Add will-change for GPU acceleration
+        shapes.forEach((shape) => {
+          (shape as SVGElement).style.willChange = "transform, opacity";
         });
 
-        gsap.to(shape, {
-          duration: 4 + index * 0.3,
-          x: index % 2 === 0 ? 5 : -5,
-          repeat: -1,
-          yoyo: true,
-          ease: "sine.inOut",
-          delay: index * 0.2,
+        // Initial setup - make shapes invisible
+        gsap.set(shapes, { opacity: 0, scale: 0.9 });
+
+        // Simplified entrance animation
+        gsap.to(shapes, {
+          duration: 1.5,
+          opacity: 1,
+          scale: 1,
+          ease: "power2.out",
+          stagger: 0.2,
         });
-      });
-    }
+
+        // Reduced floating animation (only 2 shapes for performance)
+        shapes.forEach((shape, index) => {
+          if (index < 2) {
+            // Only animate first 2 shapes
+            gsap.to(shape, {
+              duration: 8 + index * 2,
+              rotation: index % 2 === 0 ? 3 : -3,
+              transformOrigin: "center center",
+              repeat: -1,
+              yoyo: true,
+              ease: "sine.inOut",
+              delay: index * 0.5,
+            });
+          }
+        });
+      }
+
+      // Mobile animations - very minimal for performance
+      if (mobileSvg && isMobile) {
+        const shapes = mobileSvg.querySelectorAll("path");
+
+        // Add will-change for GPU acceleration
+        shapes.forEach((shape) => {
+          (shape as SVGElement).style.willChange = "transform, opacity";
+        });
+
+        gsap.set(shapes, { opacity: 0, scale: 0.95 });
+
+        // Simple fade in only
+        gsap.to(shapes, {
+          duration: 1,
+          opacity: 0.9, // Slightly transparent for performance
+          scale: 1,
+          ease: "power2.out",
+          stagger: 0.15,
+        });
+
+        // Minimal floating for only the first shape
+        if (shapes[0]) {
+          gsap.to(shapes[0], {
+            duration: 10,
+            rotation: 1,
+            transformOrigin: "center center",
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut",
+          });
+        }
+      }
+    });
 
     // Cleanup function
     return () => {
-      gsap.killTweensOf(desktopSvg?.querySelectorAll("path") || []);
-      gsap.killTweensOf(mobileSvg?.querySelectorAll("path") || []);
+      if (animationContextRef.current) {
+        animationContextRef.current.revert();
+        animationContextRef.current = null;
+      }
+
+      // Remove will-change to free up memory
+      const allShapes = [
+        ...(desktopSvg?.querySelectorAll("path") || []),
+        ...(mobileSvg?.querySelectorAll("path") || []),
+      ];
+      allShapes.forEach((shape) => {
+        (shape as SVGElement).style.willChange = "auto";
+      });
     };
-  }, []);
+  }, [isVisible]);
 
   return (
     <div
+      ref={containerRef}
       className={cn(
-        "mx-auto w-full relative min-h-screen overflow-hidden rounded-[50px] md:rounded-[100px]",
-        className
+        "mx-auto w-full relative min-h-screen overflow-hidden rounded-[50px] md:rounded-[100px]"
       )}
     >
       {/* Desktop SVG Background - Hidden on mobile */}
@@ -286,7 +311,7 @@ export function BackgroundSection({
             <stop
               offset="100%"
               stopColor="var(--color-brand-green)"
-              stopOpacity="0.7"
+              stopOpacity="1"
             />
           </linearGradient>
           <linearGradient id="mobileGreen2" x1="100%" y1="100%" x2="0%" y2="0%">
@@ -298,38 +323,40 @@ export function BackgroundSection({
             <stop
               offset="100%"
               stopColor="var(--color-brand-green)"
-              stopOpacity="0.7"
+              stopOpacity="1"
             />
           </linearGradient>
           <radialGradient id="mobilePurple1" cx="50%" cy="50%" r="50%">
             <stop
               offset="0%"
               stopColor="var(--color-brand-purple)"
-              stopOpacity="0.8"
+              stopOpacity="1"
             />
             <stop
               offset="100%"
               stopColor="var(--color-brand-purple)"
-              stopOpacity="0.6"
+              stopOpacity="1"
             />
           </radialGradient>
           <radialGradient id="mobilePurple2" cx="50%" cy="50%" r="50%">
             <stop
               offset="0%"
               stopColor="var(--color-brand-purple)"
-              stopOpacity="0.8"
+              stopOpacity="1"
             />
             <stop
               offset="100%"
               stopColor="var(--color-brand-purple)"
-              stopOpacity="0.6"
+              stopOpacity="1"
             />
           </radialGradient>
         </defs>
       </svg>
 
       {/* Content container */}
-      <div className="relative z-10 flex flex-col items-center pt-20 md:pt-20">
+      <div
+        className={cn("relative z-10 flex flex-col items-center", className)}
+      >
         {children}
       </div>
     </div>
