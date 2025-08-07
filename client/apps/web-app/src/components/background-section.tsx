@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef } from "react";
 import { gsap } from "gsap";
+import { cn } from "@workspace/ui";
+import { useIsMobile } from "@workspace/ui";
 
 interface BackgroundSectionProps {
   children?: React.ReactNode;
@@ -10,7 +12,7 @@ interface BackgroundSectionProps {
 export function BackgroundSection({ children }: BackgroundSectionProps) {
   const desktopSvgRef = useRef<SVGSVGElement>(null);
   const mobileSvgRef = useRef<SVGSVGElement>(null);
-
+  const isMobile = useIsMobile();
   useEffect(() => {
     // Desktop animations
     if (desktopSvgRef.current) {
@@ -138,7 +140,10 @@ export function BackgroundSection({ children }: BackgroundSectionProps) {
       {/* Desktop SVG Background - Hidden on mobile */}
       <svg
         ref={desktopSvgRef}
-        className="absolute inset-0 w-full h-full hidden md:block"
+        className={cn(
+          "absolute inset-0 w-full h-full",
+          isMobile && "hidden"
+        )}
         viewBox="0 0 1920 1863"
         preserveAspectRatio="xMidYMid slice"
         fill="none"

@@ -118,8 +118,6 @@ export function HowToSection({ id, ariaLabel }: { id: string, ariaLabel: string 
                     </div>
                   </div>
 
-                  {/* Decorative gradient behind phone */}
-                  <div className="absolute -z-10 inset-0 bg-gradient-to-br from-brand-green/30 to-brand-purple/30 blur-3xl transform scale-150"></div>
                 </div>
               </div>
             </div>

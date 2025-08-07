@@ -28,6 +28,17 @@ export interface UseHorizontalScrollOptions {
   progressColor?: string;
   /** Progress track background color (default: "rgba(255, 255, 255, 0.1)") */
   progressTrackColor?: string;
+  /** Inertia settings for mobile momentum scrolling */
+  inertiaSettings?: {
+    /** Velocity multiplier (default: 2) */
+    velocityScale?: number;
+    /** Minimum duration (default: 0.5) */
+    minDuration?: number;
+    /** Maximum duration (default: 3) */
+    maxDuration?: number;
+    /** Resistance factor (default: 200) */
+    resistance?: number;
+  };
 }
 
 export interface UseHorizontalScrollReturn {
@@ -51,7 +62,15 @@ export function useHorizontalScroll(
     animationDuration = 0.5,
     animationEase = "power2.out",
     startFromRight = true,
+    inertiaSettings = {},
   } = options;
+
+  const {
+    velocityScale = 2,
+    minDuration = 0.5,
+    maxDuration = 3,
+    resistance = 200,
+  } = inertiaSettings;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -89,16 +108,25 @@ export function useHorizontalScroll(
       transformOrigin: "left center",
     });
 
-    // Create draggable
+    // Create draggable with enhanced inertia for mobile
     const draggable = Draggable.create(content, {
       type: "x",
       bounds: { minX: bounds, maxX: 0 },
-      inertia,
+      inertia: inertia ? {
+        velocity: "auto",
+        resistance,
+        minDuration,
+        maxDuration,
+        overshootTolerance: 0,
+      } : false,
       edgeResistance,
       onDrag: updateProgress,
       onThrowUpdate: updateProgress,
+      onThrowComplete: updateProgress,
       cursor: "grab",
       activeCursor: "grabbing",
+      allowNativeTouchScrolling: false,
+      zIndexBoost: false,
     })[0];
 
     // Update progress bar
@@ -154,33 +182,80 @@ export function useHorizontalScroll(
 
     window.addEventListener("resize", handleResize);
 
-    // Touch support for mobile
+    // Enhanced touch support with velocity tracking for momentum
     let touchStartX = 0;
-    let startX = 0;
+    let touchStartTime = 0;
+    let lastTouchX = 0;
+    let lastTouchTime = 0;
+    let velocityX = 0;
 
     const handleTouchStart = (e: TouchEvent) => {
       if (!draggable || !e.touches[0]) return;
+      
+      // Let Draggable handle the touch if it's enabled
+      if (inertia) {
+        return;
+      }
+      
       touchStartX = e.touches[0].clientX;
-      startX = draggable.x;
+      touchStartTime = Date.now();
+      lastTouchX = touchStartX;
+      lastTouchTime = touchStartTime;
+      velocityX = 0;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!draggable || !e.touches[0]) return;
+      if (!draggable || !e.touches[0] || inertia) return;
       
-      const touchX = e.touches[0].clientX;
-      const diff = touchX - touchStartX;
-      const newX = startX + diff;
+      const currentX = e.touches[0].clientX;
+      const currentTime = Date.now();
+      const timeDelta = currentTime - lastTouchTime;
+      
+      if (timeDelta > 0) {
+        velocityX = (currentX - lastTouchX) / timeDelta;
+      }
+      
+      const diff = currentX - touchStartX;
+      const newX = draggable.x + diff;
       const clampedX = Math.max(bounds, Math.min(0, newX));
       
       gsap.set(content, { x: clampedX });
       draggable.update();
       updateProgress();
+      
+      lastTouchX = currentX;
+      lastTouchTime = currentTime;
     };
 
-    container.addEventListener("touchstart", handleTouchStart, {
-      passive: true,
-    });
-    container.addEventListener("touchmove", handleTouchMove, { passive: true });
+    const handleTouchEnd = () => {
+      if (!draggable || inertia) return;
+      
+      // Apply momentum based on velocity
+      if (Math.abs(velocityX) > 0.1) {
+        const momentum = velocityX * velocityScale * 100;
+        const targetX = draggable.x + momentum;
+        const clampedTarget = Math.max(bounds, Math.min(0, targetX));
+        
+        gsap.to(content, {
+          x: clampedTarget,
+          duration: minDuration + (Math.min(Math.abs(momentum) / 500, maxDuration - minDuration)),
+          ease: "power2.out",
+          onUpdate: () => {
+            if (draggable) {
+              draggable.update();
+              updateProgress();
+            }
+          },
+        });
+      }
+    };
+
+    // Only add custom touch handlers if inertia is disabled
+    if (!inertia) {
+      container.addEventListener("touchstart", handleTouchStart, { passive: true });
+      container.addEventListener("touchmove", handleTouchMove, { passive: true });
+      container.addEventListener("touchend", handleTouchEnd, { passive: true });
+    }
 
     // Initial progress update
     updateProgress();
@@ -191,8 +266,11 @@ export function useHorizontalScroll(
         draggable.kill();
       }
       container.removeEventListener("wheel", handleWheel);
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchmove", handleTouchMove);
+      if (!inertia) {
+        container.removeEventListener("touchstart", handleTouchStart);
+        container.removeEventListener("touchmove", handleTouchMove);
+        container.removeEventListener("touchend", handleTouchEnd);
+      }
       window.removeEventListener("resize", handleResize);
     };
   }, [
@@ -203,6 +281,10 @@ export function useHorizontalScroll(
     animationDuration,
     animationEase,
     startFromRight,
+    velocityScale,
+    minDuration,
+    maxDuration,
+    resistance,
   ]);
 
   return {

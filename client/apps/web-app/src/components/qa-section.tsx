@@ -31,7 +31,7 @@ export function QASection({
       id={id}
       aria-label={ariaLabel}
       className={cn(
-        "min-w-3xl max-w-3xl mx-auto bg-white flex flex-col items-center justify-center",
+        "md:w-3xl max-w-5xl mx-auto bg-white flex flex-col items-center justify-center",
         className
       )}
     >
@@ -46,7 +46,7 @@ export function QASection({
             value={faq.id}
             className="bg-[brand-dark] rounded-xl border-0 overflow-hidden relative"
           >
-            <AccordionTrigger className="bg-brand-dark z-10 rounded-2xl px-6 py-5 text-white font-medium text-right hover:no-underline hover:bg-brand-dark/90 transition-colors">
+            <AccordionTrigger className="bg-brand-dark z-10 rounded-2xl px-6 py-5 gap-10 text-white font-medium text-right hover:no-underline hover:bg-brand-dark/90 transition-colors">
               <span className="text-lg">{faq.question}</span>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6 bg-brand-white leading-relaxed rounded-b-2xl after:content-[''] after:absolute after:top-[40px] after:left-0 after:w-full after:h-10 after:bg-brand-white">
