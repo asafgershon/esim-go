@@ -87,7 +87,7 @@ function BundleSelector({
       <section
         id={id}
         aria-label={ariaLabel}
-        className="relative -mt-[200px] z-20"
+        className="relative -mt-[400px] z-20"
         data-speed={speed}
       >
         <div className={cn("min-w-[400px] mx-auto px-4", className)}>

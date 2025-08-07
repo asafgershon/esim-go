@@ -66,7 +66,7 @@ export default function Home() {
         {/* Main Content */}
         <main
           id="main-content"
-          className="flex flex-col gap-20 mb-[96px]"
+          className="flex flex-col gap-52 mb-[96px]"
           tabIndex={-1}
         >
           {/* Hero Section */}
@@ -90,9 +90,6 @@ export default function Home() {
               ariaLabel="גלריית יעדים"
             />
           </Suspense>
-
-          {/* Promo Banner */}
-          <PromoBanner />
 
           {/* Features Section */}
           <FeaturesSection id="features" ariaLabel="תכונות ויתרונות" />

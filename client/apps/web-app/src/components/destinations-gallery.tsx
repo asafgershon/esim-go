@@ -9,6 +9,7 @@ import { useQuery } from "@apollo/client";
 import { Card, useHorizontalScroll } from "@workspace/ui";
 import { useMemo } from "react";
 import { ImageWithFallback } from "./image-with-fallback";
+import { PromoBanner } from "./promo-banner";
 
 interface Destination {
   id: string;
@@ -146,7 +147,7 @@ export function DestinationsGallery({
       data-speed={speed}
       id={id}
       aria-label={ariaLabel}
-      className="pt-16 pb-[60px] md:pt-24 md:pb-[100px] bg-gradient-to-b from-white to-[#F8FAFC]"
+      className="bg-gradient-to-b from-white to-[#F8FAFC]"
     >
       <div className="container mx-auto px-4">
         {/* Header */}
@@ -220,6 +221,8 @@ export function DestinationsGallery({
           />
         </div>
       </div>
+      {/* Promo Banner */}
+      <PromoBanner />
     </section>
   );
 }
