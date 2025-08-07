@@ -63,7 +63,11 @@ export default function Home() {
         </Suspense>
 
         {/* Main Content */}
-        <main id="main-content" className="flex flex-col gap-20 mb-[96px]" tabIndex={-1}>
+        <main
+          id="main-content"
+          className="flex flex-col gap-20 mb-[96px]"
+          tabIndex={-1}
+        >
           {/* Hero Section */}
           <HeroSection id="home" ariaLabel="עמוד בית" />
 
