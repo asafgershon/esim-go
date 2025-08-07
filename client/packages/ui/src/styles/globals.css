@@ -1,67 +1,9 @@
 @import "tailwindcss";
 @import "./scrollbar.css";
+@import "@workspace/ui/theme.css";
 
 @custom-variant dark (&:is(.dark *));
 
-@theme {
-  /* Hiiilo Brand Colors - Primary Theme */
-  --color-brand-green: #00E095;           /* Vibrant green accent */
-  --color-brand-purple: #535FC8;          /* Brand purple */
-  --color-brand-dark: #0A232E;            /* Dark blue/black for headers */
-  --color-brand-light-blue: #F8FAFC;      /* Light blue background */
-  --color-brand-white: #FEFEFE;           /* Off-white */
-  
-  /* Tailwind v4 Direct Color Definitions for Button Variants */
-  --color-purple-brand: #535FC8;          /* For bg-purple-brand */
-  --color-green-brand: #00E095;           /* For bg-green-brand */
-  --color-dark-brand: #0A232E;            /* For bg-dark-brand */
-  --color-white-brand: #FEFEFE;           /* For bg-white-brand */
-  --color-light-blue-brand: #F8FAFC;      /* For bg-light-blue-brand */
-  
-  /* Legacy color names (for compatibility) */
-  --color-hiiilo-teal: oklch(0.32 0.05 205);        /* #2a4a5a - Dark teal from logo background */
-  --color-hiiilo-teal-dark: oklch(0.22 0.05 205);   /* #1a3a4a - Darker teal variation */
-  --color-hiiilo-green: oklch(0.72 0.15 166);       /* #00d4aa - Vibrant green accent */
-  --color-hiiilo-green-dark: oklch(0.62 0.15 166);  /* #00b894 - Darker green variation */
-  --color-hiiilo-white: oklch(0.99 0 0);            /* #ffffff - White text */
-  --color-hiiilo-light-gray: oklch(0.92 0 0);       /* #e2e8f0 - Light gray for secondary text */
-  
-  /* Updated Primary Colors using Hiiilo Branding */
-  --color-primary: oklch(0.32 0.05 205);            /* Hiiilo dark teal */
-  --color-primary-10: oklch(0.32 0.05 205) / 0.1;
-  --color-primary-20: oklch(0.32 0.05 205) / 0.2;
-  --color-primary-30: oklch(0.32 0.05 205) / 0.3;
-  --color-primary-40: oklch(0.32 0.05 205) / 0.4;
-  --color-primary-50: oklch(0.32 0.05 205) / 0.5;
-  --color-primary-60: oklch(0.32 0.05 205) / 0.6;
-  --color-primary-70: oklch(0.32 0.05 205) / 0.7;
-  --color-primary-80: oklch(0.32 0.05 205) / 0.8;
-  --color-primary-90: oklch(0.32 0.05 205) / 0.9;
-  --color-primary-foreground: oklch(0.99 0 0);      /* White text on primary */
-  
-  /* Accent Colors - Hiiilo Green */
-  --color-accent: oklch(0.72 0.15 166);             /* Hiiilo vibrant green */
-  --color-accent-foreground: oklch(0.99 0 0);       /* White text on accent */
-  
-  /* Ring/Focus Colors */
-  --color-ring: oklch(0.72 0.15 166);               /* Hiiilo green for focus states */
-  
-  /* Neutral Colors */
-  --color-border: oklch(0.89 0 0);
-  --color-secondary: oklch(0.96 0 0);
-  --color-secondary-foreground: oklch(0.09 0 0);
-  --color-muted: oklch(0.96 0 0);
-  --color-muted-foreground: oklch(0.45 0 0);
-  --color-destructive: oklch(0.55 0.22 25);
-  --color-destructive-foreground: oklch(0.99 0 0);
-  --color-background: oklch(0.99 0 0);
-  --color-foreground: oklch(0.09 0 0);
-  --color-card: oklch(0.99 0 0);
-  --color-card-foreground: oklch(0.09 0 0);
-  --color-popover: oklch(0.99 0 0);
-  --color-popover-foreground: oklch(0.09 0 0);
-  --color-input: oklch(0.89 0 0);
-}
 
 
 :root {

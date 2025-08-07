@@ -1,20 +1,21 @@
-@import "tailwindcss" ;
+@import "tailwindcss";
 @import "tw-animate-css";
-@import "../../../packages/ui/dist/globals.css";
+@import "@workspace/ui/theme.css";
+@import "@workspace/ui/globals.css";
 
 /* Font System - Dashboard uses ONLY Rubik */
 @layer base {
   :root {
-    --font-rubik: 'Rubik', system-ui, -apple-system, sans-serif;
+    --font-rubik: "Rubik", system-ui, -apple-system, sans-serif;
   }
-  
+
   /* Dashboard uses ONLY Rubik font everywhere */
   * {
-    font-family: 'Rubik', system-ui, -apple-system, sans-serif !important;
+    font-family: "Rubik", system-ui, -apple-system, sans-serif !important;
   }
-  
+
   body {
-    font-family: 'Rubik', system-ui, -apple-system, sans-serif;
+    font-family: "Rubik", system-ui, -apple-system, sans-serif;
   }
 }
 
@@ -25,8 +26,8 @@
 
 /* Smooth transitions for panels */
 [data-panel] {
-  transition: flex-grow 200ms cubic-bezier(0.4, 0, 0.2, 1), 
-              flex-shrink 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: flex-grow 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    flex-shrink 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Disable transitions during resize drag */

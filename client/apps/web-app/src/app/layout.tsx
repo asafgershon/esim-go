@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
 import Script from "next/script";
-import "./globals.css";
 import { Providers } from "./providers";
 import AuthMetaTags from "./AuthMetaTags";
 import { ErrorBoundary } from "@/components/error-boundary";
+import "@workspace/ui/theme.css";
+import "@workspace/ui/globals.css";
+import "./globals.css";
 
 const rubik = Rubik({
   variable: "--font-rubik",
@@ -14,7 +16,8 @@ const rubik = Rubik({
 
 export const metadata: Metadata = {
   title: "Hilo ESIM - Unlimited Travel. Unlimited Data",
-  description: "Stay connected worldwide with Hilo ESIM's global eSIM solutions. Unlimited travel, unlimited data.",
+  description:
+    "Stay connected worldwide with Hilo ESIM's global eSIM solutions. Unlimited travel, unlimited data.",
 };
 
 export default function RootLayout({
@@ -26,15 +29,13 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <AuthMetaTags />
-        <link 
-          href="https://fonts.cdnfonts.com/css/agency-fb" 
+        <link
+          href="https://fonts.cdnfonts.com/css/agency-fb"
           rel="stylesheet"
         />
         <meta name="apple-mobile-web-app-title" content="Hiilo ESIM" />
       </head>
-      <body
-        className={`${rubik.variable} antialiased font-hebrew`}
-      >
+      <body className={`${rubik.variable} antialiased font-hebrew`}>
         <ErrorBoundary>
           <Providers>{children}</Providers>
         </ErrorBoundary>

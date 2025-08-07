@@ -1,28 +1,25 @@
-import { NavLink, useLocation } from 'react-router-dom'
-import {
-  SidebarMenu,
-  SidebarMenuItem,
-} from '@workspace/ui/components/sidebar'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@workspace/ui/components/tooltip'
-import { type LucideIcon } from 'lucide-react'
+} from "@workspace/ui";
+import { SidebarMenu, SidebarMenuItem } from "@workspace/ui/components/sidebar";
+import { type LucideIcon } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
 
 interface NavMainProps {
   items: {
-    title: string
-    url: string
-    icon: LucideIcon
-    disabled?: boolean
-    tooltipText?: string
-  }[]
+    title: string;
+    url: string;
+    icon: LucideIcon;
+    disabled?: boolean;
+    tooltipText?: string;
+  }[];
 }
 
 export function NavMain({ items }: NavMainProps) {
-  const location = useLocation()
+  const location = useLocation();
 
   return (
     <TooltipProvider>
@@ -40,17 +37,17 @@ export function NavMain({ items }: NavMainProps) {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{item.tooltipText || 'Coming soon'}</p>
+                  <p>{item.tooltipText || "Coming soon"}</p>
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <NavLink 
+              <NavLink
                 to={item.url}
                 className={({ isActive }) =>
                   `flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary ${
                     isActive || location.pathname === item.url
-                      ? 'bg-muted font-medium text-primary'
-                      : 'text-muted-foreground'
+                      ? "bg-muted font-medium text-primary"
+                      : "text-muted-foreground"
                   }`
                 }
               >
@@ -62,5 +59,5 @@ export function NavMain({ items }: NavMainProps) {
         ))}
       </SidebarMenu>
     </TooltipProvider>
-  )
-} 
+  );
+}
