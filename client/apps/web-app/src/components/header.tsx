@@ -18,8 +18,8 @@ import type { RefObject } from "react";
 const navigation = [
   { title: "Hiilo לחברות", href: "/", external: true },
   { title: "שאלות ותשובות", href: "#faq", external: false },
-  { title: "מה זה ESIM?", href: "#what-is-esim", external: false },
-  { title: "עלינו", href: "#about", external: false },
+  { title: "?eSim מה זה", href: "#what-is-esim", external: false },
+  { title: "עלינו", href: "/docs/about-hiilo.pdf", external: true },
   { title: "ביקורות", href: "#reviews", external: false },
 ];
 
@@ -73,7 +73,11 @@ export function Header({ scrollContainerRef }: HeaderProps = {}) {
   // Desktop actions (right side) - No logout button on desktop
   const desktopActions = (
     <div className="flex items-center gap-2">
-      <IconButton variant="brand-primary" size="default" onClick={handleUserClick}>
+      <IconButton
+        variant="brand-primary"
+        size="default"
+        onClick={handleUserClick}
+      >
         <UserIcon />
       </IconButton>
       <Button
