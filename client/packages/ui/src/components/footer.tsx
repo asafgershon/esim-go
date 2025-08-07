@@ -60,8 +60,8 @@ export function Footer({
           {/* Logo */}
           <div>
             <svg
-              width={isMobile ? 100 : 234}
-              height={isMobile ? 30 : 74}
+              width={isMobile ? 100 : 220}
+              height={isMobile ? 30 : 60}
               viewBox="0 0 234 74"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -146,7 +146,7 @@ export function Footer({
 
           {/* Navigation Links */}
           <nav aria-label="ניווט פוטר">
-            <ul className="flex flex-col items-center gap-4 text-center">
+            <ul className="flex flex-col md:flex-row items-center gap-4 text-center">
               {links.map((link, index) => (
                 <li key={index}>
                   {link.href.startsWith("#") ? (

@@ -2,23 +2,28 @@
 
 import Image from "next/image";
 
-export function WhySwitchSection({ id, ariaLabel }: { id: string, ariaLabel: string }) {
+export function WhySwitchSection({
+  id,
+  ariaLabel,
+}: {
+  id: string;
+  ariaLabel: string;
+}) {
   return (
-    <section id={id} aria-label={ariaLabel} className="py-16 md:py-24 bg-white">
+    <section id={id} aria-label={ariaLabel} className="py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:grid md:grid-cols-2 gap-12 items-center">
+          <div className="flex flex-col md:grid md:grid-cols-2 gap-6 items-center">
             {/* SIM Card Graphic - appears second on mobile, first on desktop */}
             <div className="flex justify-center md:justify-start order-2 md:order-1">
-              <div className="relative w-[320px] h-[400px]">
-                <Image
-                  src="/images/logos/logo-green.png"
-                  alt="eSIM Card Illustration"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
+              <Image
+                src="/images/logos/logo-green.png"
+                alt="eSIM Card Illustration"
+                width={360}
+                height={280}
+                className="object-contain"
+                priority
+              />
             </div>
 
             {/* Text content - appears first on mobile, second on desktop */}
@@ -34,7 +39,7 @@ export function WhySwitchSection({ id, ariaLabel }: { id: string, ariaLabel: str
                 קטנות - רוב הפתרונות הקיימים פשוט לא נבנו מתוך מחשבה על המשתמש.
               </p>
 
-              <div className="text-center md:text-right">
+              <div className="text-lg md:text-xl text-center md:text-right">
                 <h3 className="text-xl font-bold text-brand-dark">
                   אנחנו החלטנו לשנות את זה.
                 </h3>

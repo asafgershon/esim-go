@@ -1,7 +1,7 @@
 "use client";
 
 import { useBatchPricing } from "@/hooks/useBatchPricing";
-import { Selector, SelectorCard } from "@workspace/ui";
+import { cn, Selector, SelectorCard } from "@workspace/ui";
 import { useMemo, useEffect } from "react";
 import { DatePickerView } from "./date-picker-view";
 import { MainView } from "./main-view";
@@ -75,10 +75,12 @@ function BundleSelector({
   id,
   ariaLabel,
   speed,
+  className,
 }: {
   id: string;
   ariaLabel: string;
   speed?: string;
+  className?: string;
 }) {
   return (
     <BundleSelectorRoot>
@@ -88,7 +90,7 @@ function BundleSelector({
         className="relative -mt-[200px] z-20"
         data-speed={speed}
       >
-        <div className="container mx-auto px-4 max-w-[880px]">
+        <div className={cn("min-w-[400px] mx-auto px-4", className)}>
           <BundleSelectorInternal />
         </div>
       </section>

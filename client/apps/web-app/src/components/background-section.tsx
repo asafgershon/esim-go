@@ -3,20 +3,28 @@
 import React, { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { cn } from "@workspace/ui";
-import { useIsMobile } from "@workspace/ui";
 
 interface BackgroundSectionProps {
   children?: React.ReactNode;
+  className?: string;
 }
 
-export function BackgroundSection({ children }: BackgroundSectionProps) {
+export function BackgroundSection({
+  children,
+  className,
+}: BackgroundSectionProps) {
   const desktopSvgRef = useRef<SVGSVGElement>(null);
   const mobileSvgRef = useRef<SVGSVGElement>(null);
-  const isMobile = useIsMobile();
+
   useEffect(() => {
+    const desktopSvg = desktopSvgRef.current;
+    const mobileSvg = mobileSvgRef.current;
+
+    if (!desktopSvg || !mobileSvg) return;
+
     // Desktop animations
-    if (desktopSvgRef.current) {
-      const shapes = desktopSvgRef.current.querySelectorAll("path");
+    if (desktopSvg) {
+      const shapes = desktopSvg.querySelectorAll("path");
 
       // Initial setup - make shapes invisible
       gsap.set(shapes, { opacity: 0, scale: 0.8 });
@@ -88,8 +96,8 @@ export function BackgroundSection({ children }: BackgroundSectionProps) {
     }
 
     // Mobile animations
-    if (mobileSvgRef.current) {
-      const shapes = mobileSvgRef.current.querySelectorAll("path");
+    if (mobileSvg) {
+      const shapes = mobileSvg.querySelectorAll("path");
 
       gsap.set(shapes, { opacity: 0, scale: 0.9 });
 
@@ -128,22 +136,24 @@ export function BackgroundSection({ children }: BackgroundSectionProps) {
       });
     }
 
-    const currentRef = desktopSvgRef.current || mobileSvgRef.current;
     // Cleanup function
     return () => {
-      gsap.killTweensOf(currentRef?.querySelectorAll("path") || []);
+      gsap.killTweensOf(desktopSvg?.querySelectorAll("path") || []);
+      gsap.killTweensOf(mobileSvg?.querySelectorAll("path") || []);
     };
   }, []);
 
   return (
-    <div className="relative min-h-screen overflow-hidden rounded-[100px] sm:rounded-[50px]">
+    <div
+      className={cn(
+        "mx-auto w-full relative min-h-screen overflow-hidden rounded-[50px] md:rounded-[100px]",
+        className
+      )}
+    >
       {/* Desktop SVG Background - Hidden on mobile */}
       <svg
         ref={desktopSvgRef}
-        className={cn(
-          "absolute inset-0 w-full h-full",
-          isMobile && "hidden"
-        )}
+        className="absolute inset-0 w-full h-full sm:hidden md:block"
         viewBox="0 0 1920 1863"
         preserveAspectRatio="xMidYMid slice"
         fill="none"
@@ -151,36 +161,39 @@ export function BackgroundSection({ children }: BackgroundSectionProps) {
       >
         <rect width="1920" height="1863" fill="var(--color-brand-dark)" />
 
-        {/* Top-left green organic shape */}
+        {/* Top-left green organic shape - moved 200px right, 100px down */}
         <path
-          d="M-68.7062 639.274L-551.595 89.1725L343.419 -696.493L826.308 -146.392C611.394 -124.363 499.483 -46.7144 436.942 20.5699C302.37 165.342 331.747 331.587 170.817 492.822C88.2288 575.552 -4.79709 617.219 -68.7062 639.274Z"
+          d="M131.294 739.274L-351.594 189.173L543.419 -596.493L1026.31 -46.3917C811.394 -24.3625 699.483 53.2856 636.942 120.57C502.37 265.342 531.748 431.587 370.818 592.822C288.229 675.552 195.203 717.219 131.294 739.274Z"
           fill="url(#greenGradient)"
-          style={{ transformOrigin: "400px 300px" }}
+          style={{ transformOrigin: "600px 400px" }}
         />
 
-        {/* Top-left purple organic shape */}
+        {/* Top-left purple organic shape - moved 200px right, 100px down */}
         <path
-          d="M-105.755 555.988L-530.063 50.6729L294.269 -647.663L718.577 -142.348C524.133 -125.566 421.492 -56.8942 363.63 3.11915C239.127 132.247 262.153 283.239 113.513 426.887C37.232 500.593 -47.6078 536.957 -105.755 555.988Z"
+          d="M94.245 655.988L-330.062 150.673L494.269 -547.663L918.577 -42.3478C724.133 -25.5658 621.492 43.1058 563.63 103.119C439.127 232.247 462.153 383.239 313.513 526.887C237.232 600.593 152.392 636.957 94.245 655.988Z"
           fill="url(#purpleGradient)"
-          style={{ transformOrigin: "350px 250px" }}
+          style={{ transformOrigin: "550px 350px" }}
         />
 
-        {/* Bottom-right green organic shape */}
+        {/* Bottom-right green organic shape - moved 200px left, 100px up */}
         <path
-          d="M2032.53 1131.51L2515.41 1681.62L1620.4 2467.28L1137.51 1917.18C1352.43 1895.15 1464.34 1817.5 1526.88 1750.22C1661.45 1605.45 1632.07 1439.2 1793 1277.97C1875.59 1195.24 1968.62 1153.57 2032.53 1131.51Z"
+          d="M1832.53 1031.51L2315.41 1581.62L1420.4 2367.28L937.51 1817.18C1152.43 1795.15 1264.34 1717.5 1326.88 1650.22C1461.45 1505.45 1432.07 1339.2 1593 1177.97C1675.59 1095.24 1768.62 1053.57 1832.53 1031.51Z"
           fill="url(#greenGradient2)"
-          style={{ transformOrigin: "1500px 1500px" }}
+          style={{ transformOrigin: "1300px 1400px" }}
         />
 
-        {/* Bottom-right purple organic shape */}
+        {/* Bottom-right purple organic shape - moved 200px left, 100px up */}
         <path
-          d="M2069.57 1214.8L2493.88 1720.12L1669.55 2418.45L1245.24 1913.14C1439.69 1896.35 1542.33 1827.68 1600.19 1767.67C1724.69 1638.54 1701.67 1487.55 1850.31 1343.9C1926.59 1270.2 2011.43 1233.83 2069.57 1214.8Z"
+          d="M1869.57 1114.8L2293.88 1620.12L1469.55 2318.45L1045.24 1813.14C1239.69 1796.35 1342.33 1727.68 1400.19 1667.67C1524.69 1538.54 1501.67 1387.55 1650.31 1243.9C1726.59 1170.2 1811.43 1133.83 1869.57 1114.8Z"
           fill="url(#purpleGradient2)"
-          style={{ transformOrigin: "1550px 1550px" }}
+          style={{ transformOrigin: "1350px 1450px" }}
         />
 
         {/* Gradients */}
         <defs>
+          <clipPath id="clip0_121_5098">
+            <rect width="1920" height="1863" rx="100" fill="white" />
+          </clipPath>
           <linearGradient
             id="greenGradient"
             x1="0%"
@@ -206,7 +219,7 @@ export function BackgroundSection({ children }: BackgroundSectionProps) {
             <stop
               offset="100%"
               stopColor="var(--color-brand-green)"
-              stopOpacity="0.95"
+              stopOpacity="1"
             />
           </linearGradient>
           <radialGradient id="purpleGradient" cx="50%" cy="50%" r="50%">

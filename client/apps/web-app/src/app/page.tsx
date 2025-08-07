@@ -21,9 +21,11 @@ import {
   useScrollTo,
   SmoothScrollContainer,
   type SmoothScrollHandle,
+  cn,
 } from "@workspace/ui";
 import { Suspense, useRef } from "react";
 
+const maxContentWidth = "max-w-7xl";
 export default function Home() {
   const scrollContainerRef = useRef<SmoothScrollHandle>(null);
   const { scrollTo } = useScrollTo({ scrollContainerRef });
@@ -46,7 +48,6 @@ export default function Home() {
       effects={true}
       fixedHeader={true}
       headerHeight={64}
-      className="bg-brand-white"
     >
       <div className="min-h-screen bg-background" dir="rtl">
         {/* Login Modal - wrapped in Suspense */}
@@ -74,6 +75,7 @@ export default function Home() {
           {/* eSIM Selector Section - Overlapping Hero */}
           <Suspense fallback={<BundleSelector.Skeleton />}>
             <BundleSelector
+              className={cn(maxContentWidth, "lg:max-w-[800px]")}
               id="esim-selector"
               ariaLabel="בחירת חבילת eSIM"
               speed="0.95"
