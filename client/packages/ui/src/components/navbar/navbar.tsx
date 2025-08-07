@@ -177,12 +177,12 @@ export function Navbar({
 function MenuIcon({ isOpen }: { isOpen: boolean }) {
   return (
     <svg
-      width="21"
-      height="15"
+      height="20"
       viewBox="0 0 21 15"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="relative"
+      style={{ width: "auto" }}
     >
       {/* Top bar - rotates to form X */}
       <rect
