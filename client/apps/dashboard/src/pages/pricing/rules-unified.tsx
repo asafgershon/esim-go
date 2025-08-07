@@ -24,9 +24,7 @@ import {
   TooltipTrigger,
 } from "@workspace/ui";
 import {
-  BarChart3,
   Check,
-  CheckCircle,
   ChevronDown,
   Copy,
   CreditCard,
@@ -60,10 +58,21 @@ import { cleanPricingRuleForMutation } from "../../utils/graphql-utils";
 // Import components
 import { SplitView } from "../../components/common/SplitView";
 // Removed specialized drawers - using EnhancedRuleBuilder for all rule types
+import {
+  ActionType,
+  CreatePricingRuleMutation,
+  CreatePricingRuleMutationVariables,
+  DeletePricingRuleMutation,
+  DeletePricingRuleMutationVariables,
+  PricingRule,
+  RuleCategory,
+  TogglePricingRuleMutation,
+  TogglePricingRuleMutationVariables,
+  UpdatePricingRuleMutation,
+  UpdatePricingRuleMutationVariables,
+} from "@/__generated__/graphql";
 import { EnhancedRuleBuilder } from "../../components/pricing/EnhancedRuleBuilder";
 import { SingleRuleTestPanel } from "../../components/pricing/single-rule-test-panel";
-import { CreatePricingRuleMutation, TogglePricingRuleMutation, DeletePricingRuleMutation, UpdatePricingRuleMutation, TogglePricingRuleMutationVariables, DeletePricingRuleMutationVariables, UpdatePricingRuleMutationVariables, CreatePricingRuleMutationVariables, PricingRule, ActionType, RuleCategory } from "@/__generated__/graphql";
-
 
 // Rule category configurations
 const ruleCategories = [
@@ -100,10 +109,12 @@ const UnifiedPricingRulesPage: React.FC = () => {
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRuleCategories, setSelectedRuleCategories] = useState<string[]>([]);
+  const [selectedRuleCategories, setSelectedRuleCategories] = useState<
+    string[]
+  >([]);
   const [showSystemRules, setShowSystemRules] = useState(true);
   const [typeFilterOpen, setTypeFilterOpen] = useState(false);
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -111,7 +122,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingRule, setEditingRule] = useState<PricingRule | null>(null);
-  const [ruleTemplate, setRuleTemplate] = useState<Partial<PricingRule> | null>(null);
+  const [ruleTemplate, setRuleTemplate] = useState<Partial<PricingRule> | null>(
+    null
+  );
 
   // Check for mobile viewport
   useEffect(() => {
@@ -132,10 +145,22 @@ const UnifiedPricingRulesPage: React.FC = () => {
     error,
     refetch,
   } = useQuery(GET_PRICING_RULES);
-  const [createRule] = useMutation<CreatePricingRuleMutation, CreatePricingRuleMutationVariables> (CREATE_PRICING_RULE);
-  const [updateRule] = useMutation<UpdatePricingRuleMutation, UpdatePricingRuleMutationVariables>(UPDATE_PRICING_RULE);
-  const [deleteRule] = useMutation<DeletePricingRuleMutation, DeletePricingRuleMutationVariables>(DELETE_PRICING_RULE);
-  const [toggleRule] = useMutation<TogglePricingRuleMutation, TogglePricingRuleMutationVariables>(TOGGLE_PRICING_RULE);
+  const [createRule] = useMutation<
+    CreatePricingRuleMutation,
+    CreatePricingRuleMutationVariables
+  >(CREATE_PRICING_RULE);
+  const [updateRule] = useMutation<
+    UpdatePricingRuleMutation,
+    UpdatePricingRuleMutationVariables
+  >(UPDATE_PRICING_RULE);
+  const [deleteRule] = useMutation<
+    DeletePricingRuleMutation,
+    DeletePricingRuleMutationVariables
+  >(DELETE_PRICING_RULE);
+  const [toggleRule] = useMutation<
+    TogglePricingRuleMutation,
+    TogglePricingRuleMutationVariables
+  >(TOGGLE_PRICING_RULE);
   const [cloneRule] = useMutation(CLONE_PRICING_RULE);
 
   const rules = rulesData?.pricingRules || [];
@@ -146,18 +171,19 @@ const UnifiedPricingRulesPage: React.FC = () => {
       rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       rule.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
-      selectedRuleCategories.length === 0 || selectedRuleCategories.includes(rule.category);
+      selectedRuleCategories.length === 0 ||
+      selectedRuleCategories.includes(rule.category);
     const matchesSystemFilter = showSystemRules || rule.isEditable;
 
     return matchesSearch && matchesCategory && matchesSystemFilter;
   });
-  
+
   // Calculate pagination
   const totalPages = Math.ceil(filteredRulesAll.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const filteredRules = filteredRulesAll.slice(startIndex, endIndex);
-  
+
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -165,7 +191,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
 
   const toggleRuleCategory = (category: string) => {
     setSelectedRuleCategories((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
     );
   };
 
@@ -267,8 +295,7 @@ const UnifiedPricingRulesPage: React.FC = () => {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <div>
-        </div>
+        <div></div>
         <div className="flex items-center gap-3">
           {/* Consolidated dropdown menu */}
           <Popover>
@@ -288,13 +315,15 @@ const UnifiedPricingRulesPage: React.FC = () => {
                   <Settings className="h-4 w-4 text-gray-600" />
                   <div>
                     <div className="font-medium">Custom Rule</div>
-                    <div className="text-xs text-gray-500">Create a custom pricing rule</div>
+                    <div className="text-xs text-gray-500">
+                      Create a custom pricing rule
+                    </div>
                   </div>
                 </button>
                 <button
                   onClick={() => {
                     setRuleTemplate({
-                      name: 'Markup Rule',
+                      name: "Markup Rule",
                       category: RuleCategory.Fee,
                       conditions: [],
                       actions: [{ type: ActionType.AddMarkup, value: 20 }],
@@ -307,13 +336,15 @@ const UnifiedPricingRulesPage: React.FC = () => {
                   <DollarSign className="h-4 w-4 text-green-600" />
                   <div>
                     <div className="font-medium">Add Markup</div>
-                    <div className="text-xs text-gray-500">Add percentage or fixed markup</div>
+                    <div className="text-xs text-gray-500">
+                      Add percentage or fixed markup
+                    </div>
                   </div>
                 </button>
                 <button
                   onClick={() => {
                     setRuleTemplate({
-                      name: 'Processing Fee',
+                      name: "Processing Fee",
                       category: RuleCategory.Fee,
                       conditions: [],
                       actions: [{ type: ActionType.AddMarkup, value: 2.9 }],
@@ -326,7 +357,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
                   <CreditCard className="h-4 w-4 text-blue-600" />
                   <div>
                     <div className="font-medium">Processing Fee</div>
-                    <div className="text-xs text-gray-500">Add payment processing fee</div>
+                    <div className="text-xs text-gray-500">
+                      Add payment processing fee
+                    </div>
                   </div>
                 </button>
               </div>
@@ -404,13 +437,14 @@ const UnifiedPricingRulesPage: React.FC = () => {
                             </div>
                             {ruleCategories.map((category) => {
                               const Icon = category.icon;
-                              const isSelected = selectedRuleCategories.includes(
-                                category.value
-                              );
+                              const isSelected =
+                                selectedRuleCategories.includes(category.value);
                               return (
                                 <button
                                   key={category.value}
-                                  onClick={() => toggleRuleCategory(category.value)}
+                                  onClick={() =>
+                                    toggleRuleCategory(category.value)
+                                  }
                                   className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
                                 >
                                   <div className="flex items-center gap-2">
@@ -439,7 +473,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
                           </div>
                         </PopoverContent>
                       </Popover>
-
                     </div>
                   </div>
 
@@ -461,7 +494,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
                         </TableHeader>
                         <TableBody>
                           {filteredRules.map((rule: PricingRule) => {
-                            const categoryConfig = getRuleCategoryConfig(rule.category);
+                            const categoryConfig = getRuleCategoryConfig(
+                              rule.category
+                            );
                             const Icon = categoryConfig.icon;
 
                             return (
@@ -665,7 +700,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
                         </TableBody>
                       </Table>
                     </div>
-
                   </Card>
 
                   {/* Pagination Controls */}
@@ -673,7 +707,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
                     <div className="flex items-center justify-between px-4 py-3 border-t">
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span>
-                          Showing {startIndex + 1} to {Math.min(endIndex, filteredRulesAll.length)} of {filteredRulesAll.length} rules
+                          Showing {startIndex + 1} to{" "}
+                          {Math.min(endIndex, filteredRulesAll.length)} of{" "}
+                          {filteredRulesAll.length} rules
                         </span>
                         <div className="flex items-center gap-2">
                           <span>Show:</span>
@@ -696,43 +732,52 @@ const UnifiedPricingRulesPage: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          onClick={() =>
+                            setCurrentPage((p) => Math.max(1, p - 1))
+                          }
                           disabled={currentPage === 1}
                         >
                           Previous
                         </Button>
                         <div className="flex items-center gap-1">
-                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let page: number;
-                            if (totalPages <= 5) {
-                              page = i + 1;
-                            } else if (currentPage <= 3) {
-                              page = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                              page = totalPages - 4 + i;
-                            } else {
-                              page = currentPage - 2 + i;
+                          {Array.from(
+                            { length: Math.min(5, totalPages) },
+                            (_, i) => {
+                              let page: number;
+                              if (totalPages <= 5) {
+                                page = i + 1;
+                              } else if (currentPage <= 3) {
+                                page = i + 1;
+                              } else if (currentPage >= totalPages - 2) {
+                                page = totalPages - 4 + i;
+                              } else {
+                                page = currentPage - 2 + i;
+                              }
+
+                              if (page < 1 || page > totalPages) return null;
+
+                              return (
+                                <Button
+                                  key={page}
+                                  variant={
+                                    currentPage === page ? "default" : "outline"
+                                  }
+                                  size="sm"
+                                  onClick={() => setCurrentPage(page)}
+                                  className="w-9"
+                                >
+                                  {page}
+                                </Button>
+                              );
                             }
-                            
-                            if (page < 1 || page > totalPages) return null;
-                            
-                            return (
-                              <Button
-                                key={page}
-                                variant={currentPage === page ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setCurrentPage(page)}
-                                className="w-9"
-                              >
-                                {page}
-                              </Button>
-                            );
-                          })}
+                          )}
                         </div>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          onClick={() =>
+                            setCurrentPage((p) => Math.min(totalPages, p + 1))
+                          }
                           disabled={currentPage === totalPages}
                         >
                           Next
@@ -754,20 +799,24 @@ const UnifiedPricingRulesPage: React.FC = () => {
                             : "Get started by creating your first pricing rule"}
                         </p>
                         <div className="mt-4 flex justify-center gap-3">
-                          <Button onClick={() => {
-                            setRuleTemplate(null);
-                            setShowCreateDialog(true);
-                          }}>
+                          <Button
+                            onClick={() => {
+                              setRuleTemplate(null);
+                              setShowCreateDialog(true);
+                            }}
+                          >
                             Create Custom Rule
                           </Button>
                           <Button
                             variant="outline"
                             onClick={() => {
                               setRuleTemplate({
-                                name: 'Markup Rule',
+                                name: "Markup Rule",
                                 category: RuleCategory.Fee,
                                 conditions: [],
-                                actions: [{ type: ActionType.AddMarkup, value: 20 }],
+                                actions: [
+                                  { type: ActionType.AddMarkup, value: 20 },
+                                ],
                                 priority: 50,
                               });
                               setShowCreateDialog(true);
@@ -779,10 +828,12 @@ const UnifiedPricingRulesPage: React.FC = () => {
                             variant="outline"
                             onClick={() => {
                               setRuleTemplate({
-                                name: 'Processing Fee',
+                                name: "Processing Fee",
                                 category: RuleCategory.Fee,
                                 conditions: [],
-                                actions: [{ type: ActionType.AddMarkup, value: 2.9 }],
+                                actions: [
+                                  { type: ActionType.AddMarkup, value: 2.9 },
+                                ],
                                 priority: 50,
                               });
                               setShowCreateDialog(true);
@@ -844,10 +895,10 @@ const UnifiedPricingRulesPage: React.FC = () => {
           }
         }}
       >
-        <SheetContent 
-          side="right" 
+        <SheetContent
+          side="right"
           className="w-full sm:w-[70vw] lg:w-[60vw] xl:w-[50vw] overflow-y-auto"
-          style={{ minWidth: '800px', maxWidth: '1200px' }}
+          style={{ minWidth: "800px", maxWidth: "1200px" }}
         >
           <SheetHeader className="px-6">
             <SheetTitle className="text-xl">
@@ -876,7 +927,9 @@ const UnifiedPricingRulesPage: React.FC = () => {
                     toast.success("Rule updated successfully");
                   } else {
                     await createRule({
-                      variables: { input: cleanPricingRuleForMutation(ruleData) },
+                      variables: {
+                        input: cleanPricingRuleForMutation(ruleData),
+                      },
                     });
                     toast.success("Rule created successfully");
                   }
@@ -897,7 +950,6 @@ const UnifiedPricingRulesPage: React.FC = () => {
           </div>
         </SheetContent>
       </Sheet>
-
     </div>
   );
 };

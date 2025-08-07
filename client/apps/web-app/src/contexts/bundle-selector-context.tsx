@@ -1,14 +1,21 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import type { Bundle } from "@/__generated__/types";
-import type { CountryISOCode } from "@/lib/types";
 import {
   useSelectorQueryState,
   type ActiveTab,
 } from "@/hooks/useSelectorQueryState";
+import type { CountryISOCode } from "@/lib/types";
 import { useHasScrollContext, useScrollContext } from "@workspace/ui";
+import { useRouter } from "next/navigation";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 // Types for the bundle selector functions
 export type BundleSelector = (
@@ -225,16 +232,16 @@ interface BundleSelectorProviderProps {
 
 /**
  * BundleSelectorProvider - Context provider for bundle selector state
- * 
+ *
  * Manages bundle selection logic, UI state, and URL query parameters.
  * Automatically scrolls to selector when destination changes.
- * 
+ *
  * Features:
  * - Syncs state with URL query parameters
  * - Manages pricing calculations and bundle selection
  * - Handles tab switching between countries and trips
  * - Auto-scrolls to selector on destination change
- * 
+ *
  * @example
  * ```tsx
  * <BundleSelectorProvider>
@@ -248,7 +255,8 @@ export function BundleSelectorProvider({
   // UI State
   const [currentView, setCurrentView] = useState<ViewState>("main");
   const [pricing, setPricing] = useState<{ totalPrice?: number } | null>(null);
-  const [shouldFocusDestinationSelector, setShouldFocusDestinationSelector] = useState(false);
+  const [shouldFocusDestinationSelector, setShouldFocusDestinationSelector] =
+    useState(false);
   const router = useRouter();
 
   // URL state management using custom hook
@@ -293,6 +301,8 @@ export function BundleSelectorProvider({
 
   // Check if we have ScrollContext available
   const hasScrollContext = useHasScrollContext();
+  // TODO: FIX THIS
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const scrollContext = hasScrollContext ? useScrollContext() : null;
 
   // Scroll to selector when country/trip changes

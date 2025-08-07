@@ -471,6 +471,13 @@ export type CreatePricingRuleInput = {
   validUntil?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type CreateTenantInput = {
+  imgUrl: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  slug: Scalars['ID']['input'];
+  tenantType?: InputMaybe<TenantType>;
+};
+
 export type CreateTripInput = {
   countryIds: Array<Scalars['ISOCountryCode']['input']>;
   description: Scalars['String']['input'];
@@ -697,17 +704,21 @@ export type Mutation = {
   __typename?: 'Mutation';
   activateESIM?: Maybe<ActivateEsimResponse>;
   assignPackageToUser?: Maybe<AssignPackageResponse>;
+  assignUserToTenant: TenantOperationResponse;
   cancelESIM?: Maybe<EsimActionResponse>;
   clonePricingRule: PricingRule;
   createCheckoutSession: CreateCheckoutSessionResponse;
   createPricingRule: PricingRule;
+  createTenant: Tenant;
   createTrip?: Maybe<CreateTripResponse>;
   deletePricingRule: Scalars['Boolean']['output'];
+  deleteTenant: TenantOperationResponse;
   deleteTrip?: Maybe<DeleteTripResponse>;
   deleteUser?: Maybe<DeleteUserResponse>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
+  removeUserFromTenant: TenantOperationResponse;
   reorderPricingRules: Array<PricingRule>;
   restoreESIM?: Maybe<EsimActionResponse>;
   sendPhoneOTP?: Maybe<SendOtpResponse>;
@@ -725,6 +736,7 @@ export type Mutation = {
   updatePricingRule: PricingRule;
   updatePricingRulePriorities: Array<PricingRule>;
   updateProfile?: Maybe<UpdateProfileResponse>;
+  updateTenant: Tenant;
   updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
   validateOrder: ValidateOrderResponse;
@@ -739,6 +751,13 @@ export type MutationActivateEsimArgs = {
 
 export type MutationAssignPackageToUserArgs = {
   planId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignUserToTenantArgs = {
+  role?: InputMaybe<Scalars['String']['input']>;
+  tenantSlug: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
 
@@ -764,6 +783,11 @@ export type MutationCreatePricingRuleArgs = {
 };
 
 
+export type MutationCreateTenantArgs = {
+  input: CreateTenantInput;
+};
+
+
 export type MutationCreateTripArgs = {
   input: CreateTripInput;
 };
@@ -771,6 +795,11 @@ export type MutationCreateTripArgs = {
 
 export type MutationDeletePricingRuleArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteTenantArgs = {
+  slug: Scalars['ID']['input'];
 };
 
 
@@ -797,6 +826,12 @@ export type MutationProcessCheckoutPaymentArgs = {
 export type MutationPurchaseEsimArgs = {
   input: PurchaseEsimInput;
   planId: Scalars['ID']['input'];
+};
+
+
+export type MutationRemoveUserFromTenantArgs = {
+  tenantSlug: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -884,6 +919,12 @@ export type MutationUpdatePricingRulePrioritiesArgs = {
 
 export type MutationUpdateProfileArgs = {
   input: UpdateProfileInput;
+};
+
+
+export type MutationUpdateTenantArgs = {
+  input: UpdateTenantInput;
+  slug: Scalars['ID']['input'];
 };
 
 
@@ -1196,6 +1237,7 @@ export type PurchaseEsimResponse = {
 export type Query = {
   __typename?: 'Query';
   activePricingRules: Array<PricingRule>;
+  allTenants: TenantConnection;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
   bundles: BundleConnection;
@@ -1229,8 +1271,16 @@ export type Query = {
   pricingRule?: Maybe<PricingRule>;
   pricingRules: Array<PricingRule>;
   simulatePricingRule: PricingBreakdown;
+  tenant?: Maybe<Tenant>;
+  tenants: Array<Tenant>;
   trips: Array<Trip>;
   users: Array<User>;
+};
+
+
+export type QueryAllTenantsArgs = {
+  filter?: InputMaybe<TenantFilter>;
+  pagination?: InputMaybe<PaginationInput>;
 };
 
 
@@ -1348,6 +1398,11 @@ export type QueryPricingRulesArgs = {
 export type QuerySimulatePricingRuleArgs = {
   rule: CreatePricingRuleInput;
   testContext: TestPricingContext;
+};
+
+
+export type QueryTenantArgs = {
+  slug: Scalars['ID']['input'];
 };
 
 export type RuleAction = {
@@ -1482,6 +1537,40 @@ export enum SyncJobType {
   MetadataSync = 'METADATA_SYNC'
 }
 
+export type Tenant = {
+  __typename?: 'Tenant';
+  createdAt: Scalars['String']['output'];
+  imgUrl: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  slug: Scalars['ID']['output'];
+  tenantType: TenantType;
+  updatedAt: Scalars['String']['output'];
+  userCount?: Maybe<Scalars['Int']['output']>;
+};
+
+export type TenantConnection = {
+  __typename?: 'TenantConnection';
+  nodes: Array<Tenant>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type TenantFilter = {
+  search?: InputMaybe<Scalars['String']['input']>;
+  tenantType?: InputMaybe<TenantType>;
+};
+
+export type TenantOperationResponse = {
+  __typename?: 'TenantOperationResponse';
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export enum TenantType {
+  Master = 'MASTER',
+  Standard = 'STANDARD'
+}
+
 export type TestPricingContext = {
   bundleGroup: Scalars['String']['input'];
   bundleId: Scalars['String']['input'];
@@ -1592,6 +1681,12 @@ export type UpdateProfileResponse = {
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
   user?: Maybe<User>;
+};
+
+export type UpdateTenantInput = {
+  imgUrl?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  tenantType?: InputMaybe<TenantType>;
 };
 
 export type UpdateTripInput = {
@@ -1759,6 +1854,7 @@ export type ResolversTypes = {
   CreateCheckoutSessionInput: CreateCheckoutSessionInput;
   CreateCheckoutSessionResponse: ResolverTypeWrapper<CreateCheckoutSessionResponse>;
   CreatePricingRuleInput: CreatePricingRuleInput;
+  CreateTenantInput: CreateTenantInput;
   CreateTripInput: CreateTripInput;
   CreateTripResponse: ResolverTypeWrapper<CreateTripResponse>;
   CustomerBundle: ResolverTypeWrapper<CustomerBundle>;
@@ -1833,6 +1929,11 @@ export type ResolversTypes = {
   SyncHistoryParams: SyncHistoryParams;
   SyncJobStatus: SyncJobStatus;
   SyncJobType: SyncJobType;
+  Tenant: ResolverTypeWrapper<Tenant>;
+  TenantConnection: ResolverTypeWrapper<TenantConnection>;
+  TenantFilter: TenantFilter;
+  TenantOperationResponse: ResolverTypeWrapper<TenantOperationResponse>;
+  TenantType: TenantType;
   TestPricingContext: TestPricingContext;
   ToggleHighDemandResponse: ResolverTypeWrapper<ToggleHighDemandResponse>;
   TriggerSyncParams: TriggerSyncParams;
@@ -1845,6 +1946,7 @@ export type ResolversTypes = {
   UpdatePricingRuleInput: UpdatePricingRuleInput;
   UpdateProfileInput: UpdateProfileInput;
   UpdateProfileResponse: ResolverTypeWrapper<UpdateProfileResponse>;
+  UpdateTenantInput: UpdateTenantInput;
   UpdateTripInput: UpdateTripInput;
   UpdateTripResponse: ResolverTypeWrapper<UpdateTripResponse>;
   User: ResolverTypeWrapper<User>;
@@ -1888,6 +1990,7 @@ export type ResolversParentTypes = {
   CreateCheckoutSessionInput: CreateCheckoutSessionInput;
   CreateCheckoutSessionResponse: CreateCheckoutSessionResponse;
   CreatePricingRuleInput: CreatePricingRuleInput;
+  CreateTenantInput: CreateTenantInput;
   CreateTripInput: CreateTripInput;
   CreateTripResponse: CreateTripResponse;
   CustomerBundle: CustomerBundle;
@@ -1956,6 +2059,10 @@ export type ResolversParentTypes = {
   String: Scalars['String']['output'];
   Subscription: {};
   SyncHistoryParams: SyncHistoryParams;
+  Tenant: Tenant;
+  TenantConnection: TenantConnection;
+  TenantFilter: TenantFilter;
+  TenantOperationResponse: TenantOperationResponse;
   TestPricingContext: TestPricingContext;
   ToggleHighDemandResponse: ToggleHighDemandResponse;
   TriggerSyncParams: TriggerSyncParams;
@@ -1968,6 +2075,7 @@ export type ResolversParentTypes = {
   UpdatePricingRuleInput: UpdatePricingRuleInput;
   UpdateProfileInput: UpdateProfileInput;
   UpdateProfileResponse: UpdateProfileResponse;
+  UpdateTenantInput: UpdateTenantInput;
   UpdateTripInput: UpdateTripInput;
   UpdateTripResponse: UpdateTripResponse;
   User: User;
@@ -2486,17 +2594,21 @@ export type ManualInstallationResolvers<ContextType = Context, ParentType extend
 export type MutationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   activateESIM?: Resolver<Maybe<ResolversTypes['ActivateESIMResponse']>, ParentType, ContextType, RequireFields<MutationActivateEsimArgs, 'esimId'>>;
   assignPackageToUser?: Resolver<Maybe<ResolversTypes['AssignPackageResponse']>, ParentType, ContextType, RequireFields<MutationAssignPackageToUserArgs, 'planId' | 'userId'>>;
+  assignUserToTenant?: Resolver<ResolversTypes['TenantOperationResponse'], ParentType, ContextType, RequireFields<MutationAssignUserToTenantArgs, 'tenantSlug' | 'userId'>>;
   cancelESIM?: Resolver<Maybe<ResolversTypes['ESIMActionResponse']>, ParentType, ContextType, RequireFields<MutationCancelEsimArgs, 'esimId'>>;
   clonePricingRule?: Resolver<ResolversTypes['PricingRule'], ParentType, ContextType, RequireFields<MutationClonePricingRuleArgs, 'id' | 'newName'>>;
   createCheckoutSession?: Resolver<ResolversTypes['CreateCheckoutSessionResponse'], ParentType, ContextType, RequireFields<MutationCreateCheckoutSessionArgs, 'input'>>;
   createPricingRule?: Resolver<ResolversTypes['PricingRule'], ParentType, ContextType, RequireFields<MutationCreatePricingRuleArgs, 'input'>>;
+  createTenant?: Resolver<ResolversTypes['Tenant'], ParentType, ContextType, RequireFields<MutationCreateTenantArgs, 'input'>>;
   createTrip?: Resolver<Maybe<ResolversTypes['CreateTripResponse']>, ParentType, ContextType, RequireFields<MutationCreateTripArgs, 'input'>>;
   deletePricingRule?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeletePricingRuleArgs, 'id'>>;
+  deleteTenant?: Resolver<ResolversTypes['TenantOperationResponse'], ParentType, ContextType, RequireFields<MutationDeleteTenantArgs, 'slug'>>;
   deleteTrip?: Resolver<Maybe<ResolversTypes['DeleteTripResponse']>, ParentType, ContextType, RequireFields<MutationDeleteTripArgs, 'id'>>;
   deleteUser?: Resolver<Maybe<ResolversTypes['DeleteUserResponse']>, ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'userId'>>;
   inviteAdminUser?: Resolver<Maybe<ResolversTypes['InviteAdminUserResponse']>, ParentType, ContextType, RequireFields<MutationInviteAdminUserArgs, 'input'>>;
   processCheckoutPayment?: Resolver<ResolversTypes['ProcessCheckoutPaymentResponse'], ParentType, ContextType, RequireFields<MutationProcessCheckoutPaymentArgs, 'input'>>;
   purchaseESIM?: Resolver<Maybe<ResolversTypes['PurchaseESIMResponse']>, ParentType, ContextType, RequireFields<MutationPurchaseEsimArgs, 'input' | 'planId'>>;
+  removeUserFromTenant?: Resolver<ResolversTypes['TenantOperationResponse'], ParentType, ContextType, RequireFields<MutationRemoveUserFromTenantArgs, 'tenantSlug' | 'userId'>>;
   reorderPricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<MutationReorderPricingRulesArgs, 'updates'>>;
   restoreESIM?: Resolver<Maybe<ResolversTypes['ESIMActionResponse']>, ParentType, ContextType, RequireFields<MutationRestoreEsimArgs, 'esimId'>>;
   sendPhoneOTP?: Resolver<Maybe<ResolversTypes['SendOTPResponse']>, ParentType, ContextType, RequireFields<MutationSendPhoneOtpArgs, 'phoneNumber'>>;
@@ -2514,6 +2626,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   updatePricingRule?: Resolver<ResolversTypes['PricingRule'], ParentType, ContextType, RequireFields<MutationUpdatePricingRuleArgs, 'id' | 'input'>>;
   updatePricingRulePriorities?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<MutationUpdatePricingRulePrioritiesArgs, 'updates'>>;
   updateProfile?: Resolver<Maybe<ResolversTypes['UpdateProfileResponse']>, ParentType, ContextType, RequireFields<MutationUpdateProfileArgs, 'input'>>;
+  updateTenant?: Resolver<ResolversTypes['Tenant'], ParentType, ContextType, RequireFields<MutationUpdateTenantArgs, 'input' | 'slug'>>;
   updateTrip?: Resolver<Maybe<ResolversTypes['UpdateTripResponse']>, ParentType, ContextType, RequireFields<MutationUpdateTripArgs, 'input'>>;
   updateUserRole?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<MutationUpdateUserRoleArgs, 'role' | 'userId'>>;
   validateOrder?: Resolver<ResolversTypes['ValidateOrderResponse'], ParentType, ContextType, RequireFields<MutationValidateOrderArgs, 'input'>>;
@@ -2730,6 +2843,7 @@ export type PurchaseEsimResponseResolvers<ContextType = Context, ParentType exte
 
 export type QueryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   activePricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType>;
+  allTenants?: Resolver<ResolversTypes['TenantConnection'], ParentType, ContextType, Partial<QueryAllTenantsArgs>>;
   bundle?: Resolver<ResolversTypes['Bundle'], ParentType, ContextType, RequireFields<QueryBundleArgs, 'id'>>;
   bundleFilterOptions?: Resolver<ResolversTypes['BundleFilterOptions'], ParentType, ContextType>;
   bundles?: Resolver<ResolversTypes['BundleConnection'], ParentType, ContextType, Partial<QueryBundlesArgs>>;
@@ -2763,6 +2877,8 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   pricingRule?: Resolver<Maybe<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<QueryPricingRuleArgs, 'id'>>;
   pricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, Partial<QueryPricingRulesArgs>>;
   simulatePricingRule?: Resolver<ResolversTypes['PricingBreakdown'], ParentType, ContextType, RequireFields<QuerySimulatePricingRuleArgs, 'rule' | 'testContext'>>;
+  tenant?: Resolver<Maybe<ResolversTypes['Tenant']>, ParentType, ContextType, RequireFields<QueryTenantArgs, 'slug'>>;
+  tenants?: Resolver<Array<ResolversTypes['Tenant']>, ParentType, ContextType>;
   trips?: Resolver<Array<ResolversTypes['Trip']>, ParentType, ContextType>;
   users?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
 };
@@ -2811,6 +2927,30 @@ export type SubscriptionResolvers<ContextType = Context, ParentType extends Reso
   catalogSyncProgress?: SubscriptionResolver<ResolversTypes['CatalogSyncProgressUpdate'], "catalogSyncProgress", ParentType, ContextType>;
   esimStatusUpdated?: SubscriptionResolver<ResolversTypes['ESIMStatusUpdate'], "esimStatusUpdated", ParentType, ContextType, RequireFields<SubscriptionEsimStatusUpdatedArgs, 'esimId'>>;
   pricingPipelineProgress?: SubscriptionResolver<ResolversTypes['PricingPipelineStepUpdate'], "pricingPipelineProgress", ParentType, ContextType, RequireFields<SubscriptionPricingPipelineProgressArgs, 'correlationId'>>;
+};
+
+export type TenantResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Tenant'] = ResolversParentTypes['Tenant']> = {
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  imgUrl?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  slug?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  tenantType?: Resolver<ResolversTypes['TenantType'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  userCount?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TenantConnectionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['TenantConnection'] = ResolversParentTypes['TenantConnection']> = {
+  nodes?: Resolver<Array<ResolversTypes['Tenant']>, ParentType, ContextType>;
+  pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TenantOperationResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['TenantOperationResponse'] = ResolversParentTypes['TenantOperationResponse']> = {
+  message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ToggleHighDemandResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ToggleHighDemandResponse'] = ResolversParentTypes['ToggleHighDemandResponse']> = {
@@ -2971,6 +3111,9 @@ export type Resolvers<ContextType = Context> = {
   SignInResponse?: SignInResponseResolvers<ContextType>;
   SignUpResponse?: SignUpResponseResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
+  Tenant?: TenantResolvers<ContextType>;
+  TenantConnection?: TenantConnectionResolvers<ContextType>;
+  TenantOperationResponse?: TenantOperationResponseResolvers<ContextType>;
   ToggleHighDemandResponse?: ToggleHighDemandResponseResolvers<ContextType>;
   TriggerSyncResponse?: TriggerSyncResponseResolvers<ContextType>;
   Trip?: TripResolvers<ContextType>;

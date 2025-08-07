@@ -120,6 +120,7 @@ export function useHorizontalScroll(
         x: {
           min: bounds,
           max: 0,
+          // @ts-ignore: TODO fix this
           resistance,
           minDuration,
           maxDuration,

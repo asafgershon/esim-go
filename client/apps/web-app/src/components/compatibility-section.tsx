@@ -1,9 +1,8 @@
 "use client";
 
 import { Button, cn, useESIMDetection } from "@workspace/ui";
-import { Check, X, Loader2 } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 import { useState } from "react";
-import { LogoRounded } from "./logo-rounded";
 
 export function CompatibilitySection({
   id,
