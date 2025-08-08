@@ -147,9 +147,9 @@ export function DestinationsGallery({
       data-speed={speed}
       id={id}
       aria-label={ariaLabel}
-      className="bg-gradient-to-b from-white to-[#F8FAFC]"
+      className="bg-gradient-to-b from-white to-[#F8FAFC] overflow-hidden"
     >
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 max-w-[1440px]">
         {/* Header */}
         <div className="text-right mb-12 max-w-4xl mx-auto">
           <h2 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-2">
@@ -170,8 +170,12 @@ export function DestinationsGallery({
         {/* Mobile Horizontal Scroll with GSAP */}
         <div
           ref={containerRef}
-          className="relative"
-          style={{ height: "304px" }}
+          className="relative overflow-hidden mx-auto"
+          style={{ 
+            height: "304px",
+            maxWidth: "100%",
+            position: "relative"
+          }}
         >
           <div
             ref={contentRef}
@@ -180,6 +184,9 @@ export function DestinationsGallery({
               cursor: "grab",
               userSelect: "none",
               WebkitUserSelect: "none",
+              willChange: "transform",
+              touchAction: "pan-y",
+              overflowX: "visible"
             }}
           >
             {destinations.map((destination) => (

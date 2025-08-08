@@ -39,7 +39,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen bg-background overflow-x-hidden" dir="rtl">
       {/* Login Modal - wrapped in Suspense */}
       <Suspense fallback={null}>
         <LoginModal />
