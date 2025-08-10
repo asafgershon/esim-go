@@ -5,6 +5,7 @@
       "name": "client",
       "devDependencies": {
         "@types/bun": "latest",
+        "country-data-list": "^1.5.4",
         "turbo": "^2.5.4",
       },
       "peerDependencies": {
