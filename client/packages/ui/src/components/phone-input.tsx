@@ -11,7 +11,7 @@ import {
   type CountryCode,
 } from "libphonenumber-js";
 import { CircleFlag } from "react-circle-flags";
-import { lookup } from "country-data-list";
+import { countries as countriesList, lookup } from "country-data-list";
 import { cn } from "../lib/utils";
 import {
   DropdownMenu,
@@ -53,7 +53,7 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
     // Get all countries for the dropdown
     const countries = React.useMemo(() => {
       try {
-        const allCountries = lookup.countries() || [];
+        const allCountries = countriesList.all
         if (!allCountries || allCountries.length === 0) {
           // Fallback countries if lookup fails
           return [
@@ -267,7 +267,7 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[280px]">
               <ScrollArea className="h-[300px]">
-                {countries.map((country) => (
+                {countries.map((country: any) => (
                   <DropdownMenuItem
                     key={country.alpha2}
                     onClick={() => handleCountrySelect(country.alpha2)}
