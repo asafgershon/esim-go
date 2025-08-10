@@ -22,7 +22,13 @@ const AvailableBlocksSidebar: React.FC<AvailableBlocksSidebarProps> = ({
               ref={provided.innerRef}
               className="space-y-2"
             >
-              {availableBlocks.map((block, index) => (
+              {availableBlocks.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="text-sm font-medium">All blocks are in use</p>
+                  <p className="text-xs mt-1">Remove blocks from your strategy to make them available again</p>
+                </div>
+              ) : (
+                availableBlocks.map((block, index) => (
                 <Draggable
                   key={block.id}
                   draggableId={block.id}
@@ -70,7 +76,8 @@ const AvailableBlocksSidebar: React.FC<AvailableBlocksSidebarProps> = ({
                     </div>
                   )}
                 </Draggable>
-              ))}
+                ))
+              )}
               {provided.placeholder}
             </div>
           )}
@@ -79,8 +86,8 @@ const AvailableBlocksSidebar: React.FC<AvailableBlocksSidebarProps> = ({
         <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-xs text-blue-700">
             <strong>Tip:</strong> Drag blocks to the right to build your
-            pricing strategy. The blocks will be executed in order from top
-            to bottom.
+            pricing strategy. Each block type can only be used once. Remove blocks 
+            from your strategy to make them available again.
           </p>
         </div>
       </div>

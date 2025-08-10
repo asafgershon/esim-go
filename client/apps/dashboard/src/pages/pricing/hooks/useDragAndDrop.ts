@@ -1,10 +1,9 @@
 import { DropResult } from "@hello-pangea/dnd";
 import { useState } from "react";
-import { availableBlocks } from "../constants/blocks";
 import { getDefaultConfig } from "../constants/defaultConfigs";
-import { StrategyStep } from "../types";
+import { StrategyStep, Block } from "../types";
 
-export const useDragAndDrop = () => {
+export const useDragAndDrop = (blocks: Block[]) => {
   const [strategySteps, setStrategySteps] = useState<StrategyStep[]>([]);
   const [selectedStep, setSelectedStep] = useState<string | null>(null);
   const [editingStep, setEditingStep] = useState<StrategyStep | null>(null);
@@ -20,8 +19,17 @@ export const useDragAndDrop = () => {
       destination.droppableId === "strategy-flow"
     ) {
       // Adding a new block to the strategy
-      const block = availableBlocks.find((b) => b.id === result.draggableId);
+      const block = blocks.find((b) => b.id === result.draggableId);
       if (block) {
+        // Check if this block type is already in the strategy
+        const isBlockTypeAlreadyUsed = strategySteps.some(step => step.type === block.type);
+        
+        if (isBlockTypeAlreadyUsed) {
+          // Block type already exists, don't add it again
+          console.log(`Block type "${block.type}" is already in the strategy`);
+          return;
+        }
+
         const newStep: StrategyStep = {
           ...block,
           uniqueId: `${block.id}-${Date.now()}`,

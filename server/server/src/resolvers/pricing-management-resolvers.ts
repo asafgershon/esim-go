@@ -12,6 +12,164 @@ const logger = createLogger({
 });
 
 /**
+ * Fallback hardcoded blocks when database is unavailable
+ */
+const getFallbackBlocks = (filter?: any) => {
+  const fallbackBlocks = [
+    {
+      id: "fallback-base-price",
+      name: "Base Price",
+      description: "Initialize base price from bundle cost",
+      category: "INITIALIZATION",
+      conditions: {},
+      action: {},
+      priority: 1,
+      isActive: true,
+      isEditable: false,
+      validFrom: null,
+      validUntil: null,
+      createdBy: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "fallback-markup",
+      name: "Markup",
+      description: "Add markup to base price",
+      category: "markup",
+      conditions: {},
+      action: {},
+      priority: 10,
+      isActive: true,
+      isEditable: false,
+      validFrom: null,
+      validUntil: null,
+      createdBy: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "fallback-processing-fee",
+      name: "Processing Fee",
+      description: "Calculate payment processing fees",
+      category: "FEE",
+      conditions: {},
+      action: {},
+      priority: 20,
+      isActive: true,
+      isEditable: false,
+      validFrom: null,
+      validUntil: null,
+      createdBy: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "fallback-profit-constraint",
+      name: "Keep Profit",
+      description: "Maintain minimum profit margin",
+      category: "profit-constraint",
+      conditions: {},
+      action: {},
+      priority: 25,
+      isActive: true,
+      isEditable: false,
+      validFrom: null,
+      validUntil: null,
+      createdBy: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "fallback-psychological-rounding",
+      name: "Psychological Rounding",
+      description: "Apply charm pricing (e.g., $9.99)",
+      category: "ROUNDING",
+      conditions: {},
+      action: {},
+      priority: 30,
+      isActive: true,
+      isEditable: false,
+      validFrom: null,
+      validUntil: null,
+      createdBy: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "fallback-unused-days-discount",
+      name: "Unused Days Discount",
+      description: "Apply discount for unused days from previous bundle",
+      category: "unused-days-discount",
+      conditions: {},
+      action: {},
+      priority: 5,
+      isActive: true,
+      isEditable: false,
+      validFrom: null,
+      validUntil: null,
+      createdBy: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "fallback-discount",
+      name: "Discount",
+      description: "Apply percentage or fixed discount",
+      category: "DISCOUNT",
+      conditions: {},
+      action: {},
+      priority: 15,
+      isActive: false, // Disabled - coming soon
+      isEditable: false,
+      validFrom: null,
+      validUntil: null,
+      createdBy: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "fallback-coupon",
+      name: "Coupon",
+      description: "Manage discount coupons and corporate domains",
+      category: "coupon",
+      conditions: {},
+      action: {},
+      priority: 18,
+      isActive: false, // Disabled - coming soon
+      isEditable: false,
+      validFrom: null,
+      validUntil: null,
+      createdBy: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  // Apply filters to fallback blocks
+  let filteredBlocks = fallbackBlocks;
+  
+  if (filter?.category) {
+    filteredBlocks = filteredBlocks.filter(block => block.category === filter.category);
+  }
+  if (filter?.isActive !== undefined) {
+    filteredBlocks = filteredBlocks.filter(block => block.isActive === filter.isActive);
+  }
+  if (filter?.isEditable !== undefined) {
+    filteredBlocks = filteredBlocks.filter(block => block.isEditable === filter.isEditable);
+  }
+  if (filter?.searchTerm) {
+    const searchLower = filter.searchTerm.toLowerCase();
+    filteredBlocks = filteredBlocks.filter(block => 
+      block.name.toLowerCase().includes(searchLower) || 
+      block.description.toLowerCase().includes(searchLower)
+    );
+  }
+
+  return filteredBlocks;
+};
+
+/**
  * Administrative resolvers for pricing cache management and performance monitoring
  * These should be protected with admin-only auth directives
  */
@@ -138,50 +296,64 @@ export const pricingManagementResolvers = {
 
         const { data, error } = await query;
 
-        if (error) {
-          logger.error("Failed to fetch pricing blocks from database", error, {
-            filter,
-            userId: context.auth?.user?.id,
-            operationType: "get-pricing-blocks",
-          });
-          throw new GraphQLError("Failed to fetch pricing blocks", {
-            extensions: { code: "DATABASE_ERROR" },
-          });
-        }
+        let blocks = [];
 
-        const blocks = data?.map(block => ({
-          id: block.id,
-          name: block.name,
-          description: block.description,
-          category: block.category,
-          conditions: block.conditions,
-          action: block.action,
-          priority: block.priority,
-          isActive: block.is_active,
-          isEditable: block.is_editable,
-          validFrom: block.valid_from,
-          validUntil: block.valid_until,
-          createdBy: block.created_by,
-          createdAt: block.created_at,
-          updatedAt: block.updated_at,
-        })) || [];
+        if (error || !data || data.length === 0) {
+          // Log database error but fall back to hardcoded blocks
+          if (error) {
+            logger.warn("Database error, falling back to hardcoded blocks", {
+              error: error.message,
+              filter,
+              userId: context.auth?.user?.id,
+              operationType: "get-pricing-blocks-fallback",
+            });
+          } else {
+            logger.info("No database blocks found, using hardcoded blocks", {
+              filter,
+              userId: context.auth?.user?.id,
+              operationType: "get-pricing-blocks-fallback",
+            });
+          }
+
+          // Return hardcoded fallback blocks
+          blocks = getFallbackBlocks(filter);
+        } else {
+          // Map database blocks to GraphQL format
+          blocks = data.map(block => ({
+            id: block.id,
+            name: block.name,
+            description: block.description,
+            category: block.category,
+            conditions: block.conditions,
+            action: block.action,
+            priority: block.priority,
+            isActive: block.is_active,
+            isEditable: block.is_editable,
+            validFrom: block.valid_from,
+            validUntil: block.valid_until,
+            createdBy: block.created_by,
+            createdAt: block.created_at,
+            updatedAt: block.updated_at,
+          }));
+        }
 
         logger.info("Successfully fetched pricing blocks", {
           count: blocks.length,
+          source: error || !data?.length ? "fallback" : "database",
           userId: context.auth?.user?.id,
           operationType: "get-pricing-blocks-success",
         });
 
         return blocks;
       } catch (error) {
-        logger.error("Failed to fetch pricing blocks", error as Error, {
+        logger.warn("Failed to fetch pricing blocks, falling back to hardcoded", error as Error, {
           filter,
           userId: context.auth?.user?.id,
-          operationType: "get-pricing-blocks",
+          operationType: "get-pricing-blocks-error-fallback",
         });
-        throw new GraphQLError("Failed to fetch pricing blocks", {
-          extensions: { code: "INTERNAL_ERROR" },
-        });
+        
+        // Return fallback blocks on any error
+        return getFallbackBlocks(filter);
       }
     },
 

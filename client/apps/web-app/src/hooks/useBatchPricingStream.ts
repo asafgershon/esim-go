@@ -55,6 +55,7 @@ export function useBatchPricingStream({
   const [pricingCache, setPricingCache] = useState<Map<number, PricingData>>(new Map());
   const [loadedDays, setLoadedDays] = useState<Set<number>>(new Set());
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+  const [isNewCountryLoading, setIsNewCountryLoading] = useState(false);
   const previousCountryRef = useRef<string | undefined>(undefined);
   
   // Create inputs for subscription
@@ -75,6 +76,7 @@ export function useBatchPricingStream({
   const countryChanged = previousCountryRef.current !== countryId;
   if (countryChanged) {
     previousCountryRef.current = countryId;
+    setIsNewCountryLoading(true);
   }
 
   // Subscribe to batch pricing stream
@@ -147,6 +149,7 @@ export function useBatchPricingStream({
           // Mark initial load complete when requested day loads
           if (requestedDays && result.duration === requestedDays) {
             setIsInitialLoadComplete(true);
+            setIsNewCountryLoading(false); // New country data is ready
           }
         }
       },
@@ -162,6 +165,7 @@ export function useBatchPricingStream({
       setPricingCache(new Map());
       setLoadedDays(new Set());
       setIsInitialLoadComplete(false);
+      // isNewCountryLoading is already set to true when country changes
     }
   }, [countryChanged]);
 
@@ -202,5 +206,10 @@ export function useBatchPricingStream({
     loadingProgress,
     isDayLoaded,
     isDayLoading,
+    
+    // New states for enhanced UX
+    isNewCountryLoading, // True only when country/trip changes
+    isStreamingData: loading && isInitialLoadComplete, // Background loading after initial load
+    hasDataForDay: (numOfDays: number) => pricingCache.has(numOfDays), // Check if we have cached data
   };
 }

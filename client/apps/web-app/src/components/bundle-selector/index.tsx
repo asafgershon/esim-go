@@ -28,8 +28,9 @@ function BundleSelectorInternal() {
     getPricing,
     loading: pricingLoading,
     error: pricingError,
-    isDayLoaded,
-    isDayLoading,
+    isNewCountryLoading,
+    isStreamingData,
+    hasDataForDay,
   } = useBatchPricingStream({
     regionId: tripId || undefined,
     countryId: countryId || undefined,
@@ -41,10 +42,10 @@ function BundleSelectorInternal() {
     return getPricing(numOfDays);
   }, [getPricing, numOfDays]);
 
-  // Check if pricing is loading for current selection
-  const isLoadingPricing = useMemo(() => {
-    return Boolean((countryId || tripId) && pricingLoading && !pricing);
-  }, [countryId, tripId, pricingLoading, pricing]);
+  // Check if we should show streaming UI (new country/trip change)
+  const shouldShowStreamingUI = useMemo(() => {
+    return Boolean(isNewCountryLoading || (pricingLoading && !hasDataForDay(numOfDays)));
+  }, [isNewCountryLoading, pricingLoading, hasDataForDay, numOfDays]);
 
   // Sync pricing with context
   useEffect(() => {
@@ -64,9 +65,9 @@ function BundleSelectorInternal() {
         ) : (
           <MainView
             pricing={pricing}
-            isLoadingPricing={isLoadingPricing}
-            isDayLoaded={isDayLoaded}
-            isDayLoading={isDayLoading}
+            shouldShowStreamingUI={shouldShowStreamingUI}
+            isStreamingData={isStreamingData}
+            hasDataForDay={hasDataForDay}
             handlePurchase={() => handlePurchase(pricing)}
           />
         )}

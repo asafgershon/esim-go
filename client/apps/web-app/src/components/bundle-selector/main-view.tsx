@@ -27,17 +27,17 @@ interface MainViewProps {
     hasDiscount?: boolean;
     discountAmount?: number;
   } | null;
-  isLoadingPricing?: boolean;
-  isDayLoaded?: (day: number) => boolean;
-  isDayLoading?: (day: number) => boolean;
+  shouldShowStreamingUI?: boolean;
+  isStreamingData?: boolean;
+  hasDataForDay?: (day: number) => boolean;
   handlePurchase: () => void;
 }
 
 export function MainView({
   pricing,
-  isLoadingPricing = false,
-  isDayLoaded,
-  isDayLoading,
+  shouldShowStreamingUI = false,
+  isStreamingData = false,
+  hasDataForDay,
   handlePurchase,
 }: MainViewProps) {
   // Get UI state and handlers from context
@@ -134,9 +134,9 @@ export function MainView({
           <Pricing
             destination={destination}
             pricing={pricing}
-            isLoadingPricing={isLoadingPricing}
-            isDayLoaded={isDayLoaded}
-            isDayLoading={isDayLoading}
+            shouldShowStreamingUI={shouldShowStreamingUI}
+            isStreamingData={isStreamingData}
+            hasDataForDay={hasDataForDay}
             countryId={countryId}
             tripId={tripId}
             numOfDays={numOfDays}

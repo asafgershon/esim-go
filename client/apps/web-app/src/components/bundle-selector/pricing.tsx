@@ -1,6 +1,6 @@
 "use client";
 
-import { CountUp } from "../ui/count-up";
+import CountUp from "react-countup";
 import { PricingSkeleton } from "./skeleton";
 import type { Destination } from "@/contexts/bundle-selector-context";
 import { useBundleSelector } from "@/contexts/bundle-selector-context";
@@ -9,6 +9,7 @@ import { he } from "date-fns/locale";
 import { useSimulatedPricingSteps } from "@/hooks/useSimulatedPricingSteps";
 import { Sparkles, Loader2 } from "lucide-react";
 import { PricingStepsDisplay } from "./pricing-steps-display";
+import { useRef } from "react";
 
 interface PricingProps {
   destination: Destination;
@@ -20,9 +21,9 @@ interface PricingProps {
     hasDiscount?: boolean;
     discountAmount?: number;
   } | null;
-  isLoadingPricing?: boolean;
-  isDayLoaded?: (day: number) => boolean;
-  isDayLoading?: (day: number) => boolean;
+  shouldShowStreamingUI?: boolean;
+  isStreamingData?: boolean;
+  hasDataForDay?: (day: number) => boolean;
   countryId: string | null;
   tripId: string | null;
   numOfDays: number;
@@ -32,18 +33,22 @@ interface PricingProps {
 export function Pricing({
   destination,
   pricing,
-  isLoadingPricing = false,
-  isDayLoaded,
-  isDayLoading,
+  shouldShowStreamingUI = false,
+  isStreamingData = false,
+  hasDataForDay,
   countryId,
   tripId,
   numOfDays,
   onRemoveDestination,
 }: PricingProps) {
+  const previousPriceRef = useRef<number>(0);
   const { startDate, endDate } = useBundleSelector();
-  
-  // Use simulated pricing steps for animation
-  // Show animation when we have pricing data (not when loading)
+
+  // Show streaming animation only for new country/trip changes
+  const shouldShowSteps = Boolean(
+    shouldShowStreamingUI && (countryId || tripId)
+  );
+
   const {
     isCalculating,
     progress,
@@ -54,9 +59,15 @@ export function Pricing({
     finalPrice: pricing?.totalPrice || pricing?.finalPrice || 0,
     hasDiscount: pricing?.hasDiscount || false,
     discountAmount: pricing?.discountAmount || 0,
-    enabled: Boolean(pricing && (countryId || tripId)),
+    enabled: shouldShowSteps,
   });
-  
+
+  // Track price changes for smooth CountUp transitions
+  const currentPrice = pricing?.totalPrice || pricing?.finalPrice || 0;
+  if (currentPrice > 0) {
+    previousPriceRef.current = currentPrice;
+  }
+
   // Display values with fallback to original pricing
   const displayPricing = {
     finalPrice: pricing?.finalPrice || pricing?.totalPrice || 0,
@@ -65,12 +76,15 @@ export function Pricing({
     hasDiscount: pricing?.hasDiscount ?? false,
     discountAmount: pricing?.discountAmount || 0,
   };
-  // Smart loading states based on streaming data
-  const isDayCurrentlyLoading = isDayLoading ? isDayLoading(numOfDays) : isLoadingPricing;
-  const isDayAlreadyLoaded = isDayLoaded ? isDayLoaded(numOfDays) : false;
-  
-  // Show skeleton if this specific day is loading and not yet loaded
-  if (isDayCurrentlyLoading && !isDayAlreadyLoaded) {
+  // Enhanced loading states - only show skeleton for new country/trip changes
+  // For cached data, we'll show the price with smooth CountUp transition
+  const shouldShowSkeleton = shouldShowStreamingUI && !pricing;
+  const hasDataCached = hasDataForDay
+    ? hasDataForDay(numOfDays)
+    : Boolean(pricing);
+
+  // Show skeleton only when loading new country data and no cached data
+  if (shouldShowSkeleton && !hasDataCached) {
     return <PricingSkeleton />;
   }
 
@@ -78,8 +92,8 @@ export function Pricing({
     return null;
   }
 
-  // Show animation overlay when calculating (for visual appeal)
-  if (isCalculating) {
+  // Show streaming animation only during new country/trip load
+  if (isCalculating && shouldShowStreamingUI) {
     return (
       <div className="relative">
         <PricingStepsDisplay
@@ -127,12 +141,23 @@ export function Pricing({
         {/* Show dates if available */}
         {startDate && endDate && (
           <div className="text-[10px] md:text-[12px] text-brand-dark opacity-60 mb-2">
-            {format(startDate, "dd/MM", { locale: he })} - {format(endDate, "dd/MM/yyyy", { locale: he })}
+            {format(startDate, "dd/MM", { locale: he })} -{" "}
+            {format(endDate, "dd/MM/yyyy", { locale: he })}
+          </div>
+        )}
+
+        {/* Background streaming indicator */}
+        {isStreamingData && !shouldShowStreamingUI && (
+          <div className="mb-2 flex items-center gap-1 opacity-60">
+            <div className="h-1 w-1 bg-brand-purple rounded-full animate-pulse" />
+            <span className="text-[6px] md:text-[8px] text-brand-purple">
+              טוען מחירים נוספים...
+            </span>
           </div>
         )}
         
-        {/* Real-time calculation progress */}
-        {isCalculating && (
+        {/* Real-time calculation progress (only for new country) */}
+        {isCalculating && shouldShowStreamingUI && (
           <div className="mb-2 flex items-center gap-2">
             <Loader2 className="h-3 w-3 animate-spin text-brand-purple" />
             <span className="text-[8px] md:text-[10px] text-brand-purple">
@@ -140,7 +165,7 @@ export function Pricing({
             </span>
           </div>
         )}
-        
+
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
             {displayPricing.days} ימים ללא הגבלה
@@ -148,18 +173,17 @@ export function Pricing({
           <span className="text-[14px] md:text-[18px] font-bold text-brand-dark">
             <CountUp
               key={`total-${countryId || tripId}-${numOfDays}`}
+              start={hasDataCached ? previousPriceRef.current : 0}
               end={displayPricing.totalPrice || 0}
               decimals={2}
               prefix="$"
-              duration={0.2}
+              duration={hasDataCached ? 0.8 : 0.2} // Longer animation for cached data transitions
               preserveValue
-              fallback={
-                <span>${displayPricing.totalPrice?.toFixed(2) || 0}</span>
-              }
+              useEasing={hasDataCached}
             />
           </span>
         </div>
-        
+
         {/* Enhanced discount display with real-time updates */}
         {displayPricing.hasDiscount && (
           <div className="space-y-1">
@@ -170,18 +194,24 @@ export function Pricing({
               aria-live="polite"
             >
               <div className="flex items-center justify-center gap-1">
-                {displayPricing.discountAmount > 0 && <Sparkles className="h-3 w-3" />}
-                <span>
-                  חסכת ${displayPricing.discountAmount.toFixed(2)}!
-                </span>
+                {displayPricing.discountAmount > 0 && (
+                  <Sparkles className="h-3 w-3" />
+                )}
+                <span>חסכת ${displayPricing.discountAmount.toFixed(2)}!</span>
               </div>
-              {displayPricing.discountAmount > 0 && displayPricing.totalPrice > 0 && (
-                <div className="text-[6px] md:text-[8px] opacity-75">
-                  {((displayPricing.discountAmount / (displayPricing.totalPrice + displayPricing.discountAmount)) * 100).toFixed(1)}% הנחה
-                </div>
-              )}
+              {displayPricing.discountAmount > 0 &&
+                displayPricing.totalPrice > 0 && (
+                  <div className="text-[6px] md:text-[8px] opacity-75">
+                    {(
+                      (displayPricing.discountAmount /
+                        (displayPricing.totalPrice +
+                          displayPricing.discountAmount)) *
+                      100
+                    ).toFixed(1)}
+                    % הנחה
+                  </div>
+                )}
             </div>
-            
           </div>
         )}
       </div>
