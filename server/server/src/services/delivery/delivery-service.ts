@@ -116,13 +116,12 @@ export class DeliveryService {
     }
 
     try {
-      const emailContent = generateESIMEmailTemplate(deliveryData);
-      const subject = `Your eSIM is Ready - ${deliveryData.planName}`;
+      const emailContent = await generateESIMEmailTemplate(deliveryData);
 
       // Send email with both HTML and text versions
       const result = await this.emailService.sendEmail(
         email,
-        subject,
+        emailContent.subject,
         emailContent.html
       );
 

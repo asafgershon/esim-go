@@ -1,0 +1,49 @@
+| שלום! 👋
+| 
+| תודה על הרכישה שלך!
+| מספר הזמנה: #{orderReference}
+| 
+| ה-eSIM שלך הוכן בהצלחה ומוכן לשימוש. הנה פרטי ההפעלה שלך:
+| 
+| סיכום הזמנה:
+| - יעד: #{destination}
+| - גודל תוכנית: #{planSize}
+| - תוקף: #{validity}
+| - סה"כ חלקי: #{subtotal}
+if discount
+  | - הנחת Hiilo: #{discount}
+| - סה"כ: #{total}
+| 
+| הוראות התקנה:
+| 
+| אפשרות 1: התקנה ישירה (iOS 17.4+)
+| עבור משתמשי iPhone עם iOS 17.4 ומעלה, הקש על כפתור ההתקנה באפליקציית Hiilo
+| 
+| אפשרות 2: סרוק קוד QR
+| פתח את הגדרות המכשיר וסרוק את קוד ה-QR מהתמונה הצורפת או האימייל.
+| - iOS: הגדרות ← סלולרי ← הוסף eSIM ← השתמש בקוד QR
+| - Android: הגדרות ← רשת ← נייד ← הוסף ← סרוק QR
+| 
+if installationLinks && installationLinks.manual
+  | אפשרות 3: התקנה ידנית
+  | כתובת SM-DP+: #{installationLinks.manual.smDpAddress}
+  | קוד הפעלה: #{installationLinks.manual.activationCode}
+  if installationLinks.manual.confirmationCode
+    | קוד אימות: #{installationLinks.manual.confirmationCode}
+  | 
+| טיפים לייעול השימוש בנתונים:
+| 
+| עבור מכשירי iPhone:
+| 1. נווט אל הגדרות ← סלולרי
+| 2. גלול למטה והשבת גיבויים אוטומטיים
+| 3. כבה את iCloud Drive ו-iCloud Backup עבור ה-eSIM שלך
+| 
+| עבור מכשירי Android:
+| 1. פתח את הגדרות במכשיר Android שלך
+| 2. עבור אל חשבונות או משתמשים וחשבונות
+| 3. כבה סנכרון נתונים אוטומטי לחיסכון בנתונים
+| 
+| צריך עזרה? צור קשר עם צוות התמיכה שלנו support@hiilo.com 👨‍💻
+| נסיעות טובות! 🎉✈️
+| 
+| כל הזכויות שמורות © 2025 Hiilo

@@ -19,8 +19,8 @@ const StrategyHeader: React.FC<StrategyHeaderProps> = ({
 }) => {
   const [showLoadModal, setShowLoadModal] = useState(false);
 
-  const handleLoadStrategy = (strategyBlocks: any[]) => {
-    onLoadStrategy(strategyBlocks);
+  const handleLoadStrategy = (strategyBlocks: any[], metadata?: any) => {
+    onLoadStrategy(strategyBlocks, metadata);
     setShowLoadModal(false);
   };
   return (

@@ -114,7 +114,13 @@ const StrategyLoadModal: React.FC<StrategyLoadModalProps> = ({
   const loadSelectedStrategy = () => {
     if (selectedStrategy) {
       const strategyBlocks = loadStrategyIntoBuilder();
-      onStrategyLoad(strategyBlocks);
+      const metadata = {
+        id: selectedStrategy.id,
+        name: selectedStrategy.name,
+        code: selectedStrategy.code,
+        description: selectedStrategy.description,
+      };
+      onStrategyLoad(strategyBlocks, metadata);
       setShowConfirmDialog(false);
       handleClose();
     }

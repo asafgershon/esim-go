@@ -1,0 +1,626 @@
+doctype html
+html(lang="he" dir="rtl")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title תודה על הזמנת ה-eSIM שלך!
+    style.
+      /* Hiilo Brand Colors */
+      :root {
+          --brand-green: #00e095;
+          --brand-purple: #535fc8;
+          --brand-dark: #0a232e;
+          --brand-light-blue: #f8fafc;
+          --brand-white: #fefefe;
+          --brand-teal: #2a4a5a;
+          --brand-teal-dark: #1a3a4a;
+      }
+      
+      body {
+          margin: 0;
+          padding: 0;
+          font-family: 'Segoe UI', 'Arial', sans-serif;
+          background-color: var(--brand-light-blue);
+          line-height: 1.6;
+          direction: rtl;
+          text-align: right;
+      }
+      
+      .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: var(--brand-light-blue);
+      }
+      
+      .header {
+          text-align: center;
+          padding: 30px 20px;
+      }
+      
+      .logo {
+          margin: 0 auto 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+      
+      .logo img {
+          display: block;
+          max-width: 120px;
+          height: auto;
+      }
+      
+      .content {
+          background: white;
+          margin: 0 20px;
+          border-radius: 24px;
+          padding: 40px 30px;
+          box-shadow: 0 8px 40px rgba(10, 35, 46, 0.1);
+      }
+      
+      .greeting {
+          display: flex;
+          align-items: center;
+          margin-bottom: 30px;
+          width: 100%;
+          flex-direction: row;
+      }
+      
+      .greeting h1 {
+          color: var(--brand-dark);
+          font-size: 32px;
+          margin: 0;
+          margin-right: 12px;
+          font-weight: 700;
+      }
+      
+      .wave {
+          font-size: 32px;
+          width: 100%;
+          text-align: right;
+      }
+      
+      .hero-section {
+          background:var(--brand-white);
+          border: 1px solid #e2e8f0;
+          color: white;
+          padding: 35px 30px;
+          border-radius: 20px;
+          text-align: center;
+          margin-bottom: 35px;
+          position: relative;
+          overflow: hidden;
+      }
+      
+      .hero-section::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          
+          background: var(--brand-purple);
+          pointer-events: none;
+      }
+      
+      .hero-section h2 {
+          margin: 0 0 12px 0;
+          font-size: 26px;
+          font-weight: 700;
+          position: relative;
+          z-index: 1;
+      }
+      
+      .order-id {
+          opacity: 0.9;
+          font-size: 15px;
+          position: relative;
+          z-index: 1;
+      }
+      
+      .divider {
+          height: 1px;
+          background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+          margin: 35px 0;
+      }
+      
+      .order-summary {
+          margin-bottom: 35px;
+      }
+      
+      .summary-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+          text-align: right;
+      }
+      
+      .summary-header h3 {
+          color: var(--brand-dark);
+          margin: 0;
+          font-size: 20px;
+          font-weight: 700;
+      }
+      
+      .invoice-link {
+          color: var(--brand-purple);
+          text-decoration: none;
+          font-weight: 600;
+          font-size: 14px;
+          padding: 8px 16px;
+          border-radius: 8px;
+          background: rgba(83, 95, 200, 0.1);
+          transition: all 0.2s ease;
+      }
+      
+      .invoice-link:hover {
+          background: rgba(83, 95, 200, 0.15);
+          transform: translateY(-1px);
+      }
+      
+      .order-details {
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      }
+      
+      .detail-row {
+          display: flex;
+          flex-direction: row-reverse;
+          justify-content: space-between;
+          padding: 18px 24px;
+          border-bottom: 1px solid #f1f5f9;
+          text-align: right;
+      }
+      
+      .detail-row:last-child {
+          border-bottom: none;
+      }
+      
+      .detail-row.highlighted {
+          background:  var(--brand-purple);
+          color: white;
+      }
+      
+      .detail-row.total {
+          background: var(--brand-light-blue);
+          font-weight: bold;
+          color: var(--brand-dark);
+      }
+      
+      .detail-label {
+          color: #64748b;
+          font-weight: 500;
+      }
+      
+      .detail-value {
+          font-weight: 600;
+          color: var(--brand-dark);
+      }
+      
+      .highlighted .detail-label,
+      .highlighted .detail-value {
+          color: white;
+      }
+      
+      .qr-section {
+          text-align: center;
+          margin: 40px 0;
+      }
+      
+      .qr-title {
+          color: var(--brand-dark);
+          margin-bottom: 24px;
+          font-size: 18px;
+          font-weight: 600;
+      }
+      
+      .qr-container {
+          background: white;
+          padding: 24px;
+          border-radius: 16px;
+          border: 2px solid #f1f5f9;
+          display: inline-block;
+          margin-bottom: 24px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      }
+      
+      .qr-code {
+          width: 200px;
+          height: 200px;
+          background: #f8fafc;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #64748b;
+      }
+      
+      .activation-methods {
+          background: var(--brand-white);
+          border-radius: 20px;
+          padding: 32px;
+          margin: 35px 0;
+          border: 1px solid rgba(42, 74, 90, 0.1);
+      }
+      
+      .method-title {
+          color: var(--brand-dark);
+          font-size: 20px;
+          font-weight: 700;
+          margin-bottom: 24px;
+          text-align: center;
+      }
+      
+      .method-tabs {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+          margin-bottom: 24px;
+          flex-wrap: wrap;
+      }
+      
+      .tab {
+          padding: 12px 24px;
+          border-radius: 12px;
+          background: white;
+          color: var(--brand-dark);
+          text-decoration: none;
+          font-weight: 600;
+          border: 2px solid #f1f5f9;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+      
+      .tab.active {
+          background: var(--brand-purple);
+          color: white;
+          border-color: var(--brand-purple);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(83, 95, 200, 0.3);
+      }
+      
+      .activation-content {
+          text-align: center;
+          color: #64748b;
+          font-size: 15px;
+      }
+      
+      .tips-section {
+          background: linear-gradient(135deg, rgba(83, 95, 200, 0.08), rgba(0, 224, 149, 0.08));
+          border-radius: 20px;
+          padding: 32px;
+          margin: 35px 0;
+          border: 1px solid rgba(83, 95, 200, 0.1);
+      }
+      
+      .tips-title {
+          color: var(--brand-dark);
+          font-size: 20px;
+          font-weight: 700;
+          margin-bottom: 24px;
+          text-align: center;
+          margin-top: 24px;
+      }
+      
+      .tip-device {
+          margin-bottom: 28px;
+      }
+      
+      .device-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 16px;
+          color: var(--brand-dark);
+          font-weight: 700;
+          font-size: 16px;
+      }
+      
+      .device-icon {
+          font-size: 24px;
+          margin-right: 12px;
+      }
+      
+      .tip-steps {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+      }
+      
+      .device-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 16px;
+          color: var(--brand-dark);
+          font-weight: 700;
+          font-size: 16px;
+          text-align: right;
+      }
+      
+      .device-icon {
+          font-size: 24px;
+          margin-left: 12px;
+          order: 2;
+      }
+      
+      .device-text {
+          order: 1;
+      }
+      
+      .tip-step {
+          display: flex;
+          align-items: flex-start;
+          margin-bottom: 12px;
+          color: #64748b;
+          font-size: 14px;
+          text-align: right;
+      }
+      
+      .step-number {
+          background: var(--brand-purple);
+          color: white;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: bold;
+          margin-right: 12px;
+          flex-shrink: 0;
+          order: 1;
+      }
+      
+      .step-text {
+          padding-right: 24px;
+          flex: 1;
+          order: 2;
+      }
+      
+      /* RTL specific adjustments */
+      .detail-row {
+          text-align: right;
+      }
+      
+      .greeting {
+          text-align: right;
+      }
+      
+      .activation-content p {
+          text-align: center;
+      }
+      
+      .footer {
+          text-align: center;
+          padding: 40px 20px;
+          color: #64748b;
+      }
+      
+      .footer-links {
+          margin-bottom: 20px;
+      }
+      
+      .footer-link {
+          color: var(--brand-purple);
+          text-decoration: none;
+          margin: 0 15px;
+          font-weight: 500;
+      }
+      
+      .copyright {
+          font-size: 12px;
+          opacity: 0.7;
+      }
+      
+      .support-section {
+          text-align: center;
+          padding: 24px;
+          background: var(--brand-light-blue);
+          border-radius: 16px;
+          margin-top: 35px;
+          border: 1px solid #f1f5f9;
+      }
+      
+      .support-section p {
+          color: #64748b;
+          margin: 0;
+          font-size: 15px;
+      }
+      
+      .support-section a {
+          color: var(--brand-purple);
+          text-decoration: none;
+          font-weight: 600;
+      }
+      
+      @media (max-width: 600px) {
+          .container {
+              margin: 0;
+          }
+          
+          .content {
+              margin: 0 10px;
+              padding: 30px 20px;
+              border-radius: 16px;
+          }
+          
+          .greeting h1 {
+              font-size: 28px;
+          }
+          
+          .hero-section {
+              padding: 28px 24px;
+          }
+          
+          .hero-section h2 {
+              font-size: 22px;
+          }
+          
+          .method-tabs {
+              flex-direction: column;
+              align-items: center;
+          }
+          
+          .tab {
+              width: 200px;
+              text-align: center;
+          }
+          
+          .summary-header {
+              flex-direction: column;
+              gap: 12px;
+              text-align: center;
+          }
+          
+          .detail-row {
+              padding: 16px 20px;
+              text-align: right;
+          }
+          
+          .device-header {
+              justify-content: center;
+          }
+          
+          .tip-step {
+              flex-direction: column;
+              text-align: center;
+              gap: 8px;
+          }
+          
+          .step-number {
+              margin: 0 auto 8px auto;
+          }
+      }
+
+  body
+    .container
+      // Header
+      .header
+        .logo
+          img(src=logoBase64 alt="eSIM Go" style="max-width: 120px; height: auto;")
+
+      // Main Content
+      .content
+        // Greeting
+        .greeting
+          h1 #{name}
+
+        // Hero Section
+        .hero-section
+          h2 תודה על הרכישה שלך!
+          if planName
+            p(style="margin: 8px 0; font-size: 16px; opacity: 0.9;") #{planName}
+          .order-id מספר הזמנה: #{orderReference}
+
+        // Divider
+        .divider
+
+        // Order Summary
+        .order-summary
+          .summary-header
+            h3 סיכום הזמנה:
+            if invoiceUrl
+              a.invoice-link(href=invoiceUrl) לצפייה בחשבונית
+
+          .order-details
+            .detail-row
+              span.detail-value #{destination}
+              span.detail-label יעד
+            .detail-row
+              span.detail-value #{planSize}
+              span.detail-label נפח גלישה
+            .detail-row
+              span.detail-value #{validity}
+              span.detail-label מס׳ ימים
+            .detail-row
+              span.detail-value #{subtotal}
+              span.detail-label סה"כ לפני הנחה
+            if discount
+              .detail-row.highlighted
+                span.detail-value #{discount}
+                span.detail-label הנחת Hiilo
+            .detail-row.total
+              span.detail-value #{total}
+              span.detail-label סה"כ
+
+        // Divider
+        .divider
+
+        // QR Code Section
+        .qr-section
+          .qr-title להתקנת ה-eSIM, סרוק את קוד ה-QR הזה:
+          .qr-container
+            .qr-code
+              if qrCode
+                img(src=qrCode alt="קוד QR של eSIM" style="width: 200px; height: 200px; border-radius: 8px;")
+
+        // Activation Methods
+        .activation-methods
+          .method-tabs
+            a.tab.active(href="#") התקנה ישירה
+            a.tab(href="#") קוד QR
+            a.tab(href="#") ידני
+          .activation-content
+            p עבור משתמשי iOS 17.4+: הקש על כפתור ההתקנה באפליקציית Hiilo
+            p עבור מכשירים אחרים: השתמש בקוד QR למעלה או הזן פרטים באופן ידני
+
+        // Data Usage Tips
+        .tips-section
+          .tips-title איך להתאים את המכשיר לצריכה נבונה?
+          
+          .tip-device
+            .device-header
+              span.device-icon 📱
+              span.device-text מכשירי iPhone
+            ol.tip-steps
+              li.tip-step
+                span.step-number 1
+                span.step-text נווט אל #[strong הגדרות] ← #[strong סלולרי]
+              li.tip-step
+                span.step-number 2
+                span.step-text גלול למטה והשבת גיבויים אוטומטיים
+              li.tip-step
+                span.step-number 3
+                span.step-text כבה את iCloud Drive ו-iCloud Backup עבור ה-eSIM שלך
+
+          .tip-device
+            .device-header
+              span.device-icon 🤖
+              span.device-text מכשירי Android
+            ol.tip-steps
+              li.tip-step
+                span.step-number 1
+                span.step-text פתח את #[strong הגדרות] במכשיר Android שלך
+              li.tip-step
+                span.step-number 2
+                span.step-text עבור אל #[strong חשבונות] או #[strong משתמשים וחשבונות]
+              li.tip-step
+                span.step-number 3
+                span.step-text כבה סנכרון נתונים אוטומטי לחיסכון בנתונים
+
+        // Support Section
+        .support-section
+          p
+            | צריך עזרה? 
+            a(href="mailto:support@hiilo.com") צור קשר עם צוות התמיכה שלנו
+            |  👨‍💻
+          p(style="margin-top: 10px;")
+            | נסיעה טובה! ✈️
+
+      // Footer
+      .footer
+        .footer-links
+          if websiteUrl
+            a.footer-link(href=websiteUrl) אתר
+          if supportUrl
+            a.footer-link(href=supportUrl) תמיכה
+          if termsUrl
+            a.footer-link(href=termsUrl) תנאים
+          if privacyUrl
+            a.footer-link(href=privacyUrl) פרטיות
+        .copyright
+          | כל הזכויות שמורות © 2025 Hiilo
