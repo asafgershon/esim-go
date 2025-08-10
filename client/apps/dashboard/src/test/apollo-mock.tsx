@@ -44,11 +44,11 @@ export const createMockResponse = (
 // Mock data helpers
 export const mockCountriesData = {
   countries: [
-    { iso: 'US', name: 'United States' },
-    { iso: 'UK', name: 'United Kingdom' },
-    { iso: 'FR', name: 'France' },
-    { iso: 'DE', name: 'Germany' },
-    { iso: 'JP', name: 'Japan' },
+    { iso: 'US', name: 'United States', nameHebrew: 'ארצות הברית', region: 'North America', flag: '🇺🇸' },
+    { iso: 'UK', name: 'United Kingdom', nameHebrew: 'בריטניה', region: 'Europe', flag: '🇬🇧' },
+    { iso: 'FR', name: 'France', nameHebrew: 'צרפת', region: 'Europe', flag: '🇫🇷' },
+    { iso: 'DE', name: 'Germany', nameHebrew: 'גרמניה', region: 'Europe', flag: '🇩🇪' },
+    { iso: 'JP', name: 'Japan', nameHebrew: 'יפן', region: 'Asia', flag: '🇯🇵' },
   ],
 };
 

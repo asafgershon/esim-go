@@ -251,21 +251,23 @@ export function FuzzyCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-full max-w-sm p-0 bg-background"
+        className="p-0"
         side="bottom"
         align="start"
+        style={{ width: "var(--radix-popover-trigger-width)" }}
         sideOffset={4}
       >
         <Command shouldFilter={false}>
           <CommandInput
             placeholder={searchPlaceholder}
             className="h-9"
+            dir="rtl"
             value={searchValue}
             onValueChange={setSearchValue}
           />
           <CommandList
             className="overflow-y-auto"
-            style={{ maxHeight: "200px" }}
+            style={{ maxHeight: "240px" }}
           >
             {filteredOptions.length === 0 ? (
               <CommandEmpty>{emptyMessage}</CommandEmpty>

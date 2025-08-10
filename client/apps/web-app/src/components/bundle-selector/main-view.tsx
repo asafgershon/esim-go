@@ -12,11 +12,10 @@ import {
   SelectorHeader,
   SelectorSection,
 } from "@workspace/ui";
-import { CountUp } from "../ui/count-up";
 import { CalendarIcon } from "./icons";
-import { PricingSkeleton } from "./skeleton";
 import { DestinationSelector } from "./destination-selector";
 import { DestinationTabs } from "./destination-tabs";
+import { Pricing } from "./pricing";
 import { SliderWithValue } from "@workspace/ui";
 
 interface MainViewProps {
@@ -127,73 +126,20 @@ export function MainView({
         </SelectorSection>
 
         {/* Selected Destination and Pricing */}
-        {destination &&
-          (isLoadingPricing ? (
-            <PricingSkeleton />
-          ) : pricing ? (
-            <div className="bg-brand-white border border-brand-dark/10 rounded-lg md:rounded-[15px] p-3 md:p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="text-xl md:text-2xl"
-                    role="img"
-                    aria-label={destination.name || undefined}
-                  >
-                    {destination.icon}
-                  </span>
-                  <div>
-                    <h3 className="text-[14px] md:text-[18px] font-medium text-brand-dark">
-                      {destination.name}
-                    </h3>
-                    <p className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
-                      {/* We can add tagline/description here if needed in the future */}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setCountryId(null);
-                    setTripId(null);
-                  }}
-                  className="text-brand-dark opacity-50 hover:opacity-100 text-sm p-1 focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2 rounded"
-                  aria-label="הסר בחירת יעד"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Pricing Summary */}
-              <div className="pt-3 border-t border-brand-dark/10">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
-                    {pricing?.days} ימים ללא הגבלה
-                  </span>
-                  <span className="text-[14px] md:text-[18px] font-bold text-brand-dark">
-                    <CountUp
-                      key={`total-${countryId || tripId}-${numOfDays}`}
-                      end={pricing?.totalPrice || 0}
-                      decimals={2}
-                      prefix="$"
-                      duration={0.2}
-                      preserveValue
-                      fallback={
-                        <span>${pricing?.totalPrice?.toFixed(2) || 0}</span>
-                      }
-                    />
-                  </span>
-                </div>
-                {pricing?.hasDiscount && (
-                  <div
-                    className="text-center py-1 text-[8px] md:text-[10px] bg-green-50 rounded text-green-600"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    חסכת ${pricing.discountAmount?.toFixed(2) || 0}!
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : null)}
+        {destination && (
+          <Pricing
+            destination={destination}
+            pricing={pricing}
+            isLoadingPricing={isLoadingPricing}
+            countryId={countryId}
+            tripId={tripId}
+            numOfDays={numOfDays}
+            onRemoveDestination={() => {
+              setCountryId(null);
+              setTripId(null);
+            }}
+          />
+        )}
       </SelectorContent>
 
       {/* Purchase Button - Always visible */}
