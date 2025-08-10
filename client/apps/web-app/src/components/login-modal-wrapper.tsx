@@ -40,7 +40,7 @@ export function LoginModalWrapper({ onLoginSuccess }: LoginModalWrapperProps) {
   // Render modal using portal to ensure it's on top
   if (showLogin) {
     const modalContent = (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ position: 'fixed' }}>
+      <div className="fixed inset-0 flex items-center justify-center" style={{ position: 'fixed', zIndex: 1000 }}>
         {/* Backdrop */}
         <div 
           className="absolute inset-0 bg-black bg-opacity-50" 

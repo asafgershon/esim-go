@@ -38,25 +38,6 @@
         "typescript": "^5.2.0",
       },
     },
-    "packages/rules-engine": {
-      "name": "@hiilo/rules-engine",
-      "version": "1.0.0",
-      "dependencies": {
-        "@hiilo/utils": "workspace:*",
-        "dot-object": "^2.1.5",
-        "immer": "^10.1.1",
-      },
-      "devDependencies": {
-        "@graphql-codegen/cli": "^5.0.7",
-        "@graphql-codegen/typescript": "^4.1.6",
-        "@graphql-codegen/typescript-resolvers": "^4.5.1",
-        "@types/dot-object": "^2.1.6",
-        "@types/node": "^20.0.0",
-        "@vitest/ui": "^3.2.4",
-        "typescript": "^5.2.0",
-        "vitest": "^3.2.4",
-      },
-    },
     "packages/rules-engine-2": {
       "name": "@hiilo/rules-engine-2",
       "version": "1.0.0",
@@ -502,8 +483,6 @@
     "@hiilo/apollo-server": ["@hiilo/apollo-server@workspace:server"],
 
     "@hiilo/client": ["@hiilo/client@workspace:packages/esim-go-client"],
-
-    "@hiilo/rules-engine": ["@hiilo/rules-engine@workspace:packages/rules-engine"],
 
     "@hiilo/rules-engine-2": ["@hiilo/rules-engine-2@workspace:packages/rules-engine-2"],
 
