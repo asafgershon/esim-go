@@ -1,6 +1,7 @@
 import {
   type RequestFacts,
-  calculatePricingWithDB
+  calculatePricingWithDB,
+  calculatePricingEnhanced
 } from "@hiilo/rules-engine-2";
 import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
@@ -149,10 +150,14 @@ export const pricingQueries: QueryResolvers = {
         // Add user information from context for coupon validation and corporate discounts
         ...(context.auth?.user?.id ? { userId: context.auth.user.id } : {}),
         ...(context.auth?.user?.email ? { userEmail: context.auth.user.email } : {}),
+        includeDebugInfo: input.includeDebugInfo || false,
       } as RequestFacts;
 
-      // Run the database-driven pricing engine
-      const result = await calculatePricingWithDB(requestFacts);
+      // Use enhanced version if we need detailed tracking or debug info
+      const useEnhanced = input.includeDebugInfo || context.auth?.user?.role === 'ADMIN';
+      const result = useEnhanced 
+        ? await calculatePricingEnhanced(requestFacts)
+        : await calculatePricingWithDB(requestFacts);
 
       // Map the result to PricingBreakdown format
       const pricingBreakdown: PricingBreakdown = {

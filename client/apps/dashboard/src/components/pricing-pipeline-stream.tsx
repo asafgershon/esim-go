@@ -104,10 +104,6 @@ export const PricingPipelineStream: React.FC<PricingPipelineStreamProps> = ({
     <Card className="overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Activity className={`h-5 w-5 ${isStreaming ? 'animate-pulse' : ''}`} />
-            Pricing Engine Reasoning
-          </CardTitle>
           {isStreaming && (
             <div className="flex items-center gap-2">
               <div className={`h-2 w-2 rounded-full animate-pulse ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} />

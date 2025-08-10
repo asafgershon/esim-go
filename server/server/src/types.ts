@@ -188,6 +188,18 @@ export enum BundleState {
   Suspended = 'SUSPENDED'
 }
 
+export type BundleStats = {
+  __typename?: 'BundleStats';
+  /** Total number of active bundles in the system */
+  totalBundles: Scalars['Int']['output'];
+  /** Number of countries covered */
+  totalCountries: Scalars['Int']['output'];
+  /** Number of unique bundle groups */
+  totalGroups: Scalars['Int']['output'];
+  /** Number of regions covered */
+  totalRegions: Scalars['Int']['output'];
+};
+
 export type BundlesByCountry = {
   __typename?: 'BundlesByCountry';
   bundleCount: Scalars['Int']['output'];
@@ -287,6 +299,7 @@ export type BundlesForRegion = {
 export type CalculatePriceInput = {
   countryId?: InputMaybe<Scalars['String']['input']>;
   groups?: InputMaybe<Array<Scalars['String']['input']>>;
+  includeDebugInfo?: InputMaybe<Scalars['Boolean']['input']>;
   numOfDays: Scalars['Int']['input'];
   paymentMethod?: InputMaybe<PaymentMethod>;
   promo?: InputMaybe<Scalars['String']['input']>;
@@ -515,6 +528,14 @@ export type CustomerBundlePricingBreakdownArgs = {
   paymentMethod?: InputMaybe<PaymentMethod>;
 };
 
+export type CustomerDiscount = {
+  __typename?: 'CustomerDiscount';
+  amount: Scalars['Float']['output'];
+  name: Scalars['String']['output'];
+  percentage?: Maybe<Scalars['Float']['output']>;
+  reason: Scalars['String']['output'];
+};
+
 export type DataAmountGroup = {
   __typename?: 'DataAmountGroup';
   count: Scalars['Int']['output'];
@@ -548,7 +569,6 @@ export type DiscountApplication = {
   amount: Scalars['Float']['output'];
   description?: Maybe<Scalars['String']['output']>;
   percentage?: Maybe<Scalars['Float']['output']>;
-  ruleName: Scalars['String']['output'];
   type: Scalars['String']['output'];
 };
 
@@ -719,7 +739,6 @@ export type Mutation = {
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
   removeUserFromTenant: TenantOperationResponse;
-  reorderPricingRules: Array<PricingRule>;
   restoreESIM?: Maybe<EsimActionResponse>;
   sendPhoneOTP?: Maybe<SendOtpResponse>;
   signIn?: Maybe<SignInResponse>;
@@ -832,11 +851,6 @@ export type MutationPurchaseEsimArgs = {
 export type MutationRemoveUserFromTenantArgs = {
   tenantSlug: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
-};
-
-
-export type MutationReorderPricingRulesArgs = {
-  updates: Array<PricingRulePriorityUpdate>;
 };
 
 
@@ -1041,9 +1055,12 @@ export type PricingBreakdown = {
   __typename?: 'PricingBreakdown';
   appliedRules?: Maybe<Array<AppliedRule>>;
   bundle: CountryBundle;
+  calculationTimeMs?: Maybe<Scalars['Float']['output']>;
   cost: Scalars['Float']['output'];
   country: Country;
   currency: Scalars['String']['output'];
+  customerDiscounts?: Maybe<Array<CustomerDiscount>>;
+  debugInfo?: Maybe<Scalars['JSON']['output']>;
   discountPerDay: Scalars['Float']['output'];
   discountRate: Scalars['Float']['output'];
   discountValue: Scalars['Float']['output'];
@@ -1054,9 +1071,13 @@ export type PricingBreakdown = {
   markup: Scalars['Float']['output'];
   netProfit: Scalars['Float']['output'];
   priceAfterDiscount: Scalars['Float']['output'];
+  pricingSteps?: Maybe<Array<PricingStep>>;
   processingCost: Scalars['Float']['output'];
   processingRate: Scalars['Float']['output'];
   revenueAfterProcessing: Scalars['Float']['output'];
+  rulesEvaluated?: Maybe<Scalars['Int']['output']>;
+  savingsAmount?: Maybe<Scalars['Float']['output']>;
+  savingsPercentage?: Maybe<Scalars['Float']['output']>;
   selectedReason?: Maybe<Scalars['String']['output']>;
   totalCost: Scalars['Float']['output'];
   totalCostBeforeProcessing?: Maybe<Scalars['Float']['output']>;
@@ -1122,26 +1143,6 @@ export type PricingRule = {
   validUntil?: Maybe<Scalars['String']['output']>;
 };
 
-export type PricingRuleCalculation = {
-  __typename?: 'PricingRuleCalculation';
-  appliedRules: Array<AppliedRule>;
-  baseCost: Scalars['Float']['output'];
-  discounts: Array<DiscountApplication>;
-  finalPrice: Scalars['Float']['output'];
-  finalRevenue: Scalars['Float']['output'];
-  markup: Scalars['Float']['output'];
-  maxDiscountPercentage: Scalars['Float']['output'];
-  maxRecommendedPrice: Scalars['Float']['output'];
-  priceAfterDiscount: Scalars['Float']['output'];
-  processingFee: Scalars['Float']['output'];
-  processingRate: Scalars['Float']['output'];
-  profit: Scalars['Float']['output'];
-  revenueAfterProcessing: Scalars['Float']['output'];
-  selectedBundle: CountryBundle;
-  subtotal: Scalars['Float']['output'];
-  totalDiscount: Scalars['Float']['output'];
-};
-
 export type PricingRuleFilter = {
   category?: InputMaybe<RuleCategory>;
   isActive?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1153,6 +1154,29 @@ export type PricingRuleFilter = {
 export type PricingRulePriorityUpdate = {
   id: Scalars['ID']['input'];
   priority: Scalars['Int']['input'];
+};
+
+export type PricingStep = {
+  __typename?: 'PricingStep';
+  impact: Scalars['Float']['output'];
+  metadata?: Maybe<Scalars['JSON']['output']>;
+  name: Scalars['String']['output'];
+  order: Scalars['Int']['output'];
+  priceAfter: Scalars['Float']['output'];
+  priceBefore: Scalars['Float']['output'];
+  ruleId?: Maybe<Scalars['ID']['output']>;
+  timestamp?: Maybe<Scalars['Float']['output']>;
+};
+
+export type PricingStepUpdate = {
+  __typename?: 'PricingStepUpdate';
+  completedSteps: Scalars['Int']['output'];
+  correlationId: Scalars['String']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  finalBreakdown?: Maybe<PricingBreakdown>;
+  isComplete: Scalars['Boolean']['output'];
+  step?: Maybe<PricingStep>;
+  totalSteps: Scalars['Int']['output'];
 };
 
 export type ProcessCheckoutPaymentInput = {
@@ -1240,6 +1264,7 @@ export type Query = {
   allTenants: TenantConnection;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
+  bundleStats: BundleStats;
   bundles: BundleConnection;
   bundlesByCountry: Array<BundlesByCountry>;
   bundlesByGroup: Array<BundlesByGroup>;
@@ -1500,12 +1525,18 @@ export type Subscription = {
   __typename?: 'Subscription';
   catalogSyncProgress: CatalogSyncProgressUpdate;
   esimStatusUpdated: EsimStatusUpdate;
+  pricingCalculationSteps: PricingStepUpdate;
   pricingPipelineProgress: PricingPipelineStepUpdate;
 };
 
 
 export type SubscriptionEsimStatusUpdatedArgs = {
   esimId: Scalars['ID']['input'];
+};
+
+
+export type SubscriptionPricingCalculationStepsArgs = {
+  input: CalculatePriceInput;
 };
 
 
@@ -1832,6 +1863,7 @@ export type ResolversTypes = {
   BundleFilter: BundleFilter;
   BundleFilterOptions: ResolverTypeWrapper<BundleFilterOptions>;
   BundleState: BundleState;
+  BundleStats: ResolverTypeWrapper<BundleStats>;
   BundlesByCountry: ResolverTypeWrapper<Omit<BundlesByCountry, 'bundles'> & { bundles: Array<ResolversTypes['Bundle']> }>;
   BundlesByGroup: ResolverTypeWrapper<Omit<BundlesByGroup, 'bundles'> & { bundles: Array<ResolversTypes['Bundle']> }>;
   BundlesByRegion: ResolverTypeWrapper<Omit<BundlesByRegion, 'bundles'> & { bundles: Array<ResolversTypes['Bundle']> }>;
@@ -1858,6 +1890,7 @@ export type ResolversTypes = {
   CreateTripInput: CreateTripInput;
   CreateTripResponse: ResolverTypeWrapper<CreateTripResponse>;
   CustomerBundle: ResolverTypeWrapper<CustomerBundle>;
+  CustomerDiscount: ResolverTypeWrapper<CustomerDiscount>;
   DataAmountGroup: ResolverTypeWrapper<DataAmountGroup>;
   DataType: ResolverTypeWrapper<DataType>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
@@ -1902,9 +1935,10 @@ export type ResolversTypes = {
   PricingPipelineStepUpdate: ResolverTypeWrapper<PricingPipelineStepUpdate>;
   PricingRange: ResolverTypeWrapper<PricingRange>;
   PricingRule: ResolverTypeWrapper<PricingRule>;
-  PricingRuleCalculation: ResolverTypeWrapper<PricingRuleCalculation>;
   PricingRuleFilter: PricingRuleFilter;
   PricingRulePriorityUpdate: PricingRulePriorityUpdate;
+  PricingStep: ResolverTypeWrapper<PricingStep>;
+  PricingStepUpdate: ResolverTypeWrapper<PricingStepUpdate>;
   ProcessCheckoutPaymentInput: ProcessCheckoutPaymentInput;
   ProcessCheckoutPaymentResponse: ResolverTypeWrapper<ProcessCheckoutPaymentResponse>;
   ProcessingFeeConfiguration: ResolverTypeWrapper<ProcessingFeeConfiguration>;
@@ -1970,6 +2004,7 @@ export type ResolversParentTypes = {
   BundleDataAggregation: BundleDataAggregation;
   BundleFilter: BundleFilter;
   BundleFilterOptions: BundleFilterOptions;
+  BundleStats: BundleStats;
   BundlesByCountry: Omit<BundlesByCountry, 'bundles'> & { bundles: Array<ResolversParentTypes['Bundle']> };
   BundlesByGroup: Omit<BundlesByGroup, 'bundles'> & { bundles: Array<ResolversParentTypes['Bundle']> };
   BundlesByRegion: Omit<BundlesByRegion, 'bundles'> & { bundles: Array<ResolversParentTypes['Bundle']> };
@@ -1994,6 +2029,7 @@ export type ResolversParentTypes = {
   CreateTripInput: CreateTripInput;
   CreateTripResponse: CreateTripResponse;
   CustomerBundle: CustomerBundle;
+  CustomerDiscount: CustomerDiscount;
   DataAmountGroup: DataAmountGroup;
   DataType: DataType;
   DateTime: Scalars['DateTime']['output'];
@@ -2035,9 +2071,10 @@ export type ResolversParentTypes = {
   PricingPipelineStepUpdate: PricingPipelineStepUpdate;
   PricingRange: PricingRange;
   PricingRule: PricingRule;
-  PricingRuleCalculation: PricingRuleCalculation;
   PricingRuleFilter: PricingRuleFilter;
   PricingRulePriorityUpdate: PricingRulePriorityUpdate;
+  PricingStep: PricingStep;
+  PricingStepUpdate: PricingStepUpdate;
   ProcessCheckoutPaymentInput: ProcessCheckoutPaymentInput;
   ProcessCheckoutPaymentResponse: ProcessCheckoutPaymentResponse;
   ProcessingFeeConfiguration: ProcessingFeeConfiguration;
@@ -2205,6 +2242,14 @@ export type BundleFilterOptionsResolvers<ContextType = Context, ParentType exten
   countries?: Resolver<Array<ResolversTypes['FilterOption']>, ParentType, ContextType>;
   groups?: Resolver<Array<ResolversTypes['FilterOption']>, ParentType, ContextType>;
   regions?: Resolver<Array<ResolversTypes['FilterOption']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type BundleStatsResolvers<ContextType = Context, ParentType extends ResolversParentTypes['BundleStats'] = ResolversParentTypes['BundleStats']> = {
+  totalBundles?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalCountries?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalGroups?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalRegions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2426,6 +2471,14 @@ export type CustomerBundleResolvers<ContextType = Context, ParentType extends Re
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type CustomerDiscountResolvers<ContextType = Context, ParentType extends ResolversParentTypes['CustomerDiscount'] = ResolversParentTypes['CustomerDiscount']> = {
+  amount?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  percentage?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  reason?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type DataAmountGroupResolvers<ContextType = Context, ParentType extends ResolversParentTypes['DataAmountGroup'] = ResolversParentTypes['DataAmountGroup']> = {
   count?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   dataAmount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -2462,7 +2515,6 @@ export type DiscountApplicationResolvers<ContextType = Context, ParentType exten
   amount?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   percentage?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
-  ruleName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -2609,7 +2661,6 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   processCheckoutPayment?: Resolver<ResolversTypes['ProcessCheckoutPaymentResponse'], ParentType, ContextType, RequireFields<MutationProcessCheckoutPaymentArgs, 'input'>>;
   purchaseESIM?: Resolver<Maybe<ResolversTypes['PurchaseESIMResponse']>, ParentType, ContextType, RequireFields<MutationPurchaseEsimArgs, 'input' | 'planId'>>;
   removeUserFromTenant?: Resolver<ResolversTypes['TenantOperationResponse'], ParentType, ContextType, RequireFields<MutationRemoveUserFromTenantArgs, 'tenantSlug' | 'userId'>>;
-  reorderPricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<MutationReorderPricingRulesArgs, 'updates'>>;
   restoreESIM?: Resolver<Maybe<ResolversTypes['ESIMActionResponse']>, ParentType, ContextType, RequireFields<MutationRestoreEsimArgs, 'esimId'>>;
   sendPhoneOTP?: Resolver<Maybe<ResolversTypes['SendOTPResponse']>, ParentType, ContextType, RequireFields<MutationSendPhoneOtpArgs, 'phoneNumber'>>;
   signIn?: Resolver<Maybe<ResolversTypes['SignInResponse']>, ParentType, ContextType, RequireFields<MutationSignInArgs, 'input'>>;
@@ -2694,9 +2745,12 @@ export type PriceRangeResolvers<ContextType = Context, ParentType extends Resolv
 export type PricingBreakdownResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PricingBreakdown'] = ResolversParentTypes['PricingBreakdown']> = {
   appliedRules?: Resolver<Maybe<Array<ResolversTypes['AppliedRule']>>, ParentType, ContextType>;
   bundle?: Resolver<ResolversTypes['CountryBundle'], ParentType, ContextType>;
+  calculationTimeMs?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   cost?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   country?: Resolver<ResolversTypes['Country'], ParentType, ContextType>;
   currency?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  customerDiscounts?: Resolver<Maybe<Array<ResolversTypes['CustomerDiscount']>>, ParentType, ContextType>;
+  debugInfo?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
   discountPerDay?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   discountRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   discountValue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
@@ -2707,9 +2761,13 @@ export type PricingBreakdownResolvers<ContextType = Context, ParentType extends 
   markup?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   netProfit?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   priceAfterDiscount?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  pricingSteps?: Resolver<Maybe<Array<ResolversTypes['PricingStep']>>, ParentType, ContextType>;
   processingCost?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   processingRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   revenueAfterProcessing?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  rulesEvaluated?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  savingsAmount?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  savingsPercentage?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   selectedReason?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   totalCost?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   totalCostBeforeProcessing?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
@@ -2776,23 +2834,26 @@ export type PricingRuleResolvers<ContextType = Context, ParentType extends Resol
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type PricingRuleCalculationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PricingRuleCalculation'] = ResolversParentTypes['PricingRuleCalculation']> = {
-  appliedRules?: Resolver<Array<ResolversTypes['AppliedRule']>, ParentType, ContextType>;
-  baseCost?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  discounts?: Resolver<Array<ResolversTypes['DiscountApplication']>, ParentType, ContextType>;
-  finalPrice?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  finalRevenue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  markup?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  maxDiscountPercentage?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  maxRecommendedPrice?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  priceAfterDiscount?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  processingFee?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  processingRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  profit?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  revenueAfterProcessing?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  selectedBundle?: Resolver<ResolversTypes['CountryBundle'], ParentType, ContextType>;
-  subtotal?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  totalDiscount?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+export type PricingStepResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PricingStep'] = ResolversParentTypes['PricingStep']> = {
+  impact?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  metadata?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  order?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  priceAfter?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  priceBefore?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  ruleId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  timestamp?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type PricingStepUpdateResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PricingStepUpdate'] = ResolversParentTypes['PricingStepUpdate']> = {
+  completedSteps?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  correlationId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  finalBreakdown?: Resolver<Maybe<ResolversTypes['PricingBreakdown']>, ParentType, ContextType>;
+  isComplete?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  step?: Resolver<Maybe<ResolversTypes['PricingStep']>, ParentType, ContextType>;
+  totalSteps?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2846,6 +2907,7 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   allTenants?: Resolver<ResolversTypes['TenantConnection'], ParentType, ContextType, Partial<QueryAllTenantsArgs>>;
   bundle?: Resolver<ResolversTypes['Bundle'], ParentType, ContextType, RequireFields<QueryBundleArgs, 'id'>>;
   bundleFilterOptions?: Resolver<ResolversTypes['BundleFilterOptions'], ParentType, ContextType>;
+  bundleStats?: Resolver<ResolversTypes['BundleStats'], ParentType, ContextType>;
   bundles?: Resolver<ResolversTypes['BundleConnection'], ParentType, ContextType, Partial<QueryBundlesArgs>>;
   bundlesByCountry?: Resolver<Array<ResolversTypes['BundlesByCountry']>, ParentType, ContextType, Partial<QueryBundlesByCountryArgs>>;
   bundlesByGroup?: Resolver<Array<ResolversTypes['BundlesByGroup']>, ParentType, ContextType, Partial<QueryBundlesByGroupArgs>>;
@@ -2926,6 +2988,7 @@ export type SignUpResponseResolvers<ContextType = Context, ParentType extends Re
 export type SubscriptionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
   catalogSyncProgress?: SubscriptionResolver<ResolversTypes['CatalogSyncProgressUpdate'], "catalogSyncProgress", ParentType, ContextType>;
   esimStatusUpdated?: SubscriptionResolver<ResolversTypes['ESIMStatusUpdate'], "esimStatusUpdated", ParentType, ContextType, RequireFields<SubscriptionEsimStatusUpdatedArgs, 'esimId'>>;
+  pricingCalculationSteps?: SubscriptionResolver<ResolversTypes['PricingStepUpdate'], "pricingCalculationSteps", ParentType, ContextType, RequireFields<SubscriptionPricingCalculationStepsArgs, 'input'>>;
   pricingPipelineProgress?: SubscriptionResolver<ResolversTypes['PricingPipelineStepUpdate'], "pricingPipelineProgress", ParentType, ContextType, RequireFields<SubscriptionPricingPipelineProgressArgs, 'correlationId'>>;
 };
 
@@ -3048,6 +3111,7 @@ export type Resolvers<ContextType = Context> = {
   BundleConnection?: BundleConnectionResolvers<ContextType>;
   BundleDataAggregation?: BundleDataAggregationResolvers<ContextType>;
   BundleFilterOptions?: BundleFilterOptionsResolvers<ContextType>;
+  BundleStats?: BundleStatsResolvers<ContextType>;
   BundlesByCountry?: BundlesByCountryResolvers<ContextType>;
   BundlesByGroup?: BundlesByGroupResolvers<ContextType>;
   BundlesByRegion?: BundlesByRegionResolvers<ContextType>;
@@ -3067,6 +3131,7 @@ export type Resolvers<ContextType = Context> = {
   CreateCheckoutSessionResponse?: CreateCheckoutSessionResponseResolvers<ContextType>;
   CreateTripResponse?: CreateTripResponseResolvers<ContextType>;
   CustomerBundle?: CustomerBundleResolvers<ContextType>;
+  CustomerDiscount?: CustomerDiscountResolvers<ContextType>;
   DataAmountGroup?: DataAmountGroupResolvers<ContextType>;
   DataType?: DataTypeResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
@@ -3100,7 +3165,8 @@ export type Resolvers<ContextType = Context> = {
   PricingPipelineStepUpdate?: PricingPipelineStepUpdateResolvers<ContextType>;
   PricingRange?: PricingRangeResolvers<ContextType>;
   PricingRule?: PricingRuleResolvers<ContextType>;
-  PricingRuleCalculation?: PricingRuleCalculationResolvers<ContextType>;
+  PricingStep?: PricingStepResolvers<ContextType>;
+  PricingStepUpdate?: PricingStepUpdateResolvers<ContextType>;
   ProcessCheckoutPaymentResponse?: ProcessCheckoutPaymentResponseResolvers<ContextType>;
   ProcessingFeeConfiguration?: ProcessingFeeConfigurationResolvers<ContextType>;
   PurchaseESIMResponse?: PurchaseEsimResponseResolvers<ContextType>;

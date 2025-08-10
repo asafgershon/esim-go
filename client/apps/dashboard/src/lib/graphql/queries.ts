@@ -579,11 +579,96 @@ export const SIMULATE_PRICING = gql(`
       unusedDays
       selectedReason
       totalCostBeforeProcessing
+      # Enhanced fields for step-by-step tracking
+      pricingSteps {
+        order
+        name
+        priceBefore
+        priceAfter
+        impact
+        ruleId
+        metadata
+        timestamp
+      }
+      customerDiscounts {
+        name
+        amount
+        percentage
+        reason
+      }
+      savingsAmount
+      savingsPercentage
+      calculationTimeMs
+      rulesEvaluated
     }
   }
 `);
 
-// WebSocket subscription for pricing pipeline progress
+// WebSocket subscription for real-time pricing calculation steps
+export const PRICING_CALCULATION_STEPS = gql(`
+  subscription PricingCalculationSteps($input: CalculatePriceInput!) {
+    pricingCalculationSteps(input: $input) {
+      correlationId
+      step {
+        order
+        name
+        priceBefore
+        priceAfter
+        impact
+        ruleId
+        metadata
+        timestamp
+      }
+      isComplete
+      totalSteps
+      completedSteps
+      error
+      finalBreakdown {
+        totalCost
+        discountValue
+        priceAfterDiscount
+        cost
+        markup
+        discountRate
+        processingRate
+        processingCost
+        finalRevenue
+        netProfit
+        discountPerDay
+        appliedRules {
+          name
+          category
+          impact
+        }
+        unusedDays
+        selectedReason
+        totalCostBeforeProcessing
+        pricingSteps {
+          order
+          name
+          priceBefore
+          priceAfter
+          impact
+          ruleId
+          metadata
+          timestamp
+        }
+        customerDiscounts {
+          name
+          amount
+          percentage
+          reason
+        }
+        savingsAmount
+        savingsPercentage
+        calculationTimeMs
+        rulesEvaluated
+      }
+    }
+  }
+`);
+
+// Legacy subscription (can be removed once migration is complete)
 export const PRICING_PIPELINE_PROGRESS = gql(`
   subscription PricingPipelineProgress($correlationId: String!) {
     pricingPipelineProgress(correlationId: $correlationId) {
@@ -1058,6 +1143,7 @@ export const GET_AIRHALO_PRICING_DATA = gql(`
     }
   }
 `);
+
 
 // Coupon Management Queries
 export const GET_COUPONS = gql(`

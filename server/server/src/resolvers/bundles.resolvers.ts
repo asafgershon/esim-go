@@ -40,6 +40,32 @@ export const bundlesResolvers: Partial<Resolvers> = {
       }
     },
 
+    bundleStats: async (_, __, context) => {
+      try {
+        // Get total active bundles count
+        const { count: totalBundles } = await context.repositories.bundles.search({
+          limit: 1, // We only need the count
+        });
+
+        // Get unique countries, regions, and groups in parallel
+        const [countries, regions, groups] = await Promise.all([
+          context.repositories.bundles.getCountries(),
+          context.repositories.bundles.getRegions(),
+          context.repositories.bundles.getGroups(),
+        ]);
+        
+        return {
+          totalBundles,
+          totalCountries: countries.length,
+          totalRegions: regions.length,
+          totalGroups: groups.length,
+        };
+      } catch (error) {
+        logger.error("Error fetching bundle stats", error as Error);
+        throw error;
+      }
+    },
+
     bundles: async (_, { filter, pagination }, context) => {
       try {
         const { data, count, hasNextPage, hasPreviousPage } =

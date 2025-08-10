@@ -36,6 +36,8 @@ type Query {
   bundle(id: String!): Bundle!
   # Search bundles with filtering and pagination
   bundles(filter: BundleFilter, pagination: PaginationInput): BundleConnection!
+  # Get total bundle count
+  bundleStats: BundleStats!
 
   bundlesByCountry(countryId: String): [BundlesByCountry!]!
   bundlesByRegion(regionId: String): [BundlesByRegion!]!
@@ -234,6 +236,28 @@ type BundleFilterOptions {
   regions: [FilterOption!]!
 }
 
+type BundleStats {
+  """
+  Total number of active bundles in the system
+  """
+  totalBundles: Int!
+  
+  """
+  Number of countries covered
+  """
+  totalCountries: Int!
+  
+  """
+  Number of regions covered
+  """
+  totalRegions: Int!
+  
+  """
+  Number of unique bundle groups
+  """
+  totalGroups: Int!
+}
+
 input BundleFilter {
   countries: [String!]
   groups: [String!]
@@ -339,6 +363,11 @@ type Subscription {
 
   # Pricing pipeline progress (authenticated users only)
   pricingPipelineProgress(correlationId: String!): PricingPipelineStepUpdate! @auth
+  
+  # NEW: Real-time pricing calculation steps
+  pricingCalculationSteps(
+    input: CalculatePriceInput!
+  ): PricingStepUpdate! @auth
 }
 
 interface Bundle {
@@ -1024,6 +1053,28 @@ type TenantOperationResponse {
 }
 
 # Pricing Types
+
+# Step-by-step pricing breakdown
+type PricingStep {
+  order: Int!
+  name: String!
+  priceBefore: Float!
+  priceAfter: Float!
+  impact: Float! # Can be positive (markup/fee) or negative (discount)
+  ruleId: ID
+  metadata: JSON
+  timestamp: Float
+}
+
+# Customer-friendly discount information
+type CustomerDiscount {
+  name: String!
+  amount: Float!
+  percentage: Float
+  reason: String! # Why they got this discount
+}
+
+# Main pricing breakdown
 type PricingBreakdown {
   # Bundle Information - Public
   bundle: CountryBundle!
@@ -1036,6 +1087,12 @@ type PricingBreakdown {
   discountValue: Float! # Total discount amount
   priceAfterDiscount: Float! # Final price users pay
   finalPrice: Float! # Final price users pay
+  
+  # NEW: Customer-friendly fields
+  customerDiscounts: [CustomerDiscount!] # Simple discount list for customers
+  savingsAmount: Float # Total amount saved
+  savingsPercentage: Float # Percentage saved
+  
   # Admin-only business sensitive fields
   cost: Float! @auth(role: "ADMIN") # Base cost from supplier
   markup: Float! @auth(role: "ADMIN") # Markup amount added to cost
@@ -1046,9 +1103,17 @@ type PricingBreakdown {
   revenueAfterProcessing: Float! @auth(role: "ADMIN") # What we receive after processing fees
   netProfit: Float! @auth(role: "ADMIN") # Final profit
   discountPerDay: Float! @auth(role: "ADMIN") # Per-day discount rate
+  
   # Rule-based pricing breakdown - Admin only
   appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
   discounts: [DiscountApplication!] @auth(role: "ADMIN") # Detailed discount breakdown (nullable)
+  
+  # NEW: Step-by-step breakdown - Admin only
+  pricingSteps: [PricingStep!] @auth(role: "ADMIN") # Detailed step-by-step breakdown
+  
+  # NEW: Performance metrics - Admin only
+  calculationTimeMs: Float @auth(role: "ADMIN") # Time taken to calculate pricing
+  rulesEvaluated: Int @auth(role: "ADMIN") # Number of rules evaluated
   
   # Pipeline metadata - Admin only
   unusedDays: Int @auth(role: "ADMIN") # Days not used from selected bundle
@@ -1056,6 +1121,18 @@ type PricingBreakdown {
   
   # Additional pricing engine fields - Admin only
   totalCostBeforeProcessing: Float @auth(role: "ADMIN") # Price before processing fees
+  debugInfo: JSON @auth(role: "ADMIN") # Optional debug information
+}
+
+# Real-time pricing step update for subscriptions
+type PricingStepUpdate {
+  correlationId: String!
+  step: PricingStep
+  isComplete: Boolean!
+  totalSteps: Int!
+  completedSteps: Int!
+  error: String
+  finalBreakdown: PricingBreakdown
 }
 
 type PricingRange {
@@ -1219,6 +1296,7 @@ input CalculatePriceInput {
   paymentMethod: PaymentMethod
   promo: String
   groups: [String!]
+  includeDebugInfo: Boolean # Include detailed debug information (admin only)
 }
 
 # Pricing Configuration Types (Legacy - to be migrated to rules)

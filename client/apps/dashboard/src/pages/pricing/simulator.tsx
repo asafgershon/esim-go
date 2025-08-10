@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@apollo/client';
-import { PricingSimulatorSplitView } from '../../components/pricing-simulator-split-view';
+import { PricingSimulatorLayout } from '../../components/pricing-simulator-layout';
 import { GET_COUNTRIES } from '../../lib/graphql/queries';
 import { GetCountriesQuery } from '@/__generated__/graphql';
 
@@ -18,7 +18,7 @@ export const PricingSimulatorPage: React.FC = () => {
 
   return (
     <div className="h-full">
-      <PricingSimulatorSplitView countries={countriesData?.countries || []} />
+      <PricingSimulatorLayout countries={countriesData?.countries || []} />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import { useLazyQuery, useSubscription } from '@apollo/client';
-import { SIMULATE_PRICING, PRICING_PIPELINE_PROGRESS } from '@/lib/graphql/queries';
-import { SimulatePricingQuery, PricingPipelineProgressSubscription, PaymentMethod } from '@/__generated__/graphql';
+import { SIMULATE_PRICING, PRICING_PIPELINE_PROGRESS, PRICING_CALCULATION_STEPS } from '@/lib/graphql/queries';
+import { SimulatePricingQuery, PricingPipelineProgressSubscription, PricingCalculationStepsSubscription, PaymentMethod } from '@/__generated__/graphql';
 import { useCallback, useMemo, useState } from 'react';
 
 interface PricingSimulatorParams {
@@ -66,6 +66,28 @@ interface PricingSimulatorData {
     name: string;
     region?: string | null;
   };
+  
+  // Enhanced real-time data
+  pricingSteps?: Array<{
+    order: number;
+    name: string;
+    priceBefore: number;
+    priceAfter: number;
+    impact: number;
+    ruleId?: string | null;
+    metadata?: any;
+    timestamp: string;
+  }>;
+  customerDiscounts?: Array<{
+    name: string;
+    amount: number;
+    percentage?: number | null;
+    reason?: string | null;
+  }>;
+  savingsAmount?: number;
+  savingsPercentage?: number;
+  calculationTimeMs?: number;
+  rulesEvaluated?: number;
 }
 
 interface PipelineStep {
@@ -87,10 +109,28 @@ interface UsePricingSimulatorReturn {
   loading: boolean;
   error: any;
   
-  // Pipeline streaming
+  // Pipeline streaming (legacy)
   pipelineSteps: PipelineStep[];
   isStreaming: boolean;
   wsConnected: boolean;
+  
+  // Real-time calculation steps
+  calculationSteps: Array<{
+    order: number;
+    name: string;
+    priceBefore: number;
+    priceAfter: number;
+    impact: number;
+    ruleId?: string | null;
+    metadata?: any;
+    timestamp: string;
+  }>;
+  calculationProgress: {
+    isComplete: boolean;
+    totalSteps: number;
+    completedSteps: number;
+    error?: string | null;
+  };
   
   // Analysis helpers
   comparePaymentMethods: (params: Omit<PricingSimulatorParams, 'paymentMethod'>) => Promise<{
@@ -115,8 +155,27 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
   const [pipelineSteps, setPipelineSteps] = useState<PipelineStep[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [wsConnected, setWsConnected] = useState(true);
+  
+  // Real-time calculation steps state
+  const [calculationSteps, setCalculationSteps] = useState<Array<{
+    order: number;
+    name: string;
+    priceBefore: number;
+    priceAfter: number;
+    impact: number;
+    ruleId?: string | null;
+    metadata?: any;
+    timestamp: string;
+  }>>([]);
+  const [calculationProgress, setCalculationProgress] = useState<{
+    isComplete: boolean;
+    totalSteps: number;
+    completedSteps: number;
+    error?: string | null;
+  }>({ isComplete: false, totalSteps: 0, completedSteps: 0 });
+  const [currentInput, setCurrentInput] = useState<PricingSimulatorParams | null>(null);
 
-  // Subscribe to pipeline progress when streaming
+  // Subscribe to pipeline progress when streaming (legacy)
   const { data: progressData } = useSubscription<PricingPipelineProgressSubscription>(
     PRICING_PIPELINE_PROGRESS,
     {
@@ -136,6 +195,59 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
       },
       onComplete: () => {
         setIsStreaming(false);
+      },
+    }
+  );
+  
+  // Subscribe to real-time calculation steps
+  const { data: calculationStepsData, error: calculationStepsError } = useSubscription<PricingCalculationStepsSubscription>(
+    PRICING_CALCULATION_STEPS,
+    {
+      variables: currentInput ? {
+        input: {
+          numOfDays: currentInput.numOfDays,
+          countryId: currentInput.countryId.toUpperCase(),
+          paymentMethod: currentInput.paymentMethod,
+          groups: currentInput.groups,
+        }
+      } : undefined,
+      skip: !currentInput,
+      onData: ({ data }) => {
+        if (data.data?.pricingCalculationSteps) {
+          const stepData = data.data.pricingCalculationSteps;
+          
+          // Update calculation steps
+          if (stepData.step) {
+            setCalculationSteps(prev => {
+              // Avoid duplicates by checking order
+              const exists = prev.find(s => s.order === stepData.step!.order);
+              if (exists) return prev;
+              return [...prev, stepData.step!].sort((a, b) => a.order - b.order);
+            });
+          }
+          
+          // Update progress
+          setCalculationProgress({
+            isComplete: stepData.isComplete,
+            totalSteps: stepData.totalSteps,
+            completedSteps: stepData.completedSteps,
+            error: stepData.error,
+          });
+          
+          // If calculation is complete and we have final breakdown, update simulation data
+          if (stepData.isComplete && stepData.finalBreakdown) {
+            // This will trigger the data transformation in the useMemo below
+            // by setting the simulationData to include the final breakdown
+          }
+        }
+      },
+      onError: (error) => {
+        console.error('Calculation steps streaming error:', error);
+        setCalculationProgress(prev => ({ ...prev, error: error.message }));
+      },
+      onComplete: () => {
+        setCalculationProgress(prev => ({ ...prev, isComplete: true }));
+        setCurrentInput(null); // Clear input to stop subscription
       },
     }
   );
@@ -205,16 +317,29 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
         name: result.country.name,
         region: result.country.region,
       },
+      
+      // Enhanced fields
+      pricingSteps: result.pricingSteps,
+      customerDiscounts: result.customerDiscounts,
+      savingsAmount: result.savingsAmount,
+      savingsPercentage: result.savingsPercentage,
+      calculationTimeMs: result.calculationTimeMs,
+      rulesEvaluated: result.rulesEvaluated,
     };
   }, [simulationData]);
 
   // Simulate pricing for given parameters
   const simulate = useCallback(async (params: PricingSimulatorParams) => {
-    // Generate correlation ID for pipeline tracking
+    // Generate correlation ID for pipeline tracking (legacy)
     const newCorrelationId = `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     setCorrelationId(newCorrelationId);
     setPipelineSteps([]);
     setIsStreaming(true);
+    
+    // Reset real-time calculation state
+    setCalculationSteps([]);
+    setCalculationProgress({ isComplete: false, totalSteps: 0, completedSteps: 0 });
+    setCurrentInput(params); // This will trigger the subscription
 
     try {
       await simulateQuery({
@@ -235,6 +360,7 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
     } catch (error) {
       console.error('Simulation error:', error);
       setIsStreaming(false);
+      setCurrentInput(null);
     }
   }, [simulateQuery]);
 
@@ -243,6 +369,9 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
     setCorrelationId(null);
     setPipelineSteps([]);
     setIsStreaming(false);
+    setCalculationSteps([]);
+    setCalculationProgress({ isComplete: false, totalSteps: 0, completedSteps: 0 });
+    setCurrentInput(null);
   }, []);
 
   // Compare different payment methods for the same bundle
@@ -373,10 +502,12 @@ export function usePricingSimulator(): UsePricingSimulatorReturn {
     clear,
     data,
     loading: simulationLoading,
-    error: simulationError,
+    error: simulationError || calculationStepsError,
     pipelineSteps,
     isStreaming,
     wsConnected,
+    calculationSteps,
+    calculationProgress,
     comparePaymentMethods,
     analyzeProfitability,
   };
