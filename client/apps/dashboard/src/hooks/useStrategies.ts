@@ -1,10 +1,7 @@
 import { useQuery } from "@apollo/client";
 import { GET_PRICING_STRATEGIES } from "../graphql/queries/strategies";
-import {
-  StrategyFilter,
-  UseStrategiesResult,
-  DatabasePricingStrategy,
-} from "../types/strategies";
+import type { StrategyFilter, PricingStrategy } from "../__generated__/graphql";
+import type { UseStrategiesResult } from "./strategy-utils";
 
 /**
  * Hook to fetch all pricing strategies from the database with optional filtering
@@ -21,7 +18,7 @@ export const useStrategies = (filter?: StrategyFilter): UseStrategiesResult => {
   });
 
   return {
-    strategies: (data?.pricingStrategies as DatabasePricingStrategy[]) || [],
+    strategies: (data?.pricingStrategies as PricingStrategy[]) || [],
     loading,
     error,
     refetch,

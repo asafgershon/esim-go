@@ -11,10 +11,10 @@ import {
   useSearchStrategies,
 } from "../useStrategies";
 import { GET_PRICING_STRATEGIES } from "../../graphql/queries/strategies";
-import { DatabasePricingStrategy, StrategyFilter } from "../../types/strategies";
+import type { PricingStrategy, StrategyFilter } from "../../__generated__/graphql";
 
 // Mock data fixtures
-const mockStrategies: DatabasePricingStrategy[] = [
+const mockStrategies: PricingStrategy[] = [
   {
     id: "strategy-123",
     code: "TEST_STRATEGY",

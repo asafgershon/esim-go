@@ -1,6 +1,3 @@
-// Strategy types
-export * from './strategies';
-
 // Re-export existing pricing types for backward compatibility
 export type {
   Block,

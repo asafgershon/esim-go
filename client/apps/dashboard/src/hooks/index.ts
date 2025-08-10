@@ -11,11 +11,14 @@ export * from './useLoadStrategy';
 // Re-export types for convenience
 export type {
   StrategyFilter,
+  PricingStrategy,
+  StrategyBlock,
+  PricingBlock,
+} from '../__generated__/graphql';
+
+export type {
   UseStrategiesResult,
   UseLoadStrategyResult,
-  DatabasePricingStrategy as PricingStrategy,
-  DatabasePricingStrategyWithBlocks as PricingStrategyWithBlocks,
-  DatabaseStrategyBlock as StrategyBlock,
-  DatabasePricingBlock as PricingBlock,
+  PricingStrategyWithBlocks,
   StrategyListItem,
-} from '../types/strategies';
+} from './strategy-utils';

@@ -26,11 +26,11 @@ import React, { useState, useMemo } from "react";
 import { Block, StrategyLoadModalProps } from "../../types";
 import { useStrategies, useSearchStrategies } from "../../../../hooks/useStrategies";
 import { useLoadStrategy } from "../../../../hooks/useLoadStrategy";
+import type { PricingStrategy } from "../../../../__generated__/graphql";
 import { 
-  DatabasePricingStrategy,
   mapStrategyToListItem,
-  StrategyListItem 
-} from "../../../../types/strategies";
+  type StrategyListItem 
+} from "../../../../hooks/strategy-utils";
 
 const StrategyLoadModal: React.FC<StrategyLoadModalProps> = ({
   isOpen,

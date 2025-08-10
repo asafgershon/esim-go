@@ -12,15 +12,13 @@ import {
   GET_PRICING_STRATEGY, 
   GET_DEFAULT_PRICING_STRATEGY 
 } from "../../graphql/queries/strategies";
-import { 
-  DatabasePricingStrategyWithBlocks,
-  mapStrategyToUIFormat 
-} from "../../types/strategies";
+import type { PricingStrategyWithBlocks } from "../strategy-utils";
+import { mapStrategyToUIFormat } from "../strategy-utils";
 import { StrategyStep } from "../../pages/pricing/types";
 
 // Mock the mapStrategyToUIFormat function
-vi.mock("../../types/strategies", async () => {
-  const actual = await vi.importActual("../../types/strategies");
+vi.mock("../strategy-utils", async () => {
+  const actual = await vi.importActual("../strategy-utils");
   return {
     ...actual,
     mapStrategyToUIFormat: vi.fn(),
@@ -53,7 +51,7 @@ const mockStrategyBlock = {
   pricingBlock: mockPricingBlock,
 };
 
-const mockStrategyWithBlocks: DatabasePricingStrategyWithBlocks = {
+const mockStrategyWithBlocks: PricingStrategyWithBlocks = {
   id: "strategy-123",
   code: "TEST_STRATEGY",
   name: "Test Strategy",
@@ -73,7 +71,7 @@ const mockStrategyWithBlocks: DatabasePricingStrategyWithBlocks = {
   blocks: [mockStrategyBlock],
 };
 
-const mockDefaultStrategy: DatabasePricingStrategyWithBlocks = {
+const mockDefaultStrategy: PricingStrategyWithBlocks = {
   ...mockStrategyWithBlocks,
   id: "default-strategy-456",
   code: "DEFAULT_STRATEGY",

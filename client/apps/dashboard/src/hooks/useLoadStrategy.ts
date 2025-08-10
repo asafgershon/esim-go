@@ -1,10 +1,10 @@
 import { useQuery } from "@apollo/client";
 import { GET_PRICING_STRATEGY, GET_DEFAULT_PRICING_STRATEGY } from "../graphql/queries/strategies";
-import {
+import type { 
   UseLoadStrategyResult,
-  DatabasePricingStrategyWithBlocks,
-  mapStrategyToUIFormat,
-} from "../types/strategies";
+  PricingStrategyWithBlocks,
+} from "./strategy-utils";
+import { mapStrategyToUIFormat } from "./strategy-utils";
 import { StrategyStep } from "../pages/pricing/types";
 
 /**
@@ -22,7 +22,7 @@ export const useLoadStrategy = (strategyId: string | null): UseLoadStrategyResul
     fetchPolicy: "cache-and-network", // Always fetch fresh data but show cache first
   });
 
-  const strategy = data?.pricingStrategy as DatabasePricingStrategyWithBlocks | null;
+  const strategy = data?.pricingStrategy as PricingStrategyWithBlocks | null;
 
   /**
    * Converts the loaded strategy into the format needed by the drag-and-drop builder
@@ -54,7 +54,7 @@ export const useLoadDefaultStrategy = (): UseLoadStrategyResult => {
     fetchPolicy: "cache-and-network", // Always fetch fresh data but show cache first
   });
 
-  const strategy = data?.defaultPricingStrategy as DatabasePricingStrategyWithBlocks | null;
+  const strategy = data?.defaultPricingStrategy as PricingStrategyWithBlocks | null;
 
   /**
    * Converts the loaded default strategy into the format needed by the drag-and-drop builder
