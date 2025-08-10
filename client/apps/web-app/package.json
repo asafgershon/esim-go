@@ -21,7 +21,7 @@
     "clean": "rm -rf .next dist node_modules/.vite tsconfig.tsbuildinfo .turbo"
   },
   "dependencies": {
-    "@apollo/client": "^3.13.9",
+    "@apollo/client": "3.13.9",
     "@hookform/resolvers": "^5.2.1",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",
@@ -61,6 +61,7 @@
     "zod": "^4.0.15"
   },
   "devDependencies": {
+    "@apollo/experimental-nextjs-app-support": "^0.12.3",
     "@eslint/eslintrc": "^3",
     "@graphql-codegen/cli": "^5.0.7",
     "@graphql-codegen/typescript": "^4.1.6",

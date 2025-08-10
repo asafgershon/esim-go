@@ -1204,6 +1204,27 @@ export type PricingStepUpdate = {
   totalSteps: Scalars['Int']['output'];
 };
 
+export type PricingStrategy = {
+  __typename?: 'PricingStrategy';
+  activationCount?: Maybe<Scalars['Int']['output']>;
+  archivedAt?: Maybe<Scalars['String']['output']>;
+  blocks: Array<StrategyBlock>;
+  code: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  createdBy: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isDefault: Scalars['Boolean']['output'];
+  lastActivatedAt?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  parentStrategyId?: Maybe<Scalars['String']['output']>;
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  updatedBy?: Maybe<Scalars['String']['output']>;
+  validatedAt?: Maybe<Scalars['String']['output']>;
+  validationErrors?: Maybe<Scalars['JSON']['output']>;
+  version: Scalars['Int']['output'];
+};
+
 export type ProcessCheckoutPaymentInput = {
   paymentMethodId: Scalars['String']['input'];
   savePaymentMethod?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1303,6 +1324,7 @@ export type Query = {
   catalogSyncHistory: CatalogSyncHistoryConnection;
   conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
+  defaultPricingStrategy?: Maybe<PricingStrategy>;
   esimDetails?: Maybe<Esim>;
   getAdminESIMDetails: AdminEsimDetails;
   getAllESIMs: Array<AdminEsim>;
@@ -1322,6 +1344,8 @@ export type Query = {
   pricingFilters: PricingFilters;
   pricingRule?: Maybe<PricingRule>;
   pricingRules: Array<PricingRule>;
+  pricingStrategies: Array<PricingStrategy>;
+  pricingStrategy?: Maybe<PricingStrategy>;
   simulatePricingRule: PricingBreakdown;
   tenant?: Maybe<Tenant>;
   tenants: Array<Tenant>;
@@ -1457,6 +1481,16 @@ export type QueryPricingRulesArgs = {
 };
 
 
+export type QueryPricingStrategiesArgs = {
+  filter?: InputMaybe<StrategyFilter>;
+};
+
+
+export type QueryPricingStrategyArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QuerySimulatePricingRuleArgs = {
   rule: CreatePricingRuleInput;
   testContext: TestPricingContext;
@@ -1556,6 +1590,20 @@ export type SocialSignInInput = {
   firstName?: InputMaybe<Scalars['String']['input']>;
   idToken: Scalars['String']['input'];
   lastName?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type StrategyBlock = {
+  __typename?: 'StrategyBlock';
+  configOverrides?: Maybe<Scalars['JSON']['output']>;
+  isEnabled: Scalars['Boolean']['output'];
+  pricingBlock: PricingBlock;
+  priority: Scalars['Int']['output'];
+};
+
+export type StrategyFilter = {
+  archived?: InputMaybe<Scalars['Boolean']['input']>;
+  isDefault?: InputMaybe<Scalars['Boolean']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Subscription = {
@@ -1985,6 +2033,7 @@ export type ResolversTypes = {
   PricingRulePriorityUpdate: PricingRulePriorityUpdate;
   PricingStep: ResolverTypeWrapper<PricingStep>;
   PricingStepUpdate: ResolverTypeWrapper<PricingStepUpdate>;
+  PricingStrategy: ResolverTypeWrapper<PricingStrategy>;
   ProcessCheckoutPaymentInput: ProcessCheckoutPaymentInput;
   ProcessCheckoutPaymentResponse: ResolverTypeWrapper<ProcessCheckoutPaymentResponse>;
   ProcessingFeeConfiguration: ResolverTypeWrapper<ProcessingFeeConfiguration>;
@@ -2004,6 +2053,8 @@ export type ResolversTypes = {
   SignUpInput: SignUpInput;
   SignUpResponse: ResolverTypeWrapper<SignUpResponse>;
   SocialSignInInput: SocialSignInInput;
+  StrategyBlock: ResolverTypeWrapper<StrategyBlock>;
+  StrategyFilter: StrategyFilter;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Subscription: ResolverTypeWrapper<{}>;
   SyncHistoryParams: SyncHistoryParams;
@@ -2123,6 +2174,7 @@ export type ResolversParentTypes = {
   PricingRulePriorityUpdate: PricingRulePriorityUpdate;
   PricingStep: PricingStep;
   PricingStepUpdate: PricingStepUpdate;
+  PricingStrategy: PricingStrategy;
   ProcessCheckoutPaymentInput: ProcessCheckoutPaymentInput;
   ProcessCheckoutPaymentResponse: ProcessCheckoutPaymentResponse;
   ProcessingFeeConfiguration: ProcessingFeeConfiguration;
@@ -2141,6 +2193,8 @@ export type ResolversParentTypes = {
   SignUpInput: SignUpInput;
   SignUpResponse: SignUpResponse;
   SocialSignInInput: SocialSignInInput;
+  StrategyBlock: StrategyBlock;
+  StrategyFilter: StrategyFilter;
   String: Scalars['String']['output'];
   Subscription: {};
   SyncHistoryParams: SyncHistoryParams;
@@ -2923,6 +2977,27 @@ export type PricingStepUpdateResolvers<ContextType = Context, ParentType extends
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type PricingStrategyResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PricingStrategy'] = ResolversParentTypes['PricingStrategy']> = {
+  activationCount?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  archivedAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  blocks?: Resolver<Array<ResolversTypes['StrategyBlock']>, ParentType, ContextType>;
+  code?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  createdBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isDefault?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  lastActivatedAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  parentStrategyId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  updatedAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  updatedBy?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  validatedAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  validationErrors?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  version?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type ProcessCheckoutPaymentResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ProcessCheckoutPaymentResponse'] = ResolversParentTypes['ProcessCheckoutPaymentResponse']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   orderId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
@@ -2987,6 +3062,7 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   catalogSyncHistory?: Resolver<ResolversTypes['CatalogSyncHistoryConnection'], ParentType, ContextType, Partial<QueryCatalogSyncHistoryArgs>>;
   conflictingPricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<QueryConflictingPricingRulesArgs, 'ruleId'>>;
   countries?: Resolver<Array<ResolversTypes['Country']>, ParentType, ContextType>;
+  defaultPricingStrategy?: Resolver<Maybe<ResolversTypes['PricingStrategy']>, ParentType, ContextType>;
   esimDetails?: Resolver<Maybe<ResolversTypes['ESIM']>, ParentType, ContextType, RequireFields<QueryEsimDetailsArgs, 'id'>>;
   getAdminESIMDetails?: Resolver<ResolversTypes['AdminESIMDetails'], ParentType, ContextType, RequireFields<QueryGetAdminEsimDetailsArgs, 'iccid'>>;
   getAllESIMs?: Resolver<Array<ResolversTypes['AdminESIM']>, ParentType, ContextType>;
@@ -3006,6 +3082,8 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   pricingFilters?: Resolver<ResolversTypes['PricingFilters'], ParentType, ContextType>;
   pricingRule?: Resolver<Maybe<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<QueryPricingRuleArgs, 'id'>>;
   pricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, Partial<QueryPricingRulesArgs>>;
+  pricingStrategies?: Resolver<Array<ResolversTypes['PricingStrategy']>, ParentType, ContextType, Partial<QueryPricingStrategiesArgs>>;
+  pricingStrategy?: Resolver<Maybe<ResolversTypes['PricingStrategy']>, ParentType, ContextType, RequireFields<QueryPricingStrategyArgs, 'id'>>;
   simulatePricingRule?: Resolver<ResolversTypes['PricingBreakdown'], ParentType, ContextType, RequireFields<QuerySimulatePricingRuleArgs, 'rule' | 'testContext'>>;
   tenant?: Resolver<Maybe<ResolversTypes['Tenant']>, ParentType, ContextType, RequireFields<QueryTenantArgs, 'slug'>>;
   tenants?: Resolver<Array<ResolversTypes['Tenant']>, ParentType, ContextType>;
@@ -3050,6 +3128,14 @@ export type SignUpResponseResolvers<ContextType = Context, ParentType extends Re
   sessionToken?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type StrategyBlockResolvers<ContextType = Context, ParentType extends ResolversParentTypes['StrategyBlock'] = ResolversParentTypes['StrategyBlock']> = {
+  configOverrides?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  isEnabled?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  pricingBlock?: Resolver<ResolversTypes['PricingBlock'], ParentType, ContextType>;
+  priority?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3237,6 +3323,7 @@ export type Resolvers<ContextType = Context> = {
   PricingRule?: PricingRuleResolvers<ContextType>;
   PricingStep?: PricingStepResolvers<ContextType>;
   PricingStepUpdate?: PricingStepUpdateResolvers<ContextType>;
+  PricingStrategy?: PricingStrategyResolvers<ContextType>;
   ProcessCheckoutPaymentResponse?: ProcessCheckoutPaymentResponseResolvers<ContextType>;
   ProcessingFeeConfiguration?: ProcessingFeeConfigurationResolvers<ContextType>;
   PurchaseESIMResponse?: PurchaseEsimResponseResolvers<ContextType>;
@@ -3246,6 +3333,7 @@ export type Resolvers<ContextType = Context> = {
   SendOTPResponse?: SendOtpResponseResolvers<ContextType>;
   SignInResponse?: SignInResponseResolvers<ContextType>;
   SignUpResponse?: SignUpResponseResolvers<ContextType>;
+  StrategyBlock?: StrategyBlockResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
   Tenant?: TenantResolvers<ContextType>;
   TenantConnection?: TenantConnectionResolvers<ContextType>;

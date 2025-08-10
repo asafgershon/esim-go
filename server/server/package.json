@@ -16,6 +16,7 @@
     "test:watch": "bun test --watch",
     "test:email": "bun run src/scripts/test-email-delivery.ts",
     "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules/.cache",
     "postinstall": "bun run codegen && bun run codegen:dbtypes"
   },
   "devDependencies": {

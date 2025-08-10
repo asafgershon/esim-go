@@ -20,6 +20,7 @@ import {
   BundleRepository,
   TenantRepository,
 } from "../repositories";
+import { StrategiesRepository } from "../repositories/strategies.repository";
 import { TripRepository } from "../repositories/trip.repository";
 import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -50,6 +51,7 @@ export type Context = {
     bundles: BundleRepository;
     pricingRules: PricingRulesRepository;
     tenants: TenantRepository;
+    strategies: StrategiesRepository;
   };
   dataSources: {
     catalogue: CatalogueDataSourceV2;

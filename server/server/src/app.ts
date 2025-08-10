@@ -50,6 +50,7 @@ import {
 } from "./repositories";
 import { PricingRulesRepository } from "./repositories/pricing-rules.repository";
 import { TripRepository } from "./repositories/trip.repository";
+import { StrategiesRepository } from "./repositories/strategies.repository";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
@@ -140,6 +141,7 @@ async function startServer() {
     const pricingRulesRepository = new PricingRulesRepository();
     const bundleRepository = new BundleRepository();
     const tenantRepository = new TenantRepository(supabaseAdmin);
+    const strategiesRepository = new StrategiesRepository();
 
     // Create an Express app and HTTP server
     const app = express();
@@ -189,6 +191,7 @@ async function startServer() {
               bundles: bundleRepository,
               pricingRules: pricingRulesRepository,
               tenants: tenantRepository,
+              strategies: strategiesRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
@@ -432,6 +435,7 @@ async function startServer() {
               bundles: bundleRepository,
               pricingRules: pricingRulesRepository,
               tenants: tenantRepository,
+              strategies: strategiesRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),

@@ -18,6 +18,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "lint": "turbo run lint",
+    "clean": "turbo run clean",
     "workers:start": "bun run --filter ./workers start"
   },
   "devDependencies": {

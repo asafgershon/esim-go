@@ -10,6 +10,7 @@ import { availableBlocks } from "./constants";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { usePricingBlocks } from "../../hooks/usePricingBlocks";
 import { mapDatabaseBlocksToUI } from "./utils/mapDatabaseBlocksToUI";
+import { Block, StrategyStep } from "./types";
 
 const StrategyPage: React.FC = () => {
   const [strategyName, setStrategyName] = useState<string>("New Strategy #1");
@@ -19,6 +20,10 @@ const StrategyPage: React.FC = () => {
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [isEditingDescription, setIsEditingDescription] =
     useState<boolean>(false);
+  
+  // State for tracking loaded strategy
+  const [loadedStrategyId, setLoadedStrategyId] = useState<string | undefined>();
+  const [loadedStrategyCode, setLoadedStrategyCode] = useState<string | undefined>();
 
   // Fetch pricing blocks from database (includes fallback logic in resolver)
   const { blocks: databaseBlocks, loading: blocksLoading, error: blocksError } = usePricingBlocks({
@@ -42,6 +47,32 @@ const StrategyPage: React.FC = () => {
     openEditModal,
     saveStepConfig,
   } = useDragAndDrop(allBlocks);
+
+  // Handle strategy loading
+  const handleLoadStrategy = (strategyBlocks: Block[], strategyMetadata?: { id: string; name: string; code: string; description?: string }) => {
+    // Convert Block[] to StrategyStep[] by adding uniqueId and config
+    const loadedSteps: StrategyStep[] = strategyBlocks.map((block) => ({
+      ...block,
+      uniqueId: `${block.type}-${Date.now()}-${Math.random()}`,
+      config: block.params || {},
+    }));
+    
+    setStrategySteps(loadedSteps);
+    
+    if (strategyMetadata) {
+      // Use actual strategy metadata when available
+      setLoadedStrategyId(strategyMetadata.id);
+      setLoadedStrategyCode(strategyMetadata.code);
+      setStrategyName(strategyMetadata.name);
+      if (strategyMetadata.description) {
+        setStrategyDescription(strategyMetadata.description);
+      }
+    } else {
+      // Fallback for when metadata isn't available
+      setLoadedStrategyId(`strategy-${Date.now()}`);
+      setLoadedStrategyCode(`STR-${Math.random().toString(36).substr(2, 6).toUpperCase()}`);
+    }
+  };
 
   // Filter out blocks that are already used in the strategy (after hook initialization)
   const usedBlockTypes = new Set(strategySteps.map(step => step.type));
@@ -88,6 +119,10 @@ const StrategyPage: React.FC = () => {
               setIsEditingName={setIsEditingName}
               isEditingDescription={isEditingDescription}
               setIsEditingDescription={setIsEditingDescription}
+              onLoadStrategy={handleLoadStrategy}
+              currentStrategySteps={strategySteps}
+              loadedStrategyId={loadedStrategyId}
+              loadedStrategyCode={loadedStrategyCode}
             />
 
             <StrategyFlowBuilder
@@ -108,7 +143,11 @@ const StrategyPage: React.FC = () => {
                   Test Strategy
                 </button>
                 <button
-                  onClick={() => setStrategySteps([])}
+                  onClick={() => {
+                    setStrategySteps([]);
+                    setLoadedStrategyId(undefined);
+                    setLoadedStrategyCode(undefined);
+                  }}
                   className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   Clear All

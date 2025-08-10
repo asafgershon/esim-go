@@ -37,6 +37,11 @@ export interface StrategyHeaderProps {
   setIsEditingName: (editing: boolean) => void;
   isEditingDescription: boolean;
   setIsEditingDescription: (editing: boolean) => void;
+  // New props for strategy loading
+  onLoadStrategy: (strategyBlocks: Block[]) => void;
+  currentStrategySteps: Block[];
+  loadedStrategyId?: string;
+  loadedStrategyCode?: string;
 }
 
 export interface AvailableBlocksSidebarProps {
@@ -58,4 +63,11 @@ export interface StepConfigurationModalProps {
   tempConfig: { [key: string]: any };
   setTempConfig: (config: { [key: string]: any }) => void;
   saveStepConfig: () => void;
+}
+
+export interface StrategyLoadModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onStrategyLoad: (strategyBlocks: Block[]) => void;
+  currentStrategySteps: Block[];
 }

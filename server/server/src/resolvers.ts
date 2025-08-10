@@ -14,6 +14,7 @@ import { tripsResolvers } from "./resolvers/trips-resolvers";
 import { usersResolvers } from "./resolvers/users-resolvers";
 import { airHaloResolvers } from "./resolvers/airhalo-resolvers";
 import { pricingManagementResolvers } from "./resolvers/pricing-management-resolvers";
+import { strategiesResolvers } from "./resolvers/strategies-resolvers";
 import { tenantResolvers } from "./resolvers/tenant-resolvers";
 import { pricingSubscriptionResolvers } from "./resolvers/pricing-subscription-resolvers";
 import { batchPricingSubscriptionResolvers } from "./resolvers/batch-pricing-subscription";
@@ -59,6 +60,9 @@ export const resolvers: Resolvers = {
 
     // Pricing management resolvers (admin only)
     ...pricingManagementResolvers.Query!,
+
+    // Strategies resolvers (admin only)
+    ...strategiesResolvers.Query!,
 
     // Tenant resolvers
     ...tenantResolvers.Query!,
@@ -285,5 +289,10 @@ export const resolvers: Resolvers = {
   // Tenant field resolvers
   Tenant: {
     ...tenantResolvers.Tenant!,
+  },
+  
+  // Strategy field resolvers
+  PricingStrategy: {
+    ...strategiesResolvers.PricingStrategy!,
   },
 };

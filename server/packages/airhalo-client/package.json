@@ -11,7 +11,6 @@
   "scripts": {
     "generate": "bun openapi-generator-cli generate -c openapi-generator.config.yaml --skip-validate-spec",
     "build": "bun tsc",
-    "clean": "rm -rf dist src/generated",
     "dev": "bun tsc --watch",
     "test": "bun test",
     "prepublishOnly": "bun clean && bun generate && bun build"

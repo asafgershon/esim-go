@@ -64,6 +64,11 @@ type Query {
   pricingBlocks(filter: PricingBlockFilter): [PricingBlock!]! @auth(role: "ADMIN")
   pricingBlock(id: ID!): PricingBlock @auth(role: "ADMIN")
 
+  # Pricing strategies
+  pricingStrategies(filter: StrategyFilter): [PricingStrategy!]! @auth(role: "ADMIN")
+  pricingStrategy(id: ID!): PricingStrategy @auth(role: "ADMIN")
+  defaultPricingStrategy: PricingStrategy
+
   # High demand countries
   highDemandCountries: [String!]! @auth(role: "ADMIN")
   
@@ -1648,4 +1653,38 @@ input PricingBlockFilter {
   isActive: Boolean
   isEditable: Boolean
   searchTerm: String
+}
+
+# Pricing Strategy System Types
+type PricingStrategy {
+  id: ID!
+  code: String!
+  name: String!
+  description: String
+  version: Int!
+  isDefault: Boolean!
+  activationCount: Int
+  parentStrategyId: String
+  validatedAt: String
+  validationErrors: JSON
+  lastActivatedAt: String
+  archivedAt: String
+  createdBy: String!
+  updatedBy: String
+  createdAt: String!
+  updatedAt: String
+  blocks: [StrategyBlock!]!
+}
+
+type StrategyBlock {
+  priority: Int!
+  isEnabled: Boolean!
+  configOverrides: JSON
+  pricingBlock: PricingBlock!
+}
+
+input StrategyFilter {
+  isDefault: Boolean
+  archived: Boolean
+  search: String
 }

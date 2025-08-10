@@ -43,6 +43,9 @@
     "test": {
       "dependsOn": ["^build"],
       "inputs": ["src/**", "test/**", "*.test.*", "*.spec.*", "!dist/**", "!node_modules/**"]
+    },
+    "clean": {
+      "cache": false
     }
   }
 }

@@ -4,6 +4,7 @@ export { OrderRepository } from "./order.repository";
 export { UserRepository } from "./user.repository";
 export { HighDemandCountryRepository } from "./high-demand-country.repository";
 export { PricingRulesRepository } from "./pricing-rules.repository";
+export { StrategiesRepository } from "./strategies.repository";
 export { TenantRepository } from "./tenant.repository";
 
 // Catalog repositories
@@ -32,6 +33,18 @@ export type {
 } from "./high-demand-country.repository";
 
 export type { Tenant, UserTenant } from "./tenant.repository";
+
+export type {
+  PricingStrategy,
+  StrategyBlock,
+  PricingStrategyWithBlocks,
+  StrategyBlockWithDetails,
+  CreateStrategyInput,
+  UpdateStrategyInput,
+  AddBlockToStrategyInput,
+  UpdateStrategyBlockInput,
+  StrategyFilter,
+} from "./strategies.repository";
 
 // Catalog types
 export type { 
