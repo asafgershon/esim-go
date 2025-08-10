@@ -1,26 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { Card } from "@workspace/ui";
-import { Button, GoogleSignInButton, AppleSignInButton } from "@workspace/ui";
-import { Input } from "@workspace/ui";
-import { PhoneInput, validatePhoneNumber } from "@workspace/ui";
-import { Label, InputOTP, InputOTPGroup, InputOTPSlot } from "@workspace/ui";
 import { useAppleSignIn } from "@/hooks/useAppleSignIn";
+import { useAuth } from "@/hooks/useAuth";
 import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 import { usePhoneOTP } from "@/hooks/usePhoneOTP";
-import { useAuth } from "@/hooks/useAuth";
-import { User, CheckCircle, LogOut } from "lucide-react";
+import { AppleSignInButton, Button, Card, GoogleSignInButton, Input, InputOTP, InputOTPGroup, InputOTPSlot, Label, PhoneInput, validatePhoneNumber } from "@workspace/ui";
+import { LogOut, User } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
 import { NameCollectionForm } from "./name-collection-form";
 import { SectionHeader } from "./section-header";
 
 interface LoginSectionProps {
   sectionNumber?: number;
-  isCompleted?: boolean;
 }
 
-export function LoginSection({ sectionNumber, isCompleted = false }: LoginSectionProps) {
+export function LoginSection({ sectionNumber }: LoginSectionProps) {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [phoneInput, setPhoneInput] = useState("");

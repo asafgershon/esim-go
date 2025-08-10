@@ -276,10 +276,7 @@ export function CheckoutContainer() {
         </div>
         {/* Right Column - Payment & Login */}
         <div className="space-y-6">
-          <LoginSection 
-            sectionNumber={2} 
-            isCompleted={!!session?.steps?.authentication?.completed}
-          />
+          <LoginSection sectionNumber={2} />
           
           <DeliveryMethodSection
             sectionNumber={3}
