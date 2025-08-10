@@ -251,7 +251,8 @@ export function CheckoutContainer() {
   }
 
   // Loading and error states
-  if (sessionLoading) {
+  // Show skeleton until we have both token AND session data loaded
+  if (sessionLoading || !session) {
     return <CheckoutSkeleton />;
   }
   if (sessionError) {
