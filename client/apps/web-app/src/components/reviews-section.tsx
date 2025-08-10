@@ -146,11 +146,11 @@ export const ReviewsSection = () => {
 
   return (
     <section
-      className="relative overflow-hidden w-full"
+      className="relative overflow-hidden w-full max-w-[100vw]"
       id="reviews"
       aria-label="ביקורות לקוחות"
     >
-      <div className="container mx-auto px-4 w-full">
+      <div className="container mx-auto px-4 w-full max-w-full">
         {/* Section header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-5xl font-bold text-brand-green mb-4">
@@ -161,12 +161,12 @@ export const ReviewsSection = () => {
         {/* Horizontal Scroll Container */}
         <div
           ref={containerRef}
-          className="relative overflow-hidden"
+          className="relative overflow-hidden max-w-full"
           style={{ height: "200px" }}
         >
           <div
             ref={contentRef}
-            className="flex gap-6 px-4 absolute top-0 left-0"
+            className="flex gap-6 px-4 absolute top-0 left-0 max-w-none"
             style={{
               cursor: "grab",
               userSelect: "none",
