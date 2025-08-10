@@ -28,12 +28,16 @@ interface MainViewProps {
     discountAmount?: number;
   } | null;
   isLoadingPricing?: boolean;
+  isDayLoaded?: (day: number) => boolean;
+  isDayLoading?: (day: number) => boolean;
   handlePurchase: () => void;
 }
 
 export function MainView({
   pricing,
   isLoadingPricing = false,
+  isDayLoaded,
+  isDayLoading,
   handlePurchase,
 }: MainViewProps) {
   // Get UI state and handlers from context
@@ -131,6 +135,8 @@ export function MainView({
             destination={destination}
             pricing={pricing}
             isLoadingPricing={isLoadingPricing}
+            isDayLoaded={isDayLoaded}
+            isDayLoading={isDayLoading}
             countryId={countryId}
             tripId={tripId}
             numOfDays={numOfDays}

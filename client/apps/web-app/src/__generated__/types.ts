@@ -184,6 +184,18 @@ export enum BundleState {
   Suspended = 'SUSPENDED'
 }
 
+export type BundleStats = {
+  __typename?: 'BundleStats';
+  /** Total number of active bundles in the system */
+  totalBundles: Scalars['Int']['output'];
+  /** Number of countries covered */
+  totalCountries: Scalars['Int']['output'];
+  /** Number of unique bundle groups */
+  totalGroups: Scalars['Int']['output'];
+  /** Number of regions covered */
+  totalRegions: Scalars['Int']['output'];
+};
+
 export type BundlesByCountry = {
   __typename?: 'BundlesByCountry';
   bundleCount: Scalars['Int']['output'];
@@ -283,6 +295,7 @@ export type BundlesForRegion = {
 export type CalculatePriceInput = {
   countryId?: InputMaybe<Scalars['String']['input']>;
   groups?: InputMaybe<Array<Scalars['String']['input']>>;
+  includeDebugInfo?: InputMaybe<Scalars['Boolean']['input']>;
   numOfDays: Scalars['Int']['input'];
   paymentMethod?: InputMaybe<PaymentMethod>;
   promo?: InputMaybe<Scalars['String']['input']>;
@@ -467,6 +480,13 @@ export type CreatePricingRuleInput = {
   validUntil?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type CreateTenantInput = {
+  imgUrl: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  slug: Scalars['ID']['input'];
+  tenantType?: InputMaybe<TenantType>;
+};
+
 export type CreateTripInput = {
   countryIds: Array<Scalars['ISOCountryCode']['input']>;
   description: Scalars['String']['input'];
@@ -502,6 +522,14 @@ export type CustomerBundle = Bundle & {
 
 export type CustomerBundlePricingBreakdownArgs = {
   paymentMethod?: InputMaybe<PaymentMethod>;
+};
+
+export type CustomerDiscount = {
+  __typename?: 'CustomerDiscount';
+  amount: Scalars['Float']['output'];
+  name: Scalars['String']['output'];
+  percentage?: Maybe<Scalars['Float']['output']>;
+  reason: Scalars['String']['output'];
 };
 
 export type DataAmountGroup = {
@@ -692,17 +720,21 @@ export type Mutation = {
   __typename?: 'Mutation';
   activateESIM?: Maybe<ActivateEsimResponse>;
   assignPackageToUser?: Maybe<AssignPackageResponse>;
+  assignUserToTenant: TenantOperationResponse;
   cancelESIM?: Maybe<EsimActionResponse>;
   clonePricingRule: PricingRule;
   createCheckoutSession: CreateCheckoutSessionResponse;
   createPricingRule: PricingRule;
+  createTenant: Tenant;
   createTrip?: Maybe<CreateTripResponse>;
   deletePricingRule: Scalars['Boolean']['output'];
+  deleteTenant: TenantOperationResponse;
   deleteTrip?: Maybe<DeleteTripResponse>;
   deleteUser?: Maybe<DeleteUserResponse>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
+  removeUserFromTenant: TenantOperationResponse;
   restoreESIM?: Maybe<EsimActionResponse>;
   sendPhoneOTP?: Maybe<SendOtpResponse>;
   signIn?: Maybe<SignInResponse>;
@@ -719,6 +751,7 @@ export type Mutation = {
   updatePricingRule: PricingRule;
   updatePricingRulePriorities: Array<PricingRule>;
   updateProfile?: Maybe<UpdateProfileResponse>;
+  updateTenant: Tenant;
   updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
   validateOrder: ValidateOrderResponse;
@@ -733,6 +766,13 @@ export type MutationActivateEsimArgs = {
 
 export type MutationAssignPackageToUserArgs = {
   planId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationAssignUserToTenantArgs = {
+  role?: InputMaybe<Scalars['String']['input']>;
+  tenantSlug: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
 
@@ -758,6 +798,11 @@ export type MutationCreatePricingRuleArgs = {
 };
 
 
+export type MutationCreateTenantArgs = {
+  input: CreateTenantInput;
+};
+
+
 export type MutationCreateTripArgs = {
   input: CreateTripInput;
 };
@@ -765,6 +810,11 @@ export type MutationCreateTripArgs = {
 
 export type MutationDeletePricingRuleArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteTenantArgs = {
+  slug: Scalars['ID']['input'];
 };
 
 
@@ -791,6 +841,12 @@ export type MutationProcessCheckoutPaymentArgs = {
 export type MutationPurchaseEsimArgs = {
   input: PurchaseEsimInput;
   planId: Scalars['ID']['input'];
+};
+
+
+export type MutationRemoveUserFromTenantArgs = {
+  tenantSlug: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -873,6 +929,12 @@ export type MutationUpdatePricingRulePrioritiesArgs = {
 
 export type MutationUpdateProfileArgs = {
   input: UpdateProfileInput;
+};
+
+
+export type MutationUpdateTenantArgs = {
+  input: UpdateTenantInput;
+  slug: Scalars['ID']['input'];
 };
 
 
@@ -989,9 +1051,12 @@ export type PricingBreakdown = {
   __typename?: 'PricingBreakdown';
   appliedRules?: Maybe<Array<AppliedRule>>;
   bundle: CountryBundle;
+  calculationTimeMs?: Maybe<Scalars['Float']['output']>;
   cost: Scalars['Float']['output'];
   country: Country;
   currency: Scalars['String']['output'];
+  customerDiscounts?: Maybe<Array<CustomerDiscount>>;
+  debugInfo?: Maybe<Scalars['JSON']['output']>;
   discountPerDay: Scalars['Float']['output'];
   discountRate: Scalars['Float']['output'];
   discountValue: Scalars['Float']['output'];
@@ -1002,9 +1067,13 @@ export type PricingBreakdown = {
   markup: Scalars['Float']['output'];
   netProfit: Scalars['Float']['output'];
   priceAfterDiscount: Scalars['Float']['output'];
+  pricingSteps?: Maybe<Array<PricingStep>>;
   processingCost: Scalars['Float']['output'];
   processingRate: Scalars['Float']['output'];
   revenueAfterProcessing: Scalars['Float']['output'];
+  rulesEvaluated?: Maybe<Scalars['Int']['output']>;
+  savingsAmount?: Maybe<Scalars['Float']['output']>;
+  savingsPercentage?: Maybe<Scalars['Float']['output']>;
   selectedReason?: Maybe<Scalars['String']['output']>;
   totalCost: Scalars['Float']['output'];
   totalCostBeforeProcessing?: Maybe<Scalars['Float']['output']>;
@@ -1081,6 +1150,29 @@ export type PricingRuleFilter = {
 export type PricingRulePriorityUpdate = {
   id: Scalars['ID']['input'];
   priority: Scalars['Int']['input'];
+};
+
+export type PricingStep = {
+  __typename?: 'PricingStep';
+  impact: Scalars['Float']['output'];
+  metadata?: Maybe<Scalars['JSON']['output']>;
+  name: Scalars['String']['output'];
+  order: Scalars['Int']['output'];
+  priceAfter: Scalars['Float']['output'];
+  priceBefore: Scalars['Float']['output'];
+  ruleId?: Maybe<Scalars['ID']['output']>;
+  timestamp?: Maybe<Scalars['Float']['output']>;
+};
+
+export type PricingStepUpdate = {
+  __typename?: 'PricingStepUpdate';
+  completedSteps: Scalars['Int']['output'];
+  correlationId: Scalars['String']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  finalBreakdown?: Maybe<PricingBreakdown>;
+  isComplete: Scalars['Boolean']['output'];
+  step?: Maybe<PricingStep>;
+  totalSteps: Scalars['Int']['output'];
 };
 
 export type ProcessCheckoutPaymentInput = {
@@ -1165,8 +1257,10 @@ export type PurchaseEsimResponse = {
 export type Query = {
   __typename?: 'Query';
   activePricingRules: Array<PricingRule>;
+  allTenants: TenantConnection;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
+  bundleStats: BundleStats;
   bundles: BundleConnection;
   bundlesByCountry: Array<BundlesByCountry>;
   bundlesByGroup: Array<BundlesByGroup>;
@@ -1198,8 +1292,16 @@ export type Query = {
   pricingRule?: Maybe<PricingRule>;
   pricingRules: Array<PricingRule>;
   simulatePricingRule: PricingBreakdown;
+  tenant?: Maybe<Tenant>;
+  tenants: Array<Tenant>;
   trips: Array<Trip>;
   users: Array<User>;
+};
+
+
+export type QueryAllTenantsArgs = {
+  filter?: InputMaybe<TenantFilter>;
+  pagination?: InputMaybe<PaginationInput>;
 };
 
 
@@ -1319,6 +1421,11 @@ export type QuerySimulatePricingRuleArgs = {
   testContext: TestPricingContext;
 };
 
+
+export type QueryTenantArgs = {
+  slug: Scalars['ID']['input'];
+};
+
 export type RuleAction = {
   __typename?: 'RuleAction';
   metadata?: Maybe<Scalars['JSON']['output']>;
@@ -1412,14 +1519,27 @@ export type SocialSignInInput = {
 
 export type Subscription = {
   __typename?: 'Subscription';
+  calculatePricesBatchStream: PricingBreakdown;
   catalogSyncProgress: CatalogSyncProgressUpdate;
   esimStatusUpdated: EsimStatusUpdate;
+  pricingCalculationSteps: PricingStepUpdate;
   pricingPipelineProgress: PricingPipelineStepUpdate;
+};
+
+
+export type SubscriptionCalculatePricesBatchStreamArgs = {
+  inputs: Array<CalculatePriceInput>;
+  requestedDays?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
 export type SubscriptionEsimStatusUpdatedArgs = {
   esimId: Scalars['ID']['input'];
+};
+
+
+export type SubscriptionPricingCalculationStepsArgs = {
+  input: CalculatePriceInput;
 };
 
 
@@ -1449,6 +1569,40 @@ export enum SyncJobType {
   FullSync = 'FULL_SYNC',
   GroupSync = 'GROUP_SYNC',
   MetadataSync = 'METADATA_SYNC'
+}
+
+export type Tenant = {
+  __typename?: 'Tenant';
+  createdAt: Scalars['String']['output'];
+  imgUrl: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  slug: Scalars['ID']['output'];
+  tenantType: TenantType;
+  updatedAt: Scalars['String']['output'];
+  userCount?: Maybe<Scalars['Int']['output']>;
+};
+
+export type TenantConnection = {
+  __typename?: 'TenantConnection';
+  nodes: Array<Tenant>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type TenantFilter = {
+  search?: InputMaybe<Scalars['String']['input']>;
+  tenantType?: InputMaybe<TenantType>;
+};
+
+export type TenantOperationResponse = {
+  __typename?: 'TenantOperationResponse';
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export enum TenantType {
+  Master = 'MASTER',
+  Standard = 'STANDARD'
 }
 
 export type TestPricingContext = {
@@ -1563,6 +1717,12 @@ export type UpdateProfileResponse = {
   user?: Maybe<User>;
 };
 
+export type UpdateTenantInput = {
+  imgUrl?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  tenantType?: InputMaybe<TenantType>;
+};
+
 export type UpdateTripInput = {
   countryIds: Array<Scalars['ISOCountryCode']['input']>;
   description: Scalars['String']['input'];
@@ -1614,6 +1774,13 @@ export type VerifyOtpInput = {
   otp: Scalars['String']['input'];
   phoneNumber: Scalars['String']['input'];
 };
+
+export type PricingCalculationStepsSubscriptionVariables = Exact<{
+  input: CalculatePriceInput;
+}>;
+
+
+export type PricingCalculationStepsSubscription = { __typename?: 'Subscription', pricingCalculationSteps: { __typename?: 'PricingStepUpdate', correlationId: string, isComplete: boolean, totalSteps: number, completedSteps: number, step?: { __typename?: 'PricingStep', order: number, name: string, priceBefore: number, priceAfter: number, impact: number, ruleId?: string | null, metadata?: any | null, timestamp?: number | null } | null, finalBreakdown?: { __typename?: 'PricingBreakdown', finalPrice: number, currency: string, discountValue: number, savingsAmount?: number | null, savingsPercentage?: number | null, customerDiscounts?: Array<{ __typename?: 'CustomerDiscount', name: string, amount: number, percentage?: number | null, reason: string }> | null } | null } };
 
 export type CreateCheckoutSessionMutationVariables = Exact<{
   input: CreateCheckoutSessionInput;
@@ -1755,9 +1922,29 @@ export type UpdateProfileMutationVariables = Exact<{
 
 export type UpdateProfileMutation = { __typename?: 'Mutation', updateProfile?: { __typename?: 'UpdateProfileResponse', success: boolean, error?: string | null, user?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, createdAt: string, updatedAt: string } | null } | null };
 
+export type PricingDiscountsUpdateSubscriptionVariables = Exact<{
+  input: CalculatePriceInput;
+}>;
+
+
+export type PricingDiscountsUpdateSubscription = { __typename?: 'Subscription', pricingCalculationSteps: { __typename?: 'PricingStepUpdate', correlationId: string, isComplete: boolean, totalSteps: number, completedSteps: number, error?: string | null, finalBreakdown?: { __typename?: 'PricingBreakdown', totalCost: number, discountValue: number, priceAfterDiscount: number, currency: string, savingsAmount?: number | null, savingsPercentage?: number | null, customerDiscounts?: Array<{ __typename?: 'CustomerDiscount', name: string, amount: number, percentage?: number | null, reason: string }> | null } | null } };
+
 export type CalculateDestinationPricesQueryVariables = Exact<{
   inputs: Array<CalculatePriceInput> | CalculatePriceInput;
 }>;
 
 
 export type CalculateDestinationPricesQuery = { __typename?: 'Query', calculatePrices: Array<{ __typename?: 'PricingBreakdown', finalPrice: number, currency: string, country: { __typename?: 'Country', iso: any } }> };
+
+export type GetBundleStatsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetBundleStatsQuery = { __typename?: 'Query', bundleStats: { __typename?: 'BundleStats', totalBundles: number, totalCountries: number, totalRegions: number, totalGroups: number } };
+
+export type CalculatePricesBatchStreamSubscriptionVariables = Exact<{
+  inputs: Array<CalculatePriceInput> | CalculatePriceInput;
+  requestedDays?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type CalculatePricesBatchStreamSubscription = { __typename?: 'Subscription', calculatePricesBatchStream: { __typename?: 'PricingBreakdown', finalPrice: number, currency: string, totalCost: number, discountValue: number, duration: number, savingsAmount?: number | null, savingsPercentage?: number | null, bundle: { __typename?: 'CountryBundle', id: string, name: string, duration: number, isUnlimited: boolean, data?: number | null, group?: string | null, country: { __typename?: 'Country', iso: any, name: string } }, country: { __typename?: 'Country', iso: any, name: string, nameHebrew?: string | null, region?: string | null, flag?: string | null }, customerDiscounts?: Array<{ __typename?: 'CustomerDiscount', name: string, amount: number, percentage?: number | null, reason: string }> | null } };

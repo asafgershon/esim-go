@@ -322,3 +322,30 @@ export const UPDATE_PROFILE = gql`
   }
 `;
 
+// Customer-friendly pricing subscription (no internal business data)
+export const PRICING_DISCOUNTS_SUBSCRIPTION = gql`
+  subscription PricingDiscountsUpdate($input: CalculatePriceInput!) {
+    pricingCalculationSteps(input: $input) {
+      correlationId
+      isComplete
+      totalSteps
+      completedSteps
+      error
+      finalBreakdown {
+        totalCost
+        discountValue
+        priceAfterDiscount
+        currency
+        customerDiscounts {
+          name
+          amount
+          percentage
+          reason
+        }
+        savingsAmount
+        savingsPercentage
+      }
+    }
+  }
+`;
+

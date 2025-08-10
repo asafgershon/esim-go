@@ -1,6 +1,6 @@
 "use client";
 
-import { useBatchPricing } from "@/hooks/useBatchPricing";
+import { useBatchPricingStream } from "@/hooks/useBatchPricingStream";
 import { cn, Selector, SelectorCard } from "@workspace/ui";
 import { useMemo, useEffect } from "react";
 import { DatePickerView } from "./date-picker-view";
@@ -28,9 +28,12 @@ function BundleSelectorInternal() {
     getPricing,
     loading: pricingLoading,
     error: pricingError,
-  } = useBatchPricing({
+    isDayLoaded,
+    isDayLoading,
+  } = useBatchPricingStream({
     regionId: tripId || undefined,
     countryId: countryId || undefined,
+    requestedDays: numOfDays,
   });
 
   // Get pricing for current number of days
@@ -62,6 +65,8 @@ function BundleSelectorInternal() {
           <MainView
             pricing={pricing}
             isLoadingPricing={isLoadingPricing}
+            isDayLoaded={isDayLoaded}
+            isDayLoading={isDayLoading}
             handlePurchase={() => handlePurchase(pricing)}
           />
         )}

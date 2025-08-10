@@ -6,6 +6,9 @@ import type { Destination } from "@/contexts/bundle-selector-context";
 import { useBundleSelector } from "@/contexts/bundle-selector-context";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
+import { useSimulatedPricingSteps } from "@/hooks/useSimulatedPricingSteps";
+import { Sparkles, Loader2 } from "lucide-react";
+import { PricingStepsDisplay } from "./pricing-steps-display";
 
 interface PricingProps {
   destination: Destination;
@@ -18,6 +21,8 @@ interface PricingProps {
     discountAmount?: number;
   } | null;
   isLoadingPricing?: boolean;
+  isDayLoaded?: (day: number) => boolean;
+  isDayLoading?: (day: number) => boolean;
   countryId: string | null;
   tripId: string | null;
   numOfDays: number;
@@ -28,18 +33,64 @@ export function Pricing({
   destination,
   pricing,
   isLoadingPricing = false,
+  isDayLoaded,
+  isDayLoading,
   countryId,
   tripId,
   numOfDays,
   onRemoveDestination,
 }: PricingProps) {
   const { startDate, endDate } = useBundleSelector();
-  if (isLoadingPricing) {
+  
+  // Use simulated pricing steps for animation
+  // Show animation when we have pricing data (not when loading)
+  const {
+    isCalculating,
+    progress,
+    steps: calculationSteps,
+    totalSteps,
+    completedSteps,
+  } = useSimulatedPricingSteps({
+    finalPrice: pricing?.totalPrice || pricing?.finalPrice || 0,
+    hasDiscount: pricing?.hasDiscount || false,
+    discountAmount: pricing?.discountAmount || 0,
+    enabled: Boolean(pricing && (countryId || tripId)),
+  });
+  
+  // Display values with fallback to original pricing
+  const displayPricing = {
+    finalPrice: pricing?.finalPrice || pricing?.totalPrice || 0,
+    totalPrice: pricing?.totalPrice || pricing?.finalPrice || 0,
+    days: numOfDays,
+    hasDiscount: pricing?.hasDiscount ?? false,
+    discountAmount: pricing?.discountAmount || 0,
+  };
+  // Smart loading states based on streaming data
+  const isDayCurrentlyLoading = isDayLoading ? isDayLoading(numOfDays) : isLoadingPricing;
+  const isDayAlreadyLoaded = isDayLoaded ? isDayLoaded(numOfDays) : false;
+  
+  // Show skeleton if this specific day is loading and not yet loaded
+  if (isDayCurrentlyLoading && !isDayAlreadyLoaded) {
     return <PricingSkeleton />;
   }
 
   if (!pricing) {
     return null;
+  }
+
+  // Show animation overlay when calculating (for visual appeal)
+  if (isCalculating) {
+    return (
+      <div className="relative">
+        <PricingStepsDisplay
+          steps={calculationSteps || []}
+          isCalculating={isCalculating}
+          progress={progress}
+          totalSteps={totalSteps || 0}
+          completedSteps={completedSteps || 0}
+        />
+      </div>
+    );
   }
 
   return (
@@ -79,31 +130,58 @@ export function Pricing({
             {format(startDate, "dd/MM", { locale: he })} - {format(endDate, "dd/MM/yyyy", { locale: he })}
           </div>
         )}
+        
+        {/* Real-time calculation progress */}
+        {isCalculating && (
+          <div className="mb-2 flex items-center gap-2">
+            <Loader2 className="h-3 w-3 animate-spin text-brand-purple" />
+            <span className="text-[8px] md:text-[10px] text-brand-purple">
+              מחשב מחיר... {progress > 0 && `(${Math.round(progress)}%)`}
+            </span>
+          </div>
+        )}
+        
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
-            {pricing.days} ימים ללא הגבלה
+            {displayPricing.days} ימים ללא הגבלה
           </span>
           <span className="text-[14px] md:text-[18px] font-bold text-brand-dark">
             <CountUp
               key={`total-${countryId || tripId}-${numOfDays}`}
-              end={pricing.totalPrice || 0}
+              end={displayPricing.totalPrice || 0}
               decimals={2}
               prefix="$"
               duration={0.2}
               preserveValue
               fallback={
-                <span>${pricing.totalPrice?.toFixed(2) || 0}</span>
+                <span>${displayPricing.totalPrice?.toFixed(2) || 0}</span>
               }
             />
           </span>
         </div>
-        {pricing.hasDiscount && (
-          <div
-            className="text-center py-1 text-[8px] md:text-[10px] bg-green-50 rounded text-green-600"
-            role="status"
-            aria-live="polite"
-          >
-            חסכת ${pricing.discountAmount?.toFixed(2) || 0}!
+        
+        {/* Enhanced discount display with real-time updates */}
+        {displayPricing.hasDiscount && (
+          <div className="space-y-1">
+            {/* Total savings */}
+            <div
+              className="text-center py-1 text-[8px] md:text-[10px] rounded bg-green-50 text-green-600"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex items-center justify-center gap-1">
+                {displayPricing.discountAmount > 0 && <Sparkles className="h-3 w-3" />}
+                <span>
+                  חסכת ${displayPricing.discountAmount.toFixed(2)}!
+                </span>
+              </div>
+              {displayPricing.discountAmount > 0 && displayPricing.totalPrice > 0 && (
+                <div className="text-[6px] md:text-[8px] opacity-75">
+                  {((displayPricing.discountAmount / (displayPricing.totalPrice + displayPricing.discountAmount)) * 100).toFixed(1)}% הנחה
+                </div>
+              )}
+            </div>
+            
           </div>
         )}
       </div>
