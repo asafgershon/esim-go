@@ -3,6 +3,9 @@
 import { CountUp } from "../ui/count-up";
 import { PricingSkeleton } from "./skeleton";
 import type { Destination } from "@/contexts/bundle-selector-context";
+import { useBundleSelector } from "@/contexts/bundle-selector-context";
+import { format } from "date-fns";
+import { he } from "date-fns/locale";
 
 interface PricingProps {
   destination: Destination;
@@ -30,6 +33,7 @@ export function Pricing({
   numOfDays,
   onRemoveDestination,
 }: PricingProps) {
+  const { startDate, endDate } = useBundleSelector();
   if (isLoadingPricing) {
     return <PricingSkeleton />;
   }
@@ -69,6 +73,12 @@ export function Pricing({
 
       {/* Pricing Summary */}
       <div className="pt-3 border-t border-brand-dark/10">
+        {/* Show dates if available */}
+        {startDate && endDate && (
+          <div className="text-[10px] md:text-[12px] text-brand-dark opacity-60 mb-2">
+            {format(startDate, "dd/MM", { locale: he })} - {format(endDate, "dd/MM/yyyy", { locale: he })}
+          </div>
+        )}
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
             {pricing.days} ימים ללא הגבלה

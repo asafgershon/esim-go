@@ -265,6 +265,10 @@ export function BundleSelectorProvider({
     useState(false);
   const router = useRouter();
 
+  // Date State
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+
   // URL state management using custom hook
   const {
     numOfDays,
@@ -376,6 +380,12 @@ export function BundleSelectorProvider({
     setTripId,
     activeTab,
     setActiveTab,
+
+    // Date State
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
 
     // Destination State (computed - null for now, will be set by parent component)
     destination: null,
