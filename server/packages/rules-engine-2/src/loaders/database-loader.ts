@@ -201,6 +201,37 @@ export async function getCachedPricingRules(): Promise<Rule[]> {
 }
 
 /**
+ * Gets the default strategy ID from the database
+ */
+export async function getDefaultStrategyId(): Promise<string | null> {
+  try {
+    logger.info('Loading default strategy ID from database...');
+    
+    const { data: strategy, error } = await supabase
+      .from('pricing_strategies')
+      .select('id')
+      .eq('is_default', true)
+      .single();
+
+    if (error) {
+      logger.error('Failed to load default strategy:', error);
+      return null;
+    }
+
+    if (!strategy) {
+      logger.warn('No default strategy found in database');
+      return null;
+    }
+
+    logger.info(`Found default strategy: ${strategy.id}`);
+    return strategy.id;
+  } catch (error) {
+    logger.error('Error loading default strategy:', error as Error);
+    return null;
+  }
+}
+
+/**
  * Clears the cache, forcing reload on next request
  */
 export function clearRulesCache(): void {

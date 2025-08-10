@@ -22,6 +22,7 @@ import {
   clearRulesCache,
   getCachedPricingRules,
   loadStrategyBlocks,
+  getDefaultStrategyId,
 } from "./loaders/database-loader";
 import { processEventType } from "./processors/process-event";
 
@@ -71,9 +72,18 @@ async function initializeEngine(strategyId?: string): Promise<Rule[]> {
       logger.info(`Loading rules for strategy: ${strategyId}`);
       rules = await loadStrategyBlocks(strategyId);
     } else {
-      // Load default rules from pricing_blocks table
-      logger.info("Loading default pricing rules from database");
-      rules = await getCachedPricingRules();
+      // Load rules from default strategy
+      logger.info("Loading rules from default strategy");
+      const defaultStrategyId = await getDefaultStrategyId();
+      
+      if (defaultStrategyId) {
+        logger.info(`Using default strategy: ${defaultStrategyId}`);
+        rules = await loadStrategyBlocks(defaultStrategyId);
+      } else {
+        // Fallback to direct pricing_blocks if no default strategy
+        logger.warn("No default strategy found, falling back to pricing_blocks table");
+        rules = await getCachedPricingRules();
+      }
     }
 
     if (rules.length === 0) {
@@ -166,48 +176,28 @@ export async function calculatePricing({
     "previousBundle"
   );
 
-  // Define the correct processing order based on the original index.ts
-  const eventProcessingOrder = [
-    "set-base-price",
-    "apply-markup",
-    "apply-unused-days-discount",
-    "apply-processing-fee",
-    "apply-profit-constraint",
-    "apply-psychological-rounding",
-    // These are not implemented yet but included for future:
-    // 'apply-region-rounding',
-    // 'apply-fixed-price'
-  ];
-
   const appliedRules: AppliedRule[] = [];
   let currentPrice = selectedBundle?.price || previousBundle?.price || 0;
 
-  // Process events in the defined order
-  for (const eventType of eventProcessingOrder) {
-    const eventsOfType = events.filter((e) => {
-      // Normalize event type for comparison
-      const normalizedEventType = e.type.toLowerCase().replace(/_/g, "-");
-      return normalizedEventType === eventType;
-    });
-
-    if (eventsOfType.length > 0) {
-      logger.info(`Found ${eventsOfType.length} events of type: ${eventType}`);
-    }
-
-    for (const event of eventsOfType) {
-      logger.debug(`Processing event: ${event.type}`, { params: event.params });
-      const previousPrice = currentPrice;
-      currentPrice = processEventType(
-        event,
-        currentPrice,
-        appliedRules,
-        { selectedBundle, previousBundle, unusedDays, paymentMethod },
-        logger
-      );
-      logger.info(
-        `Price changed from ${previousPrice} to ${currentPrice} after ${event.type}`
-      );
-    }
+  // Process events in the order they were fired by the engine (already sorted by priority DESC from database)
+  // The loadStrategyBlocks function returns rules sorted by priority DESC, so events are naturally in correct order
+  logger.info(`Processing ${events.length} events in database-defined priority order`);
+  
+  for (const event of events) {
+    logger.debug(`Processing event: ${event.type}`, { params: event.params });
+    const previousPrice = currentPrice;
+    
+    currentPrice = processEventType(
+      event,
+      currentPrice,
+      appliedRules,
+      { selectedBundle, previousBundle, unusedDays, paymentMethod },
+      logger
+    );
+    
+    logger.info(
+      `Price changed from ${previousPrice} to ${currentPrice} after ${event.type}`
+    );
   }
 
   const endTime = performance.now();
