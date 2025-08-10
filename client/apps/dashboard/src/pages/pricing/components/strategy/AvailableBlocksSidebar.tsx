@@ -27,6 +27,7 @@ const AvailableBlocksSidebar: React.FC<AvailableBlocksSidebarProps> = ({
                   key={block.id}
                   draggableId={block.id}
                   index={index}
+                  isDragDisabled={block.disabled}
                 >
                   {(provided, snapshot) => (
                     <div
@@ -41,9 +42,11 @@ const AvailableBlocksSidebar: React.FC<AvailableBlocksSidebarProps> = ({
                       }}
                     >
                       <Card
-                        className={`p-3 cursor-move transition-all hover:shadow-md ${
-                          block.color
-                        } border-2 ${
+                        className={`p-3 transition-all ${
+                          block.disabled 
+                            ? "cursor-not-allowed opacity-60 grayscale" 
+                            : "cursor-move hover:shadow-md"
+                        } ${block.color} border-2 ${
                           snapshot.isDragging ? "opacity-50" : ""
                         }`}
                       >
@@ -52,6 +55,11 @@ const AvailableBlocksSidebar: React.FC<AvailableBlocksSidebarProps> = ({
                           <div className="flex-1">
                             <h4 className="font-medium text-sm">
                               {block.name}
+                              {block.disabled && (
+                                <span className="ml-2 text-xs font-normal opacity-60">
+                                  (Coming Soon)
+                                </span>
+                              )}
                             </h4>
                             <p className="text-xs opacity-75 mt-1">
                               {block.description}

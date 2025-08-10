@@ -171,40 +171,54 @@ const StepConfigurationModal: React.FC<StepConfigurationModalProps> = ({
             />
           )}
 
-          {editingStep?.type === "keep-profit" && (
+          {editingStep?.type === "base-price" && (
+            <div className="space-y-4">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Base Price Configuration</strong>
+                </p>
+                <p className="text-xs text-blue-700 mt-2">
+                  This block initializes the pricing calculation with the bundle's base cost.
+                  No additional configuration is required - the base price is automatically 
+                  extracted from the selected bundle.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {editingStep?.type === "unused-days-discount" && (
+            <div className="space-y-4">
+              <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
+                <p className="text-sm text-cyan-800">
+                  <strong>Unused Days Discount Configuration</strong>
+                </p>
+                <p className="text-xs text-cyan-700 mt-2">
+                  This block applies a discount based on unused days from a previous bundle.
+                  The calculation is automatic - 50% discount on the daily rate for each unused day.
+                  No additional configuration is required.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {editingStep?.type === "profit-constraint" && (
             <>
               <div className="space-y-2">
-                <Label>Profit Type</Label>
-                <Select
-                  value={tempConfig.type}
-                  onValueChange={(value) =>
-                    setTempConfig({ ...tempConfig, type: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="percentage">Percentage</SelectItem>
-                    <SelectItem value="fixed">Fixed Amount</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>
-                  Minimum Profit{" "}
-                  {tempConfig.type === "percentage" ? "(%)" : "($)"}
-                </Label>
+                <Label>Minimum Profit ($)</Label>
                 <Input
                   type="number"
-                  value={tempConfig.minProfit}
+                  step="0.01"
+                  value={tempConfig.value}
                   onChange={(e) =>
                     setTempConfig({
                       ...tempConfig,
-                      minProfit: parseFloat(e.target.value),
+                      value: parseFloat(e.target.value) || 0,
                     })
                   }
                 />
+                <p className="text-xs text-gray-500">
+                  Ensures the final price maintains at least this profit margin in dollars.
+                </p>
               </div>
             </>
           )}

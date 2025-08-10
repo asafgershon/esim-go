@@ -7,10 +7,20 @@ import {
   Tag,
   Target,
   TrendingUp,
+  PlayCircle,
+  Clock,
 } from "lucide-react";
 import { Block } from "../types";
 
 export const availableBlocks: Block[] = [
+  {
+    id: "base-price",
+    type: "base-price", 
+    name: "Base Price",
+    description: "Initialize base price from bundle cost",
+    icon: <PlayCircle className="h-4 w-4" />,
+    color: "bg-gray-100 border-gray-300 text-gray-800",
+  },
   {
     id: "discount",
     type: "discount",
@@ -18,6 +28,7 @@ export const availableBlocks: Block[] = [
     description: "Apply percentage or fixed discount",
     icon: <Percent className="h-4 w-4" />,
     color: "bg-green-100 border-green-300 text-green-800",
+    disabled: true, // TODO: Implement discount configuration
   },
   {
     id: "markup",
@@ -45,7 +56,7 @@ export const availableBlocks: Block[] = [
   },
   {
     id: "keep-profit",
-    type: "keep-profit",
+    type: "profit-constraint", // Maps to apply-profit-constraint in database
     name: "Keep Profit",
     description: "Maintain minimum profit margin",
     icon: <Target className="h-4 w-4" />,
@@ -74,5 +85,14 @@ export const availableBlocks: Block[] = [
     description: "Manage discount coupons and corporate domains",
     icon: <Tag className="h-4 w-4" />,
     color: "bg-amber-100 border-amber-300 text-amber-800",
+    disabled: true, // TODO: Implement coupon configuration
+  },
+  {
+    id: "unused-days-discount",
+    type: "unused-days-discount",
+    name: "Unused Days Discount",
+    description: "Apply discount for unused days from previous bundle",
+    icon: <Clock className="h-4 w-4" />,
+    color: "bg-cyan-100 border-cyan-300 text-cyan-800",
   },
 ];

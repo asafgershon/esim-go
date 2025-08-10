@@ -24,10 +24,9 @@ export const getDefaultConfig = (type: string): { [key: string]: any } => {
         feePercentage: 2.9,
         fixedFee: 0.3,
       };
-    case "keep-profit":
+    case "profit-constraint":
       return {
-        minProfit: 15,
-        type: "percentage",
+        value: 1.5, // Minimum profit in dollars - matches database
       };
     case "psychological-rounding":
       return {
@@ -46,6 +45,10 @@ export const getDefaultConfig = (type: string): { [key: string]: any } => {
         activeCoupons: 0,
         corporateDomains: 0,
       };
+    case "base-price":
+      return {}; // No params needed - uses bundle price directly
+    case "unused-days-discount":
+      return {}; // No params needed - calculated dynamically
     default:
       return {};
   }

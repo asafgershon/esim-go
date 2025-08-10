@@ -8,6 +8,7 @@ export interface Block {
   icon: React.ReactNode;
   color: string;
   params?: Record<string, any>;
+  disabled?: boolean;
 }
 
 export interface StrategyStep extends Block {
