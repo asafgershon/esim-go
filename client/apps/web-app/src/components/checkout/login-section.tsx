@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card } from "@workspace/ui";
 import { Button, GoogleSignInButton, AppleSignInButton } from "@workspace/ui";
 import { Input } from "@workspace/ui";
+import { PhoneInput, validatePhoneNumber } from "@workspace/ui";
 import { Label, InputOTP, InputOTPGroup, InputOTPSlot } from "@workspace/ui";
 import { useAppleSignIn } from "@/hooks/useAppleSignIn";
 import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
@@ -43,6 +44,12 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
 
     if (!phoneInput.trim()) {
       setError("אנא הכנס את מספר הטלפון שלך");
+      return;
+    }
+
+    // Validate phone number format
+    if (!validatePhoneNumber(phoneInput)) {
+      setError("מספר הטלפון אינו תקין");
       return;
     }
 
@@ -271,13 +278,14 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
           <form onSubmit={handlePhoneSubmit} className="space-y-3">
             <div className="space-y-2">
               <Label htmlFor="phone">מספר טלפון</Label>
-              <Input
+              <PhoneInput
                 id="phone"
-                type="tel"
-                placeholder="050-123-4567"
                 value={phoneInput}
-                onChange={(e) => setPhoneInput(e.target.value)}
+                onChange={setPhoneInput}
+                placeholder="הכנס מספר טלפון"
                 disabled={otpLoading}
+                defaultCountry="IL"
+                error={!!error && !phoneInput.trim()}
               />
             </div>
 

@@ -40,6 +40,9 @@ module.exports = defineConfig(({ mode }) => ({
         "overlayscrollbars-react",
         "tailwind-merge",
         "vaul",
+        "libphonenumber-js",
+        "react-circle-flags",
+        "country-data-list",
       ],
       output: {
         globals: {
