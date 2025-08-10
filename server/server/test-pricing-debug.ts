@@ -1,4 +1,4 @@
-import { calculatePricing as calculatePricingWithDB } from '../packages/rules-engine-2/src/index-with-db';
+import { calculatePricingWithDB } from '../packages/rules-engine-2/src/index';
 import { PaymentMethod } from '../packages/rules-engine-2/src/generated/types';
 
 async function testPricing() {
