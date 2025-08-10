@@ -1,17 +1,16 @@
 import { DragDropContext } from "@hello-pangea/dnd";
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import React, { useState } from "react";
+import { usePricingBlocks } from "../../hooks/usePricingBlocks";
+import { StepConfigurationModal } from "./components/modals";
 import {
   AvailableBlocksSidebar,
   StrategyFlowBuilder,
   StrategyHeader,
 } from "./components/strategy";
-import { StepConfigurationModal } from "./components/modals";
-import { availableBlocks } from "./constants";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
-import { usePricingBlocks } from "../../hooks/usePricingBlocks";
-import { mapDatabaseBlocksToUI } from "./utils/mapDatabaseBlocksToUI";
 import { Block, StrategyStep } from "./types";
-import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { mapDatabaseBlocksToUI } from "./utils/mapDatabaseBlocksToUI";
 
 const StrategyPage: React.FC = () => {
   const [strategyName, setStrategyName] = useState<string>("New Strategy #1");

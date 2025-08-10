@@ -76,7 +76,7 @@ function AppleCallbackContent() {
 
             // Redirect based on the state parameter
             setTimeout(() => {
-              router.push('/');
+              router.push("/");
             }, 1500);
           } else {
             throw new Error(
