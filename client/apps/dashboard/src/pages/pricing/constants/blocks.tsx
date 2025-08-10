@@ -1,0 +1,78 @@
+import {
+  Calculator,
+  CreditCard,
+  DollarSign,
+  Globe,
+  Percent,
+  Tag,
+  Target,
+  TrendingUp,
+} from "lucide-react";
+import { Block } from "../types";
+
+export const availableBlocks: Block[] = [
+  {
+    id: "discount",
+    type: "discount",
+    name: "Discount",
+    description: "Apply percentage or fixed discount",
+    icon: <Percent className="h-4 w-4" />,
+    color: "bg-green-100 border-green-300 text-green-800",
+  },
+  {
+    id: "markup",
+    type: "markup",
+    name: "Markup",
+    description: "Add markup to base price",
+    icon: <TrendingUp className="h-4 w-4" />,
+    color: "bg-blue-100 border-blue-300 text-blue-800",
+  },
+  {
+    id: "fixed-price",
+    type: "fixed-price",
+    name: "Fixed Price",
+    description: "Set a fixed price for the bundle",
+    icon: <DollarSign className="h-4 w-4" />,
+    color: "bg-purple-100 border-purple-300 text-purple-800",
+  },
+  {
+    id: "processing-fee",
+    type: "processing-fee",
+    name: "Processing Fee",
+    description: "Calculate payment processing fees",
+    icon: <CreditCard className="h-4 w-4" />,
+    color: "bg-orange-100 border-orange-300 text-orange-800",
+  },
+  {
+    id: "keep-profit",
+    type: "keep-profit",
+    name: "Keep Profit",
+    description: "Maintain minimum profit margin",
+    icon: <Target className="h-4 w-4" />,
+    color: "bg-red-100 border-red-300 text-red-800",
+  },
+  {
+    id: "psychological-rounding",
+    type: "psychological-rounding",
+    name: "Psychological Rounding",
+    description: "Apply charm pricing (e.g., $9.99)",
+    icon: <Calculator className="h-4 w-4" />,
+    color: "bg-indigo-100 border-indigo-300 text-indigo-800",
+  },
+  {
+    id: "region-rounding",
+    type: "region-rounding",
+    name: "Region Rounding",
+    description: "Apply region-specific rounding rules",
+    icon: <Globe className="h-4 w-4" />,
+    color: "bg-teal-100 border-teal-300 text-teal-800",
+  },
+  {
+    id: "coupon",
+    type: "coupon",
+    name: "Coupon",
+    description: "Manage discount coupons and corporate domains",
+    icon: <Tag className="h-4 w-4" />,
+    color: "bg-amber-100 border-amber-300 text-amber-800",
+  },
+];
