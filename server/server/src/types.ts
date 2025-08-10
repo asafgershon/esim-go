@@ -1051,6 +1051,31 @@ export type PriceRange = {
   min: Scalars['Float']['output'];
 };
 
+export type PricingBlock = {
+  __typename?: 'PricingBlock';
+  action: Scalars['JSON']['output'];
+  category: Scalars['String']['output'];
+  conditions: Scalars['JSON']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdBy?: Maybe<Scalars['ID']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  isEditable: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  validFrom?: Maybe<Scalars['DateTime']['output']>;
+  validUntil?: Maybe<Scalars['DateTime']['output']>;
+};
+
+export type PricingBlockFilter = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  isEditable?: InputMaybe<Scalars['Boolean']['input']>;
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type PricingBreakdown = {
   __typename?: 'PricingBreakdown';
   appliedRules?: Maybe<Array<AppliedRule>>;
@@ -1292,6 +1317,8 @@ export type Query = {
   orderDetails?: Maybe<Order>;
   orders: Array<Order>;
   paymentMethods: Array<PaymentMethodInfo>;
+  pricingBlock?: Maybe<PricingBlock>;
+  pricingBlocks: Array<PricingBlock>;
   pricingFilters: PricingFilters;
   pricingRule?: Maybe<PricingRule>;
   pricingRules: Array<PricingRule>;
@@ -1407,6 +1434,16 @@ export type QueryMyOrdersArgs = {
 
 export type QueryOrderDetailsArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryPricingBlockArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPricingBlocksArgs = {
+  filter?: InputMaybe<PricingBlockFilter>;
 };
 
 
@@ -1936,6 +1973,8 @@ export type ResolversTypes = {
   PaymentMethod: PaymentMethod;
   PaymentMethodInfo: ResolverTypeWrapper<PaymentMethodInfo>;
   PriceRange: ResolverTypeWrapper<PriceRange>;
+  PricingBlock: ResolverTypeWrapper<PricingBlock>;
+  PricingBlockFilter: PricingBlockFilter;
   PricingBreakdown: ResolverTypeWrapper<PricingBreakdown>;
   PricingConfiguration: ResolverTypeWrapper<PricingConfiguration>;
   PricingFilters: ResolverTypeWrapper<PricingFilters>;
@@ -2072,6 +2111,8 @@ export type ResolversParentTypes = {
   PaginationInput: PaginationInput;
   PaymentMethodInfo: PaymentMethodInfo;
   PriceRange: PriceRange;
+  PricingBlock: PricingBlock;
+  PricingBlockFilter: PricingBlockFilter;
   PricingBreakdown: PricingBreakdown;
   PricingConfiguration: PricingConfiguration;
   PricingFilters: PricingFilters;
@@ -2749,6 +2790,24 @@ export type PriceRangeResolvers<ContextType = Context, ParentType extends Resolv
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type PricingBlockResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PricingBlock'] = ResolversParentTypes['PricingBlock']> = {
+  action?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
+  category?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  conditions?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  createdBy?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isActive?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  isEditable?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  priority?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  validFrom?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
+  validUntil?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type PricingBreakdownResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PricingBreakdown'] = ResolversParentTypes['PricingBreakdown']> = {
   appliedRules?: Resolver<Maybe<Array<ResolversTypes['AppliedRule']>>, ParentType, ContextType>;
   bundle?: Resolver<ResolversTypes['CountryBundle'], ParentType, ContextType>;
@@ -2942,6 +3001,8 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   orderDetails?: Resolver<Maybe<ResolversTypes['Order']>, ParentType, ContextType, RequireFields<QueryOrderDetailsArgs, 'id'>>;
   orders?: Resolver<Array<ResolversTypes['Order']>, ParentType, ContextType>;
   paymentMethods?: Resolver<Array<ResolversTypes['PaymentMethodInfo']>, ParentType, ContextType>;
+  pricingBlock?: Resolver<Maybe<ResolversTypes['PricingBlock']>, ParentType, ContextType, RequireFields<QueryPricingBlockArgs, 'id'>>;
+  pricingBlocks?: Resolver<Array<ResolversTypes['PricingBlock']>, ParentType, ContextType, Partial<QueryPricingBlocksArgs>>;
   pricingFilters?: Resolver<ResolversTypes['PricingFilters'], ParentType, ContextType>;
   pricingRule?: Resolver<Maybe<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<QueryPricingRuleArgs, 'id'>>;
   pricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, Partial<QueryPricingRulesArgs>>;
@@ -3167,6 +3228,7 @@ export type Resolvers<ContextType = Context> = {
   PageInfo?: PageInfoResolvers<ContextType>;
   PaymentMethodInfo?: PaymentMethodInfoResolvers<ContextType>;
   PriceRange?: PriceRangeResolvers<ContextType>;
+  PricingBlock?: PricingBlockResolvers<ContextType>;
   PricingBreakdown?: PricingBreakdownResolvers<ContextType>;
   PricingConfiguration?: PricingConfigurationResolvers<ContextType>;
   PricingFilters?: PricingFiltersResolvers<ContextType>;
