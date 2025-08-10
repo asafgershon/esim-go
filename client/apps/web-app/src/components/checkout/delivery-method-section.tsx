@@ -1,8 +1,8 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { Card, Input, Label } from "@workspace/ui";
-import { Mail, QrCode, Truck } from "lucide-react";
+import { Card } from "@workspace/ui";
+import { Mail, Phone, Smartphone } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DeliveryMethodSectionProps {
   sectionNumber?: number;
@@ -12,24 +12,20 @@ interface DeliveryMethodSectionProps {
   setEmail: (email: string) => void;
 }
 
-export function DeliveryMethodSection({ sectionNumber, selectedMethod, setSelectedMethod, email, setEmail }: DeliveryMethodSectionProps) {
+export function DeliveryMethodSection({ 
+  sectionNumber
+}: DeliveryMethodSectionProps) {
+  const { user, isAuthenticated } = useAuth();
+  
+  // Determine if user logged in with email (Apple/Google) or phone
+  const hasUserEmail = user?.email && !user.email.includes('@phone.esim-go.com');
+  const isPhoneAuth = user?.email?.includes('@phone.esim-go.com');
+  const userPhone = user?.phoneNumber;
 
-  const deliveryOptions = [
-    {
-      id: "QR" as const,
-      name: "QR Code",
-      description: "הפעלה מיידית באמצעות QR Code",
-      icon: QrCode,
-      recommended: true,
-    },
-    {
-      id: "EMAIL" as const,
-      name: "משלוח למייל",
-      description: "קבלת eSIM באמצעות מייל",
-      icon: Mail,
-      recommended: false,
-    },
-  ];
+  // Only show if user is authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Card className="p-6 relative bg-muted-foreground" dir="rtl">
@@ -39,95 +35,51 @@ export function DeliveryMethodSection({ sectionNumber, selectedMethod, setSelect
             {sectionNumber}
           </div>
         )}
-        <Truck className="h-5 w-5 text-primary" />
-        <h2 className="text-xl font-semibold">שיטת משלוח</h2>
+        <Smartphone className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold">אופן קבלת ה-eSIM</h2>
       </div>
 
       <div className="space-y-4">
-        {/* Delivery Options */}
-        <div className="grid gap-3">
-          {deliveryOptions.map((option) => (
-            <div
-              key={option.id}
-              className={cn(
-                "relative flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all",
-                selectedMethod === option.id
-                  ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                  : "border-border hover:border-primary/50"
-              )}
-              onClick={() => setSelectedMethod(option.id)}
-            >
-              {/* Radio Button */}
-              <div className="flex items-center">
-                <div
-                  className={cn(
-                    "w-4 h-4 rounded-full border-2 transition-all",
-                    selectedMethod === option.id
-                      ? "border-primary bg-primary"
-                      : "border-muted-foreground"
-                  )}
-                >
-                  {selectedMethod === option.id && (
-                    <div className="w-full h-full rounded-full bg-primary-foreground scale-50" />
-                  )}
-                </div>
-              </div>
-
-              {/* Icon */}
-              <div className="flex items-center justify-center w-10 h-10 bg-muted rounded-lg">
-                <option.icon className="h-5 w-5 text-muted-foreground" />
-              </div>
-
-              {/* Content */}
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-medium">{option.name}</h3>
-                  {option.recommended && (
-                    <span className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-full">
-                      מומלץ
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">{option.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Email Input for Email Delivery */}
-        {selectedMethod === "EMAIL" && (
-          <div className="space-y-2 p-4 bg-muted rounded-lg">
-            <Label htmlFor="deliveryEmail">כתובת מייל</Label>
-            <Input
-              id="deliveryEmail"
-              type="email"
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-background"
-              dir="ltr"
-            />
-            <p className="text-xs text-muted-foreground">
-              נשלח את פרטי הפעלת ה-eSIM לכתובת המייל הזו
-            </p>
-          </div>
-        )}
-
-        {/* QR Code Info */}
-        {selectedMethod === "QR" && (
-          <div className="p-4 bg-primary/5 rounded-lg">
+        {/* Show delivery info based on auth method */}
+        <div className="p-4 bg-muted rounded-lg">
+          {hasUserEmail ? (
             <div className="flex items-start gap-3">
-              <QrCode className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <h4 className="font-medium text-sm">הפעלה מיידית</h4>
+              <Mail className="h-5 w-5 text-primary mt-0.5" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium">מייל ישלח לכתובת:</p>
+                  <span className="text-sm font-medium" dir="ltr">{user.email}</span>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  לאחר הרכישה, תקבל QR Code לסריקה עם מצלמת הטלפון שלך. 
-                  ה-eSIM יופעל מיידית ללא כל הגדרה נוספת.
+                  ה-eSIM יופיע כאן לאחר השלמת הרכישה
                 </p>
               </div>
             </div>
-          </div>
-        )}
+          ) : isPhoneAuth && userPhone ? (
+            <div className="flex items-start gap-3">
+              <Phone className="h-5 w-5 text-primary mt-0.5" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium">SMS ישלח למספר:</p>
+                  <span className="text-sm font-medium" dir="ltr">{userPhone}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  ה-eSIM יופיע כאן לאחר השלמת הרכישה
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-3">
+              <Smartphone className="h-5 w-5 text-primary mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium mb-2">ה-eSIM יהיה זמין כאן</p>
+                <p className="text-xs text-muted-foreground">
+                  ה-eSIM יופיע כאן לאחר השלמת הרכישה
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </Card>
   );

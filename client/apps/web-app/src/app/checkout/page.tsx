@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Image from "next/image";
 import { AutoAuthPrompt } from "@/components/auto-auth-prompt";
 import { CheckoutSkeleton } from "@/components/checkout/checkout-skeleton";
 import CheckoutHandler from "./checkout-handler";
@@ -21,12 +22,16 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
 
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-start">
           <div className="flex items-center">
-            <span className="text-2xl font-bold">
-              <span className="text-primary font-extrabold">Hiii</span>
-              <span className="text-foreground font-medium">lo</span>
-            </span>
+            <Image
+              src="/images/logos/logo-header.svg"
+              alt="eSIM Go Logo"
+              width={120}
+              height={40}
+              className="h-10 w-auto"
+              priority
+            />
           </div>
         </div>
       </header>

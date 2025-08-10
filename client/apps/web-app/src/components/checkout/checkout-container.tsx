@@ -29,14 +29,16 @@ export function CheckoutContainer() {
   } = useCheckoutUrlState();
 
   // UI state
-  const [selectedMethod, setSelectedMethod] = useState<"QR" | "EMAIL">("QR");
-  const [email, setEmail] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [validationStatus, setValidationStatus] = useState<"pending" | "valid" | "invalid" | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  
+  // Default to EMAIL delivery method since we're not selecting anymore
+  const [selectedMethod] = useState<"QR" | "EMAIL">("EMAIL");
+  const [email] = useState("");
 
   // Backend session
   const {
@@ -47,7 +49,7 @@ export function CheckoutContainer() {
   } = useCheckoutSession(token as string | undefined, isProcessing);
 
   // Step and payment hooks
-  const { updateStepWithData, updateStepError } = useCheckoutSteps((token as string) || "");
+  const { updateStepWithData } = useCheckoutSteps((token as string) || "");
   const { handlePayment } = useCheckoutPayment();
   
   // Order validation hook
@@ -116,9 +118,12 @@ export function CheckoutContainer() {
       !session.steps?.delivery?.completed &&
       token
     ) {
-      // User is already authenticated, auto-complete delivery with default QR method
+      // User is already authenticated, auto-complete delivery with EMAIL method
+      // The actual email will be determined based on auth type
+      const deliveryEmail = user?.email && !user.email.includes('@phone.esim-go.com') ? user.email : undefined;
       updateStepWithData(CheckoutStepType.Delivery, {
-        method: "QR",
+        method: "EMAIL",
+        email: deliveryEmail,
       }).then(() => {
         refetchSession();
       });
@@ -128,34 +133,14 @@ export function CheckoutContainer() {
     session?.steps?.authentication?.completed,
     session?.steps?.delivery?.completed,
     token,
+    user?.email,
     updateStepWithData,
     refetchSession,
   ]);
 
-  const isDeliveryValid =
-    selectedMethod === "QR" || (selectedMethod === "EMAIL" && email.length > 3);
 
-  // Delivery step completion or update
-  const handleDeliveryUpdate = useCallback(async () => {
-    if (updateStepError) {
-      console.error("Error updating delivery step", updateStepError);
-      return;
-    }
-    if (token) {
-      await updateStepWithData(CheckoutStepType.Delivery, {
-        method: selectedMethod,
-        email: selectedMethod === "EMAIL" ? email : undefined,
-      });
-      refetchSession();
-    }
-  }, [
-    token,
-    selectedMethod,
-    email,
-    updateStepWithData,
-    refetchSession,
-    updateStepError,
-  ]);
+  // Delivery step is now handled automatically after auth
+  // Remove manual delivery update since it's automatic
 
   // Auth step completion
   const handleAuthComplete = useCallback(async () => {
@@ -179,26 +164,6 @@ export function CheckoutContainer() {
       handleAuthComplete();
     }
   }, [user, session, handleAuthComplete]);
-
-  useEffect(() => {
-    // When delivery method changes, update it if the step is already completed.
-    if (isDeliveryValid && session?.steps.delivery?.completed) {
-      const deliveryData = session.steps.delivery;
-      if (
-        deliveryData?.method !== selectedMethod ||
-        (selectedMethod === "EMAIL" && deliveryData?.email !== email)
-      ) {
-        console.log(
-          "Delivery method changed, updating step",
-          deliveryData?.method,
-          selectedMethod,
-          deliveryData?.email,
-          email
-        );
-        handleDeliveryUpdate();
-      }
-    }
-  }, [selectedMethod, email, isDeliveryValid, session, handleDeliveryUpdate]);
 
   // Payment callback from PaymentSection
   const handlePaymentSubmit = useCallback(
@@ -304,17 +269,18 @@ export function CheckoutContainer() {
               compact
             />
           )}
-          <DeliveryMethodSection
-            sectionNumber={2}
-            selectedMethod={selectedMethod}
-            setSelectedMethod={setSelectedMethod}
-            email={email}
-            setEmail={setEmail}
-          />
         </div>
         {/* Right Column - Payment & Login */}
         <div className="space-y-6">
-          <LoginSection sectionNumber={3} />
+          <LoginSection sectionNumber={2} />
+          
+          <DeliveryMethodSection
+            sectionNumber={3}
+            selectedMethod={selectedMethod}
+            setSelectedMethod={() => {}}
+            email={email}
+            setEmail={() => {}}
+          />
           
           <PaymentSection
             sectionNumber={4}
