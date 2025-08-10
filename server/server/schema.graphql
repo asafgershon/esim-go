@@ -60,6 +60,10 @@ type Query {
   # Pricing filters
   pricingFilters: PricingFilters!
 
+  # Pricing blocks for strategy builder
+  pricingBlocks(filter: PricingBlockFilter): [PricingBlock!]! @auth(role: "ADMIN")
+  pricingBlock(id: ID!): PricingBlock @auth(role: "ADMIN")
+
   # High demand countries
   highDemandCountries: [String!]! @auth(role: "ADMIN")
   
@@ -368,6 +372,12 @@ type Subscription {
   pricingCalculationSteps(
     input: CalculatePriceInput!
   ): PricingStepUpdate! @auth
+  
+  # Stream batch pricing results as they're calculated
+  calculatePricesBatchStream(
+    inputs: [CalculatePriceInput!]!
+    requestedDays: Int # Priority - calculate this day first
+  ): PricingBreakdown!
 }
 
 interface Bundle {
@@ -1613,4 +1623,29 @@ type ConflictingJobInfo {
   status: String!
   createdAt: String!
   startedAt: String
+}
+
+# Pricing Block System Types
+type PricingBlock {
+  id: ID!
+  name: String!
+  description: String
+  category: String!
+  conditions: JSON!
+  action: JSON!
+  priority: Int!
+  isActive: Boolean!
+  isEditable: Boolean!
+  validFrom: DateTime
+  validUntil: DateTime
+  createdBy: ID
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+input PricingBlockFilter {
+  category: String
+  isActive: Boolean
+  isEditable: Boolean
+  searchTerm: String
 }

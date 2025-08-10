@@ -1,10 +1,9 @@
-import DataLoader from "dataloader";
 import { calculatePricingWithDB, type RequestFacts } from "@hiilo/rules-engine-2";
+import DataLoader from "dataloader";
 import type { Context } from "../context/types";
-import type { PaymentMethod, PricingBreakdown } from "../types";
 import { createLogger } from "../lib/logger";
 import { withPerformanceMonitoring } from "../services/pricing-performance-monitor";
-import byteSize from "byte-size";
+import type { PaymentMethod, PricingBreakdown } from "../types";
 
 const logger = createLogger({
   component: "PricingDataLoader",

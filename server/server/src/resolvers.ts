@@ -15,6 +15,8 @@ import { usersResolvers } from "./resolvers/users-resolvers";
 import { airHaloResolvers } from "./resolvers/airhalo-resolvers";
 import { pricingManagementResolvers } from "./resolvers/pricing-management-resolvers";
 import { tenantResolvers } from "./resolvers/tenant-resolvers";
+import { pricingSubscriptionResolvers } from "./resolvers/pricing-subscription-resolvers";
+import { batchPricingSubscriptionResolvers } from "./resolvers/batch-pricing-subscription";
 import type { Resolvers } from "./types";
 import * as countriesList from "countries-list";
 
@@ -256,6 +258,12 @@ export const resolvers: Resolvers = {
 
     // Catalog subscriptions are merged from catalog-resolvers.ts
     ...catalogResolvers.Subscription!,
+    
+    // Pricing subscriptions for real-time step streaming
+    ...pricingSubscriptionResolvers.Subscription!,
+    
+    // Batch pricing subscription for progressive loading
+    ...batchPricingSubscriptionResolvers,
   },
   // Bundle field resolvers
   BundlesByCountry: {

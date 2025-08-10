@@ -104,6 +104,160 @@ export const pricingManagementResolvers = {
         });
       }
     },
+
+    /**
+     * Get all pricing blocks for strategy builder
+     */
+    pricingBlocks: async (_, { filter }, context: Context) => {
+      logger.info("Fetching pricing blocks", {
+        filter,
+        userId: context.auth?.user?.id,
+        operationType: "get-pricing-blocks",
+      });
+
+      try {
+        let query = context.supabaseClient
+          .from("pricing_blocks")
+          .select("*")
+          .order("priority", { ascending: true })
+          .order("category", { ascending: true });
+
+        // Apply filters
+        if (filter?.category) {
+          query = query.eq("category", filter.category);
+        }
+        if (filter?.isActive !== undefined) {
+          query = query.eq("is_active", filter.isActive);
+        }
+        if (filter?.isEditable !== undefined) {
+          query = query.eq("is_editable", filter.isEditable);
+        }
+        if (filter?.searchTerm) {
+          query = query.or(`name.ilike.%${filter.searchTerm}%,description.ilike.%${filter.searchTerm}%`);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          logger.error("Failed to fetch pricing blocks from database", error, {
+            filter,
+            userId: context.auth?.user?.id,
+            operationType: "get-pricing-blocks",
+          });
+          throw new GraphQLError("Failed to fetch pricing blocks", {
+            extensions: { code: "DATABASE_ERROR" },
+          });
+        }
+
+        const blocks = data?.map(block => ({
+          id: block.id,
+          name: block.name,
+          description: block.description,
+          category: block.category,
+          conditions: block.conditions,
+          action: block.action,
+          priority: block.priority,
+          isActive: block.is_active,
+          isEditable: block.is_editable,
+          validFrom: block.valid_from,
+          validUntil: block.valid_until,
+          createdBy: block.created_by,
+          createdAt: block.created_at,
+          updatedAt: block.updated_at,
+        })) || [];
+
+        logger.info("Successfully fetched pricing blocks", {
+          count: blocks.length,
+          userId: context.auth?.user?.id,
+          operationType: "get-pricing-blocks-success",
+        });
+
+        return blocks;
+      } catch (error) {
+        logger.error("Failed to fetch pricing blocks", error as Error, {
+          filter,
+          userId: context.auth?.user?.id,
+          operationType: "get-pricing-blocks",
+        });
+        throw new GraphQLError("Failed to fetch pricing blocks", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
+      }
+    },
+
+    /**
+     * Get a specific pricing block by ID
+     */
+    pricingBlock: async (_, { id }, context: Context) => {
+      logger.info("Fetching pricing block by ID", {
+        id,
+        userId: context.auth?.user?.id,
+        operationType: "get-pricing-block",
+      });
+
+      try {
+        const { data, error } = await context.supabaseClient
+          .from("pricing_blocks")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (error) {
+          logger.error("Failed to fetch pricing block from database", error, {
+            id,
+            userId: context.auth?.user?.id,
+            operationType: "get-pricing-block",
+          });
+          throw new GraphQLError("Failed to fetch pricing block", {
+            extensions: { code: "DATABASE_ERROR" },
+          });
+        }
+
+        if (!data) {
+          throw new GraphQLError("Pricing block not found", {
+            extensions: { code: "NOT_FOUND" },
+          });
+        }
+
+        const block = {
+          id: data.id,
+          name: data.name,
+          description: data.description,
+          category: data.category,
+          conditions: data.conditions,
+          action: data.action,
+          priority: data.priority,
+          isActive: data.is_active,
+          isEditable: data.is_editable,
+          validFrom: data.valid_from,
+          validUntil: data.valid_until,
+          createdBy: data.created_by,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        };
+
+        logger.info("Successfully fetched pricing block", {
+          id,
+          name: block.name,
+          userId: context.auth?.user?.id,
+          operationType: "get-pricing-block-success",
+        });
+
+        return block;
+      } catch (error) {
+        logger.error("Failed to fetch pricing block", error as Error, {
+          id,
+          userId: context.auth?.user?.id,
+          operationType: "get-pricing-block",
+        });
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
+        throw new GraphQLError("Failed to fetch pricing block", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
+      }
+    },
   },
 
   Mutation: {

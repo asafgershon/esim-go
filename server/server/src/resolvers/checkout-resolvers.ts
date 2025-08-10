@@ -306,7 +306,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             const availableDurations = bundleResults.data
               .map((b) => b.validity_in_days)
               .filter((d) => d && d > 0)
-              .sort((a, b) => a - b);
+              .sort((a, b) => (a || 0) - (b || 0));
 
             throw new Error(
               `No bundles available for ${numOfDays} days or longer for ${

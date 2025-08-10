@@ -1523,10 +1523,17 @@ export type SocialSignInInput = {
 
 export type Subscription = {
   __typename?: 'Subscription';
+  calculatePricesBatchStream: PricingBreakdown;
   catalogSyncProgress: CatalogSyncProgressUpdate;
   esimStatusUpdated: EsimStatusUpdate;
   pricingCalculationSteps: PricingStepUpdate;
   pricingPipelineProgress: PricingPipelineStepUpdate;
+};
+
+
+export type SubscriptionCalculatePricesBatchStreamArgs = {
+  inputs: Array<CalculatePriceInput>;
+  requestedDays?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -2986,6 +2993,7 @@ export type SignUpResponseResolvers<ContextType = Context, ParentType extends Re
 };
 
 export type SubscriptionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
+  calculatePricesBatchStream?: SubscriptionResolver<ResolversTypes['PricingBreakdown'], "calculatePricesBatchStream", ParentType, ContextType, RequireFields<SubscriptionCalculatePricesBatchStreamArgs, 'inputs'>>;
   catalogSyncProgress?: SubscriptionResolver<ResolversTypes['CatalogSyncProgressUpdate'], "catalogSyncProgress", ParentType, ContextType>;
   esimStatusUpdated?: SubscriptionResolver<ResolversTypes['ESIMStatusUpdate'], "esimStatusUpdated", ParentType, ContextType, RequireFields<SubscriptionEsimStatusUpdatedArgs, 'esimId'>>;
   pricingCalculationSteps?: SubscriptionResolver<ResolversTypes['PricingStepUpdate'], "pricingCalculationSteps", ParentType, ContextType, RequireFields<SubscriptionPricingCalculationStepsArgs, 'input'>>;

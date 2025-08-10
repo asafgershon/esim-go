@@ -934,6 +934,33 @@ export type Database = {
           },
         ]
       }
+      tenants: {
+        Row: {
+          created_at: string | null
+          img_url: string | null
+          name: string
+          slug: string
+          tenant_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          img_url?: string | null
+          name: string
+          slug: string
+          tenant_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          img_url?: string | null
+          name?: string
+          slug?: string
+          tenant_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           country_ids: Json
@@ -1276,6 +1303,14 @@ export type Database = {
       }
       is_checkout_session_complete: {
         Args: { session_id: string }
+        Returns: boolean
+      }
+      is_master_tenant_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_user_master_tenant_admin: {
+        Args: { check_user_id: string }
         Returns: boolean
       }
       refresh_region_summary: {

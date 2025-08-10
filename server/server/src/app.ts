@@ -58,7 +58,7 @@ import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
 
 const rulesEngineSchema = readFileSync(
-  join(__dirname, "../../packages/rules-engine/schema.graphql"),
+  join(__dirname, "../../packages/rules-engine-2/schema.graphql"),
   "utf-8"
 );
 
