@@ -47,13 +47,12 @@ export interface PricingStrategyWithBlocks extends PricingStrategy {
 export interface StrategyBlockWithDetails extends StrategyBlock {
   block: {
     id: string;
-    code: string;
     name: string;
     description: string | null;
-    type: string;
+    eventType: string;
     category: string;
     conditions: any;
-    action: any;
+    params: any;
     isActive: boolean;
     isEditable: boolean;
     priority: number; // This is from pricing_blocks table
@@ -240,13 +239,12 @@ export class StrategiesRepository extends BaseSupabaseRepository<
       addedAt: blockRow.added_at,
       block: {
         id: blockRow.pricing_blocks.id,
-        code: blockRow.pricing_blocks.code,
         name: blockRow.pricing_blocks.name,
         description: blockRow.pricing_blocks.description,
-        type: blockRow.pricing_blocks.type,
+        eventType: blockRow.pricing_blocks.event_type,
         category: blockRow.pricing_blocks.category,
         conditions: blockRow.pricing_blocks.conditions,
-        action: blockRow.pricing_blocks.action,
+        params: blockRow.pricing_blocks.params,
         isActive: blockRow.pricing_blocks.is_active,
         isEditable: blockRow.pricing_blocks.is_editable,
         priority: blockRow.pricing_blocks.priority,

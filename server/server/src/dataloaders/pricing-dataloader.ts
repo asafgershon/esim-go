@@ -1,4 +1,7 @@
-import { calculatePricingWithDB, type RequestFacts } from "@hiilo/rules-engine-2";
+import {
+  calculatePricingWithDB,
+  type RequestFacts,
+} from "@hiilo/rules-engine-2";
 import DataLoader from "dataloader";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
@@ -32,166 +35,179 @@ export interface PricingResult extends PricingBreakdown {
  * Creates a string cache key from the pricing key
  */
 function createCacheKey(key: PricingKey): string {
-  return `pricing:${key.bundleId}:${key.validityInDays}:${key.countries.join(",")}:${
-    key.region || "none"
-  }:${key.paymentMethod}:${key.group || "default"}:${key.promo || "none"}:${
-    key.userId || "anonymous"
-  }`;
+  return `pricing:${key.bundleId}:${key.validityInDays}:${key.countries.join(
+    ","
+  )}:${key.region || "none"}:${key.paymentMethod}:${key.group || "default"}:${
+    key.promo || "none"
+  }:${key.userId || "anonymous"}`;
 }
 
 /**
  * Creates a DataLoader instance for batch loading pricing calculations
  * This is created per-request to ensure proper request isolation
  */
-export function createPricingDataLoader(context: Context): DataLoader<PricingKey, PricingResult> {
+export function createPricingDataLoader(
+  context: Context
+): DataLoader<PricingKey, PricingResult> {
   return new DataLoader<PricingKey, PricingResult>(
-    withPerformanceMonitoring(async (keys: readonly PricingKey[]): Promise<PricingResult[]> => {
-      const startTime = Date.now();
-      
-      logger.info("Batch loading pricing calculations", {
-        batchSize: keys.length,
-        operationType: "batch-load",
-      });
+    withPerformanceMonitoring(
+      async (keys: readonly PricingKey[]): Promise<PricingResult[]> => {
+        const startTime = Date.now();
 
-      try {
-        // Process calculations in parallel
-        const results = await Promise.all(
-          keys.map(async (key) => {
-            const cacheKey = createCacheKey(key);
-            
-            try {
-              // Check Redis cache first
-              const cachedResult = await getCachedPricing(context, cacheKey);
-              if (cachedResult) {
-                logger.debug("Cache hit for pricing calculation", {
-                  cacheKey,
-                  bundleId: key.bundleId,
-                  operationType: "cache-hit",
-                });
-                return cachedResult;
-              }
+        logger.info("Batch loading pricing calculations", {
+          batchSize: keys.length,
+          operationType: "batch-load",
+        });
 
-              // Prepare request facts for the rules engine
-              const requestFacts: RequestFacts = {
-                group: key.group || "Standard Unlimited Essential",
-                days: key.validityInDays,
-                paymentMethod: key.paymentMethod,
-                ...(key.countries?.[0] ? { country: key.countries[0] } : {}),
-                ...(key.region ? { region: key.region } : {}),
-                ...(key.promo ? { couponCode: key.promo } : {}),
-                ...(key.userId ? { userId: key.userId } : {}),
-                ...(key.userEmail ? { userEmail: key.userEmail } : {}),
-              };
+        try {
+          // Process calculations in parallel
+          const results = await Promise.all(
+            keys.map(async (key) => {
+              const cacheKey = createCacheKey(key);
 
-              // Calculate pricing using the rules engine
-              const result = await calculatePricingWithDB(requestFacts);
+              try {
+                // Check Redis cache first
+                const cachedResult = await getCachedPricing(context, cacheKey);
+                if (cachedResult) {
+                  logger.debug("Cache hit for pricing calculation", {
+                    cacheKey,
+                    bundleId: key.bundleId,
+                    operationType: "cache-hit",
+                  });
+                  return cachedResult;
+                }
 
-              // Map to PricingBreakdown format
-              const pricingBreakdown: PricingResult = {
-                __typename: "PricingBreakdown",
-                cacheKey,
-                
-                ...result.pricing,
-                
-                // Bundle Information
-                bundle: {
-                  __typename: "CountryBundle",
-                  id: result.selectedBundle?.esim_go_name || key.bundleId,
-                  name: result.selectedBundle?.esim_go_name || "",
-                  duration: key.validityInDays,
-                  data: result.selectedBundle?.data_amount_mb || 0,
-                  isUnlimited: result.selectedBundle?.is_unlimited || false,
-                  currency: "USD",
+                // Prepare request facts for the rules engine
+                const requestFacts: RequestFacts = {
                   group: key.group || "Standard Unlimited Essential",
-                  country: {
-                    __typename: "Country",
-                    iso: key.countries?.[0] || "",
+                  days: key.validityInDays,
+                  paymentMethod: key.paymentMethod,
+                  ...(key.countries?.[0] ? { country: key.countries[0] } : {}),
+                  ...(key.region ? { region: key.region } : {}),
+                  ...(key.promo ? { couponCode: key.promo } : {}),
+                  ...(key.userId ? { userId: key.userId } : {}),
+                  ...(key.userEmail ? { userEmail: key.userEmail } : {}),
+                };
+
+                // Calculate pricing using the rules engine
+                const result = await calculatePricingWithDB(requestFacts);
+
+                // Map to PricingBreakdown format
+                const pricingBreakdown: PricingResult = {
+                  __typename: "PricingBreakdown",
+                  cacheKey,
+
+                  ...result.pricing,
+
+                  // Bundle Information
+                  bundle: {
+                    __typename: "CountryBundle",
+                    id: result.selectedBundle?.esim_go_name || key.bundleId,
+                    name: result.selectedBundle?.esim_go_name || "",
+                    duration: key.validityInDays,
+                    data: result.selectedBundle?.data_amount_mb || 0,
+                    isUnlimited: result.selectedBundle?.is_unlimited || false,
+                    currency: "USD",
+                    group: key.group || "Standard Unlimited Essential",
+                    country: {
+                      __typename: "Country",
+                      iso: key.countries?.[0] || "",
+                    },
                   },
-                },
 
-                country: {
-                  iso: key.countries?.[0] || "",
-                  name: key.countries?.[0] || "",
-                  region: key.region || "",
-                },
+                  country: {
+                    iso: key.countries?.[0] || "",
+                    name: key.countries?.[0] || "",
+                    region: key.region || "",
+                  },
 
-                duration: key.validityInDays,
-                appliedRules: result.appliedRules,
-                unusedDays: result.unusedDays,
-                selectedReason: "calculated",
-                totalCostBeforeProcessing: result.pricing.totalCostBeforeProcessing,
-                
-                // Store the full calculation for field resolvers
-                _pricingCalculation: result,
-              };
-
-              // Cache the result
-              await cachePricing(context, cacheKey, pricingBreakdown);
-
-              return pricingBreakdown;
-            } catch (error) {
-              logger.error("Failed to calculate pricing for key", error as Error, {
-                cacheKey,
-                bundleId: key.bundleId,
-                operationType: "calculation-error",
-              });
-              
-              // Return a default error result to avoid breaking the batch
-              return {
-                __typename: "PricingBreakdown",
-                cacheKey,
-                basePrice: 0,
-                markup: 0,
-                processingFee: 0,
-                totalCost: 0,
-                finalPrice: 0,
-                currency: "USD",
-                bundle: {
-                  __typename: "CountryBundle",
-                  id: key.bundleId,
-                  name: "",
                   duration: key.validityInDays,
-                  data: 0,
-                  isUnlimited: false,
+                  appliedRules: result.appliedRules,
+                  unusedDays: result.unusedDays,
+                  selectedReason: "calculated",
+                  totalCostBeforeProcessing:
+                    result.pricing.totalCostBeforeProcessing,
+
+                  // Store the full calculation for field resolvers
+                  _pricingCalculation: result,
+                };
+
+                // Cache the result
+                await cachePricing(context, cacheKey, pricingBreakdown);
+
+                return pricingBreakdown;
+              } catch (error) {
+                logger.error(
+                  "Failed to calculate pricing for key",
+                  error as Error,
+                  {
+                    cacheKey,
+                    bundleId: key.bundleId,
+                    operationType: "calculation-error",
+                  }
+                );
+
+                // Return a default error result to avoid breaking the batch
+                return {
+                  __typename: "PricingBreakdown",
+                  cacheKey,
+                  basePrice: 0,
+                  markup: 0,
+                  processingFee: 0,
+                  totalCost: 0,
+                  finalPrice: 0,
                   currency: "USD",
-                  group: key.group || "",
-                  country: {
-                    __typename: "Country",
-                    iso: key.countries?.[0] || "",
+                  bundle: {
+                    __typename: "CountryBundle",
+                    id: key.bundleId,
+                    name: "",
+                    duration: key.validityInDays,
+                    data: 0,
+                    isUnlimited: false,
+                    currency: "USD",
+                    group: key.group || "",
+                    country: {
+                      __typename: "Country",
+                      iso: key.countries?.[0] || "",
+                    },
                   },
-                },
-                country: {
-                  iso: key.countries?.[0] || "",
-                  name: key.countries?.[0] || "",
-                  region: key.region || "",
-                },
-                duration: key.validityInDays,
-                appliedRules: [],
-                unusedDays: 0,
-                selectedReason: "error",
-                totalCostBeforeProcessing: 0,
-              } as PricingResult;
+                  country: {
+                    iso: key.countries?.[0] || "",
+                    name: key.countries?.[0] || "",
+                    region: key.region || "",
+                  },
+                  duration: key.validityInDays,
+                  appliedRules: [],
+                  unusedDays: 0,
+                  selectedReason: "error",
+                  totalCostBeforeProcessing: 0,
+                } as PricingResult;
+              }
+            })
+          );
+
+          const duration = Date.now() - startTime;
+          logger.info("Batch pricing calculations completed", {
+            batchSize: keys.length,
+            duration,
+            avgTimePerCalc: duration / keys.length,
+            operationType: "batch-complete",
+          });
+
+          return results;
+        } catch (error) {
+          logger.error(
+            "Failed to batch load pricing calculations",
+            error as Error,
+            {
+              batchSize: keys.length,
+              operationType: "batch-error",
             }
-          })
-        );
-
-        const duration = Date.now() - startTime;
-        logger.info("Batch pricing calculations completed", {
-          batchSize: keys.length,
-          duration,
-          avgTimePerCalc: duration / keys.length,
-          operationType: "batch-complete",
-        });
-
-        return results;
-      } catch (error) {
-        logger.error("Failed to batch load pricing calculations", error as Error, {
-          batchSize: keys.length,
-          operationType: "batch-error",
-        });
-        throw error;
+          );
+          throw error;
+        }
       }
-    }),
+    ),
     {
       // DataLoader options
       cacheKeyFn: (key: PricingKey) => createCacheKey(key),
@@ -240,8 +256,12 @@ async function cachePricing(
       cachedAt: Date.now(),
     };
     // Cache for 1 hour
-    await context.services.redis.setex(cacheKey, 3600, JSON.stringify(cacheData));
-    
+    await context.services.redis.setex(
+      cacheKey,
+      3600,
+      JSON.stringify(cacheData)
+    );
+
     logger.debug("Cached pricing result", {
       cacheKey,
       operationType: "cache-set",
