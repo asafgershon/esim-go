@@ -1,0 +1,288 @@
+# Enhanced Pricing Rules Engine Types - Extending Existing Schema
+
+# Keep all existing enums
+enum RuleCategory {
+  DISCOUNT
+  CONSTRAINT
+  FEE
+  BUNDLE_ADJUSTMENT
+  MARKUP
+  ROUNDING
+}
+
+enum ConditionOperator {
+  EQUALS
+  NOT_EQUALS
+  GREATER_THAN
+  LESS_THAN
+  BETWEEN
+  IN
+  NOT_IN
+  EXISTS
+  NOT_EXISTS
+}
+
+enum ActionType {
+  APPLY_DISCOUNT_PERCENTAGE
+  APPLY_FIXED_DISCOUNT
+  SET_MINIMUM_PRICE
+  SET_MINIMUM_PROFIT
+  ADD_MARKUP
+  SET_PROCESSING_RATE
+  SET_DISCOUNT_PER_UNUSED_DAY
+  APPLY_PSYCHOLOGICAL_ROUNDING
+}
+
+# ===== NEW LIGHTWEIGHT TYPES FOR STEP-BY-STEP BREAKDOWN =====
+
+# Simplified step for streaming/yielding
+type PricingStep {
+  order: Int!
+  name: String!
+  priceBefore: Float!
+  priceAfter: Float!
+  impact: Float! # Can be positive or negative
+  ruleId: ID
+  metadata: JSON # Optional extra context
+}
+
+# Customer-friendly discount info
+type CustomerDiscount {
+  name: String!
+  amount: Float!
+  percentage: Float
+  reason: String # Why they got this discount
+}
+
+# ===== EXTENDED EXISTING TYPES =====
+
+# Enhanced AppliedRule (backward compatible)
+type AppliedRule {
+  id: ID!
+  name: String!
+  category: RuleCategory!
+  impact: Float!
+  
+  # New optional fields
+  order: Int # Execution order
+  conditions: JSON # What conditions triggered this
+  metadata: JSON # Additional context
+}
+
+# Keep existing DiscountApplication
+type DiscountApplication {
+  ruleName: String!
+  amount: Float!
+  type: String!
+}
+
+# ===== EXTEND EXISTING PricingBreakdown =====
+type PricingBreakdown {
+  # === EXISTING PUBLIC FIELDS ===
+  bundle: CountryBundle!
+  country: Country!
+  duration: Int!
+  currency: String!
+  totalCost: Float!
+  discountValue: Float!
+  priceAfterDiscount: Float!
+  finalPrice: Float!
+  
+  # === NEW PUBLIC FIELDS ===
+  # Customer-friendly discount list
+  customerDiscounts: [CustomerDiscount!] # Simple list for customers
+  savingsAmount: Float # Total saved
+  savingsPercentage: Float # Percentage saved
+  
+  # === EXISTING ADMIN FIELDS ===
+  cost: Float! @auth(role: "ADMIN")
+  markup: Float! @auth(role: "ADMIN")
+  discountRate: Float! @auth(role: "ADMIN")
+  processingRate: Float! @auth(role: "ADMIN")
+  processingCost: Float! @auth(role: "ADMIN")
+  finalRevenue: Float! @auth(role: "ADMIN")
+  revenueAfterProcessing: Float! @auth(role: "ADMIN")
+  netProfit: Float! @auth(role: "ADMIN")
+  discountPerDay: Float! @auth(role: "ADMIN")
+  appliedRules: [AppliedRule!] @auth(role: "ADMIN")
+  discounts: [DiscountApplication!] @auth(role: "ADMIN")
+  unusedDays: Int @auth(role: "ADMIN")
+  selectedReason: String @auth(role: "ADMIN")
+  totalCostBeforeProcessing: Float @auth(role: "ADMIN")
+  
+  # === NEW ADMIN FIELDS ===
+  # Step-by-step breakdown
+  pricingSteps: [PricingStep!] @auth(role: "ADMIN")
+  
+  # Performance metrics
+  calculationTimeMs: Float @auth(role: "ADMIN")
+  rulesEvaluated: Int @auth(role: "ADMIN")
+  
+  # Debug info (optional)
+  debugInfo: JSON @auth(role: "ADMIN")
+}
+
+# ===== SUBSCRIPTIONS FOR STREAMING =====
+
+type PricingStepUpdate {
+  step: PricingStep!
+  currentPrice: Float!
+  totalSteps: Int
+  isComplete: Boolean!
+}
+
+extend type Subscription {
+  # Stream pricing calculation steps as they happen
+  pricingCalculationSteps(
+    countryId: ID!
+    bundleGroup: String!
+    duration: Int!
+    paymentMethod: PaymentMethod!
+  ): PricingStepUpdate! @auth(role: "ADMIN")
+}
+
+# ===== EXISTING TYPES (unchanged) =====
+
+type RuleCondition {
+  field: String!
+  operator: ConditionOperator!
+  value: JSON!
+  type: String
+}
+
+type RuleAction {
+  type: ActionType!
+  value: Float!
+  metadata: JSON
+}
+
+type PricingRule {
+  id: ID!
+  category: RuleCategory!
+  name: String!
+  description: String
+  conditions: [RuleCondition!]!
+  actions: [RuleAction!]!
+  priority: Int!
+  isActive: Boolean!
+  isEditable: Boolean!
+  validFrom: String
+  validUntil: String
+  createdBy: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type PricingRuleCalculation {
+  baseCost: Float!
+  markup: Float!
+  subtotal: Float!
+  discounts: [DiscountApplication!]!
+  totalDiscount: Float!
+  priceAfterDiscount: Float!
+  processingFee: Float!
+  processingRate: Float!
+  finalPrice: Float!
+  finalRevenue: Float!
+  revenueAfterProcessing: Float!
+  profit: Float!
+  maxRecommendedPrice: Float!
+  maxDiscountPercentage: Float!
+  appliedRules: [AppliedRule!]!
+  selectedBundle: CountryBundle!
+}
+
+# ===== INPUT TYPES =====
+
+input CreatePricingRuleInput {
+  category: RuleCategory!
+  name: String!
+  description: String
+  conditions: [RuleConditionInput!]!
+  actions: [RuleActionInput!]!
+  priority: Int!
+  isActive: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input UpdatePricingRuleInput {
+  name: String
+  description: String
+  conditions: [RuleConditionInput!]
+  actions: [RuleActionInput!]
+  priority: Int
+  isActive: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input RuleConditionInput {
+  field: String!
+  operator: ConditionOperator!
+  value: JSON!
+  type: String
+}
+
+input RuleActionInput {
+  type: ActionType!
+  value: Float!
+  metadata: JSON
+}
+
+input PricingRulePriorityUpdate {
+  id: ID!
+  priority: Int!
+}
+
+input PricingRuleFilter {
+  category: RuleCategory
+  isActive: Boolean
+  isEditable: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+# ===== QUERY EXTENSIONS =====
+
+extend type Query {
+  # Enhanced pricing calculation with detailed steps
+  calculatePrice(
+    countryId: ID!
+    bundleGroup: String!
+    duration: Int!
+    paymentMethod: PaymentMethod!
+    includeDebugInfo: Boolean # Optional debug info
+  ): PricingBreakdown!
+  
+  # Batch pricing for comparison
+  calculatePriceBatch(
+    requests: [CalculatePriceInput!]!
+  ): [PricingBreakdown!]!
+  
+  # Existing queries
+  pricingRules(filter: PricingRuleFilter): [PricingRule!]!
+  pricingRule(id: ID!): PricingRule
+}
+
+# ===== MUTATION EXTENSIONS =====
+
+extend type Mutation {
+  # Test rules without saving
+  testPricingRule(
+    rule: CreatePricingRuleInput!
+    testCountryId: ID!
+    testBundleGroup: String!
+    testDuration: Int!
+    testPaymentMethod: PaymentMethod!
+  ): PricingBreakdown!
+  
+  # Existing mutations
+  createPricingRule(input: CreatePricingRuleInput!): PricingRule!
+  updatePricingRule(id: ID!, input: UpdatePricingRuleInput!): PricingRule!
+  deletePricingRule(id: ID!): Boolean!
+  togglePricingRule(id: ID!): PricingRule!
+  updatePricingRulePriorities(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
+  clonePricingRule(id: ID!, newName: String!): PricingRule!
+  reorderPricingRules(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
+}

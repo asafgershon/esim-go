@@ -278,5 +278,4 @@ export async function calculatePricing({
 // Export alias for backward compatibility
 export { calculatePricing as calculatePricingWithDB };
 
-// Export enhanced version with step tracking
-  export { calculatePricingEnhanced, EnhancedPricingEngineResult } from './calculate-pricing-enhanced';
+// Enhanced version with database-driven strategy is now the primary export above
