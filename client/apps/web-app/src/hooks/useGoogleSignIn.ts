@@ -8,6 +8,9 @@ interface GoogleSignInConfig {
   auto_select?: boolean;
   cancel_on_tap_outside?: boolean;
   use_fedcm_for_prompt?: boolean;
+  ux_mode?: 'popup' | 'redirect';
+  allowed_parent_origin?: string;
+  login_uri?: string;
 }
 
 interface GoogleCredentialResponse {
@@ -78,7 +81,8 @@ export const useGoogleSignIn = () => {
           callback: handleCredentialResponse,
           auto_select: false,
           cancel_on_tap_outside: true,
-          use_fedcm_for_prompt: true, // Enable FedCM to fix migration warning
+          use_fedcm_for_prompt: false, // Enable FedCM to fix migration warning
+          ux_mode: 'popup',
         });
 
         if (autoPrompt) {

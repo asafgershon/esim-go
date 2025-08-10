@@ -404,10 +404,25 @@ export type CheckoutSession = {
   token: Scalars['String']['output'];
 };
 
+export type CheckoutSessionUpdate = {
+  __typename?: 'CheckoutSessionUpdate';
+  session: CheckoutSession;
+  timestamp: Scalars['DateTime']['output'];
+  updateType: CheckoutUpdateType;
+};
+
 export enum CheckoutStepType {
   Authentication = 'AUTHENTICATION',
   Delivery = 'DELIVERY',
   Payment = 'PAYMENT'
+}
+
+export enum CheckoutUpdateType {
+  OrderCreated = 'ORDER_CREATED',
+  PaymentCompleted = 'PAYMENT_COMPLETED',
+  PaymentProcessing = 'PAYMENT_PROCESSING',
+  SessionExpired = 'SESSION_EXPIRED',
+  StepCompleted = 'STEP_COMPLETED'
 }
 
 export enum ConditionOperator {
@@ -1049,6 +1064,31 @@ export type PriceRange = {
   min: Scalars['Float']['output'];
 };
 
+export type PricingBlock = {
+  __typename?: 'PricingBlock';
+  action: Scalars['JSON']['output'];
+  category: Scalars['String']['output'];
+  conditions: Scalars['JSON']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdBy?: Maybe<Scalars['ID']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  isEditable: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  validFrom?: Maybe<Scalars['DateTime']['output']>;
+  validUntil?: Maybe<Scalars['DateTime']['output']>;
+};
+
+export type PricingBlockFilter = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  isEditable?: InputMaybe<Scalars['Boolean']['input']>;
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type PricingBreakdown = {
   __typename?: 'PricingBreakdown';
   appliedRules?: Maybe<Array<AppliedRule>>;
@@ -1177,6 +1217,27 @@ export type PricingStepUpdate = {
   totalSteps: Scalars['Int']['output'];
 };
 
+export type PricingStrategy = {
+  __typename?: 'PricingStrategy';
+  activationCount?: Maybe<Scalars['Int']['output']>;
+  archivedAt?: Maybe<Scalars['String']['output']>;
+  blocks: Array<StrategyBlock>;
+  code: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  createdBy: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isDefault: Scalars['Boolean']['output'];
+  lastActivatedAt?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  parentStrategyId?: Maybe<Scalars['String']['output']>;
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  updatedBy?: Maybe<Scalars['String']['output']>;
+  validatedAt?: Maybe<Scalars['String']['output']>;
+  validationErrors?: Maybe<Scalars['JSON']['output']>;
+  version: Scalars['Int']['output'];
+};
+
 export type ProcessCheckoutPaymentInput = {
   paymentMethodId: Scalars['String']['input'];
   savePaymentMethod?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1276,6 +1337,7 @@ export type Query = {
   catalogSyncHistory: CatalogSyncHistoryConnection;
   conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
+  defaultPricingStrategy?: Maybe<PricingStrategy>;
   esimDetails?: Maybe<Esim>;
   getAdminESIMDetails: AdminEsimDetails;
   getAllESIMs: Array<AdminEsim>;
@@ -1290,9 +1352,13 @@ export type Query = {
   orderDetails?: Maybe<Order>;
   orders: Array<Order>;
   paymentMethods: Array<PaymentMethodInfo>;
+  pricingBlock?: Maybe<PricingBlock>;
+  pricingBlocks: Array<PricingBlock>;
   pricingFilters: PricingFilters;
   pricingRule?: Maybe<PricingRule>;
   pricingRules: Array<PricingRule>;
+  pricingStrategies: Array<PricingStrategy>;
+  pricingStrategy?: Maybe<PricingStrategy>;
   simulatePricingRule: PricingBreakdown;
   tenant?: Maybe<Tenant>;
   tenants: Array<Tenant>;
@@ -1408,6 +1474,16 @@ export type QueryOrderDetailsArgs = {
 };
 
 
+export type QueryPricingBlockArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPricingBlocksArgs = {
+  filter?: InputMaybe<PricingBlockFilter>;
+};
+
+
 export type QueryPricingRuleArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1415,6 +1491,16 @@ export type QueryPricingRuleArgs = {
 
 export type QueryPricingRulesArgs = {
   filter?: InputMaybe<PricingRuleFilter>;
+};
+
+
+export type QueryPricingStrategiesArgs = {
+  filter?: InputMaybe<StrategyFilter>;
+};
+
+
+export type QueryPricingStrategyArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1519,10 +1605,25 @@ export type SocialSignInInput = {
   lastName?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type StrategyBlock = {
+  __typename?: 'StrategyBlock';
+  configOverrides?: Maybe<Scalars['JSON']['output']>;
+  isEnabled: Scalars['Boolean']['output'];
+  pricingBlock: PricingBlock;
+  priority: Scalars['Int']['output'];
+};
+
+export type StrategyFilter = {
+  archived?: InputMaybe<Scalars['Boolean']['input']>;
+  isDefault?: InputMaybe<Scalars['Boolean']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type Subscription = {
   __typename?: 'Subscription';
   calculatePricesBatchStream: PricingBreakdown;
   catalogSyncProgress: CatalogSyncProgressUpdate;
+  checkoutSessionUpdated: CheckoutSessionUpdate;
   esimStatusUpdated: EsimStatusUpdate;
   pricingCalculationSteps: PricingStepUpdate;
   pricingPipelineProgress: PricingPipelineStepUpdate;
@@ -1532,6 +1633,11 @@ export type Subscription = {
 export type SubscriptionCalculatePricesBatchStreamArgs = {
   inputs: Array<CalculatePriceInput>;
   requestedDays?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type SubscriptionCheckoutSessionUpdatedArgs = {
+  token: Scalars['String']['input'];
 };
 
 
@@ -1831,6 +1937,13 @@ export type ValidateOrderMutationVariables = Exact<{
 
 export type ValidateOrderMutation = { __typename?: 'Mutation', validateOrder: { __typename?: 'ValidateOrderResponse', success: boolean, isValid: boolean, bundleDetails?: any | null, totalPrice?: number | null, currency?: string | null, error?: string | null, errorCode?: string | null } };
 
+export type CheckoutSessionUpdatedSubscriptionVariables = Exact<{
+  token: Scalars['String']['input'];
+}>;
+
+
+export type CheckoutSessionUpdatedSubscription = { __typename?: 'Subscription', checkoutSessionUpdated: { __typename?: 'CheckoutSessionUpdate', updateType: CheckoutUpdateType, timestamp: any, session: { __typename?: 'CheckoutSession', id: string, orderId?: string | null, isComplete: boolean, paymentStatus?: string | null, timeRemaining?: number | null, steps?: any | null, metadata?: any | null, planSnapshot?: any | null, pricing?: any | null } } };
+
 export type SignInMutationVariables = Exact<{
   input: SignInInput;
 }>;
@@ -1960,6 +2073,7 @@ export const GetCheckoutSessionDocument = {"kind":"Document","definitions":[{"ki
 export const OrderDetailsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"OrderDetails"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"orderDetails"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"reference"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"totalPrice"}},{"kind":"Field","name":{"kind":"Name","value":"esims"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"iccid"}},{"kind":"Field","name":{"kind":"Name","value":"qrCode"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"smdpAddress"}},{"kind":"Field","name":{"kind":"Name","value":"matchingId"}},{"kind":"Field","name":{"kind":"Name","value":"installationLinks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"universalLink"}},{"kind":"Field","name":{"kind":"Name","value":"lpaScheme"}},{"kind":"Field","name":{"kind":"Name","value":"qrCodeData"}},{"kind":"Field","name":{"kind":"Name","value":"manual"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"smDpAddress"}},{"kind":"Field","name":{"kind":"Name","value":"activationCode"}},{"kind":"Field","name":{"kind":"Name","value":"confirmationCode"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<OrderDetailsQuery, OrderDetailsQueryVariables>;
 export const GetUserOrdersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserOrders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"myOrders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"reference"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"totalPrice"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"esims"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]}}]} as unknown as DocumentNode<GetUserOrdersQuery, GetUserOrdersQueryVariables>;
 export const ValidateOrderDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ValidateOrder"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ValidateOrderInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"validateOrder"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"isValid"}},{"kind":"Field","name":{"kind":"Name","value":"bundleDetails"}},{"kind":"Field","name":{"kind":"Name","value":"totalPrice"}},{"kind":"Field","name":{"kind":"Name","value":"currency"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"errorCode"}}]}}]}}]} as unknown as DocumentNode<ValidateOrderMutation, ValidateOrderMutationVariables>;
+export const CheckoutSessionUpdatedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"CheckoutSessionUpdated"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"token"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkoutSessionUpdated"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"token"},"value":{"kind":"Variable","name":{"kind":"Name","value":"token"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"session"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"orderId"}},{"kind":"Field","name":{"kind":"Name","value":"isComplete"}},{"kind":"Field","name":{"kind":"Name","value":"paymentStatus"}},{"kind":"Field","name":{"kind":"Name","value":"timeRemaining"}},{"kind":"Field","name":{"kind":"Name","value":"steps"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"planSnapshot"}},{"kind":"Field","name":{"kind":"Name","value":"pricing"}}]}},{"kind":"Field","name":{"kind":"Name","value":"updateType"}},{"kind":"Field","name":{"kind":"Name","value":"timestamp"}}]}}]}}]} as unknown as DocumentNode<CheckoutSessionUpdatedSubscription, CheckoutSessionUpdatedSubscriptionVariables>;
 export const SignInDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SignIn"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SignInInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"signIn"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"sessionToken"}},{"kind":"Field","name":{"kind":"Name","value":"refreshToken"}}]}}]}}]} as unknown as DocumentNode<SignInMutation, SignInMutationVariables>;
 export const SignUpDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SignUp"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SignUpInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"signUp"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"sessionToken"}},{"kind":"Field","name":{"kind":"Name","value":"refreshToken"}}]}}]}}]} as unknown as DocumentNode<SignUpMutation, SignUpMutationVariables>;
 export const SignInWithAppleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SignInWithApple"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SocialSignInInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"signInWithApple"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"phoneNumber"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"sessionToken"}},{"kind":"Field","name":{"kind":"Name","value":"refreshToken"}}]}}]}}]} as unknown as DocumentNode<SignInWithAppleMutation, SignInWithAppleMutationVariables>;

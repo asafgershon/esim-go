@@ -402,10 +402,25 @@ export type CheckoutSession = {
   token: Scalars['String']['output'];
 };
 
+export type CheckoutSessionUpdate = {
+  __typename?: 'CheckoutSessionUpdate';
+  session: CheckoutSession;
+  timestamp: Scalars['DateTime']['output'];
+  updateType: CheckoutUpdateType;
+};
+
 export enum CheckoutStepType {
   Authentication = 'AUTHENTICATION',
   Delivery = 'DELIVERY',
   Payment = 'PAYMENT'
+}
+
+export enum CheckoutUpdateType {
+  OrderCreated = 'ORDER_CREATED',
+  PaymentCompleted = 'PAYMENT_COMPLETED',
+  PaymentProcessing = 'PAYMENT_PROCESSING',
+  SessionExpired = 'SESSION_EXPIRED',
+  StepCompleted = 'STEP_COMPLETED'
 }
 
 export enum ConditionOperator {
@@ -1047,6 +1062,31 @@ export type PriceRange = {
   min: Scalars['Float']['output'];
 };
 
+export type PricingBlock = {
+  __typename?: 'PricingBlock';
+  action: Scalars['JSON']['output'];
+  category: Scalars['String']['output'];
+  conditions: Scalars['JSON']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdBy?: Maybe<Scalars['ID']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  isEditable: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  validFrom?: Maybe<Scalars['DateTime']['output']>;
+  validUntil?: Maybe<Scalars['DateTime']['output']>;
+};
+
+export type PricingBlockFilter = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  isEditable?: InputMaybe<Scalars['Boolean']['input']>;
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type PricingBreakdown = {
   __typename?: 'PricingBreakdown';
   appliedRules?: Maybe<Array<AppliedRule>>;
@@ -1175,6 +1215,27 @@ export type PricingStepUpdate = {
   totalSteps: Scalars['Int']['output'];
 };
 
+export type PricingStrategy = {
+  __typename?: 'PricingStrategy';
+  activationCount?: Maybe<Scalars['Int']['output']>;
+  archivedAt?: Maybe<Scalars['String']['output']>;
+  blocks: Array<StrategyBlock>;
+  code: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  createdBy: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isDefault: Scalars['Boolean']['output'];
+  lastActivatedAt?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  parentStrategyId?: Maybe<Scalars['String']['output']>;
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  updatedBy?: Maybe<Scalars['String']['output']>;
+  validatedAt?: Maybe<Scalars['String']['output']>;
+  validationErrors?: Maybe<Scalars['JSON']['output']>;
+  version: Scalars['Int']['output'];
+};
+
 export type ProcessCheckoutPaymentInput = {
   paymentMethodId: Scalars['String']['input'];
   savePaymentMethod?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1274,6 +1335,7 @@ export type Query = {
   catalogSyncHistory: CatalogSyncHistoryConnection;
   conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
+  defaultPricingStrategy?: Maybe<PricingStrategy>;
   esimDetails?: Maybe<Esim>;
   getAdminESIMDetails: AdminEsimDetails;
   getAllESIMs: Array<AdminEsim>;
@@ -1288,9 +1350,13 @@ export type Query = {
   orderDetails?: Maybe<Order>;
   orders: Array<Order>;
   paymentMethods: Array<PaymentMethodInfo>;
+  pricingBlock?: Maybe<PricingBlock>;
+  pricingBlocks: Array<PricingBlock>;
   pricingFilters: PricingFilters;
   pricingRule?: Maybe<PricingRule>;
   pricingRules: Array<PricingRule>;
+  pricingStrategies: Array<PricingStrategy>;
+  pricingStrategy?: Maybe<PricingStrategy>;
   simulatePricingRule: PricingBreakdown;
   tenant?: Maybe<Tenant>;
   tenants: Array<Tenant>;
@@ -1406,6 +1472,16 @@ export type QueryOrderDetailsArgs = {
 };
 
 
+export type QueryPricingBlockArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPricingBlocksArgs = {
+  filter?: InputMaybe<PricingBlockFilter>;
+};
+
+
 export type QueryPricingRuleArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1413,6 +1489,16 @@ export type QueryPricingRuleArgs = {
 
 export type QueryPricingRulesArgs = {
   filter?: InputMaybe<PricingRuleFilter>;
+};
+
+
+export type QueryPricingStrategiesArgs = {
+  filter?: InputMaybe<StrategyFilter>;
+};
+
+
+export type QueryPricingStrategyArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1517,10 +1603,25 @@ export type SocialSignInInput = {
   lastName?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type StrategyBlock = {
+  __typename?: 'StrategyBlock';
+  configOverrides?: Maybe<Scalars['JSON']['output']>;
+  isEnabled: Scalars['Boolean']['output'];
+  pricingBlock: PricingBlock;
+  priority: Scalars['Int']['output'];
+};
+
+export type StrategyFilter = {
+  archived?: InputMaybe<Scalars['Boolean']['input']>;
+  isDefault?: InputMaybe<Scalars['Boolean']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type Subscription = {
   __typename?: 'Subscription';
   calculatePricesBatchStream: PricingBreakdown;
   catalogSyncProgress: CatalogSyncProgressUpdate;
+  checkoutSessionUpdated: CheckoutSessionUpdate;
   esimStatusUpdated: EsimStatusUpdate;
   pricingCalculationSteps: PricingStepUpdate;
   pricingPipelineProgress: PricingPipelineStepUpdate;
@@ -1530,6 +1631,11 @@ export type Subscription = {
 export type SubscriptionCalculatePricesBatchStreamArgs = {
   inputs: Array<CalculatePriceInput>;
   requestedDays?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type SubscriptionCheckoutSessionUpdatedArgs = {
+  token: Scalars['String']['input'];
 };
 
 
@@ -1828,6 +1934,13 @@ export type ValidateOrderMutationVariables = Exact<{
 
 
 export type ValidateOrderMutation = { __typename?: 'Mutation', validateOrder: { __typename?: 'ValidateOrderResponse', success: boolean, isValid: boolean, bundleDetails?: any | null, totalPrice?: number | null, currency?: string | null, error?: string | null, errorCode?: string | null } };
+
+export type CheckoutSessionUpdatedSubscriptionVariables = Exact<{
+  token: Scalars['String']['input'];
+}>;
+
+
+export type CheckoutSessionUpdatedSubscription = { __typename?: 'Subscription', checkoutSessionUpdated: { __typename?: 'CheckoutSessionUpdate', updateType: CheckoutUpdateType, timestamp: any, session: { __typename?: 'CheckoutSession', id: string, orderId?: string | null, isComplete: boolean, paymentStatus?: string | null, timeRemaining?: number | null, steps?: any | null, metadata?: any | null, planSnapshot?: any | null, pricing?: any | null } } };
 
 export type SignInMutationVariables = Exact<{
   input: SignInInput;

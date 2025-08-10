@@ -406,10 +406,25 @@ export type CheckoutSession = {
   token: Scalars['String']['output'];
 };
 
+export type CheckoutSessionUpdate = {
+  __typename?: 'CheckoutSessionUpdate';
+  session: CheckoutSession;
+  timestamp: Scalars['DateTime']['output'];
+  updateType: CheckoutUpdateType;
+};
+
 export enum CheckoutStepType {
   Authentication = 'AUTHENTICATION',
   Delivery = 'DELIVERY',
   Payment = 'PAYMENT'
+}
+
+export enum CheckoutUpdateType {
+  OrderCreated = 'ORDER_CREATED',
+  PaymentCompleted = 'PAYMENT_COMPLETED',
+  PaymentProcessing = 'PAYMENT_PROCESSING',
+  SessionExpired = 'SESSION_EXPIRED',
+  StepCompleted = 'STEP_COMPLETED'
 }
 
 export enum ConditionOperator {
@@ -1610,6 +1625,7 @@ export type Subscription = {
   __typename?: 'Subscription';
   calculatePricesBatchStream: PricingBreakdown;
   catalogSyncProgress: CatalogSyncProgressUpdate;
+  checkoutSessionUpdated: CheckoutSessionUpdate;
   esimStatusUpdated: EsimStatusUpdate;
   pricingCalculationSteps: PricingStepUpdate;
   pricingPipelineProgress: PricingPipelineStepUpdate;
@@ -1619,6 +1635,11 @@ export type Subscription = {
 export type SubscriptionCalculatePricesBatchStreamArgs = {
   inputs: Array<CalculatePriceInput>;
   requestedDays?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type SubscriptionCheckoutSessionUpdatedArgs = {
+  token: Scalars['String']['input'];
 };
 
 
@@ -1970,7 +1991,9 @@ export type ResolversTypes = {
   CatalogSyncJob: ResolverTypeWrapper<CatalogSyncJob>;
   CatalogSyncProgressUpdate: ResolverTypeWrapper<CatalogSyncProgressUpdate>;
   CheckoutSession: ResolverTypeWrapper<CheckoutSession>;
+  CheckoutSessionUpdate: ResolverTypeWrapper<CheckoutSessionUpdate>;
   CheckoutStepType: CheckoutStepType;
+  CheckoutUpdateType: CheckoutUpdateType;
   ConditionOperator: ConditionOperator;
   ConflictingJobInfo: ResolverTypeWrapper<ConflictingJobInfo>;
   Country: ResolverTypeWrapper<Country>;
@@ -2116,6 +2139,7 @@ export type ResolversParentTypes = {
   CatalogSyncJob: CatalogSyncJob;
   CatalogSyncProgressUpdate: CatalogSyncProgressUpdate;
   CheckoutSession: CheckoutSession;
+  CheckoutSessionUpdate: CheckoutSessionUpdate;
   ConflictingJobInfo: ConflictingJobInfo;
   Country: Country;
   CountryBundle: CountryBundle;
@@ -2504,6 +2528,13 @@ export type CheckoutSessionResolvers<ContextType = Context, ParentType extends R
   steps?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
   timeRemaining?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   token?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CheckoutSessionUpdateResolvers<ContextType = Context, ParentType extends ResolversParentTypes['CheckoutSessionUpdate'] = ResolversParentTypes['CheckoutSessionUpdate']> = {
+  session?: Resolver<ResolversTypes['CheckoutSession'], ParentType, ContextType>;
+  timestamp?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  updateType?: Resolver<ResolversTypes['CheckoutUpdateType'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3142,6 +3173,7 @@ export type StrategyBlockResolvers<ContextType = Context, ParentType extends Res
 export type SubscriptionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
   calculatePricesBatchStream?: SubscriptionResolver<ResolversTypes['PricingBreakdown'], "calculatePricesBatchStream", ParentType, ContextType, RequireFields<SubscriptionCalculatePricesBatchStreamArgs, 'inputs'>>;
   catalogSyncProgress?: SubscriptionResolver<ResolversTypes['CatalogSyncProgressUpdate'], "catalogSyncProgress", ParentType, ContextType>;
+  checkoutSessionUpdated?: SubscriptionResolver<ResolversTypes['CheckoutSessionUpdate'], "checkoutSessionUpdated", ParentType, ContextType, RequireFields<SubscriptionCheckoutSessionUpdatedArgs, 'token'>>;
   esimStatusUpdated?: SubscriptionResolver<ResolversTypes['ESIMStatusUpdate'], "esimStatusUpdated", ParentType, ContextType, RequireFields<SubscriptionEsimStatusUpdatedArgs, 'esimId'>>;
   pricingCalculationSteps?: SubscriptionResolver<ResolversTypes['PricingStepUpdate'], "pricingCalculationSteps", ParentType, ContextType, RequireFields<SubscriptionPricingCalculationStepsArgs, 'input'>>;
   pricingPipelineProgress?: SubscriptionResolver<ResolversTypes['PricingPipelineStepUpdate'], "pricingPipelineProgress", ParentType, ContextType, RequireFields<SubscriptionPricingPipelineProgressArgs, 'correlationId'>>;
@@ -3280,6 +3312,7 @@ export type Resolvers<ContextType = Context> = {
   CatalogSyncJob?: CatalogSyncJobResolvers<ContextType>;
   CatalogSyncProgressUpdate?: CatalogSyncProgressUpdateResolvers<ContextType>;
   CheckoutSession?: CheckoutSessionResolvers<ContextType>;
+  CheckoutSessionUpdate?: CheckoutSessionUpdateResolvers<ContextType>;
   ConflictingJobInfo?: ConflictingJobInfoResolvers<ContextType>;
   Country?: CountryResolvers<ContextType>;
   CountryBundle?: CountryBundleResolvers<ContextType>;
