@@ -383,6 +383,24 @@ type Subscription {
     inputs: [CalculatePriceInput!]!
     requestedDays: Int # Priority - calculate this day first
   ): PricingBreakdown!
+  
+  # Real-time checkout session updates
+  checkoutSessionUpdated(token: String!): CheckoutSessionUpdate!
+}
+
+# Checkout session update subscription type
+type CheckoutSessionUpdate {
+  session: CheckoutSession!
+  updateType: CheckoutUpdateType!
+  timestamp: DateTime!
+}
+
+enum CheckoutUpdateType {
+  STEP_COMPLETED
+  PAYMENT_PROCESSING
+  PAYMENT_COMPLETED
+  SESSION_EXPIRED
+  ORDER_CREATED
 }
 
 interface Bundle {

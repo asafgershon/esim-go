@@ -22,6 +22,7 @@ import {
 import type { OrderResponse } from "../datasources/esim-go";
 import { purchaseAndDeliverESIM } from "../services/esim-purchase";
 import { WEB_APP_BUNDLE_GROUP } from "../lib/constants/bundle-groups";
+import { publishCheckoutSessionUpdate } from "./checkout-subscription-resolvers";
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS
@@ -535,26 +536,37 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
         console.log("Next step:", nextStep, "Is complete:", isComplete);
 
+        const sessionResponse = {
+          id: updatedSession.id,
+          token,
+          expiresAt: updatedSession.expires_at,
+          isComplete,
+          timeRemaining: Math.max(
+            0,
+            Math.floor(
+              (new Date(updatedSession.expires_at).getTime() - Date.now()) /
+                1000
+            )
+          ),
+          createdAt: updatedSession.created_at,
+          planSnapshot: updatedSession.plan_snapshot,
+          pricing: updatedSession.pricing,
+          steps: updatedSteps,
+          paymentStatus: updatedSession.payment_status || "PENDING",
+          orderId: updatedSession.order_id,
+          metadata: updatedSession.metadata,
+        };
+
+        // Publish update to subscription
+        await publishCheckoutSessionUpdate(
+          updatedSession.id,
+          sessionResponse,
+          "STEP_COMPLETED"
+        );
+
         return {
           success: true,
-          session: {
-            id: updatedSession.id,
-            token,
-            expiresAt: updatedSession.expires_at,
-            isComplete,
-            timeRemaining: Math.max(
-              0,
-              Math.floor(
-                (new Date(updatedSession.expires_at).getTime() - Date.now()) /
-                  1000
-              )
-            ),
-            createdAt: updatedSession.created_at,
-            planSnapshot: updatedSession.plan_snapshot,
-            pricing: updatedSession.pricing,
-            steps: updatedSteps,
-            paymentStatus: updatedSession.payment_status || "PENDING",
-          },
+          session: sessionResponse,
           nextStep: nextStep as any,
           error: null,
         };
@@ -695,6 +707,34 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
         console.log("Session updated, starting webhook simulation...");
 
+        const processingSession = {
+          id: updatedSession.id,
+          token,
+          expiresAt: updatedSession.expires_at,
+          isComplete: false, // Will be true after webhook completes
+          timeRemaining: Math.max(
+            0,
+            Math.floor(
+              (new Date(updatedSession.expires_at).getTime() - Date.now()) /
+                1000
+            )
+          ),
+          createdAt: updatedSession.created_at,
+          planSnapshot: updatedSession.plan_snapshot,
+          pricing: updatedSession.pricing,
+          steps: updatedSteps,
+          paymentStatus: "PROCESSING",
+          orderId: updatedSession.order_id,
+          metadata: updatedSession.metadata,
+        };
+
+        // Publish payment processing update
+        await publishCheckoutSessionUpdate(
+          updatedSession.id,
+          processingSession,
+          "PAYMENT_PROCESSING"
+        );
+
         // Start webhook simulation (Step 2: Timer to simulate webhook)
         // In production, this would be a real webhook from Stripe
         setTimeout(async () => {
@@ -715,26 +755,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         return {
           success: true,
           orderId, // This will be replaced with real DB order ID by the webhook
-          session: {
-            id: updatedSession.id,
-            token,
-            expiresAt: updatedSession.expires_at,
-            isComplete: false, // Will be true after webhook completes
-            timeRemaining: Math.max(
-              0,
-              Math.floor(
-                (new Date(updatedSession.expires_at).getTime() - Date.now()) /
-                  1000
-              )
-            ),
-            createdAt: updatedSession.created_at,
-            planSnapshot: updatedSession.plan_snapshot,
-            pricing: updatedSession.pricing,
-            steps: updatedSteps,
-            paymentStatus: "PROCESSING",
-            orderId: updatedSession.order_id,
-            metadata: updatedSession.metadata, // Added missing metadata field
-          },
+          session: processingSession,
           paymentIntentId: paymentIntent.id,
           webhookProcessing: true,
           error: null,
@@ -973,10 +994,32 @@ async function simulateWebhookProcessing(
         completedSteps
       );
 
-      await context.repositories.checkoutSessions.markCompleted(sessionId, {
+      const completedSession = await context.repositories.checkoutSessions.markCompleted(sessionId, {
         orderId: orderRecord.id, // This is the database order ID, not the reference
         orderReference: orderId, // This is the reference string
       });
+
+      // Publish payment completed update
+      const sessionUpdate = {
+        id: completedSession.id,
+        token: "", // Token not needed for subscription
+        expiresAt: completedSession.expires_at,
+        isComplete: true,
+        timeRemaining: 0,
+        createdAt: completedSession.created_at,
+        planSnapshot: completedSession.plan_snapshot,
+        pricing: completedSession.pricing,
+        steps: completedSession.steps,
+        paymentStatus: "COMPLETED",
+        orderId: orderRecord.id,
+        metadata: completedSession.metadata,
+      };
+      
+      await publishCheckoutSessionUpdate(
+        sessionId,
+        sessionUpdate,
+        "PAYMENT_COMPLETED"
+      );
 
       console.log(
         "Webhook simulation: Payment, order, and eSIM creation completed!"

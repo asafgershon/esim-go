@@ -189,13 +189,16 @@ export function CheckoutContainer() {
     [token, handlePayment, refetchSession]
   );
 
-  // Poll for webhook completion and redirect
+  // Handle webhook completion and redirect (now triggered by subscription)
   useEffect(() => {
     if (session?.isComplete && session?.orderId) {
       // Webhook has completed successfully - stop processing and redirect
       setIsProcessing(false);
       
-      router.push(`/order/${session.orderId}`);
+      // Small delay to ensure UI updates before navigation
+      setTimeout(() => {
+        router.push(`/order/${session.orderId}`);
+      }, 100);
 
       return () => {
         // clearCheckoutState();
@@ -244,6 +247,7 @@ export function CheckoutContainer() {
             session={session}
             sectionNumber={1}
             validationStatus={validationStatus}
+            isCompleted={validationStatus === "valid"}
           />
           
           {/* Validation Error Display */}
@@ -272,7 +276,10 @@ export function CheckoutContainer() {
         </div>
         {/* Right Column - Payment & Login */}
         <div className="space-y-6">
-          <LoginSection sectionNumber={2} />
+          <LoginSection 
+            sectionNumber={2} 
+            isCompleted={!!session?.steps?.authentication?.completed}
+          />
           
           <DeliveryMethodSection
             sectionNumber={3}
@@ -280,6 +287,7 @@ export function CheckoutContainer() {
             setSelectedMethod={() => {}}
             email={email}
             setEmail={() => {}}
+            isCompleted={!!session?.steps?.delivery?.completed}
           />
           
           <PaymentSection
@@ -293,6 +301,7 @@ export function CheckoutContainer() {
             onPaymentSubmit={handlePaymentSubmit}
             isProcessing={isProcessing}
             canSubmit={canSubmitPayment}
+            isCompleted={!!session?.steps?.payment?.completed}
           />
           {/* Payment processing screen */}
           {isProcessing && (

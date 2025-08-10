@@ -13,12 +13,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { User, CheckCircle, LogOut } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { NameCollectionForm } from "./name-collection-form";
+import { SectionHeader } from "./section-header";
 
 interface LoginSectionProps {
   sectionNumber?: number;
+  isCompleted?: boolean;
 }
 
-export function LoginSection({ sectionNumber }: LoginSectionProps) {
+export function LoginSection({ sectionNumber, isCompleted = false }: LoginSectionProps) {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
@@ -198,10 +200,13 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
 
     return (
       <Card className="p-6 relative" dir="rtl">
-        <div className="flex items-center justify-between mb-4">
-          <CheckCircle className="h-5 w-5 text-green-500" />
-          <h2 className="text-xl font-semibold">מחובר</h2>
-
+        <div className="flex items-center justify-between">
+          <SectionHeader
+            sectionNumber={sectionNumber || 2}
+            title="מחובר"
+            icon={<User className="h-5 w-5 text-primary" />}
+            isCompleted={true}
+          />
           <Button
             onClick={signOut}
             variant="ghost"
@@ -229,15 +234,12 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
 
   return (
     <Card className="p-6 relative" dir="rtl">
-      <div className="flex items-center gap-2 mb-4">
-        {sectionNumber && (
-          <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
-            {sectionNumber}
-          </div>
-        )}
-        <User className="h-5 w-5 text-primary" />
-        <h2 className="text-xl font-semibold">התחבר כדי להמשיך</h2>
-      </div>
+      <SectionHeader
+        sectionNumber={sectionNumber || 2}
+        title="התחבר כדי להמשיך"
+        icon={<User className="h-5 w-5 text-primary" />}
+        isCompleted={false}
+      />
 
       {step === "phone" && (
         <div className="space-y-4">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Label, Input, Card, Button } from "@workspace/ui";
 import { CreditCard, Lock } from "lucide-react";
+import { SectionHeader } from "./section-header";
 
 interface PaymentSectionProps {
   sectionNumber?: number;
@@ -15,6 +16,7 @@ interface PaymentSectionProps {
   onPaymentSubmit: (paymentMethodId: string) => Promise<void>;
   isProcessing?: boolean;
   canSubmit?: boolean;
+  isCompleted?: boolean;
 }
 
 export function PaymentSection({
@@ -27,6 +29,7 @@ export function PaymentSection({
   setCvv,
   onPaymentSubmit,
   isProcessing = false,
+  isCompleted = false,
 }: PaymentSectionProps) {
   const [isCreatingPaymentMethod, setIsCreatingPaymentMethod] = useState(false);
 
@@ -96,15 +99,12 @@ export function PaymentSection({
 
   return (
     <Card className="p-6 relative" dir="rtl">
-      <div className="flex items-center gap-2 mb-4">
-        {sectionNumber && (
-          <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
-            {sectionNumber}
-          </div>
-        )}
-        <CreditCard className="h-5 w-5 text-primary" />
-        <h2 className="text-xl font-semibold">פרטי תשלום</h2>
-      </div>
+      <SectionHeader
+        sectionNumber={sectionNumber || 4}
+        title="פרטי תשלום"
+        icon={<CreditCard className="h-5 w-5 text-primary" />}
+        isCompleted={isCompleted}
+      />
 
       <div className="space-y-4">
         {/* Card Number */}

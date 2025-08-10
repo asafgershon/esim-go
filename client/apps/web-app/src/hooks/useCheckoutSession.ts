@@ -1,24 +1,50 @@
+import { useEffect } from "react";
 import {
   GetCheckoutSessionQuery,
   GetCheckoutSessionQueryVariables,
+  CheckoutSessionUpdatedSubscription,
+  CheckoutSessionUpdatedSubscriptionVariables,
 } from "@/__generated__/graphql";
 import {
   GetCheckoutSession,
+  CheckoutSessionUpdated,
 } from "@/lib/graphql/checkout";
-import { useQuery } from "@apollo/client";
+import { useQuery, useSubscription } from "@apollo/client";
 
 export const useCheckoutSession = (token?: string, isProcessing?: boolean) => {
+  // Initial query to get the session
   const { data, loading, error, refetch } = useQuery<
     GetCheckoutSessionQuery,
     GetCheckoutSessionQueryVariables
   >(GetCheckoutSession, {
     variables: { token: token! },
     skip: !token,
-    pollInterval: isProcessing ? 2000 : 0,
+    // Remove polling since we'll use subscription
+    pollInterval: 0,
   });
 
+  // Subscribe to session updates when processing
+  const { data: subscriptionData } = useSubscription<
+    CheckoutSessionUpdatedSubscription,
+    CheckoutSessionUpdatedSubscriptionVariables
+  >(CheckoutSessionUpdated, {
+    variables: { token: token! },
+    skip: !token || !isProcessing, // Only subscribe when processing
+  });
+
+  // Merge subscription data with query data
+  const session = subscriptionData?.checkoutSessionUpdated?.session || 
+                  data?.getCheckoutSession?.session;
+
+  // Refetch when subscription indicates completion
+  useEffect(() => {
+    if (subscriptionData?.checkoutSessionUpdated?.updateType === "PAYMENT_COMPLETED") {
+      refetch();
+    }
+  }, [subscriptionData, refetch]);
+
   return {
-    session: data?.getCheckoutSession?.session,
+    session,
     refetch,
     loading,
     error,

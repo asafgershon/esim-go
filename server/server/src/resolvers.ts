@@ -6,6 +6,7 @@ import { authResolvers } from "./resolvers/auth-resolvers";
 import { bundlesResolvers } from "./resolvers/bundles.resolvers";
 import { catalogResolvers } from "./resolvers/catalog-resolvers";
 import { checkoutResolvers } from "./resolvers/checkout-resolvers";
+import { checkoutSubscriptionResolvers } from "./resolvers/checkout-subscription-resolvers";
 import { esimResolvers } from "./resolvers/esim-resolvers";
 import { ordersResolvers } from "./resolvers/orders-resolvers";
 import { pricingRulesResolvers } from "./resolvers/pricing-rules-resolvers";
@@ -265,6 +266,9 @@ export const resolvers: Resolvers = {
     
     // Pricing subscriptions for real-time step streaming
     ...pricingSubscriptionResolvers.Subscription!,
+    
+    // Checkout subscriptions for real-time session updates
+    ...checkoutSubscriptionResolvers.Subscription!,
     
     // Batch pricing subscription for progressive loading
     ...batchPricingSubscriptionResolvers,

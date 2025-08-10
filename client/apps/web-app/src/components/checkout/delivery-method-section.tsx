@@ -3,6 +3,7 @@
 import { Card } from "@workspace/ui";
 import { Mail, Phone, Smartphone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { SectionHeader } from "./section-header";
 
 interface DeliveryMethodSectionProps {
   sectionNumber?: number;
@@ -10,10 +11,12 @@ interface DeliveryMethodSectionProps {
   setSelectedMethod: (method: "QR" | "EMAIL") => void;
   email: string;
   setEmail: (email: string) => void;
+  isCompleted?: boolean;
 }
 
 export function DeliveryMethodSection({ 
-  sectionNumber
+  sectionNumber,
+  isCompleted = false
 }: DeliveryMethodSectionProps) {
   const { user, isAuthenticated } = useAuth();
   
@@ -28,16 +31,13 @@ export function DeliveryMethodSection({
   }
 
   return (
-    <Card className="p-6 relative bg-muted-foreground" dir="rtl">
-      <div className="flex items-center gap-2 mb-4">
-        {sectionNumber && (
-          <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
-            {sectionNumber}
-          </div>
-        )}
-        <Smartphone className="h-5 w-5 text-primary" />
-        <h2 className="text-xl font-semibold">אופן קבלת ה-eSIM</h2>
-      </div>
+    <Card className="p-6 relative" dir="rtl">
+      <SectionHeader
+        sectionNumber={sectionNumber || 3}
+        title="אופן קבלת ה-eSIM"
+        icon={<Smartphone className="h-5 w-5 text-primary" />}
+        isCompleted={isCompleted}
+      />
 
       <div className="space-y-4">
         {/* Show delivery info based on auth method */}

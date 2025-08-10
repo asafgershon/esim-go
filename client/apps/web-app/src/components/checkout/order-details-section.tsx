@@ -3,6 +3,8 @@
 import { Card } from "@workspace/ui";
 import { lazy } from "react";
 import type { GetCheckoutSessionQuery } from "@/__generated__/graphql";
+import { SectionHeader } from "./section-header";
+import { ShoppingCart } from "lucide-react";
 
 const CountUp = lazy(() => import("react-countup"));
 
@@ -10,12 +12,14 @@ interface OrderDetailsSectionProps {
   session: GetCheckoutSessionQuery['getCheckoutSession']['session'] | null | undefined;
   sectionNumber?: number;
   validationStatus?: "pending" | "valid" | "invalid" | null;
+  isCompleted?: boolean;
 }
 
 export function OrderDetailsSection({
   session,
   sectionNumber,
   validationStatus,
+  isCompleted = false,
 }: OrderDetailsSectionProps) {
   // Extract session data (already parsed JSON objects, not strings)
   const planSnapshot = session?.planSnapshot || null;
@@ -53,15 +57,13 @@ export function OrderDetailsSection({
   if (!session || !planSnapshot) {
     return (
       <Card className="p-6" dir="rtl">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            {sectionNumber && (
-              <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
-                {sectionNumber}
-              </div>
-            )}
-            <h2 className="text-xl font-semibold">פרטי הזמנה</h2>
-          </div>
+        <div className="flex items-center justify-between">
+          <SectionHeader
+            sectionNumber={sectionNumber || 1}
+            title="פרטי הזמנה"
+            icon={<ShoppingCart className="h-5 w-5 text-primary" />}
+            isCompleted={isCompleted}
+          />
           <ValidationIndicator />
         </div>
         <div className="text-center py-8 text-muted-foreground">
@@ -88,15 +90,13 @@ export function OrderDetailsSection({
 
   return (
     <Card className="p-6" dir="rtl">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {sectionNumber && (
-            <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-md font-bold shadow-lg">
-              {sectionNumber}
-            </div>
-          )}
-          <h2 className="text-xl font-semibold">פרטי הזמנה</h2>
-        </div>
+      <div className="flex items-center justify-between">
+        <SectionHeader
+          sectionNumber={sectionNumber || 1}
+          title="פרטי הזמנה"
+          icon={<ShoppingCart className="h-5 w-5 text-primary" />}
+          isCompleted={isCompleted}
+        />
         <ValidationIndicator />
       </div>
       

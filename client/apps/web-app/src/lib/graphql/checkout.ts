@@ -126,3 +126,22 @@ mutation ValidateOrder($input: ValidateOrderInput!) {
     errorCode
   }
 }`
+
+export const CheckoutSessionUpdated = gql`
+subscription CheckoutSessionUpdated($token: String!) {
+  checkoutSessionUpdated(token: $token) {
+    session {
+      id
+      orderId
+      isComplete
+      paymentStatus
+      timeRemaining
+      steps
+      metadata
+      planSnapshot
+      pricing
+    }
+    updateType
+    timestamp
+  }
+}`
