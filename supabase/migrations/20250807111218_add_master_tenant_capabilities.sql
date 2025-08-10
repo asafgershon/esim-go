@@ -46,8 +46,8 @@ INSERT INTO public.tenants (
     img_url, 
     tenant_type
 ) VALUES (
-    'esim_go_master', 
-    'eSIM Go Master Tenant', 
+    'hiilo-master', 
+    'Hiilo Master', 
     'https://example.com/master-tenant-logo.png', 
     'master'
 ) ON CONFLICT (slug) DO NOTHING;
