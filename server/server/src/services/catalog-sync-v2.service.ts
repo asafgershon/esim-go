@@ -1,6 +1,6 @@
 import { ESimGoClient } from "@hiilo/client";
-import { SyncJobType } from "@hiilo/rules-engine";
 import { createLogger, withPerformanceLogging } from "../lib/logger";
+import { SyncJobType } from "../types";
 import {
   BundleRepository,
   CatalogMetadataRepository,

@@ -62,6 +62,12 @@ interface BundleSelectorContextValue {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
 
+  // Date State
+  startDate: Date | null;
+  setStartDate: (date: Date | null) => void;
+  endDate: Date | null;
+  setEndDate: (date: Date | null) => void;
+
   // Destination State (will be computed from queryStates in the component that has access to countries/trips data)
   destination: Destination | null;
 

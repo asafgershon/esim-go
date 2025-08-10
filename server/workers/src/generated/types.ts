@@ -440,6 +440,13 @@ export type CreatePricingRuleInput = {
   validUntil?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type CreateTenantInput = {
+  imgUrl: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  slug: Scalars['ID']['input'];
+  tenantType?: InputMaybe<TenantType>;
+};
+
 export type CreateTripInput = {
   countryIds: Array<Scalars['ISOCountryCode']['input']>;
   description: Scalars['String']['input'];
@@ -501,6 +508,8 @@ export type DeleteUserResponse = {
 
 export type DiscountApplication = {
   amount: Scalars['Float']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  percentage?: Maybe<Scalars['Float']['output']>;
   ruleName: Scalars['String']['output'];
   type: Scalars['String']['output'];
 };
@@ -643,17 +652,21 @@ export type ManualInstallation = {
 export type Mutation = {
   activateESIM?: Maybe<ActivateEsimResponse>;
   assignPackageToUser?: Maybe<AssignPackageResponse>;
+  assignUserToTenant: TenantOperationResponse;
   cancelESIM?: Maybe<EsimActionResponse>;
   clonePricingRule: PricingRule;
   createCheckoutSession: CreateCheckoutSessionResponse;
   createPricingRule: PricingRule;
+  createTenant: Tenant;
   createTrip?: Maybe<CreateTripResponse>;
   deletePricingRule: Scalars['Boolean']['output'];
+  deleteTenant: TenantOperationResponse;
   deleteTrip?: Maybe<DeleteTripResponse>;
   deleteUser?: Maybe<DeleteUserResponse>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
+  removeUserFromTenant: TenantOperationResponse;
   reorderPricingRules: Array<PricingRule>;
   restoreESIM?: Maybe<EsimActionResponse>;
   sendPhoneOTP?: Maybe<SendOtpResponse>;
@@ -671,6 +684,7 @@ export type Mutation = {
   updatePricingRule: PricingRule;
   updatePricingRulePriorities: Array<PricingRule>;
   updateProfile?: Maybe<UpdateProfileResponse>;
+  updateTenant: Tenant;
   updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
   validateOrder: ValidateOrderResponse;
@@ -685,6 +699,13 @@ export type Mutation_ActivateEsimArgs = {
 
 export type Mutation_AssignPackageToUserArgs = {
   planId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type Mutation_AssignUserToTenantArgs = {
+  role?: InputMaybe<Scalars['String']['input']>;
+  tenantSlug: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
 
@@ -710,6 +731,11 @@ export type Mutation_CreatePricingRuleArgs = {
 };
 
 
+export type Mutation_CreateTenantArgs = {
+  input: CreateTenantInput;
+};
+
+
 export type Mutation_CreateTripArgs = {
   input: CreateTripInput;
 };
@@ -717,6 +743,11 @@ export type Mutation_CreateTripArgs = {
 
 export type Mutation_DeletePricingRuleArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type Mutation_DeleteTenantArgs = {
+  slug: Scalars['ID']['input'];
 };
 
 
@@ -743,6 +774,12 @@ export type Mutation_ProcessCheckoutPaymentArgs = {
 export type Mutation_PurchaseEsimArgs = {
   input: PurchaseEsimInput;
   planId: Scalars['ID']['input'];
+};
+
+
+export type Mutation_RemoveUserFromTenantArgs = {
+  tenantSlug: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -833,6 +870,12 @@ export type Mutation_UpdateProfileArgs = {
 };
 
 
+export type Mutation_UpdateTenantArgs = {
+  input: UpdateTenantInput;
+  slug: Scalars['ID']['input'];
+};
+
+
 export type Mutation_UpdateTripArgs = {
   input: UpdateTripInput;
 };
@@ -857,6 +900,7 @@ export type Order = {
   bundleId?: Maybe<Scalars['String']['output']>;
   bundleName?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
+  currency: Scalars['String']['output'];
   esims: Array<Esim>;
   id: Scalars['ID']['output'];
   quantity: Scalars['Int']['output'];
@@ -947,6 +991,7 @@ export type PricingBreakdown = {
   discountValue: Scalars['Float']['output'];
   discounts?: Maybe<Array<DiscountApplication>>;
   duration: Scalars['Int']['output'];
+  finalPrice: Scalars['Float']['output'];
   finalRevenue: Scalars['Float']['output'];
   markup: Scalars['Float']['output'];
   netProfit: Scalars['Float']['output'];
@@ -1124,6 +1169,7 @@ export type PurchaseEsimResponse = {
 
 export type Query = {
   activePricingRules: Array<PricingRule>;
+  allTenants: TenantConnection;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
   bundles: BundleConnection;
@@ -1134,9 +1180,7 @@ export type Query = {
   bundlesForGroup?: Maybe<BundlesForGroup>;
   bundlesForRegion?: Maybe<BundlesForRegion>;
   calculatePrice: PricingBreakdown;
-  calculatePrice2: PricingBreakdown;
   calculatePrices: Array<PricingBreakdown>;
-  calculatePrices2: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
   conflictingPricingRules: Array<PricingRule>;
@@ -1159,8 +1203,16 @@ export type Query = {
   pricingRule?: Maybe<PricingRule>;
   pricingRules: Array<PricingRule>;
   simulatePricingRule: PricingBreakdown;
+  tenant?: Maybe<Tenant>;
+  tenants: Array<Tenant>;
   trips: Array<Trip>;
   users: Array<User>;
+};
+
+
+export type Query_AllTenantsArgs = {
+  filter?: InputMaybe<TenantFilter>;
+  pagination?: InputMaybe<PaginationInput>;
 };
 
 
@@ -1206,25 +1258,11 @@ export type Query_BundlesForRegionArgs = {
 
 
 export type Query_CalculatePriceArgs = {
-  countryId: Scalars['String']['input'];
-  groups?: InputMaybe<Array<Scalars['String']['input']>>;
-  numOfDays: Scalars['Int']['input'];
-  paymentMethod?: InputMaybe<PaymentMethod>;
-  regionId?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type Query_CalculatePrice2Args = {
   input: CalculatePriceInput;
 };
 
 
 export type Query_CalculatePricesArgs = {
-  inputs: Array<CalculatePriceInput>;
-};
-
-
-export type Query_CalculatePrices2Args = {
   inputs: Array<CalculatePriceInput>;
 };
 
@@ -1292,6 +1330,11 @@ export type Query_PricingRulesArgs = {
 export type Query_SimulatePricingRuleArgs = {
   rule: CreatePricingRuleInput;
   testContext: TestPricingContext;
+};
+
+
+export type Query_TenantArgs = {
+  slug: Scalars['ID']['input'];
 };
 
 export type RuleAction = {
@@ -1420,6 +1463,37 @@ export enum SyncJobType {
   MetadataSync = 'METADATA_SYNC'
 }
 
+export type Tenant = {
+  createdAt: Scalars['String']['output'];
+  imgUrl: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  slug: Scalars['ID']['output'];
+  tenantType: TenantType;
+  updatedAt: Scalars['String']['output'];
+  userCount?: Maybe<Scalars['Int']['output']>;
+};
+
+export type TenantConnection = {
+  nodes: Array<Tenant>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type TenantFilter = {
+  search?: InputMaybe<Scalars['String']['input']>;
+  tenantType?: InputMaybe<TenantType>;
+};
+
+export type TenantOperationResponse = {
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export enum TenantType {
+  Master = 'MASTER',
+  Standard = 'STANDARD'
+}
+
 export type TestPricingContext = {
   bundleGroup: Scalars['String']['input'];
   bundleId: Scalars['String']['input'];
@@ -1524,6 +1598,12 @@ export type UpdateProfileResponse = {
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
   user?: Maybe<User>;
+};
+
+export type UpdateTenantInput = {
+  imgUrl?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  tenantType?: InputMaybe<TenantType>;
 };
 
 export type UpdateTripInput = {

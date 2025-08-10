@@ -42,7 +42,6 @@
     "@aws-sdk/client-ses": "^3.855.0",
     "@graphql-tools/merge": "^9.1.1",
     "@hiilo/client": "workspace:*",
-    "@hiilo/rules-engine": "workspace:*",
     "@hiilo/rules-engine-2": "workspace:*",
     "@hiilo/utils": "workspace:*",
     "@keyv/redis": "^4.6.0",

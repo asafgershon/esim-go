@@ -1,4 +1,4 @@
-import { ActionType, ConditionOperator } from "@hiilo/rules-engine";
+import { ActionType, ConditionOperator } from "../types";
 import type { Database } from "../database.types";
 import { createLogger } from "../lib/logger";
 import type {
