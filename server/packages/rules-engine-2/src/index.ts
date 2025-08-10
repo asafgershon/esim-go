@@ -18,13 +18,12 @@ import {
   PricingBreakdown,
   RuleCategory,
 } from "./generated/types";
-import { processEventType } from "./processors/process-event";
-import { selectEvents } from "./strategies/process-events";
-import { 
-  getCachedPricingRules, 
-  loadStrategyBlocks,
-  clearRulesCache 
+import {
+  clearRulesCache,
+  getCachedPricingRules,
+  loadStrategyBlocks
 } from "./loaders/database-loader";
+import { processEventType } from "./processors/process-event";
 
 // Export cache clear function for manual cache invalidation
 export { clearRulesCache };
@@ -197,7 +196,7 @@ export async function calculatePricing({
         event,
         currentPrice,
         appliedRules,
-        { selectedBundle, previousBundle, unusedDays },
+        { selectedBundle, previousBundle, unusedDays, paymentMethod },
         logger
       );
       logger.info(`Price changed from ${previousPrice} to ${currentPrice} after ${event.type}`);
@@ -278,3 +277,6 @@ export async function calculatePricing({
 
 // Export alias for backward compatibility
 export { calculatePricing as calculatePricingWithDB };
+
+// Export enhanced version with step tracking
+  export { calculatePricingEnhanced, EnhancedPricingEngineResult } from './calculate-pricing-enhanced';

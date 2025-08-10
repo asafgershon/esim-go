@@ -8,6 +8,9 @@ import { PaymentMethod, ActionType } from "../generated/types";
 type ProcessingFeeDetails = {
   method: PaymentMethod;
   rate: number;
+  percentageFee?: number;
+  fixedFee?: number;
+  totalFee?: number;
 };
 
 type UnusedDaysDiscountDetails = {
@@ -140,15 +143,37 @@ export async function processEventType(
 
     case "apply-processing-fee":
       const { params } = ProcessingFeeEventSchema.parse(events[0]);
-      const { value: rate } = params;
-      const processingFee = (currentPrice * rate) / 100;
+      const { feesMatrix } = params;
+      const paymentMethod = await almanac.factValue<PaymentMethod>("paymentMethod");
+      
+      // Get the fees for the selected payment method
+      const fees = feesMatrix[paymentMethod];
+      if (!fees) {
+        return {
+          newPrice: currentPrice,
+          change: 0,
+          description: `No processing fee for payment method: ${paymentMethod}`,
+          details: {
+            method: paymentMethod,
+            rate: 0,
+          },
+        };
+      }
+      
+      // Calculate processing fee: percentage + fixed fee
+      const percentageFee = (currentPrice * fees.percentageFee) / 100;
+      const totalProcessingFee = percentageFee + fees.fixedFee;
+      
       return {
         newPrice: currentPrice,
-        change: Number(processingFee.toFixed(2)),
-        description: `Applied processing fee of $${processingFee}`,
+        change: Number(totalProcessingFee.toFixed(2)),
+        description: `Applied processing fee of $${totalProcessingFee.toFixed(2)}`,
         details: {
-          rate,
-          method: params.method,
+          method: paymentMethod,
+          rate: fees.percentageFee,
+          percentageFee: Number(percentageFee.toFixed(2)),
+          fixedFee: fees.fixedFee,
+          totalFee: Number(totalProcessingFee.toFixed(2)),
         },
       };
 

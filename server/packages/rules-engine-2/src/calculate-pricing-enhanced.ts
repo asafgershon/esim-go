@@ -255,7 +255,7 @@ export async function calculatePricingEnhanced({
         event,
         currentPrice,
         appliedRules,
-        { selectedBundle, previousBundle, unusedDays },
+        { selectedBundle, previousBundle, unusedDays, paymentMethod },
         logger
       );
       

@@ -9,10 +9,7 @@ import { unusedDaysDiscountRule } from "src/blocks/unused-days";
 import { SelectedBundleFact } from "src/facts/bundle-facts";
 import { processEventType } from "src/processors/process";
 import { Strategy } from "src/types";
-import {
-  internationalCardRule,
-  israeliCardRule,
-} from "../blocks/processing-fee";
+import { processingFeeRule } from "../blocks/processing-fee";
 
 export type DefaultPricingStrategy = {
   id: string;
@@ -45,8 +42,7 @@ const blocks = [
   keepProfit,
 
   // Processing fees
-  israeliCardRule,
-  internationalCardRule,
+  processingFeeRule,
 
   // Rounding rules (lowest priority, applied last)
   regionRoundingRule,

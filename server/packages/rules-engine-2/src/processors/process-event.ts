@@ -7,6 +7,7 @@ interface ProcessContext {
   selectedBundle: SelectedBundleFact | null;
   previousBundle: PreviousBundleFact | null;
   unusedDays: number;
+  paymentMethod?: string;
 }
 
 /**
@@ -116,13 +117,38 @@ export function processEventType(
       break;
 
     case "apply-processing-fee":
-      // Apply payment processing fee
+      // Apply payment processing fee using feesMatrix
       const feeParams = event.params as any;
-      const feeRate = feeParams.value / 100;
-      const feeAmount = currentPrice * feeRate;
-      newPrice = currentPrice + feeAmount;
-      description = `Applied ${feeParams.value}% processing fee for ${feeParams.method}`;
-      details = { method: feeParams.method, rate: feeParams.value, feeAmount };
+      const { feesMatrix } = feeParams;
+      
+      if (!feesMatrix) {
+        // No fees matrix configured - skip processing fee
+        logger.warn('No feesMatrix found in processing fee params', { params: feeParams });
+        description = 'Processing fee skipped - no configuration';
+        details = { error: 'No feesMatrix configured' };
+        break;
+      }
+      
+      const paymentMethod = context.paymentMethod || 'ISRAELI_CARD';
+      const fees = feesMatrix[paymentMethod];
+      
+      if (!fees) {
+        // No fees configured for this payment method
+        description = `No processing fee for payment method: ${paymentMethod}`;
+        details = { method: paymentMethod, feeAmount: 0 };
+      } else {
+        const percentageFee = (currentPrice * fees.percentageFee) / 100;
+        const totalFee = percentageFee + fees.fixedFee;
+        newPrice = currentPrice + totalFee;
+        description = `Applied processing fee of $${totalFee.toFixed(2)} for ${paymentMethod}`;
+        details = { 
+          method: paymentMethod, 
+          rate: fees.percentageFee,
+          percentageFee: percentageFee.toFixed(2),
+          fixedFee: fees.fixedFee,
+          totalFee: totalFee.toFixed(2)
+        };
+      }
       break;
 
     case "apply-profit-constraint":
