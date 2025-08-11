@@ -147,7 +147,7 @@ export function DestinationsGallery({
       data-speed={speed}
       id={id}
       aria-label={ariaLabel}
-      className="bg-gradient-to-b from-white to-[#F8FAFC] overflow-hidden"
+      className="overflow-hidden"
     >
       <div className="container mx-auto px-4 max-w-[1440px]">
         {/* Header */}

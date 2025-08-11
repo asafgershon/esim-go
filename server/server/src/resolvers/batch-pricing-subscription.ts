@@ -1,5 +1,5 @@
 import {
-  calculatePricingWithDB,
+  calculatePricingEnhanced,
   type RequestFacts,
 } from "@hiilo/rules-engine-2";
 import { GraphQLError } from "graphql";
@@ -75,6 +75,9 @@ const createPricingBreakdown = (
 
     // Additional fields
     totalCostBeforeProcessing: result.pricing.totalCostBeforeProcessing,
+    
+    // Include pricing steps explicitly
+    pricingSteps: result.pricing.pricingSteps || [],
   };
 };
 
@@ -176,7 +179,7 @@ async function processInputsBatch({
 
       // Calculate pricing
       const startTime = Date.now();
-      const result = await calculatePricingWithDB(requestFacts);
+      const result = await calculatePricingEnhanced(requestFacts);
       const calculationTime = Date.now() - startTime;
 
       logger.debug("Calculated price for day", {

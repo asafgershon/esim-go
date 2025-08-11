@@ -109,6 +109,5 @@ export {
   CardTitle, 
   CardDescription, 
   CardContent,
-  cardVariants,
-  type CardProps
+  cardVariants
 } 

@@ -56,7 +56,7 @@ export default function Home() {
       {/* Main Content */}
       <main
         id="main-content"
-        className="flex flex-col gap-52 mb-[96px]"
+        className="flex flex-col gap-40 mb-[96px]"
         tabIndex={-1}
       >
         {/* Hero Section */}
@@ -65,7 +65,7 @@ export default function Home() {
         {/* eSIM Selector Section - Overlapping Hero */}
         <Suspense
           fallback={
-            <BundleSelector.Skeleton className="relative -mt-[400px] lg:max-w-[800px] z-20" />
+            <BundleSelector.Skeleton className="relative -mt-[300px] lg:max-w-[800px] z-20" />
           }
         >
           <BundleSelector

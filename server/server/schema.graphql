@@ -1142,7 +1142,7 @@ type PricingBreakdown {
   discounts: [DiscountApplication!] @auth(role: "ADMIN") # Detailed discount breakdown (nullable)
   
   # NEW: Step-by-step breakdown - Admin only
-  pricingSteps: [PricingStep!] @auth(role: "ADMIN") # Detailed step-by-step breakdown
+  pricingSteps: [PricingStep!] # Detailed step-by-step breakdown
   
   # NEW: Performance metrics - Admin only
   calculationTimeMs: Float @auth(role: "ADMIN") # Time taken to calculate pricing
