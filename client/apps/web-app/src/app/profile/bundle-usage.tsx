@@ -121,6 +121,8 @@ const BundleUsage: React.FC<BundleUsageProps> = ({
   // Mock installation links if not provided
   const mockInstallationLinks: InstallationLinks = installationLinks || {
     qrCodeData: `LPA:1${"$"}esim-go.com${"$"}8910300001234567890`,
+    lpaScheme: `LPA:1${"$"}esim-go.com${"$"}8910300001234567890`,
+    universalLink: `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=LPA:1${"$"}esim-go.com${"$"}8910300001234567890`,
     manual: {
       smDpAddress: "esim-go.com",
       activationCode: "1234-5678-9012",
