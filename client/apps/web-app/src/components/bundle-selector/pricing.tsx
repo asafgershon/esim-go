@@ -53,30 +53,33 @@ export function Pricing({
   const previousPriceRef = useRef<number>(0);
   const previousDestinationRef = useRef<string | null>(null);
   const [forceShowSteps, setForceShowSteps] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
   const { startDate, endDate } = useBundleSelector();
 
   // Track destination changes and force animation
   const currentDestination = tripId || countryId;
-  const destinationChanged = previousDestinationRef.current !== currentDestination;
   
   useEffect(() => {
-    if (currentDestination !== previousDestinationRef.current) {
+    // Check if destination actually changed
+    if (currentDestination && currentDestination !== previousDestinationRef.current) {
       previousDestinationRef.current = currentDestination;
       // Force show steps for at least one animation cycle when destination changes
-      if (currentDestination) {
-        setForceShowSteps(true);
-        // Reset after animation completes (adjust timing as needed)
-        const timer = setTimeout(() => {
-          setForceShowSteps(false);
-        }, 5000); // Keep showing for 5 seconds to ensure animation completes
-        return () => clearTimeout(timer);
-      }
+      setForceShowSteps(true);
+      // Increment key to force re-animation
+      setAnimationKey(prev => prev + 1);
+      
+      // Reset after animation completes
+      const timer = setTimeout(() => {
+        setForceShowSteps(false);
+      }, 5000); // Keep showing for 5 seconds to ensure animation completes
+      
+      return () => clearTimeout(timer);
     }
   }, [currentDestination]);
 
   // Always show steps when destination changes, regardless of data speed
   const shouldShowSteps = Boolean(
-    (forceShowSteps || shouldShowStreamingUI || destinationChanged) && 
+    (forceShowSteps || shouldShowStreamingUI) && 
     (countryId || tripId)
   );
 
@@ -91,6 +94,8 @@ export function Pricing({
     enabled: shouldShowSteps,
     // Use default steps if pricing steps aren't available yet
     forceAnimation: forceShowSteps,
+    // Key to force re-animation on destination change
+    key: animationKey,
   });
 
   // Track price changes for smooth CountUp transitions
@@ -116,8 +121,8 @@ export function Pricing({
   }
 
   // Show pricing steps animation when destination changes
-  // Show animation even if we have pricing data, as long as forceShowSteps is true
-  if ((isCalculating && shouldShowSteps) || (forceShowSteps && isCalculating)) {
+  // Always show when forceShowSteps is true and we're animating
+  if (forceShowSteps && isCalculating) {
     return (
       <div className="relative">
         <PricingStepsDisplay

@@ -60,6 +60,7 @@ interface UsePricingStepsProps {
   enabled: boolean;
   animationSpeed?: number; // milliseconds per step
   forceAnimation?: boolean; // Force animation even without real steps
+  key?: number; // Key to force re-animation
 }
 
 export function usePricingSteps({
@@ -67,6 +68,7 @@ export function usePricingSteps({
   enabled,
   animationSpeed = 800, // Default 800ms per step for good visibility
   forceAnimation = false,
+  key = 0,
 }: UsePricingStepsProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -138,7 +140,7 @@ export function usePricingSteps({
         clearTimeout(animationRef.current);
       }
     };
-  }, [pricingSteps, enabled, animationSpeed, forceAnimation]);
+  }, [pricingSteps, enabled, animationSpeed, forceAnimation, key]);
 
   // Use the appropriate total steps count
   const actualSteps = (forceAnimation && (!pricingSteps || pricingSteps.length === 0))
