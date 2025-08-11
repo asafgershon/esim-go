@@ -9,7 +9,7 @@ import { he } from "date-fns/locale";
 import { usePricingSteps } from "@/hooks/usePricingSteps";
 import { Sparkles, Loader2 } from "lucide-react";
 import { PricingStepsDisplay } from "./pricing-steps-display";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 interface PricingProps {
   destination: Destination;
@@ -52,23 +52,32 @@ export function Pricing({
 }: PricingProps) {
   const previousPriceRef = useRef<number>(0);
   const previousDestinationRef = useRef<string | null>(null);
+  const [forceShowSteps, setForceShowSteps] = useState(false);
   const { startDate, endDate } = useBundleSelector();
 
-  // Track destination changes
+  // Track destination changes and force animation
   const currentDestination = tripId || countryId;
   const destinationChanged = previousDestinationRef.current !== currentDestination;
   
   useEffect(() => {
     if (currentDestination !== previousDestinationRef.current) {
       previousDestinationRef.current = currentDestination;
+      // Force show steps for at least one animation cycle when destination changes
+      if (currentDestination) {
+        setForceShowSteps(true);
+        // Reset after animation completes (adjust timing as needed)
+        const timer = setTimeout(() => {
+          setForceShowSteps(false);
+        }, 5000); // Keep showing for 5 seconds to ensure animation completes
+        return () => clearTimeout(timer);
+      }
     }
   }, [currentDestination]);
 
-  // Show streaming animation when destination changes and we have pricing steps
+  // Always show steps when destination changes, regardless of data speed
   const shouldShowSteps = Boolean(
-    (shouldShowStreamingUI || destinationChanged) && 
-    (countryId || tripId) && 
-    pricing?.pricingSteps?.length
+    (forceShowSteps || shouldShowStreamingUI || destinationChanged) && 
+    (countryId || tripId)
   );
 
   const {
@@ -80,6 +89,8 @@ export function Pricing({
   } = usePricingSteps({
     pricingSteps: pricing?.pricingSteps,
     enabled: shouldShowSteps,
+    // Use default steps if pricing steps aren't available yet
+    forceAnimation: forceShowSteps,
   });
 
   // Track price changes for smooth CountUp transitions
@@ -105,7 +116,8 @@ export function Pricing({
   }
 
   // Show pricing steps animation when destination changes
-  if (isCalculating && shouldShowSteps) {
+  // Show animation even if we have pricing data, as long as forceShowSteps is true
+  if ((isCalculating && shouldShowSteps) || (forceShowSteps && isCalculating)) {
     return (
       <div className="relative">
         <PricingStepsDisplay

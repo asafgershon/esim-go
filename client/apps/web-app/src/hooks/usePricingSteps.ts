@@ -11,16 +11,62 @@ interface PricingStep {
   timestamp?: number | null;
 }
 
+// Default steps to show when forcing animation
+const DEFAULT_PRICING_STEPS: PricingStep[] = [
+  {
+    order: 0,
+    name: "Bundle Selection",
+    priceBefore: 0,
+    priceAfter: 0,
+    impact: 0,
+    ruleId: null,
+    metadata: null,
+    timestamp: null,
+  },
+  {
+    order: 1,
+    name: "Regional Price Check",
+    priceBefore: 0,
+    priceAfter: 0,
+    impact: 0,
+    ruleId: null,
+    metadata: null,
+    timestamp: null,
+  },
+  {
+    order: 2,
+    name: "Discount Calculation",
+    priceBefore: 0,
+    priceAfter: 0,
+    impact: 0,
+    ruleId: null,
+    metadata: null,
+    timestamp: null,
+  },
+  {
+    order: 3,
+    name: "Final Price",
+    priceBefore: 0,
+    priceAfter: 0,
+    impact: 0,
+    ruleId: null,
+    metadata: null,
+    timestamp: null,
+  },
+];
+
 interface UsePricingStepsProps {
   pricingSteps?: PricingStep[] | null;
   enabled: boolean;
   animationSpeed?: number; // milliseconds per step
+  forceAnimation?: boolean; // Force animation even without real steps
 }
 
 export function usePricingSteps({
   pricingSteps,
   enabled,
   animationSpeed = 800, // Default 800ms per step for good visibility
+  forceAnimation = false,
 }: UsePricingStepsProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -30,8 +76,8 @@ export function usePricingSteps({
   const previousStepsRef = useRef<PricingStep[] | null | undefined>(undefined);
 
   useEffect(() => {
-    // Only animate if enabled, we have steps, and they're different from before
-    if (!enabled || !pricingSteps || pricingSteps.length === 0) {
+    // Exit if not enabled
+    if (!enabled) {
       setIsAnimating(false);
       setDisplayedSteps([]);
       setCurrentStepIndex(0);
@@ -40,8 +86,23 @@ export function usePricingSteps({
       return;
     }
 
-    // Always animate when we get new steps (destination change)
-    previousStepsRef.current = pricingSteps;
+    // Use default steps if forcing animation without real steps
+    const stepsToAnimate = (forceAnimation && (!pricingSteps || pricingSteps.length === 0))
+      ? DEFAULT_PRICING_STEPS
+      : pricingSteps;
+
+    // Exit if no steps to animate
+    if (!stepsToAnimate || stepsToAnimate.length === 0) {
+      setIsAnimating(false);
+      setDisplayedSteps([]);
+      setCurrentStepIndex(0);
+      setProgress(0);
+      previousStepsRef.current = undefined;
+      return;
+    }
+
+    // Always animate when we get new steps (destination change) or forcing
+    previousStepsRef.current = stepsToAnimate;
 
     // Start animation for new steps
     setIsAnimating(true);
@@ -50,7 +111,7 @@ export function usePricingSteps({
     setProgress(0);
 
     let stepIndex = 0;
-    const sortedSteps = [...pricingSteps].sort((a, b) => a.order - b.order);
+    const sortedSteps = [...stepsToAnimate].sort((a, b) => a.order - b.order);
 
     const animateSteps = () => {
       if (stepIndex < sortedSteps.length) {
@@ -77,13 +138,18 @@ export function usePricingSteps({
         clearTimeout(animationRef.current);
       }
     };
-  }, [pricingSteps, enabled, animationSpeed]);
+  }, [pricingSteps, enabled, animationSpeed, forceAnimation]);
+
+  // Use the appropriate total steps count
+  const actualSteps = (forceAnimation && (!pricingSteps || pricingSteps.length === 0))
+    ? DEFAULT_PRICING_STEPS
+    : pricingSteps;
 
   return {
     isAnimating,
     progress,
     steps: displayedSteps,
-    totalSteps: pricingSteps?.length || 0,
+    totalSteps: actualSteps?.length || 0,
     completedSteps: currentStepIndex + 1,
     currentStep: displayedSteps[currentStepIndex],
   };
