@@ -6,7 +6,7 @@ import type { Destination } from "@/contexts/bundle-selector-context";
 import { useBundleSelector } from "@/contexts/bundle-selector-context";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { useSimulatedPricingSteps } from "@/hooks/useSimulatedPricingSteps";
+import { usePricingSteps } from "@/hooks/usePricingSteps";
 import { Sparkles, Loader2 } from "lucide-react";
 import { PricingStepsDisplay } from "./pricing-steps-display";
 import { useRef } from "react";
@@ -20,6 +20,16 @@ interface PricingProps {
     totalPrice?: number;
     hasDiscount?: boolean;
     discountAmount?: number;
+    pricingSteps?: Array<{
+      order: number;
+      name: string;
+      priceBefore: number;
+      priceAfter: number;
+      impact: number;
+      ruleId?: string | null;
+      metadata?: Record<string, unknown> | null;
+      timestamp?: number | null;
+    }> | null;
   } | null;
   shouldShowStreamingUI?: boolean;
   isStreamingData?: boolean;
@@ -50,15 +60,13 @@ export function Pricing({
   );
 
   const {
-    isCalculating,
+    isAnimating: isCalculating,
     progress,
     steps: calculationSteps,
     totalSteps,
     completedSteps,
-  } = useSimulatedPricingSteps({
-    finalPrice: pricing?.totalPrice || pricing?.finalPrice || 0,
-    hasDiscount: pricing?.hasDiscount || false,
-    discountAmount: pricing?.discountAmount || 0,
+  } = usePricingSteps({
+    pricingSteps: pricing?.pricingSteps,
     enabled: shouldShowSteps,
   });
 
@@ -155,7 +163,7 @@ export function Pricing({
             </span>
           </div>
         )}
-        
+
         {/* Real-time calculation progress (only for new country) */}
         {isCalculating && shouldShowStreamingUI && (
           <div className="mb-2 flex items-center gap-2">

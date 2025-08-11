@@ -35,6 +35,18 @@ export const CALCULATE_PRICES_BATCH_STREAM = gql`
         flag
       }
       
+      # Pricing calculation steps
+      pricingSteps {
+        order
+        name
+        priceBefore
+        priceAfter
+        impact
+        ruleId
+        metadata
+        timestamp
+      }
+      
       # Customer-friendly fields
       savingsAmount
       savingsPercentage

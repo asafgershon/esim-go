@@ -11,8 +11,8 @@ interface PricingStep {
   priceAfter: number;
   impact: number;
   ruleId?: string | null;
-  metadata?: Record<string, unknown>;
-  timestamp: number;
+  metadata?: Record<string, unknown> | null;
+  timestamp?: number | null;
 }
 
 interface PricingStepsDisplayProps {

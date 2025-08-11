@@ -26,6 +26,16 @@ interface MainViewProps {
     totalPrice?: number;
     hasDiscount?: boolean;
     discountAmount?: number;
+    pricingSteps?: Array<{
+      order: number;
+      name: string;
+      priceBefore: number;
+      priceAfter: number;
+      impact: number;
+      ruleId?: string | null;
+      metadata?: Record<string, unknown> | null;
+      timestamp?: number | null;
+    }> | null;
   } | null;
   shouldShowStreamingUI?: boolean;
   isStreamingData?: boolean;
@@ -82,6 +92,7 @@ export function MainView({
     }
     return null;
   }, [countryId, tripId, countries, trips]);
+
   return (
     <>
       <SelectorHeader>
