@@ -37,9 +37,9 @@ const getCurrencySymbol = (currency: string) => {
 };
 
 export default function ProfileContent() {
-  const { data: userData } = useQuery(ME);
-  const { data: ordersData } = useQuery(GetUserOrders);
-  const { data: esimsData } = useQuery(GET_ACTIVE_ESIM_PLAN);
+  const { data: userData, loading: userLoading } = useQuery(ME);
+  const { data: ordersData, loading: ordersLoading } = useQuery(GetUserOrders);
+  const { data: esimsData, loading: esimsLoading } = useQuery(GET_ACTIVE_ESIM_PLAN);
 
   // Get active eSIM plan from real data
   const getActiveESIM = () => {
@@ -179,20 +179,67 @@ export default function ProfileContent() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h2 className="text-xl font-semibold truncate">
-                {userData?.me?.firstName} {userData?.me?.lastName}
-              </h2>
-              <p className="text-muted-foreground truncate">{userData?.me?.email}</p>
-              <p className="text-sm text-muted-foreground truncate">
-                {userData?.me?.phoneNumber}
-              </p>
+              {userLoading ? (
+                <>
+                  <div className="h-6 w-32 bg-gray-200 rounded animate-pulse mb-2" />
+                  <div className="h-4 w-48 bg-gray-100 rounded animate-pulse mb-1" />
+                  <div className="h-4 w-36 bg-gray-100 rounded animate-pulse" />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-semibold truncate">
+                    {userData?.me?.firstName} {userData?.me?.lastName}
+                  </h2>
+                  <p className="text-muted-foreground truncate">{userData?.me?.email}</p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {userData?.me?.phoneNumber}
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </Card>
 
         {/* My Plan */}
         <Card className="p-6 mb-6">
-          {currentPlan ? (
+          {esimsLoading ? (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-5 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-5 w-40 bg-gray-200 rounded animate-pulse" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-5 w-12 bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+              
+              {/* Usage bars skeleton */}
+              <div className="space-y-6">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="h-4 w-20 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-4 w-32 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                  <div className="h-2 w-full bg-gray-200 rounded animate-pulse mb-2" />
+                  <div className="h-3 w-24 bg-gray-100 rounded animate-pulse" />
+                </div>
+                
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="h-4 w-16 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-4 w-28 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                  <div className="h-2 w-full bg-gray-200 rounded animate-pulse mb-2" />
+                  <div className="h-3 w-32 bg-gray-100 rounded animate-pulse" />
+                </div>
+                
+                {/* CTA Button skeleton */}
+                <div className="h-12 w-full bg-gray-200 rounded animate-pulse" />
+              </div>
+            </div>
+          ) : currentPlan ? (
             <>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2 truncate min-w-0">
@@ -298,7 +345,31 @@ export default function ProfileContent() {
           </h3>
 
           <div className="space-y-4">
-            {ordersData?.myOrders?.length > 0 ? (
+            {ordersLoading ? (
+              <>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                        <div className="h-4 w-12 bg-gray-100 rounded animate-pulse" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="h-3 w-20 bg-gray-100 rounded animate-pulse" />
+                        <div className="h-3 w-28 bg-gray-100 rounded animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div>
+                        <div className="h-5 w-16 bg-gray-200 rounded animate-pulse mb-1" />
+                        <div className="h-3 w-20 bg-gray-100 rounded animate-pulse" />
+                      </div>
+                      <div className="h-4 w-4 bg-gray-100 rounded animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : ordersData?.myOrders?.length > 0 ? (
               ordersData.myOrders.map((order: Order) => (
                 <Link
                   key={order.id}
