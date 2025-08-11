@@ -4,7 +4,7 @@ import { Esim, EsimBundle, GetUserOrdersQuery } from "@/__generated__/graphql";
 import { GetUserOrders } from "@/lib/graphql/checkout";
 import { GET_ACTIVE_ESIM_PLAN, ME } from "@/lib/graphql/mutations";
 import { useQuery } from "@apollo/client";
-import { Button, Card, Progress } from "@workspace/ui";
+import { Button, Card } from "@workspace/ui";
 import {
   Avatar,
   AvatarFallback,
@@ -15,8 +15,6 @@ import {
   ArrowLeft,
   Calendar,
   ChevronRight,
-  Plus,
-  QrCode,
   User,
   Wifi,
 } from "lucide-react";
@@ -123,15 +121,6 @@ export default function ProfileContent() {
 
   const currentPlan = getCurrentPlan();
 
-  const handleExtendPackage = () => {
-    // TODO: Implement extend package functionality
-    console.log("Extending package...");
-  };
-
-  const handleShowQRCode = (qrCode: string) => {
-    // TODO: Implement QR code display modal
-    console.log("Showing QR code:", qrCode);
-  };
 
   const getStatusText = (status: string) => {
     switch (status.toLowerCase()) {
@@ -165,19 +154,6 @@ export default function ProfileContent() {
   };
 
   // Calculate percentages based on real data
-  const dataUsagePercentage =
-    currentPlan && currentPlan.dataTotalMB > 0
-      ? (currentPlan.dataUsedMB / currentPlan.dataTotalMB) * 100
-      : 0;
-  const daysUsagePercentage =
-    currentPlan && currentPlan.totalDays > 0
-      ? ((currentPlan.totalDays - currentPlan.daysLeft) /
-          currentPlan.totalDays) *
-        100
-      : 0;
-
-  // Check if usage exceeds 80%
-  const isHighUsage = dataUsagePercentage > 80;
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
