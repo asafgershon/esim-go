@@ -108,7 +108,7 @@ export default function MobileDestinationDrawer({
                       className={`w-full flex items-center gap-3 p-4 rounded-lg text-right justify-start min-h-[3rem] ${
                         value === opt.value
                           ? "bg-primary/10 font-bold border border-primary text-primary"
-                          : "hover:bg-muted/50"
+                          : ""
                       }`}
                       onClick={() => handleSelect(opt.value)}
                       type="button"

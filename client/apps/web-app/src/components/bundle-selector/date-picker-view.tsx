@@ -9,11 +9,19 @@ import {
 } from "@workspace/ui";
 import { addDays, differenceInDays, format } from "date-fns";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CloseIcon } from "./icons";
+import { XCircle } from "lucide-react";
+import { IconButton } from "@workspace/ui";
 
 export function DatePickerView() {
   // Get context values
-  const { setCurrentView, setNumOfDays, startDate: contextStartDate, endDate: contextEndDate, setStartDate: setContextStartDate, setEndDate: setContextEndDate } = useBundleSelector();
+  const {
+    setCurrentView,
+    setNumOfDays,
+    startDate: contextStartDate,
+    endDate: contextEndDate,
+    setStartDate: setContextStartDate,
+    setEndDate: setContextEndDate,
+  } = useBundleSelector();
 
   // State for date inputs - initialize from context if available
   const [startDate, setStartDate] = useState<string>(
@@ -44,14 +52,21 @@ export function DatePickerView() {
   useEffect(() => {
     if (numberOfDays > 0 && numberOfDays <= 30) {
       setNumOfDays(numberOfDays);
-      
+
       // Update dates in context
       if (startDate && endDate) {
         setContextStartDate(new Date(startDate));
         setContextEndDate(new Date(endDate));
       }
     }
-  }, [numberOfDays, setNumOfDays, startDate, endDate, setContextStartDate, setContextEndDate]);
+  }, [
+    numberOfDays,
+    setNumOfDays,
+    startDate,
+    endDate,
+    setContextStartDate,
+    setContextEndDate,
+  ]);
 
   // Handle start date change
   const handleStartDateChange = useCallback(
@@ -95,13 +110,14 @@ export function DatePickerView() {
     <>
       <SelectorHeader className="mb-0 min-h-10 relative">
         {/* Close button */}
-        <button
+        <IconButton
           onClick={handleBack}
-          className="absolute top-0 left-0 md:left-auto md:right-0 p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+          variant="ghost"
+          className="w-10 h-10 absolute top-0 left-0 md:left-auto md:right-0 p-2 rounded-full"
           aria-label="חזור לבחירת ימים"
         >
-          <CloseIcon />
-        </button>
+          <XCircle className="w-6 h-6" />
+        </IconButton>
         <h2 className="text-[18px] md:text-[30px] font-medium text-brand-dark text-center">
           בחר תאריכי נסיעה
         </h2>
@@ -169,7 +185,6 @@ export function DatePickerView() {
               </div>
             </div>
           )}
-
         </div>
       </SelectorContent>
 

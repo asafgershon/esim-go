@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { usePricingSteps } from "@/hooks/usePricingSteps";
 import { Sparkles, Loader2 } from "lucide-react";
-import { PricingStepsDisplay } from "./pricing-steps-display";
+import { PricingThinkingDisplay } from "./pricing-thinking-display";
 import { useRef, useEffect, useState } from "react";
 
 interface PricingProps {
@@ -86,9 +86,6 @@ export function Pricing({
   const {
     isAnimating: isCalculating,
     progress,
-    steps: calculationSteps,
-    totalSteps,
-    completedSteps,
   } = usePricingSteps({
     pricingSteps: pricing?.pricingSteps,
     enabled: shouldShowSteps,
@@ -120,17 +117,16 @@ export function Pricing({
     return null;
   }
 
-  // Show pricing steps animation when destination changes
+  // Show pricing thinking animation when destination changes
   // Always show when forceShowSteps is true and we're animating
   if (forceShowSteps && isCalculating) {
     return (
       <div className="relative">
-        <PricingStepsDisplay
-          steps={calculationSteps || []}
+        <PricingThinkingDisplay
           isCalculating={isCalculating}
           progress={progress}
-          totalSteps={totalSteps || 0}
-          completedSteps={completedSteps || 0}
+          countryName={destination.name}
+          numOfDays={numOfDays}
         />
       </div>
     );

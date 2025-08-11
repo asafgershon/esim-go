@@ -1,3 +1,4 @@
+import { cn } from "@workspace/ui";
 import { motion } from "framer-motion";
 
 export function PricingSkeleton() {
@@ -34,10 +35,13 @@ export function PricingSkeleton() {
   );
 }
 
-export function SelectorSkeleton() {
+export function SelectorSkeleton({ className }: { className?: string }) {
   return (
     <div
-      className="w-full max-w-xl mx-auto bg-card rounded-2xl shadow-lg overflow-hidden"
+      className={cn(
+        "w-full max-w-xl mx-auto bg-card rounded-2xl shadow-lg overflow-hidden",
+        className
+      )}
       dir="rtl"
     >
       {/* Header Skeleton */}

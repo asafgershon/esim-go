@@ -19,7 +19,7 @@ import {
   Footer,
   type SmoothScrollHandle,
   cn,
-  useScrollTo
+  useScrollTo,
 } from "@workspace/ui";
 import { Suspense, useRef } from "react";
 
@@ -63,7 +63,11 @@ export default function Home() {
         <HeroSection id="home" ariaLabel="עמוד בית" />
 
         {/* eSIM Selector Section - Overlapping Hero */}
-        <Suspense fallback={<BundleSelector.Skeleton />}>
+        <Suspense
+          fallback={
+            <BundleSelector.Skeleton className="relative -mt-[400px] lg:max-w-[800px] z-20" />
+          }
+        >
           <BundleSelector
             className={cn(maxContentWidth, "lg:max-w-[800px]")}
             id="esim-selector"
