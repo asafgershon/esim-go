@@ -1,15 +1,14 @@
 "use client";
 
-import CountUp from "react-countup";
-import { PricingSkeleton } from "./skeleton";
 import type { Destination } from "@/contexts/bundle-selector-context";
 import { useBundleSelector } from "@/contexts/bundle-selector-context";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { usePricingSteps } from "@/hooks/usePricingSteps";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import CountUp from "react-countup";
 import { PricingThinkingDisplay } from "./pricing-thinking-display";
-import { useRef, useEffect, useState } from "react";
+import { PricingSkeleton } from "./skeleton";
 
 interface PricingProps {
   destination: Destination;
@@ -52,48 +51,57 @@ export function Pricing({
 }: PricingProps) {
   const previousPriceRef = useRef<number>(0);
   const previousDestinationRef = useRef<string | null>(null);
-  const [forceShowSteps, setForceShowSteps] = useState(false);
-  const [animationKey, setAnimationKey] = useState(0);
+  const [showThinkingAnimation, setShowThinkingAnimation] = useState(false);
   const { startDate, endDate } = useBundleSelector();
 
-  // Track destination changes and force animation
+  // Track destination changes for thinking animation
   const currentDestination = tripId || countryId;
-  
+
   useEffect(() => {
-    // Check if destination actually changed
-    if (currentDestination && currentDestination !== previousDestinationRef.current) {
+    // Show thinking animation only when destination changes
+    const destinationChanged =
+      currentDestination &&
+      currentDestination !== previousDestinationRef.current;
+
+    if (destinationChanged) {
       previousDestinationRef.current = currentDestination;
-      // Force show steps for at least one animation cycle when destination changes
-      setForceShowSteps(true);
-      // Increment key to force re-animation
-      setAnimationKey(prev => prev + 1);
-      
-      // Reset after animation completes
-      const timer = setTimeout(() => {
-        setForceShowSteps(false);
-      }, 5000); // Keep showing for 5 seconds to ensure animation completes
-      
-      return () => clearTimeout(timer);
+      // Show thinking animation for new destination
+      setShowThinkingAnimation(true);
     }
   }, [currentDestination]);
 
-  // Always show steps when destination changes, regardless of data speed
-  const shouldShowSteps = Boolean(
-    (forceShowSteps || shouldShowStreamingUI) && 
-    (countryId || tripId)
-  );
+  // Hide thinking animation when we get pricing data
+  useEffect(() => {
+    if (pricing?.finalPrice) {
+      setShowThinkingAnimation(false);
+    }
+  }, [pricing?.finalPrice]);
 
-  const {
-    isAnimating: isCalculating,
-    progress,
-  } = usePricingSteps({
-    pricingSteps: pricing?.pricingSteps,
-    enabled: shouldShowSteps,
-    // Use default steps if pricing steps aren't available yet
-    forceAnimation: forceShowSteps,
-    // Key to force re-animation on destination change
-    key: animationKey,
-  });
+  // Determine if we should show the thinking UI
+  const shouldShowThinking =
+    showThinkingAnimation && !pricing?.finalPrice && (countryId || tripId);
+
+  // Simple progress simulation for thinking animation
+  const [thinkingProgress, setThinkingProgress] = useState(0);
+
+  useEffect(() => {
+    if (shouldShowThinking) {
+      setThinkingProgress(0);
+      const interval = setInterval(() => {
+        setThinkingProgress((prev) => {
+          if (prev >= 95) {
+            clearInterval(interval);
+            return 95; // Cap at 95% until we get real data
+          }
+          return prev + 10;
+        });
+      }, 300);
+
+      return () => clearInterval(interval);
+    } else {
+      setThinkingProgress(100);
+    }
+  }, [shouldShowThinking]);
 
   // Track price changes for smooth CountUp transitions
   const currentPrice = pricing?.totalPrice || pricing?.finalPrice || 0;
@@ -117,16 +125,16 @@ export function Pricing({
     return null;
   }
 
-  // Show pricing thinking animation when destination changes
-  // Always show when forceShowSteps is true and we're animating
-  if (forceShowSteps && isCalculating) {
+  // Show thinking animation when destination changes and we're loading data
+  if (shouldShowThinking) {
     return (
       <div className="relative">
         <PricingThinkingDisplay
-          isCalculating={isCalculating}
-          progress={progress}
+          isCalculating={true}
+          progress={thinkingProgress}
           countryName={destination.name}
           numOfDays={numOfDays}
+          onAnimationDone={() => setShowThinkingAnimation(false)}
         />
       </div>
     );
@@ -171,8 +179,6 @@ export function Pricing({
             {format(endDate, "dd/MM/yyyy", { locale: he })}
           </div>
         )}
-
-
 
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
