@@ -36,16 +36,11 @@ export function usePricingSteps({
       setDisplayedSteps([]);
       setCurrentStepIndex(0);
       setProgress(0);
+      previousStepsRef.current = undefined;
       return;
     }
 
-    // Check if steps have changed (simple reference equality check)
-    const stepsChanged = previousStepsRef.current !== pricingSteps;
-    if (!stepsChanged && displayedSteps.length > 0) {
-      // Steps haven't changed and we already displayed them
-      return;
-    }
-
+    // Always animate when we get new steps (destination change)
     previousStepsRef.current = pricingSteps;
 
     // Start animation for new steps
@@ -82,7 +77,7 @@ export function usePricingSteps({
         clearTimeout(animationRef.current);
       }
     };
-  }, [pricingSteps, enabled, animationSpeed, displayedSteps.length]);
+  }, [pricingSteps, enabled, animationSpeed]);
 
   return {
     isAnimating,

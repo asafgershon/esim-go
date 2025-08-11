@@ -9,7 +9,7 @@ import { he } from "date-fns/locale";
 import { usePricingSteps } from "@/hooks/usePricingSteps";
 import { Sparkles, Loader2 } from "lucide-react";
 import { PricingStepsDisplay } from "./pricing-steps-display";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 
 interface PricingProps {
   destination: Destination;
@@ -45,18 +45,30 @@ export function Pricing({
   pricing,
   shouldShowStreamingUI = false,
   isStreamingData = false,
-  hasDataForDay,
   countryId,
   tripId,
   numOfDays,
   onRemoveDestination,
 }: PricingProps) {
   const previousPriceRef = useRef<number>(0);
+  const previousDestinationRef = useRef<string | null>(null);
   const { startDate, endDate } = useBundleSelector();
 
-  // Show streaming animation only for new country/trip changes
+  // Track destination changes
+  const currentDestination = tripId || countryId;
+  const destinationChanged = previousDestinationRef.current !== currentDestination;
+  
+  useEffect(() => {
+    if (currentDestination !== previousDestinationRef.current) {
+      previousDestinationRef.current = currentDestination;
+    }
+  }, [currentDestination]);
+
+  // Show streaming animation when destination changes and we have pricing steps
   const shouldShowSteps = Boolean(
-    shouldShowStreamingUI && (countryId || tripId)
+    (shouldShowStreamingUI || destinationChanged) && 
+    (countryId || tripId) && 
+    pricing?.pricingSteps?.length
   );
 
   const {
@@ -84,24 +96,16 @@ export function Pricing({
     hasDiscount: pricing?.hasDiscount ?? false,
     discountAmount: pricing?.discountAmount || 0,
   };
-  // Enhanced loading states - only show skeleton for new country/trip changes
-  // For cached data, we'll show the price with smooth CountUp transition
-  const shouldShowSkeleton = shouldShowStreamingUI && !pricing;
-  const hasDataCached = hasDataForDay
-    ? hasDataForDay(numOfDays)
-    : Boolean(pricing);
-
-  // Show skeleton only when loading new country data and no cached data
-  if (shouldShowSkeleton && !hasDataCached) {
-    return <PricingSkeleton />;
-  }
-
+  // Only show skeleton when we have absolutely no data
   if (!pricing) {
+    if (shouldShowStreamingUI) {
+      return <PricingSkeleton />;
+    }
     return null;
   }
 
-  // Show streaming animation only during new country/trip load
-  if (isCalculating && shouldShowStreamingUI) {
+  // Show pricing steps animation when destination changes
+  if (isCalculating && shouldShowSteps) {
     return (
       <div className="relative">
         <PricingStepsDisplay
@@ -126,13 +130,14 @@ export function Pricing({
           >
             {destination.icon}
           </span>
-          <div>
-            <h3 className="text-[14px] md:text-[18px] font-medium text-brand-dark">
+          <div className="flex items-center gap-2">
+            <h3 className="text-[14px] md:text-[18px] font-medium text-brand-dark flex items-center gap-2">
               {destination.name}
+              {/* Show streaming indicator next to country name */}
+              {isStreamingData && (
+                <Loader2 className="h-3 w-3 animate-spin text-brand-purple opacity-60" />
+              )}
             </h3>
-            <p className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
-              {/* We can add tagline/description here if needed in the future */}
-            </p>
           </div>
         </div>
         <button
@@ -154,25 +159,7 @@ export function Pricing({
           </div>
         )}
 
-        {/* Background streaming indicator */}
-        {isStreamingData && !shouldShowStreamingUI && (
-          <div className="mb-2 flex items-center gap-1 opacity-60">
-            <div className="h-1 w-1 bg-brand-purple rounded-full animate-pulse" />
-            <span className="text-[6px] md:text-[8px] text-brand-purple">
-              טוען מחירים נוספים...
-            </span>
-          </div>
-        )}
 
-        {/* Real-time calculation progress (only for new country) */}
-        {isCalculating && shouldShowStreamingUI && (
-          <div className="mb-2 flex items-center gap-2">
-            <Loader2 className="h-3 w-3 animate-spin text-brand-purple" />
-            <span className="text-[8px] md:text-[10px] text-brand-purple">
-              מחשב מחיר... {progress > 0 && `(${Math.round(progress)}%)`}
-            </span>
-          </div>
-        )}
 
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
@@ -181,13 +168,13 @@ export function Pricing({
           <span className="text-[14px] md:text-[18px] font-bold text-brand-dark">
             <CountUp
               key={`total-${countryId || tripId}-${numOfDays}`}
-              start={hasDataCached ? previousPriceRef.current : 0}
+              start={previousPriceRef.current}
               end={displayPricing.totalPrice || 0}
               decimals={2}
               prefix="$"
-              duration={hasDataCached ? 0.8 : 0.2} // Longer animation for cached data transitions
+              duration={0.8}
               preserveValue
-              useEasing={hasDataCached}
+              useEasing
             />
           </span>
         </div>

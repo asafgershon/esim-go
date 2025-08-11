@@ -31,7 +31,7 @@ export function DeliveryMethodSection({
   }
 
   return (
-    <Card className="p-6 relative" dir="rtl">
+    <Card className="relative" dir="rtl">
       <SectionHeader
         sectionNumber={sectionNumber || 3}
         title="אופן קבלת ה-eSIM"

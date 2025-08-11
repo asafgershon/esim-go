@@ -170,7 +170,7 @@ export default function ProfileContent() {
 
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Profile Information */}
-        <Card className="p-6 mb-6">
+        <Card className="mb-6">
           <div className="flex items-center gap-4 mb-4">
             <Avatar className="h-16 w-16">
               <AvatarImage className="" src={""} />
@@ -201,7 +201,7 @@ export default function ProfileContent() {
         </Card>
 
         {/* My Plan */}
-        <Card className="p-6 mb-6">
+        <Card className="mb-6">
           {esimsLoading ? (
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -275,7 +275,7 @@ export default function ProfileContent() {
             <>
               {/* Usage Summary Card */}
               {isHighUsage && (
-                <Card className="p-4 mb-4 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
+                <Card variant="subtle" size="sm" className="mb-4 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-orange-900 dark:text-orange-100">
@@ -338,7 +338,7 @@ export default function ProfileContent() {
         </Card>
 
         {/* Order History */}
-        <Card className="p-6">
+        <Card>
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             היסטוריית הזמנות
@@ -348,7 +348,7 @@ export default function ProfileContent() {
             {ordersLoading ? (
               <>
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div key={i} className="flex items-center justify-between border border-brand-dark/10 rounded-lg md:rounded-[15px] p-3 md:p-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
                         <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
@@ -376,7 +376,7 @@ export default function ProfileContent() {
                   href={`/order/${order.id}`}
                   className="block"
                 >
-                  <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center justify-between border border-brand-dark/10 rounded-lg md:rounded-[15px] p-3 md:p-4 hover:bg-muted/50 transition-colors">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
                         <h4 className="font-medium truncate">

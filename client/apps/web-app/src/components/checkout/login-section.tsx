@@ -131,7 +131,7 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
 
   if (isLoading) {
     return (
-      <Card className="p-6 relative" dir="rtl">
+      <Card className="relative" dir="rtl">
         <div className="flex items-center gap-2 mb-4">
           <User className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold">טוען...</h2>
@@ -150,7 +150,7 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
     
     if (needsNameInfo) {
       return (
-        <Card className="p-6 relative" dir="rtl">
+        <Card className="relative" dir="rtl">
           <div className="flex items-center gap-2 mb-4">
             <User className="h-5 w-5 text-primary" />
             <h2 className="text-xl font-semibold">השלם את הפרטים</h2>
@@ -194,7 +194,7 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
     };
 
     return (
-      <Card className="p-6 relative" dir="rtl">
+      <Card className="relative" dir="rtl">
         <div className="flex items-center justify-between">
           <SectionHeader
             sectionNumber={sectionNumber || 2}
@@ -228,7 +228,7 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
   }
 
   return (
-    <Card className="p-6 relative" dir="rtl">
+    <Card className="relative" dir="rtl">
       <SectionHeader
         sectionNumber={sectionNumber || 2}
         title="התחבר כדי להמשיך"

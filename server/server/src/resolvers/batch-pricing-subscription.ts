@@ -1,15 +1,21 @@
-import { calculatePricingWithDB, type RequestFacts } from "@hiilo/rules-engine-2";
+import {
+  calculatePricingWithDB,
+  type RequestFacts,
+} from "@hiilo/rules-engine-2";
 import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import { getPubSub, publishEvent } from "../context/pubsub";
+import * as countriesList from "countries-list";
+
 import type {
   CalculatePriceInput,
   Country,
   PaymentMethod,
   PricingBreakdown,
-  SubscriptionResolvers
+  SubscriptionResolvers,
 } from "../types";
+import { getCountryNameHebrew } from "../datasources/esim-go/hebrew-names";
 
 const logger = createLogger({
   component: "BatchPricingSubscription",
@@ -33,7 +39,7 @@ const createPricingBreakdown = (
   return {
     __typename: "PricingBreakdown",
     ...result.pricing,
-    
+
     // Bundle Information
     bundle: {
       __typename: "CountryBundle",
@@ -46,14 +52,14 @@ const createPricingBreakdown = (
         __typename: "Country",
         iso: country.iso,
         name: country.name,
-        nameHebrew: country.nameHebrew,
+        nameHebrew: getCountryNameHebrew(country.iso),
         region: country.region,
         flag: country.flag,
       },
       group: result.selectedBundle?.group || null,
       price: result.pricing.totalCost || 0,
     },
-    
+
     // Country Information
     country: {
       __typename: "Country",
@@ -63,10 +69,10 @@ const createPricingBreakdown = (
       region: country.region,
       flag: country.flag,
     },
-    
+
     // Duration
     duration,
-    
+
     // Additional fields
     totalCostBeforeProcessing: result.pricing.totalCostBeforeProcessing,
   };
@@ -90,9 +96,9 @@ async function processInputsBatch({
   let sortedInputs = [...inputs];
   if (requestedDays) {
     sortedInputs = [
-      ...inputs.filter(i => i.numOfDays === requestedDays),
-      ...inputs.filter(i => Math.abs(i.numOfDays - requestedDays) <= 3), // Nearby days
-      ...inputs.filter(i => Math.abs(i.numOfDays - requestedDays) > 3),  // Rest
+      ...inputs.filter((i) => i.numOfDays === requestedDays),
+      ...inputs.filter((i) => Math.abs(i.numOfDays - requestedDays) <= 3), // Nearby days
+      ...inputs.filter((i) => Math.abs(i.numOfDays - requestedDays) > 3), // Rest
     ];
   }
 
@@ -115,7 +121,9 @@ async function processInputsBatch({
       // Get country information - use a simpler approach
       let country: Country;
       try {
-        const foundCountry = await context.repositories.countries?.getByIso(input.countryId);
+        const foundCountry = countriesList.getCountryData(
+          input.countryId as countriesList.TCountryCode
+        );
         if (!foundCountry) {
           // Create a minimal country object if not found
           country = {
@@ -126,10 +134,21 @@ async function processInputsBatch({
             flag: null,
           } as Country;
         } else {
-          country = foundCountry;
+          country = {
+            iso: foundCountry.iso2,
+            name: foundCountry.name,
+            nameHebrew: getCountryNameHebrew(foundCountry.iso2),
+            region: foundCountry.continent,
+            flag: countriesList.getEmojiFlag(
+              input.countryId as countriesList.TCountryCode
+            ),
+          } as Country;
         }
       } catch (error) {
-        logger.warn("Error fetching country, using fallback", { error, countryId: input.countryId });
+        logger.warn("Error fetching country, using fallback", {
+          error,
+          countryId: input.countryId,
+        });
         country = {
           iso: input.countryId.toUpperCase(),
           name: input.countryId.toUpperCase(),
@@ -150,7 +169,9 @@ async function processInputsBatch({
         country: input.countryId,
         ...(input.promo ? { couponCode: input.promo } : {}),
         ...(context.auth?.user?.id ? { userId: context.auth.user.id } : {}),
-        ...(context.auth?.user?.email ? { userEmail: context.auth.user.email } : {}),
+        ...(context.auth?.user?.email
+          ? { userEmail: context.auth.user.email }
+          : {}),
       } as RequestFacts;
 
       // Calculate pricing
@@ -173,17 +194,20 @@ async function processInputsBatch({
       );
 
       // Publish the result
-      await publishEvent(pubsub, `${BATCH_PRICING_CHANNEL}:${subscriptionId}` as any, {
-        calculatePricesBatchStream: pricingBreakdown,
-      });
-      
+      await publishEvent(
+        pubsub,
+        `${BATCH_PRICING_CHANNEL}:${subscriptionId}` as any,
+        {
+          calculatePricesBatchStream: pricingBreakdown,
+        }
+      );
+
       successCount++;
 
       // Small delay to prevent overwhelming the client
       if (calculationTime < 50) {
-        await new Promise(resolve => setTimeout(resolve, 20));
+        await new Promise((resolve) => setTimeout(resolve, 20));
       }
-
     } catch (error) {
       logger.error("Error calculating price for input", error as Error, {
         subscriptionId,
@@ -200,74 +224,82 @@ async function processInputsBatch({
   });
 }
 
-export const batchPricingSubscriptionResolvers: Partial<SubscriptionResolvers> = {
-  calculatePricesBatchStream: {
-    subscribe: async (
-      _,
-      { inputs, requestedDays }: { inputs: CalculatePriceInput[], requestedDays?: number },
-      context: Context
-    ) => {
-      const subscriptionId = `batch-pricing-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-      
-      logger.info("Setting up batch pricing stream subscription", {
-        subscriptionId,
-        totalInputs: inputs.length,
-        requestedDays,
-      });
+export const batchPricingSubscriptionResolvers: Partial<SubscriptionResolvers> =
+  {
+    calculatePricesBatchStream: {
+      subscribe: async (_, { inputs, requestedDays }, context: Context) => {
+        const subscriptionId = `batch-pricing-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 11)}`;
 
-      try {
-        // Validate inputs
-        if (!inputs || inputs.length === 0) {
-          throw new GraphQLError("No inputs provided", {
-            extensions: { code: "INVALID_INPUT" },
-          });
-        }
-
-        // Get the Redis PubSub instance
-        const pubsub = await getPubSub();
-
-        // Start async processing
-        const processingPromise = processInputsBatch({
-          inputs,
-          requestedDays,
-          context,
+        logger.info("Setting up batch pricing stream subscription", {
           subscriptionId,
-          pubsub,
-        });
-
-        // Handle processing completion/errors
-        processingPromise
-          .then(() => {
-            logger.info("Batch pricing stream completed successfully", {
-              subscriptionId,
-            });
-          })
-          .catch((error) => {
-            logger.error("Batch pricing stream failed", error as Error, {
-              subscriptionId,
-            });
-          });
-
-        // Return the async iterator for this specific subscription
-        return pubsub.asyncIterator(`${BATCH_PRICING_CHANNEL}:${subscriptionId}`);
-        
-      } catch (error) {
-        logger.error("Failed to setup batch pricing subscription", error as Error, {
-          inputs,
+          totalInputs: inputs.length,
           requestedDays,
         });
 
-        if (error instanceof GraphQLError) {
-          throw error;
-        }
+        try {
+          // Validate inputs
+          if (!inputs || inputs.length === 0) {
+            throw new GraphQLError("No inputs provided", {
+              extensions: { code: "INVALID_INPUT" },
+            });
+          }
 
-        throw new GraphQLError("Failed to setup batch pricing stream subscription", {
-          extensions: {
-            code: "SUBSCRIPTION_SETUP_FAILED",
-            originalError: error instanceof Error ? error.message : String(error),
-          },
-        });
-      }
+          // Get the Redis PubSub instance
+          const pubsub = await getPubSub();
+
+          // Start async processing
+          const processingPromise = processInputsBatch({
+            inputs,
+            requestedDays: requestedDays || undefined,
+            context,
+            subscriptionId,
+            pubsub,
+          });
+
+          // Handle processing completion/errors
+          processingPromise
+            .then(() => {
+              logger.info("Batch pricing stream completed successfully", {
+                subscriptionId,
+              });
+            })
+            .catch((error) => {
+              logger.error("Batch pricing stream failed", error as Error, {
+                subscriptionId,
+              });
+            });
+
+          // Return the async iterator for this specific subscription
+          return pubsub.asyncIterator(
+            `${BATCH_PRICING_CHANNEL}:${subscriptionId}`
+          );
+        } catch (error) {
+          logger.error(
+            "Failed to setup batch pricing subscription",
+            error as Error,
+            {
+              inputs,
+              requestedDays,
+            }
+          );
+
+          if (error instanceof GraphQLError) {
+            throw error;
+          }
+
+          throw new GraphQLError(
+            "Failed to setup batch pricing stream subscription",
+            {
+              extensions: {
+                code: "SUBSCRIPTION_SETUP_FAILED",
+                originalError:
+                  error instanceof Error ? error.message : String(error),
+              },
+            }
+          );
+        }
+      },
     },
-  },
-};
+  };

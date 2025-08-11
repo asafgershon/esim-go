@@ -56,7 +56,7 @@ export function OrderDetailsSection({
   // If no session data, show loading state
   if (!session || !planSnapshot) {
     return (
-      <Card className="p-6" dir="rtl">
+      <Card dir="rtl">
         <div className="flex items-center justify-between">
           <SectionHeader
             sectionNumber={sectionNumber || 1}
@@ -89,7 +89,7 @@ export function OrderDetailsSection({
                      planSnapshot.dataAmount?.toLowerCase().includes('ללא הגבלה');
 
   return (
-    <Card className="p-6" dir="rtl">
+    <Card dir="rtl">
       <div className="flex items-center justify-between">
         <SectionHeader
           sectionNumber={sectionNumber || 1}

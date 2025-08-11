@@ -98,7 +98,7 @@ export function PaymentSection({
   };
 
   return (
-    <Card className="p-6 relative" dir="rtl">
+    <Card className="relative" dir="rtl">
       <SectionHeader
         sectionNumber={sectionNumber || 4}
         title="פרטי תשלום"

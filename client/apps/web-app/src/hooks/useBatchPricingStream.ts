@@ -61,6 +61,7 @@ interface PricingData {
 }
 
 export function useBatchPricingStream({
+  regionId,
   countryId,
   paymentMethod,
   maxDays = 30,
@@ -72,7 +73,7 @@ export function useBatchPricingStream({
   const [loadedDays, setLoadedDays] = useState<Set<number>>(new Set());
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
   const [isNewCountryLoading, setIsNewCountryLoading] = useState(false);
-  const previousCountryRef = useRef<string | undefined>(undefined);
+  const previousDestinationRef = useRef<string | undefined>(undefined);
 
   // Create inputs for subscription
   const inputs = useMemo(() => {
@@ -88,10 +89,11 @@ export function useBatchPricingStream({
     }));
   }, [countryId, paymentMethod, maxDays]);
 
-  // Check if country changed
-  const countryChanged = previousCountryRef.current !== countryId;
-  if (countryChanged) {
-    previousCountryRef.current = countryId;
+  // Check if destination (country or region) changed
+  const currentDestination = regionId || countryId;
+  const destinationChanged = previousDestinationRef.current !== currentDestination;
+  if (destinationChanged && currentDestination) {
+    previousDestinationRef.current = currentDestination;
     setIsNewCountryLoading(true);
   }
 
@@ -175,15 +177,15 @@ export function useBatchPricingStream({
     },
   });
 
-  // Reset cache when country changes
+  // Reset cache when destination changes
   useEffect(() => {
-    if (countryChanged) {
+    if (destinationChanged && currentDestination) {
       setPricingCache(new Map());
       setLoadedDays(new Set());
       setIsInitialLoadComplete(false);
-      // isNewCountryLoading is already set to true when country changes
+      // isNewCountryLoading is already set to true when destination changes
     }
-  }, [countryChanged]);
+  }, [destinationChanged, currentDestination]);
 
   // Get pricing for specific number of days
   const getPricing = useMemo(() => {
