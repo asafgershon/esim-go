@@ -286,9 +286,10 @@ function DestinationCard({
   return (
     <Card
       onClick={handleClick}
-      className="relative overflow-hidden rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer group"
+      className="relative overflow-hidden rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer group p-0"
+      size={null}
     >
-      <div className="relative h-64 md:h-72">
+      <div className="relative h-64 md:h-72 w-full">
         {/* Background Image with Fallback */}
         <ImageWithFallback
           src={destination.image}
