@@ -1,8 +1,5 @@
-import { EasyCardClient, env } from "@hiilo/easycard-client";
-import type { KeyvAdapter } from "@apollo/utils.keyvadapter";
-import jwt from "jsonwebtoken";
+import { EasyCardClient, env, createPrismClient } from "@hiilo/easycard-client";
 import { logger } from "../../lib/logger";
-import { getRedis } from "../redis";
 import type {
   CreatePaymentIntentRequest,
   PaymentIntent,
@@ -25,12 +22,7 @@ import {
 
 // Singleton client instance
 let client: EasyCardClient | null = null;
-let redis: KeyvAdapter | null = null;
 let initializationPromise: Promise<EasyCardClient> | null = null;
-
-// Token management constants
-export const TOKEN_CACHE_KEY = "easycard:access_token" as const;
-export const TOKEN_TTL = 3600 as const; // 1 hour in seconds
 
 /**
  * Initialize the EasyCard client
@@ -51,42 +43,43 @@ export async function initializeClient(): Promise<EasyCardClient> {
   initializationPromise = (async () => {
     logger.info("Initializing EasyCard client", {
       operationType: "easycard-init",
+      environment: process.env.EASYCARD_ENVIRONMENT,
     });
     
-    client = EasyCardClient.fromEnv();
-    
-    // Initialize Redis for token caching
-    try {
-      if (!redis) {
-        redis = await getRedis();
-        logger.info("Redis connected for EasyCard token caching", {
-          operationType: "easycard-redis-init",
+    // Use Prism mock client for testing/development
+    if (process.env.EASYCARD_ENVIRONMENT === 'test' || process.env.EASYCARD_ENVIRONMENT === 'mock') {
+      logger.info("Using EasyCard Prism mock client", {
+        operationType: "easycard-prism-init",
+      });
+      
+      client = createPrismClient({
+        basePath: process.env.EASYCARD_MOCK_BASE_URL || 'http://localhost:4012'
+      });
+    } else {
+      // Use real client for production
+      logger.info("Using EasyCard production client", {
+        operationType: "easycard-production-init",
+      });
+      
+      client = EasyCardClient.fromEnv();
+      
+      // Only set up token management for production
+      try {
+        const accessToken = await getAccessToken();
+        client.updateConfig({
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        logger.info("EasyCard client configured with access token", {
+          operationType: "easycard-token-init",
+        });
+      } catch (error) {
+        logger.error("Failed to get initial access token", {
+          error: error instanceof Error ? error.message : "Unknown error",
+          operationType: "easycard-token-init-error",
         });
       }
-    } catch (error) {
-      logger.warn("Redis not available for EasyCard token caching", {
-        error: error instanceof Error ? error.message : "Unknown error",
-        operationType: "easycard-redis-init-error",
-      });
-    }
-
-    // Get initial access token and configure client
-    try {
-      const accessToken = await getAccessToken();
-      client.updateConfig({
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      logger.info("EasyCard client configured with access token", {
-        operationType: "easycard-token-init",
-      });
-    } catch (error) {
-      logger.error("Failed to get initial access token", {
-        error: error instanceof Error ? error.message : "Unknown error",
-        operationType: "easycard-token-init-error",
-      });
-      // Don't throw here - let individual API calls handle token retrieval
     }
     
     return client;
@@ -106,12 +99,6 @@ export function getClient(): EasyCardClient {
   return client;
 }
 
-/**
- * Get the Redis instance for token caching
- */
-export function getRedisInstance(): KeyvAdapter | null {
-  return redis;
-}
 
 /**
  * Update client configuration
@@ -136,29 +123,17 @@ let tokenRequestPromise: Promise<string> | null = null;
 
 /**
  * Get access token with caching support
- * This is a shared utility for all EasyCard operations
+ * Only used for production environment - mocks don't need real tokens
  */
 export async function getAccessToken(): Promise<string> {
-  const redisInstance = getRedisInstance();
-  
-  // Check cache first if Redis is available
-  if (redisInstance) {
-    try {
-      const cachedToken = await redisInstance.get(TOKEN_CACHE_KEY);
-      if (cachedToken) {
-        logger.debug("Using cached EasyCard access token", {
-          operationType: "token-cache-hit",
-        });
-        return cachedToken;
-      }
-    } catch (error) {
-      logger.warn("Failed to retrieve cached token", {
-        error: error instanceof Error ? error.message : "Unknown error",
-        operationType: "token-cache-error",
-      });
-    }
+  // For mock/test environment, return a mock token immediately
+  if (process.env.EASYCARD_ENVIRONMENT === 'test' || process.env.EASYCARD_ENVIRONMENT === 'mock') {
+    logger.debug("Using mock EasyCard access token", {
+      operationType: "token-mock-hit",
+    });
+    return "mock.jwt.token.for.testing";
   }
-  
+
   // If a token request is already in progress, wait for it
   if (tokenRequestPromise) {
     logger.debug("Waiting for in-progress token request", {
@@ -180,14 +155,6 @@ export async function getAccessToken(): Promise<string> {
         authorizationKey: env.EASYCARD_API_KEY,
         grant_type: "terminal_rest_api",
         client_id: "terminal",
-      });
-
-      // Debug logging
-      logger.debug("Token request details", {
-        url: `${env.EASYCARD_IDENTITY_URL}/connect/token`,
-        body: params.toString(),
-        keyLength: env.EASYCARD_API_KEY?.length,
-        keyPreview: env.EASYCARD_API_KEY?.substring(0, 20) + "...",
       });
 
       // Make request to identity server
@@ -214,61 +181,7 @@ export async function getAccessToken(): Promise<string> {
         throw new Error("No access token in response");
       }
 
-      const accessToken = tokenResponse.access_token;
-
-      // Decode JWT to get expiration time
-      const decoded = jwt.decode(accessToken) as { exp?: number } | null;
-      
-      let ttl: number;
-      if (decoded?.exp) {
-        // Calculate TTL from JWT exp claim with 60-second buffer
-        const currentTime = Math.floor(Date.now() / 1000);
-        ttl = Math.max(decoded.exp - currentTime - 60, 60); // Minimum 60 seconds
-        
-        logger.debug("Token expiration calculated from JWT", {
-          exp: decoded.exp,
-          currentTime,
-          ttl,
-          operationType: "token-ttl-calculation",
-        });
-      } else if (tokenResponse.expires_in) {
-        // Fallback to expires_in from response with buffer
-        ttl = Math.max(tokenResponse.expires_in - 60, 60);
-        
-        logger.debug("Token expiration from expires_in", {
-          expires_in: tokenResponse.expires_in,
-          ttl,
-          operationType: "token-ttl-fallback",
-        });
-      } else {
-        // Default TTL if no expiration info available
-        ttl = 3600; // 1 hour
-        
-        logger.warn("No expiration info available, using default TTL", {
-          ttl,
-          operationType: "token-ttl-default",
-        });
-      }
-
-      // Cache the token with calculated TTL
-      if (redisInstance) {
-        try {
-          await redisInstance.set(TOKEN_CACHE_KEY, accessToken, {
-            ttl: ttl * 1000, // KeyvAdapter expects milliseconds
-          });
-          logger.info("Cached EasyCard access token", {
-            operationType: "token-cache-set",
-            ttl,
-          });
-        } catch (error) {
-          logger.warn("Failed to cache access token", {
-            error: error instanceof Error ? error.message : "Unknown error",
-            operationType: "token-cache-set-error",
-          });
-        }
-      }
-
-      return accessToken;
+      return tokenResponse.access_token;
     } catch (error) {
       logger.error("Failed to get EasyCard access token", {
         message: error instanceof Error ? error.message : "Unknown error",
@@ -286,56 +199,16 @@ export async function getAccessToken(): Promise<string> {
   return tokenRequestPromise;
 }
 
-/**
- * Cache an access token
- */
-export async function cacheAccessToken(token: string): Promise<void> {
-  const redisInstance = getRedisInstance();
-  
-  if (redisInstance) {
-    try {
-      await redisInstance.set(TOKEN_CACHE_KEY, token, {
-        ttl: TOKEN_TTL * 1000, // KeyvAdapter expects milliseconds
-      });
-      logger.debug("Cached EasyCard access token", {
-        operationType: "token-cache-set",
-        ttl: TOKEN_TTL,
-      });
-    } catch (error) {
-      logger.warn("Failed to cache access token", {
-        error: error instanceof Error ? error.message : "Unknown error",
-        operationType: "token-cache-set-error",
-      });
-    }
-  }
-}
 
 /**
- * Clear cached access token
- */
-export async function clearAccessToken(): Promise<void> {
-  const redisInstance = getRedisInstance();
-  
-  if (redisInstance) {
-    try {
-      await redisInstance.delete(TOKEN_CACHE_KEY);
-      logger.debug("Cleared cached EasyCard access token", {
-        operationType: "token-cache-clear",
-      });
-    } catch (error) {
-      logger.warn("Failed to clear cached token", {
-        error: error instanceof Error ? error.message : "Unknown error",
-        operationType: "token-cache-clear-error",
-      });
-    }
-  }
-}
-
-/**
- * Ensure the client has a valid access token
- * Refreshes the token if needed
+ * Ensure the client has a valid access token (production only)
  */
 export async function ensureValidToken(): Promise<void> {
+  // Mock environments don't need real token management
+  if (process.env.EASYCARD_ENVIRONMENT === 'test' || process.env.EASYCARD_ENVIRONMENT === 'mock') {
+    return;
+  }
+
   try {
     const accessToken = await getAccessToken();
     const easycardClient = getClient();
@@ -359,28 +232,30 @@ export async function ensureValidToken(): Promise<void> {
 }
 
 /**
- * Execute an API call with automatic token refresh on 401
- * @param operation The async operation to execute
- * @param retries Number of retries on 401 errors
+ * Execute an API call with automatic token refresh on 401 (production only)
  */
 export async function executeWithTokenRefresh<T>(
   operation: () => Promise<T>,
   retries: number = 1
 ): Promise<T> {
+  // Mock environments don't need token refresh logic
+  if (process.env.EASYCARD_ENVIRONMENT === 'test' || process.env.EASYCARD_ENVIRONMENT === 'mock') {
+    return await operation();
+  }
+
   try {
-    // Ensure we have a valid token before the operation
     await ensureValidToken();
     return await operation();
   } catch (error: any) {
-    // Check if error is 401 Unauthorized
+    // Check if error is 401 Unauthorized and we have retries left
     if (retries > 0 && (error.status === 401 || error.response?.status === 401)) {
       logger.info("Received 401, refreshing token and retrying", {
         operationType: "token-refresh-retry",
         retriesLeft: retries - 1,
       });
       
-      // Clear the cached token to force refresh
-      await clearAccessToken();
+      // Force token refresh by clearing the current promise
+      tokenRequestPromise = null;
       
       // Retry the operation
       return executeWithTokenRefresh(operation, retries - 1);
