@@ -1,0 +1,113 @@
+name: Web App E2E Tests
+
+on:
+  push:
+    branches: [ main, development ]
+    paths:
+      - 'client/apps/web-app/**'
+      - 'server/**'
+      - '.github/workflows/web-app-e2e.yml'
+  pull_request:
+    branches: [ main, development ]
+    paths:
+      - 'client/apps/web-app/**'
+      - 'server/**'
+      - '.github/workflows/web-app-e2e.yml'
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: esim_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies (root)
+        run: bun install
+
+      - name: Install server dependencies
+        working-directory: ./server/server
+        run: bun install
+
+      - name: Install web-app dependencies
+        working-directory: ./client/apps/web-app
+        run: bun install
+
+      - name: Install Playwright browsers
+        working-directory: ./client/apps/web-app
+        run: bunx playwright install --with-deps
+
+      - name: Setup test environment
+        run: |
+          cp server/server/.env.example server/server/.env
+          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/esim_test" >> server/server/.env
+          echo "REDIS_URL=redis://localhost:6379" >> server/server/.env
+
+      - name: Run database migrations
+        working-directory: ./server/server
+        run: |
+          bun run db:migrate || echo "Migration failed, continuing..."
+
+      - name: Start backend server
+        working-directory: ./server/server
+        run: |
+          bun run dev &
+          sleep 10
+        env:
+          NODE_ENV: test
+
+      - name: Wait for backend to be ready
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:4000/graphql; do sleep 2; done'
+
+      - name: Run E2E tests
+        working-directory: ./client/apps/web-app
+        run: bun run test:e2e
+        env:
+          CI: true
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: client/apps/web-app/playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: client/apps/web-app/test-results/
+          retention-days: 7
