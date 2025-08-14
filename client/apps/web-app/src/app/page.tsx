@@ -27,6 +27,8 @@ const maxContentWidth = "max-w-7xl";
 export default function Home() {
   const scrollContainerRef = useRef<SmoothScrollHandle>(null);
   const { scrollTo } = useScrollTo({ scrollContainerRef });
+  
+  // Test change to trigger E2E CI workflow
 
   // Handle footer navigation
   const handleFooterNavigation = (href: string) => {
