@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from "vitest";
 import { GraphQLError } from "graphql";
 import DataLoader from "dataloader";
-import { strategiesResolvers } from "../strategies-resolvers";
+import { strategiesResolvers } from "../strategies.resolvers";
 import type { Context } from "../../context/types";
 
 // Mock the logger

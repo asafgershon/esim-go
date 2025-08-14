@@ -46,7 +46,7 @@ export function CheckoutContainer() {
     refetch: refetchSession,
     loading: sessionLoading,
     error: sessionError,
-  } = useCheckoutSession(token as string | undefined, isProcessing);
+  } = useCheckoutSession(token as string | undefined);
 
   // Step and payment hooks
   const { updateStepWithData } = useCheckoutSteps((token as string) || "");
@@ -299,6 +299,7 @@ export function CheckoutContainer() {
             isProcessing={isProcessing}
             canSubmit={canSubmitPayment}
             isCompleted={!!session?.steps?.payment?.completed}
+            paymentIntentUrls={(session?.metadata as any)?.paymentIntent}
           />
           {/* Payment processing screen */}
           {isProcessing && (

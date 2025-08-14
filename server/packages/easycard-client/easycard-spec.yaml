@@ -1,0 +1,440 @@
+openapi: 3.0.0
+info:
+  title: EasyCard Transactions API
+  description: EasyCard payment processing API
+  version: v1
+  contact:
+    name: EasyCard Support
+    url: https://easycard.com
+servers:
+  - url: https://ecng-transactions.azurewebsites.net
+    description: EasyCard Production API
+  - url: https://ecng-transactions-staging.azurewebsites.net
+    description: EasyCard Staging API
+paths:
+  /:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+    head:
+      tags:
+        - Health
+      summary: Health check endpoint (HEAD)
+      operationId: healthCheckHead
+      responses:
+        '200':
+          description: Server is healthy
+  /connect/token:
+    post:
+      tags:
+        - Authentication
+      summary: Get OAuth2 access token
+      operationId: getAccessToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  enum: [client_credentials]
+                  example: client_credentials
+                authorizationKey:
+                  type: string
+                  description: Client authorization key
+              required:
+                - grant_type
+                - authorizationKey
+      responses:
+        '200':
+          description: Access token granted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: eyJhbGciOiJSUzI1NiIsImtpZCI6IjEyMyJ9...
+                  token_type:
+                    type: string
+                    example: Bearer
+                  expires_in:
+                    type: integer
+                    example: 3600
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/paymentIntent:
+    post:
+      tags:
+        - Payment Intent
+      summary: Create payment intent
+      operationId: createPaymentIntent
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequestCreate'
+      responses:
+        '200':
+          description: Payment intent created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntentResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/paymentIntent/{paymentIntentID}:
+    get:
+      tags:
+        - Payment Intent
+      summary: Get payment intent
+      operationId: getPaymentIntent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: paymentIntentID
+          in: path
+          required: true
+          schema:
+            type: string
+            example: pi_1234567890
+        - name: showDeleted
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Payment intent found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntentResponse'
+        '404':
+          description: Payment intent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Payment Intent
+      summary: Cancel payment intent
+      operationId: cancelPaymentIntent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: paymentIntentID
+          in: path
+          required: true
+          schema:
+            type: string
+            example: pi_1234567890
+      responses:
+        '200':
+          description: Payment intent cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '404':
+          description: Payment intent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/transactions:
+    get:
+      tags:
+        - Transactions
+      summary: Get transactions
+      operationId: getTransactions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, completed, failed, cancelled]
+      responses:
+        '200':
+          description: Transactions retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/webhooks/signature:
+    post:
+      tags:
+        - Webhooks
+      summary: Verify webhook signature
+      operationId: verifyWebhookSignature
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payload:
+                  type: string
+                  description: Raw webhook payload
+                signature:
+                  type: string
+                  description: Webhook signature to verify
+              required:
+                - payload
+                - signature
+      responses:
+        '200':
+          description: Signature verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  message:
+                    type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: invalid_grant
+        error_description:
+          type: string
+          example: The provided authorization grant is invalid
+        message:
+          type: string
+          example: Request failed with status 400
+
+    PaymentRequestCreate:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: decimal
+          example: 29.99
+          description: Payment amount
+        currency:
+          type: string
+          example: USD
+          description: Payment currency
+        description:
+          type: string
+          example: eSIM Bundle Purchase
+          description: Payment description
+        customerReference:
+          type: string
+          example: ORDER-123
+          description: Customer reference ID
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            orderId: "order_123"
+            userId: "user_456"
+      required:
+        - amount
+        - currency
+        - description
+
+    PaymentIntentResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [SUCCESS, FAILED, PENDING]
+          example: SUCCESS
+        data:
+          $ref: '#/components/schemas/PaymentIntent'
+        message:
+          type: string
+          example: Payment intent created successfully
+
+    PaymentIntent:
+      type: object
+      properties:
+        paymentIntentID:
+          type: string
+          example: pi_1234567890
+        amount:
+          type: number
+          format: decimal
+          example: 29.99
+        currency:
+          type: string
+          example: USD
+        status:
+          type: string
+          enum: [pending, processing, succeeded, failed, cancelled]
+          example: pending
+        description:
+          type: string
+          example: eSIM Bundle Purchase
+        customerReference:
+          type: string
+          example: ORDER-123
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:00:00Z"
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          example: txn_1234567890
+        paymentIntentId:
+          type: string
+          example: pi_1234567890
+        amount:
+          type: number
+          format: decimal
+          example: 29.99
+        currency:
+          type: string
+          example: USD
+        status:
+          type: string
+          enum: [pending, completed, failed, cancelled]
+          example: completed
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:00:00Z"
+        processedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:01:00Z"
+
+    OperationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation completed successfully
+        data:
+          type: object
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 150
+        totalPages:
+          type: integer
+          example: 8

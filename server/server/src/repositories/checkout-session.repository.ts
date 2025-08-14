@@ -56,6 +56,7 @@ export interface CheckoutSessionPlanSnapshot {
   name: string;
   duration: number;
   price: number;
+  discount: number;
   currency: string;
   countries: string[];
 }

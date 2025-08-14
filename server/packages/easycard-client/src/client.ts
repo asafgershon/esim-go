@@ -1,4 +1,4 @@
-import * as runtime from './generated/src/runtime';
+import * as runtime from "./generated/src/runtime";
 import {
   BillingApi,
   CardTokenApi,
@@ -7,8 +7,14 @@ import {
   PaymentRequestsApi,
   TransactionsApiApi,
   WebhooksApi,
-} from './generated/src/apis';
-import { env } from './config';
+} from "./generated/src/apis";
+import { env } from "./config";
+import { createLogger } from "@hiilo/utils";
+
+const logger = createLogger({
+  component: "EasyCardClient",
+  operationType: "easycard-client",
+});
 
 export interface EasyCardClientConfig {
   apiKey?: string;
@@ -18,7 +24,7 @@ export interface EasyCardClientConfig {
 
 export class EasyCardClient {
   private configuration: runtime.Configuration;
-  
+
   public billing: BillingApi;
   public cardToken: CardTokenApi;
   public invoicing: InvoicingApi;
@@ -29,10 +35,11 @@ export class EasyCardClient {
 
   constructor(config: EasyCardClientConfig = {}) {
     this.configuration = new runtime.Configuration({
-      basePath: config.basePath || 'https://ecng-transactions.azurewebsites.net',
+      basePath:
+        config.basePath || "https://ecng-transactions.azurewebsites.net",
       headers: {
         ...config.headers,
-        ...(config.apiKey && { 'Authorization': `Bearer ${config.apiKey}` }),
+        ...(config.apiKey && { Authorization: `Bearer ${config.apiKey}` }),
       },
     });
 
@@ -51,6 +58,14 @@ export class EasyCardClient {
    * Validates EASYCARD_API_KEY and EASYCARD_API_URL env vars
    */
   static fromEnv(): EasyCardClient {
+    logger.info("Creating EasyCardClient from env", {
+      operationType: "easycard-client-from-env",
+      apiKey:
+        env.EASYCARD_API_KEY?.substring(0, 4) +
+        "..." +
+        env.EASYCARD_API_KEY?.substring(env.EASYCARD_API_KEY.length - 4),
+      apiUrl: env.EASYCARD_API_URL,
+    });
     return new EasyCardClient({
       apiKey: env.EASYCARD_API_KEY,
       basePath: env.EASYCARD_API_URL,
@@ -61,14 +76,27 @@ export class EasyCardClient {
    * Update the API configuration
    */
   updateConfig(config: Partial<EasyCardClientConfig>): void {
-    if (config.basePath !== undefined || config.headers !== undefined || config.apiKey !== undefined) {
+    if (
+      config.basePath !== undefined ||
+      config.headers !== undefined ||
+      config.apiKey !== undefined
+    ) {
       this.configuration = new runtime.Configuration({
         basePath: config.basePath || this.configuration.basePath,
         headers: {
           ...this.configuration.headers,
           ...config.headers,
-          ...(config.apiKey && { 'Authorization': `Bearer ${config.apiKey}` }),
+          ...(config.apiKey && { Authorization: `Bearer ${config.apiKey}` }),
         },
+      });
+
+      logger.debug("Updated EasyCardClient config", {
+        operationType: "easycard-client-update-config",
+        apiKey:
+          config.apiKey?.substring(0, 4) +
+          "..." +
+          config.apiKey?.substring(config.apiKey.length - 4),
+        basePath: config.basePath,
       });
 
       // Re-initialize all API endpoints with new configuration

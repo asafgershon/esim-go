@@ -25,7 +25,7 @@ import {
   ESimGoRateLimitError,
   ESimGoAuthError,
 } from './types';
-
+export {type AxiosResponse} from 'axios';
 // Simple logger interface to avoid dependency on external logger
 interface SimpleLogger {
   info(message: string, data?: any): void;

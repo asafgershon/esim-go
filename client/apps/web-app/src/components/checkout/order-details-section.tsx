@@ -25,33 +25,7 @@ export function OrderDetailsSection({
   const planSnapshot = session?.planSnapshot || null;
   const pricing = session?.pricing || null;
 
-  // Validation status indicator component
-  const ValidationIndicator = () => {
-    if (validationStatus === "pending") {
-      return (
-        <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" />
-      );
-    }
-    if (validationStatus === "valid") {
-      return (
-        <div className="rounded-full h-5 w-5 bg-green-500 flex items-center justify-center">
-          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-      );
-    }
-    if (validationStatus === "invalid") {
-      return (
-        <div className="rounded-full h-5 w-5 bg-red-500 flex items-center justify-center">
-          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </div>
-      );
-    }
-    return null;
-  };
+
 
   // If no session data, show loading state
   if (!session || !planSnapshot) {
@@ -64,7 +38,6 @@ export function OrderDetailsSection({
             icon={<ShoppingCart className="h-5 w-5 text-primary" />}
             isCompleted={isCompleted}
           />
-          <ValidationIndicator />
         </div>
         <div className="text-center py-8 text-muted-foreground">
           <p>טוען פרטי הזמנה...</p>
@@ -97,7 +70,6 @@ export function OrderDetailsSection({
           icon={<ShoppingCart className="h-5 w-5 text-primary" />}
           isCompleted={isCompleted}
         />
-        <ValidationIndicator />
       </div>
       
       <div className="space-y-4">

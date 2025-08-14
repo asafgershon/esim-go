@@ -2,22 +2,22 @@ import { GraphQLError } from "graphql";
 import { supabaseAdmin } from "./context/supabase-auth";
 import type { Context } from "./context/types";
 import { createLogger } from "./lib/logger";
-import { authResolvers } from "./resolvers/auth-resolvers";
+import { authResolvers } from "./resolvers/auth.resolvers";
 import { bundlesResolvers } from "./resolvers/bundles.resolvers";
-import { catalogResolvers } from "./resolvers/catalog-resolvers";
-import { checkoutResolvers } from "./resolvers/checkout-resolvers";
-import { checkoutSubscriptionResolvers } from "./resolvers/checkout-subscription-resolvers";
-import { esimResolvers } from "./resolvers/esim-resolvers";
-import { ordersResolvers } from "./resolvers/orders-resolvers";
-import { pricingRulesResolvers } from "./resolvers/pricing-rules-resolvers";
-import { pricingResolvers } from "./resolvers/pricing-resolvers";
-import { tripsResolvers } from "./resolvers/trips-resolvers";
-import { usersResolvers } from "./resolvers/users-resolvers";
-import { airHaloResolvers } from "./resolvers/airhalo-resolvers";
-import { pricingManagementResolvers } from "./resolvers/pricing-management-resolvers";
-import { strategiesResolvers } from "./resolvers/strategies-resolvers";
-import { tenantResolvers } from "./resolvers/tenant-resolvers";
-import { pricingSubscriptionResolvers } from "./resolvers/pricing-subscription-resolvers";
+import { catalogResolvers } from "./resolvers/catalog.resolvers";
+import { checkoutResolvers } from "./resolvers/checkout.resolvers";
+import { checkoutSubscriptionResolvers } from "./resolvers/checkout-subscription.resolvers";
+import { esimResolvers } from "./resolvers/esim.resolvers";
+import { ordersResolvers } from "./resolvers/orders.resolvers";
+import { pricingRulesResolvers } from "./resolvers/pricing-rules.resolvers";
+import { pricingResolvers } from "./resolvers/pricing.resolvers";
+import { tripsResolvers } from "./resolvers/trips.resolvers";
+import { usersResolvers } from "./resolvers/users.resolvers";
+import { airHaloResolvers } from "./resolvers/airhalo.resolvers";
+import { pricingManagementResolvers } from "./resolvers/pricing-management.resolvers";
+import { strategiesResolvers } from "./resolvers/strategies.resolvers";
+import { tenantResolvers } from "./resolvers/tenant.resolvers";
+import { pricingSubscriptionResolvers } from "./resolvers/pricing-subscription.resolvers";
 import { batchPricingSubscriptionResolvers } from "./resolvers/batch-pricing-subscription";
 import type { Resolvers } from "./types";
 import * as countriesList from "countries-list";
@@ -28,7 +28,6 @@ export const resolvers: Resolvers = {
   Query: {
     hello: () => "Hello eSIM Go!",
     ...authResolvers.Query!,
-
     // Orders resolvers are merged from orders-resolvers.ts
     ...ordersResolvers.Query!,
 

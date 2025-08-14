@@ -54,6 +54,7 @@ import { StrategiesRepository } from "./repositories/strategies.repository";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
+import * as EasycardPayment from "./services/payment";
 
 // Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
@@ -85,9 +86,18 @@ const env = cleanEnv(process.env, {
   PORT: port({ default: 5001 }),
   CORS_ORIGINS: str({ default: "http://localhost:3000" }),
   ESIM_GO_API_KEY: str({ desc: "eSIM Go API key for V2 sync service" }),
-  AIRHALO_CLIENT_ID: str({ default: "", desc: "AirHalo API client ID (optional)" }),
-  AIRHALO_CLIENT_SECRET: str({ default: "", desc: "AirHalo API client secret (optional)" }),
-  AIRHALO_BASE_URL: str({ default: "https://api.airalo.com", desc: "AirHalo API base URL" }),
+  AIRHALO_CLIENT_ID: str({
+    default: "",
+    desc: "AirHalo API client ID (optional)",
+  }),
+  AIRHALO_CLIENT_SECRET: str({
+    default: "",
+    desc: "AirHalo API client secret (optional)",
+  }),
+  AIRHALO_BASE_URL: str({
+    default: "https://api.airalo.com",
+    desc: "AirHalo API base URL",
+  }),
 });
 
 async function startServer() {
@@ -127,8 +137,14 @@ async function startServer() {
       });
       console.log("✅ AirHalo client initialized successfully");
     } else {
-      console.log("⚠️ AirHalo credentials not provided - AirHalo features will be disabled");
+      console.log(
+        "⚠️ AirHalo credentials not provided - AirHalo features will be disabled"
+      );
     }
+
+    // Initialize Easycard payment service (optional)
+
+    const paymentService = await EasycardPayment.initialize();
 
     // Initialize repositories
     const checkoutSessionRepository = new CheckoutSessionRepository();
@@ -179,6 +195,7 @@ async function startServer() {
               syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
               esimGoClient,
               airHaloClient,
+              easycardPayment: EasycardPayment,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -277,34 +294,42 @@ async function startServer() {
     await server.start();
     console.log("Server started successfully");
 
-    const allowedOrigins = env.CORS_ORIGINS.split(",").map(origin => origin.trim());
-    logger.info('CORS configuration', { 
+    const allowedOrigins = env.CORS_ORIGINS.split(",").map((origin) =>
+      origin.trim()
+    );
+    logger.info("CORS configuration", {
       allowedOrigins,
       rawCorsOrigins: env.CORS_ORIGINS,
       originCount: allowedOrigins.length,
-      operationType: 'cors-setup'
+      operationType: "cors-setup",
     });
-    
+
     // Set up our Express middleware to handle CORS, body parsing
     // Manually handle CORS because the cors package seems to have issues
     app.use((req, res, next) => {
       const origin = req.headers.origin;
-      
+
       // Check if origin is allowed
       if (origin && allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-        res.setHeader('Vary', 'Origin');
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+        res.setHeader("Vary", "Origin");
       }
-      
+
       // Handle preflight
-      if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept,x-correlation-id');
-        res.setHeader('Access-Control-Max-Age', '86400');
+      if (req.method === "OPTIONS") {
+        res.setHeader(
+          "Access-Control-Allow-Methods",
+          "GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH"
+        );
+        res.setHeader(
+          "Access-Control-Allow-Headers",
+          "Content-Type,Authorization,Accept,x-correlation-id"
+        );
+        res.setHeader("Access-Control-Max-Age", "86400");
         return res.sendStatus(204);
       }
-      
+
       next();
     });
 
@@ -312,7 +337,7 @@ async function startServer() {
 
     // Add debug middleware to log all requests
     app.use((req, res, next) => {
-      logger.info('Incoming request', {
+      logger.info("Incoming request", {
         method: req.method,
         path: req.path,
         url: req.url,
@@ -320,26 +345,28 @@ async function startServer() {
           origin: req.headers.origin,
           host: req.headers.host,
           referer: req.headers.referer,
-          'content-type': req.headers['content-type'],
-          'access-control-request-method': req.headers['access-control-request-method'],
-          'access-control-request-headers': req.headers['access-control-request-headers'],
+          "content-type": req.headers["content-type"],
+          "access-control-request-method":
+            req.headers["access-control-request-method"],
+          "access-control-request-headers":
+            req.headers["access-control-request-headers"],
         },
-        operationType: 'request-debug'
+        operationType: "request-debug",
       });
-      
+
       // Log response headers after CORS
       const originalSend = res.send;
-      res.send = function(data) {
-        logger.info('Response headers', {
+      res.send = function (data) {
+        logger.info("Response headers", {
           method: req.method,
           path: req.path,
           statusCode: res.statusCode,
           headers: res.getHeaders(),
-          operationType: 'response-debug'
+          operationType: "response-debug",
         });
         return originalSend.call(this, data);
       };
-      
+
       next();
     });
 
@@ -402,7 +429,6 @@ async function startServer() {
       }
     });
 
-
     app.use(
       "/graphql",
       expressMiddleware(server, {
@@ -422,6 +448,7 @@ async function startServer() {
               syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
               esimGoClient,
               airHaloClient,
+              easycardPayment: EasycardPayment,
               db: supabaseAdmin,
             },
             repositories: {

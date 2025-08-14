@@ -1,8 +1,11 @@
 // Main client export
-export { EasyCardClient, EasyCardClientConfig } from './client';
+export { EasyCardClient, type EasyCardClientConfig } from './client';
 
 // Environment configuration
 export { env } from './config';
+
+// Testing utilities
+export { createPrismClient } from './testing/mock-config';
 
 // Export all generated APIs
 export * from './generated/src/apis';

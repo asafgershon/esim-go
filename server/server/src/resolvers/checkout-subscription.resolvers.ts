@@ -59,6 +59,59 @@ export const checkoutSubscriptions: SubscriptionResolvers = {
           // Create a channel specific to this session
           const channel = `${PubSubEvents.CHECKOUT_SESSION_UPDATED}:${sessionId}`;
 
+          // Fetch current session state to emit immediately
+          const currentSession = await context.repositories.checkoutSessions.getById(sessionId);
+          
+          if (currentSession) {
+            // Parse the session data
+            const steps = currentSession.steps || {};
+            const planSnapshotData = typeof currentSession.plan_snapshot === 'string' 
+              ? JSON.parse(currentSession.plan_snapshot) 
+              : currentSession.plan_snapshot;
+            
+            const sessionData: CheckoutSession = {
+              __typename: "CheckoutSession",
+              id: currentSession.id,
+              token,
+              expiresAt: currentSession.expires_at,
+              isComplete: currentSession.is_complete || false,
+              timeRemaining: Math.max(
+                0,
+                Math.floor(
+                  (new Date(currentSession.expires_at).getTime() - Date.now()) / 1000
+                )
+              ),
+              createdAt: currentSession.created_at,
+              planSnapshot: planSnapshotData,
+              pricing: currentSession.pricing as any,
+              steps: steps as any,
+              paymentStatus: currentSession.payment_status || "PENDING",
+              orderId: currentSession.order_id || null,
+              metadata: currentSession.metadata as any,
+            };
+
+            // Immediately publish current state as initial update
+            const initialUpdate: CheckoutSessionUpdate = {
+              __typename: "CheckoutSessionUpdate",
+              session: sessionData,
+              updateType: "INITIAL" as CheckoutUpdateType, // You may need to add this to the enum
+              timestamp: new Date().toISOString(),
+            };
+
+            // Use setImmediate to emit the initial state after subscription is established
+            setImmediate(async () => {
+              await pubsub.publish(channel, {
+                checkoutSessionUpdated: initialUpdate,
+              });
+              
+              logger.debug("Published initial session state", {
+                sessionId,
+                hasMetadata: !!currentSession.metadata,
+                operationType: "subscription-initial-state",
+              });
+            });
+          }
+
           logger.info("Checkout subscription setup successful", {
             sessionId,
             channel,

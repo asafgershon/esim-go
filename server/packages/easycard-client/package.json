@@ -7,7 +7,12 @@
   "scripts": {
     "generate": "openapi-generator-cli generate -c openapi-generator.config.yaml --skip-validate-spec",
     "clean": "rm -rf src/generated",
-    "regenerate": "bun run clean && bun run generate"
+    "regenerate": "bun run clean && bun run generate",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:prism": "concurrently -k -s first \"bun run mock:server\" \"wait-on http://localhost:4012 && vitest run\"",
+    "mock:server": "prism mock ./easycard-spec.yaml -p 4012 --dynamic",
+    "mock:server:verbose": "prism mock ./easycard-spec.yaml -p 4012 --dynamic --verbose"
   },
   "dependencies": {
     "cross-fetch": "^4.0.0",
@@ -16,6 +21,10 @@
   "devDependencies": {
     "@openapitools/openapi-generator-cli": "^2.13.4",
     "@types/node": "^20.11.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "@stoplight/prism-cli": "^5.8.1",
+    "vitest": "^1.2.0",
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0"
   }
 }

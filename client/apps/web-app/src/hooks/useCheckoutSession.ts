@@ -11,7 +11,7 @@ import {
 } from "@/lib/graphql/checkout";
 import { useQuery, useSubscription } from "@apollo/client";
 
-export const useCheckoutSession = (token?: string, isProcessing?: boolean) => {
+export const useCheckoutSession = (token?: string) => {
   // Initial query to get the session
   const { data, loading, error, refetch } = useQuery<
     GetCheckoutSessionQuery,
@@ -23,13 +23,13 @@ export const useCheckoutSession = (token?: string, isProcessing?: boolean) => {
     pollInterval: 0,
   });
 
-  // Subscribe to session updates when processing
+  // Subscribe to session updates
   const { data: subscriptionData } = useSubscription<
     CheckoutSessionUpdatedSubscription,
     CheckoutSessionUpdatedSubscriptionVariables
   >(CheckoutSessionUpdated, {
     variables: { token: token! },
-    skip: !token || !isProcessing, // Only subscribe when processing
+    skip: !token, // Subscribe whenever we have a token
   });
 
   // Merge subscription data with query data

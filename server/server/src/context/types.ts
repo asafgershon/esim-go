@@ -28,7 +28,11 @@ import type { CatalogSyncServiceV2 } from "../services";
 import type { ESimGoClient } from "@hiilo/client";
 import type { AirHaloClient } from "@airhalo/client";
 import type DataLoader from "dataloader";
-import type { PricingKey, PricingResult } from "../dataloaders/pricing-dataloader";
+import type {
+  PricingKey,
+  PricingResult,
+} from "../dataloaders/pricing-dataloader";
+import * as EasycardPayment from "../services/payment";
 
 export type Context = {
   auth: SupabaseAuthContext;
@@ -38,6 +42,7 @@ export type Context = {
     syncs: CatalogSyncServiceV2;
     esimGoClient: ESimGoClient;
     airHaloClient?: AirHaloClient;
+    easycardPayment: typeof EasycardPayment;
     pubsub?: RedisPubSub;
   };
   repositories: {

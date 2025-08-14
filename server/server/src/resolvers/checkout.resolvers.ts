@@ -1,8 +1,8 @@
-import { BundleOrderTypeEnum, OrderRequestTypeEnum } from "@hiilo/client";
+import { BundleOrderTypeEnum, OrderRequestTypeEnum, type OrderResponseTransaction } from "@hiilo/client";
 import {
   calculatePricing,
-  type RequestFacts,
   type PricingEngineV2Result,
+  type RequestFacts,
 } from "@hiilo/rules-engine-2";
 import crypto from "crypto";
 import { GraphQLError } from "graphql";
@@ -10,19 +10,14 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import type { Context } from "../context/types";
 import type { Database } from "../database.types";
-import { createLogger } from "../lib/logger";
-import { CheckoutSessionStepsSchema } from "../repositories/checkout-session.repository";
-import { createPaymentService } from "../services/payment";
-import {
-  PaymentMethod,
-  type EsimStatus,
-  type OrderStatus,
-  type Resolvers,
-} from "../types";
-import type { OrderResponse } from "../datasources/esim-go";
-import { purchaseAndDeliverESIM } from "../services/esim-purchase";
 import { WEB_APP_BUNDLE_GROUP } from "../lib/constants/bundle-groups";
-import { publishCheckoutSessionUpdate } from "./checkout-subscription-resolvers";
+import { createLogger } from "../lib/logger";
+import { CheckoutSessionStepsSchema, type CheckoutSessionSteps } from "../repositories/checkout-session.repository";
+import { purchaseAndDeliverESIM } from "../services/esim-purchase";
+import { CheckoutUpdateType, OrderStatus, PaymentMethod, type Resolvers } from "../types";
+import { publishCheckoutSessionUpdate } from "./checkout-subscription.resolvers";
+import type { AxiosResponse } from "@hiilo/client";
+import { supabaseAdmin } from "../context/supabase-auth";
 
 // ===============================================
 // TYPE DEFINITIONS & SCHEMAS
@@ -121,7 +116,11 @@ export const checkoutResolvers: Partial<Resolvers> = {
         // Parse JSON fields into typed objects
         const steps = CheckoutSessionStepsSchema.parse(session.steps || {});
         const pricing = session.pricing;
-        const planSnapshot = PlanSnapshotSchema.parse(session.plan_snapshot);
+        // plan_snapshot is stored as JSON string, need to parse it first
+        const planSnapshotData = typeof session.plan_snapshot === 'string' 
+          ? JSON.parse(session.plan_snapshot) 
+          : session.plan_snapshot;
+        const planSnapshot = PlanSnapshotSchema.parse(planSnapshotData);
 
         // Check if session is expired
         if (await context.repositories.checkoutSessions.isExpired(session)) {
@@ -368,14 +367,14 @@ export const checkoutResolvers: Partial<Resolvers> = {
         const session = await context.repositories.checkoutSessions.create({
           user_id: context.auth?.user?.id,
           plan_id: plan.id,
-          plan_snapshot: {
+          plan_snapshot: JSON.stringify({
             id: plan.id,
             name: plan.name,
             duration: plan.duration,
             price: plan.price,
             currency: "USD",
             countries: plan.countries,
-          },
+          }),
           pricing: pricing as any,
           steps: {
             authentication: {
@@ -474,6 +473,131 @@ export const checkoutResolvers: Partial<Resolvers> = {
               // Update our local session object too
               session.user_id = context.auth.user.id;
             }
+
+            // Create payment intent immediately after authentication
+            let user: any = null;
+            let planSnapshot: any = null;
+            
+            try {
+              // plan_snapshot is stored as JSON string, need to parse it first
+              const planSnapshotData = typeof session.plan_snapshot === 'string' 
+                ? JSON.parse(session.plan_snapshot) 
+                : session.plan_snapshot;
+              planSnapshot = PlanSnapshotSchema.parse(planSnapshotData);
+              const orderId = `order_${Date.now()}_${Math.random()
+                .toString(36)
+                .substring(2, 11)}`;
+
+              // Get user details for payment intent
+              // Since context.auth might not be populated in updateCheckoutStep, fetch user if needed
+              user = context.auth?.user;
+              const userId = context.auth?.user?.id || data.userId || session.user_id;
+              
+              if (!user && userId) {
+                // Fetch user details from database
+                const { data: userData, error: userError } = await supabaseAdmin
+                  .from('profiles')
+                  .select('*')
+                  .eq('id', userId)
+                  .single();
+                
+                if (userData && !userError) {
+                  user = userData;
+                }
+                console.log("Fetched user for payment intent:", user?.email);
+              }
+              
+              const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/callback?token=${token}`;
+
+              console.log("Debug - Available services:", Object.keys(context.services || {}));
+              console.log("Debug - easycardPayment available?", !!context.services?.easycardPayment);
+              console.log("Debug - easycardPayment type:", typeof context.services?.easycardPayment);
+
+              const paymentResult = await context.services.easycardPayment.createPaymentIntent({
+                amount: planSnapshot.price,
+                currency: "USD",
+                description: `eSIM purchase: ${planSnapshot.name}`,
+                costumer: {
+                  id: user?.id || session.user_id || "anonymous",
+                  email: user?.email || "",
+                  firstName: user?.firstName || "",
+                  lastName: user?.lastName || "",
+                },
+                item: {
+                  id: planSnapshot.id,
+                  name: planSnapshot.name,
+                  price: planSnapshot.price,
+                  discount: 0,
+                  duration: planSnapshot.duration,
+                  currency: planSnapshot.currency,
+                  countries: planSnapshot.countries,
+                },
+                order: {
+                  id: orderId,
+                  reference: orderId,
+                },
+                redirectUrl,
+                metadata: {
+                  sessionId: session.id,
+                  orderId,
+                  planId: session.plan_id,
+                },
+              });
+
+              if (paymentResult.success && paymentResult.payment_intent) {
+                // Store payment intent URLs in session metadata
+                const paymentIntent = paymentResult.payment_intent as any;
+                const paymentIntentData = {
+                  paymentIntentId: paymentIntent.entityUID || paymentIntent.entityReference,
+                  url: paymentIntent.additionalData?.url,
+                  applePayJavaScriptUrl: paymentIntent.additionalData?.applePayJavaScriptUrl,
+                  createdAt: now,
+                  orderId,
+                };
+
+                // Update session with payment intent info
+                const currentMetadata = (session.metadata as any) || {};
+                await context.repositories.checkoutSessions.update(session.id, {
+                  metadata: {
+                    ...currentMetadata,
+                    paymentIntent: paymentIntentData,
+                  } as any,
+                });
+
+                console.log("Payment intent created on authentication:", {
+                  paymentIntentId: paymentIntentData.paymentIntentId,
+                  hasUrl: !!paymentIntentData.url,
+                  hasApplePayUrl: !!paymentIntentData.applePayJavaScriptUrl,
+                  urls: {
+                    url: paymentIntentData.url,
+                    applePayUrl: paymentIntentData.applePayJavaScriptUrl
+                  }
+                });
+              } else {
+                console.error("Payment intent creation failed or returned no intent:", {
+                  success: paymentResult.success,
+                  error: paymentResult.error,
+                  hasPaymentIntent: !!paymentResult.payment_intent
+                });
+              }
+            } catch (error) {
+              console.error("Failed to create payment intent on auth - detailed error:", {
+                error: error instanceof Error ? error.message : error,
+                stack: error instanceof Error ? error.stack : undefined,
+                user: {
+                  id: user?.id,
+                  email: user?.email,
+                  hasFirstName: !!user?.firstName,
+                  hasLastName: !!user?.lastName
+                },
+                planSnapshot: {
+                  price: planSnapshot.price,
+                  name: planSnapshot.name
+                }
+              });
+              // Don't fail the auth step, just log the error
+              // Payment intent can be created later when processing payment
+            }
             break;
 
           case "DELIVERY":
@@ -561,7 +685,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         await publishCheckoutSessionUpdate(
           updatedSession.id,
           sessionResponse,
-          "STEP_COMPLETED"
+          CheckoutUpdateType.StepCompleted
         );
 
         return {
@@ -584,7 +708,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
     // Process checkout payment
     processCheckoutPayment: async (_, { input }, context: Context) => {
       try {
-        const { token, paymentMethodId } = input;
+        const { token } = input;
         console.log(
           "Processing checkout payment for token:",
           token.substring(0, 20) + "..."
@@ -611,7 +735,11 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
         // Parse JSON fields
         const steps = CheckoutSessionStepsSchema.parse(session.steps || {});
-        const planSnapshot = PlanSnapshotSchema.parse(session.plan_snapshot);
+        // plan_snapshot is stored as JSON string, need to parse it first
+        const planSnapshotData = typeof session.plan_snapshot === 'string' 
+          ? JSON.parse(session.plan_snapshot) 
+          : session.plan_snapshot;
+        const planSnapshot = PlanSnapshotSchema.parse(planSnapshotData);
 
         // Check if session is expired
         if (await context.repositories.checkoutSessions.isExpired(session)) {
@@ -650,49 +778,81 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
         console.log("All steps validated, processing payment...");
 
-        // Create order record first (before payment processing)
-        const orderId = `order_${Date.now()}_${Math.random()
-          .toString(36)
-          .substring(2, 11)}`;
+        // Check if we already have a payment intent from authentication step
+        const existingPaymentIntent = (session.metadata as any)?.paymentIntent;
+        let paymentIntentID: string | undefined;
+        let orderId: string;
 
-        // Create payment service and process payment
-        const paymentService = createPaymentService("mock");
-        await paymentService.initialize({});
+        if (existingPaymentIntent?.paymentIntentId) {
+          // Reuse existing payment intent
+          console.log("Reusing existing payment intent:", existingPaymentIntent.paymentIntentId);
+          paymentIntentID = existingPaymentIntent.paymentIntentId;
+          orderId = existingPaymentIntent.orderId;
+        } else {
+          // Create new payment intent as fallback
+          console.log("Creating new payment intent (fallback)");
+          orderId = `order_${Date.now()}_${Math.random()
+            .toString(36)
+            .substring(2, 11)}`;
 
-        const paymentResult = await paymentService.createPaymentIntent({
-          amount: planSnapshot.price, // Use the price from plan snapshot
-          currency: "USD",
-          payment_method_id: paymentMethodId,
-          description: `eSIM purchase: ${planSnapshot.name}`,
-          metadata: {
-            sessionId: session.id,
-            orderId,
-            planId: session.plan_id,
-          },
-        });
+          const user = context.auth?.user;
+          const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/callback?token=${token}`;
 
-        if (!paymentResult.success || !paymentResult.payment_intent) {
-          return {
-            success: false,
-            error: paymentResult.error?.message || "Payment processing failed",
-            orderId: null,
-            session: null,
-            paymentIntentId: null,
-            webhookProcessing: false,
-          };
+          const paymentResult = await context.services.easycardPayment.createPaymentIntent({
+            amount: planSnapshot.price,
+            currency: "USD",
+            description: `eSIM purchase: ${planSnapshot.name}`,
+            costumer: {
+              id: user?.id || session.user_id || "anonymous",
+              email: user?.email || "",
+              firstName: user?.firstName || "",
+              lastName: user?.lastName || "",
+            },
+            item: {
+              id: planSnapshot.id,
+              name: planSnapshot.name,
+              price: planSnapshot.price,
+              discount: 0,
+              duration: planSnapshot.duration,
+              currency: planSnapshot.currency,
+              countries: planSnapshot.countries,
+            },
+            order: {
+              id: orderId,
+              reference: orderId,
+            },
+            redirectUrl,
+            metadata: {
+              sessionId: session.id,
+              orderId,
+              planId: session.plan_id,
+            },
+          });
+
+          if (!paymentResult.success || !paymentResult.payment_intent) {
+            return {
+              success: false,
+              error: paymentResult.error?.message || "Payment processing failed",
+              orderId: null,
+              session: null,
+              paymentIntentId: null,
+              webhookProcessing: false,
+            };
+          }
+
+          const paymentIntent = paymentResult.payment_intent as any;
+          paymentIntentID = paymentIntent.entityUID || paymentIntent.entityReference;
+          console.log("New payment intent created:", paymentIntentID);
         }
 
-        const paymentIntent = paymentResult.payment_intent;
-        console.log("Payment intent created:", paymentIntent.id);
-
         // Update session with payment processing status
-        const updatedSteps = {
+        const updatedSteps: CheckoutSessionSteps = {
           ...steps,
           payment: {
             ...steps.payment,
             completed: false, // Will be set to true by webhook
-            paymentMethodId,
-            paymentIntentId: paymentIntent.id,
+            paymentIntentId: paymentIntentID || undefined,
+            paymentMethodId: paymentMethodId || undefined,
             processing: true,
             processedAt: new Date().toISOString(),
           },
@@ -701,7 +861,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         const updatedSession =
           await context.repositories.checkoutSessions.updatePaymentProcessing(
             session.id,
-            paymentIntent.id,
+            paymentIntentID || "",
             updatedSteps
           );
 
@@ -723,7 +883,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           planSnapshot: updatedSession.plan_snapshot,
           pricing: updatedSession.pricing,
           steps: updatedSteps,
-          paymentStatus: "PROCESSING",
+          paymentStatus: CheckoutUpdateType.PaymentProcessing,
           orderId: updatedSession.order_id,
           metadata: updatedSession.metadata,
         };
@@ -732,7 +892,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         await publishCheckoutSessionUpdate(
           updatedSession.id,
           processingSession,
-          "PAYMENT_PROCESSING"
+          CheckoutUpdateType.PaymentProcessing
         );
 
         // Start webhook simulation (Step 2: Timer to simulate webhook)
@@ -740,15 +900,15 @@ export const checkoutResolvers: Partial<Resolvers> = {
         setTimeout(async () => {
           console.log(
             "Simulating webhook processing for payment:",
-            paymentIntent.id
+            paymentIntentID
           );
           await simulateWebhookProcessing(
             session.id,
-            paymentIntent.id,
+            paymentIntentID || "",
             orderId,
             session,
             context,
-            paymentService
+            context.services.easycardPayment
           );
         }, 3000); // Simulate 3-second payment processing
 
@@ -756,7 +916,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           success: true,
           orderId, // This will be replaced with real DB order ID by the webhook
           session: processingSession,
-          paymentIntentId: paymentIntent.id,
+          paymentIntentId: paymentIntentID,
           webhookProcessing: true,
           error: null,
         };
@@ -823,12 +983,12 @@ export const checkoutResolvers: Partial<Resolvers> = {
         });
 
         const validationResult = {
-          isValid: response.data.valid || false,
+          isValid: Number(response.data.total) > 0,
           bundleDetails: response.data.order?.[0] || null,
           totalPrice: response.data.total || null,
           currency: response.data.currency || "USD",
-          error: response.data.valid ? null : response.data.message,
-          errorCode: response.data.valid ? null : "VALIDATION_FAILED",
+          error: null,
+          errorCode: null,
         };
 
         if (!validationResult.isValid) {
@@ -955,9 +1115,9 @@ async function simulateWebhookProcessing(
           {
             user_id: steps.authentication.userId,
             total_price: detailedPricing.pricing.finalPrice,
-            reference: orderId, // This becomes the order reference
-            status: "PROCESSING" as OrderStatus, // Start as PROCESSING, will be updated to COMPLETED after eSIM delivery
-            plan_data: planSnapshot, // Store plan info in JSONB field
+            reference: orderId, 
+            status: OrderStatus.Processing, 
+            plan_data: planSnapshot,
             quantity: 1,
           },
           pricingBreakdownForOrder as any
@@ -994,10 +1154,11 @@ async function simulateWebhookProcessing(
         completedSteps
       );
 
-      const completedSession = await context.repositories.checkoutSessions.markCompleted(sessionId, {
-        orderId: orderRecord.id, // This is the database order ID, not the reference
-        orderReference: orderId, // This is the reference string
-      });
+      const completedSession =
+        await context.repositories.checkoutSessions.markCompleted(sessionId, {
+          orderId: orderRecord.id, // This is the database order ID, not the reference
+          orderReference: orderId, // This is the reference string
+        });
 
       // Publish payment completed update
       const sessionUpdate = {
@@ -1014,11 +1175,11 @@ async function simulateWebhookProcessing(
         orderId: orderRecord.id,
         metadata: completedSession.metadata,
       };
-      
+
       await publishCheckoutSessionUpdate(
         sessionId,
         sessionUpdate,
-        "PAYMENT_COMPLETED"
+        CheckoutUpdateType.PaymentCompleted
       );
 
       console.log(
@@ -1072,10 +1233,11 @@ async function provisionESIM(
           },
         ],
       },
-    });
+    }) as AxiosResponse<OrderResponseTransaction>
 
     // Extract eSIM details from response
-    const iccid = order.data?.order?.[0]?.iccids?.[0];
+
+    const iccid = order.data.order?.[0]?.esims?.[0]?.iccid;
     const bundle = order.data?.order?.[0]?.item;
     if (!iccid) {
       throw new Error("No eSIM returned from provisioning API");

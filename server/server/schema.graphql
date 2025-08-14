@@ -6,12 +6,15 @@ type Query {
   me: User @auth
   users: [User!]! @auth(role: "ADMIN")
   orders: [Order!]! @auth(role: "ADMIN")
-  
+
   # Tenant management
   tenants: [Tenant!]! @auth
-  
+
   # Master tenant queries
-  allTenants(filter: TenantFilter, pagination: PaginationInput): TenantConnection! @auth
+  allTenants(
+    filter: TenantFilter
+    pagination: PaginationInput
+  ): TenantConnection! @auth
   tenant(slug: ID!): Tenant @auth
 
   # eSIM queries
@@ -61,17 +64,19 @@ type Query {
   pricingFilters: PricingFilters!
 
   # Pricing blocks for strategy builder
-  pricingBlocks(filter: PricingBlockFilter): [PricingBlock!]! @auth(role: "ADMIN")
+  pricingBlocks(filter: PricingBlockFilter): [PricingBlock!]!
+    @auth(role: "ADMIN")
   pricingBlock(id: ID!): PricingBlock @auth(role: "ADMIN")
 
   # Pricing strategies
-  pricingStrategies(filter: StrategyFilter): [PricingStrategy!]! @auth(role: "ADMIN")
+  pricingStrategies(filter: StrategyFilter): [PricingStrategy!]!
+    @auth(role: "ADMIN")
   pricingStrategy(id: ID!): PricingStrategy @auth(role: "ADMIN")
   defaultPricingStrategy: PricingStrategy
 
   # High demand countries
   highDemandCountries: [String!]! @auth(role: "ADMIN")
-  
+
   # Payment methods with processing rates
   paymentMethods: [PaymentMethodInfo!]!
 
@@ -83,7 +88,7 @@ type Query {
   catalogBundles(criteria: SearchCatalogCriteria): CatalogBundleConnection!
     @auth(role: "ADMIN")
   bundleFilterOptions: BundleFilterOptions!
-  
+
   # Admin eSIM management queries
   getAllESIMs: [AdminESIM!]! @auth(role: "ADMIN")
   getCustomerESIMs(userId: ID!): [AdminESIM!]! @auth(role: "ADMIN")
@@ -250,17 +255,17 @@ type BundleStats {
   Total number of active bundles in the system
   """
   totalBundles: Int!
-  
+
   """
   Number of countries covered
   """
   totalCountries: Int!
-  
+
   """
   Number of regions covered
   """
   totalRegions: Int!
-  
+
   """
   Number of unique bundle groups
   """
@@ -344,7 +349,6 @@ type Mutation {
   assignPackageToUser(userId: ID!, planId: ID!): AssignPackageResponse
     @auth(role: "ADMIN")
 
-
   # High demand countries management
   toggleHighDemandCountry(countryId: String!): ToggleHighDemandResponse
     @auth(role: "ADMIN")
@@ -371,19 +375,18 @@ type Subscription {
   catalogSyncProgress: CatalogSyncProgressUpdate! @auth(role: "ADMIN")
 
   # Pricing pipeline progress (authenticated users only)
-  pricingPipelineProgress(correlationId: String!): PricingPipelineStepUpdate! @auth
-  
+  pricingPipelineProgress(correlationId: String!): PricingPipelineStepUpdate!
+    @auth
+
   # NEW: Real-time pricing calculation steps
-  pricingCalculationSteps(
-    input: CalculatePriceInput!
-  ): PricingStepUpdate! @auth
-  
+  pricingCalculationSteps(input: CalculatePriceInput!): PricingStepUpdate! @auth
+
   # Stream batch pricing results as they're calculated
   calculatePricesBatchStream(
     inputs: [CalculatePriceInput!]!
     requestedDays: Int # Priority - calculate this day first
   ): PricingBreakdown!
-  
+
   # Real-time checkout session updates
   checkoutSessionUpdated(token: String!): CheckoutSessionUpdate!
 }
@@ -396,6 +399,7 @@ type CheckoutSessionUpdate {
 }
 
 enum CheckoutUpdateType {
+  INITIAL
   STEP_COMPLETED
   PAYMENT_PROCESSING
   PAYMENT_COMPLETED
@@ -424,11 +428,9 @@ interface Bundle {
   # Base pricing (before any rules/markups)
   basePrice: Float!
   currency: String!
-  
+
   # Calculated pricing (only computed when requested)
-  pricingBreakdown(
-    paymentMethod: PaymentMethod
-  ): PricingBreakdown
+  pricingBreakdown(paymentMethod: PaymentMethod): PricingBreakdown
 }
 
 type CatalogBundle implements Bundle {
@@ -447,11 +449,9 @@ type CatalogBundle implements Bundle {
   speed: [String!]!
   basePrice: Float! # Maps to 'price' column in DB
   currency: String!
-  
+
   # Calculated pricing (from Bundle interface)
-  pricingBreakdown(
-    paymentMethod: PaymentMethod
-  ): PricingBreakdown
+  pricingBreakdown(paymentMethod: PaymentMethod): PricingBreakdown
 
   # Timestamps
   createdAt: DateTime!
@@ -477,9 +477,7 @@ type CustomerBundle implements Bundle {
   currency: String!
 
   # Calculated pricing (from Bundle interface)
-  pricingBreakdown(
-    paymentMethod: PaymentMethod
-  ): PricingBreakdown
+  pricingBreakdown(paymentMethod: PaymentMethod): PricingBreakdown
 }
 
 type BundlesByCountry {
@@ -761,17 +759,17 @@ type InstallationLinks {
   iOS 17.4+ direct activation link (no QR scanning needed)
   """
   universalLink: String!
-  
+
   """
   LPA scheme for Android/Windows direct activation
   """
   lpaScheme: String!
-  
+
   """
   Manual entry components for all devices
   """
   manual: ManualInstallation!
-  
+
   """
   QR code data string (LPA format) for fallback
   """
@@ -783,12 +781,12 @@ type ManualInstallation {
   SM-DP+ server address
   """
   smDpAddress: String!
-  
+
   """
   Activation code
   """
   activationCode: String!
-  
+
   """
   Optional confirmation code
   """
@@ -1009,8 +1007,6 @@ enum CheckoutStepType {
 # Input for processing final payment
 input ProcessCheckoutPaymentInput {
   token: String!
-  paymentMethodId: String! # From Stripe/payment provider
-  savePaymentMethod: Boolean = false
 }
 
 # Response for payment processing
@@ -1038,21 +1034,28 @@ extend type Mutation {
     input: ProcessCheckoutPaymentInput!
   ): ProcessCheckoutPaymentResponse!
   validateOrder(input: ValidateOrderInput!): ValidateOrderResponse!
-  
+
   # Pricing Rules Engine
   createPricingRule(input: CreatePricingRuleInput!): PricingRule!
   updatePricingRule(id: ID!, input: UpdatePricingRuleInput!): PricingRule!
   deletePricingRule(id: ID!): Boolean!
   togglePricingRule(id: ID!): PricingRule!
-  updatePricingRulePriorities(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
+  updatePricingRulePriorities(
+    updates: [PricingRulePriorityUpdate!]!
+  ): [PricingRule!]!
   clonePricingRule(id: ID!, newName: String!): PricingRule!
-  
+
   # Tenant Management (Master tenant only)
   createTenant(input: CreateTenantInput!): Tenant! @auth
   updateTenant(slug: ID!, input: UpdateTenantInput!): Tenant! @auth
   deleteTenant(slug: ID!): TenantOperationResponse! @auth
-  assignUserToTenant(userId: ID!, tenantSlug: ID!, role: String): TenantOperationResponse! @auth
-  removeUserFromTenant(userId: ID!, tenantSlug: ID!): TenantOperationResponse! @auth
+  assignUserToTenant(
+    userId: ID!
+    tenantSlug: ID!
+    role: String
+  ): TenantOperationResponse! @auth
+  removeUserFromTenant(userId: ID!, tenantSlug: ID!): TenantOperationResponse!
+    @auth
 }
 
 # Tenant Management Inputs
@@ -1120,12 +1123,10 @@ type PricingBreakdown {
   discountValue: Float! # Total discount amount
   priceAfterDiscount: Float! # Final price users pay
   finalPrice: Float! # Final price users pay
-  
   # NEW: Customer-friendly fields
   customerDiscounts: [CustomerDiscount!] # Simple discount list for customers
   savingsAmount: Float # Total amount saved
   savingsPercentage: Float # Percentage saved
-  
   # Admin-only business sensitive fields
   cost: Float! @auth(role: "ADMIN") # Base cost from supplier
   markup: Float! @auth(role: "ADMIN") # Markup amount added to cost
@@ -1136,22 +1137,17 @@ type PricingBreakdown {
   revenueAfterProcessing: Float! @auth(role: "ADMIN") # What we receive after processing fees
   netProfit: Float! @auth(role: "ADMIN") # Final profit
   discountPerDay: Float! @auth(role: "ADMIN") # Per-day discount rate
-  
   # Rule-based pricing breakdown - Admin only
   appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
   discounts: [DiscountApplication!] @auth(role: "ADMIN") # Detailed discount breakdown (nullable)
-  
   # NEW: Step-by-step breakdown - Admin only
   pricingSteps: [PricingStep!] # Detailed step-by-step breakdown
-  
   # NEW: Performance metrics - Admin only
   calculationTimeMs: Float @auth(role: "ADMIN") # Time taken to calculate pricing
   rulesEvaluated: Int @auth(role: "ADMIN") # Number of rules evaluated
-  
   # Pipeline metadata - Admin only
   unusedDays: Int @auth(role: "ADMIN") # Days not used from selected bundle
   selectedReason: String @auth(role: "ADMIN") # Bundle selection reason (exact_match, next_available, etc.)
-  
   # Additional pricing engine fields - Admin only
   totalCostBeforeProcessing: Float @auth(role: "ADMIN") # Price before processing fees
   debugInfo: JSON @auth(role: "ADMIN") # Optional debug information
@@ -1315,10 +1311,10 @@ type AppliedRule {
 
 # Represents a discount that was applied during pricing calculation
 type DiscountApplication {
-  type: String!          # The type of discount (e.g., "unused-days", "coupon", "corporate")
-  amount: Float!         # The discount amount in currency
-  percentage: Float      # The discount percentage (if applicable)
-  description: String    # Human-readable description of the discount
+  type: String! # The type of discount (e.g., "unused-days", "coupon", "corporate")
+  amount: Float! # The discount amount in currency
+  percentage: Float # The discount percentage (if applicable)
+  description: String # Human-readable description of the discount
 }
 
 # Batch pricing input

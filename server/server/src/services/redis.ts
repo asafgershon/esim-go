@@ -11,6 +11,7 @@ const env = cleanEnv(process.env, {
   REDIS_USER: str({ default: "default" }),
 });
 
+
 const logger = createLogger({ component: 'redis' });
 
 let redisInstance: KeyvAdapter<any>;

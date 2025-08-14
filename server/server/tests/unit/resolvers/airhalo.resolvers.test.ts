@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { GraphQLError } from 'graphql';
-import { airHaloResolvers } from '../../../src/resolvers/airhalo-resolvers';
+import { airHaloResolvers } from '../../../src/resolvers/airhalo.resolvers';
 import type { Context } from '../../../src/context/types';
 import type { AirHaloPackageFilter } from '../../../src/types';
 

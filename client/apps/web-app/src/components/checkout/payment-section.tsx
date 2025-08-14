@@ -2,8 +2,14 @@
 
 import { useState } from "react";
 import { Label, Input, Card, Button } from "@workspace/ui";
-import { CreditCard, Lock } from "lucide-react";
+import { CreditCard, Lock, ArrowLeft } from "lucide-react";
 import { SectionHeader } from "./section-header";
+
+interface PaymentIntentUrls {
+  paymentIntentId?: string;
+  url?: string;
+  applePayJavaScriptUrl?: string;
+}
 
 interface PaymentSectionProps {
   sectionNumber?: number;
@@ -17,6 +23,7 @@ interface PaymentSectionProps {
   isProcessing?: boolean;
   canSubmit?: boolean;
   isCompleted?: boolean;
+  paymentIntentUrls?: PaymentIntentUrls;
 }
 
 export function PaymentSection({
@@ -30,6 +37,7 @@ export function PaymentSection({
   onPaymentSubmit,
   isProcessing = false,
   isCompleted = false,
+  paymentIntentUrls,
 }: PaymentSectionProps) {
   const [isCreatingPaymentMethod, setIsCreatingPaymentMethod] = useState(false);
 
@@ -97,6 +105,13 @@ export function PaymentSection({
     }
   };
 
+  const handleContinueToPayment = () => {
+    if (paymentIntentUrls?.url) {
+      // Redirect to EasyCard payment page
+      window.location.href = paymentIntentUrls.url;
+    }
+  };
+
   return (
     <Card className="relative" dir="rtl">
       <SectionHeader
@@ -107,7 +122,66 @@ export function PaymentSection({
       />
 
       <div className="space-y-4">
-        {/* Card Number */}
+        {/* Show payment options if payment intent is available */}
+        {paymentIntentUrls?.url ? (
+          <>
+            {/* Continue to Payment Button */}
+            <Button
+              onClick={handleContinueToPayment}
+              disabled={isProcessing}
+              className="w-full h-12 text-lg font-medium"
+              variant="default"
+            >
+              {isProcessing ? (
+                "מעבד תשלום..."
+              ) : (
+                <>
+                  המשך לתשלום מאובטח
+                  <ArrowLeft className="mr-2 h-5 w-5" />
+                </>
+              )}
+            </Button>
+
+            {/* Apple Pay Button (if available) */}
+            {paymentIntentUrls.applePayJavaScriptUrl && (
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-background px-2 text-muted-foreground">או</span>
+                </div>
+              </div>
+            )}
+
+            {paymentIntentUrls.applePayJavaScriptUrl && (
+              <Button
+                onClick={() => {
+                  // TODO: Implement Apple Pay integration
+                  console.log("Apple Pay integration coming soon");
+                }}
+                className="w-full h-12 text-lg font-medium bg-black hover:bg-gray-800"
+              >
+                <svg className="h-6 w-auto mr-2" viewBox="0 0 165 165" fill="white">
+                  <path d="M150.734 78.731c-.275-28.539 23.288-42.213 24.336-42.875-13.248-19.381-33.872-22.023-41.214-22.336-17.539-1.774-34.221 10.325-43.12 10.325-8.877 0-22.601-10.067-37.129-9.801-19.115.271-36.735 11.114-46.563 28.223-19.854 34.402-5.082 85.349 14.278 113.3 9.467 13.69 20.755 29.066 35.583 28.523 14.278-.572 19.682-9.241 36.948-9.241 17.249 0 22.098 9.241 37.152 8.954 15.349-.282 25.098-13.963 34.467-27.725 10.852-15.89 15.317-31.273 15.583-32.062-.338-.155-29.893-11.478-30.171-45.509zM121.773 29.371c7.873-9.546 13.185-22.807 11.735-36.029-11.35.462-25.098 7.564-33.241 17.11-7.304 8.434-13.701 21.9-11.975 34.825 12.667.981 25.607-6.434 33.481-15.906z"/>
+                </svg>
+                 Apple Pay
+              </Button>
+            )}
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-background px-2 text-muted-foreground">או הזן פרטי כרטיס</span>
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {/* Card Input Fields (always shown as fallback) */}
         <div className="space-y-2">
           <Label htmlFor="cardNumber">מספר כרטיס</Label>
           <Input
@@ -159,19 +233,21 @@ export function PaymentSection({
           <span>פרטי התשלום שלך מוצפנים ומאובטחים</span>
         </div>
 
-        {/* Payment Submit Button */}
-        <Button
-          onClick={handlePaymentSubmit}
-          disabled={false}
-          // disabled={!canSubmit || !isPaymentValid || isCreatingPaymentMethod || isProcessing}
-          className="w-full h-12 text-lg font-medium"
-        >
-          {isCreatingPaymentMethod
-            ? "יוצר אמצעי תשלום..."
-            : isProcessing
-            ? "מעבד תשלום..."
-            : "שלח תשלום"}
-        </Button>
+        {/* Payment Submit Button (for card payment) */}
+        {!paymentIntentUrls?.url && (
+          <Button
+            onClick={handlePaymentSubmit}
+            disabled={false}
+            // disabled={!canSubmit || !isPaymentValid || isCreatingPaymentMethod || isProcessing}
+            className="w-full h-12 text-lg font-medium"
+          >
+            {isCreatingPaymentMethod
+              ? "יוצר אמצעי תשלום..."
+              : isProcessing
+              ? "מעבד תשלום..."
+              : "שלח תשלום"}
+          </Button>
+        )}
       </div>
     </Card>
   );

@@ -420,6 +420,7 @@ export enum CheckoutStepType {
 }
 
 export enum CheckoutUpdateType {
+  Initial = 'INITIAL',
   OrderCreated = 'ORDER_CREATED',
   PaymentCompleted = 'PAYMENT_COMPLETED',
   PaymentProcessing = 'PAYMENT_PROCESSING',
@@ -1241,8 +1242,6 @@ export type PricingStrategy = {
 };
 
 export type ProcessCheckoutPaymentInput = {
-  paymentMethodId: Scalars['String']['input'];
-  savePaymentMethod?: InputMaybe<Scalars['Boolean']['input']>;
   token: Scalars['String']['input'];
 };
 

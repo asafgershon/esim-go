@@ -17,3 +17,4 @@ export type {
   ESIMDetailsResponse,
   OrganisationResponse,
 } from './generated';
+export {type AxiosResponse} from 'axios';

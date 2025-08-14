@@ -4,7 +4,7 @@ export type {
   AirHaloClientConfig, 
   AirHaloPackageFilter,
   AirHaloPackageSearchCriteria,
-  EnhancedPackageInfo
+  EnhancedPackageInfo,
 } from './client';
 
 // Enhanced types
