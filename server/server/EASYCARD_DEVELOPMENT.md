@@ -8,17 +8,18 @@ The EasyCard integration supports both real API calls and mock responses using P
 
 1. **Set up environment variables** in your `.env`:
    ```bash
-   # For mock development
-   EASYCARD_ENVIRONMENT=mock
+   # For test/development with mocks
+   EASYCARD_ENVIRONMENT=test
    EASYCARD_MOCK_BASE_URL=http://localhost:4012
    
-   # Still needed (can be dummy values for mock mode)
-   EASYCARD_API_KEY=test-api-key
-   EASYCARD_TERMINAL_ID=test-terminal-id
-   EASY_CARD_PRIVATE_API_KEY=test-private-key
+   # For production with real payments
+   EASYCARD_ENVIRONMENT=production
+   EASYCARD_API_KEY=your-real-api-key
+   EASYCARD_TERMINAL_ID=your-real-terminal-id
+   EASY_CARD_PRIVATE_API_KEY=your-real-private-key
    ```
 
-2. **Start the EasyCard mock server**:
+2. **Start the EasyCard mock server** (for test mode only):
    ```bash
    bun run mock:easycard
    ```
@@ -33,26 +34,23 @@ The EasyCard integration supports both real API calls and mock responses using P
 
 | Environment Variable | Description | Values |
 |----------------------|-------------|--------|
-| `EASYCARD_ENVIRONMENT` | Controls which client to use | `production`, `test`, `mock` |
-| `EASYCARD_MOCK_BASE_URL` | Mock server URL (when using `mock`) | `http://localhost:4012` |
-| `EASYCARD_API_KEY` | API key (real or dummy for mock) | Your EasyCard API key |
+| `EASYCARD_ENVIRONMENT` | Controls which client to use | `test`, `production` |
+| `EASYCARD_MOCK_BASE_URL` | Mock server URL (when using `test`) | `http://localhost:4012` |
+| `EASYCARD_API_KEY` | API key (real or dummy for test) | Your EasyCard API key |
 
 ### Development Modes
 
-#### 1. Mock Mode (`EASYCARD_ENVIRONMENT=mock`)
+#### 1. Test Mode (`EASYCARD_ENVIRONMENT=test`)
 - **Uses**: Prism mock server with OpenAPI specification
-- **Benefits**: Fast development, no API limits, predictable responses
+- **Benefits**: Fast development, no API limits, predictable responses  
 - **Setup**: Run `bun run mock:easycard` first
+- **Payment Links**: Mock URLs for testing UI flows
 
-#### 2. Test Mode (`EASYCARD_ENVIRONMENT=test`)
-- **Uses**: Mock client with hardcoded responses
-- **Benefits**: No external dependencies, fastest for unit tests
-- **Setup**: No additional setup needed
-
-#### 3. Production Mode (`EASYCARD_ENVIRONMENT=production`)
+#### 2. Production Mode (`EASYCARD_ENVIRONMENT=production`)
 - **Uses**: Real EasyCard API
-- **Benefits**: Real integration testing
+- **Benefits**: Real payment processing and integration testing
 - **Setup**: Requires valid EasyCard credentials
+- **Payment Links**: Real payment URLs that process actual transactions
 
 ### Testing
 

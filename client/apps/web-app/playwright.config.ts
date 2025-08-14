@@ -1,10 +1,23 @@
 import { defineConfig, devices } from '@playwright/test';
+import * as dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load test environment variables
+dotenv.config({ path: resolve(__dirname, 'tests/e2e/.env.test.local') });
+dotenv.config({ path: resolve(__dirname, 'tests/e2e/.env.test') });
 
 /**
  * Playwright configuration for eSIM Go web app integration tests
  */
 export default defineConfig({
   testDir: './tests/e2e',
+  
+  /* Global setup script */
+  globalSetup: './tests/e2e/global-setup.ts',
   
   /* Run tests in files in parallel */
   fullyParallel: true,

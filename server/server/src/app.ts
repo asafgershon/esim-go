@@ -54,6 +54,7 @@ import { StrategiesRepository } from "./repositories/strategies.repository";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
+import { createCheckoutSessionService } from "./services/checkout-session.service";
 import * as EasycardPayment from "./services/payment";
 
 // Load and merge schemas
@@ -196,6 +197,7 @@ async function startServer() {
               esimGoClient,
               airHaloClient,
               easycardPayment: EasycardPayment,
+              checkoutSessionService: undefined, // Will be initialized lazily in resolvers
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -450,6 +452,7 @@ async function startServer() {
               airHaloClient,
               easycardPayment: EasycardPayment,
               db: supabaseAdmin,
+              checkoutSessionService: undefined, // Will be initialized lazily in resolvers
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,

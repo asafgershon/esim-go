@@ -46,10 +46,10 @@ export async function initializeClient(): Promise<EasyCardClient> {
       environment: process.env.EASYCARD_ENVIRONMENT,
     });
     
-    // Use Prism mock client for testing/development
-    if (process.env.EASYCARD_ENVIRONMENT === 'test' || process.env.EASYCARD_ENVIRONMENT === 'mock') {
-      logger.info("Using EasyCard Prism mock client", {
-        operationType: "easycard-prism-init",
+    // Use Prism mock client for test environment
+    if (process.env.EASYCARD_ENVIRONMENT === 'test') {
+      logger.info("Using EasyCard test client (Prism mock server)", {
+        operationType: "easycard-test-init",
       });
       
       client = createPrismClient({
@@ -123,11 +123,11 @@ let tokenRequestPromise: Promise<string> | null = null;
 
 /**
  * Get access token with caching support
- * Only used for production environment - mocks don't need real tokens
+ * Only used for production environment - test doesn't need real tokens
  */
 export async function getAccessToken(): Promise<string> {
-  // For mock/test environment, return a mock token immediately
-  if (process.env.EASYCARD_ENVIRONMENT === 'test' || process.env.EASYCARD_ENVIRONMENT === 'mock') {
+  // For test environment, return a mock token immediately
+  if (process.env.EASYCARD_ENVIRONMENT === 'test') {
     logger.debug("Using mock EasyCard access token", {
       operationType: "token-mock-hit",
     });
@@ -204,8 +204,8 @@ export async function getAccessToken(): Promise<string> {
  * Ensure the client has a valid access token (production only)
  */
 export async function ensureValidToken(): Promise<void> {
-  // Mock environments don't need real token management
-  if (process.env.EASYCARD_ENVIRONMENT === 'test' || process.env.EASYCARD_ENVIRONMENT === 'mock') {
+  // Test environment doesn't need real token management
+  if (process.env.EASYCARD_ENVIRONMENT === 'test') {
     return;
   }
 
@@ -238,8 +238,8 @@ export async function executeWithTokenRefresh<T>(
   operation: () => Promise<T>,
   retries: number = 1
 ): Promise<T> {
-  // Mock environments don't need token refresh logic
-  if (process.env.EASYCARD_ENVIRONMENT === 'test' || process.env.EASYCARD_ENVIRONMENT === 'mock') {
+  // Test environment doesn't need token refresh logic
+  if (process.env.EASYCARD_ENVIRONMENT === 'test') {
     return await operation();
   }
 

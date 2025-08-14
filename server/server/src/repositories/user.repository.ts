@@ -30,6 +30,32 @@ export class UserRepository extends BaseSupabaseRepository<UserRow, never, UserU
     super('users' as any);
   }
 
+  // Override getById to use auth.users table
+  async getById(id: string): Promise<any | null> {
+    try {
+      const { data, error } = await supabaseAdmin.auth.admin.getUserById(id);
+      
+      if (error) {
+        console.warn(`User not found in auth.users: ${error.message}`);
+        return null;
+      }
+      
+      // Return user data in the expected format
+      return {
+        id: data.user.id,
+        email: data.user.email,
+        first_name: data.user.user_metadata?.first_name,
+        last_name: data.user.user_metadata?.last_name,
+        phone_number: data.user.user_metadata?.phone_number,
+        created_at: data.user.created_at,
+        updated_at: data.user.updated_at,
+      };
+    } catch (error) {
+      console.error('Error fetching user from auth.users:', error);
+      return null;
+    }
+  }
+
   async updateUserRole(userId: string, role: string): Promise<{ success: boolean; user?: any }> {
     try {
       // Validate role

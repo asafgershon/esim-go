@@ -957,6 +957,8 @@ type CheckoutSession {
   pricing: JSON
   steps: JSON
   paymentStatus: String
+  paymentUrl: String # URL to redirect for payment
+  paymentIntentId: String # Payment intent identifier
   metadata: JSON
   orderId: ID # Order ID after completion
 }

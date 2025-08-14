@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'bun:test';
-import { CheckoutSessionRepository } from '../../../src/repositories/checkout/checkout-session.repository';
+import { describe, it, expect } from 'vitest';
+import { CheckoutSessionRepository } from '../../../src/repositories/checkout-session.repository';
 
 describe('CheckoutSessionRepository', () => {
   // TODO: Add test infrastructure setup

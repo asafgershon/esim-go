@@ -25,6 +25,7 @@ import { TripRepository } from "../repositories/trip.repository";
 import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CatalogSyncServiceV2 } from "../services";
+import type { CheckoutSessionService } from "../services/checkout-session.service";
 import type { ESimGoClient } from "@hiilo/client";
 import type { AirHaloClient } from "@airhalo/client";
 import type DataLoader from "dataloader";
@@ -43,6 +44,7 @@ export type Context = {
     esimGoClient: ESimGoClient;
     airHaloClient?: AirHaloClient;
     easycardPayment: typeof EasycardPayment;
+    checkoutSessionService?: CheckoutSessionService;
     pubsub?: RedisPubSub;
   };
   repositories: {

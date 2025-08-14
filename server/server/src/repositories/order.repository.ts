@@ -1,10 +1,8 @@
-import { supabaseAdmin } from '../context/supabase-auth';
-import type { Database } from '../database.types';
 import { GraphQLError } from 'graphql';
 import { z } from 'zod';
+import type { Database } from '../database.types';
 import { BaseSupabaseRepository } from './base-supabase.repository';
-import type { ESIMGoOrder } from '../datasources/esim-go';
-import type { PricingRuleCalculation } from '../types';
+import type { PricingBreakdown } from '../types';
 
 type OrderRow = Database['public']['Tables']['esim_orders']['Row'];
 type OrderInsert = Database['public']['Tables']['esim_orders']['Insert'];
@@ -200,7 +198,7 @@ export class OrderRepository extends BaseSupabaseRepository<
 
   async createOrderWithPricing(
     orderData: Omit<OrderInsert, 'id' | 'created_at' | 'updated_at'>,
-    pricingBreakdown: PricingRuleCalculation
+    pricingBreakdown: PricingBreakdown
   ): Promise<OrderRow> {
     const orderWithPricing = {
       ...orderData,
@@ -211,20 +209,20 @@ export class OrderRepository extends BaseSupabaseRepository<
     return this.create(orderWithPricing);
   }
 
-  async updateOrderPricing(id: string, pricingBreakdown: PricingRuleCalculation): Promise<OrderRow> {
+  async updateOrderPricing(id: string, pricingBreakdown: PricingBreakdown): Promise<OrderRow> {
     return this.update(id, {
       pricing_breakdown: pricingBreakdown,
       total_price: pricingBreakdown.priceAfterDiscount,
     });
   }
 
-  async getOrderWithPricing(id: string): Promise<(OrderRow & { pricingBreakdown: PricingRuleCalculation }) | null> {
+  async getOrderWithPricing(id: string): Promise<(OrderRow & { pricingBreakdown: PricingBreakdown }) | null> {
     const order = await this.getById(id);
     if (!order) return null;
 
     return {
       ...order,
-      pricingBreakdown: order.pricing_breakdown as PricingRuleCalculation,
+      pricingBreakdown: order.pricing_breakdown as PricingBreakdown,
     };
   }
 }

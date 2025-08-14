@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import { getPubSub, PubSubEvents } from "../context/pubsub";
+import { createCheckoutSessionService, CheckoutState } from "../services/checkout-session.service";
 import type {
   SubscriptionResolvers,
   CheckoutSessionUpdate,
@@ -37,6 +38,60 @@ function validateCheckoutToken(token: string): { userId: string; sessionId: stri
   }
 }
 
+// Format session for subscription response
+function formatSessionForSubscription(session: any, token: string): CheckoutSession {
+  const planSnapshot = session.metadata?.planSnapshot || 
+    (typeof session.plan_snapshot === 'string' 
+      ? JSON.parse(session.plan_snapshot) 
+      : session.plan_snapshot);
+  
+  // Import mapStateToSteps from the service
+  const { mapStateToSteps } = require('../services/checkout-session.service');
+  
+  // Generate steps from the current state
+  const steps = mapStateToSteps({
+    state: session.state || session.metadata?.state || CheckoutState.INITIALIZED,
+    userId: session.user_id || session.userId,
+    paymentIntentId: session.payment_intent_id || session.paymentIntentId,
+    metadata: session.metadata || {}
+  });
+  
+  return {
+    __typename: "CheckoutSession",
+    id: session.id,
+    token,
+    expiresAt: session.expiresAt || session.expires_at,
+    isComplete: session.state === CheckoutState.PAYMENT_COMPLETED,
+    timeRemaining: Math.max(
+      0,
+      Math.floor(
+        (new Date(session.expiresAt || session.expires_at).getTime() - Date.now()) / 1000
+      )
+    ),
+    createdAt: session.createdAt || session.created_at,
+    planSnapshot,
+    pricing: session.pricing,
+    steps: steps || session.metadata?.steps || session.steps, // Fallback to stored steps if mapStateToSteps fails
+    paymentStatus: mapStateToPaymentStatus(session.state || session.metadata?.state || CheckoutState.INITIALIZED),
+    orderId: session.orderId || session.order_id || null,
+    metadata: session.metadata,
+  } as CheckoutSession;
+}
+
+// Map internal state to payment status
+function mapStateToPaymentStatus(state: CheckoutState): string {
+  switch (state) {
+    case CheckoutState.PAYMENT_PROCESSING:
+      return "PROCESSING";
+    case CheckoutState.PAYMENT_COMPLETED:
+      return "SUCCEEDED";
+    case CheckoutState.PAYMENT_FAILED:
+      return "FAILED";
+    default:
+      return "PENDING";
+  }
+}
+
 export const checkoutSubscriptions: SubscriptionResolvers = {
   /**
    * Real-time checkout session updates subscription
@@ -50,8 +105,24 @@ export const checkoutSubscriptions: SubscriptionResolvers = {
         });
 
         try {
+          // Initialize service if not already done
+          if (!context.services.checkoutSessionService) {
+            context.services.checkoutSessionService = createCheckoutSessionService(context);
+          }
+          
+          const service = context.services.checkoutSessionService;
+          
           // Validate token and extract session info
           const { sessionId } = validateCheckoutToken(token);
+          
+          // Validate session exists using the service
+          const session = await service.getSession(sessionId);
+          
+          if (!session) {
+            throw new GraphQLError("Session not found or expired", {
+              extensions: { code: "SESSION_NOT_FOUND" },
+            });
+          }
 
           // Get the Redis PubSub instance
           const pubsub = await getPubSub();
@@ -59,62 +130,33 @@ export const checkoutSubscriptions: SubscriptionResolvers = {
           // Create a channel specific to this session
           const channel = `${PubSubEvents.CHECKOUT_SESSION_UPDATED}:${sessionId}`;
 
-          // Fetch current session state to emit immediately
-          const currentSession = await context.repositories.checkoutSessions.getById(sessionId);
+          // Format session for GraphQL and emit initial state
+          const sessionData = formatSessionForSubscription(session, token);
           
-          if (currentSession) {
-            // Parse the session data
-            const steps = currentSession.steps || {};
-            const planSnapshotData = typeof currentSession.plan_snapshot === 'string' 
-              ? JSON.parse(currentSession.plan_snapshot) 
-              : currentSession.plan_snapshot;
-            
-            const sessionData: CheckoutSession = {
-              __typename: "CheckoutSession",
-              id: currentSession.id,
-              token,
-              expiresAt: currentSession.expires_at,
-              isComplete: currentSession.is_complete || false,
-              timeRemaining: Math.max(
-                0,
-                Math.floor(
-                  (new Date(currentSession.expires_at).getTime() - Date.now()) / 1000
-                )
-              ),
-              createdAt: currentSession.created_at,
-              planSnapshot: planSnapshotData,
-              pricing: currentSession.pricing as any,
-              steps: steps as any,
-              paymentStatus: currentSession.payment_status || "PENDING",
-              orderId: currentSession.order_id || null,
-              metadata: currentSession.metadata as any,
-            };
+          const initialUpdate: CheckoutSessionUpdate = {
+            __typename: "CheckoutSessionUpdate",
+            session: sessionData,
+            updateType: "INITIAL" as CheckoutUpdateType,
+            timestamp: new Date().toISOString(),
+          };
 
-            // Immediately publish current state as initial update
-            const initialUpdate: CheckoutSessionUpdate = {
-              __typename: "CheckoutSessionUpdate",
-              session: sessionData,
-              updateType: "INITIAL" as CheckoutUpdateType, // You may need to add this to the enum
-              timestamp: new Date().toISOString(),
-            };
-
-            // Use setImmediate to emit the initial state after subscription is established
-            setImmediate(async () => {
-              await pubsub.publish(channel, {
-                checkoutSessionUpdated: initialUpdate,
-              });
-              
-              logger.debug("Published initial session state", {
-                sessionId,
-                hasMetadata: !!currentSession.metadata,
-                operationType: "subscription-initial-state",
-              });
+          // Use setImmediate to emit the initial state after subscription is established
+          setImmediate(async () => {
+            await pubsub.publish(channel, {
+              checkoutSessionUpdated: initialUpdate,
             });
-          }
+            
+            logger.debug("Published initial session state", {
+              sessionId,
+              state: session.state,
+              operationType: "subscription-initial-state",
+            });
+          });
 
           logger.info("Checkout subscription setup successful", {
             sessionId,
             channel,
+            state: session.state,
             operationType: "subscription-setup-success",
           });
 
@@ -151,6 +193,7 @@ export const checkoutSubscriptions: SubscriptionResolvers = {
 };
 
 // Helper function to publish checkout session updates
+// This is now mostly handled by the service, but kept for backward compatibility
 export async function publishCheckoutSessionUpdate(
   sessionId: string,
   session: CheckoutSession,

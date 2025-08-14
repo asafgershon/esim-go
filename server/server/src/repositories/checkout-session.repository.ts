@@ -168,4 +168,49 @@ export class CheckoutSessionRepository extends BaseSupabaseRepository<
 
     return count || 0;
   }
+
+  async findByPaymentIntent(paymentIntentId: string): Promise<CheckoutSessionRow | null> {
+    const { data: session, error } = await this.supabase
+      .from('checkout_sessions')
+      .select('*')
+      .eq('payment_intent_id', paymentIntentId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // Not found
+      }
+      this.handleError(error, 'fetching checkout session by payment intent');
+    }
+
+    if (session?.steps) {
+      this.validateSteps(session.steps);
+    }
+
+    return session;
+  }
+
+  async findExpired(): Promise<CheckoutSessionRow[]> {
+    const { data: sessions, error } = await this.supabase
+      .from('checkout_sessions')
+      .select('*')
+      .lt('expires_at', new Date().toISOString())
+      .not('payment_status', 'eq', 'SUCCEEDED');
+
+    if (error) {
+      this.handleError(error, 'fetching expired sessions');
+    }
+
+    return sessions || [];
+  }
+
+  async withTransaction<T>(
+    operation: (trx: any) => Promise<T>
+  ): Promise<T> {
+    // Supabase doesn't support transactions directly via the client SDK
+    // For now, we'll execute the operation directly
+    // In production, you might want to use raw SQL with BEGIN/COMMIT/ROLLBACK
+    // or use a different approach for atomic operations
+    return operation(this.supabase);
+  }
 }

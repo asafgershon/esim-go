@@ -38,10 +38,8 @@ export const env = cleanEnv(process.env, {
   // EasyCard Payment Configuration
   EASYCARD_API_KEY: str({ default: "" }),
   EASYCARD_IDENTITY_URL: str({ default: "https://identity.e-c.co.il" }),
-  EASYCARD_API_KEY: str({ default: "" }),
   EASYCARD_API_URL: str({ default: "https://ecng-transactions.azurewebsites.net" }),
   EASYCARD_MERCHANT_URL: str({ default: "https://ecng-merchant.azurewebsites.net" }),
-  EASYCARD_IDENTITY_URL: str({ default: "https://ecng-identity.azurewebsites.net" }),
   EASYCARD_TERMINAL_ID: str({ default: "" }),
   EASYCARD_WEBHOOK_SECRET: str({ default: "" }),
   EASYCARD_MODE: str({ choices: ["test", "production"], default: "test" }),
