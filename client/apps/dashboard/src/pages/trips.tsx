@@ -29,8 +29,10 @@ interface Country {
 interface Trip {
   id: string
   name: string
+  title: string
   description: string
-  regionId: string
+  bundleName: string
+  regionId?: string
   countryIds: string[]
   countries: Country[]
   createdAt: string

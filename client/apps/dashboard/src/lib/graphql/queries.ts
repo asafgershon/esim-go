@@ -207,15 +207,10 @@ export const GET_TRIPS = gql(`
     trips {
       id
       name
+      title
       description
+      bundleName
       region
-      countries {
-        iso
-        name
-      }
-      createdAt
-      updatedAt
-      createdBy
       countries {
         iso
         name
@@ -223,6 +218,9 @@ export const GET_TRIPS = gql(`
         region
         flag
       }
+      createdAt
+      updatedAt
+      createdBy
     }
   }
 `);
@@ -235,15 +233,10 @@ export const CREATE_TRIP = gql(`
       trip {
         id
         name
+        title
         description
+        bundleName
         region
-        countries {
-          iso
-          name
-        }
-        createdAt
-        updatedAt
-        createdBy
         countries {
           iso
           name
@@ -251,6 +244,9 @@ export const CREATE_TRIP = gql(`
           region
           flag
         }
+        createdAt
+        updatedAt
+        createdBy
       }
     }
   }
@@ -264,7 +260,9 @@ export const UPDATE_TRIP = gql(`
       trip {
         id
         name
+        title
         description
+        bundleName
         region
         countries {
           iso
@@ -276,13 +274,6 @@ export const UPDATE_TRIP = gql(`
         createdAt
         updatedAt
         createdBy
-        countries {
-          iso
-          name
-          nameHebrew
-          region
-          flag
-        }
       }
     }
   }

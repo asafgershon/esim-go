@@ -66,8 +66,6 @@ const data = {
       title: "Trips",
       url: "/trips",
       icon: MapPin,
-      disabled: true,
-      tooltipText: "Soon",
     },
     {
       title: "Pricing",
