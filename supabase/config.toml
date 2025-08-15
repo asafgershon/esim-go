@@ -114,7 +114,7 @@ template = "Your code is {{ .Code }} ."
 [auth.sms.twilio]
 enabled = false
 account_sid = ""
-message_service_sid = ""
+message_service_sid = "MG535306f721c51cba80e15ad965a595b7"
 # DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
 auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 
