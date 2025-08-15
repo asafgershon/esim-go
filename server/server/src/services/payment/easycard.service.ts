@@ -46,8 +46,8 @@ export async function initializeClient(): Promise<EasyCardClient> {
       environment: process.env.EASYCARD_ENVIRONMENT,
     });
     
-    // Use Prism mock client for test environment
     if (process.env.EASYCARD_ENVIRONMENT === 'test') {
+      // Use Prism mock client for automated tests
       logger.info("Using EasyCard test client (Prism mock server)", {
         operationType: "easycard-test-init",
       });
@@ -55,6 +55,31 @@ export async function initializeClient(): Promise<EasyCardClient> {
       client = createPrismClient({
         basePath: process.env.EASYCARD_MOCK_BASE_URL || 'http://localhost:4012'
       });
+    } else if (process.env.EASYCARD_ENVIRONMENT === 'development') {
+      // Use real client with test credentials for local development  
+      logger.info("Using EasyCard development client (real API with test credentials)", {
+        operationType: "easycard-development-init",
+      });
+      
+      client = EasyCardClient.fromEnv();
+      
+      // Set up token management for development with real API
+      try {
+        const accessToken = await getAccessToken();
+        client.updateConfig({
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        logger.info("EasyCard client configured with access token", {
+          operationType: "easycard-token-init",
+        });
+      } catch (error) {
+        logger.error("Failed to get initial access token", {
+          error: error instanceof Error ? error.message : "Unknown error",
+          operationType: "easycard-token-init-error",
+        });
+      }
     } else {
       // Use real client for production
       logger.info("Using EasyCard production client", {
@@ -63,7 +88,7 @@ export async function initializeClient(): Promise<EasyCardClient> {
       
       client = EasyCardClient.fromEnv();
       
-      // Only set up token management for production
+      // Set up token management for production
       try {
         const accessToken = await getAccessToken();
         client.updateConfig({
@@ -123,7 +148,7 @@ let tokenRequestPromise: Promise<string> | null = null;
 
 /**
  * Get access token with caching support
- * Only used for production environment - test doesn't need real tokens
+ * Used for development and production environments - test uses mock tokens
  */
 export async function getAccessToken(): Promise<string> {
   // For test environment, return a mock token immediately
@@ -201,7 +226,7 @@ export async function getAccessToken(): Promise<string> {
 
 
 /**
- * Ensure the client has a valid access token (production only)
+ * Ensure the client has a valid access token (development and production)
  */
 export async function ensureValidToken(): Promise<void> {
   // Test environment doesn't need real token management
@@ -232,7 +257,7 @@ export async function ensureValidToken(): Promise<void> {
 }
 
 /**
- * Execute an API call with automatic token refresh on 401 (production only)
+ * Execute an API call with automatic token refresh on 401 (development and production)
  */
 export async function executeWithTokenRefresh<T>(
   operation: () => Promise<T>,

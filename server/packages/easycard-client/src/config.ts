@@ -30,8 +30,8 @@ export const env = cleanEnv(process.env, {
   
   // Environment mode
   EASYCARD_ENVIRONMENT: str({ 
-    choices: ["test", "production"],
-    default: isTestEnvironment ? 'test' : 'production',
+    choices: ["test", "development", "production"],
+    default: isTestEnvironment ? 'test' : 'development',
   }),
   
   // Private API key (for OAuth)

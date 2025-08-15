@@ -19,7 +19,9 @@ export const tripsResolvers: Resolvers = {
           return {
             id: trip.id,
             name: trip.name,
+            title: trip.title || trip.name, // Fallback to name if title is null
             description: trip.description,
+            bundleName: trip.bundle_name || '', // Fallback to empty string if bundle_name is null
             regionId: trip.region_id,
             countries: countryIds.map(id => ({
               iso: id,
@@ -59,21 +61,24 @@ export const tripsResolvers: Resolvers = {
           });
         }
 
-        // Validate country codes exist in catalog
-        const validCountryCodes = await context.repositories.bundles.getCountries();
-        const invalidCountries = input.countryIds.filter(id => !validCountryCodes.includes(id));
-        
-        if (invalidCountries.length > 0) {
-          throw new GraphQLError(`Invalid country codes: ${invalidCountries.join(', ')}`, {
-            extensions: { code: 'INVALID_COUNTRY_CODES' },
+        // Validate that bundle exists in catalog
+        const { data: bundleData, error: bundleError } = await supabaseAdmin
+          .from('catalog_bundles')
+          .select('esim_go_name, region, countries')
+          .eq('esim_go_name', input.bundleName)
+          .single();
+
+        if (bundleError || !bundleData) {
+          throw new GraphQLError(`Bundle not found: ${input.bundleName}`, {
+            extensions: { code: 'BUNDLE_NOT_FOUND' },
           });
         }
 
         const createInput: CreateTripInput = {
           name: input.name,
+          title: input.title,
           description: input.description,
-          regionId: input.regionId,
-          countryIds: input.countryIds,
+          bundleName: input.bundleName,
         };
 
         const trip = await context.repositories.trips.createTrip(createInput, userId);
@@ -84,7 +89,9 @@ export const tripsResolvers: Resolvers = {
           trip: {
             id: trip.id,
             name: trip.name,
+            title: trip.title,
             description: trip.description,
+            bundleName: trip.bundle_name,
             regionId: trip.region_id,
             countryIds: Array.isArray(trip.country_ids) ? trip.country_ids : [] as any,
             countries: [],
@@ -128,22 +135,25 @@ export const tripsResolvers: Resolvers = {
           });
         }
 
-        // Validate country codes exist in catalog
-        const validCountryCodes = await context.repositories.bundles.getCountries();
-        const invalidCountries = input.countryIds.filter(id => !validCountryCodes.includes(id));
-        
-        if (invalidCountries.length > 0) {
-          throw new GraphQLError(`Invalid country codes: ${invalidCountries.join(', ')}`, {
-            extensions: { code: 'INVALID_COUNTRY_CODES' },
+        // Validate that bundle exists in catalog
+        const { data: bundleData, error: bundleError } = await supabaseAdmin
+          .from('catalog_bundles')
+          .select('esim_go_name, region, countries')
+          .eq('esim_go_name', input.bundleName)
+          .single();
+
+        if (bundleError || !bundleData) {
+          throw new GraphQLError(`Bundle not found: ${input.bundleName}`, {
+            extensions: { code: 'BUNDLE_NOT_FOUND' },
           });
         }
 
         const updateInput: UpdateTripInput = {
           id: input.id,
           name: input.name,
+          title: input.title,
           description: input.description,
-          regionId: input.regionId,
-          countryIds: input.countryIds,
+          bundleName: input.bundleName,
         };
 
         const trip = await context.repositories.trips.updateTrip(updateInput, userId);
@@ -154,7 +164,9 @@ export const tripsResolvers: Resolvers = {
           trip: {
             id: trip.id,
             name: trip.name,
+            title: trip.title,
             description: trip.description,
+            bundleName: trip.bundle_name,
             regionId: trip.region_id,
             countryIds: Array.isArray(trip.country_ids) ? trip.country_ids : [] as any,
             countries: [],

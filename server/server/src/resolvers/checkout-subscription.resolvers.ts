@@ -56,6 +56,10 @@ function formatSessionForSubscription(session: any, token: string): CheckoutSess
     metadata: session.metadata || {}
   });
   
+  // Extract payment URL from metadata (same as regular checkout resolver)
+  const paymentUrl = (session.metadata as any)?.paymentIntent?.url || null;
+  const paymentIntentId = session.payment_intent_id || session.paymentIntentId || null;
+  
   return {
     __typename: "CheckoutSession",
     id: session.id,
@@ -73,6 +77,8 @@ function formatSessionForSubscription(session: any, token: string): CheckoutSess
     pricing: session.pricing,
     steps: steps || session.metadata?.steps || session.steps, // Fallback to stored steps if mapStateToSteps fails
     paymentStatus: mapStateToPaymentStatus(session.state || session.metadata?.state || CheckoutState.INITIALIZED),
+    paymentUrl,
+    paymentIntentId,
     orderId: session.orderId || session.order_id || null,
     metadata: session.metadata,
   } as CheckoutSession;

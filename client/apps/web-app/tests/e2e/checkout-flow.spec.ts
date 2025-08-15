@@ -534,4 +534,151 @@ test.describe('Checkout Flow E2E', () => {
     
     console.log('✅ Authentication and checkout flow completed successfully!');
   });
+
+  test('Payment buttons and forms appear in checkout page', async ({ page }) => {
+    console.log('🔄 Testing payment section visibility...');
+    
+    // Navigate directly to a checkout page with valid session to skip initial flow
+    // This simulates a user who has already gone through country selection
+    await page.goto('/');
+    await page.waitForTimeout(2000);
+    
+    // Clear any existing auth/session
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
+    // Quick flow to get to checkout page
+    const destinationsSection = page.locator('#destinations');
+    if (await destinationsSection.count() > 0) {
+      await destinationsSection.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(1000);
+      
+      const usaCard = page.locator('h4:text("USA")').first();
+      if (await usaCard.isVisible().catch(() => false)) {
+        const parentCard = usaCard.locator('../..');
+        await parentCard.click();
+        await page.waitForTimeout(2000);
+      }
+    }
+
+    // Navigate to checkout
+    const checkoutButton = page.locator('button').filter({ 
+      hasText: /לרכישת החבילה|Checkout|Purchase/ 
+    }).first();
+    
+    await expect(checkoutButton).toBeVisible({ timeout: 10000 });
+    await checkoutButton.click();
+    
+    // Wait for checkout page
+    await expect(page).toHaveURL(/\/checkout/, { timeout: 15000 });
+    await page.waitForURL(/token=/, { timeout: 30000 });
+    
+    // Wait for checkout content to load
+    await page.waitForTimeout(3000);
+    
+    // Step 1: Check for payment section header
+    console.log('🔄 Step 1: Checking payment section header...');
+    const paymentHeader = page.locator('text="פרטי תשלום"');
+    await expect(paymentHeader).toBeVisible({ timeout: 10000 });
+    console.log('✓ Payment section header found');
+    
+    // Step 2: Check for card input fields
+    console.log('🔄 Step 2: Checking card input fields...');
+    
+    // Card number field
+    const cardNumberInput = page.locator('input[placeholder*="1234"], input[id*="card"], input[placeholder*="כרטיס"]');
+    await expect(cardNumberInput).toBeVisible({ timeout: 10000 });
+    console.log('✓ Card number input found');
+    
+    // Expiry field
+    const expiryInput = page.locator('input[placeholder*="MM/YY"], input[placeholder*="תפוגה"]');
+    await expect(expiryInput).toBeVisible({ timeout: 5000 });
+    console.log('✓ Expiry input found');
+    
+    // CVV field
+    const cvvInput = page.locator('input[placeholder*="123"], input[placeholder*="CVV"]');
+    await expect(cvvInput).toBeVisible({ timeout: 5000 });
+    console.log('✓ CVV input found');
+    
+    // Step 3: Check for payment buttons
+    console.log('🔄 Step 3: Checking payment buttons...');
+    
+    // Look for primary payment button
+    const paymentButtons = page.locator('button').filter({ 
+      hasText: /שלח תשלום|המשך לתשלום|לתשלום|תשלום/ 
+    });
+    
+    const buttonCount = await paymentButtons.count();
+    expect(buttonCount).toBeGreaterThan(0);
+    console.log(`✓ Found ${buttonCount} payment button(s)`);
+    
+    // Get button texts
+    const buttonTexts = await paymentButtons.allTextContents();
+    console.log('Payment button texts:', buttonTexts);
+    
+    // Step 4: Check for security notice
+    console.log('🔄 Step 4: Checking security notice...');
+    const securityNotice = page.locator('text=/מוצפן|מאובטח|secure|encrypted/i');
+    if (await securityNotice.count() > 0) {
+      await expect(securityNotice.first()).toBeVisible();
+      console.log('✓ Security notice found');
+    } else {
+      console.log('⚠️ Security notice not found');
+    }
+    
+    // Step 5: Test card input functionality
+    console.log('🔄 Step 5: Testing card input functionality...');
+    
+    // Test card number formatting
+    await cardNumberInput.fill('4111111111111111');
+    const formattedValue = await cardNumberInput.inputValue();
+    console.log(`Card number formatted as: "${formattedValue}"`);
+    expect(formattedValue).toContain('4111'); // Should contain the digits
+    
+    // Test expiry formatting
+    await expiryInput.fill('1225');
+    const expiryValue = await expiryInput.inputValue();
+    console.log(`Expiry formatted as: "${expiryValue}"`);
+    expect(expiryValue).toMatch(/\d{2}\/\d{2}/); // Should be MM/YY format
+    
+    // Test CVV input
+    await cvvInput.fill('123');
+    const cvvValue = await cvvInput.inputValue();
+    expect(cvvValue).toBe('123');
+    console.log('✓ Card input formatting works correctly');
+    
+    // Step 6: Check for additional payment options (if EasyCard integration exists)
+    console.log('🔄 Step 6: Checking for additional payment options...');
+    
+    // Look for external payment buttons (EasyCard, Apple Pay, etc.)
+    const externalPaymentButtons = page.locator('button').filter({ 
+      hasText: /Apple Pay|המשך לתשלום מאובטח|תשלום חיצוני/ 
+    });
+    
+    const externalButtonCount = await externalPaymentButtons.count();
+    if (externalButtonCount > 0) {
+      console.log(`✓ Found ${externalButtonCount} external payment option(s)`);
+      const externalButtonTexts = await externalPaymentButtons.allTextContents();
+      console.log('External payment options:', externalButtonTexts);
+    } else {
+      console.log('⚠️ No external payment options found');
+    }
+    
+    // Step 7: Verify section numbering and completion status
+    console.log('🔄 Step 7: Verifying section structure...');
+    
+    // Look for section numbers
+    const sectionNumbers = page.locator('text=/^[1-4]$/');
+    const sectionCount = await sectionNumbers.count();
+    console.log(`Found ${sectionCount} numbered sections`);
+    
+    // Look for completion indicators
+    const completionIndicators = page.locator('[data-testid*="completed"], .completed, text=/✓|הושלם|completed/i');
+    const completedSections = await completionIndicators.count();
+    console.log(`Found ${completedSections} completion indicators`);
+    
+    console.log('✅ Payment section verification completed successfully!');
+  });
 });

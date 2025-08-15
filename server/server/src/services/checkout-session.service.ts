@@ -109,83 +109,8 @@ const validateStateTransition = (
 };
 
 // ===============================================
-// SESSION LOCKING UTILITIES
+// CORE SESSION OPERATIONS 
 // ===============================================
-
-const acquireSessionLock = async (
-  redis: any,
-  sessionId: string,
-  ttlMs: number = 5000,
-  retries: number = 3,
-  retryDelayMs: number = 100
-): Promise<string | null> => {
-  const lockKey = `checkout:lock:${sessionId}`;
-  const lockValue = crypto.randomUUID();
-  
-  // If redis is actually a Keyv instance, use its methods
-  if (redis.set && !redis.eval) {
-    // This is Keyv, not raw Redis
-    for (let i = 0; i < retries; i++) {
-      const existingLock = await redis.get(lockKey);
-      if (!existingLock) {
-        await redis.set(lockKey, lockValue, ttlMs);
-        return lockValue;
-      }
-      
-      // If not the last retry, wait before trying again
-      if (i < retries - 1) {
-        await new Promise(resolve => setTimeout(resolve, retryDelayMs * (i + 1)));
-      }
-    }
-    return null;
-  }
-  
-  // Raw Redis client
-  for (let i = 0; i < retries; i++) {
-    const acquired = await redis.set(lockKey, lockValue, 'NX', 'PX', ttlMs);
-    if (acquired === 'OK') {
-      return lockValue;
-    }
-    
-    // If not the last retry, wait before trying again
-    if (i < retries - 1) {
-      await new Promise(resolve => setTimeout(resolve, retryDelayMs * (i + 1)));
-    }
-  }
-  
-  return null;
-};
-
-const releaseSessionLock = async (
-  redis: any,
-  sessionId: string,
-  lockValue: string
-): Promise<boolean> => {
-  const lockKey = `checkout:lock:${sessionId}`;
-  
-  // If redis is actually a Keyv instance, use its methods
-  if (redis.set && !redis.eval) {
-    // This is Keyv, not raw Redis
-    const existingLock = await redis.get(lockKey);
-    if (existingLock === lockValue) {
-      await redis.delete(lockKey);
-      return true;
-    }
-    return false;
-  }
-  
-  // Raw Redis client - use Lua script to ensure we only delete our own lock
-  const script = `
-    if redis.call("get", KEYS[1]) == ARGV[1] then
-      return redis.call("del", KEYS[1])
-    else
-      return 0
-    end
-  `;
-  
-  const result = await redis.eval(script, 1, lockKey, lockValue);
-  return result === 1;
-};
 
 // ===============================================
 // PUBSUB INTEGRATION
@@ -450,14 +375,6 @@ export const authenticateSession = async (
   sessionId: string,
   userId: string
 ): Promise<CheckoutSession> => {
-  const lockValue = await acquireSessionLock(context.services.redis, sessionId, 5000, 5, 200);
-  
-  if (!lockValue) {
-    logger.warn('Failed to acquire lock for authentication', { sessionId, userId });
-    throw new GraphQLError('Session is busy, please try again', {
-      extensions: { code: 'SESSION_BUSY', retryAfter: 1000 }
-    });
-  }
   
   try {
     // Get current session
@@ -577,8 +494,9 @@ export const authenticateSession = async (
     await publishSessionUpdate(mappedSession, CheckoutUpdateType.StepCompleted, context);
     
     return mappedSession;
-  } finally {
-    await releaseSessionLock(context.services.redis, sessionId, lockValue);
+  } catch (error) {
+    logger.error('Failed to authenticate session', error as Error, { sessionId, userId });
+    throw error;
   }
 };
 
@@ -594,14 +512,6 @@ export const setDeliveryMethod = async (
     phoneNumber?: string;
   }
 ): Promise<CheckoutSession> => {
-  const lockValue = await acquireSessionLock(context.services.redis, sessionId, 5000, 5, 200);
-  
-  if (!lockValue) {
-    logger.warn('Failed to acquire lock for delivery method', { sessionId });
-    throw new GraphQLError('Session is busy, please try again', {
-      extensions: { code: 'SESSION_BUSY', retryAfter: 1000 }
-    });
-  }
   
   try {
     const session = await context.repositories.checkoutSessions.getById(sessionId);
@@ -668,8 +578,9 @@ export const setDeliveryMethod = async (
     await publishSessionUpdate(mappedSession, CheckoutUpdateType.StepCompleted, context);
     
     return mappedSession;
-  } finally {
-    await releaseSessionLock(context.services.redis, sessionId, lockValue);
+  } catch (error) {
+    logger.error('Failed to set delivery method', error as Error, { sessionId });
+    throw error;
   }
 };
 
@@ -680,13 +591,6 @@ export const preparePayment = async (
   context: Context,
   sessionId: string
 ): Promise<CheckoutSession> => {
-  const lockValue = await acquireSessionLock(context.services.redis, sessionId);
-  
-  if (!lockValue) {
-    throw new GraphQLError('Session is currently being modified', {
-      extensions: { code: 'CONCURRENT_MODIFICATION' }
-    });
-  }
   
   try {
     const session = await context.repositories.checkoutSessions.getById(sessionId);
@@ -730,8 +634,9 @@ export const preparePayment = async (
     await publishSessionUpdate(mappedSession, CheckoutUpdateType.StepCompleted, context);
     
     return mappedSession;
-  } finally {
-    await releaseSessionLock(context.services.redis, sessionId, lockValue);
+  } catch (error) {
+    logger.error('Failed to prepare payment', error as Error, { sessionId });
+    throw error;
   }
 };
 
@@ -746,13 +651,6 @@ export const processPayment = async (
   orderId?: string;
   error?: string;
 }> => {
-  const lockValue = await acquireSessionLock(context.services.redis, sessionId, 10000); // 10 second lock for payment
-  
-  if (!lockValue) {
-    throw new GraphQLError('Payment already in progress', {
-      extensions: { code: 'PAYMENT_IN_PROGRESS' }
-    });
-  }
   
   try {
     const session = await context.repositories.checkoutSessions.getById(sessionId);
@@ -811,8 +709,9 @@ export const processPayment = async (
       orderId: undefined, // Will be set by webhook
       error: undefined
     };
-  } finally {
-    await releaseSessionLock(context.services.redis, sessionId, lockValue);
+  } catch (error) {
+    logger.error('Failed to process payment', error as Error, { sessionId });
+    throw error;
   }
 };
 
@@ -833,13 +732,6 @@ export const handlePaymentWebhook = async (
   if (!session) {
     logger.warn('No session found for payment intent', { paymentIntentId });
     return;
-  }
-  
-  const lockValue = await acquireSessionLock(context.services.redis, session.id, 15000);
-  
-  if (!lockValue) {
-    // Webhook will be retried by payment provider
-    throw new Error('Could not acquire lock for webhook processing');
   }
   
   try {
@@ -867,8 +759,9 @@ export const handlePaymentWebhook = async (
         await publishSessionUpdate(mappedSession, CheckoutUpdateType.PaymentFailed, context);
       }
     }
-  } finally {
-    await releaseSessionLock(context.services.redis, session.id, lockValue);
+  } catch (error) {
+    logger.error('Failed to handle payment webhook', error as Error, { paymentIntentId, sessionId: session.id });
+    throw error;
   }
 };
 
@@ -913,15 +806,6 @@ const renewPaymentIntent = async (
   context: Context,
   session: any
 ): Promise<any> => {
-  const lockValue = await acquireSessionLock(context.services.redis, session.id, 5000, 5, 200);
-  
-  if (!lockValue) {
-    logger.warn('Failed to acquire lock for payment intent renewal', { sessionId: session.id });
-    throw new GraphQLError('Session is busy, please try again', {
-      extensions: { code: 'SESSION_BUSY', retryAfter: 1000 }
-    });
-  }
-  
   try {
     // Get user details (if user exists)
     let user;
@@ -1011,8 +895,9 @@ const renewPaymentIntent = async (
     });
     
     return updatedSession;
-  } finally {
-    await releaseSessionLock(context.services.redis, session.id, lockValue);
+  } catch (error) {
+    logger.error('Failed to renew payment intent', error as Error, { sessionId: session.id });
+    throw error;
   }
 };
 

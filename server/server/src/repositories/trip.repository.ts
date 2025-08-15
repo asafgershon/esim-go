@@ -9,17 +9,17 @@ type TripUpdate = Database['public']['Tables']['trips']['Update'];
 
 export interface CreateTripInput {
   name: string;
+  title: string;
   description: string;
-  regionId: string;
-  countryIds: string[];
+  bundleName: string;
 }
 
 export interface UpdateTripInput {
   id: string;
   name: string;
+  title: string;
   description: string;
-  regionId: string;
-  countryIds: string[];
+  bundleName: string;
 }
 
 export class TripRepository extends BaseSupabaseRepository<TripRow, TripInsert, TripUpdate> {
@@ -54,13 +54,28 @@ export class TripRepository extends BaseSupabaseRepository<TripRow, TripInsert, 
 
   async createTrip(input: CreateTripInput, userId: string): Promise<TripRow> {
     try {
+      // Get bundle details from catalog to populate region and countries
+      const { data: bundleData, error: bundleError } = await supabaseAdmin
+        .from('catalog_bundles')
+        .select('region, countries')
+        .eq('esim_go_name', input.bundleName)
+        .single();
+
+      if (bundleError || !bundleData) {
+        throw new GraphQLError(`Bundle not found: ${input.bundleName}`, {
+          extensions: { code: 'BUNDLE_NOT_FOUND' },
+        });
+      }
+
       const { data, error } = await supabaseAdmin
         .from('trips')
         .insert({
           name: input.name,
+          title: input.title,
           description: input.description,
-          region_id: input.regionId,
-          country_ids: input.countryIds,
+          bundle_name: input.bundleName,
+          region_id: bundleData.region || '',
+          country_ids: bundleData.countries || [],
           created_by: userId,
         })
         .select()
@@ -86,13 +101,28 @@ export class TripRepository extends BaseSupabaseRepository<TripRow, TripInsert, 
 
   async updateTrip(input: UpdateTripInput, userId: string): Promise<TripRow> {
     try {
+      // Get bundle details from catalog to populate region and countries
+      const { data: bundleData, error: bundleError } = await supabaseAdmin
+        .from('catalog_bundles')
+        .select('region, countries')
+        .eq('esim_go_name', input.bundleName)
+        .single();
+
+      if (bundleError || !bundleData) {
+        throw new GraphQLError(`Bundle not found: ${input.bundleName}`, {
+          extensions: { code: 'BUNDLE_NOT_FOUND' },
+        });
+      }
+
       const { data, error } = await supabaseAdmin
         .from('trips')
         .update({
           name: input.name,
+          title: input.title,
           description: input.description,
-          region_id: input.regionId,
-          country_ids: input.countryIds,
+          bundle_name: input.bundleName,
+          region_id: bundleData.region || '',
+          country_ids: bundleData.countries || [],
           updated_at: new Date().toISOString(),
         })
         .eq('id', input.id)

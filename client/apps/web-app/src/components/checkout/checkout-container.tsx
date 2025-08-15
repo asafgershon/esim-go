@@ -16,6 +16,12 @@ import { CheckoutStepType } from "@/__generated__/graphql";
 import { ErrorDisplay } from "@/components/error-display";
 import { parseGraphQLError, ErrorType } from "@/lib/error-types";
 
+interface PaymentIntentUrls {
+  paymentIntentId?: string;
+  url?: string;
+  applePayJavaScriptUrl?: string;
+}
+
 export function CheckoutContainer() {
   const router = useRouter();
   const { user } = useAuth();
@@ -29,9 +35,6 @@ export function CheckoutContainer() {
   } = useCheckoutUrlState();
 
   // UI state
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [validationStatus, setValidationStatus] = useState<"pending" | "valid" | "invalid" | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -289,17 +292,11 @@ export function CheckoutContainer() {
           
           <PaymentSection
             sectionNumber={4}
-            cardNumber={cardNumber}
-            setCardNumber={setCardNumber}
-            expiry={expiry}
-            setExpiry={setExpiry}
-            cvv={cvv}
-            setCvv={setCvv}
             onPaymentSubmit={handlePaymentSubmit}
             isProcessing={isProcessing}
             canSubmit={canSubmitPayment}
             isCompleted={!!session?.steps?.payment?.completed}
-            paymentIntentUrls={(session?.metadata as any)?.paymentIntent}
+            paymentIntentUrls={(session?.metadata as Record<string, unknown>)?.paymentIntent as PaymentIntentUrls}
           />
           {/* Payment processing screen */}
           {isProcessing && (

@@ -18,7 +18,8 @@ interface OrderDetailsSectionProps {
 export function OrderDetailsSection({
   session,
   sectionNumber,
-  validationStatus,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  validationStatus: _validationStatus,
   isCompleted = false,
 }: OrderDetailsSectionProps) {
   // Extract session data (already parsed JSON objects, not strings)

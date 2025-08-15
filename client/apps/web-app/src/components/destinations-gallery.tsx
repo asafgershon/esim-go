@@ -153,7 +153,7 @@ export function DestinationsGallery({
         {/* Header */}
         <div className="text-right mb-12 max-w-4xl mx-auto">
           <h2 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-2">
-            שירות זמין ב- <span className="text-[#535FC8]">+100</span>
+            שירות זמין ב  <span className="text-[#535FC8]">+100</span>
           </h2>
           <h3 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-6">
             מדינות ברחבי העולם
