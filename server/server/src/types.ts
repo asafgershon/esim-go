@@ -398,7 +398,9 @@ export type CheckoutSession = {
   isComplete: Scalars['Boolean']['output'];
   metadata?: Maybe<Scalars['JSON']['output']>;
   orderId?: Maybe<Scalars['ID']['output']>;
+  paymentIntentId?: Maybe<Scalars['String']['output']>;
   paymentStatus?: Maybe<Scalars['String']['output']>;
+  paymentUrl?: Maybe<Scalars['String']['output']>;
   planSnapshot?: Maybe<Scalars['JSON']['output']>;
   pricing?: Maybe<Scalars['JSON']['output']>;
   steps?: Maybe<Scalars['JSON']['output']>;
@@ -508,10 +510,10 @@ export type CreateTenantInput = {
 };
 
 export type CreateTripInput = {
-  countryIds: Array<Scalars['ISOCountryCode']['input']>;
+  bundleName: Scalars['String']['input'];
   description: Scalars['String']['input'];
   name: Scalars['String']['input'];
-  regionId: Scalars['String']['input'];
+  title: Scalars['String']['input'];
 };
 
 export type CreateTripResponse = {
@@ -1755,6 +1757,7 @@ export type TriggerSyncResponse = {
 
 export type Trip = {
   __typename?: 'Trip';
+  bundleName?: Maybe<Scalars['String']['output']>;
   countries: Array<Country>;
   countryIds: Array<Scalars['ISOCountryCode']['output']>;
   createdAt: Scalars['String']['output'];
@@ -1763,6 +1766,7 @@ export type Trip = {
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   region: Scalars['String']['output'];
+  title?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['String']['output'];
 };
 
@@ -1833,11 +1837,11 @@ export type UpdateTenantInput = {
 };
 
 export type UpdateTripInput = {
-  countryIds: Array<Scalars['ISOCountryCode']['input']>;
+  bundleName: Scalars['String']['input'];
   description: Scalars['String']['input'];
   id: Scalars['ID']['input'];
   name: Scalars['String']['input'];
-  regionId: Scalars['String']['input'];
+  title: Scalars['String']['input'];
 };
 
 export type UpdateTripResponse = {
@@ -2521,7 +2525,9 @@ export type CheckoutSessionResolvers<ContextType = Context, ParentType extends R
   isComplete?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   metadata?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
   orderId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  paymentIntentId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   paymentStatus?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  paymentUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   planSnapshot?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
   pricing?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
   steps?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
@@ -3220,6 +3226,7 @@ export type TriggerSyncResponseResolvers<ContextType = Context, ParentType exten
 };
 
 export type TripResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Trip'] = ResolversParentTypes['Trip']> = {
+  bundleName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   countries?: Resolver<Array<ResolversTypes['Country']>, ParentType, ContextType>;
   countryIds?: Resolver<Array<ResolversTypes['ISOCountryCode']>, ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -3228,6 +3235,7 @@ export type TripResolvers<ContextType = Context, ParentType extends ResolversPar
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   region?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  title?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
