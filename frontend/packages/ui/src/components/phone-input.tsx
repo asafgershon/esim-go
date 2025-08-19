@@ -246,6 +246,19 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
 
     return (
       <div className={cn("flex gap-2", className)}>
+           <Input
+          ref={innerRef}
+          type="tel"
+          value={getDisplayValue()}
+          onChange={handlePhoneNumberChange}
+          placeholder={placeholder}
+          className={cn(
+            "flex-1",
+            error && "border-red-500 focus:border-red-500"
+          )}
+          dir="ltr"
+          {...props}
+        />
         {showCountrySelect && (
           <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenuTrigger asChild>
@@ -290,19 +303,7 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
           </DropdownMenu>
         )}
         
-        <Input
-          ref={innerRef}
-          type="tel"
-          value={getDisplayValue()}
-          onChange={handlePhoneNumberChange}
-          placeholder={placeholder}
-          className={cn(
-            "flex-1",
-            error && "border-red-500 focus:border-red-500"
-          )}
-          dir="ltr"
-          {...props}
-        />
+     
       </div>
     );
   }

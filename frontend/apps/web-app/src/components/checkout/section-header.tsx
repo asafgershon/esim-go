@@ -80,16 +80,6 @@ export function SectionHeader({
       >
         {title}
       </motion.h2>
-      
-      {isCompleted && (
-        <motion.span
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-sm text-green-600 dark:text-green-400 font-medium mr-auto"
-        >
-          הושלם ✓
-        </motion.span>
-      )}
     </div>
   );
 }
