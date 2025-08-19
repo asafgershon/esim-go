@@ -8,7 +8,7 @@ const env = cleanEnv(process.env, {
 const apiUrl = env.NEXT_PUBLIC_GRAPHQL_ENDPOINT;
 
 const config: CodegenConfig = {
-  schema: "../../../server/server/schema.graphql",
+  schema: "../../../backend/server/schema.graphql",
   documents: ["src/**/*.tsx", "src/**/*.ts"],
   generates: {
     "./src/__generated__/": {

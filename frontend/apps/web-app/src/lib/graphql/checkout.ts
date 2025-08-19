@@ -59,6 +59,7 @@ query GetCheckoutSession($token: String!) {
       id
       orderId
       isComplete
+      isValidated
       paymentStatus
       timeRemaining
       steps
@@ -134,6 +135,7 @@ subscription CheckoutSessionUpdated($token: String!) {
       id
       orderId
       isComplete
+      isValidated
       paymentStatus
       timeRemaining
       steps

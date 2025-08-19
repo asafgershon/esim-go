@@ -194,6 +194,7 @@ export type Database = {
           plan_id: string
           plan_snapshot: Json
           pricing: Json
+          state: string | null
           steps: Json
           token_hash: string | null
           updated_at: string | null
@@ -210,6 +211,7 @@ export type Database = {
           plan_id: string
           plan_snapshot: Json
           pricing?: Json
+          state?: string | null
           steps?: Json
           token_hash?: string | null
           updated_at?: string | null
@@ -226,6 +228,7 @@ export type Database = {
           plan_id?: string
           plan_snapshot?: Json
           pricing?: Json
+          state?: string | null
           steps?: Json
           token_hash?: string | null
           updated_at?: string | null

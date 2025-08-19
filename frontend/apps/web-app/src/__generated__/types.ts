@@ -392,9 +392,12 @@ export type CheckoutSession = {
   expiresAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
   isComplete: Scalars['Boolean']['output'];
+  isValidated: Scalars['Boolean']['output'];
   metadata?: Maybe<Scalars['JSON']['output']>;
   orderId?: Maybe<Scalars['ID']['output']>;
+  paymentIntentId?: Maybe<Scalars['String']['output']>;
   paymentStatus?: Maybe<Scalars['String']['output']>;
+  paymentUrl?: Maybe<Scalars['String']['output']>;
   planSnapshot?: Maybe<Scalars['JSON']['output']>;
   pricing?: Maybe<Scalars['JSON']['output']>;
   steps?: Maybe<Scalars['JSON']['output']>;
@@ -416,6 +419,7 @@ export enum CheckoutStepType {
 }
 
 export enum CheckoutUpdateType {
+  Initial = 'INITIAL',
   OrderCreated = 'ORDER_CREATED',
   PaymentCompleted = 'PAYMENT_COMPLETED',
   PaymentProcessing = 'PAYMENT_PROCESSING',
@@ -503,10 +507,10 @@ export type CreateTenantInput = {
 };
 
 export type CreateTripInput = {
-  countryIds: Array<Scalars['ISOCountryCode']['input']>;
+  bundleName: Scalars['String']['input'];
   description: Scalars['String']['input'];
   name: Scalars['String']['input'];
-  regionId: Scalars['String']['input'];
+  title: Scalars['String']['input'];
 };
 
 export type CreateTripResponse = {
@@ -1237,8 +1241,6 @@ export type PricingStrategy = {
 };
 
 export type ProcessCheckoutPaymentInput = {
-  paymentMethodId: Scalars['String']['input'];
-  savePaymentMethod?: InputMaybe<Scalars['Boolean']['input']>;
   token: Scalars['String']['input'];
 };
 
@@ -1752,6 +1754,7 @@ export type TriggerSyncResponse = {
 
 export type Trip = {
   __typename?: 'Trip';
+  bundleName?: Maybe<Scalars['String']['output']>;
   countries: Array<Country>;
   countryIds: Array<Scalars['ISOCountryCode']['output']>;
   createdAt: Scalars['String']['output'];
@@ -1760,6 +1763,7 @@ export type Trip = {
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   region: Scalars['String']['output'];
+  title?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['String']['output'];
 };
 
@@ -1830,11 +1834,11 @@ export type UpdateTenantInput = {
 };
 
 export type UpdateTripInput = {
-  countryIds: Array<Scalars['ISOCountryCode']['input']>;
+  bundleName: Scalars['String']['input'];
   description: Scalars['String']['input'];
   id: Scalars['ID']['input'];
   name: Scalars['String']['input'];
-  regionId: Scalars['String']['input'];
+  title: Scalars['String']['input'];
 };
 
 export type UpdateTripResponse = {
@@ -1914,7 +1918,7 @@ export type GetCheckoutSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetCheckoutSessionQuery = { __typename?: 'Query', getCheckoutSession: { __typename?: 'GetCheckoutSessionResponse', success: boolean, error?: string | null, session?: { __typename?: 'CheckoutSession', id: string, orderId?: string | null, isComplete: boolean, paymentStatus?: string | null, timeRemaining?: number | null, steps?: any | null, metadata?: any | null, planSnapshot?: any | null, pricing?: any | null } | null } };
+export type GetCheckoutSessionQuery = { __typename?: 'Query', getCheckoutSession: { __typename?: 'GetCheckoutSessionResponse', success: boolean, error?: string | null, session?: { __typename?: 'CheckoutSession', id: string, orderId?: string | null, isComplete: boolean, isValidated: boolean, paymentStatus?: string | null, timeRemaining?: number | null, steps?: any | null, metadata?: any | null, planSnapshot?: any | null, pricing?: any | null } | null } };
 
 export type OrderDetailsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -1940,7 +1944,7 @@ export type CheckoutSessionUpdatedSubscriptionVariables = Exact<{
 }>;
 
 
-export type CheckoutSessionUpdatedSubscription = { __typename?: 'Subscription', checkoutSessionUpdated: { __typename?: 'CheckoutSessionUpdate', updateType: CheckoutUpdateType, timestamp: any, session: { __typename?: 'CheckoutSession', id: string, orderId?: string | null, isComplete: boolean, paymentStatus?: string | null, timeRemaining?: number | null, steps?: any | null, metadata?: any | null, planSnapshot?: any | null, pricing?: any | null } } };
+export type CheckoutSessionUpdatedSubscription = { __typename?: 'Subscription', checkoutSessionUpdated: { __typename?: 'CheckoutSessionUpdate', updateType: CheckoutUpdateType, timestamp: any, session: { __typename?: 'CheckoutSession', id: string, orderId?: string | null, isComplete: boolean, isValidated: boolean, paymentStatus?: string | null, timeRemaining?: number | null, steps?: any | null, metadata?: any | null, planSnapshot?: any | null, pricing?: any | null } } };
 
 export type SignInMutationVariables = Exact<{
   input: SignInInput;

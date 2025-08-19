@@ -396,6 +396,7 @@ export type CheckoutSession = {
   expiresAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
   isComplete: Scalars['Boolean']['output'];
+  isValidated: Scalars['Boolean']['output'];
   metadata?: Maybe<Scalars['JSON']['output']>;
   orderId?: Maybe<Scalars['ID']['output']>;
   paymentIntentId?: Maybe<Scalars['String']['output']>;
@@ -2523,6 +2524,7 @@ export type CheckoutSessionResolvers<ContextType = Context, ParentType extends R
   expiresAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isComplete?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  isValidated?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   metadata?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
   orderId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   paymentIntentId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;

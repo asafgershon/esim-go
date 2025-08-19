@@ -90,6 +90,7 @@ function formatSessionForGraphQL(session: any, token?: string) {
     token: token || "",
     expiresAt: session.expiresAt || session.expires_at,
     isComplete: session.state === CheckoutState.PAYMENT_COMPLETED,
+    isValidated: session.metadata?.isValidated || false,
     timeRemaining: Math.max(
       0,
       Math.floor(

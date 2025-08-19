@@ -952,6 +952,7 @@ type CheckoutSession {
   token: String! # JWT token for secure navigation
   expiresAt: DateTime!
   isComplete: Boolean!
+  isValidated: Boolean! # Whether the order has been validated with eSIM Go
   timeRemaining: Int # seconds until expiration
   createdAt: DateTime!
   # Additional fields for frontend
