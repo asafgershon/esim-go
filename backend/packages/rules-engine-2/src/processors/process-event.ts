@@ -1,7 +1,7 @@
 import { Event } from "json-rules-engine";
 import { AppliedRule, RuleCategory } from "../generated/types";
 import { SelectedBundleFact, PreviousBundleFact } from "../facts/bundle-facts";
-import type { StructuredLogger } from "@hiilo/utils/src/logger";
+import type { StructuredLogger } from "@hiilo/utils";
 
 interface ProcessContext {
   selectedBundle: SelectedBundleFact | null;

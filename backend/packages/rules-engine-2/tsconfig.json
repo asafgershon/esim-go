@@ -20,10 +20,10 @@
     "sourceMap": true,
     "baseUrl": ".",
   },
-  "references": [{ "path": "../utils" }],
+  
   "include": ["src/**/*", "__tests__"],
   "exclude": [
-    "node_modules",
+    "../server/node_modules",
     "dist",
     "**/*.test.ts",
     "**/*.spec.ts",

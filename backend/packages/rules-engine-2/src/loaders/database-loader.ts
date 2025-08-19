@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Rule } from 'json-rules-engine';
-import { createLogger } from '@hiilo/utils/src/logger';
+import { createLogger } from '@hiilo/utils';
 import { EventParamsSchemas } from '../schemas/event-params';
 
 const logger = createLogger({

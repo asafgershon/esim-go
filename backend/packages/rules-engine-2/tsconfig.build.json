@@ -2,10 +2,11 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
+    "skipLibCheck": true,
     "composite": false
   },
   "exclude": [
-    "node_modules",
+    "../server/node_modules",
     "dist",
     "tests",
     "**/*.test.ts",

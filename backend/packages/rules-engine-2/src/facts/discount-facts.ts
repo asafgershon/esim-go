@@ -1,5 +1,5 @@
 import { Almanac } from "json-rules-engine";
-import { createLogger } from "@hiilo/utils/src/logger";
+import { createLogger } from "@hiilo/utils";
 import { 
   loadCouponByCode, 
   getCouponUsageCount, 

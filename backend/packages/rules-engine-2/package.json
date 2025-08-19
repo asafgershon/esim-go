@@ -9,7 +9,6 @@
     "src"
   ],
   "scripts": {
-    "build": "bun tsc -p tsconfig.build.json",
     "dev": "bun tsc --watch",
     "codegen:dbtypes": "bunx supabase gen types typescript --project-id \"dgkyjkzkwzmjjurzvcxy\" --schema public > src/generated/database.types.ts || echo \"Skipping Supabase codegen (no token available)\"",
     "clean": "rm -rf dist",
@@ -21,7 +20,7 @@
   },
   "dependencies": {
     "@hiilo/utils": "workspace:*",
-    "@supabase/supabase-js": "^2.53.0",
+    "@supabase/supabase-js": "^2.55.0",
     "dot-object": "^2.1.5",
     "envalid": "^8.1.0",
     "immer": "^10.1.1",

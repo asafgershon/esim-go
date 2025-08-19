@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../supabase';
-import { createLogger } from '@hiilo/utils/src/logger';
+import { createLogger } from '@hiilo/utils';
 import { Database } from '../generated/database.types';
 
 const logger = createLogger({

@@ -1,4 +1,4 @@
-import { createLogger } from "@hiilo/utils/src/logger";
+import { createLogger } from "@hiilo/utils";
 import { Engine, Rule } from "json-rules-engine";
 import { availableBundles } from "./facts/available-bundles";
 import {

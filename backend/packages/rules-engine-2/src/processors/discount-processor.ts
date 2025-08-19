@@ -1,5 +1,5 @@
 import { Event, Almanac } from "json-rules-engine";
-import { createLogger } from "@hiilo/utils/src/logger";
+import { createLogger } from "@hiilo/utils";
 import { DiscountEventSchema } from "../blocks/discount";
 import type { CouponValidation, VolumeDiscountTier } from "../facts/discount-facts";
 import { logCouponUsage } from "../loaders/coupon-loader";
