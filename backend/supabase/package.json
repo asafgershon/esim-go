@@ -1,0 +1,21 @@
+{
+  "name": "@hiilo/supabase",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./types": "index.ts"
+  },
+  "scripts": {
+    "link": "dotenv && supabase link .",
+    "codegen": "dotenv & supabase gen types typescript --project-id ${SUPABASE_PROJECT_ID} > types.ts",
+    "codegen:local": "supabase gen types typescript --local > types.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "dotenv": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
