@@ -1,4 +1,4 @@
-import { EasyCardClient, env, createPrismClient } from "@hiilo/easycard-client";
+import { EasyCardClient, env, createPrismClient } from "@hiilo/easycard";
 import { logger } from "../../lib/logger";
 import type {
   CreatePaymentIntentRequest,
@@ -412,4 +412,4 @@ export default {
 };
 
 // Re-export types for convenience
-export type { EasyCardClient } from "@hiilo/easycard-client";
+export type { EasyCardClient } from "@hiilo/easycard";

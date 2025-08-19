@@ -1,4 +1,4 @@
-import { ESimGoClient } from "@hiilo/client";
+import { ESimGoClient } from "@hiilo/esim-go";
 import { createLogger, withPerformanceLogging } from "../lib/logger";
 import { SyncJobType } from "../types";
 import {

@@ -1,0 +1,35 @@
+{
+  "name": "@hiilo/airalo",
+  "version": "1.0.0",
+  "description": "Type-safe Airalo API client",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "generate": "bun openapi-generator-cli generate -c openapi-generator.config.yaml --skip-validate-spec",
+    "build": "bun tsc",
+    "dev": "bun tsc --watch",
+    "test": "bun test",
+    "prepublishOnly": "bun clean && bun generate && bun build"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.13.0",
+    "typescript": "^5.2.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0"
+  },
+  "keywords": [
+    "airalo",
+    "api-client",
+    "typescript",
+    "openapi",
+    "esim"
+  ]
+}

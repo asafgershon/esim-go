@@ -1,0 +1,1 @@
+A directory of auto-generated API client using openapi-generator. Alllows us ease of use and type saftey.

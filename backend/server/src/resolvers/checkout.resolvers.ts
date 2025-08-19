@@ -380,7 +380,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         }
         
         // Use the eSIM Go client to validate the order
-        const { BundleOrderTypeEnum, OrderRequestTypeEnum } = await import("@hiilo/client");
+        const { BundleOrderTypeEnum, OrderRequestTypeEnum } = await import("@hiilo/esim-go");
         
         const orderRequest = {
           type: OrderRequestTypeEnum.VALIDATE,

@@ -1,11 +1,11 @@
-import { ESimGoClient } from '@hiilo/client';
+import { ESimGoClient } from '@hiilo/esim-go';
 import { createLogger, withPerformanceLogging } from '../../lib/logger';
 import { CatalogSyncServiceV2 } from '../../services/catalog-sync-v2.service';
 import { BundleRepository } from '../../repositories/catalog';
 import type { 
   CatalogueResponseInner, 
   InventoryResponseBundlesInner 
-} from '@hiilo/client';
+} from '@hiilo/esim-go';
 import type { SearchCatalogCriteria } from '../../repositories/catalog';
 import { supabaseAdmin } from '../../context/supabase-auth';
 

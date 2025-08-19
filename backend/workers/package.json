@@ -20,7 +20,7 @@
     "postinstall": "bun run codegen && bun run codegen:dbtypes"
   },
   "dependencies": {
-    "@hiilo/client": "workspace:*",
+    "@hiilo/esim-go": "workspace:*",
     "@hiilo/utils": "workspace:*",
     "@supabase/supabase-js": "^2.38.0",
     "bullmq": "^5.0.0",

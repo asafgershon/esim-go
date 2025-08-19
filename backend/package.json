@@ -4,6 +4,8 @@
   "packageManager": "bun@1.2.9",
   "workspaces": [
     "packages/*",
+    "apis/*",
+    "utils",
     "server",
     "workers"
   ],

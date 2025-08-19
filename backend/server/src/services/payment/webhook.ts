@@ -2,7 +2,7 @@ import { createHmac } from "crypto";
 import { logger } from "../../lib/logger";
 import { getClient, getAccessToken, updateClientConfig } from "./index";
 import type { PaymentWebhookEvent, PaymentIntent } from "./types";
-import type { TransactionResponse } from "@hiilo/easycard-client";
+import type { TransactionResponse } from "@hiilo/easycard";
 
 /**
  * Webhook signature verification configuration

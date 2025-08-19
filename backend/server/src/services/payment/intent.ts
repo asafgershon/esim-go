@@ -6,7 +6,7 @@ import {
   type TransactionResponse,
   TransactionTypeEnum,
   env as easycardEnv,
-} from "@hiilo/easycard-client";
+} from "@hiilo/easycard";
 import { logger } from "../../lib/logger";
 import { executeWithTokenRefresh, getClient } from "./index";
 import type {

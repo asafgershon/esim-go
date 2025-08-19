@@ -35,7 +35,7 @@ import type {
 
   // Common types
   Address,
-} from "@hiilo/easycard-client";
+} from "@hiilo/easycard";
 
 // Import enum types
 import {
@@ -45,7 +45,7 @@ import {
   PaymentTypeEnum,
   CurrencyEnum,
   CardPresenceEnum,
-} from "@hiilo/easycard-client";
+} from "@hiilo/easycard";
 import type { Order, User } from "../../types";
 import type { CheckoutSessionPlanSnapshot } from "../../repositories";
 

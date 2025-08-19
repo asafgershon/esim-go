@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createTestContext } from '../../src/test-utils/prism-context';
 import { purchaseAndDeliverESIM } from '../../src/services/esim-purchase';
-import { OrderRequestTypeEnum, BundleOrderTypeEnum } from '@hiilo/client';
+import { OrderRequestTypeEnum, BundleOrderTypeEnum } from '@hiilo/esim-go';
 import type { Context } from '../../src/context/types';
 import ordersFixture from '../fixtures/orders.json';
 import esimsFixture from '../fixtures/esims.json';

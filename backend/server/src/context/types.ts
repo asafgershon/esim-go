@@ -26,8 +26,8 @@ import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CatalogSyncServiceV2 } from "../services";
 import type { CheckoutSessionService } from "../services/checkout-session.service";
-import type { ESimGoClient } from "@hiilo/client";
-import type { AirHaloClient } from "@airhalo/client";
+import type { ESimGoClient } from "@hiilo/esim-go";
+import type { AirHaloClient } from "@hiilo/airalo";
 import type DataLoader from "dataloader";
 import type {
   PricingKey,

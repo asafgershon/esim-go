@@ -1,0 +1,41 @@
+{
+  "name": "@hiilo/esim-go",
+  "version": "1.0.0",
+  "description": "Type-safe eSIM Go API client",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "generate": "bun openapi-generator-cli generate -c openapi-generator.config.yaml --skip-validate-spec",
+    "build": "bun tsc",
+    "dev": "bun tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:prism": "concurrently -k -s first \"bun run mock:server\" \"wait-on http://localhost:4010/health && vitest run\"",
+    "mock:server": "prism mock ./openapi-spec.yaml -p 4010 --dynamic",
+    "mock:server:verbose": "prism mock ./openapi-spec.yaml -p 4010 --dynamic --verbose",
+    "download:spec": "curl -o openapi-spec.yaml https://docs.esim-go.com/esim_go_schema_v2_4.yaml",
+    "prepublishOnly": "bun clean && bun generate && bun build"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.13.0",
+    "typescript": "^5.2.0",
+    "@types/node": "^20.0.0",
+    "@stoplight/prism-cli": "^5.8.1",
+    "vitest": "^1.2.0",
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0"
+  },
+  "keywords": [
+    "esim-go",
+    "api-client",
+    "typescript",
+    "openapi"
+  ]
+}

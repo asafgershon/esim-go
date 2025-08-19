@@ -46,14 +46,14 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@airhalo/client": "workspace:*",
+    "@hiilo/airalo": "workspace:*",
     "@apollo/datasource-rest": "^6.4.1",
     "@apollo/server": "^4.12.2",
     "@apollo/utils.keyvadapter": "^4.0.1",
     "@aws-sdk/client-ses": "^3.855.0",
     "@graphql-tools/merge": "^9.1.1",
-    "@hiilo/client": "workspace:*",
-    "@hiilo/easycard-client": "workspace:*",
+    "@hiilo/esim-go": "workspace:*",
+    "@hiilo/easycard": "workspace:*",
     "@hiilo/rules-engine-2": "workspace:*",
     "@hiilo/utils": "workspace:*",
     "@keyv/redis": "^4.6.0",

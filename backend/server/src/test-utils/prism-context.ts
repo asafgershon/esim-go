@@ -1,4 +1,4 @@
-import { ESimGoClient } from '@hiilo/client';
+import { ESimGoClient } from '@hiilo/esim-go';
 import type { Context } from '../context/types';
 import {
   CheckoutSessionRepository,

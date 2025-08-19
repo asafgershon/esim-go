@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { AirHaloClient, type AirHaloClientConfig } from '@airhalo/client';
+import { AirHaloClient, type AirHaloClientConfig } from '@hiilo/airalo';
 
 // Mock the generated API classes
 const mockPackagesApi = {
@@ -24,14 +24,14 @@ const mockManageOrdersApi = {
 const mockConfiguration = mock(() => ({}));
 
 // Mock all the generated API classes
-mock.module('@airhalo/client/generated/api', () => ({
+mock.module('@hiilo/airalo/generated/api', () => ({
   RESTAPIEndpointsBrowsePackagesApi: mock(() => mockPackagesApi),
   RESTAPIEndpointsAuthenticateApi: mock(() => mockAuthApi),
   RESTAPIEndpointsPlaceOrderApi: mock(() => mockOrdersApi),
   RESTAPIEndpointsManageOrdersESIMsApi: mock(() => mockManageOrdersApi),
 }));
 
-mock.module('@airhalo/client/generated/configuration', () => ({
+mock.module('@hiilo/airalo/generated/configuration', () => ({
   Configuration: mockConfiguration,
 }));
 

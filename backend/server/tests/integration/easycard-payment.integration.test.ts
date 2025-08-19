@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { createTestContext } from '../../src/test-utils/prism-context';
 import easycardService from '../../src/services/payment/easycard.service';
-import { EasyCardClient } from '@hiilo/easycard-client';
+import { EasyCardClient } from '@hiilo/easycard';
 import type { Context } from '../../src/context/types';
 
 // Helper function to create consistent payment requests

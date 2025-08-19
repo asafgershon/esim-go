@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createPrismClient, EasyCardClient } from '@hiilo/easycard-client';
+import { createPrismClient, EasyCardClient } from '@hiilo/easycard';
 
 describe('EasyCard Integration Summary', () => {
   it('should confirm EasyCard client is available from server', () => {

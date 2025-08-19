@@ -9,10 +9,10 @@ import { WEB_APP_BUNDLE_GROUP } from '../lib/constants/bundle-groups';
 import type { CheckoutSessionRepository } from '../repositories/checkout-session.repository';
 import type { Redis } from 'ioredis';
 import { getPubSub, PubSubEvents } from '../context/pubsub';
-import { BundleOrderTypeEnum, OrderRequestTypeEnum, type OrderResponseTransaction } from '@hiilo/client';
+import { BundleOrderTypeEnum, OrderRequestTypeEnum, type OrderResponseTransaction } from '@hiilo/esim-go';
 import { purchaseAndDeliverESIM } from './esim-purchase';
 import { OrderStatus } from '../types';
-import type { AxiosResponse } from '@hiilo/client';
+import type { AxiosResponse } from '@hiilo/esim-go';
 
 const logger = createLogger({ component: 'checkout-session-service' });
 

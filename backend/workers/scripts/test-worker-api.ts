@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import 'dotenv/config';
-import { ESimGoClient } from '@hiilo/client';
+import { ESimGoClient } from '@hiilo/esim-go';
 import { createLogger } from '@hiilo/utils';
 import { config } from '../src/config/index.js';
 
