@@ -4,62 +4,54 @@ import jwt from "jsonwebtoken";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import { getPubSub, PubSubEvents } from "../context/pubsub";
-import { createCheckoutSessionService, CheckoutState } from "../services/checkout-session.service";
+import {
+  createCheckoutSessionService,
+  CheckoutState,
+} from "../services/checkout-session.service";
 import type {
   SubscriptionResolvers,
   CheckoutSessionUpdate,
   CheckoutUpdateType,
   CheckoutSession,
 } from "../types";
+import { getCheckoutTokenService } from "../services/checkout-token.service";
 
 const logger = createLogger({
   component: "CheckoutSubscriptionResolvers",
   operationType: "graphql-subscription",
 });
 
+const checkoutTokenService = getCheckoutTokenService();
 // Validate and decode checkout token
-function validateCheckoutToken(token: string): { userId: string; sessionId: string } {
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.CHECKOUT_JWT_SECRET!
-    ) as { userId: string; sessionId: string; exp: number; iss: string };
-
-    if (decoded.iss !== "esim-go-checkout") {
-      throw new Error("Invalid token issuer");
-    }
-
-    return { userId: decoded.userId, sessionId: decoded.sessionId };
-  } catch (error) {
-    logger.error("Failed to validate checkout token", error as Error);
-    throw new GraphQLError("Invalid or expired checkout token", {
-      extensions: { code: "INVALID_TOKEN" },
-    });
-  }
-}
 
 // Format session for subscription response
-function formatSessionForSubscription(session: any, token: string): CheckoutSession {
-  const planSnapshot = session.metadata?.planSnapshot || 
-    (typeof session.plan_snapshot === 'string' 
-      ? JSON.parse(session.plan_snapshot) 
+function formatSessionForSubscription(
+  session: any,
+  token: string
+): CheckoutSession {
+  const planSnapshot =
+    session.metadata?.planSnapshot ||
+    (typeof session.plan_snapshot === "string"
+      ? JSON.parse(session.plan_snapshot)
       : session.plan_snapshot);
-  
+
   // Import mapStateToSteps from the service
-  const { mapStateToSteps } = require('../services/checkout-session.service');
-  
+  const { mapStateToSteps } = require("../services/checkout-session.service");
+
   // Generate steps from the current state
   const steps = mapStateToSteps({
-    state: session.state || session.metadata?.state || CheckoutState.INITIALIZED,
+    state:
+      session.state || session.metadata?.state || CheckoutState.INITIALIZED,
     userId: session.user_id || session.userId,
     paymentIntentId: session.payment_intent_id || session.paymentIntentId,
-    metadata: session.metadata || {}
+    metadata: session.metadata || {},
   });
-  
+
   // Extract payment URL from metadata (same as regular checkout resolver)
   const paymentUrl = (session.metadata as any)?.paymentIntent?.url || null;
-  const paymentIntentId = session.payment_intent_id || session.paymentIntentId || null;
-  
+  const paymentIntentId =
+    session.payment_intent_id || session.paymentIntentId || null;
+
   return {
     __typename: "CheckoutSession",
     id: session.id,
@@ -69,14 +61,18 @@ function formatSessionForSubscription(session: any, token: string): CheckoutSess
     timeRemaining: Math.max(
       0,
       Math.floor(
-        (new Date(session.expiresAt || session.expires_at).getTime() - Date.now()) / 1000
+        (new Date(session.expiresAt || session.expires_at).getTime() -
+          Date.now()) /
+          1000
       )
     ),
     createdAt: session.createdAt || session.created_at,
     planSnapshot,
     pricing: session.pricing,
     steps: steps || session.metadata?.steps || session.steps, // Fallback to stored steps if mapStateToSteps fails
-    paymentStatus: mapStateToPaymentStatus(session.state || session.metadata?.state || CheckoutState.INITIALIZED),
+    paymentStatus: mapStateToPaymentStatus(
+      session.state || session.metadata?.state || CheckoutState.INITIALIZED
+    ),
     paymentUrl,
     paymentIntentId,
     orderId: session.orderId || session.order_id || null,
@@ -111,34 +107,27 @@ export const checkoutSubscriptions: SubscriptionResolvers = {
         });
 
         try {
-          // Initialize service if not already done
-          if (!context.services.checkoutSessionService) {
-            context.services.checkoutSessionService = createCheckoutSessionService(context);
-          }
-          
+
           const service = context.services.checkoutSessionService;
-          
+
           // Validate token and extract session info
-          const { sessionId } = validateCheckoutToken(token);
-          
+          const { sessionId } = checkoutTokenService.validateToken(token);
+
           // Validate session exists using the service
           const session = await service.getSession(sessionId);
-          
+
           if (!session) {
             throw new GraphQLError("Session not found or expired", {
               extensions: { code: "SESSION_NOT_FOUND" },
             });
           }
 
-          // Get the Redis PubSub instance
-          const pubsub = await getPubSub();
-
           // Create a channel specific to this session
           const channel = `${PubSubEvents.CHECKOUT_SESSION_UPDATED}:${sessionId}`;
 
           // Format session for GraphQL and emit initial state
           const sessionData = formatSessionForSubscription(session, token);
-          
+
           const initialUpdate: CheckoutSessionUpdate = {
             __typename: "CheckoutSessionUpdate",
             session: sessionData,
@@ -148,10 +137,10 @@ export const checkoutSubscriptions: SubscriptionResolvers = {
 
           // Use setImmediate to emit the initial state after subscription is established
           setImmediate(async () => {
-            await pubsub.publish(channel, {
+            await context.services.pubsub.publish(channel, {
               checkoutSessionUpdated: initialUpdate,
             });
-            
+
             logger.debug("Published initial session state", {
               sessionId,
               state: session.state,
@@ -167,28 +156,41 @@ export const checkoutSubscriptions: SubscriptionResolvers = {
           });
 
           // Return the async iterator for this specific session
-          return pubsub.asyncIterator(channel);
+          return context.services.pubsub.asyncIterator(channel);
         } catch (error) {
-          logger.error("Failed to setup checkout subscription", error as Error, {
-            operationType: "subscription-setup-error",
-          });
+          logger.error(
+            "Failed to setup checkout subscription",
+            error as Error,
+            {
+              operationType: "subscription-setup-error",
+            }
+          );
 
           if (error instanceof GraphQLError) {
             throw error;
           }
 
-          throw new GraphQLError("Failed to setup checkout session subscription", {
-            extensions: {
-              code: "SUBSCRIPTION_SETUP_FAILED",
-              originalError: error instanceof Error ? error.message : String(error),
-            },
-          });
+          throw new GraphQLError(
+            "Failed to setup checkout session subscription",
+            {
+              extensions: {
+                code: "SUBSCRIPTION_SETUP_FAILED",
+                originalError:
+                  error instanceof Error ? error.message : String(error),
+              },
+            }
+          );
         }
       },
       // Filter to ensure the update is for the correct session
-      (payload: { checkoutSessionUpdated: CheckoutSessionUpdate }, variables: { token: string }) => {
+      (
+        payload: { checkoutSessionUpdated: CheckoutSessionUpdate },
+        variables: { token: string }
+      ) => {
         try {
-          const { sessionId } = validateCheckoutToken(variables.token);
+          const { sessionId } = checkoutTokenService.validateToken(
+            variables.token
+          );
           return payload.checkoutSessionUpdated.session.id === sessionId;
         } catch {
           return false;
@@ -200,7 +202,7 @@ export const checkoutSubscriptions: SubscriptionResolvers = {
 
 // Helper function to publish checkout session updates
 // This is now mostly handled by the service, but kept for backward compatibility
-export async function publishCheckoutSessionUpdate(
+export async function publish(
   sessionId: string,
   session: CheckoutSession,
   updateType: CheckoutUpdateType
@@ -208,7 +210,7 @@ export async function publishCheckoutSessionUpdate(
   try {
     const pubsub = await getPubSub();
     const channel = `${PubSubEvents.CHECKOUT_SESSION_UPDATED}:${sessionId}`;
-    
+
     const update: CheckoutSessionUpdate = {
       __typename: "CheckoutSessionUpdate",
       session,

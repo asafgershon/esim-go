@@ -10,7 +10,7 @@ const logger = createLogger({ component: "checkout-token-service" });
 
 // Token configuration
 const TOKEN_EXPIRY_SECONDS = 30 * 60; // 30 minutes
-const TOKEN_ISSUER = "esim-go-checkout";
+const TOKEN_ISSUER = "hiilo-checkout";
 
 // Validation schema
 const CheckoutSessionTokenSchema = z.object({

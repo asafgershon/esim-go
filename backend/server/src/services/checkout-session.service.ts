@@ -1,26 +1,15 @@
-import crypto from "crypto";
-import { GraphQLError } from "graphql";
-import type { Context } from "../context/types";
-import type { Database } from "../database.types";
-import { createLogger } from "../lib/logger";
 import {
   calculatePricing,
   type PricingEngineV2Result,
   type RequestFacts,
 } from "@hiilo/rules-engine-2";
-import { PaymentMethod, CheckoutUpdateType } from "../types";
-import { WEB_APP_BUNDLE_GROUP } from "../lib/constants/bundle-groups";
-import type { CheckoutSessionRepository } from "../repositories/checkout-session.repository";
-import type { Redis } from "ioredis";
+import { GraphQLError } from "graphql";
 import { getPubSub, PubSubEvents } from "../context/pubsub";
-import {
-  BundleOrderTypeEnum,
-  OrderRequestTypeEnum,
-  type OrderResponseTransaction,
-} from "@hiilo/esim-go";
+import type { Context } from "../context/types";
+import { WEB_APP_BUNDLE_GROUP } from "../lib/constants/bundle-groups";
+import { createLogger } from "../lib/logger";
+import { CheckoutUpdateType, OrderStatus, PaymentMethod } from "../types";
 import { purchaseAndDeliverESIM } from "./esim-purchase";
-import { OrderStatus } from "../types";
-import type { AxiosResponse } from "@hiilo/esim-go";
 
 const logger = createLogger({ component: "checkout-session-service" });
 
@@ -398,7 +387,7 @@ export const createSession = async (
   );
 
   // Start async validation (don't await)
-  validateSessionOrder(context, session.id, planSnapshot.name)
+  validateSessionOrder(context, session.id, planSnapshot.name || "")
     .then(() => {
       logger.info("Session validation completed", { sessionId: session.id });
     })
@@ -423,8 +412,10 @@ const validateSessionOrder = async (
     logger.info("Starting session order validation", { sessionId, bundleName });
 
     // Call eSIM Go API to validate the order
-    const { BundleOrderTypeEnum, OrderRequestTypeEnum } = await import("@hiilo/esim-go");
-    
+    const { BundleOrderTypeEnum, OrderRequestTypeEnum } = await import(
+      "@hiilo/esim-go"
+    );
+
     const orderRequest = {
       type: OrderRequestTypeEnum.VALIDATE,
       order: [
@@ -443,8 +434,10 @@ const validateSessionOrder = async (
     const isValid = Number(response.data.total) > 0;
 
     // Update session with validation result
-    const session = await context.repositories.checkoutSessions.getById(sessionId);
-    
+    const session = await context.repositories.checkoutSessions.getById(
+      sessionId
+    );
+
     if (!session) {
       logger.warn("Session not found for validation update", { sessionId });
       return;
@@ -453,13 +446,15 @@ const validateSessionOrder = async (
     const updatedMetadata = {
       ...session.metadata,
       isValidated: isValid,
-      validationDetails: isValid ? {
-        bundleDetails: response.data.order?.[0] || null,
-        totalPrice: response.data.total || null,
-        currency: response.data.currency || "USD",
-      } : {
-        error: "Order validation failed",
-      },
+      validationDetails: isValid
+        ? {
+            bundleDetails: response.data.order?.[0] || null,
+            totalPrice: response.data.total || null,
+            currency: response.data.currency || "USD",
+          }
+        : {
+            error: "Order validation failed",
+          },
     } as any;
 
     await context.repositories.checkoutSessions.update(sessionId, {
@@ -467,11 +462,13 @@ const validateSessionOrder = async (
     });
 
     // Get updated session for publishing
-    const updatedSession = await context.repositories.checkoutSessions.getById(sessionId);
-    
+    const updatedSession = await context.repositories.checkoutSessions.getById(
+      sessionId
+    );
+
     if (updatedSession) {
       const mappedSession = mapDatabaseSessionToModel(updatedSession);
-      
+
       // Publish validation update
       await publishSessionUpdate(
         mappedSession,
@@ -480,33 +477,40 @@ const validateSessionOrder = async (
       );
     }
 
-    logger.info("Session order validation completed", { 
-      sessionId, 
+    logger.info("Session order validation completed", {
+      sessionId,
       isValid,
       totalPrice: response.data.total,
     });
   } catch (error) {
-    logger.error("Failed to validate session order", error as Error, { 
+    logger.error("Failed to validate session order", error as Error, {
       sessionId,
       bundleName,
     });
-    
+
     // Update session to mark validation as failed
     try {
-      const session = await context.repositories.checkoutSessions.getById(sessionId);
+      const session = await context.repositories.checkoutSessions.getById(
+        sessionId
+      );
       if (session) {
         await context.repositories.checkoutSessions.update(sessionId, {
           metadata: {
             ...session.metadata,
             isValidated: false,
-            validationError: error instanceof Error ? error.message : "Validation failed",
+            validationError:
+              error instanceof Error ? error.message : "Validation failed",
           } as any,
         });
       }
     } catch (updateError) {
-      logger.error("Failed to update session after validation error", updateError as Error, {
-        sessionId,
-      });
+      logger.error(
+        "Failed to update session after validation error",
+        updateError as Error,
+        {
+          sessionId,
+        }
+      );
     }
   }
 };

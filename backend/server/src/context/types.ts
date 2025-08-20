@@ -44,8 +44,8 @@ export type Context = {
     esimGoClient: ESimGoClient;
     airHaloClient?: AirHaloClient;
     easycardPayment: typeof EasycardPayment;
-    checkoutSessionService?: CheckoutSessionService;
-    pubsub?: RedisPubSub;
+    checkoutSessionService: CheckoutSessionService;
+    pubsub: RedisPubSub;
   };
   repositories: {
     checkoutSessions: CheckoutSessionRepository;
