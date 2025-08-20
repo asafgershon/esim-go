@@ -15,6 +15,7 @@ import type {
   CheckoutSession,
 } from "../types";
 import { getCheckoutTokenService } from "../services/checkout-token.service";
+import { create } from "node:domain";
 
 const logger = createLogger({
   component: "CheckoutSubscriptionResolvers",
@@ -108,7 +109,7 @@ export const checkoutSubscriptions: SubscriptionResolvers = {
 
         try {
 
-          const service = context.services.checkoutSessionService;
+          const service = createCheckoutSessionService(context);
 
           // Validate token and extract session info
           const { sessionId } = checkoutTokenService.validateToken(token);

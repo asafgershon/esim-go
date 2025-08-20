@@ -10,6 +10,7 @@ import { WEB_APP_BUNDLE_GROUP } from "../lib/constants/bundle-groups";
 import { createLogger } from "../lib/logger";
 import { CheckoutUpdateType, OrderStatus, PaymentMethod } from "../types";
 import { purchaseAndDeliverESIM } from "./esim-purchase";
+import { env } from "@hiilo/easycard";
 
 const logger = createLogger({ component: "checkout-session-service" });
 
@@ -560,9 +561,15 @@ export const authenticateSession = async (
     }
 
     // For anonymous users or when user doesn't exist yet, use placeholder data
-    const userEmail = user?.email || `${userId}@checkout.esim-go.com`;
-    const userFirstName = user?.first_name || "Guest";
-    const userLastName = user?.last_name || "User";
+    const userEmail = user?.email;
+    const userFirstName = user?.first_name;
+    const userLastName = user?.last_name;
+
+    if (!userFirstName && !userLastName) {
+      throw new GraphQLError("User first name and last name are required", {
+        extensions: { code: "USER_NAME_REQUIRED" },
+      });
+    }
 
     // Parse plan snapshot
     const planSnapshot =
@@ -575,7 +582,9 @@ export const authenticateSession = async (
       .toString(36)
       .substring(2, 11)}`;
     const redirectUrl = `${
-      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+      env.isDev
+        ? "https://hiilo.loca.lt"
+        : process.env.NEXT_PUBLIC_APP_URL || "https://hiilo.loca.lt"
     }/payment/callback?sessionId=${sessionId}`;
 
     const paymentResult =
@@ -606,8 +615,8 @@ export const authenticateSession = async (
         metadata: {
           sessionId,
           planId: session.plan_id,
+          idempotencyKey: `session-${sessionId}-auth`,
         },
-        idempotencyKey: `session-${sessionId}-auth`,
       });
 
     if (!paymentResult.success || !paymentResult.payment_intent) {
@@ -1045,9 +1054,15 @@ const renewPaymentIntent = async (
     }
 
     // For anonymous users or when user doesn't exist yet, use placeholder data
-    const userEmail = user?.email || `${session.user_id}@checkout.esim-go.com`;
-    const userFirstName = user?.first_name || "Guest";
-    const userLastName = user?.last_name || "User";
+    const userEmail = user?.email;
+    const userFirstName = user?.first_name;
+    const userLastName = user?.last_name;
+
+    if (!userFirstName && !userLastName) {
+      throw new GraphQLError("User first name and last name are required", {
+        extensions: { code: "USER_NAME_REQUIRED" },
+      });
+    }
 
     // Parse plan snapshot
     const planSnapshot =
@@ -1067,7 +1082,7 @@ const renewPaymentIntent = async (
       await context.services.easycardPayment.createPaymentIntent({
         amount: planSnapshot.price,
         currency: "USD",
-        description: `eSIM purchase: ${planSnapshot.name}`,
+        description: `Hiilo eSIM - ${planSnapshot.name}`,
         costumer: {
           id: session.user_id,
           email: userEmail,

@@ -196,7 +196,7 @@ async function startServer() {
               syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
               esimGoClient,
               airHaloClient,
-              easycardPayment: EasycardPayment,
+              easycardPayment: paymentService,
               checkoutSessionService: undefined, // Will be initialized lazily in resolvers
             },
             repositories: {

@@ -21,6 +21,7 @@ export const CHECKOUT_STEP_TYPE = {
   AUTHENTICATION: "AUTHENTICATION",
   DELIVERY: "DELIVERY",
   PAYMENT: "PAYMENT",
+  VALIDATION: "VALIDATION",
 } as const;
 
 // Update types for subscriptions

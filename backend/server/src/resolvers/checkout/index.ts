@@ -30,20 +30,21 @@ export const checkoutResolvers: Partial<Resolvers> = {
       try {
         // Validate input
         const { token } = validateGetSessionInput(args);
-        
+
         // Get services
         const tokenService = getCheckoutTokenService();
-        const sessionService = context.services.checkoutSessionService || 
+        const sessionService =
+          context.services.checkoutSessionService ||
           createCheckoutSessionService(context);
-        
+
         // Validate token and extract session info
         const decoded = tokenService.validateToken(token);
-        
+
         // Get session with auto-renewal enabled
-        const session = await sessionService.getSession(decoded.sessionId, { 
-          autoRenewPaymentIntent: true 
+        const session = await sessionService.getSession(decoded.sessionId, {
+          autoRenewPaymentIntent: true,
         });
-        
+
         if (!session) {
           logger.warn("Session not found", { sessionId: decoded.sessionId });
           return {
@@ -52,7 +53,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             session: null,
           };
         }
-        
+
         // Check if session is expired
         if (new Date(session.expiresAt) <= new Date()) {
           logger.warn("Session expired", { sessionId: decoded.sessionId });
@@ -62,7 +63,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
             session: null,
           };
         }
-        
+
         return {
           success: true,
           session: formatSessionForGraphQL(session, token),
@@ -70,12 +71,12 @@ export const checkoutResolvers: Partial<Resolvers> = {
         };
       } catch (error: any) {
         logger.error("Error in getCheckoutSession", error);
-        
+
         // Handle specific GraphQL errors
         if (error instanceof GraphQLError) {
           throw error;
         }
-        
+
         return {
           success: false,
           session: null,
@@ -93,37 +94,38 @@ export const checkoutResolvers: Partial<Resolvers> = {
       try {
         // Validate input
         const input = validateCreateSessionInput(args.input);
-        
+
         // Get services
         const tokenService = getCheckoutTokenService();
-        const sessionService = context.services.checkoutSessionService || 
+        const sessionService =
+          context.services.checkoutSessionService ||
           createCheckoutSessionService(context);
-        
+
         logger.info("Creating checkout session", { input });
-        
+
         // Create session
         const session = await sessionService.createSession({
           ...input,
           userId: context.auth?.user?.id,
         });
-        
+
         // Generate JWT token
         const token = tokenService.generateToken(
           context.auth?.user?.id || "anonymous",
           session.id
         );
-        
+
         // Store token hash for lookup
         await context.repositories.checkoutSessions.updateTokenHash(
           session.id,
           tokenService.hashToken(token)
         );
-        
-        logger.info("Checkout session created", { 
+
+        logger.info("Checkout session created", {
           sessionId: session.id,
-          userId: context.auth?.user?.id 
+          userId: context.auth?.user?.id,
         });
-        
+
         return {
           success: true,
           session: formatSessionForGraphQL(session, token),
@@ -131,7 +133,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         };
       } catch (error: any) {
         logger.error("Error in createCheckoutSession", error);
-        
+
         return {
           success: false,
           session: null,
@@ -147,54 +149,74 @@ export const checkoutResolvers: Partial<Resolvers> = {
       try {
         // Validate input
         const { token, stepType, data } = validateUpdateStepInput(args.input);
-        
+
         // Get services
         const tokenService = getCheckoutTokenService();
-        const sessionService = context.services.checkoutSessionService || 
+        const sessionService =
+          context.services.checkoutSessionService ||
           createCheckoutSessionService(context);
-        
+
         logger.info("Updating checkout step", { stepType, data });
-        
+
         // Validate token
         const decoded = tokenService.validateToken(token);
-        
+        const checkoutSession = await sessionService.getSession(
+          decoded.sessionId
+        );
+
+        if (!checkoutSession) {
+          throw new GraphQLError(ERROR_MESSAGES.SESSION_NOT_FOUND, {
+            extensions: { code: CheckoutErrorCode.SESSION_NOT_FOUND },
+          });
+        }
+
         let updatedSession;
-        
+
         switch (stepType) {
+          case CHECKOUT_STEP_TYPE.VALIDATION: {
+            updatedSession = await context.dataSources.orders.validateOrder(
+              checkoutSession.bundleId,
+              1,
+              decoded.userId
+            );
+            break;
+          }
           case CHECKOUT_STEP_TYPE.AUTHENTICATION: {
             // User has logged in or signed up
             const userId = context.auth?.user?.id || data?.userId;
-            
+
             if (!userId) {
               throw new GraphQLError(ERROR_MESSAGES.USER_ID_REQUIRED, {
-                extensions: { code: CheckoutErrorCode.VALIDATION_ERROR }
+                extensions: { code: CheckoutErrorCode.VALIDATION_ERROR },
               });
             }
-            
+
             updatedSession = await sessionService.authenticateSession(
               decoded.sessionId,
               userId
             );
             break;
           }
-          
+
           case CHECKOUT_STEP_TYPE.DELIVERY: {
             // Validate delivery data
             const deliveryData = DeliveryStepDataSchema.parse(data);
-            
+
             updatedSession = await sessionService.setDeliveryMethod(
               decoded.sessionId,
               deliveryData
             );
             break;
           }
-          
+
           case CHECKOUT_STEP_TYPE.PAYMENT: {
             // Prepare for payment
-            updatedSession = await sessionService.preparePayment(decoded.sessionId);
+            updatedSession = await sessionService.preparePayment(
+              decoded.sessionId
+            );
             break;
           }
-          
+
           default:
             return {
               success: false,
@@ -203,15 +225,15 @@ export const checkoutResolvers: Partial<Resolvers> = {
               nextStep: null,
             };
         }
-        
+
         const nextStep = determineNextStep(updatedSession.state);
-        
-        logger.info("Checkout step updated", { 
+
+        logger.info("Checkout step updated", {
           sessionId: decoded.sessionId,
           stepType,
-          nextStep 
+          nextStep,
         });
-        
+
         return {
           success: true,
           session: formatSessionForGraphQL(updatedSession, token),
@@ -220,12 +242,12 @@ export const checkoutResolvers: Partial<Resolvers> = {
         };
       } catch (error: any) {
         logger.error("Error in updateCheckoutStep", error);
-        
+
         // Handle specific GraphQL errors
         if (error instanceof GraphQLError) {
           throw error;
         }
-        
+
         return {
           success: false,
           session: null,
@@ -242,31 +264,32 @@ export const checkoutResolvers: Partial<Resolvers> = {
       try {
         // Validate input
         const { token } = validateProcessPaymentInput(args.input);
-        
+
         // Get services
         const tokenService = getCheckoutTokenService();
-        const sessionService = context.services.checkoutSessionService || 
+        const sessionService =
+          context.services.checkoutSessionService ||
           createCheckoutSessionService(context);
-        
+
         logger.info("Processing checkout payment");
-        
+
         // Validate token
         const decoded = tokenService.validateToken(token);
 
         // Process payment
         const result = await sessionService.processPayment(decoded.sessionId);
-        
+
         // Get updated session for response
-        const session = result.success 
+        const session = result.success
           ? await sessionService.getSession(decoded.sessionId)
           : null;
-        
-        logger.info("Payment processing result", { 
+
+        logger.info("Payment processing result", {
           sessionId: decoded.sessionId,
           success: result.success,
-          orderId: result.orderId 
+          orderId: result.orderId,
         });
-        
+
         return {
           success: result.success,
           orderId: result.orderId || null,
@@ -277,12 +300,12 @@ export const checkoutResolvers: Partial<Resolvers> = {
         };
       } catch (error: any) {
         logger.error("Error in processCheckoutPayment", error);
-        
+
         // Handle specific GraphQL errors
         if (error instanceof GraphQLError) {
           throw error;
         }
-        
+
         return {
           success: false,
           orderId: null,
@@ -301,18 +324,22 @@ export const checkoutResolvers: Partial<Resolvers> = {
     validateOrder: async (_, args, context: Context) => {
       try {
         // Validate input
-        const { bundleName, quantity, customerReference } = validateOrderInput(args.input);
-        
+        const { bundleName, quantity, customerReference } = validateOrderInput(
+          args.input
+        );
+
         logger.info("validateOrder resolver called", {
           bundleName,
           quantity,
           customerReference,
           operationType: "order-validation",
         });
-        
+
         // Use the eSIM Go client to validate the order
-        const { BundleOrderTypeEnum, OrderRequestTypeEnum } = await import("@hiilo/esim-go");
-        
+        const { BundleOrderTypeEnum, OrderRequestTypeEnum } = await import(
+          "@hiilo/esim-go"
+        );
+
         const orderRequest = {
           type: OrderRequestTypeEnum.VALIDATE,
           order: [
@@ -323,29 +350,30 @@ export const checkoutResolvers: Partial<Resolvers> = {
             },
           ],
         };
-        
+
         logger.info("Calling eSIM Go API", {
           orderRequest,
           operationType: "order-validation",
         });
-        
-        const response = await context.services.esimGoClient.ordersApi.ordersPost({
-          orderRequest,
-        });
-        
+
+        const response =
+          await context.services.esimGoClient.ordersApi.ordersPost({
+            orderRequest,
+          });
+
         logger.info("eSIM Go API response", {
           responseData: response.data,
           operationType: "order-validation",
         });
-        
+
         const isValid = Number(response.data.total) > 0;
-        
+
         if (!isValid) {
           logger.warn("Order validation failed", {
             bundleName,
             operationType: "order-validation",
           });
-          
+
           return {
             success: true,
             isValid: false,
@@ -356,14 +384,14 @@ export const checkoutResolvers: Partial<Resolvers> = {
             errorCode: "VALIDATION_ERROR",
           };
         }
-        
+
         logger.info("Order validation succeeded", {
           bundleName,
           totalPrice: response.data.total,
           currency: response.data.currency,
           operationType: "order-validation",
         });
-        
+
         return {
           success: true,
           isValid: true,
@@ -378,7 +406,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           bundleName: args.input.bundleName,
           operationType: "order-validation",
         });
-        
+
         return {
           success: false,
           isValid: false,

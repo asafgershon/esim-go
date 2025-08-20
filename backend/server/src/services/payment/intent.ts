@@ -6,9 +6,9 @@ import {
   type TransactionResponse,
   TransactionTypeEnum,
   env as easycardEnv,
+  getEasyCardClient,
 } from "@hiilo/easycard";
 import { logger } from "../../lib/logger";
-import { executeWithTokenRefresh, getClient } from "./index";
 import type {
   CreatePaymentIntentRequest,
   PaymentIntent,
@@ -20,7 +20,7 @@ import type {
  */
 export async function createPaymentIntent({
   currency = "USD",
-  costumer: { id, email, firstName, lastName },
+  costumer: { id, email, firstName, lastName, phoneNumber },
   item,
   description,
   redirectUrl,
@@ -42,45 +42,44 @@ export async function createPaymentIntent({
       operationType: "payment-intent-create-start",
     });
 
-    // Execute the API call with automatic token refresh on 401
-    const result = await executeWithTokenRefresh(async () => {
-      const client = getClient();
-      logger.info("Got EasyCard client", {
-        operationType: "payment-intent-client-ready",
-      });
+    // Get the EasyCard client with built-in token management
+    const client = await getEasyCardClient();
+    logger.info("Got EasyCard client", {
+      operationType: "payment-intent-client-ready",
+    });
 
-      // An expiration time for the payment link, 5 minutes
-      const dueDate = new Date(Date.now() + 1000 * 60 * 5);
+    // An expiration time for the payment link, 5 minutes
+    const dueDate = new Date(Date.now() + 1000 * 60 * 5);
 
-      logger.info("Calling EasyCard API", {
-        terminalID: easycardEnv.EASYCARD_TERMINAL_ID,
-        amount: request.amount,
-        dueDate: dueDate.toISOString(),
-        operationType: "payment-intent-api-call",
-      });
+    logger.info("Calling EasyCard API", {
+      terminalID: easycardEnv.EASYCARD_TERMINAL_ID,
+      amount: request.amount,
+      dueDate: dueDate.toISOString(),
+      operationType: "payment-intent-api-call",
+    });
 
-      const paymentIntent = await client.paymentIntent.apiPaymentIntentPost({
+    const paymentIntent = await client.paymentIntent.apiPaymentIntentPost(
+      {
         paymentRequestCreate: {
           terminalID: easycardEnv.EASYCARD_TERMINAL_ID,
+          allowInstallments: false,
+          allowCredit: false,
+          userAmount: false,
+          emailRequired: false,
+          dueDate: null,
+          consumerNameReadonly: true,
+          currency: "USD",
           dealDetails: {
             externalUserID: id,
+            consumerPhone: phoneNumber,
             consumerEmail: email,
             consumerName:
               firstName && lastName ? `${firstName} ${lastName}` : undefined,
             dealReference: order.reference,
-            items: [
-              {
-                itemName: item.name,
-                amount: item.price,
-                quantity: 1,
-                netAmount: item.price,
-                discount: item.discount,
-              },
-            ],
+
             dealDescription: description,
           },
           paymentRequestAmount: request.amount,
-          dueDate: dueDate.toISOString(),
           transactionType: TransactionTypeEnum.REGULAR_DEAL,
           invoiceDetails: {
             invoiceType: InvoiceTypeEnum.INVOICE_WITH_PAYMENT_INFO,
@@ -89,44 +88,55 @@ export async function createPaymentIntent({
           issueInvoice: true,
           redirectUrl,
         },
-      });
-
-      logger.info("EasyCard API response received", {
-        status: paymentIntent.status,
-        hasAdditionalData: !!paymentIntent.additionalData,
-        entityUID: paymentIntent.entityUID,
-        operationType: "payment-intent-api-response",
-      });
-
-      if (paymentIntent.status !== StatusEnum.SUCCESS) {
-        logger.error("Payment intent creation failed", {
-          status: paymentIntent.status,
-          message: paymentIntent.message || "Unknown error",
-          operationType: "payment-intent-api-error",
-        });
-        throw new Error(
-          `Failed to create payment intent: ${paymentIntent.status} - ${
-            paymentIntent.message || "Unknown error"
-          }`
-        );
+      },
+      {
+        headers: {
+          ...client.headers,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       }
+    );
 
-      // Return the successful payment intent
-      // The paymentIntent IS the OperationResponse, not nested under .data
-      logger.info("Payment intent created successfully", {
-        entityUID: paymentIntent.entityUID,
-        hasUrl: !!paymentIntent.additionalData?.url,
-        hasApplePayUrl: !!paymentIntent.additionalData?.applePayJavaScriptUrl,
-        operationType: "payment-intent-success",
-      });
-
-      return {
-        success: true,
-        payment_intent: paymentIntent as PaymentIntent,
-      };
+    logger.info("EasyCard API response received", {
+      status: paymentIntent.status,
+      hasAdditionalData: !!paymentIntent.additionalData,
+      entityUID: paymentIntent.entityUID,
+      operationType: "payment-intent-api-response",
     });
 
-    return result;
+    if (paymentIntent.status !== StatusEnum.SUCCESS) {
+      logger.error(
+        "Payment intent creation failed",
+        new Error(
+          `${paymentIntent.status} - ${
+            paymentIntent.message || "Unknown error"
+          }`
+        ),
+        {
+          operationType: "payment-intent-api-error",
+        }
+      );
+      throw new Error(
+        `Failed to create payment intent: ${paymentIntent.status} - ${
+          paymentIntent.message || "Unknown error"
+        }`
+      );
+    }
+
+    // Return the successful payment intent
+    // The paymentIntent IS the OperationResponse, not nested under .data
+    logger.info("Payment intent created successfully", {
+      entityUID: paymentIntent.entityUID,
+      hasUrl: !!paymentIntent.additionalData?.url,
+      hasApplePayUrl: !!paymentIntent.additionalData?.applePayJavaScriptUrl,
+      operationType: "payment-intent-success",
+    });
+
+    return {
+      success: true,
+      payment_intent: paymentIntent as PaymentIntent,
+    };
   } catch (error) {
     // Enhanced error logging for EasyCard API debugging
     const errorInfo: any = {
@@ -153,6 +163,12 @@ export async function createPaymentIntent({
         }
         if (errorObj.response.json) {
           errorInfo.responseJson = errorObj.response.json;
+        }
+
+        if (errorObj.response.body instanceof ReadableStream) {
+          const reader = errorObj.response.body.getReader();
+          const result = await reader.read();
+          errorInfo.responseBody = result.value;
         }
       }
 
@@ -191,26 +207,22 @@ export async function getPaymentIntent(
   });
 
   try {
-    const result = await executeWithTokenRefresh(async () => {
-      const client = getClient();
+    const client = await getEasyCardClient();
 
-      // Retrieve the payment intent from EasyCard
-      const paymentIntent =
-        await client.paymentIntent.apiPaymentIntentPaymentIntentIDGet({
-          paymentIntentID: paymentIntentId,
-        });
-
-      logger.info("EasyCard API response received", {
-        status: paymentIntent.status,
-        hasAdditionalData: Boolean(paymentIntent.additionalFields),
-        entityUID: paymentIntent.paymentRequestID,
-        operationType: "payment-intent-api-response",
+    // Retrieve the payment intent from EasyCard - client handles authentication internally
+    const paymentIntent =
+      await client.paymentIntent.apiPaymentIntentPaymentIntentIDGet({
+        paymentIntentID: paymentIntentId,
       });
 
-      return paymentIntent as PaymentIntent;
+    logger.info("EasyCard API response received", {
+      status: paymentIntent.status,
+      hasAdditionalData: Boolean(paymentIntent.additionalFields),
+      entityUID: paymentIntent.paymentRequestID,
+      operationType: "payment-intent-api-response",
     });
 
-    return result;
+    return paymentIntent as PaymentIntent;
   } catch (error) {
     logger.error("Failed to retrieve payment intent", error as Error, {
       paymentIntentId,
@@ -232,27 +244,23 @@ export async function cancelPaymentIntent(
   });
 
   try {
-    const result = await executeWithTokenRefresh(async () => {
-      const client = getClient();
+    const client = await getEasyCardClient();
 
-      // Cancel the transaction with EasyCard
-      // For now, return a mock success response for testing
-      // TODO: Implement actual API call when endpoint is available
-      logger.warn(
-        "Payment intent cancellation not yet implemented, returning mock success",
-        {
-          paymentIntentId,
-          operationType: "payment-intent-cancel-mock",
-        }
-      );
+    // Cancel the transaction with EasyCard
+    // For now, return a mock success response for testing
+    // TODO: Implement actual API call when endpoint is available
+    logger.warn(
+      "Payment intent cancellation not yet implemented, returning mock success",
+      {
+        paymentIntentId,
+        operationType: "payment-intent-cancel-mock",
+      }
+    );
 
-      return {
-        success: true,
-        payment_intent: undefined,
-      };
-    });
-
-    return result;
+    return {
+      success: true,
+      payment_intent: undefined,
+    };
   } catch (error) {
     logger.error("Failed to cancel payment intent", error as Error, {
       paymentIntentId,
@@ -287,28 +295,24 @@ export async function refundPaymentIntent(
   });
 
   try {
-    const result = await executeWithTokenRefresh(async () => {
-      const client = getClient();
+    const client = await getEasyCardClient();
 
-      // Create a refund request with EasyCard
-      // For now, return a mock success response for testing
-      // TODO: Implement actual API call when endpoint is available
-      logger.warn(
-        "Payment intent refund not yet implemented, returning mock success",
-        {
-          paymentIntentId,
-          amount,
-          operationType: "payment-intent-refund-mock",
-        }
-      );
+    // Create a refund request with EasyCard
+    // For now, return a mock success response for testing
+    // TODO: Implement actual API call when endpoint is available
+    logger.warn(
+      "Payment intent refund not yet implemented, returning mock success",
+      {
+        paymentIntentId,
+        amount,
+        operationType: "payment-intent-refund-mock",
+      }
+    );
 
-      return {
-        success: true,
-        payment_intent: undefined,
-      };
-    });
-
-    return result;
+    return {
+      success: true,
+      payment_intent: undefined,
+    };
   } catch (error) {
     logger.error("Failed to refund payment intent", error as Error, {
       paymentIntentId,

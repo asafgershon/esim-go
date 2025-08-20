@@ -20,6 +20,7 @@ export const UpdateCheckoutStepInputSchema = z.object({
     CHECKOUT_STEP_TYPE.AUTHENTICATION,
     CHECKOUT_STEP_TYPE.DELIVERY,
     CHECKOUT_STEP_TYPE.PAYMENT,
+    CHECKOUT_STEP_TYPE.VALIDATION,
   ]),
   data: z.record(z.any()).optional(),
 });

@@ -43,7 +43,7 @@ export const env = cleanEnv(process.env, {
   EASYCARD_TERMINAL_ID: str({ default: "" }),
   EASYCARD_WEBHOOK_SECRET: str({ default: "" }),
   EASYCARD_MODE: str({ choices: ["test", "production"], default: "test" }),
-  EASYCARD_ENVIRONMENT: str({ choices: ["test", "production"], default: "test" }),
+  EASYCARD_ENVIRONMENT: str({ choices: ["test", "development", "production"], default: "development" }),
   
   // URLs
   DASHBOARD_URL: str({ default: "http://localhost:3000" }),

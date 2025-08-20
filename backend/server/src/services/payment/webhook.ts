@@ -1,6 +1,6 @@
 import { createHmac } from "crypto";
 import { logger } from "../../lib/logger";
-import { getClient, getAccessToken, updateClientConfig } from "./index";
+import { getEasyCardClient } from "@hiilo/easycard";
 import type { PaymentWebhookEvent, PaymentIntent } from "./types";
 import type { TransactionResponse } from "@hiilo/easycard";
 
@@ -283,17 +283,8 @@ export async function registerWebhook(webhookUrl: string): Promise<boolean> {
   });
 
   try {
-    const client = getClient();
-
-    // Get access token for authenticated requests
-    const accessToken = await getAccessToken();
-
-    // Update client with bearer token
-    updateClientConfig({
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    // Get the initialized client with authentication
+    const client = await getEasyCardClient();
 
     // Register the webhook with EasyCard
     // For now, throw an error as requested
@@ -302,11 +293,13 @@ export async function registerWebhook(webhookUrl: string): Promise<boolean> {
     );
 
     // When implemented, it would look something like:
-    // await client.webhooks.apiWebhooksPost({
-    //   webhookRequest: {
-    //     url: webhookUrl,
-    //     events: ["payment.*", "refund.*"],
-    //   },
+    // await client.executeWithTokenRefresh(async () => {
+    //   return await client.webhooks.apiWebhooksPost({
+    //     webhookRequest: {
+    //       url: webhookUrl,
+    //       events: ["payment.*", "refund.*"],
+    //     },
+    //   });
     // });
     //
     // return true;

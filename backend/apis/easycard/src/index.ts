@@ -1,5 +1,5 @@
 // Main client export
-export { EasyCardClient, type EasyCardClientConfig } from './client';
+export { EasyCardClient, type EasyCardClientConfig, getEasyCardClient, resetEasyCardClient } from './client';
 
 // Environment configuration
 export { env } from './config';
