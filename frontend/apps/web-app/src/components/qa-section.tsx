@@ -31,7 +31,7 @@ export function QASection({
       id={id}
       aria-label={ariaLabel}
       className={cn(
-        "sm:w-full px-5 md:px-0 md:w-3xl max-w-5xl mx-auto flex flex-col items-center justify-center",
+        "sm:w-full md:w-3xl px-5 mx-auto max-w-5xl flex flex-col items-center justify-center",
         className
       )}
     >
@@ -39,7 +39,7 @@ export function QASection({
         שאלות ותשובות נפוצות
       </h2>
 
-      <Accordion type="single" collapsible className="space-y-4">
+      <Accordion type="single" collapsible className="space-y-4 w-full">
         {faqs.map((faq) => (
           <AccordionItem
             key={faq.id}

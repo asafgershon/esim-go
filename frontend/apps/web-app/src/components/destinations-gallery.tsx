@@ -167,10 +167,9 @@ export function DestinationsGallery({
           </p>
         </div>
 
-        {/* Mobile Horizontal Scroll with GSAP */}
         <div
           ref={containerRef}
-          className="relative overflow-hidden mx-auto"
+          className="relative overflow-y-visible mx-auto mt-10"
           style={{ 
             height: "304px",
             maxWidth: "100%",
