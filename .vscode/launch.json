@@ -4,7 +4,28 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
+        {
+            "type": "bun",
+            "request": "launch",
+            "name": "Debug Backend Server",
+            "program": "${workspaceFolder}/backend/server/src/app.ts",
+            "cwd": "${workspaceFolder}/backend/server",
+            "env": {
+                "NODE_ENV": "development"
+            },
+            "envFile": "${workspaceFolder}/backend/server/.env",
+            "stopOnEntry": false,
+            "watchMode": true,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "type": "bun",
+            "request": "attach",
+            "name": "Attach to Backend Server",
+            "url": "ws://localhost:6499/",
+            "cwd": "${workspaceFolder}/backend/server",
+            "stopOnEntry": false
+        },
         {
             "type": "bun",
             "internalConsoleOptions": "neverOpen",
