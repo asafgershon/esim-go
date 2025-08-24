@@ -466,6 +466,7 @@ type CatalogSyncProgressUpdate {
 type Checkout {
   auth: CheckoutAuth
   bundle: CheckoutBundle
+  delivery: CheckoutDelivery
   id: ID!
 }
 
@@ -519,6 +520,12 @@ type CheckoutBundle {
   pricePerDay: Float!
   speed: [String!]!
   validated: Boolean
+}
+
+type CheckoutDelivery {
+  completed: Boolean!
+  email: String
+  phone: String
 }
 
 type CheckoutSession {
@@ -889,6 +896,7 @@ type Mutation {
   triggerCatalogSync(params: TriggerSyncParams!): TriggerSyncResponse
   updateCheckoutAuth(email: String, firstName: String, lastName: String, phone: String, sessionId: String!): CheckoutAuth!
   updateCheckoutAuthName(firstName: String, lastName: String, sessionId: String!): CheckoutAuth!
+  updateCheckoutDelivery(email: String, phone: String, sessionId: String!): CheckoutDelivery!
   updateCheckoutStep(input: UpdateCheckoutStepInput!): UpdateCheckoutStepResponse!
   updateESIMReference(esimId: ID!, reference: String!): ESIMActionResponse
   updatePricingConfiguration(input: UpdatePricingConfigurationInput!): UpdatePricingConfigurationResponse

@@ -546,6 +546,7 @@ export type Checkout = {
   __typename?: 'Checkout';
   auth?: Maybe<CheckoutAuth>;
   bundle?: Maybe<CheckoutBundle>;
+  delivery?: Maybe<CheckoutDelivery>;
   id: Scalars['ID']['output'];
 };
 
@@ -602,6 +603,13 @@ export type CheckoutBundle = {
   pricePerDay: Scalars['Float']['output'];
   speed: Array<Scalars['String']['output']>;
   validated?: Maybe<Scalars['Boolean']['output']>;
+};
+
+export type CheckoutDelivery = {
+  __typename?: 'CheckoutDelivery';
+  completed: Scalars['Boolean']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
 };
 
 export type CheckoutSession = {
@@ -999,6 +1007,7 @@ export type Mutation = {
   triggerCatalogSync?: Maybe<TriggerSyncResponse>;
   updateCheckoutAuth: CheckoutAuth;
   updateCheckoutAuthName: CheckoutAuth;
+  updateCheckoutDelivery: CheckoutDelivery;
   updateCheckoutStep: UpdateCheckoutStepResponse;
   updateESIMReference?: Maybe<EsimActionResponse>;
   updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
@@ -1194,6 +1203,13 @@ export type MutationUpdateCheckoutAuthArgs = {
 export type MutationUpdateCheckoutAuthNameArgs = {
   firstName?: InputMaybe<Scalars['String']['input']>;
   lastName?: InputMaybe<Scalars['String']['input']>;
+  sessionId: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateCheckoutDeliveryArgs = {
+  email?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
   sessionId: Scalars['String']['input'];
 };
 
@@ -2280,6 +2296,15 @@ export type UpdateCheckoutAuthNameMutationVariables = Exact<{
 
 
 export type UpdateCheckoutAuthNameMutation = { __typename?: 'Mutation', updateCheckoutAuthName: { __typename?: 'CheckoutAuth', firstName?: string | null, lastName?: string | null } };
+
+export type UpdateCheckoutDeliveryMutationVariables = Exact<{
+  sessionId: Scalars['String']['input'];
+  email?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type UpdateCheckoutDeliveryMutation = { __typename?: 'Mutation', updateCheckoutDelivery: { __typename?: 'CheckoutDelivery', completed: boolean, email?: string | null, phone?: string | null } };
 
 export type CheckoutSubscriptionVariables = Exact<{
   id: Scalars['ID']['input'];

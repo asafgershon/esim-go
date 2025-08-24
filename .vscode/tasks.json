@@ -4,9 +4,9 @@
 		{
 			"type": "npm",
 			"script": "codegen",
-			"path": "server/server",
+			"path": "backend/server",
 			"problemMatcher": [],
-			"label": "npm: codegen - server/server",
+			"label": "npm: codegen - backend/server",
 			"detail": "graphql-codegen"
 		}
 	]

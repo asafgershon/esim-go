@@ -1713,6 +1713,7 @@ extend type Mutation {
   updateCheckoutAuth(sessionId: String!, firstName: String, lastName: String, email: String, phone: String): CheckoutAuth!
   verifyOTP(sessionId: String!, otp: String!): CheckoutAuthWithOTP!
   updateCheckoutAuthName(sessionId: String!, firstName: String, lastName: String): CheckoutAuth!
+  updateCheckoutDelivery(sessionId: String!, email: String, phone: String): CheckoutDelivery!
 }
 
 extend type Subscription {
@@ -1725,6 +1726,14 @@ type Checkout {
   bundle: CheckoutBundle
 
   auth: CheckoutAuth
+
+  delivery: CheckoutDelivery
+}
+
+type CheckoutDelivery { 
+  completed: Boolean!
+  email: String
+  phone: String
 }
 
 interface CheckoutAuthInterface {

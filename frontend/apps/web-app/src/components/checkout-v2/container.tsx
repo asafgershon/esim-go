@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSelectorQueryState } from "@/hooks/useSelectorQueryState";
 import { AuthCard } from "./auth-card";
 import { OrderCard } from "./order-card";
+import { DeliveryCard } from "./delivery-card";
 
 export const CheckoutContainerV2 = () => {
   const { numOfDays, countryId } = useSelectorQueryState();
@@ -35,6 +36,12 @@ export const CheckoutContainerV2 = () => {
         data={data?.checkout}
         sectionNumber={2}
         onAuthUpdate={handleAuthUpdate}
+      />
+
+       <DeliveryCard
+        completed={Boolean(data?.checkout.auth?.completed)}
+        sectionNumber={3}
+        data={data?.checkout}
       />
     </main>
   );
