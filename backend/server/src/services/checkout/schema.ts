@@ -15,7 +15,7 @@ const BundleSelectionSchema = z.object({
 
 const AuthSchema = z.object({
   completed: z.boolean().default(false),
-  email: z.string().email().optional(),
+  email: z.string().email().nullable().optional(),
   phone: z.string().optional(),
   userId: z.string().optional(),
   firstName: z.string().optional(),
@@ -27,8 +27,8 @@ const AuthSchema = z.object({
 
 const DeliverySchema = z.object({
   completed: z.boolean().default(false),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
+  email: z.string().email().nullable().optional(),
+  phone: z.string().nullable().optional(),
 });
 
 const PaymentSchema = z.object({

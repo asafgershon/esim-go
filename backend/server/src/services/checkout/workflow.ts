@@ -6,7 +6,6 @@ import type { EasyCardClient } from "@hiilo/easycard";
 import type { UserRepository } from "../../repositories";
 import * as pricingEngine from "@hiilo/rules-engine-2";
 import { WEB_APP_BUNDLE_GROUP } from "../../lib/constants/bundle-groups";
-import { publish } from "../../resolvers/checkout";
 import { supabaseAdmin } from "../../context/supabase-auth";
 
 /* ===============================
@@ -244,6 +243,12 @@ const verifyOTP = async ({
     type: "sms",
   });
 
+  // Update the user with the phone number
+  if (data?.user?.id && session.auth.phone) {
+    userRepository?.updateProfile(data?.user?.id, {
+      phoneNumber: session.auth.phone,
+    });
+  }
 
   if (error) {
     throw new CheckoutStepError("verifyOTP", "Failed to verify OTP");
@@ -251,7 +256,8 @@ const verifyOTP = async ({
 
   const firstName = data?.user?.user_metadata?.first_name;
   const lastName = data?.user?.user_metadata?.last_name;
-
+  const email = data?.user?.email;
+  const phone = session.auth.phone;
   const isCompleted =
     data?.user?.id && session.auth.phone && firstName && lastName;
 
@@ -264,8 +270,8 @@ const verifyOTP = async ({
       completed: Boolean(isCompleted),
       firstName: firstName,
       lastName: lastName,
-      email: session.auth.email,
-      phone: session.auth.phone,
+      email: email === "" ? undefined : email,
+      phone: phone === "" ? undefined : phone,
       method: "phone",
     }
   );
@@ -333,8 +339,35 @@ const updateAuthName = async ({
   return nextSession;
 };
 
-const setDelivery = async ({}: { sessionId: string }) => {
-  throw new Error("Not implemented");
+const setDelivery = async ({
+  sessionId,
+  email,
+  phone,
+}: {
+  sessionId: string;
+  email?: string | null;
+  phone?: string | null;
+}) => {
+  if (!sessionService) {
+    throw new NotInitializedError();
+  }
+
+  const session = await sessionService.getSession(sessionId);
+  if (!session) {
+    throw new SessionNotFound();
+  }
+
+  const nextSession = await sessionService.updateSessionStep(
+    sessionId,
+    "delivery",
+    {
+      completed: true,
+      email,
+      phone,
+    }
+  );
+
+  return nextSession;
 };
 
 const preparePayment = async ({}) => {

@@ -38,6 +38,12 @@ const CHECKOUT_SUBSCRIPTION = gql(`subscription Checkout($id: ID!) {
         otpSent
         otpVerified
     }
+
+    delivery {
+        completed
+        email
+        phone
+    }
   }
 }`);
 

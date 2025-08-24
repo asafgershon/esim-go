@@ -7,10 +7,29 @@ import { publish } from "./subscriptions";
 
 export const checkoutMutationsV2: MutationResolvers = {
   createCheckout: {
-    resolve: async (_, { numOfDays, countryId }, { services }) => {
+    resolve: async (
+      _,
+      { numOfDays, countryId },
+      { auth, repositories, services }
+    ) => {
+      const loggedInUser = await repositories.users.getUserById(
+        auth.user?.id || ""
+      );
+
+      const initialState = loggedInUser
+        ? {
+            auth: {
+              completed: true,
+              email: loggedInUser.email,
+              phone: loggedInUser.user_metadata?.phone_number || undefined,
+            },
+          }
+        : undefined;
+
       const checkout = await services.checkoutSessionServiceV2.createSession({
         numOfDays,
         countryId,
+        initialState,
       });
 
       setImmediate(async () => {
@@ -156,6 +175,34 @@ export const checkoutMutationsV2: MutationResolvers = {
       });
 
       return session.auth;
+    },
+  },
+  updateCheckoutDelivery: {
+    resolve: async (_, { sessionId, email, phone }, { services }) => {
+      const session = await services.checkoutWorkflow.setDelivery({
+        sessionId,
+        email: email,
+        phone: phone,
+      });
+
+      publish(services.pubsub)(sessionId, {
+        ...session,
+        bundle: {
+          id: session.bundle.externalId || "",
+          country: {
+            iso: session.bundle.countryId || "",
+            __typename: "Country",
+            // We rely on field resolver
+          } as Country,
+          price: session.bundle.price || Infinity,
+          pricePerDay: session.bundle.pricePerDay || Infinity,
+          currency: "USD",
+          ...session.bundle,
+        },
+        delivery: session.delivery,
+      });
+
+      return session.delivery;
     },
   },
 };

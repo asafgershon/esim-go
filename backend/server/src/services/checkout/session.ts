@@ -1,9 +1,6 @@
 import { createLogger } from "@hiilo/utils";
-import { getRedis, type RedisInstance } from "../redis";
-import type KeyvRedis from "@keyv/redis";
-import type { PubSubInstance } from "../../context/pubsub";
-import * as pricingEngine from "@hiilo/rules-engine-2";
 import { nanoid } from "nanoid";
+import { type RedisInstance } from "../redis";
 import { CheckoutSessionSchema, type CheckoutSession } from "./schema";
 
 const logger = createLogger({ component: "checkout-session-service-v2" });
@@ -11,10 +8,18 @@ let redis: RedisInstance | null = null;
 
 const init = async (context: { redis: RedisInstance }) => {
   redis = context.redis;
-  return checkoutSessionService
+  return checkoutSessionService;
 };
 
-const createSession = async ({countryId,numOfDays}: { numOfDays: number; countryId: string }) => {
+const createSession = async ({
+  countryId,
+  numOfDays,
+  initialState,
+}: {
+  numOfDays: number;
+  countryId: string;
+  initialState?: Pick<CheckoutSession, "auth">;
+}) => {
   const id = nanoid();
 
   const session = CheckoutSessionSchema.parse({
@@ -28,10 +33,14 @@ const createSession = async ({countryId,numOfDays}: { numOfDays: number; country
       numOfDays,
     },
     auth: {
-      completed: false,
+      completed: initialState?.auth?.completed || false,
+      email: initialState?.auth?.email || undefined,
+      phone: initialState?.auth?.phone || undefined,
     },
     delivery: {
       completed: false,
+      email: undefined,
+      phone: undefined,
     },
     payment: {
       completed: false,

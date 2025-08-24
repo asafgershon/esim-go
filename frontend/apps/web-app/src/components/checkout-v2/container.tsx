@@ -19,6 +19,7 @@ export const CheckoutContainerV2 = () => {
     refreshAuth();
   };
 
+  console.log(data?.checkout)
   //   if (loading) return <div>Loading...</div>;
   //   if (error) return <div>Error: {error.message}</div>;
   //   if (!data) return <div>No data</div>;
@@ -39,9 +40,10 @@ export const CheckoutContainerV2 = () => {
       />
 
        <DeliveryCard
-        completed={Boolean(data?.checkout.auth?.completed)}
+        completed={Boolean(data?.checkout.delivery?.completed)}
         sectionNumber={3}
         data={data?.checkout}
+        onDeliveryUpdate={handleAuthUpdate}
       />
     </main>
   );

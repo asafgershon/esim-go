@@ -394,6 +394,7 @@ export type Checkout = {
   __typename?: 'Checkout';
   auth?: Maybe<CheckoutAuth>;
   bundle?: Maybe<CheckoutBundle>;
+  delivery?: Maybe<CheckoutDelivery>;
   id: Scalars['ID']['output'];
 };
 
@@ -450,6 +451,13 @@ export type CheckoutBundle = {
   pricePerDay: Scalars['Float']['output'];
   speed: Array<Scalars['String']['output']>;
   validated?: Maybe<Scalars['Boolean']['output']>;
+};
+
+export type CheckoutDelivery = {
+  __typename?: 'CheckoutDelivery';
+  completed: Scalars['Boolean']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
 };
 
 export type CheckoutSession = {
@@ -833,6 +841,7 @@ export type Mutation = {
   triggerCatalogSync?: Maybe<TriggerSyncResponse>;
   updateCheckoutAuth: CheckoutAuth;
   updateCheckoutAuthName: CheckoutAuth;
+  updateCheckoutDelivery: CheckoutDelivery;
   updateCheckoutStep: UpdateCheckoutStepResponse;
   updateESIMReference?: Maybe<EsimActionResponse>;
   updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
@@ -1007,6 +1016,13 @@ export type MutationUpdateCheckoutAuthArgs = {
 export type MutationUpdateCheckoutAuthNameArgs = {
   firstName?: InputMaybe<Scalars['String']['input']>;
   lastName?: InputMaybe<Scalars['String']['input']>;
+  sessionId: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateCheckoutDeliveryArgs = {
+  email?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
   sessionId: Scalars['String']['input'];
 };
 
@@ -2100,6 +2116,7 @@ export type ResolversTypes = {
   CheckoutAuthInterface: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['CheckoutAuthInterface']>;
   CheckoutAuthWithOTP: ResolverTypeWrapper<CheckoutAuthWithOtp>;
   CheckoutBundle: ResolverTypeWrapper<CheckoutBundle>;
+  CheckoutDelivery: ResolverTypeWrapper<CheckoutDelivery>;
   CheckoutSession: ResolverTypeWrapper<CheckoutSession>;
   CheckoutSessionUpdate: ResolverTypeWrapper<CheckoutSessionUpdate>;
   CheckoutStepType: CheckoutStepType;
@@ -2253,6 +2270,7 @@ export type ResolversParentTypes = {
   CheckoutAuthInterface: ResolversInterfaceTypes<ResolversParentTypes>['CheckoutAuthInterface'];
   CheckoutAuthWithOTP: CheckoutAuthWithOtp;
   CheckoutBundle: CheckoutBundle;
+  CheckoutDelivery: CheckoutDelivery;
   CheckoutSession: CheckoutSession;
   CheckoutSessionUpdate: CheckoutSessionUpdate;
   ConflictingJobInfo: ConflictingJobInfo;
@@ -2633,6 +2651,7 @@ export type CatalogSyncProgressUpdateResolvers<ContextType = Context, ParentType
 export type CheckoutResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Checkout'] = ResolversParentTypes['Checkout']> = {
   auth?: Resolver<Maybe<ResolversTypes['CheckoutAuth']>, ParentType, ContextType>;
   bundle?: Resolver<Maybe<ResolversTypes['CheckoutBundle']>, ParentType, ContextType>;
+  delivery?: Resolver<Maybe<ResolversTypes['CheckoutDelivery']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -2690,6 +2709,13 @@ export type CheckoutBundleResolvers<ContextType = Context, ParentType extends Re
   pricePerDay?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   speed?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   validated?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CheckoutDeliveryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['CheckoutDelivery'] = ResolversParentTypes['CheckoutDelivery']> = {
+  completed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  phone?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2988,6 +3014,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   triggerCatalogSync?: Resolver<Maybe<ResolversTypes['TriggerSyncResponse']>, ParentType, ContextType, RequireFields<MutationTriggerCatalogSyncArgs, 'params'>>;
   updateCheckoutAuth?: Resolver<ResolversTypes['CheckoutAuth'], ParentType, ContextType, RequireFields<MutationUpdateCheckoutAuthArgs, 'sessionId'>>;
   updateCheckoutAuthName?: Resolver<ResolversTypes['CheckoutAuth'], ParentType, ContextType, RequireFields<MutationUpdateCheckoutAuthNameArgs, 'sessionId'>>;
+  updateCheckoutDelivery?: Resolver<ResolversTypes['CheckoutDelivery'], ParentType, ContextType, RequireFields<MutationUpdateCheckoutDeliveryArgs, 'sessionId'>>;
   updateCheckoutStep?: Resolver<ResolversTypes['UpdateCheckoutStepResponse'], ParentType, ContextType, RequireFields<MutationUpdateCheckoutStepArgs, 'input'>>;
   updateESIMReference?: Resolver<Maybe<ResolversTypes['ESIMActionResponse']>, ParentType, ContextType, RequireFields<MutationUpdateEsimReferenceArgs, 'esimId' | 'reference'>>;
   updatePricingConfiguration?: Resolver<Maybe<ResolversTypes['UpdatePricingConfigurationResponse']>, ParentType, ContextType, RequireFields<MutationUpdatePricingConfigurationArgs, 'input'>>;
@@ -3504,6 +3531,7 @@ export type Resolvers<ContextType = Context> = {
   CheckoutAuthInterface?: CheckoutAuthInterfaceResolvers<ContextType>;
   CheckoutAuthWithOTP?: CheckoutAuthWithOtpResolvers<ContextType>;
   CheckoutBundle?: CheckoutBundleResolvers<ContextType>;
+  CheckoutDelivery?: CheckoutDeliveryResolvers<ContextType>;
   CheckoutSession?: CheckoutSessionResolvers<ContextType>;
   CheckoutSessionUpdate?: CheckoutSessionUpdateResolvers<ContextType>;
   ConflictingJobInfo?: ConflictingJobInfoResolvers<ContextType>;

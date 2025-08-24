@@ -2304,14 +2304,14 @@ export type UpdateCheckoutDeliveryMutationVariables = Exact<{
 }>;
 
 
-export type UpdateCheckoutDeliveryMutation = { __typename?: 'Mutation', updateCheckoutDelivery: { __typename?: 'CheckoutDelivery', completed: boolean, email?: string | null, phone?: string | null } };
+export type UpdateCheckoutDeliveryMutation = { __typename?: 'Mutation', updateCheckoutDelivery: { __typename?: 'CheckoutDelivery', phone?: string | null, completed: boolean, email?: string | null } };
 
 export type CheckoutSubscriptionVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type CheckoutSubscription = { __typename?: 'Subscription', checkout: { __typename?: 'Checkout', id: string, bundle?: { __typename?: 'CheckoutBundle', completed: boolean, id: string, numOfDays: number, dataAmount: string, price: number, pricePerDay: number, currency: string, speed: Array<string>, discounts: Array<string>, validated?: boolean | null, country?: { __typename?: 'Country', iso: any, name: string } | null } | null, auth?: { __typename?: 'CheckoutAuth', completed: boolean, userId?: string | null, email?: string | null, phone?: string | null, firstName?: string | null, lastName?: string | null, method?: string | null, otpSent?: boolean | null, otpVerified?: boolean | null } | null } };
+export type CheckoutSubscription = { __typename?: 'Subscription', checkout: { __typename?: 'Checkout', id: string, bundle?: { __typename?: 'CheckoutBundle', completed: boolean, id: string, numOfDays: number, dataAmount: string, price: number, pricePerDay: number, currency: string, speed: Array<string>, discounts: Array<string>, validated?: boolean | null, country?: { __typename?: 'Country', iso: any, name: string } | null } | null, auth?: { __typename?: 'CheckoutAuth', completed: boolean, userId?: string | null, email?: string | null, phone?: string | null, firstName?: string | null, lastName?: string | null, method?: string | null, otpSent?: boolean | null, otpVerified?: boolean | null } | null, delivery?: { __typename?: 'CheckoutDelivery', completed: boolean, email?: string | null, phone?: string | null } | null } };
 
 export type CreateCheckoutMutationVariables = Exact<{
   numOfDays: Scalars['Int']['input'];

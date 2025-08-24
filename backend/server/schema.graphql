@@ -1710,10 +1710,24 @@ input StrategyFilter {
 
 extend type Mutation {
   createCheckout(numOfDays: Int!, countryId: String!): String
-  updateCheckoutAuth(sessionId: String!, firstName: String, lastName: String, email: String, phone: String): CheckoutAuth!
+  updateCheckoutAuth(
+    sessionId: String!
+    firstName: String
+    lastName: String
+    email: String
+    phone: String
+  ): CheckoutAuth!
   verifyOTP(sessionId: String!, otp: String!): CheckoutAuthWithOTP!
-  updateCheckoutAuthName(sessionId: String!, firstName: String, lastName: String): CheckoutAuth!
-  updateCheckoutDelivery(sessionId: String!, email: String, phone: String): CheckoutDelivery!
+  updateCheckoutAuthName(
+    sessionId: String!
+    firstName: String
+    lastName: String
+  ): CheckoutAuth!
+  updateCheckoutDelivery(
+    sessionId: String!
+    email: String
+    phone: String
+  ): CheckoutDelivery!
 }
 
 extend type Subscription {
@@ -1730,7 +1744,7 @@ type Checkout {
   delivery: CheckoutDelivery
 }
 
-type CheckoutDelivery { 
+type CheckoutDelivery {
   completed: Boolean!
   email: String
   phone: String
