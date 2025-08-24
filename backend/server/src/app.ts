@@ -5,10 +5,10 @@ dotenv.config({ path: join(__dirname, "../.env") });
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
-import { ESimGoClient } from "@hiilo/esim-go";
-import { AirHaloClient } from "@hiilo/airalo";
 import { mergeTypeDefs } from "@graphql-tools/merge";
 import { makeExecutableSchema } from "@graphql-tools/schema";
+import { AirHaloClient } from "@hiilo/airalo";
+import { ESimGoClient } from "@hiilo/esim-go";
 import { cleanEnv, port, str } from "envalid";
 import express from "express";
 import type { Context as WSContext } from "graphql-ws";
@@ -45,17 +45,18 @@ import {
   HighDemandCountryRepository,
   OrderRepository,
   SyncJobRepository,
-  UserRepository,
   TenantRepository,
+  UserRepository,
 } from "./repositories";
 import { PricingRulesRepository } from "./repositories/pricing-rules.repository";
-import { TripRepository } from "./repositories/trip.repository";
 import { StrategiesRepository } from "./repositories/strategies.repository";
+import { TripRepository } from "./repositories/trip.repository";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
-import { createCheckoutSessionService } from "./services/checkout-session.service";
 import * as EasycardPayment from "./services/payment";
+import { checkoutSessionService } from "./services/checkout";
+import { checkoutWorkflow } from "./services/checkout/workflow";
 
 // Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
@@ -143,15 +144,27 @@ async function startServer() {
       );
     }
 
-    // Initialize Easycard payment service (optional)
+    const userRepository = new UserRepository();
 
-    const paymentService = await EasycardPayment.initialize();
+    const paymentService = EasycardPayment.init();
+
+    // Initialize Easycard payment service (optional)
+    const [checkoutSessionServiceV2, checkoutWorkflowService] =
+      await Promise.all([
+        checkoutSessionService.init({ redis }),
+        checkoutWorkflow.init({
+          pubsub,
+          sessionService: checkoutSessionService,
+          userRepository,
+          esimAPI: esimGoClient,
+          paymentAPI: await  paymentService,
+        }),
+      ]);
 
     // Initialize repositories
     const checkoutSessionRepository = new CheckoutSessionRepository();
     const orderRepository = new OrderRepository();
     const esimRepository = new ESIMRepository();
-    const userRepository = new UserRepository();
     const tripRepository = new TripRepository();
     const highDemandCountryRepository = new HighDemandCountryRepository();
     const syncJobRepository = new SyncJobRepository();
@@ -198,6 +211,8 @@ async function startServer() {
               airHaloClient,
               easycardPayment: paymentService,
               checkoutSessionService: undefined, // Will be initialized lazily in resolvers
+              checkoutSessionServiceV2: checkoutSessionServiceV2,
+              checkoutWorkflow: checkoutWorkflowService,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -453,6 +468,8 @@ async function startServer() {
               easycardPayment: EasycardPayment,
               db: supabaseAdmin,
               checkoutSessionService: undefined, // Will be initialized lazily in resolvers
+              checkoutSessionServiceV2: checkoutSessionServiceV2,
+              checkoutWorkflow: checkoutWorkflowService,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -464,6 +481,7 @@ async function startServer() {
               syncJob: syncJobRepository,
               bundles: bundleRepository,
               pricingRules: pricingRulesRepository,
+              checkoutSessionServiceV2: checkoutSessionServiceV2,
               tenants: tenantRepository,
               strategies: strategiesRepository,
             },

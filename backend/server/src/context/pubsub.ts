@@ -155,3 +155,5 @@ export async function publishEvent<T = any>(
     throw error;
   }
 }
+
+export type PubSubInstance = Awaited<ReturnType<typeof getPubSub>>;

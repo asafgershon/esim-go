@@ -1,4 +1,8 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
+import axios, {
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+} from "axios";
 import {
   CatalogueApi,
   ESIMsApi,
@@ -16,7 +20,9 @@ import {
   EsimsGetOrderByEnum,
   EsimsGetFilterByEnum,
   EsimsGetPerPageEnum,
-} from './generated';
+  OrderRequestTypeEnum,
+  BundleOrderTypeEnum,
+} from "./generated";
 import {
   type ESimGoClientConfig,
   type ESimGoApiResponse,
@@ -24,8 +30,8 @@ import {
   ESimGoApiError,
   ESimGoRateLimitError,
   ESimGoAuthError,
-} from './types';
-export {type AxiosResponse} from 'axios';
+} from "./types";
+export { type AxiosResponse } from "axios";
 // Simple logger interface to avoid dependency on external logger
 interface SimpleLogger {
   info(message: string, data?: any): void;
@@ -55,7 +61,7 @@ async function withRetry<T>(
 
       // Don't retry on authentication errors
       if ((error as any).response?.status === 401) {
-        logger?.warn('Authentication error, not retrying', {
+        logger?.warn("Authentication error, not retrying", {
           attempt,
           error: lastError.message,
         });
@@ -63,14 +69,14 @@ async function withRetry<T>(
       }
 
       const delay = baseDelay * Math.pow(2, attempt - 1);
-      logger?.warn('Operation failed, retrying', {
+      logger?.warn("Operation failed, retrying", {
         attempt,
         maxAttempts,
         delay,
         error: lastError.message,
       });
 
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 
@@ -78,7 +84,7 @@ async function withRetry<T>(
     throw lastError;
   }
 
-  throw new Error('Retry operation completed without success or error');
+  throw new Error("Retry operation completed without success or error");
 }
 
 export class ESimGoClient {
@@ -95,14 +101,14 @@ export class ESimGoClient {
     this.logger = logger;
 
     // Create axios instance with custom configuration
-    const baseUrl = config.baseUrl || 'https://api.esim-go.com/v2.5';
-    
+    const baseUrl = config.baseUrl || "https://api.esim-go.com/v2.5";
+
     this.axiosInstance = axios.create({
       baseURL: baseUrl,
       timeout: config.timeout || 30000,
       headers: {
-        'X-API-KEY': config.apiKey,
-        'Content-Type': 'application/json',
+        "X-API-KEY": config.apiKey,
+        "Content-Type": "application/json",
       },
     });
 
@@ -110,13 +116,13 @@ export class ESimGoClient {
     this.axiosInstance.interceptors.request.use(
       (config) => {
         // Log the full request details
-        this.logger?.info('API Request', {
+        this.logger?.info("API Request", {
           method: config.method,
           url: config.url,
           fullURL: `${config.baseURL}${config.url}`,
           headers: {
-            'X-API-KEY': config.headers['X-API-KEY'] ? '[REDACTED]' : undefined,
-            'Content-Type': config.headers['Content-Type'],
+            "X-API-KEY": config.headers["X-API-KEY"] ? "[REDACTED]" : undefined,
+            "Content-Type": config.headers["Content-Type"],
           },
           params: config.params,
           baseURL: config.baseURL,
@@ -124,7 +130,7 @@ export class ESimGoClient {
         return config;
       },
       (error) => {
-        this.logger?.error('Request error', error);
+        this.logger?.error("Request error", error);
         return Promise.reject(error);
       }
     );
@@ -137,7 +143,7 @@ export class ESimGoClient {
         const message = error.response?.data?.message || error.message;
 
         // Log error response details
-        this.logger?.error('API Error Response', error, {
+        this.logger?.error("API Error Response", error, {
           status,
           url: error.config?.url,
           fullURL: error.config?.baseURL + error.config?.url,
@@ -148,10 +154,19 @@ export class ESimGoClient {
         if (status === 401) {
           throw new ESimGoAuthError(message, error.response?.data);
         } else if (status === 429) {
-          const retryAfter = error.response?.headers['retry-after'];
-          throw new ESimGoRateLimitError(message, retryAfter, error.response?.data);
+          const retryAfter = error.response?.headers["retry-after"];
+          throw new ESimGoRateLimitError(
+            message,
+            retryAfter,
+            error.response?.data
+          );
         } else if (status >= 400) {
-          throw new ESimGoApiError(message, status, error.response?.data, error);
+          throw new ESimGoApiError(
+            message,
+            status,
+            error.response?.data,
+            error
+          );
         }
 
         throw error;
@@ -164,10 +179,22 @@ export class ESimGoClient {
       apiKey: config.apiKey,
     });
 
-    this.catalogueApi = new CatalogueApi(configuration, undefined, this.axiosInstance);
+    this.catalogueApi = new CatalogueApi(
+      configuration,
+      undefined,
+      this.axiosInstance
+    );
     this.esimsApi = new ESIMsApi(configuration, undefined, this.axiosInstance);
-    this.organisationApi = new OrganisationApi(configuration, undefined, this.axiosInstance);
-    this._ordersApi = new OrdersApi(configuration, undefined, this.axiosInstance);
+    this.organisationApi = new OrganisationApi(
+      configuration,
+      undefined,
+      this.axiosInstance
+    );
+    this._ordersApi = new OrdersApi(
+      configuration,
+      undefined,
+      this.axiosInstance
+    );
   }
 
   // Public getters for API clients
@@ -184,12 +211,12 @@ export class ESimGoClient {
   }): Promise<ESimGoApiResponse<CatalogueResponseInner[]>> {
     return withRetry(
       async () => {
-        this.logger?.debug('Fetching catalogue', { params });
+        this.logger?.debug("Fetching catalogue", { params });
 
         const response = await this.catalogueApi.catalogueGet(params);
 
         // Log the raw response to understand its structure
-        this.logger?.debug('Raw API response', {
+        this.logger?.debug("Raw API response", {
           hasData: !!response.data,
           dataType: typeof response.data,
           dataKeys: response.data ? Object.keys(response.data) : [],
@@ -200,14 +227,18 @@ export class ESimGoClient {
         let bundles: CatalogueResponseInner[] = [];
         if (Array.isArray(response.data)) {
           bundles = response.data;
-        } else if (response.data && typeof response.data === 'object' && 'bundles' in response.data) {
+        } else if (
+          response.data &&
+          typeof response.data === "object" &&
+          "bundles" in response.data
+        ) {
           bundles = (response.data as any).bundles || [];
         }
 
-        this.logger?.info('Catalogue fetched', {
+        this.logger?.info("Catalogue fetched", {
           bundleCount: bundles.length,
           group: params.group,
-          operationType: 'catalogue-fetch',
+          operationType: "catalogue-fetch",
         });
 
         return {
@@ -216,7 +247,7 @@ export class ESimGoClient {
             requestId: this.generateRequestId(),
             timestamp: new Date().toISOString(),
             cached: false,
-            source: 'api' as const,
+            source: "api" as const,
           },
         };
       },
@@ -230,13 +261,13 @@ export class ESimGoClient {
   async getOrganizationGroups(): Promise<ESimGoApiResponse<BundleGroup[]>> {
     return withRetry(
       async () => {
-        this.logger?.debug('Fetching organization groups');
+        this.logger?.debug("Fetching organization groups");
 
         const response = await this.organisationApi.organisationGroupsGet();
 
-        this.logger?.info('Organization groups fetched', {
+        this.logger?.info("Organization groups fetched", {
           groupCount: response.data?.groups?.length || 0,
-          operationType: 'organization-groups-fetch',
+          operationType: "organization-groups-fetch",
         });
 
         return {
@@ -245,7 +276,7 @@ export class ESimGoClient {
             requestId: this.generateRequestId(),
             timestamp: new Date().toISOString(),
             cached: false,
-            source: 'api' as const,
+            source: "api" as const,
           },
         };
       },
@@ -263,16 +294,16 @@ export class ESimGoClient {
   }): Promise<ESimGoApiResponse<ESIMApplyResponse>> {
     return withRetry(
       async () => {
-        this.logger?.debug('Applying bundle to eSIM', { 
+        this.logger?.debug("Applying bundle to eSIM", {
           iccid: request.iccid,
-          bundleCount: request.bundles.length
+          bundleCount: request.bundles.length,
         });
 
         // For now, apply the first bundle only (API limitation)
         // TODO: Support applying multiple bundles by making multiple API calls
         const bundleName = request.bundles[0];
         if (!bundleName) {
-          throw new ESimGoApiError('At least one bundle must be provided');
+          throw new ESimGoApiError("At least one bundle must be provided");
         }
 
         const applyRequest: ApplyBundleWithICCIDRequest = {
@@ -285,10 +316,10 @@ export class ESimGoClient {
           esimsApplyPostRequest: applyRequest,
         });
 
-        this.logger?.info('Bundle applied to eSIM', {
+        this.logger?.info("Bundle applied to eSIM", {
           iccid: request.iccid,
           bundleCount: request.bundles.length,
-          operationType: 'bundle-application',
+          operationType: "bundle-application",
         });
 
         return {
@@ -297,7 +328,7 @@ export class ESimGoClient {
             requestId: this.generateRequestId(),
             timestamp: new Date().toISOString(),
             cached: false,
-            source: 'api' as const,
+            source: "api" as const,
           },
         };
       },
@@ -318,13 +349,13 @@ export class ESimGoClient {
   }): Promise<ESimGoApiResponse<ESIMs>> {
     return withRetry(
       async () => {
-        this.logger?.debug('Fetching eSIMs', { params });
+        this.logger?.debug("Fetching eSIMs", { params });
 
         const response = await this.esimsApi.esimsGet(params);
 
-        this.logger?.info('eSIMs fetched', {
+        this.logger?.info("eSIMs fetched", {
           esimCount: response.data?.esims?.length || 0,
-          operationType: 'esims-fetch',
+          operationType: "esims-fetch",
         });
 
         return {
@@ -333,7 +364,7 @@ export class ESimGoClient {
             requestId: this.generateRequestId(),
             timestamp: new Date().toISOString(),
             cached: false,
-            source: 'api' as const,
+            source: "api" as const,
           },
         };
       },
@@ -344,17 +375,19 @@ export class ESimGoClient {
   }
 
   // Search catalog with enhanced filtering
-  async searchCatalog(criteria: CatalogSearchCriteria): Promise<ESimGoApiResponse<CatalogueResponseInner[]>> {
+  async searchCatalog(
+    criteria: CatalogSearchCriteria
+  ): Promise<ESimGoApiResponse<CatalogueResponseInner[]>> {
     const searchParams: any = {};
 
     if (criteria.countries?.length) {
-      searchParams.countries = criteria.countries.join(',');
+      searchParams.countries = criteria.countries.join(",");
     }
 
     if (criteria.bundleGroups?.length) {
       // Search each bundle group separately for optimal performance
       const allBundles: CatalogueResponseInner[] = [];
-      
+
       for (const group of criteria.bundleGroups) {
         const groupResult = await this.getCatalogueWithRetry({
           group,
@@ -364,14 +397,25 @@ export class ESimGoClient {
       }
 
       // Apply additional filtering
-      const filteredBundles = allBundles.filter(bundle => {
-        if (criteria.minDuration && bundle.duration && bundle.duration < criteria.minDuration) {
+      const filteredBundles = allBundles.filter((bundle) => {
+        if (
+          criteria.minDuration &&
+          bundle.duration &&
+          bundle.duration < criteria.minDuration
+        ) {
           return false;
         }
-        if (criteria.maxDuration && bundle.duration && bundle.duration > criteria.maxDuration) {
+        if (
+          criteria.maxDuration &&
+          bundle.duration &&
+          bundle.duration > criteria.maxDuration
+        ) {
           return false;
         }
-        if (criteria.unlimited !== undefined && bundle.unlimited !== criteria.unlimited) {
+        if (
+          criteria.unlimited !== undefined &&
+          bundle.unlimited !== criteria.unlimited
+        ) {
           return false;
         }
         // Add more filters as needed
@@ -384,7 +428,7 @@ export class ESimGoClient {
           requestId: this.generateRequestId(),
           timestamp: new Date().toISOString(),
           cached: false,
-          source: 'api' as const,
+          source: "api" as const,
         },
       };
     }
@@ -404,8 +448,26 @@ export class ESimGoClient {
       await this.organisationApi.organisationGet();
       return true;
     } catch (error) {
-      this.logger?.error('Health check failed', error as Error);
+      this.logger?.error("Health check failed", error as Error);
       return false;
     }
+  }
+
+  async validateOrder(bundleName: string) {
+    const response = await this.ordersApi.ordersPost({
+      orderRequest: {
+        type: OrderRequestTypeEnum.VALIDATE,
+        assign: false,
+        order: [
+          {
+            item: bundleName,
+            quantity: 1,
+            type: BundleOrderTypeEnum.BUNDLE,
+          },
+        ],
+      },
+    });
+
+    return Boolean(response.data.order?.[0]?.type);
   }
 }

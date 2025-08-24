@@ -1,3 +1,4 @@
+import { env } from "@hiilo/easycard";
 import {
   calculatePricing,
   type PricingEngineV2Result,
@@ -10,7 +11,6 @@ import { WEB_APP_BUNDLE_GROUP } from "../lib/constants/bundle-groups";
 import { createLogger } from "../lib/logger";
 import { CheckoutUpdateType, OrderStatus, PaymentMethod } from "../types";
 import { purchaseAndDeliverESIM } from "./esim-purchase";
-import { env } from "@hiilo/easycard";
 
 const logger = createLogger({ component: "checkout-session-service" });
 
@@ -148,6 +148,7 @@ const publishSessionUpdate = async (
       token: "", // Token not needed in updates
       expiresAt: session.expiresAt,
       isComplete: session.state === CheckoutState.PAYMENT_COMPLETED,
+      isValidated: session.isValidated || false,
       timeRemaining: Math.max(
         0,
         Math.floor((new Date(session.expiresAt).getTime() - Date.now()) / 1000)
@@ -162,6 +163,8 @@ const publishSessionUpdate = async (
         metadata: session.metadata,
       }),
       paymentStatus: mapStateToPaymentStatus(session.state),
+      paymentUrl: session.metadata?.paymentIntent?.url || null,
+      paymentIntentId: session.paymentIntentId || null,
       orderId: session.orderId || null,
       metadata: session.metadata,
     };
@@ -199,16 +202,33 @@ const publishSessionUpdate = async (
 export const mapStateToSteps = (params: {
   state: CheckoutState;
   userId?: string;
-  paymentIntentId?: string;
+  user?: {
+    email?: string;
+    firstName: string;
+    phoneNumber?: string;
+    lastName: string;
+    id: string;
+  };
+  paymentIntent?: {
+    id: string;
+    url: string;
+    applePayJavaScriptUrl: string;
+    createdAt: string;
+    orderId: string;
+  };
   metadata?: any;
 }) => {
-  const { state, userId, paymentIntentId, metadata = {} } = params;
+  const { state, userId, user, paymentIntent, metadata = {} } = params;
 
   const steps = {
     authentication: {
       completed: false,
       completedAt: undefined as string | undefined,
       userId: undefined as string | undefined,
+      email: undefined as string | undefined,
+      firstName: undefined as string | undefined,
+      lastName: undefined as string | undefined,
+      phoneNumber: undefined as string | undefined,
     },
     delivery: {
       completed: false,
@@ -222,6 +242,8 @@ export const mapStateToSteps = (params: {
       completedAt: undefined as string | undefined,
       paymentIntentId: undefined as string | undefined,
       processing: false,
+      paymentIntentUrl: undefined as string | undefined,
+      paymentIntentApplePayUrl: undefined as string | undefined,
       readyForPayment: false,
     },
   };
@@ -231,6 +253,9 @@ export const mapStateToSteps = (params: {
     steps.authentication.completed = true;
     steps.authentication.completedAt = metadata.authCompletedAt;
     steps.authentication.userId = userId;
+    steps.authentication.email = user?.email;
+    steps.authentication.firstName = user?.first_name;
+    steps.authentication.lastName = user?.last_name;
   }
 
   if (
@@ -250,17 +275,20 @@ export const mapStateToSteps = (params: {
 
   if (state === CheckoutState.PAYMENT_READY) {
     steps.payment.readyForPayment = true;
+    steps.payment.paymentIntentId = paymentIntent?.id;
+    steps.payment.paymentIntentUrl = paymentIntent?.url;
+    steps.payment.paymentIntentApplePayUrl =
+      paymentIntent?.applePayJavaScriptUrl;
   }
 
   if (state === CheckoutState.PAYMENT_PROCESSING) {
     steps.payment.processing = true;
-    steps.payment.paymentIntentId = paymentIntentId;
   }
 
   if (state === CheckoutState.PAYMENT_COMPLETED) {
     steps.payment.completed = true;
     steps.payment.completedAt = metadata.paymentCompletedAt;
-    steps.payment.paymentIntentId = paymentIntentId;
+    steps.payment.paymentIntentId = paymentIntent?.id;
   }
 
   return steps;
@@ -445,7 +473,7 @@ const validateSessionOrder = async (
     }
 
     const updatedMetadata = {
-      ...session.metadata,
+      ...(session.metadata as any),
       isValidated: isValid,
       validationDetails: isValid
         ? {
@@ -571,72 +599,19 @@ export const authenticateSession = async (
       });
     }
 
-    // Parse plan snapshot
-    const planSnapshot =
-      typeof session.plan_snapshot === "string"
-        ? JSON.parse(session.plan_snapshot)
-        : session.plan_snapshot;
-
-    // Create payment intent
-    const orderId = `order_${Date.now()}_${Math.random()
-      .toString(36)
-      .substring(2, 11)}`;
-    const redirectUrl = `${
-      env.isDev
-        ? "https://hiilo.loca.lt"
-        : process.env.NEXT_PUBLIC_APP_URL || "https://hiilo.loca.lt"
-    }/payment/callback?sessionId=${sessionId}`;
-
-    const paymentResult =
-      await context.services.easycardPayment.createPaymentIntent({
-        amount: planSnapshot.price,
-        currency: "USD",
-        description: `eSIM purchase: ${planSnapshot.name}`,
-        costumer: {
-          id: userId,
-          email: userEmail,
-          firstName: userFirstName,
-          lastName: userLastName,
-        },
-        item: {
-          id: planSnapshot.id,
-          name: planSnapshot.name,
-          price: planSnapshot.price,
-          discount: 0,
-          duration: planSnapshot.duration,
-          currency: "USD",
-          countries: planSnapshot.countries,
-        },
-        order: {
-          id: orderId,
-          reference: orderId,
-        },
-        redirectUrl,
-        metadata: {
-          sessionId,
-          planId: session.plan_id,
-          idempotencyKey: `session-${sessionId}-auth`,
-        },
-      });
-
-    if (!paymentResult.success || !paymentResult.payment_intent) {
-      throw new GraphQLError("Failed to create payment intent", {
-        extensions: { code: "PAYMENT_INTENT_ERROR" },
-      });
-    }
-
-    const paymentIntent = paymentResult.payment_intent as any;
-    const paymentIntentId =
-      paymentIntent.entityUID || paymentIntent.entityReference;
-
-    // Update session with authentication and payment intent
+    // Update session with authentication
     const updatedSession = await context.repositories.checkoutSessions.update(
       sessionId,
       {
         state: CheckoutState.AUTHENTICATED, // Update state column
         user_id: userId,
-        payment_intent_id: paymentIntentId,
         steps: mapStateToSteps({
+          user: {
+            email: userEmail,
+            firstName: userFirstName,
+            lastName: userLastName,
+            id: userId,
+          },
           state: CheckoutState.AUTHENTICATED,
           userId,
           metadata: {
@@ -647,14 +622,6 @@ export const authenticateSession = async (
           ...session.metadata,
           state: CheckoutState.AUTHENTICATED,
           authCompletedAt: new Date().toISOString(),
-          paymentIntent: {
-            id: paymentIntentId,
-            url: paymentIntent.additionalData?.url,
-            applePayJavaScriptUrl:
-              paymentIntent.additionalData?.applePayJavaScriptUrl,
-            createdAt: new Date().toISOString(),
-            orderId,
-          },
         } as any,
       }
     );
@@ -707,31 +674,31 @@ export const setDeliveryMethod = async (
       (session.metadata as any)?.state || CheckoutState.INITIALIZED;
 
     // Validate we're in the right state
-    if (currentState !== CheckoutState.AUTHENTICATED) {
-      throw new GraphQLError(
-        `Cannot set delivery method in state: ${currentState}`,
-        { extensions: { code: "INVALID_STATE_TRANSITION" } }
-      );
-    }
+    // if (currentState !== CheckoutState.AUTHENTICATED) {
+    //   throw new GraphQLError(
+    //     `Cannot set delivery method in state: ${currentState}`,
+    //     { extensions: { code: "INVALID_STATE_TRANSITION" } }
+    //   );
+    // }
 
-    // Validate delivery data
-    if (
-      (deliveryData.method === "EMAIL" || deliveryData.method === "BOTH") &&
-      !deliveryData.email
-    ) {
-      throw new GraphQLError("Email required for email delivery", {
-        extensions: { code: "VALIDATION_ERROR" },
-      });
-    }
+    // // Validate delivery data
+    // if (
+    //   (deliveryData.method === "EMAIL" || deliveryData.method === "BOTH") &&
+    //   !deliveryData.email
+    // ) {
+    //   throw new GraphQLError("Email required for email delivery", {
+    //     extensions: { code: "VALIDATION_ERROR" },
+    //   });
+    // }
 
-    if (
-      (deliveryData.method === "SMS" || deliveryData.method === "BOTH") &&
-      !deliveryData.phoneNumber
-    ) {
-      throw new GraphQLError("Phone number required for SMS delivery", {
-        extensions: { code: "VALIDATION_ERROR" },
-      });
-    }
+    // if (
+    //   (deliveryData.method === "SMS" || deliveryData.method === "BOTH") &&
+    //   !deliveryData.phoneNumber
+    // ) {
+    //   throw new GraphQLError("Phone number required for SMS delivery", {
+    //     extensions: { code: "VALIDATION_ERROR" },
+    //   });
+    // }
 
     // Update session
     const updatedSession = await context.repositories.checkoutSessions.update(
@@ -768,14 +735,21 @@ export const setDeliveryMethod = async (
 
     const mappedSession = mapDatabaseSessionToModel(updatedSession);
 
-    // Publish update
+    // Publish update for delivery step completion
     await publishSessionUpdate(
       mappedSession,
       CheckoutUpdateType.StepCompleted,
       context
     );
 
-    return mappedSession;
+    // Automatically prepare payment after delivery is set
+    logger.info("Automatically preparing payment after delivery", {
+      sessionId,
+    });
+
+    const paymentReadySession = await preparePayment(context, sessionId);
+
+    return paymentReadySession;
   } catch (error) {
     logger.error("Failed to set delivery method", error as Error, {
       sessionId,
@@ -801,6 +775,74 @@ export const preparePayment = async (
         extensions: { code: "SESSION_NOT_FOUND" },
       });
     }
+    const userId = session.user_id || "";
+    const user = (await context.repositories.users.getById(userId)) || {};
+
+    if (!user) {
+      throw new GraphQLError("User not found", {
+        extensions: { code: "USER_NOT_FOUND" },
+      });
+    }
+
+    const { email, first_name, last_name } = user;
+
+    // Parse plan snapshot
+    const planSnapshot =
+      typeof session.plan_snapshot === "string"
+        ? JSON.parse(session.plan_snapshot)
+        : session.plan_snapshot;
+
+    // Create payment intent
+    const orderId = `order_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 11)}`;
+    const redirectUrl = `${
+      env.isDev
+        ? "https://hiilo.loca.lt"
+        : process.env.NEXT_PUBLIC_APP_URL || "https://hiilo.loca.lt"
+    }/payment/callback?sessionId=${sessionId}`;
+
+    const paymentResult =
+      await context.services.easycardPayment.createPaymentIntent({
+        amount: planSnapshot.price,
+        currency: "USD",
+        description: `eSIM purchase: ${planSnapshot.name}`,
+        costumer: {
+          id: userId,
+          email,
+          firstName: first_name,
+          lastName: last_name,
+        },
+        item: {
+          id: planSnapshot.id,
+          name: planSnapshot.name,
+          price: planSnapshot.price,
+          discount: 0,
+          duration: planSnapshot.duration,
+          currency: "USD",
+          countries: planSnapshot.countries,
+        },
+        order: {
+          id: orderId,
+          reference: orderId,
+        },
+        redirectUrl,
+        metadata: {
+          sessionId,
+          planId: session.plan_id,
+          idempotencyKey: `session-${sessionId}-auth`,
+        },
+      });
+
+    if (!paymentResult.success || !paymentResult.payment_intent) {
+      throw new GraphQLError("Failed to create payment intent", {
+        extensions: { code: "PAYMENT_INTENT_ERROR" },
+      });
+    }
+
+    const paymentIntent = paymentResult.payment_intent as any;
+    const paymentIntentId =
+      paymentIntent.entityUID || paymentIntent.entityReference;
 
     const currentState =
       (session.metadata as any)?.state || CheckoutState.INITIALIZED;
@@ -821,11 +863,18 @@ export const preparePayment = async (
         steps: mapStateToSteps({
           state: CheckoutState.PAYMENT_READY,
           userId: session.user_id || undefined,
-          paymentIntentId: session.payment_intent_id || undefined,
+          paymentIntent: {
+            id: paymentIntentId,
+            url: paymentIntent.additionalData?.url,
+            applePayJavaScriptUrl:
+              paymentIntent.additionalData?.applePayJavaScriptUrl,
+            createdAt: new Date().toISOString(),
+            orderId,
+          },
           metadata: session.metadata,
         }),
         metadata: {
-          ...session.metadata,
+          ...(session.metadata as any),
           state: CheckoutState.PAYMENT_READY,
         } as any,
       }

@@ -23,7 +23,7 @@ import { ScrollArea } from "./scroll-area";
 
 export interface PhoneInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
   value?: string;
-  onChange?: (value: string) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   defaultCountry?: CountryCode;
   placeholder?: string;
   error?: boolean;
@@ -174,7 +174,7 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
         // Keep current country if parsing fails
       }
 
-      onChange?.(inputValue);
+      onChange?.(e);
     };
 
     const handleCountrySelect = (alpha2: string) => {
@@ -206,7 +206,7 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
             }
             
             setPhoneNumber(newPhoneNumber);
-            onChange?.(newPhoneNumber);
+            onChange?.({ target: { value: newPhoneNumber } } as React.ChangeEvent<HTMLInputElement>);
           } catch (error) {
             // If we can't get the calling code, just update the flag
           }

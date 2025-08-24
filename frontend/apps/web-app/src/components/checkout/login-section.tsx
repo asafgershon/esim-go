@@ -2,7 +2,18 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useLoginForm } from "@/hooks/useLoginForm";
-import { AppleSignInButton, Button, Card, GoogleSignInButton, Input, InputOTP, InputOTPGroup, InputOTPSlot, Label, PhoneInput } from "@workspace/ui";
+import {
+  AppleSignInButton,
+  Button,
+  Card,
+  GoogleSignInButton,
+  Input,
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+  Label,
+  PhoneInput,
+} from "@workspace/ui";
 import { LogOut, User } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
@@ -18,8 +29,36 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
 
+  // Determine default country based on locale and environment
+  const getDefaultCountry = () => {
+    if (process.env.NODE_ENV === "development") {
+      return "US"; // Force US in development for test numbers
+    }
+
+    // Get user's locale
+    const locale = navigator.language || "en-US";
+
+    // Map common locales to country codes
+    const localeToCountry: Record<string, string> = {
+      he: "IL",
+      "he-IL": "IL",
+      "en-US": "US",
+      "en-GB": "GB",
+      "fr-FR": "FR",
+      "de-DE": "DE",
+      "es-ES": "ES",
+      "it-IT": "IT",
+      // Add more mappings as needed
+    };
+
+    // Try exact match first, then language code only
+    return (
+      localeToCountry[locale] || localeToCountry[locale.split("-")[0]] || "US"
+    ); // Default to US if no match
+  };
+
   const { user, isAuthenticated, isLoading, signOut, refreshAuth } = useAuth();
-  
+
   const {
     phoneForm,
     otpForm,
@@ -104,7 +143,7 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
   if (isAuthenticated && user) {
     // Check if user needs to provide name information
     const needsNameInfo = !user.firstName || !user.lastName;
-    
+
     if (needsNameInfo) {
       return (
         <Card className="relative" dir="rtl">
@@ -116,7 +155,7 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
         </Card>
       );
     }
-    
+
     // Format phone number for Israeli numbers
     const formatPhoneNumber = (phoneNumber: string) => {
       try {
@@ -198,20 +237,18 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
           {/* Social Login Buttons */}
           <div className="space-y-3">
             <GoogleSignInButton
-              rtl={true}
               loading={googleLoading}
               onClick={() => handleSocialSignIn("google")}
               disabled={googleLoading}
-              className="w-full h-11"
+              className="w-full"
             >
               המשך עם Google
             </GoogleSignInButton>
             <AppleSignInButton
-              rtl={true}
               loading={appleLoading}
               onClick={() => handleSocialSignIn("apple")}
               disabled={appleLoading}
-              className="w-full h-11"
+              className="w-full"
             >
               המשך עם Apple
             </AppleSignInButton>
@@ -238,7 +275,7 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
                 onChange={handlePhoneInputChange}
                 placeholder="הכנס מספר טלפון"
                 disabled={otpLoading}
-                defaultCountry="IL"
+                defaultCountry={getDefaultCountry()}
                 error={!!error && !phoneForm.watch("phoneNumber").trim()}
               />
             </div>
@@ -259,7 +296,9 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
                 >
                   <Button
                     type="submit"
-                    disabled={otpLoading || !phoneForm.watch("phoneNumber").trim()}
+                    disabled={
+                      otpLoading || !phoneForm.watch("phoneNumber").trim()
+                    }
                     className="w-full"
                   >
                     {otpLoading ? "שולח..." : "שלח קוד אימות"}

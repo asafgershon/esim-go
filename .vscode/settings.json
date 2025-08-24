@@ -4,5 +4,8 @@
   },
   "editor.quickSuggestions": {
     "strings": "on"
-  }
+  },
+  "typescript.tsdk": "./frontend/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "vitest.disableWorkspaceWarning": true
 }

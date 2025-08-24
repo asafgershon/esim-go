@@ -16,6 +16,15 @@
     "plugins": [
       {
         "name": "next"
+      },
+      {
+        "name": "@swc-contrib/plugin-graphql-codegen-client-preset",
+        "artifactDirectory": "./src/__generated__",
+        "gqlTagName": "gql"
+      },
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "./schema.graphql"
       }
     ],
     "paths": {

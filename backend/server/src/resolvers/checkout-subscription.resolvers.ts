@@ -78,6 +78,7 @@ function formatSessionForSubscription(
     paymentIntentId,
     orderId: session.orderId || session.order_id || null,
     metadata: session.metadata,
+    isValidated: Boolean(session.metadata?.isValidated),
   } as CheckoutSession;
 }
 

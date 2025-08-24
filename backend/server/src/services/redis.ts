@@ -58,3 +58,5 @@ export async function getRedis() {
 
   return redisInstance;
 }
+
+export type RedisInstance = typeof redisInstance;

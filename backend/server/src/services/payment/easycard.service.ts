@@ -32,12 +32,14 @@ export async function getClient() {
  * Initialize the EasyCard payment service
  * This sets up the singleton client instance
  */
-export async function initialize(): Promise<void> {
-  await getEasyCardClient();
-  
+export async function init() {
+  const client = await getEasyCardClient();
+
   logger.info("EasyCard payment service initialized", {
     operationType: "payment-service-init",
   });
+
+  return client;
 }
 
 /**
@@ -135,7 +137,7 @@ export async function refundPayment(
 
 // Export singleton functions as default
 export default {
-  initialize,
+  initialize: init,
   createPaymentIntent,
   getPaymentIntent,
   cancelPaymentIntent,

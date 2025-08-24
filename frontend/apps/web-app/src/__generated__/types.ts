@@ -95,6 +95,151 @@ export type AdminEsimUser = {
   lastName?: Maybe<Scalars['String']['output']>;
 };
 
+export type AirHaloApn = {
+  __typename?: 'AirHaloAPN';
+  ios?: Maybe<AirHaloApnios>;
+  name?: Maybe<Scalars['String']['output']>;
+  password?: Maybe<Scalars['String']['output']>;
+  username?: Maybe<Scalars['String']['output']>;
+};
+
+export type AirHaloApnios = {
+  __typename?: 'AirHaloAPNIOS';
+  name?: Maybe<Scalars['String']['output']>;
+  password?: Maybe<Scalars['String']['output']>;
+  username?: Maybe<Scalars['String']['output']>;
+};
+
+export type AirHaloCompatibleDevice = {
+  __typename?: 'AirHaloCompatibleDevice';
+  esimSupport: Scalars['Boolean']['output'];
+  manufacturer: Scalars['String']['output'];
+  model: Scalars['String']['output'];
+};
+
+export type AirHaloCompatibleDevicesResponse = {
+  __typename?: 'AirHaloCompatibleDevicesResponse';
+  data: Array<AirHaloCompatibleDevice>;
+};
+
+export type AirHaloCountry = {
+  __typename?: 'AirHaloCountry';
+  id: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type AirHaloCoverage = {
+  __typename?: 'AirHaloCoverage';
+  networks: Array<AirHaloNetwork>;
+};
+
+export type AirHaloImage = {
+  __typename?: 'AirHaloImage';
+  height?: Maybe<Scalars['Int']['output']>;
+  url: Scalars['String']['output'];
+  width?: Maybe<Scalars['Int']['output']>;
+};
+
+export type AirHaloLinks = {
+  __typename?: 'AirHaloLinks';
+  first?: Maybe<Scalars['String']['output']>;
+  last?: Maybe<Scalars['String']['output']>;
+  next?: Maybe<Scalars['String']['output']>;
+  prev?: Maybe<Scalars['String']['output']>;
+};
+
+export type AirHaloMeta = {
+  __typename?: 'AirHaloMeta';
+  currentPage?: Maybe<Scalars['Int']['output']>;
+  from?: Maybe<Scalars['Int']['output']>;
+  lastPage?: Maybe<Scalars['Int']['output']>;
+  path?: Maybe<Scalars['String']['output']>;
+  perPage?: Maybe<Scalars['Int']['output']>;
+  to?: Maybe<Scalars['Int']['output']>;
+  total?: Maybe<Scalars['Int']['output']>;
+};
+
+export type AirHaloNetwork = {
+  __typename?: 'AirHaloNetwork';
+  name: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type AirHaloOperator = {
+  __typename?: 'AirHaloOperator';
+  apn?: Maybe<AirHaloApn>;
+  countries: Array<AirHaloCountry>;
+  coverages: Array<AirHaloCoverage>;
+  id: Scalars['String']['output'];
+  packages: Array<AirHaloPackage>;
+  title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type AirHaloPackage = {
+  __typename?: 'AirHaloPackage';
+  amount: Scalars['Float']['output'];
+  data: Scalars['String']['output'];
+  day: Scalars['Int']['output'];
+  fairUsagePolicy?: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  isFairUsagePolicy?: Maybe<Scalars['Boolean']['output']>;
+  isUnlimited: Scalars['Boolean']['output'];
+  manualInstallation: Scalars['String']['output'];
+  netPrice: AirHaloPrice;
+  price: AirHaloPrice;
+  prices: AirHaloPrices;
+  qrInstallation: Scalars['String']['output'];
+  shortInfo?: Maybe<Scalars['String']['output']>;
+  text?: Maybe<Scalars['Int']['output']>;
+  title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+  voice?: Maybe<Scalars['Int']['output']>;
+};
+
+export type AirHaloPackageData = {
+  __typename?: 'AirHaloPackageData';
+  id: Scalars['String']['output'];
+  image?: Maybe<AirHaloImage>;
+  operators: Array<AirHaloOperator>;
+  slug: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type AirHaloPackageFilter = {
+  countries?: InputMaybe<Array<Scalars['String']['input']>>;
+  includeTopup?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  type?: InputMaybe<AirHaloPackageType>;
+};
+
+export enum AirHaloPackageType {
+  Global = 'GLOBAL',
+  Local = 'LOCAL',
+  Regional = 'REGIONAL'
+}
+
+export type AirHaloPackagesResponse = {
+  __typename?: 'AirHaloPackagesResponse';
+  data: Array<AirHaloPackageData>;
+  links?: Maybe<AirHaloLinks>;
+  meta?: Maybe<AirHaloMeta>;
+};
+
+export type AirHaloPrice = {
+  __typename?: 'AirHaloPrice';
+  currency: Scalars['String']['output'];
+  value: Scalars['Float']['output'];
+};
+
+export type AirHaloPrices = {
+  __typename?: 'AirHaloPrices';
+  netPrice: AirHaloPrice;
+  recommendedRetailPrice: AirHaloPrice;
+};
+
 export type AppliedRule = {
   __typename?: 'AppliedRule';
   category: RuleCategory;
@@ -292,6 +437,17 @@ export type BundlesForRegion = {
   region: Scalars['String']['output'];
 };
 
+/** Result of a cache operation */
+export type CacheOperationResult = {
+  __typename?: 'CacheOperationResult';
+  /** Number of cache entries affected (optional) */
+  clearedCount?: Maybe<Scalars['Int']['output']>;
+  /** Human-readable message about the operation */
+  message: Scalars['String']['output'];
+  /** Whether the operation was successful */
+  success: Scalars['Boolean']['output'];
+};
+
 export type CalculatePriceInput = {
   countryId?: InputMaybe<Scalars['String']['input']>;
   groups?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -384,6 +540,68 @@ export type CatalogSyncProgressUpdate = {
   status: SyncJobStatus;
   totalBundles?: Maybe<Scalars['Int']['output']>;
   updatedAt: Scalars['String']['output'];
+};
+
+export type Checkout = {
+  __typename?: 'Checkout';
+  auth?: Maybe<CheckoutAuth>;
+  bundle?: Maybe<CheckoutBundle>;
+  id: Scalars['ID']['output'];
+};
+
+export type CheckoutAuth = CheckoutAuthInterface & {
+  __typename?: 'CheckoutAuth';
+  completed: Scalars['Boolean']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  lastName?: Maybe<Scalars['String']['output']>;
+  method?: Maybe<Scalars['String']['output']>;
+  otpSent?: Maybe<Scalars['Boolean']['output']>;
+  otpVerified?: Maybe<Scalars['Boolean']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+  userId?: Maybe<Scalars['String']['output']>;
+};
+
+export type CheckoutAuthInterface = {
+  completed: Scalars['Boolean']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  lastName?: Maybe<Scalars['String']['output']>;
+  method?: Maybe<Scalars['String']['output']>;
+  otpSent?: Maybe<Scalars['Boolean']['output']>;
+  otpVerified?: Maybe<Scalars['Boolean']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+  userId?: Maybe<Scalars['String']['output']>;
+};
+
+export type CheckoutAuthWithOtp = CheckoutAuthInterface & {
+  __typename?: 'CheckoutAuthWithOTP';
+  authToken: Scalars['String']['output'];
+  completed: Scalars['Boolean']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  lastName?: Maybe<Scalars['String']['output']>;
+  method?: Maybe<Scalars['String']['output']>;
+  otpSent?: Maybe<Scalars['Boolean']['output']>;
+  otpVerified?: Maybe<Scalars['Boolean']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+  refreshToken: Scalars['String']['output'];
+  userId?: Maybe<Scalars['String']['output']>;
+};
+
+export type CheckoutBundle = {
+  __typename?: 'CheckoutBundle';
+  completed: Scalars['Boolean']['output'];
+  country?: Maybe<Country>;
+  currency: Scalars['String']['output'];
+  dataAmount: Scalars['String']['output'];
+  discounts: Array<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  numOfDays: Scalars['Int']['output'];
+  price: Scalars['Float']['output'];
+  pricePerDay: Scalars['Float']['output'];
+  speed: Array<Scalars['String']['output']>;
+  validated?: Maybe<Scalars['Boolean']['output']>;
 };
 
 export type CheckoutSession = {
@@ -584,6 +802,7 @@ export type DiscountApplication = {
   amount: Scalars['Float']['output'];
   description?: Maybe<Scalars['String']['output']>;
   percentage?: Maybe<Scalars['Float']['output']>;
+  ruleName: Scalars['String']['output'];
   type: Scalars['String']['output'];
 };
 
@@ -741,7 +960,16 @@ export type Mutation = {
   assignPackageToUser?: Maybe<AssignPackageResponse>;
   assignUserToTenant: TenantOperationResponse;
   cancelESIM?: Maybe<EsimActionResponse>;
+  /** Perform cache cleanup - remove expired entries (Admin only) */
+  cleanupPricingCache?: Maybe<CacheOperationResult>;
+  /** Clear pricing cache for a specific bundle (Admin only) */
+  clearBundlePricingCache?: Maybe<CacheOperationResult>;
+  /** Clear pricing cache for a specific country (Admin only) */
+  clearCountryPricingCache?: Maybe<CacheOperationResult>;
+  /** Clear all pricing cache (Admin only) */
+  clearPricingCache?: Maybe<CacheOperationResult>;
   clonePricingRule: PricingRule;
+  createCheckout?: Maybe<Scalars['String']['output']>;
   createCheckoutSession: CreateCheckoutSessionResponse;
   createPricingRule: PricingRule;
   createTenant: Tenant;
@@ -750,10 +978,15 @@ export type Mutation = {
   deleteTenant: TenantOperationResponse;
   deleteTrip?: Maybe<DeleteTripResponse>;
   deleteUser?: Maybe<DeleteUserResponse>;
+  /** Smart cache invalidation based on rule changes (Admin only) */
+  invalidateCacheByRuleChange?: Maybe<CacheOperationResult>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
   removeUserFromTenant: TenantOperationResponse;
+  reorderPricingRules: Array<PricingRule>;
+  /** Reset pricing performance metrics (Admin only) */
+  resetPricingMetrics?: Maybe<CacheOperationResult>;
   restoreESIM?: Maybe<EsimActionResponse>;
   sendPhoneOTP?: Maybe<SendOtpResponse>;
   signIn?: Maybe<SignInResponse>;
@@ -764,6 +997,8 @@ export type Mutation = {
   toggleHighDemandCountry?: Maybe<ToggleHighDemandResponse>;
   togglePricingRule: PricingRule;
   triggerCatalogSync?: Maybe<TriggerSyncResponse>;
+  updateCheckoutAuth: CheckoutAuth;
+  updateCheckoutAuthName: CheckoutAuth;
   updateCheckoutStep: UpdateCheckoutStepResponse;
   updateESIMReference?: Maybe<EsimActionResponse>;
   updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
@@ -774,6 +1009,7 @@ export type Mutation = {
   updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
   validateOrder: ValidateOrderResponse;
+  verifyOTP: CheckoutAuthWithOtp;
   verifyPhoneOTP?: Maybe<SignInResponse>;
 };
 
@@ -801,9 +1037,25 @@ export type MutationCancelEsimArgs = {
 };
 
 
+export type MutationClearBundlePricingCacheArgs = {
+  bundleId: Scalars['String']['input'];
+};
+
+
+export type MutationClearCountryPricingCacheArgs = {
+  countryId: Scalars['String']['input'];
+};
+
+
 export type MutationClonePricingRuleArgs = {
   id: Scalars['ID']['input'];
   newName: Scalars['String']['input'];
+};
+
+
+export type MutationCreateCheckoutArgs = {
+  countryId: Scalars['String']['input'];
+  numOfDays: Scalars['Int']['input'];
 };
 
 
@@ -847,6 +1099,12 @@ export type MutationDeleteUserArgs = {
 };
 
 
+export type MutationInvalidateCacheByRuleChangeArgs = {
+  affectedEntities: Array<Scalars['String']['input']>;
+  ruleType: Scalars['String']['input'];
+};
+
+
 export type MutationInviteAdminUserArgs = {
   input: InviteAdminUserInput;
 };
@@ -866,6 +1124,11 @@ export type MutationPurchaseEsimArgs = {
 export type MutationRemoveUserFromTenantArgs = {
   tenantSlug: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationReorderPricingRulesArgs = {
+  updates: Array<PricingRulePriorityUpdate>;
 };
 
 
@@ -916,6 +1179,22 @@ export type MutationTogglePricingRuleArgs = {
 
 export type MutationTriggerCatalogSyncArgs = {
   params: TriggerSyncParams;
+};
+
+
+export type MutationUpdateCheckoutAuthArgs = {
+  email?: InputMaybe<Scalars['String']['input']>;
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
+  sessionId: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateCheckoutAuthNameArgs = {
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+  sessionId: Scalars['String']['input'];
 };
 
 
@@ -970,6 +1249,12 @@ export type MutationUpdateUserRoleArgs = {
 
 export type MutationValidateOrderArgs = {
   input: ValidateOrderInput;
+};
+
+
+export type MutationVerifyOtpArgs = {
+  otp: Scalars['String']['input'];
+  sessionId: Scalars['String']['input'];
 };
 
 
@@ -1124,6 +1409,23 @@ export type PricingBreakdown = {
   unusedDays?: Maybe<Scalars['Int']['output']>;
 };
 
+/** Statistics about the pricing cache */
+export type PricingCacheStats = {
+  __typename?: 'PricingCacheStats';
+  /** Average key size in KB */
+  avgKeySizeKB: Scalars['Float']['output'];
+  /** Estimated total cache size in MB */
+  estimatedSizeMB: Scalars['Float']['output'];
+  /** Number of expired keys */
+  expiredKeys: Scalars['Int']['output'];
+  /** Timestamp when stats were collected */
+  timestamp: Scalars['String']['output'];
+  /** Total number of cache keys */
+  totalKeys: Scalars['Int']['output'];
+  /** Number of valid (non-expired) keys */
+  validKeys: Scalars['Int']['output'];
+};
+
 export type PricingConfiguration = {
   __typename?: 'PricingConfiguration';
   bundleGroup?: Maybe<Scalars['String']['output']>;
@@ -1147,6 +1449,23 @@ export type PricingFilters = {
   dataTypes: Array<DataType>;
   durations: Array<DurationRange>;
   groups: Array<Scalars['String']['output']>;
+};
+
+/** Performance metrics for pricing calculations */
+export type PricingPerformanceMetrics = {
+  __typename?: 'PricingPerformanceMetrics';
+  /** Error rate (0-1) */
+  errorRate: Scalars['Float']['output'];
+  /** Recent average batch size */
+  recentAvgBatchSize: Scalars['Float']['output'];
+  /** Recent average duration per batch (ms) */
+  recentAvgDuration: Scalars['Float']['output'];
+  /** Recent cache hit rate (0-1) */
+  recentCacheHitRate: Scalars['Float']['output'];
+  /** Timestamp when metrics were collected */
+  timestamp: Scalars['String']['output'];
+  /** Total number of pricing calculations performed */
+  totalCalculations: Scalars['Int']['output'];
 };
 
 export type PricingPipelineStepUpdate = {
@@ -1181,6 +1500,26 @@ export type PricingRule = {
   updatedAt: Scalars['String']['output'];
   validFrom?: Maybe<Scalars['String']['output']>;
   validUntil?: Maybe<Scalars['String']['output']>;
+};
+
+export type PricingRuleCalculation = {
+  __typename?: 'PricingRuleCalculation';
+  appliedRules: Array<AppliedRule>;
+  baseCost: Scalars['Float']['output'];
+  discounts: Array<DiscountApplication>;
+  finalPrice: Scalars['Float']['output'];
+  finalRevenue: Scalars['Float']['output'];
+  markup: Scalars['Float']['output'];
+  maxDiscountPercentage: Scalars['Float']['output'];
+  maxRecommendedPrice: Scalars['Float']['output'];
+  priceAfterDiscount: Scalars['Float']['output'];
+  processingFee: Scalars['Float']['output'];
+  processingRate: Scalars['Float']['output'];
+  profit: Scalars['Float']['output'];
+  revenueAfterProcessing: Scalars['Float']['output'];
+  selectedBundle: CountryBundle;
+  subtotal: Scalars['Float']['output'];
+  totalDiscount: Scalars['Float']['output'];
 };
 
 export type PricingRuleFilter = {
@@ -1320,6 +1659,9 @@ export type PurchaseEsimResponse = {
 export type Query = {
   __typename?: 'Query';
   activePricingRules: Array<PricingRule>;
+  airHaloCompatibleDevices: AirHaloCompatibleDevicesResponse;
+  airHaloPackages: AirHaloPackagesResponse;
+  airHaloPricingData: Array<AirHaloPackage>;
   allTenants: TenantConnection;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
@@ -1335,6 +1677,7 @@ export type Query = {
   calculatePrices: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
+  compareAirHaloPackages: Array<AirHaloPackageData>;
   conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   defaultPricingStrategy?: Maybe<PricingStrategy>;
@@ -1354,7 +1697,11 @@ export type Query = {
   paymentMethods: Array<PaymentMethodInfo>;
   pricingBlock?: Maybe<PricingBlock>;
   pricingBlocks: Array<PricingBlock>;
+  /** Get pricing cache statistics (Admin only) */
+  pricingCacheStats?: Maybe<PricingCacheStats>;
   pricingFilters: PricingFilters;
+  /** Get current pricing performance metrics (Admin only) */
+  pricingPerformanceMetrics?: Maybe<PricingPerformanceMetrics>;
   pricingRule?: Maybe<PricingRule>;
   pricingRules: Array<PricingRule>;
   pricingStrategies: Array<PricingStrategy>;
@@ -1364,6 +1711,16 @@ export type Query = {
   tenants: Array<Tenant>;
   trips: Array<Trip>;
   users: Array<User>;
+};
+
+
+export type QueryAirHaloPackagesArgs = {
+  filter?: InputMaybe<AirHaloPackageFilter>;
+};
+
+
+export type QueryAirHaloPricingDataArgs = {
+  packageIds: Array<Scalars['String']['input']>;
 };
 
 
@@ -1431,6 +1788,11 @@ export type QueryCatalogBundlesArgs = {
 
 export type QueryCatalogSyncHistoryArgs = {
   params?: InputMaybe<SyncHistoryParams>;
+};
+
+
+export type QueryCompareAirHaloPackagesArgs = {
+  countryCode: Scalars['String']['input'];
 };
 
 
@@ -1623,6 +1985,7 @@ export type Subscription = {
   __typename?: 'Subscription';
   calculatePricesBatchStream: PricingBreakdown;
   catalogSyncProgress: CatalogSyncProgressUpdate;
+  checkout: Checkout;
   checkoutSessionUpdated: CheckoutSessionUpdate;
   esimStatusUpdated: EsimStatusUpdate;
   pricingCalculationSteps: PricingStepUpdate;
@@ -1633,6 +1996,11 @@ export type Subscription = {
 export type SubscriptionCalculatePricesBatchStreamArgs = {
   inputs: Array<CalculatePriceInput>;
   requestedDays?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type SubscriptionCheckoutArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1884,6 +2252,49 @@ export type VerifyOtpInput = {
   otp: Scalars['String']['input'];
   phoneNumber: Scalars['String']['input'];
 };
+
+export type UpdateCheckoutAuthMutationVariables = Exact<{
+  sessionId: Scalars['String']['input'];
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type UpdateCheckoutAuthMutation = { __typename?: 'Mutation', updateCheckoutAuth: { __typename?: 'CheckoutAuth', completed: boolean, userId?: string | null, email?: string | null, phone?: string | null, firstName?: string | null, lastName?: string | null } };
+
+export type VerifyOtpMutationVariables = Exact<{
+  sessionId: Scalars['String']['input'];
+  otp: Scalars['String']['input'];
+}>;
+
+
+export type VerifyOtpMutation = { __typename?: 'Mutation', verifyOTP: { __typename?: 'CheckoutAuthWithOTP', otpVerified?: boolean | null, authToken: string, refreshToken: string } };
+
+export type UpdateCheckoutAuthNameMutationVariables = Exact<{
+  sessionId: Scalars['String']['input'];
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type UpdateCheckoutAuthNameMutation = { __typename?: 'Mutation', updateCheckoutAuthName: { __typename?: 'CheckoutAuth', firstName?: string | null, lastName?: string | null } };
+
+export type CheckoutSubscriptionVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type CheckoutSubscription = { __typename?: 'Subscription', checkout: { __typename?: 'Checkout', id: string, bundle?: { __typename?: 'CheckoutBundle', completed: boolean, id: string, numOfDays: number, dataAmount: string, price: number, pricePerDay: number, currency: string, speed: Array<string>, discounts: Array<string>, validated?: boolean | null, country?: { __typename?: 'Country', iso: any, name: string } | null } | null, auth?: { __typename?: 'CheckoutAuth', completed: boolean, userId?: string | null, email?: string | null, phone?: string | null, firstName?: string | null, lastName?: string | null, method?: string | null, otpSent?: boolean | null, otpVerified?: boolean | null } | null } };
+
+export type CreateCheckoutMutationVariables = Exact<{
+  numOfDays: Scalars['Int']['input'];
+  countryId: Scalars['String']['input'];
+}>;
+
+
+export type CreateCheckoutMutation = { __typename?: 'Mutation', createCheckout?: string | null };
 
 export type PricingCalculationStepsSubscriptionVariables = Exact<{
   input: CalculatePriceInput;

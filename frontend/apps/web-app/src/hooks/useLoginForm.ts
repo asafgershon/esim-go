@@ -62,6 +62,7 @@ export const useLoginForm = ({
   const [error, setError] = useState<string | null>(null);
   const [showPhoneHelper, setShowPhoneHelper] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
 
   // Hooks
   const { signInWithApple, loading: appleLoading } = useAppleSignIn();
@@ -109,6 +110,10 @@ export const useLoginForm = ({
       shouldValidate: true,
       shouldDirty: true,
     });
+    // Reset auto-submit flag when user changes OTP
+    if (value.length < 6) {
+      setHasAutoSubmitted(false);
+    }
   }, [otpForm]);
 
   // Phone form submission
@@ -231,16 +236,18 @@ export const useLoginForm = ({
     setOtp("");
     setError(null);
     setResendCooldown(0);
+    setHasAutoSubmitted(false);
     otpForm.reset();
     phoneForm.clearErrors();
   }, [otpForm, phoneForm, resetFlow]);
 
   // Auto-submit OTP when complete
   useEffect(() => {
-    if (otp.length === 6 && !otpLoading && otpForm.formState.isValid) {
+    if (otp.length === 6 && !otpLoading && !error && !hasAutoSubmitted && otpForm.formState.isValid) {
+      setHasAutoSubmitted(true);
       handleOTPSubmit({ otp });
     }
-  }, [handleOTPSubmit, otp, otpLoading, otpForm.formState.isValid]);
+  }, [handleOTPSubmit, otp, otpLoading, error, hasAutoSubmitted, otpForm.formState.isValid]);
 
   // Resend cooldown timer
   useEffect(() => {

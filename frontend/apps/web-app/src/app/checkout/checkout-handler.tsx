@@ -1,8 +1,9 @@
 import { CreateCheckoutSessionInput } from "@/__generated__/graphql";
-import { CheckoutContainer } from "@/components/checkout/checkout-container";
+import { CheckoutContainer } from "@/components/checkout/container";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { WEB_APP_BUNDLE_GROUP } from "@/lib/constants/bundle-groups";
+import { CheckoutContainerV2 } from "@/components/checkout-v2/container";
 
 interface CheckoutHandlerProps {
   searchParams: {
@@ -82,6 +83,7 @@ export default async function CheckoutHandler({
 }: CheckoutHandlerProps) {
   const { token, numOfDays, countryId, regionId } = searchParams;
 
+  return <CheckoutContainerV2 />;
   // If we already have a token, render the checkout page
   if (token) {
     return <CheckoutContainer />;

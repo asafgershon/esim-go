@@ -17,6 +17,10 @@
     "apps/*"
   ],
   "devDependencies": {
+    "@0no-co/graphqlsp": "^1.15.0",
+    "@graphql-codegen/cli": "^5.0.7",
+    "@graphql-codegen/schema-ast": "^4.1.0",
+    "@parcel/watcher": "^2.5.1",
     "@types/bun": "latest",
     "country-data-list": "^1.5.4",
     "turbo": "^2.5.4"

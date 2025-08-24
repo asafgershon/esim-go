@@ -1,0 +1,1660 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+directive @auth(role: String) on FIELD_DEFINITION | OBJECT
+
+enum ActionType {
+  ADD_MARKUP
+  APPLY_DISCOUNT_PERCENTAGE
+  APPLY_FIXED_DISCOUNT
+  SET_DISCOUNT_PER_UNUSED_DAY
+  SET_MINIMUM_PRICE
+  SET_MINIMUM_PROFIT
+  SET_PROCESSING_RATE
+}
+
+type ActivateESIMResponse {
+  error: String
+  esim: ESIM
+  success: Boolean!
+}
+
+type AdminESIM {
+  actionDate: String
+  activationCode: String
+  apiStatus: String
+  assignedDate: String
+  createdAt: String!
+  customerRef: String
+  esim_bundles: [JSON]
+  iccid: String!
+  id: ID!
+  lastAction: String
+  matchingId: String
+  order: AdminESIMOrder
+  orderId: String!
+  qrCodeUrl: String
+  smdpAddress: String
+  status: String!
+  updatedAt: String
+  usage: ESIMUsage
+  user: AdminESIMUser
+  userId: String!
+}
+
+type AdminESIMDetails {
+  actionDate: String
+  activationCode: String
+  apiDetails: JSON
+  assignedDate: String
+  createdAt: String!
+  customerRef: String
+  iccid: String!
+  id: ID!
+  lastAction: String
+  matchingId: String
+  order: Order
+  orderId: String!
+  qrCodeUrl: String
+  smdpAddress: String
+  status: String!
+  updatedAt: String
+  usage: ESIMUsage
+  userId: String!
+}
+
+type AdminESIMOrder {
+  bundleName: String
+  id: ID!
+  reference: String!
+}
+
+type AdminESIMUser {
+  email: String
+  firstName: String
+  id: ID!
+  lastName: String
+}
+
+type AirHaloAPN {
+  ios: AirHaloAPNIOS
+  name: String
+  password: String
+  username: String
+}
+
+type AirHaloAPNIOS {
+  name: String
+  password: String
+  username: String
+}
+
+type AirHaloCompatibleDevice {
+  esimSupport: Boolean!
+  manufacturer: String!
+  model: String!
+}
+
+type AirHaloCompatibleDevicesResponse {
+  data: [AirHaloCompatibleDevice!]!
+}
+
+type AirHaloCountry {
+  id: String!
+  slug: String!
+  title: String!
+}
+
+type AirHaloCoverage {
+  networks: [AirHaloNetwork!]!
+}
+
+type AirHaloImage {
+  height: Int
+  url: String!
+  width: Int
+}
+
+type AirHaloLinks {
+  first: String
+  last: String
+  next: String
+  prev: String
+}
+
+type AirHaloMeta {
+  currentPage: Int
+  from: Int
+  lastPage: Int
+  path: String
+  perPage: Int
+  to: Int
+  total: Int
+}
+
+type AirHaloNetwork {
+  name: String!
+  type: String!
+}
+
+type AirHaloOperator {
+  apn: AirHaloAPN
+  countries: [AirHaloCountry!]!
+  coverages: [AirHaloCoverage!]!
+  id: String!
+  packages: [AirHaloPackage!]!
+  title: String!
+  type: String!
+}
+
+type AirHaloPackage {
+  amount: Float!
+  data: String!
+  day: Int!
+  fairUsagePolicy: String
+  id: String!
+  isFairUsagePolicy: Boolean
+  isUnlimited: Boolean!
+  manualInstallation: String!
+  netPrice: AirHaloPrice!
+  price: AirHaloPrice!
+  prices: AirHaloPrices!
+  qrInstallation: String!
+  shortInfo: String
+  text: Int
+  title: String!
+  type: String!
+  voice: Int
+}
+
+type AirHaloPackageData {
+  id: String!
+  image: AirHaloImage
+  operators: [AirHaloOperator!]!
+  slug: String!
+  title: String!
+}
+
+input AirHaloPackageFilter {
+  countries: [String!]
+  includeTopup: Boolean
+  limit: Int
+  page: Int
+  type: AirHaloPackageType
+}
+
+enum AirHaloPackageType {
+  GLOBAL
+  LOCAL
+  REGIONAL
+}
+
+type AirHaloPackagesResponse {
+  data: [AirHaloPackageData!]!
+  links: AirHaloLinks
+  meta: AirHaloMeta
+}
+
+type AirHaloPrice {
+  currency: String!
+  value: Float!
+}
+
+type AirHaloPrices {
+  netPrice: AirHaloPrice!
+  recommendedRetailPrice: AirHaloPrice!
+}
+
+type AppliedRule {
+  category: RuleCategory!
+  id: ID!
+  impact: Float!
+  name: String!
+}
+
+type AssignPackageResponse {
+  assignment: PackageAssignment
+  error: String
+  success: Boolean!
+}
+
+enum AssignmentStatus {
+  ACTIVATED
+  ASSIGNED
+  CANCELLED
+  EXPIRED
+  PENDING
+}
+
+interface Bundle {
+  basePrice: Float!
+  countries: [String!]!
+  currency: String!
+  dataAmountMB: Int
+  dataAmountReadable: String!
+  description: String
+  groups: [String!]!
+  isUnlimited: Boolean!
+  name: String!
+  pricingBreakdown(paymentMethod: PaymentMethod): PricingBreakdown
+  region: String
+  speed: [String!]!
+  validityInDays: Int!
+}
+
+type BundleConnection {
+  nodes: [Bundle!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type BundleDataAggregation {
+  byDataAmount: [DataAmountGroup!]!
+  byDuration: [DurationGroup!]!
+  byGroup: [GroupDataStats!]!
+  lastUpdated: String!
+  total: Int!
+  unlimited: Int!
+}
+
+input BundleFilter {
+  countries: [String!]
+  groups: [String!]
+  isUnlimited: Boolean
+  priceRange: FloatRange
+  region: String
+  validityInDays: IntRange
+}
+
+type BundleFilterOptions {
+  """Available countries"""
+  countries: [FilterOption!]!
+  """Available groups"""
+  groups: [FilterOption!]!
+  """Available regions"""
+  regions: [FilterOption!]!
+}
+
+enum BundleState {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  INACTIVE
+  PROCESSING
+  SUSPENDED
+}
+
+type BundleStats {
+  """Total number of active bundles in the system"""
+  totalBundles: Int!
+  """Number of countries covered"""
+  totalCountries: Int!
+  """Number of unique bundle groups"""
+  totalGroups: Int!
+  """Number of regions covered"""
+  totalRegions: Int!
+}
+
+type BundlesByCountry {
+  bundleCount: Int!
+  bundles(limit: Int = 3, offset: Int): [Bundle!]!
+  country: Country!
+  pricingRange: PricingRange
+}
+
+type BundlesByGroup {
+  bundleCount: Int!
+  bundles(limit: Int = 3, offset: Int): [Bundle!]!
+  group: String!
+  pricingRange: PricingRange
+}
+
+type BundlesByRegion {
+  bundleCount: Int!
+  bundles(limit: Int = 3, offset: Int): [Bundle!]!
+  pricingRange: PricingRange
+  region: String!
+}
+
+type BundlesForCountry {
+  """Total number of bundles"""
+  bundleCount: Int!
+  """All bundles available for this country"""
+  bundles: [Bundle!]!
+  """Country information"""
+  country: Country!
+  """Groups available in this country"""
+  groups: [String!]!
+  """Whether unlimited bundles are available"""
+  hasUnlimited: Boolean!
+  """Price range"""
+  pricingRange: PriceRange!
+  """Regions that include this country"""
+  regions: [String!]!
+}
+
+type BundlesForGroup {
+  """Total number of bundles"""
+  bundleCount: Int!
+  """All bundles in this group"""
+  bundles: [Bundle!]!
+  """Countries covered by this group"""
+  countries: [String!]!
+  """Group name"""
+  group: String!
+  """Whether unlimited bundles are available"""
+  hasUnlimited: Boolean!
+  """Price range"""
+  pricingRange: PriceRange!
+  """Regions covered by this group"""
+  regions: [String!]!
+}
+
+type BundlesForRegion {
+  """Total number of bundles"""
+  bundleCount: Int!
+  """All bundles available for this region"""
+  bundles: [Bundle!]!
+  """Countries in this region"""
+  countries: [String!]!
+  """Groups available in this region"""
+  groups: [String!]!
+  """Whether unlimited bundles are available"""
+  hasUnlimited: Boolean!
+  """Price range"""
+  pricingRange: PriceRange!
+  """Region name"""
+  region: String!
+}
+
+"""Result of a cache operation"""
+type CacheOperationResult {
+  """Number of cache entries affected (optional)"""
+  clearedCount: Int
+  """Human-readable message about the operation"""
+  message: String!
+  """Whether the operation was successful"""
+  success: Boolean!
+}
+
+input CalculatePriceInput {
+  countryId: String
+  groups: [String!]
+  includeDebugInfo: Boolean
+  numOfDays: Int!
+  paymentMethod: PaymentMethod
+  promo: String
+  regionId: String
+}
+
+type CatalogBundle implements Bundle {
+  basePrice: Float!
+  countries: [String!]!
+  createdAt: DateTime!
+  currency: String!
+  dataAmountMB: Int
+  dataAmountReadable: String!
+  description: String
+  esimGoName: ID!
+  groups: [String!]!
+  isUnlimited: Boolean!
+  name: String!
+  pricingBreakdown(paymentMethod: PaymentMethod): PricingBreakdown
+  region: String
+  speed: [String!]!
+  syncedAt: DateTime!
+  updatedAt: DateTime!
+  validityInDays: Int!
+}
+
+type CatalogBundleConnection {
+  bundles: [CatalogBundle!]!
+  totalCount: Int!
+}
+
+type CatalogCountryBundles {
+  bundleCount: Int!
+  bundles: [CatalogBundle!]!
+  country: String!
+}
+
+type CatalogSyncHistoryConnection {
+  jobs: [CatalogSyncJob!]!
+  totalCount: Int!
+}
+
+type CatalogSyncJob {
+  bundlesAdded: Int
+  bundlesProcessed: Int
+  bundlesUpdated: Int
+  completedAt: String
+  countryId: String
+  createdAt: String!
+  duration: Int
+  errorMessage: String
+  group: String
+  id: ID!
+  jobType: String!
+  metadata: JSON
+  priority: String!
+  startedAt: String!
+  status: String!
+  type: SyncJobType!
+  updatedAt: String!
+}
+
+type CatalogSyncProgressUpdate {
+  bundleGroup: String
+  bundlesAdded: Int!
+  bundlesProcessed: Int!
+  bundlesUpdated: Int!
+  countryId: String
+  errorMessage: String
+  jobId: ID!
+  jobType: SyncJobType!
+  message: String
+  progress: Float!
+  startedAt: String!
+  status: SyncJobStatus!
+  totalBundles: Int
+  updatedAt: String!
+}
+
+type Checkout {
+  auth: CheckoutAuth
+  bundle: CheckoutBundle
+  id: ID!
+}
+
+type CheckoutAuth implements CheckoutAuthInterface {
+  completed: Boolean!
+  email: String
+  firstName: String
+  lastName: String
+  method: String
+  otpSent: Boolean
+  otpVerified: Boolean
+  phone: String
+  userId: String
+}
+
+interface CheckoutAuthInterface {
+  completed: Boolean!
+  email: String
+  firstName: String
+  lastName: String
+  method: String
+  otpSent: Boolean
+  otpVerified: Boolean
+  phone: String
+  userId: String
+}
+
+type CheckoutAuthWithOTP implements CheckoutAuthInterface {
+  authToken: String!
+  completed: Boolean!
+  email: String
+  firstName: String
+  lastName: String
+  method: String
+  otpSent: Boolean
+  otpVerified: Boolean
+  phone: String
+  refreshToken: String!
+  userId: String
+}
+
+type CheckoutBundle {
+  completed: Boolean!
+  country: Country
+  currency: String!
+  dataAmount: String!
+  discounts: [String!]!
+  id: ID!
+  numOfDays: Int!
+  price: Float!
+  pricePerDay: Float!
+  speed: [String!]!
+  validated: Boolean
+}
+
+type CheckoutSession {
+  createdAt: DateTime!
+  expiresAt: DateTime!
+  id: ID!
+  isComplete: Boolean!
+  isValidated: Boolean!
+  metadata: JSON
+  orderId: ID
+  paymentIntentId: String
+  paymentStatus: String
+  paymentUrl: String
+  planSnapshot: JSON
+  pricing: JSON
+  steps: JSON
+  timeRemaining: Int
+  token: String!
+}
+
+type CheckoutSessionUpdate {
+  session: CheckoutSession!
+  timestamp: DateTime!
+  updateType: CheckoutUpdateType!
+}
+
+enum CheckoutStepType {
+  AUTHENTICATION
+  DELIVERY
+  PAYMENT
+}
+
+enum CheckoutUpdateType {
+  INITIAL
+  ORDER_CREATED
+  PAYMENT_COMPLETED
+  PAYMENT_PROCESSING
+  SESSION_EXPIRED
+  STEP_COMPLETED
+}
+
+enum ConditionOperator {
+  BETWEEN
+  EQUALS
+  EXISTS
+  GREATER_THAN
+  IN
+  LESS_THAN
+  NOT_EQUALS
+  NOT_EXISTS
+  NOT_IN
+}
+
+type ConflictingJobInfo {
+  createdAt: String!
+  id: String!
+  jobType: String!
+  startedAt: String
+  status: String!
+}
+
+type Country {
+  flag: String
+  isHighDemand: Boolean
+  iso: ISOCountryCode!
+  name: String!
+  nameHebrew: String
+  region: String
+}
+
+type CountryBundle {
+  appliedRules: [AppliedRule!]
+  country: Country!
+  currency: String!
+  data: Float
+  duration: Int!
+  group: String
+  id: ID!
+  isUnlimited: Boolean!
+  name: String!
+  price: Float
+  pricingBreakdown: PricingBreakdown
+}
+
+input CreateCheckoutSessionInput {
+  countryId: String
+  group: String
+  numOfDays: Int!
+  regionId: String
+}
+
+type CreateCheckoutSessionResponse {
+  error: String
+  session: CheckoutSession
+  success: Boolean!
+}
+
+input CreatePricingRuleInput {
+  actions: [RuleActionInput!]!
+  category: RuleCategory!
+  conditions: [RuleConditionInput!]!
+  description: String
+  isActive: Boolean
+  name: String!
+  priority: Int!
+  validFrom: String
+  validUntil: String
+}
+
+input CreateTenantInput {
+  imgUrl: String!
+  name: String!
+  slug: ID!
+  tenantType: TenantType = STANDARD
+}
+
+input CreateTripInput {
+  bundleName: String!
+  description: String!
+  name: String!
+  title: String!
+}
+
+type CreateTripResponse {
+  error: String
+  success: Boolean!
+  trip: Trip
+}
+
+type CustomerBundle implements Bundle {
+  basePrice: Float!
+  countries: [String!]!
+  currency: String!
+  dataAmountMB: Int
+  dataAmountReadable: String!
+  description: String
+  groups: [String!]!
+  id: ID!
+  isUnlimited: Boolean!
+  name: String!
+  pricingBreakdown(paymentMethod: PaymentMethod): PricingBreakdown
+  region: String
+  speed: [String!]!
+  validityInDays: Int!
+}
+
+type CustomerDiscount {
+  amount: Float!
+  name: String!
+  percentage: Float
+  reason: String!
+}
+
+type DataAmountGroup {
+  count: Int!
+  dataAmount: Int!
+  percentage: Float!
+}
+
+type DataType {
+  isUnlimited: Boolean!
+  label: String!
+  maxDataMB: Int
+  minDataMB: Int
+  value: String!
+}
+
+scalar DateTime
+
+type DeleteTripResponse {
+  error: String
+  success: Boolean!
+}
+
+type DeleteUserResponse {
+  error: String
+  success: Boolean!
+}
+
+type DiscountApplication {
+  amount: Float!
+  description: String
+  percentage: Float
+  ruleName: String!
+  type: String!
+}
+
+type DurationGroup {
+  category: String!
+  count: Int!
+  duration: Int!
+  percentage: Float!
+}
+
+type DurationRange {
+  label: String!
+  maxDays: Int!
+  minDays: Int!
+  value: String!
+}
+
+type ESIM {
+  actionDate: String
+  assignedDate: String
+  bundleId: String!
+  bundleName: String!
+  bundles: [ESIMBundle!]!
+  createdAt: String!
+  customerRef: String
+  iccid: String!
+  id: ID!
+  installationLinks: InstallationLinks
+  lastAction: String
+  matchingId: String
+  order: Order!
+  qrCode: String
+  smdpAddress: String
+  status: ESIMStatus!
+  updatedAt: String!
+  usage: ESIMUsage!
+}
+
+type ESIMActionResponse {
+  error: String
+  esim: ESIM
+  success: Boolean!
+}
+
+type ESIMBundle {
+  dataRemaining: Float
+  dataUsed: Float!
+  endDate: String
+  id: ID!
+  name: String!
+  startDate: String
+  state: BundleState!
+}
+
+enum ESIMStatus {
+  ACTIVE
+  ASSIGNED
+  CANCELLED
+  EXPIRED
+  PROCESSING
+  SUSPENDED
+}
+
+type ESIMStatusUpdate {
+  dataRemaining: Float
+  dataUsed: Float
+  esimId: ID!
+  status: ESIMStatus!
+  updatedAt: String!
+}
+
+type ESIMUsage {
+  activeBundles: [ESIMBundle!]!
+  totalRemaining: Float
+  totalUsed: Float!
+}
+
+type FilterOption {
+  label: String!
+  value: String!
+}
+
+input FloatRange {
+  max: Float
+  min: Float
+}
+
+type GetCheckoutSessionResponse {
+  error: String
+  session: CheckoutSession
+  success: Boolean!
+}
+
+type GroupDataStats {
+  averageDataAmount: Float!
+  group: String!
+  limited: Int!
+  total: Int!
+  unlimited: Int!
+}
+
+scalar ISOCountryCode
+
+type InstallationLinks {
+  """LPA scheme for Android/Windows direct activation"""
+  lpaScheme: String!
+  """Manual entry components for all devices"""
+  manual: ManualInstallation!
+  """QR code data string (LPA format) for fallback"""
+  qrCodeData: String!
+  """iOS 17.4+ direct activation link (no QR scanning needed)"""
+  universalLink: String!
+}
+
+input IntRange {
+  max: Int
+  min: Int
+}
+
+input InviteAdminUserInput {
+  email: String!
+  redirectUrl: String
+  role: String!
+}
+
+type InviteAdminUserResponse {
+  error: String
+  invitedEmail: String
+  success: Boolean!
+}
+
+scalar JSON
+
+type ManualInstallation {
+  """Activation code"""
+  activationCode: String!
+  """Optional confirmation code"""
+  confirmationCode: String
+  """SM-DP+ server address"""
+  smDpAddress: String!
+}
+
+type Mutation {
+  activateESIM(esimId: ID!): ActivateESIMResponse
+  assignPackageToUser(planId: ID!, userId: ID!): AssignPackageResponse
+  assignUserToTenant(role: String, tenantSlug: ID!, userId: ID!): TenantOperationResponse!
+  cancelESIM(esimId: ID!): ESIMActionResponse
+  """Perform cache cleanup - remove expired entries (Admin only)"""
+  cleanupPricingCache: CacheOperationResult
+  """Clear pricing cache for a specific bundle (Admin only)"""
+  clearBundlePricingCache(bundleId: String!): CacheOperationResult
+  """Clear pricing cache for a specific country (Admin only)"""
+  clearCountryPricingCache(countryId: String!): CacheOperationResult
+  """Clear all pricing cache (Admin only)"""
+  clearPricingCache: CacheOperationResult
+  clonePricingRule(id: ID!, newName: String!): PricingRule!
+  createCheckout(countryId: String!, numOfDays: Int!): String
+  createCheckoutSession(input: CreateCheckoutSessionInput!): CreateCheckoutSessionResponse!
+  createPricingRule(input: CreatePricingRuleInput!): PricingRule!
+  createTenant(input: CreateTenantInput!): Tenant!
+  createTrip(input: CreateTripInput!): CreateTripResponse
+  deletePricingRule(id: ID!): Boolean!
+  deleteTenant(slug: ID!): TenantOperationResponse!
+  deleteTrip(id: ID!): DeleteTripResponse
+  deleteUser(userId: ID!): DeleteUserResponse
+  """Smart cache invalidation based on rule changes (Admin only)"""
+  invalidateCacheByRuleChange(affectedEntities: [String!]!, ruleType: String!): CacheOperationResult
+  inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse
+  processCheckoutPayment(input: ProcessCheckoutPaymentInput!): ProcessCheckoutPaymentResponse!
+  purchaseESIM(input: PurchaseESIMInput!, planId: ID!): PurchaseESIMResponse
+  removeUserFromTenant(tenantSlug: ID!, userId: ID!): TenantOperationResponse!
+  reorderPricingRules(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
+  """Reset pricing performance metrics (Admin only)"""
+  resetPricingMetrics: CacheOperationResult
+  restoreESIM(esimId: ID!): ESIMActionResponse
+  sendPhoneOTP(phoneNumber: String!): SendOTPResponse
+  signIn(input: SignInInput!): SignInResponse
+  signInWithApple(input: SocialSignInInput!): SignInResponse
+  signInWithGoogle(input: SocialSignInInput!): SignInResponse
+  signUp(input: SignUpInput!): SignUpResponse
+  suspendESIM(esimId: ID!): ESIMActionResponse
+  toggleHighDemandCountry(countryId: String!): ToggleHighDemandResponse
+  togglePricingRule(id: ID!): PricingRule!
+  triggerCatalogSync(params: TriggerSyncParams!): TriggerSyncResponse
+  updateCheckoutAuth(email: String, firstName: String, lastName: String, phone: String, sessionId: String!): CheckoutAuth!
+  updateCheckoutAuthName(firstName: String, lastName: String, sessionId: String!): CheckoutAuth!
+  updateCheckoutStep(input: UpdateCheckoutStepInput!): UpdateCheckoutStepResponse!
+  updateESIMReference(esimId: ID!, reference: String!): ESIMActionResponse
+  updatePricingConfiguration(input: UpdatePricingConfigurationInput!): UpdatePricingConfigurationResponse
+  updatePricingRule(id: ID!, input: UpdatePricingRuleInput!): PricingRule!
+  updatePricingRulePriorities(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
+  updateProfile(input: UpdateProfileInput!): UpdateProfileResponse
+  updateTenant(input: UpdateTenantInput!, slug: ID!): Tenant!
+  updateTrip(input: UpdateTripInput!): UpdateTripResponse
+  updateUserRole(role: String!, userId: ID!): User
+  validateOrder(input: ValidateOrderInput!): ValidateOrderResponse!
+  verifyOTP(otp: String!, sessionId: String!): CheckoutAuthWithOTP!
+  verifyPhoneOTP(input: VerifyOTPInput!): SignInResponse
+}
+
+type Order {
+  bundleId: String
+  bundleName: String
+  createdAt: String!
+  currency: String!
+  esims: [ESIM!]!
+  id: ID!
+  quantity: Int!
+  reference: String!
+  status: OrderStatus!
+  totalPrice: Float!
+  updatedAt: String!
+  user: User
+}
+
+input OrderFilter {
+  fromDate: String
+  status: OrderStatus
+  toDate: String
+}
+
+enum OrderStatus {
+  CANCELLED
+  COMPLETED
+  FAILED
+  PROCESSING
+  REFUNDED
+}
+
+type PackageAssignment {
+  assignedAt: String!
+  assignedBy: User!
+  bundleId: String!
+  bundleName: String!
+  createdAt: String!
+  id: ID!
+  status: AssignmentStatus!
+  updatedAt: String!
+  user: User!
+}
+
+type PageInfo {
+  currentPage: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  limit: Int!
+  offset: Int!
+  pages: Int!
+  total: Int!
+}
+
+input PaginationInput {
+  limit: Int = 50
+  offset: Int = 0
+}
+
+enum PaymentMethod {
+  AMEX
+  BIT
+  DINERS
+  FOREIGN_CARD
+  ISRAELI_CARD
+}
+
+type PaymentMethodInfo {
+  description: String!
+  icon: String
+  isActive: Boolean!
+  label: String!
+  processingRate: Float!
+  value: PaymentMethod!
+}
+
+type PriceRange {
+  """Average price (optional)"""
+  avg: Float
+  """Currency code"""
+  currency: String!
+  """Maximum price"""
+  max: Float!
+  """Minimum price"""
+  min: Float!
+}
+
+type PricingBlock {
+  action: JSON!
+  category: String!
+  conditions: JSON!
+  createdAt: DateTime!
+  createdBy: ID
+  description: String
+  id: ID!
+  isActive: Boolean!
+  isEditable: Boolean!
+  name: String!
+  priority: Int!
+  updatedAt: DateTime!
+  validFrom: DateTime
+  validUntil: DateTime
+}
+
+input PricingBlockFilter {
+  category: String
+  isActive: Boolean
+  isEditable: Boolean
+  searchTerm: String
+}
+
+type PricingBreakdown {
+  appliedRules: [AppliedRule!]
+  bundle: CountryBundle!
+  calculationTimeMs: Float
+  cost: Float!
+  country: Country!
+  currency: String!
+  customerDiscounts: [CustomerDiscount!]
+  debugInfo: JSON
+  discountPerDay: Float!
+  discountRate: Float!
+  discountValue: Float!
+  discounts: [DiscountApplication!]
+  duration: Int!
+  finalPrice: Float!
+  finalRevenue: Float!
+  markup: Float!
+  netProfit: Float!
+  priceAfterDiscount: Float!
+  pricingSteps: [PricingStep!]
+  processingCost: Float!
+  processingRate: Float!
+  revenueAfterProcessing: Float!
+  rulesEvaluated: Int
+  savingsAmount: Float
+  savingsPercentage: Float
+  selectedReason: String
+  totalCost: Float!
+  totalCostBeforeProcessing: Float
+  unusedDays: Int
+}
+
+"""Statistics about the pricing cache"""
+type PricingCacheStats {
+  """Average key size in KB"""
+  avgKeySizeKB: Float!
+  """Estimated total cache size in MB"""
+  estimatedSizeMB: Float!
+  """Number of expired keys"""
+  expiredKeys: Int!
+  """Timestamp when stats were collected"""
+  timestamp: String!
+  """Total number of cache keys"""
+  totalKeys: Int!
+  """Number of valid (non-expired) keys"""
+  validKeys: Int!
+}
+
+type PricingConfiguration {
+  bundleGroup: String
+  countryId: String
+  createdAt: String!
+  createdBy: String!
+  description: String!
+  discountPerDay: Float
+  discountRate: Float!
+  duration: Int
+  id: ID!
+  isActive: Boolean!
+  markupAmount: Float
+  name: String!
+  regionId: String
+  updatedAt: String!
+}
+
+type PricingFilters {
+  dataTypes: [DataType!]!
+  durations: [DurationRange!]!
+  groups: [String!]!
+}
+
+"""Performance metrics for pricing calculations"""
+type PricingPerformanceMetrics {
+  """Error rate (0-1)"""
+  errorRate: Float!
+  """Recent average batch size"""
+  recentAvgBatchSize: Float!
+  """Recent average duration per batch (ms)"""
+  recentAvgDuration: Float!
+  """Recent cache hit rate (0-1)"""
+  recentCacheHitRate: Float!
+  """Timestamp when metrics were collected"""
+  timestamp: String!
+  """Total number of pricing calculations performed"""
+  totalCalculations: Int!
+}
+
+type PricingPipelineStepUpdate {
+  appliedRules: [String!]
+  correlationId: String!
+  debug: JSON
+  name: String!
+  state: JSON
+  timestamp: String!
+}
+
+type PricingRange {
+  max: Float!
+  min: Float!
+}
+
+type PricingRule {
+  actions: [RuleAction!]!
+  category: RuleCategory!
+  conditions: [RuleCondition!]!
+  createdAt: String!
+  createdBy: String!
+  description: String
+  id: ID!
+  isActive: Boolean!
+  isEditable: Boolean!
+  name: String!
+  priority: Int!
+  updatedAt: String!
+  validFrom: String
+  validUntil: String
+}
+
+type PricingRuleCalculation {
+  appliedRules: [AppliedRule!]!
+  baseCost: Float!
+  discounts: [DiscountApplication!]!
+  finalPrice: Float!
+  finalRevenue: Float!
+  markup: Float!
+  maxDiscountPercentage: Float!
+  maxRecommendedPrice: Float!
+  priceAfterDiscount: Float!
+  processingFee: Float!
+  processingRate: Float!
+  profit: Float!
+  revenueAfterProcessing: Float!
+  selectedBundle: CountryBundle!
+  subtotal: Float!
+  totalDiscount: Float!
+}
+
+input PricingRuleFilter {
+  category: RuleCategory
+  isActive: Boolean
+  isEditable: Boolean
+  validFrom: String
+  validUntil: String
+}
+
+input PricingRulePriorityUpdate {
+  id: ID!
+  priority: Int!
+}
+
+type PricingStep {
+  impact: Float!
+  metadata: JSON
+  name: String!
+  order: Int!
+  priceAfter: Float!
+  priceBefore: Float!
+  ruleId: ID
+  timestamp: Float
+}
+
+type PricingStepUpdate {
+  completedSteps: Int!
+  correlationId: String!
+  error: String
+  finalBreakdown: PricingBreakdown
+  isComplete: Boolean!
+  step: PricingStep
+  totalSteps: Int!
+}
+
+type PricingStrategy {
+  activationCount: Int
+  archivedAt: String
+  blocks: [StrategyBlock!]!
+  code: String!
+  createdAt: String!
+  createdBy: String!
+  description: String
+  id: ID!
+  isDefault: Boolean!
+  lastActivatedAt: String
+  name: String!
+  parentStrategyId: String
+  updatedAt: String
+  updatedBy: String
+  validatedAt: String
+  validationErrors: JSON
+  version: Int!
+}
+
+input ProcessCheckoutPaymentInput {
+  token: String!
+}
+
+type ProcessCheckoutPaymentResponse {
+  error: String
+  orderId: ID
+  paymentIntentId: String
+  session: CheckoutSession
+  success: Boolean!
+  webhookProcessing: Boolean
+}
+
+type ProcessingFeeConfiguration {
+  appleGooglePayFee: Float!
+  bankWithdrawalFee: Float!
+  bitPaymentRate: Float!
+  cancellationFee: Float!
+  chargebackFee: Float!
+  createdAt: DateTime!
+  createdBy: String!
+  effectiveFrom: DateTime!
+  effectiveTo: DateTime
+  fixedFeeForeign: Float!
+  fixedFeeNIS: Float!
+  foreignCardsRate: Float!
+  id: ID!
+  invoiceServiceFee: Float!
+  isActive: Boolean!
+  israeliCardsRate: Float!
+  monthlyFixedCost: Float!
+  monthlyMinimumFee: Float!
+  notes: String
+  premiumAmexRate: Float!
+  premiumDinersRate: Float!
+  setupCost: Float!
+  threeDSecureFee: Float!
+  updatedAt: DateTime!
+}
+
+input ProcessingFeeConfigurationInput {
+  appleGooglePayFee: Float!
+  bankWithdrawalFee: Float!
+  bitPaymentRate: Float!
+  cancellationFee: Float!
+  chargebackFee: Float!
+  effectiveFrom: DateTime!
+  effectiveTo: DateTime
+  fixedFeeForeign: Float!
+  fixedFeeNIS: Float!
+  foreignCardsRate: Float!
+  invoiceServiceFee: Float!
+  israeliCardsRate: Float!
+  monthlyFixedCost: Float!
+  monthlyMinimumFee: Float!
+  notes: String
+  premiumAmexRate: Float!
+  premiumDinersRate: Float!
+  setupCost: Float!
+  threeDSecureFee: Float!
+}
+
+input PurchaseESIMInput {
+  autoActivate: Boolean
+  customerReference: String
+  quantity: Int!
+}
+
+type PurchaseESIMResponse {
+  error: String
+  order: Order
+  success: Boolean!
+}
+
+type Query {
+  activePricingRules: [PricingRule!]!
+  airHaloCompatibleDevices: AirHaloCompatibleDevicesResponse!
+  airHaloPackages(filter: AirHaloPackageFilter): AirHaloPackagesResponse!
+  airHaloPricingData(packageIds: [String!]!): [AirHaloPackage!]!
+  allTenants(filter: TenantFilter, pagination: PaginationInput): TenantConnection!
+  bundle(id: String!): Bundle!
+  bundleFilterOptions: BundleFilterOptions!
+  bundleStats: BundleStats!
+  bundles(filter: BundleFilter, pagination: PaginationInput): BundleConnection!
+  bundlesByCountry(countryId: String): [BundlesByCountry!]!
+  bundlesByGroup(groupId: String): [BundlesByGroup!]!
+  bundlesByRegion(regionId: String): [BundlesByRegion!]!
+  bundlesForCountry(countryCode: String!): BundlesForCountry
+  bundlesForGroup(group: String!): BundlesForGroup
+  bundlesForRegion(region: String!): BundlesForRegion
+  calculatePrice(input: CalculatePriceInput!): PricingBreakdown!
+  calculatePrices(inputs: [CalculatePriceInput!]!): [PricingBreakdown!]!
+  catalogBundles(criteria: SearchCatalogCriteria): CatalogBundleConnection!
+  catalogSyncHistory(params: SyncHistoryParams): CatalogSyncHistoryConnection!
+  compareAirHaloPackages(countryCode: String!): [AirHaloPackageData!]!
+  conflictingPricingRules(ruleId: ID!): [PricingRule!]!
+  countries: [Country!]!
+  defaultPricingStrategy: PricingStrategy
+  esimDetails(id: ID!): ESIM
+  getAdminESIMDetails(iccid: String!): AdminESIMDetails!
+  getAllESIMs: [AdminESIM!]!
+  getCheckoutSession(token: String!): GetCheckoutSessionResponse!
+  getCustomerESIMs(userId: ID!): [AdminESIM!]!
+  getUserOrders(userId: ID!): [Order!]!
+  hello: String!
+  highDemandCountries: [String!]!
+  me: User
+  myESIMs: [ESIM!]!
+  myOrders(filter: OrderFilter): [Order!]!
+  orderDetails(id: ID!): Order
+  orders: [Order!]!
+  paymentMethods: [PaymentMethodInfo!]!
+  pricingBlock(id: ID!): PricingBlock
+  pricingBlocks(filter: PricingBlockFilter): [PricingBlock!]!
+  """Get pricing cache statistics (Admin only)"""
+  pricingCacheStats: PricingCacheStats
+  pricingFilters: PricingFilters!
+  """Get current pricing performance metrics (Admin only)"""
+  pricingPerformanceMetrics: PricingPerformanceMetrics
+  pricingRule(id: ID!): PricingRule
+  pricingRules(filter: PricingRuleFilter): [PricingRule!]!
+  pricingStrategies(filter: StrategyFilter): [PricingStrategy!]!
+  pricingStrategy(id: ID!): PricingStrategy
+  simulatePricingRule(rule: CreatePricingRuleInput!, testContext: TestPricingContext!): PricingBreakdown!
+  tenant(slug: ID!): Tenant
+  tenants: [Tenant!]!
+  trips: [Trip!]!
+  users: [User!]!
+}
+
+type RuleAction {
+  metadata: JSON
+  type: ActionType!
+  value: Float!
+}
+
+input RuleActionInput {
+  metadata: JSON
+  type: ActionType!
+  value: Float!
+}
+
+enum RuleCategory {
+  BUNDLE_ADJUSTMENT
+  CONSTRAINT
+  DISCOUNT
+  FEE
+}
+
+type RuleCondition {
+  field: String!
+  operator: ConditionOperator!
+  type: String
+  value: JSON!
+}
+
+input RuleConditionInput {
+  field: String!
+  operator: ConditionOperator!
+  type: String
+  value: JSON!
+}
+
+input SearchCatalogCriteria {
+  bundleGroups: [String!]
+  countries: [String!]
+  limit: Int = 50
+  maxDuration: Int
+  minDuration: Int
+  offset: Int = 0
+  regions: [String!]
+  search: String
+  unlimited: Boolean
+}
+
+type SendOTPResponse {
+  error: String
+  messageId: String
+  success: Boolean!
+}
+
+input SignInInput {
+  email: String!
+  password: String!
+}
+
+type SignInResponse {
+  error: String
+  refreshToken: String
+  sessionToken: String
+  success: Boolean!
+  user: User
+}
+
+input SignUpInput {
+  email: String!
+  firstName: String!
+  lastName: String!
+  password: String!
+  phoneNumber: String
+}
+
+type SignUpResponse {
+  error: String
+  refreshToken: String
+  sessionToken: String
+  success: Boolean!
+  user: User
+}
+
+input SocialSignInInput {
+  firstName: String
+  idToken: String!
+  lastName: String
+}
+
+type StrategyBlock {
+  configOverrides: JSON
+  isEnabled: Boolean!
+  pricingBlock: PricingBlock!
+  priority: Int!
+}
+
+input StrategyFilter {
+  archived: Boolean
+  isDefault: Boolean
+  search: String
+}
+
+type Subscription {
+  calculatePricesBatchStream(inputs: [CalculatePriceInput!]!, requestedDays: Int): PricingBreakdown!
+  catalogSyncProgress: CatalogSyncProgressUpdate!
+  checkout(id: ID!): Checkout!
+  checkoutSessionUpdated(token: String!): CheckoutSessionUpdate!
+  esimStatusUpdated(esimId: ID!): ESIMStatusUpdate!
+  pricingCalculationSteps(input: CalculatePriceInput!): PricingStepUpdate!
+  pricingPipelineProgress(correlationId: String!): PricingPipelineStepUpdate!
+}
+
+input SyncHistoryParams {
+  fromDate: String
+  limit: Int = 50
+  offset: Int = 0
+  status: SyncJobStatus
+  toDate: String
+  type: SyncJobType
+}
+
+enum SyncJobStatus {
+  CANCELLED
+  COMPLETED
+  FAILED
+  PENDING
+  PROCESSING
+}
+
+enum SyncJobType {
+  COUNTRY_SYNC
+  FULL_SYNC
+  GROUP_SYNC
+  METADATA_SYNC
+}
+
+type Tenant {
+  createdAt: String!
+  imgUrl: String!
+  name: String!
+  slug: ID!
+  tenantType: TenantType!
+  updatedAt: String!
+  userCount: Int
+}
+
+type TenantConnection {
+  nodes: [Tenant!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input TenantFilter {
+  search: String
+  tenantType: TenantType
+}
+
+type TenantOperationResponse {
+  message: String
+  success: Boolean!
+}
+
+enum TenantType {
+  MASTER
+  STANDARD
+}
+
+input TestPricingContext {
+  bundleGroup: String!
+  bundleId: String!
+  bundleName: String!
+  cost: Float!
+  countryId: String!
+  duration: Int!
+  isNewUser: Boolean
+  paymentMethod: PaymentMethod!
+  regionId: String!
+  requestedDuration: Int
+  userId: String
+}
+
+type ToggleHighDemandResponse {
+  countryId: String!
+  error: String
+  isHighDemand: Boolean!
+  success: Boolean!
+}
+
+input TriggerSyncParams {
+  bundleGroup: String
+  countryId: String
+  force: Boolean = false
+  priority: String = "normal"
+  type: SyncJobType!
+}
+
+type TriggerSyncResponse {
+  conflictingJob: ConflictingJobInfo
+  error: String
+  jobId: String
+  message: String
+  success: Boolean!
+}
+
+type Trip {
+  bundleName: String
+  countries: [Country!]!
+  countryIds: [ISOCountryCode!]!
+  createdAt: String!
+  createdBy: String
+  description: String!
+  id: ID!
+  name: String!
+  region: String!
+  title: String
+  updatedAt: String!
+}
+
+input UpdateCheckoutStepInput {
+  data: JSON!
+  stepType: CheckoutStepType!
+  token: String!
+}
+
+type UpdateCheckoutStepResponse {
+  error: String
+  nextStep: CheckoutStepType
+  session: CheckoutSession
+  success: Boolean!
+}
+
+input UpdatePricingConfigurationInput {
+  bundleGroup: String
+  countryId: String
+  description: String!
+  discountPerDay: Float
+  discountRate: Float!
+  duration: Int
+  id: ID
+  isActive: Boolean!
+  markupAmount: Float
+  name: String!
+  regionId: String
+}
+
+type UpdatePricingConfigurationResponse {
+  configuration: PricingConfiguration
+  error: String
+  success: Boolean!
+}
+
+input UpdatePricingRuleInput {
+  actions: [RuleActionInput!]
+  category: RuleCategory
+  conditions: [RuleConditionInput!]
+  description: String
+  isActive: Boolean
+  name: String
+  priority: Int
+  validFrom: String
+  validUntil: String
+}
+
+input UpdateProfileInput {
+  firstName: String
+  lastName: String
+  phoneNumber: String
+}
+
+type UpdateProfileResponse {
+  error: String
+  success: Boolean!
+  user: User
+}
+
+input UpdateTenantInput {
+  imgUrl: String
+  name: String
+  tenantType: TenantType
+}
+
+input UpdateTripInput {
+  bundleName: String!
+  description: String!
+  id: ID!
+  name: String!
+  title: String!
+}
+
+type UpdateTripResponse {
+  error: String
+  success: Boolean!
+  trip: Trip
+}
+
+type User {
+  createdAt: String!
+  email: String!
+  firstName: String!
+  id: ID!
+  lastName: String!
+  orderCount: Int!
+  phoneNumber: String
+  role: String!
+  updatedAt: String!
+}
+
+input ValidateOrderInput {
+  bundleName: String!
+  customerReference: String
+  quantity: Int!
+}
+
+type ValidateOrderResponse {
+  bundleDetails: JSON
+  currency: String
+  error: String
+  errorCode: String
+  isValid: Boolean!
+  success: Boolean!
+  totalPrice: Float
+}
+
+input VerifyOTPInput {
+  firstName: String
+  lastName: String
+  otp: String!
+  phoneNumber: String!
+}

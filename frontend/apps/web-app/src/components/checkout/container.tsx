@@ -14,16 +14,16 @@ import { DeliveryMethodSection } from "./delivery-method-section";
 import { CheckoutSkeleton } from "./checkout-skeleton";
 import { ErrorDisplay } from "@/components/error-display";
 import { parseGraphQLError, ErrorType } from "@/lib/error-types";
-import { extractPaymentIntentUrls, formatTimeRemaining, extractBundleName } from "@/utils/checkout-helpers";
+import {
+  extractPaymentIntentUrls,
+  formatTimeRemaining,
+  extractBundleName,
+} from "@/utils/checkout-helpers";
 
 export function CheckoutContainer() {
   // Core hooks
-  const {
-    token,
-    setToken,
-    hasToken,
-    clearCheckoutState,
-  } = useCheckoutUrlState();
+  const { token, setToken, hasToken, clearCheckoutState } =
+    useCheckoutUrlState();
 
   // Session management
   const {
@@ -38,23 +38,16 @@ export function CheckoutContainer() {
   const { handlePayment } = useCheckoutPayment();
 
   // Validation hook
-  const {
-    validationStatus,
-    validationError,
-    retryValidation,
-  } = useCheckoutValidation({ session });
+  const { validationStatus, validationError, retryValidation } =
+    useCheckoutValidation({ session });
 
   // State machine hook
-  const {
-    isProcessing,
-    canSubmitPayment,
-    startProcessing,
-    stopProcessing,
-  } = useCheckoutStateMachine({
-    session,
-    validationStatus,
-    token: token as string | undefined,
-  });
+  const { isProcessing, canSubmitPayment, startProcessing, stopProcessing } =
+    useCheckoutStateMachine({
+      session,
+      validationStatus,
+      token: token as string | undefined,
+    });
 
   // Auto-complete hook
   useCheckoutAutoComplete({
@@ -80,7 +73,7 @@ export function CheckoutContainer() {
   const handlePaymentSubmit = useCallback(
     async (paymentMethodId: string) => {
       if (!token) return;
-      
+
       startProcessing();
       try {
         const result = await handlePayment(token, paymentMethodId);
@@ -141,7 +134,7 @@ export function CheckoutContainer() {
             validationStatus={validationStatus}
             isCompleted={validationStatus === "valid"}
           />
-          
+
           {/* Validation Error Display */}
           {validationStatus === "invalid" && validationError && (
             <ErrorDisplay
@@ -159,7 +152,7 @@ export function CheckoutContainer() {
         {/* Right Column - Payment & Login */}
         <div className="space-y-6">
           <LoginSection sectionNumber={2} />
-          
+
           <DeliveryMethodSection
             sectionNumber={3}
             selectedMethod={selectedMethod}
@@ -168,7 +161,7 @@ export function CheckoutContainer() {
             setEmail={() => {}}
             isCompleted={!!session?.steps?.delivery?.completed}
           />
-          
+
           <PaymentSection
             sectionNumber={4}
             onPaymentSubmit={handlePaymentSubmit}

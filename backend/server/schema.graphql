@@ -1707,3 +1707,82 @@ input StrategyFilter {
   archived: Boolean
   search: String
 }
+
+extend type Mutation {
+  createCheckout(numOfDays: Int!, countryId: String!): String
+  updateCheckoutAuth(sessionId: String!, firstName: String, lastName: String, email: String, phone: String): CheckoutAuth!
+  verifyOTP(sessionId: String!, otp: String!): CheckoutAuthWithOTP!
+  updateCheckoutAuthName(sessionId: String!, firstName: String, lastName: String): CheckoutAuth!
+}
+
+extend type Subscription {
+  checkout(id: ID!): Checkout!
+}
+
+type Checkout {
+  id: ID!
+
+  bundle: CheckoutBundle
+
+  auth: CheckoutAuth
+}
+
+interface CheckoutAuthInterface {
+  completed: Boolean!
+
+  userId: String
+  email: String
+  phone: String
+  firstName: String
+  lastName: String
+  method: String
+  otpSent: Boolean
+  otpVerified: Boolean
+}
+
+type CheckoutAuth implements CheckoutAuthInterface {
+  completed: Boolean!
+
+  userId: String
+  email: String
+  phone: String
+  firstName: String
+  lastName: String
+  method: String
+  otpSent: Boolean
+  otpVerified: Boolean
+}
+
+type CheckoutAuthWithOTP implements CheckoutAuthInterface {
+  completed: Boolean!
+
+  userId: String
+  email: String
+  phone: String
+  firstName: String
+  lastName: String
+  method: String
+  otpSent: Boolean
+  otpVerified: Boolean
+
+  authToken: String!
+  refreshToken: String!
+}
+
+type CheckoutBundle {
+  completed: Boolean!
+  id: ID!
+
+  numOfDays: Int!
+  country: Country
+
+  validated: Boolean
+
+  speed: [String!]!
+  dataAmount: String!
+  pricePerDay: Float!
+  price: Float!
+  currency: String!
+
+  discounts: [String!]!
+}

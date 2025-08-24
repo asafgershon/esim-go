@@ -27,7 +27,7 @@ export const GoogleSignInButton = React.forwardRef<
     {...props}
   >
     <span className={cn("flex-1", rtl ? "text-right" : "text-left")}>
-      {children || "Continue with Google"}
+      {children || "המשך עם Google"}
     </span>
     {loading ? (
       <Loader2 className={cn("h-5 w-5 animate-spin", rtl ? "ml-2" : "mr-2")} />
@@ -71,7 +71,7 @@ export const AppleSignInButton = React.forwardRef<
     {...props}
   >
     <span className={cn("flex-1", rtl ? "text-right" : "text-left")}>
-      {children || "Continue with Apple"}
+      {children || "המשך עם Apple"}
     </span>
     {loading ? (
       <Loader2 className={cn("h-5 w-5 animate-spin", rtl ? "ml-2" : "mr-2")} />

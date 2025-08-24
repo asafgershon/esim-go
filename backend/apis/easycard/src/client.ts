@@ -221,6 +221,7 @@ export class EasyCardClient {
         client_id: "terminal",
       });
 
+      const timeout = AbortSignal.timeout(3000)
       // Make request to identity server
       const response = await fetch(`${env.EASYCARD_IDENTITY_URL}/connect/token`, {
         method: "POST",
@@ -228,6 +229,7 @@ export class EasyCardClient {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: params.toString(),
+        signal: timeout,
       });
 
       if (!response.ok) {

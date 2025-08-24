@@ -173,17 +173,10 @@ export const checkoutResolvers: Partial<Resolvers> = {
         let updatedSession;
 
         switch (stepType) {
-          case CHECKOUT_STEP_TYPE.VALIDATION: {
-            updatedSession = await context.dataSources.orders.validateOrder(
-              checkoutSession.bundleId,
-              1,
-              decoded.userId
-            );
-            break;
-          }
           case CHECKOUT_STEP_TYPE.AUTHENTICATION: {
             // User has logged in or signed up
-            const userId = context.auth?.user?.id || data?.userId;
+            const userId =
+              context.auth?.user?.id || data?.userId || decoded.userId;
 
             if (!userId) {
               throw new GraphQLError(ERROR_MESSAGES.USER_ID_REQUIRED, {
@@ -199,9 +192,9 @@ export const checkoutResolvers: Partial<Resolvers> = {
           }
 
           case CHECKOUT_STEP_TYPE.DELIVERY: {
-            // Validate delivery data
             const deliveryData = DeliveryStepDataSchema.parse(data);
 
+            // This now automatically prepares payment after setting delivery
             updatedSession = await sessionService.setDeliveryMethod(
               decoded.sessionId,
               deliveryData
@@ -210,10 +203,14 @@ export const checkoutResolvers: Partial<Resolvers> = {
           }
 
           case CHECKOUT_STEP_TYPE.PAYMENT: {
-            // Prepare for payment
-            updatedSession = await sessionService.preparePayment(
-              decoded.sessionId
-            );
+            // This case is now deprecated since payment is automatically prepared after delivery
+            // Keeping for backward compatibility - just return current session
+            updatedSession = await sessionService.getSession(decoded.sessionId);
+            if (!updatedSession) {
+              throw new GraphQLError(ERROR_MESSAGES.SESSION_NOT_FOUND, {
+                extensions: { code: CheckoutErrorCode.SESSION_NOT_FOUND },
+              });
+            }
             break;
           }
 
@@ -422,3 +419,6 @@ export const checkoutResolvers: Partial<Resolvers> = {
 };
 
 export default checkoutResolvers;
+
+export * from "./subscriptions";
+export * from "./mutations";

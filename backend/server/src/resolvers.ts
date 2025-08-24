@@ -21,6 +21,8 @@ import { pricingSubscriptionResolvers } from "./resolvers/pricing-subscription.r
 import { batchPricingSubscriptionResolvers } from "./resolvers/batch-pricing-subscription";
 import type { Resolvers } from "./types";
 import * as countriesList from "countries-list";
+import { checkoutSubscriptionsV2 } from "./resolvers/checkout/subscriptions";
+import { checkoutMutationsV2 } from "./resolvers/checkout";
 
 const logger = createLogger({ component: "resolvers" });
 
@@ -152,6 +154,7 @@ export const resolvers: Resolvers = {
 
   Mutation: {
     ...checkoutResolvers.Mutation!,
+    ...checkoutMutationsV2,
     ...usersResolvers.Mutation!,
     ...tripsResolvers.Mutation!,
     ...pricingRulesResolvers.Mutation!,
@@ -268,6 +271,7 @@ export const resolvers: Resolvers = {
     
     // Checkout subscriptions for real-time session updates
     ...checkoutSubscriptionResolvers.Subscription!,
+    ...checkoutSubscriptionsV2,
     
     // Batch pricing subscription for progressive loading
     ...batchPricingSubscriptionResolvers,

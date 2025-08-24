@@ -108,7 +108,7 @@ export const useAuth = () => {
     }
   }, [data, loading, error, hasToken]);
 
-  const signOut = useCallback(() => {
+  const signOut = useCallback((redirect: boolean = true) => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('authToken');
       localStorage.removeItem('refreshToken');
@@ -123,7 +123,7 @@ export const useAuth = () => {
     });
     
     // Reload the page to clear any cached data
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && redirect) {
       window.location.href = '/';
     }
   }, []);
