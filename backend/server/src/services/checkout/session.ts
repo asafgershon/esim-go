@@ -33,9 +33,15 @@ const createSession = async ({
       numOfDays,
     },
     auth: {
-      completed: initialState?.auth?.completed || false,
-      email: initialState?.auth?.email || undefined,
-      phone: initialState?.auth?.phone || undefined,
+      completed: initialState?.auth?.completed ?? false,
+      userId: initialState?.auth?.userId,
+      email: initialState?.auth?.email && initialState.auth.email !== "" ? initialState.auth.email : undefined,
+      phone: initialState?.auth?.phone && initialState.auth.phone !== "" ? initialState.auth.phone : undefined,
+      firstName: initialState?.auth?.firstName && initialState.auth.firstName !== "" ? initialState.auth.firstName : undefined,
+      lastName: initialState?.auth?.lastName && initialState.auth.lastName !== "" ? initialState.auth.lastName : undefined,
+      method: initialState?.auth?.method,
+      otpSent: initialState?.auth?.otpSent,
+      otpVerified: initialState?.auth?.otpVerified,
     },
     delivery: {
       completed: false,

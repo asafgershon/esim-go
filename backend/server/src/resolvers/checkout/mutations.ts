@@ -16,12 +16,17 @@ export const checkoutMutationsV2: MutationResolvers = {
         auth.user?.id || ""
       );
 
+      const isAuthCompleted = (loggedInUser?.email || loggedInUser?.user_metadata?.phone_number) && loggedInUser?.user_metadata?.first_name !== "" && loggedInUser?.user_metadata?.last_name !== "";
+
       const initialState = loggedInUser
         ? {
             auth: {
-              completed: true,
-              email: loggedInUser.email,
-              phone: loggedInUser.user_metadata?.phone_number || undefined,
+              completed: isAuthCompleted,
+              userId: auth.user?.id,
+              email: loggedInUser.email && loggedInUser.email !== "" ? loggedInUser.email : undefined,
+              phone: loggedInUser.user_metadata?.phone_number && loggedInUser.user_metadata?.phone_number !== "" ? loggedInUser.user_metadata?.phone_number : undefined,
+              firstName: loggedInUser.user_metadata?.first_name && loggedInUser.user_metadata?.first_name !== "" ? loggedInUser.user_metadata?.first_name : undefined,
+              lastName: loggedInUser.user_metadata?.last_name && loggedInUser.user_metadata?.last_name !== "" ? loggedInUser.user_metadata?.last_name : undefined,
             },
           }
         : undefined;

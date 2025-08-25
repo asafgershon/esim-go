@@ -1,5 +1,5 @@
 import type { PubSubInstance } from "../../context/pubsub";
-import type { Checkout, SubscriptionResolvers } from "../../types";
+import type { Checkout, Country, SubscriptionResolvers } from "../../types";
 import { CheckoutSessionNotFoundError } from "./errors";
 
 export const checkoutSubscriptionsV2: SubscriptionResolvers = {
@@ -9,9 +9,32 @@ export const checkoutSubscriptionsV2: SubscriptionResolvers = {
       if (!session) throw new CheckoutSessionNotFoundError(id);
 
       setImmediate(async () => {
-        publish(services.pubsub)(id, {
-          id,
-        });
+        // Publish the complete session data on initial subscription
+        const fullSession = await services.checkoutSessionServiceV2.getSession(id);
+        if (fullSession) {
+          publish(services.pubsub)(id, {
+            id,
+            bundle: fullSession.bundle ? {
+              id: fullSession.bundle.externalId || "",
+              country: {
+                iso: fullSession.bundle.countryId || "",
+                __typename: "Country",
+              } as Country,
+              numOfDays: fullSession.bundle.numOfDays,
+              dataAmount: fullSession.bundle.dataAmount || "",
+              speed: fullSession.bundle.speed || [],
+              price: fullSession.bundle.price || 0,
+              pricePerDay: fullSession.bundle.pricePerDay || 0,
+              currency: "USD",
+              discounts: fullSession.bundle.discounts || [],
+              validated: fullSession.bundle.validated || false,
+              completed: fullSession.bundle.completed || false,
+            } : undefined,
+            auth: fullSession.auth,
+            delivery: fullSession.delivery,
+            payment: fullSession.payment,
+          });
+        }
       });
       return services.pubsub.asyncIterator(`CHECKOUT_UPDATED:${id}`);
     },
