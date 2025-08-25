@@ -19,7 +19,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
   Label,
-  PhoneInput,
+  PhoneInputV2 as PhoneInput,
   Separator,
 } from "@workspace/ui";
 import { AnimatePresence, motion } from "framer-motion";
@@ -36,6 +36,7 @@ type AuthCardProps = {
   sectionNumber?: number;
   data: Pick<Checkout, "auth" | "id"> | undefined;
   onAuthUpdate: (auth: Checkout["auth"]) => void;
+  loading: boolean;
 };
 
 const PhoneOrEmailSchema = z
@@ -72,12 +73,11 @@ export const AuthCard = ({
   data,
   completed,
   onAuthUpdate,
+  loading,
 }: AuthCardProps) => {
-  const { user: loggedInUser } = useAuth();
-
   const { auth } = data || {};
 
-  if (!auth) return <AuthCardSkeleton />;
+  if (loading || !auth) return <AuthCardSkeleton />;
 
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
@@ -87,7 +87,16 @@ export const AuthCard = ({
         icon={<UserIcon className="h-5 w-5 text-primary" />}
         isCompleted={completed}
       />
-      {loggedInUser && <LoggedInAuthCard user={loggedInUser} />}
+      {data?.auth && (
+        <LoggedInAuthCard
+          user={{
+            firstName: data.auth.firstName || "",
+            lastName: data.auth.lastName || "",
+            email: data.auth.email || "",
+            phoneNumber: data.auth.phone || "",
+          }}
+        />
+      )}
       {!auth.otpSent && !auth.otpVerified && data?.id && (
         <PhoneEmailForm
           sessionId={data.id}
@@ -118,10 +127,9 @@ export const AuthCard = ({
 const LoggedInAuthCard = ({
   user,
 }: {
-  user: Omit<User, "orderCount" | "role">;
+  user: Pick<User, "firstName" | "lastName" | "email" | "phoneNumber">;
 }) => {
-  const { signOut, isAuthenticated } = useAuth();
-  if (!isAuthenticated) return null;
+  const { signOut } = useAuth();
   return (
     <CardContent className="space-y-4 flex flex-row items-center justify-between gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
       <div className="flex-1">

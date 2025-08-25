@@ -12,7 +12,7 @@ import {
   CardContent,
   Input,
   Label,
-  PhoneInput,
+  PhoneInputV2 as PhoneInput,
 } from "@workspace/ui";
 import { Package } from "lucide-react";
 import { useCallback, useEffect } from "react";
@@ -25,12 +25,28 @@ type DeliveryCardProps = {
   sectionNumber?: number;
   data: Pick<Checkout, "delivery" | "id" | "auth"> | undefined;
   onDeliveryUpdate: (delivery: Checkout["delivery"]) => void;
+  loading: boolean;
 };
 
-const DeliverySchema = z.object({
-  email: z.string().email({ message: "אימייל לא תקין" }),
-  phone: z.string().min(1, { message: "מספר טלפון נדרש" }),
-});
+const DeliverySchema = z
+  .object({
+    email: z.string().optional(),
+    phone: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      const hasValidEmail =
+        data.email &&
+        data.email.trim() !== "" &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
+      const hasValidPhone = data.phone && data.phone.trim() !== "";
+      return hasValidEmail || hasValidPhone;
+    },
+    {
+      message: "חובה למלא לפחות אימייל תקין או טלפון",
+      path: ["email"],
+    }
+  );
 
 type DeliveryFormData = z.infer<typeof DeliverySchema>;
 
@@ -49,11 +65,12 @@ export const DeliveryCard = ({
   sectionNumber,
   data,
   completed,
+  loading,
   onDeliveryUpdate,
 }: DeliveryCardProps) => {
   const { delivery, auth } = data || {};
 
-  const [updateCheckoutDelivery, { loading: isLoading }] = useMutation<
+  const [updateCheckoutDelivery] = useMutation<
     UpdateCheckoutDeliveryMutation,
     UpdateCheckoutDeliveryMutationVariables
   >(UPDATE_CHECKOUT_DELIVERY_MUTATION);
@@ -63,7 +80,8 @@ export const DeliveryCard = ({
     setValue,
     watch,
     handleSubmit,
-    formState: { errors, isValid, isDirty },
+    reset,
+    formState: { errors, isDirty, isSubmitSuccessful },
   } = useForm<DeliveryFormData>({
     resolver: zodResolver(DeliverySchema),
     defaultValues: {
@@ -71,9 +89,14 @@ export const DeliveryCard = ({
       phone: delivery?.phone || "",
     },
     mode: "onChange",
+    resetOptions: {
+      keepIsSubmitSuccessful: false,
+      keepDirty: true,
+      keepDefaultValues: false,
+    },
   });
 
-  const isReadOnly = delivery?.completed;
+  const isAuthCompleted = auth?.completed;
 
   useEffect(() => {
     if (auth?.completed) {
@@ -86,19 +109,29 @@ export const DeliveryCard = ({
     async (formData: DeliveryFormData) => {
       if (!data?.id) return;
 
+      const cleanedData = {
+        email: formData.email?.trim() || null,
+        phone: formData.phone?.trim() || null,
+      };
+
+      // Only send fields that have actual values
+      const variables: UpdateCheckoutDeliveryMutationVariables = {
+        sessionId: data.id,
+      };
+
+      if (cleanedData.email) variables.email = cleanedData.email;
+      if (cleanedData.phone) variables.phone = cleanedData.phone;
+
       const { data: result } = await updateCheckoutDelivery({
-        variables: {
-          sessionId: data.id,
-          email: formData.email,
-          phone: formData.phone,
-        },
+        variables,
       });
 
       if (result?.updateCheckoutDelivery) {
         onDeliveryUpdate(result.updateCheckoutDelivery);
+        reset();
       }
     },
-    [data?.id, updateCheckoutDelivery, onDeliveryUpdate]
+    [data?.id, updateCheckoutDelivery, onDeliveryUpdate, reset]
   );
 
   const removeCountryCode = (phone: string) => {
@@ -137,7 +170,14 @@ export const DeliveryCard = ({
     updateCheckoutDelivery,
   ]);
 
-  //   if (!authCompleted) return <DeliveryCardSkeleton />;
+  const getButtonLabel = () => {
+    if (loading) return "שומר...";
+    if (isSubmitSuccessful && !isDirty) return "פרטי משלוח נשמרו";
+    if (isSubmitSuccessful && isDirty) return "עדכון פרטי משלוח";
+    return "שמירת פרטי משלוח";
+  };
+
+  if (loading) return <DeliveryCardSkeleton />;
 
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
@@ -157,7 +197,7 @@ export const DeliveryCard = ({
               type="email"
               placeholder="הכנס כתובת אימייל"
               {...register("email")}
-              disabled={isLoading || isReadOnly}
+              disabled={loading || Boolean(!isAuthCompleted)}
             />
             {errors.email && (
               <p className="text-sm text-red-500">{errors.email.message}</p>
@@ -171,51 +211,49 @@ export const DeliveryCard = ({
               defaultCountry="IL"
               placeholder="הכנס מספר טלפון"
               {...register("phone")}
-              value={removeCountryCode(watch("phone"))}
-              disabled={isLoading || isReadOnly}
+              value={removeCountryCode(watch("phone") || "")}
+              disabled={loading || Boolean(!isAuthCompleted)}
             />
             {errors.phone && (
               <p className="text-sm text-red-500">{errors.phone.message}</p>
             )}
           </div>
 
-          {isDirty && (
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              disabled={isLoading || !isValid}
-            >
-              {isLoading ? "שומר..." : "שמור פרטי משלוח"}
-            </Button>
-          )}
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={loading || !isDirty}
+          >
+            {getButtonLabel()}
+          </Button>
         </form>
       </CardContent>
     </Card>
   );
 };
 
-// const DeliveryCardSkeleton = () => {
-//   return (
-//     <Card className="p-6">
-//       <div className="flex items-center gap-3 mb-4">
-//         <div className="w-6 h-6 md:w-8 md:h-8 bg-gray-200 rounded-full animate-pulse" />
-//         <div>
-//           <div className="h-4 md:h-5 w-20 bg-gray-200 rounded animate-pulse mb-1" />
-//           <div className="h-3 md:h-4 w-16 bg-gray-100 rounded animate-pulse" />
-//         </div>
-//       </div>
+const DeliveryCardSkeleton = () => {
+  return (
+    <Card className="p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-6 h-6 md:w-8 md:h-8 bg-gray-200 rounded-full animate-pulse" />
+        <div>
+          <div className="h-4 md:h-5 w-20 bg-gray-200 rounded animate-pulse mb-1" />
+          <div className="h-3 md:h-4 w-16 bg-gray-100 rounded animate-pulse" />
+        </div>
+      </div>
 
-//       <div className="space-y-4">
-//         <div className="space-y-2">
-//           <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-//           <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
-//         </div>
-//         <div className="space-y-2">
-//           <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-//           <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
-//         </div>
-//       </div>
-//     </Card>
-//   );
-// };
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+          <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+          <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+        </div>
+      </div>
+    </Card>
+  );
+};

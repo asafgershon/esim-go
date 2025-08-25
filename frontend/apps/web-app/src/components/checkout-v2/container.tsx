@@ -4,13 +4,13 @@ import { useCheckout } from "@/hooks/checkout/useCheckoutV2";
 import { useAuth } from "@/hooks/useAuth";
 import { useSelectorQueryState } from "@/hooks/useSelectorQueryState";
 import { AuthCard } from "./auth-card";
-import { OrderCard } from "./order-card";
 import { DeliveryCard } from "./delivery-card";
+import { OrderCard } from "./order-card";
 
 export const CheckoutContainerV2 = () => {
   const { numOfDays, countryId } = useSelectorQueryState();
   const { refreshAuth } = useAuth();
-  const { data, loading, error, checkout} = useCheckout({
+  const { data, loading} = useCheckout({
     numOfDays,
     countryId,
   });
@@ -19,7 +19,6 @@ export const CheckoutContainerV2 = () => {
     refreshAuth();
   };
 
-  console.log(data?.checkout)
   //   if (loading) return <div>Loading...</div>;
   //   if (error) return <div>Error: {error.message}</div>;
   //   if (!data) return <div>No data</div>;
@@ -42,6 +41,7 @@ export const CheckoutContainerV2 = () => {
        <DeliveryCard
         completed={Boolean(data?.checkout.delivery?.completed)}
         sectionNumber={3}
+        loading={loading}
         data={data?.checkout}
         onDeliveryUpdate={handleAuthUpdate}
       />
