@@ -54,5 +54,4 @@ EXPOSE 4000
 WORKDIR /app/server
 
 # Run the server directly (build already done)
-# CMD ["bun", "run", "src/app.ts"]
-CMD ["sleep", "5h"]
+CMD ["bun", "run", "src/app.ts"]

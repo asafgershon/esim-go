@@ -4,13 +4,13 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy the entire monorepo
-COPY server ./server
+COPY . ./backend
 
 # Install turbo globally
 RUN bun add -g turbo
 
 # Prune the monorepo for the workers package
-WORKDIR /app/server
+WORKDIR /app/backend
 
 # Remove 'server' workspace from root package.json workspaces
 RUN sed -i '/"server"/d' package.json
@@ -23,19 +23,20 @@ RUN apk add --no-cache python3 make g++ libc6-compat
 WORKDIR /app
 
 # Copy pruned lockfile and package files
-COPY --from=pruner /app/server/out/json/ .
-COPY --from=pruner /app/server/out/bun.lock ./bun.lock
+COPY --from=pruner /app/backend/out/json/ .
+COPY --from=pruner /app/backend/out/bun.lock ./bun.lock
 
 
 # Install dependencies
-RUN bun install --frozen-lockfile --ignore-scripts
+RUN bun install --frozen-lockfile --ignore-scripts --production
 
 # Copy pruned source code
-COPY --from=pruner /app/server/out/full/ .
+COPY --from=pruner /app/backend/out/full/ .
 
 # Build the workspace packages that workers depends on
-WORKDIR /app/server
+WORKDIR /app
 RUN bunx turbo run build --filter=...@hiilo/workers
+CMD ["sleep", "5h"]
 
 # Stage 3: Runtime
 FROM oven/bun:1-alpine AS runner
@@ -47,23 +48,16 @@ RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
 # Copy built application from builder
-COPY --from=builder --chown=nodejs:nodejs /app/packages ./packages
-COPY --from=builder --chown=nodejs:nodejs /app/workers ./workers
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/bun.lock ./bun.lock
-COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nodejs:nodejs /app/ .
 
-# Set working directory for workers runtime
-WORKDIR /app/workers
-
-# Switch to non-root user
+# # Switch to non-root user
 USER nodejs
 
-# Set runtime environment
+# # Set runtime environment
 ENV NODE_ENV=production
 
-# Expose port if needed for health checks
+# # Expose port if needed for health checks
 EXPOSE 5002
 
-# Run the workers directly with Bun
-CMD ["bun", "run", "start"]
+# # Run the workers directly with Bun
+CMD ["bun", "run", "dev:workers"]
