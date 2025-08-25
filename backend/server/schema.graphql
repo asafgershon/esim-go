@@ -1331,6 +1331,7 @@ input CalculatePriceInput {
   promo: String
   groups: [String!]
   includeDebugInfo: Boolean # Include detailed debug information (admin only)
+  strategyId: String
 }
 
 # Pricing Configuration Types (Legacy - to be migrated to rules)

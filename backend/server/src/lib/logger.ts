@@ -157,6 +157,7 @@ export function createLogger(context: LogContext): StructuredLogger {
   });
 }
 
+
 // Legacy compatibility - maintain existing interface while using structured logging
 export const compatLogger = {
   debug: (message: string, data?: any) => logger.debug(message, data),

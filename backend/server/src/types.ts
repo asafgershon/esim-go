@@ -304,6 +304,7 @@ export type CalculatePriceInput = {
   paymentMethod?: InputMaybe<PaymentMethod>;
   promo?: InputMaybe<Scalars['String']['input']>;
   regionId?: InputMaybe<Scalars['String']['input']>;
+  strategyId?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CatalogBundle = Bundle & {

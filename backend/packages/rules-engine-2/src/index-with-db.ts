@@ -75,13 +75,15 @@ async function initializeEngine(strategyId?: string): Promise<Rule[]> {
       // Load rules from default strategy
       logger.info("Loading rules from default strategy");
       const defaultStrategyId = await getDefaultStrategyId();
-      
+
       if (defaultStrategyId) {
         logger.info(`Using default strategy: ${defaultStrategyId}`);
         rules = await loadStrategyBlocks(defaultStrategyId);
       } else {
         // Fallback to direct pricing_blocks if no default strategy
-        logger.warn("No default strategy found, falling back to pricing_blocks table");
+        logger.warn(
+          "No default strategy found, falling back to pricing_blocks table"
+        );
         rules = await getCachedPricingRules();
       }
     }
@@ -181,12 +183,14 @@ export async function calculatePricing({
 
   // Process events in the order they were fired by the engine (already sorted by priority DESC from database)
   // The loadStrategyBlocks function returns rules sorted by priority DESC, so events are naturally in correct order
-  logger.info(`Processing ${events.length} events in database-defined priority order`);
-  
+  logger.info(
+    `Processing ${events.length} events in database-defined priority order`
+  );
+
   for (const event of events) {
     logger.debug(`Processing event: ${event.type}`, { params: event.params });
     const previousPrice = currentPrice;
-    
+
     currentPrice = processEventType(
       event,
       currentPrice,
@@ -194,7 +198,7 @@ export async function calculatePricing({
       { selectedBundle, previousBundle, unusedDays, paymentMethod },
       logger
     );
-    
+
     logger.info(
       `Price changed from ${previousPrice} to ${currentPrice} after ${event.type}`
     );
@@ -290,3 +294,35 @@ export async function calculatePricing({
     appliedRules,
   };
 }
+
+// Export alias for backward compatibility
+export { calculatePricing as calculatePricingWithDB };
+
+// Export enhanced version with step tracking
+export {
+  calculatePricingEnhanced,
+  EnhancedPricingEngineResult,
+} from "./calculate-pricing-enhanced";
+export {
+  isExactMatch,
+  previousBundle as previousBundleFact,
+  previousBundleMarkup,
+  selectBundle,
+  selectedBundleMarkup,
+  unusedDays as unusedDaysFact,
+  type SelectedBundleFact,
+  type PreviousBundleFact,
+} from "./facts/bundle-facts";
+export { durations } from "./facts/durations";
+export { availableBundles } from "./facts/available-bundles";
+export {
+  getCachedPricingRules,
+  loadStrategyBlocks,
+} from "./loaders/database-loader";
+export { processEventType } from "./processors/process-event";
+export {
+  AppliedRule,
+  PaymentMethod,
+  PricingBreakdown,
+  RuleCategory,
+} from "./generated/types";
