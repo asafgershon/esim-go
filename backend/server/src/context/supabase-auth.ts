@@ -1,11 +1,8 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@hiilo/supabase";
+import { createClient } from "@supabase/supabase-js";
 import { cleanEnv, str } from "envalid";
 import type { IncomingMessage } from "node:http";
 import type { User } from "../types";
-import type { Database } from "../database.types";
-import dotenv from 'dotenv';
-import { join } from "node:path";
-dotenv.config({path: join(__dirname, '../../.env')});
 
 const env = cleanEnv(process.env, {
   SUPABASE_URL: str(),
@@ -19,7 +16,7 @@ export const supabaseAdmin = createClient<Database>(
   env.SUPABASE_SERVICE_ROLE_KEY,
   {
     auth: {
-      autoRefreshToken: false,
+      autoRefreshToken: true,
       persistSession: false,
     },
   }
@@ -51,7 +48,6 @@ export const createSupabaseAuthContext = async (
   }
 
   try {
-    // Verify JWT with Supabase
     const {
       data: { user: supabaseUser },
       error,
@@ -140,7 +136,10 @@ export const getSupabaseTokenFromConnectionParams = (
  * Check if user has specific role
  */
 export const hasRole = (supabaseUser: any, role: string): boolean => {
-  const userRole = supabaseUser?.app_metadata?.role || supabaseUser?.user_metadata?.role || "USER";
+  const userRole =
+    supabaseUser?.app_metadata?.role ||
+    supabaseUser?.user_metadata?.role ||
+    "USER";
   return userRole === role;
 };
 
@@ -164,7 +163,11 @@ export const isPartner = (supabaseUser: any): boolean => {
 export const getUserRole = (
   supabaseUser: any
 ): "USER" | "ADMIN" | "PARTNER" => {
-  return supabaseUser?.app_metadata?.role || supabaseUser?.user_metadata?.role || "USER";
+  return (
+    supabaseUser?.app_metadata?.role ||
+    supabaseUser?.user_metadata?.role ||
+    "USER"
+  );
 };
 
 /**
@@ -328,21 +331,23 @@ export const inviteUserByEmail = async (
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       email,
       {
-        redirectTo: redirectUrl || `${process.env.DASHBOARD_URL || 'http://localhost:3000'}/auth/callback`,
+        redirectTo:
+          redirectUrl ||
+          `${
+            process.env.DASHBOARD_URL || "http://localhost:3000"
+          }/auth/callback`,
       }
     );
 
     // Set role in app_metadata after invitation
     if (data.user && !error) {
-      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-        data.user.id,
-        {
-          app_metadata: { role: role }
-        }
-      );
-      
+      const { error: updateError } =
+        await supabaseAdmin.auth.admin.updateUserById(data.user.id, {
+          app_metadata: { role: role },
+        });
+
       if (updateError) {
-        console.error('Failed to set role after invitation:', updateError);
+        console.error("Failed to set role after invitation:", updateError);
         return {
           success: false,
           error: `User invited but failed to set role: ${updateError.message}`,

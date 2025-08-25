@@ -4,11 +4,11 @@
   "type": "module",
   "private": true,
   "exports": {
-    "./types": "index.ts"
+    ".": "./types.ts"
   },
   "scripts": {
-    "link": "dotenv && supabase link .",
-    "codegen": "dotenv & supabase gen types typescript --project-id ${SUPABASE_PROJECT_ID} > types.ts",
+    "link": "supabase link .",
+    "codegen": "[ ! -f .env ] || export $(grep -v '^#' .env | xargs) && supabase gen types typescript --project-id ${SUPABASE_PROJECT_ID} --schema public --schema auth > types.ts",
     "codegen:local": "supabase gen types typescript --local > types.ts"
   },
   "devDependencies": {

@@ -152,8 +152,8 @@ const authenticate = async ({
     // Update the session with the email, phone and otpSent status
     const session = await sessionService.updateSessionStep(sessionId, "auth", {
       completed: false,
-      email: email || undefined,
-      phone: phone || undefined,
+      email: email !== "" ? email : undefined,
+      phone: phone !== "" ? (phone || undefined) : undefined,
       otpSent: true,
     });
 

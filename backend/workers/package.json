@@ -21,7 +21,7 @@
   "dependencies": {
     "@hiilo/esim-go": "workspace:*",
     "@hiilo/utils": "workspace:*",
-    "@supabase/supabase-js": "^2.38.0",
+    "@supabase/supabase-js": "^2.50.5",
     "bullmq": "^5.0.0",
     "byte-size": "^9.0.1",
     "dotenv": "^16.3.1",

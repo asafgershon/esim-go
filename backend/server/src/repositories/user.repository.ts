@@ -216,6 +216,8 @@ export class UserRepository extends BaseSupabaseRepository<
   }
 
   async getUserById(userId: string): Promise<UserRow | null> {
+    if (!userId) return null;
+    
     try {
       const { data, error } = await supabaseAdmin.auth.admin.getUserById(
         userId

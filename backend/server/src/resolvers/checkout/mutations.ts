@@ -181,8 +181,8 @@ export const checkoutMutationsV2: MutationResolvers = {
     resolve: async (_, { sessionId, email, phone }, { services }) => {
       const session = await services.checkoutWorkflow.setDelivery({
         sessionId,
-        email: email,
-        phone: phone,
+        email: email !== "" ? email : undefined,
+        phone: phone !== "" ? phone : undefined,
       });
 
       publish(services.pubsub)(sessionId, {

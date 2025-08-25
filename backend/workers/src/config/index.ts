@@ -9,7 +9,8 @@ const env = cleanEnv(process.env, {
   // Redis configuration
   REDIS_HOST: str({ default: 'localhost' }),
   REDIS_PORT: num({ default: 6379 }),
-  REDIS_PASSWORD: str({ default: '' }),
+  REDIS_PASSWORD: str({ default: 'mypassword' }),
+  REDIS_USER: str({ default: 'default' }),
   REDIS_MAX_RETRIES: num({ default: 3 }),
 
   // Supabase configuration

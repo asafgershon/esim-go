@@ -7,7 +7,8 @@
     "apis/*",
     "utils",
     "server",
-    "workers"
+    "workers",
+    "supabase"
   ],
   "scripts": {
     "dev": "turbo run dev --parallel",
@@ -30,6 +31,7 @@
     "turbo": "^2.5.5"
   },
   "dependencies": {
-    "@hiilo/utils": "workspace:*"
+    "@hiilo/utils": "workspace:*",
+    "@supabase/supabase-js": "^2.56.0"
   }
 }

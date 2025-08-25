@@ -9,6 +9,7 @@ COPY packages ./packages
 COPY apis ./apis
 COPY utils ./utils
 COPY server ./server
+COPY supabase ./supabase
 COPY workers ./workers
 
 # Prune the workspace for just the server

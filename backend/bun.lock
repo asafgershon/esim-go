@@ -5,6 +5,7 @@
       "name": "esim-go-server-workspace",
       "dependencies": {
         "@hiilo/utils": "workspace:*",
+        "@supabase/supabase-js": "^2.56.0",
       },
       "devDependencies": {
         "@apollo/client": "^3.13.8",
@@ -96,10 +97,11 @@
         "@hiilo/easycard": "workspace:*",
         "@hiilo/esim-go": "workspace:*",
         "@hiilo/rules-engine-2": "workspace:*",
+        "@hiilo/supabase": "workspace:*",
         "@hiilo/utils": "workspace:*",
         "@keyv/redis": "^4.6.0",
         "@mikro-orm/postgresql": "^6.4.16",
-        "@supabase/supabase-js": "^2.47.10",
+        "@supabase/supabase-js": "^2.50.5",
         "@types/cors": "^2.8.19",
         "@types/email-templates": "^10.0.4",
         "@types/express": "^4.17.21",
@@ -145,6 +147,16 @@
         "typescript": "^5",
       },
     },
+    "supabase": {
+      "name": "@hiilo/supabase",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "dotenv": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "utils": {
       "name": "@hiilo/utils",
       "version": "1.0.0",
@@ -163,7 +175,7 @@
       "dependencies": {
         "@hiilo/esim-go": "workspace:*",
         "@hiilo/utils": "workspace:*",
-        "@supabase/supabase-js": "^2.38.0",
+        "@supabase/supabase-js": "^2.50.5",
         "bullmq": "^5.0.0",
         "byte-size": "^9.0.1",
         "dotenv": "^16.3.1",
@@ -523,6 +535,8 @@
 
     "@hiilo/rules-engine-2": ["@hiilo/rules-engine-2@workspace:packages/rules-engine-2"],
 
+    "@hiilo/supabase": ["@hiilo/supabase@workspace:supabase"],
+
     "@hiilo/utils": ["@hiilo/utils@workspace:utils"],
 
     "@hiilo/workers": ["@hiilo/workers@workspace:workers"],
@@ -877,13 +891,13 @@
 
     "@supabase/node-fetch": ["@supabase/node-fetch@2.6.15", "", { "dependencies": { "whatwg-url": "^5.0.0" } }, "sha512-1ibVeYUacxWYi9i0cf5efil6adJ9WRyZBLivgjs+AUpewx1F3xPi7gLgaASI2SmIQxPoCEjAsLAzKPgMJVgOUQ=="],
 
-    "@supabase/postgrest-js": ["@supabase/postgrest-js@1.19.4", "", { "dependencies": { "@supabase/node-fetch": "^2.6.14" } }, "sha512-O4soKqKtZIW3olqmbXXbKugUtByD2jPa8kL2m2c1oozAO11uCcGrRhkZL0kVxjBLrXHE0mdSkFsMj7jDSfyNpw=="],
+    "@supabase/postgrest-js": ["@supabase/postgrest-js@1.21.3", "", { "dependencies": { "@supabase/node-fetch": "^2.6.14" } }, "sha512-rg3DmmZQKEVCreXq6Am29hMVe1CzemXyIWVYyyua69y6XubfP+DzGfLxME/1uvdgwqdoaPbtjBDpEBhqxq1ZwA=="],
 
     "@supabase/realtime-js": ["@supabase/realtime-js@2.15.1", "", { "dependencies": { "@supabase/node-fetch": "^2.6.13", "@types/phoenix": "^1.6.6", "@types/ws": "^8.18.1", "ws": "^8.18.2" } }, "sha512-edRFa2IrQw50kNntvUyS38hsL7t2d/psah6om6aNTLLcWem0R6bOUq7sk7DsGeSlNfuwEwWn57FdYSva6VddYw=="],
 
     "@supabase/storage-js": ["@supabase/storage-js@2.10.4", "", { "dependencies": { "@supabase/node-fetch": "^2.6.14" } }, "sha512-cvL02GarJVFcNoWe36VBybQqTVRq6wQSOCvTS64C+eyuxOruFIm1utZAY0xi2qKtHJO3EjKaj8iWJKySusDmAQ=="],
 
-    "@supabase/supabase-js": ["@supabase/supabase-js@2.55.0", "", { "dependencies": { "@supabase/auth-js": "2.71.1", "@supabase/functions-js": "2.4.5", "@supabase/node-fetch": "2.6.15", "@supabase/postgrest-js": "1.19.4", "@supabase/realtime-js": "2.15.1", "@supabase/storage-js": "^2.10.4" } }, "sha512-Y1uV4nEMjQV1x83DGn7+Z9LOisVVRlY1geSARrUHbXWgbyKLZ6/08dvc0Us1r6AJ4tcKpwpCZWG9yDQYo1JgHg=="],
+    "@supabase/supabase-js": ["@supabase/supabase-js@2.56.0", "", { "dependencies": { "@supabase/auth-js": "2.71.1", "@supabase/functions-js": "2.4.5", "@supabase/node-fetch": "2.6.15", "@supabase/postgrest-js": "1.21.3", "@supabase/realtime-js": "2.15.1", "@supabase/storage-js": "^2.10.4" } }, "sha512-XqwhHSyVnkjdliPN61CmXsmFGnFHTX2WDdwjG3Ukvdzuu3Trix+dXupYOQ3BueIyYp7B6t0yYpdQtJP2hIInyg=="],
 
     "@theguild/federation-composition": ["@theguild/federation-composition@0.19.1", "", { "dependencies": { "constant-case": "^3.0.4", "debug": "4.4.1", "json5": "^2.2.3", "lodash.sortby": "^4.7.0" }, "peerDependencies": { "graphql": "^16.0.0" } }, "sha512-E4kllHSRYh+FsY0VR+fwl0rmWhDV8xUgWawLZTXmy15nCWQwj0BDsoEpdEXjPh7xes+75cRaeJcSbZ4jkBuSdg=="],
 
@@ -1355,7 +1369,7 @@
 
     "dot-object": ["dot-object@2.1.5", "", { "dependencies": { "commander": "^6.1.0", "glob": "^7.1.6" }, "bin": { "dot-object": "bin/dot-object" } }, "sha512-xHF8EP4XH/Ba9fvAF2LDd5O3IITVolerVV6xvkxoM8zlGEiCUrggpAnHyOoKJKCrhvPcGATFAUwIujj7bRG5UA=="],
 
-    "dotenv": ["dotenv@17.2.0", "", {}, "sha512-Q4sgBT60gzd0BB0lSyYD3xM4YxrXA9y4uBDof1JNYGzOXrQdQ6yX+7XIAqoFOGQFOTK1D3Hts5OllpxMDZFONQ=="],
+    "dotenv": ["dotenv@17.2.1", "", {}, "sha512-kQhDYKZecqnM0fCnzI5eIv5L4cAe/iRI+HqMbO/hbRdTAeXDG+M9FjipUxNfbARuEg4iHIbhnhs78BCHNbSxEQ=="],
 
     "dset": ["dset@3.1.4", "", {}, "sha512-2QF/g9/zTaPDc3BjNcVTGoBbXBgYfMTTceLaYcFJ/W9kggFUkhxD/hMEeuLKbugyef9SqAx8cpgwlIP/jinUTA=="],
 
