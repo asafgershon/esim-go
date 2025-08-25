@@ -440,7 +440,16 @@ const PhoneEmailForm = ({
           />
         </div>
         <SeparatorWithText text="או" />
-        <PhoneNumberControl {...register("phone")} isLoading={isLoading} />
+        <div className="space-y-2">
+          <Label htmlFor="phone">מספר טלפון</Label>
+          <PhoneInput
+            id="phone"
+            {...register("phone")}
+            defaultCountry="IL"
+            placeholder="הכנס מספר טלפון"
+            disabled={isLoading}
+          />
+        </div>
         <SeparatorWithText text="או" />
 
         <EmailControl {...register("email")} isLoading={isLoading} />
@@ -484,27 +493,6 @@ const PhoneEmailForm = ({
   );
 };
 
-const PhoneNumberControl = forwardRef<HTMLInputElement, { isLoading: boolean }>(
-  ({ isLoading, ...rest }, ref) => {
-    return (
-      <div className="space-y-2">
-        <Label htmlFor="phone">מספר טלפון</Label>
-        <PhoneInput
-          id="phone"
-          ref={ref}
-          name="phone"
-          defaultCountry="US"
-          placeholder="הכנס מספר טלפון"
-          disabled={isLoading}
-          {...rest}
-          // defaultCountry={getDefaultCountry()}
-          // error={!!error && !phoneForm.watch("phoneNumber").trim()}
-        />
-      </div>
-    );
-  }
-);
-PhoneNumberControl.displayName = "PhoneNumberControl";
 
 const EmailControl = forwardRef<HTMLInputElement, { isLoading: boolean }>(
   ({ isLoading, ...rest }, ref) => {

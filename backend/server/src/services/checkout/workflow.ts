@@ -7,6 +7,7 @@ import type { UserRepository } from "../../repositories";
 import * as pricingEngine from "@hiilo/rules-engine-2";
 import { WEB_APP_BUNDLE_GROUP } from "../../lib/constants/bundle-groups";
 import { supabaseAdmin } from "../../context/supabase-auth";
+import { z } from "zod";
 
 /* ===============================
  * Variables
@@ -141,10 +142,14 @@ const authenticate = async ({
 
   if (!userId) {
     // We need to autheticate this session using OTP to email or phone
-    // Send OTP to email or phone
+    // Send OTP to email or phone (validate E164 format first)
     if (phone) {
+      const phoneValidation = z.e164().safeParse(phone);
+      if (!phoneValidation.success) {
+        throw new CheckoutStepError("authenticate", "Phone number must be in E164 format");
+      }
       await supabaseAdmin.auth.signInWithOtp({
-        phone: phone,
+        phone: phoneValidation.data,
         options: { shouldCreateUser: true },
       });
     }
@@ -243,11 +248,19 @@ const verifyOTP = async ({
     type: "sms",
   });
 
-  // Update the user with the phone number
+  // Update the user with the phone number (validate E164 format first)
   if (data?.user?.id && session.auth.phone) {
-    userRepository?.updateProfile(data?.user?.id, {
-      phoneNumber: session.auth.phone,
-    });
+    // The phone should already be in E164 format from frontend, but validate to be safe
+    const phoneValidation = z.e164().safeParse(session.auth.phone);
+    if (phoneValidation.success) {
+      userRepository?.updateProfile(data?.user?.id, {
+        phoneNumber: phoneValidation.data,
+      });
+    } else {
+      logger.warn("Phone number not in E164 format, skipping profile update", {
+        phone: session.auth.phone,
+      });
+    }
   }
 
   if (error) {

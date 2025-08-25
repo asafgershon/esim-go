@@ -30,20 +30,20 @@ type DeliveryCardProps = {
 
 const DeliverySchema = z
   .object({
-    email: z.string().optional(),
-    phone: z.string().optional(),
+    email: z.email({ message: "אימייל לא תקין" }).optional().or(z.literal("")),
+    phone: z
+      .e164({ message: "מספר טלפון לא תקין" })
+      .optional()
+      .or(z.literal("")),
   })
   .refine(
     (data) => {
-      const hasValidEmail =
-        data.email &&
-        data.email.trim() !== "" &&
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
+      const hasValidEmail = data.email && data.email.trim() !== "";
       const hasValidPhone = data.phone && data.phone.trim() !== "";
       return hasValidEmail || hasValidPhone;
     },
     {
-      message: "חובה למלא לפחות אימייל תקין או טלפון",
+      message: "חובה למלא לפחות אימייל או טלפון",
       path: ["email"],
     }
   );
@@ -78,7 +78,6 @@ export const DeliveryCard = ({
   const {
     register,
     setValue,
-    watch,
     handleSubmit,
     reset,
     formState: { errors, isDirty, isSubmitSuccessful },
@@ -134,24 +133,6 @@ export const DeliveryCard = ({
     [data?.id, updateCheckoutDelivery, onDeliveryUpdate, reset]
   );
 
-  const removeCountryCode = (phone: string) => {
-    if (!phone) return "";
-
-    // Remove leading + if present
-    let cleanedPhone = phone.replace(/^\+/, "");
-
-    // Remove common country codes for Israel (972) and other common ones
-    // Handle cases like: 972501234567, 972-50-123-4567, +972501234567
-    if (cleanedPhone.startsWith("972")) {
-      cleanedPhone = cleanedPhone.substring(3);
-    }
-
-    // Remove any remaining non-digit characters except for common separators
-    cleanedPhone = cleanedPhone.replace(/[^\d\-\s\(\)]/g, "");
-
-    return cleanedPhone;
-  };
-
   useEffect(() => {
     if (auth?.completed && data?.id) {
       updateCheckoutDelivery({
@@ -191,11 +172,12 @@ export const DeliveryCard = ({
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">אימייל למשלוח</Label>
+            <Label htmlFor="email">אימייל</Label>
             <Input
+              autoComplete="email"
               id="email"
               type="email"
-              placeholder="הכנס כתובת אימייל"
+              placeholder="ben@hiiloworld.com"
               {...register("email")}
               disabled={loading || Boolean(!isAuthCompleted)}
             />
@@ -205,13 +187,12 @@ export const DeliveryCard = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">טלפון לעדכונים</Label>
+            <Label htmlFor="phone">טלפון</Label>
             <PhoneInput
               id="phone"
               defaultCountry="IL"
               placeholder="הכנס מספר טלפון"
               {...register("phone")}
-              value={removeCountryCode(watch("phone") || "")}
               disabled={loading || Boolean(!isAuthCompleted)}
             />
             {errors.phone && (

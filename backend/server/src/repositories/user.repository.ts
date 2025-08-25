@@ -153,8 +153,15 @@ export class UserRepository extends BaseSupabaseRepository<
         updateData.user_metadata.last_name = updates.lastName;
       }
       if (updates.phoneNumber !== undefined) {
-        updateData.phone = updates.phoneNumber;
-        updateData.user_metadata.phone_number = updates.phoneNumber;
+        // Validate phone number is in E164 format
+        const phoneValidation = z.string().e164().safeParse(updates.phoneNumber);
+        if (!phoneValidation.success) {
+          throw new GraphQLError("Phone number must be in E164 format (e.g., +972501234567)", {
+            extensions: { code: "INVALID_PHONE_FORMAT" },
+          });
+        }
+        updateData.phone = phoneValidation.data;
+        updateData.user_metadata.phone_number = phoneValidation.data;
       }
 
       const { data, error } = await supabaseAdmin.auth.admin.updateUserById(

@@ -8,6 +8,7 @@ import {
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import type { Resolvers } from "../types";
+import { z } from "zod";
 
 const logger = createLogger({
   component: "AuthResolvers",
@@ -17,19 +18,35 @@ const logger = createLogger({
 export const authResolvers: Partial<Resolvers> = {
   Query: {
     me: async (_, __, context: Context) => {
-      return context.auth.user;
+      return { ...context.auth.user, phoneNumber: z.string().e164().safeParse(`+${context.auth.user?.phoneNumber}`).data || null };
     },
   },
   Mutation: {
     signUp: async (_, { input }) => {
       try {
+        // Validate phone number is in E164 format if provided
+        let validatedPhoneNumber = input.phoneNumber;
+        if (input.phoneNumber) {
+          const phoneValidation = z.e164().safeParse(input.phoneNumber);
+          if (!phoneValidation.success) {
+            return {
+              success: false,
+              error: "Phone number must be in E164 format (e.g., +972501234567)",
+              user: null,
+              sessionToken: null,
+              refreshToken: null,
+            };
+          }
+          validatedPhoneNumber = phoneValidation.data;
+        }
+
         const { data, error } = await supabaseAdmin.auth.admin.createUser({
           email: input.email,
           password: input.password,
           user_metadata: {
             first_name: input.firstName,
             last_name: input.lastName,
-            phone_number: input.phoneNumber,
+            phone_number: validatedPhoneNumber,
             role: "USER", // Default role
           },
           email_confirm: false, // Set to true if you want email confirmation
@@ -330,9 +347,9 @@ export const authResolvers: Partial<Resolvers> = {
         
         // Update profile using repository
         const result = await context.repositories.users.updateProfile(userId, {
-          firstName: input.firstName,
-          lastName: input.lastName,
-          phoneNumber: input.phoneNumber,
+          firstName: input.firstName || undefined,
+          lastName: input.lastName || undefined,
+          phoneNumber: input.phoneNumber || undefined,
         });
 
         if (!result.success) {
