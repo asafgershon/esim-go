@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { Input } from "./input";
 import { Button } from "./button";
 import { ChevronDown } from "lucide-react";
@@ -21,7 +26,11 @@ import {
 } from "./dropdown-menu";
 import { ScrollArea } from "./scroll-area";
 
-export interface PhoneInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
+export interface PhoneInputProps
+  extends Omit<
+    React.InputHTMLAttributes<HTMLInputElement>,
+    "onChange" | "value"
+  > {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   defaultCountry?: CountryCode;
@@ -31,19 +40,24 @@ export interface PhoneInputProps extends Omit<React.InputHTMLAttributes<HTMLInpu
 }
 
 const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
-  ({ 
-    value = "", 
-    onChange, 
-    defaultCountry = "IL", // Israel as default
-    placeholder = "Enter phone number",
-    error = false,
-    showCountrySelect = true,
-    className,
-    ...props 
-  }, ref) => {
+  (
+    {
+      value = "",
+      onChange,
+      defaultCountry = "IL", // Israel as default
+      placeholder = "Enter phone number",
+      error = false,
+      showCountrySelect = true,
+      className,
+      ...props
+    },
+    ref
+  ) => {
     const [phoneNumber, setPhoneNumber] = useState(value);
     const [countryCode, setCountryCode] = useState<CountryCode>(defaultCountry);
-    const [displayFlag, setDisplayFlag] = useState(defaultCountry.toLowerCase());
+    const [displayFlag, setDisplayFlag] = useState(
+      defaultCountry.toLowerCase()
+    );
     const [countryData, setCountryData] = useState<any>(null);
     const [isOpen, setIsOpen] = useState(false);
     const innerRef = React.useRef<HTMLInputElement>(null);
@@ -53,18 +67,24 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
     // Get all countries for the dropdown
     const countries = React.useMemo(() => {
       try {
-        const allCountries = countriesList.all
+        const allCountries = countriesList.all;
         if (!allCountries || allCountries.length === 0) {
           // Fallback countries if lookup fails
           return [
             { alpha2: "IL", name: "Israel", countryCallingCodes: ["972"] },
             { alpha2: "US", name: "United States", countryCallingCodes: ["1"] },
-            { alpha2: "GB", name: "United Kingdom", countryCallingCodes: ["44"] },
+            {
+              alpha2: "GB",
+              name: "United Kingdom",
+              countryCallingCodes: ["44"],
+            },
           ];
         }
         // Move Israel to the top
         const israel = allCountries.find((c: any) => c.alpha2 === "IL");
-        const otherCountries = allCountries.filter((c: any) => c.alpha2 !== "IL");
+        const otherCountries = allCountries.filter(
+          (c: any) => c.alpha2 !== "IL"
+        );
         return israel ? [israel, ...otherCountries] : allCountries;
       } catch (error) {
         console.error("Error loading countries:", error);
@@ -87,13 +107,21 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
           setCountryCode(defaultCountry);
         } else {
           // Fallback for Israel
-          setCountryData({ alpha2: "IL", name: "Israel", countryCallingCodes: ["972"] });
+          setCountryData({
+            alpha2: "IL",
+            name: "Israel",
+            countryCallingCodes: ["972"],
+          });
           setDisplayFlag("il");
           setCountryCode("IL");
         }
       } catch (error) {
         // Fallback for Israel
-        setCountryData({ alpha2: "IL", name: "Israel", countryCallingCodes: ["972"] });
+        setCountryData({
+          alpha2: "IL",
+          name: "Israel",
+          countryCallingCodes: ["972"],
+        });
         setDisplayFlag("il");
         setCountryCode("IL");
       }
@@ -111,7 +139,9 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
               setCountryCode(parsed.country);
               setDisplayFlag(parsed.country.toLowerCase());
               try {
-                const country = lookup.countries({ alpha2: parsed.country })?.[0];
+                const country = lookup.countries({
+                  alpha2: parsed.country,
+                })?.[0];
                 if (country) {
                   setCountryData(country);
                 }
@@ -126,7 +156,9 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
       }
     }, [value]);
 
-    const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhoneNumberChange = (
+      e: React.ChangeEvent<HTMLInputElement>
+    ) => {
       let inputValue = e.target.value;
 
       // Convert 00 to +
@@ -150,7 +182,9 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
           parsed = parsePhoneNumber(inputValue);
         } else if (countryCode) {
           // If no + prefix, try with current country code
-          const withCountryCode = `+${getCountryCallingCode(countryCode)}${inputValue}`;
+          const withCountryCode = `+${getCountryCallingCode(
+            countryCode
+          )}${inputValue}`;
           parsed = parsePhoneNumber(withCountryCode);
           if (parsed) {
             inputValue = withCountryCode;
@@ -179,18 +213,21 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
 
     const handleCountrySelect = (alpha2: string) => {
       try {
-        const country = lookup.countries({ alpha2 })?.[0] || 
-                       countries.find((c: any) => c.alpha2 === alpha2);
+        const country =
+          lookup.countries({ alpha2 })?.[0] ||
+          countries.find((c: any) => c.alpha2 === alpha2);
         if (country) {
           setCountryData(country);
           setCountryCode(alpha2 as CountryCode);
           setDisplayFlag(alpha2.toLowerCase());
-          
+
           // Update phone number with new country code
           try {
-            const countryCallingCode = getCountryCallingCode(alpha2 as CountryCode);
+            const countryCallingCode = getCountryCallingCode(
+              alpha2 as CountryCode
+            );
             let newPhoneNumber = phoneNumber;
-            
+
             // Remove old country code if present
             if (phoneNumber.startsWith("+")) {
               const parsed = parsePhoneNumber(phoneNumber);
@@ -204,9 +241,11 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
             } else {
               newPhoneNumber = `+${countryCallingCode}`;
             }
-            
+
             setPhoneNumber(newPhoneNumber);
-            onChange?.({ target: { value: newPhoneNumber } } as React.ChangeEvent<HTMLInputElement>);
+            onChange?.({
+              target: { value: newPhoneNumber },
+            } as React.ChangeEvent<HTMLInputElement>);
           } catch (error) {
             // If we can't get the calling code, just update the flag
           }
@@ -246,7 +285,7 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
 
     return (
       <div className={cn("flex gap-2", className)}>
-           <Input
+        <Input
           ref={innerRef}
           type="tel"
           value={getDisplayValue()}
@@ -302,8 +341,6 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-        
-     
       </div>
     );
   }
@@ -312,9 +349,12 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
 PhoneInput.displayName = "PhoneInput";
 
 // Helper function to validate phone number
-export const validatePhoneNumber = (phoneNumber: string, countryCode?: CountryCode) => {
+export const validatePhoneNumber = (
+  phoneNumber: string,
+  countryCode?: CountryCode
+) => {
   if (!phoneNumber) return false;
-  
+
   try {
     if (countryCode) {
       return isValidPhoneNumber(phoneNumber, countryCode);
@@ -327,12 +367,15 @@ export const validatePhoneNumber = (phoneNumber: string, countryCode?: CountryCo
 };
 
 // Helper function to format phone number
-export const formatPhoneNumber = (phoneNumber: string, countryCode?: CountryCode) => {
+export const formatPhoneNumber = (
+  phoneNumber: string,
+  countryCode?: CountryCode
+) => {
   try {
-    const parsed = countryCode 
+    const parsed = countryCode
       ? parsePhoneNumber(phoneNumber, countryCode)
       : parsePhoneNumber(phoneNumber);
-    
+
     if (parsed) {
       return parsed.formatInternational();
     }

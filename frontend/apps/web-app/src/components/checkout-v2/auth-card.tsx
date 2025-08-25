@@ -87,7 +87,7 @@ export const AuthCard = ({
         icon={<UserIcon className="h-5 w-5 text-primary" />}
         isCompleted={completed}
       />
-      {data?.auth && (
+      {data?.auth?.completed && (
         <LoggedInAuthCard
           user={{
             firstName: data.auth.firstName || "",
