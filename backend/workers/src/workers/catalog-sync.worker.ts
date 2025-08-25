@@ -21,6 +21,12 @@ const connection = new Redis({
   port: config.redis.port,
   password: config.redis.password,
   maxRetriesPerRequest: config.redis.maxRetriesPerRequest,
+  family: 0,
+});
+
+await connection.ping().catch((error) => {
+  logger.error('Redis connection failed', error);
+  process.exit(1);
 });
 
 // Process job based on type
