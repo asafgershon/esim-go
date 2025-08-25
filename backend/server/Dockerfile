@@ -6,6 +6,8 @@ WORKDIR /app
 # Copy package files for pruning
 COPY package.json bun.lock turbo.json ./
 COPY packages ./packages
+COPY apis ./apis
+COPY utils ./utils
 COPY server ./server
 COPY workers ./workers
 

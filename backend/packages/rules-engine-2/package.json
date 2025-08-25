@@ -2,14 +2,20 @@
   "name": "@hiilo/rules-engine-2",
   "version": "1.0.0",
   "description": "Pure pricing rules engine for eSIM Go",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "src"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
   "scripts": {
     "dev": "bun tsc --watch",
+    "build": "bun tsc",
     "codegen:dbtypes": "bunx supabase gen types typescript --project-id \"dgkyjkzkwzmjjurzvcxy\" --schema public > src/generated/database.types.ts || echo \"Skipping Supabase codegen (no token available)\"",
     "clean": "rm -rf dist",
     "codegen": "graphql-codegen",

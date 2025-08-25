@@ -1,10 +1,10 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "server/workers/Dockerfile"
+dockerfilePath = "backend/workers/Dockerfile"
 
 [deploy]
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
+restartPolicyMaxRetries = 2
 
 [service]
 internalPort = 3000

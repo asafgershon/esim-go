@@ -1,5 +1,5 @@
 {
-  "name": "@hiilo/easycard",
+  "name": "@hiilo/easycard-generated",
   "version": "1.0.0",
   "description": "OpenAPI client for @hiilo/easycard",
   "author": "OpenAPI-Generator",
