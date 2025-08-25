@@ -31,23 +31,26 @@ const DeliverySchema = z.object({
   phone: z.string().nullable().optional(),
 });
 
+const PaymentIntentSchema = z.object({
+  id: z.string(),
+  url: z.string(),
+  applePayJavaScriptUrl: z.string().optional(),
+});
+
 const PaymentSchema = z.object({
   completed: z.boolean().default(false),
-  paymentIntentId: z.string().optional(),
-  // A script provided by the payment provider to load the Apple payment UI
-  applePayURL: z.string().optional(),
-  // A link to a payment page which will return to us once completed
-  paymentURL: z.string().optional(),
-  // The order id in Hiilo
-  orderRef: z.string().optional(),
-
-  capture: z
-    .object({
-      completed: z.boolean().default(false),
-      captureAmount: z.number().optional(),
-      capturedAt: z.date().optional(),
-    })
-    .optional(),
+  intent: PaymentIntentSchema.optional(),
+  phone: z.e164().optional(),
+  email: z.email().optional(),
+  nameForBilling: z.string().optional(),
+  // For webhook integration
+  // capture: z
+  //   .object({
+  //     completed: z.boolean().default(false),
+  //     captureAmount: z.number().optional(),
+  //     capturedAt: z.date().optional(),
+  //   })
+  //   .optional(),
 });
 
 export const CheckoutSessionSchema = z.object({
@@ -62,13 +65,23 @@ export const CheckoutSessionSchema = z.object({
   payment: PaymentSchema,
 
   // Overall tracking
-  status: z.enum(["select-bundle",'validate-bundle', "auth", "delivery", "payment", "confirmation"]),
+  status: z.enum([
+    "select-bundle",
+    "validate-bundle",
+    "auth",
+    "delivery",
+    "payment",
+    "confirmation",
+  ]),
 
   // Timestamps
   createdAt: z.union([z.date(), z.string()]).transform((val) => new Date(val)),
   updatedAt: z.union([z.date(), z.string()]).transform((val) => new Date(val)),
   expiresAt: z.union([z.date(), z.string()]).transform((val) => new Date(val)),
-  completedAt: z.union([z.date(), z.string()]).transform((val) => new Date(val)).optional(),
+  completedAt: z
+    .union([z.date(), z.string()])
+    .transform((val) => new Date(val))
+    .optional(),
 });
 
 export const PartialCheckoutSessionSchema = CheckoutSessionSchema.partial();

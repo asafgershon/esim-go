@@ -205,4 +205,33 @@ export const checkoutMutationsV2: MutationResolvers = {
       return session.delivery;
     },
   },
+  triggerCheckoutPayment: {
+    resolve: async (_, { sessionId }, { services }) => {
+      const session = await services.checkoutWorkflow.triggerPayment({
+        sessionId,
+        completed: false,
+      });
+
+      publish(services.pubsub)(sessionId, {
+        ...session,
+        bundle: {
+          id: session.bundle.externalId || "",
+          country: {
+            iso: session.bundle.countryId || "",
+            __typename: "Country",
+            // We rely on field resolver
+          } as Country,
+          price: session.bundle.price || Infinity,
+          pricePerDay: session.bundle.pricePerDay || Infinity,
+          currency: "USD",
+          ...session.bundle,
+        },
+        auth: session.auth,
+        delivery: session.delivery,
+        payment: session.payment,
+      });
+
+      return session.payment;
+    },
+  },
 };

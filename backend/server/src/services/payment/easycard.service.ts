@@ -1,7 +1,6 @@
 import { getEasyCardClient } from "@hiilo/easycard";
 import { logger } from "../../lib/logger";
 import type {
-  CreatePaymentIntentRequest,
   PaymentIntent,
   PaymentResult,
   PaymentWebhookEvent,
@@ -9,24 +8,17 @@ import type {
 
 // Import payment operations
 import {
+  cancelPaymentIntent as cancelIntent,
   createPaymentIntent as createIntent,
   getPaymentIntent as getIntent,
-  cancelPaymentIntent as cancelIntent,
   refundPaymentIntent,
+  type CreatePaymentIntentRequestV2,
 } from "./intent";
 import {
+  handleWebhook as handleWebhookEvent,
   processWebhookEvent as processWebhook,
   verifyWebhookSignature as verifySignature,
-  handleWebhook as handleWebhookEvent,
 } from "./webhook";
-
-/**
- * Get the EasyCard client instance
- * This is a thin wrapper around the singleton client
- */
-export async function getClient() {
-  return getEasyCardClient();
-}
 
 /**
  * Initialize the EasyCard payment service
@@ -46,7 +38,7 @@ export async function init() {
  * Create a payment intent for processing
  */
 export async function createPaymentIntent(
-  request: CreatePaymentIntentRequest
+  request: CreatePaymentIntentRequestV2
 ): Promise<PaymentResult> {
   return createIntent(request);
 }

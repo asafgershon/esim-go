@@ -1,6 +1,7 @@
-// Re-export everything from the easycard service
-export * from "./easycard.service";
 export { default } from "./easycard.service";
 
-// Re-export types
+export * from "./easycard.service";
 export * from "./types";
+import * as easycard from "./easycard.service";
+export type PaymentServiceInstance = typeof easycard;
+export { easycard as paymentService };

@@ -1,13 +1,12 @@
 import {
-  type CreateTransactionRequest,
-  type CurrencyEnum,
+  CurrencyEnum,
   InvoiceTypeEnum,
   StatusEnum,
-  type TransactionResponse,
   TransactionTypeEnum,
   env as easycardEnv,
-  getEasyCardClient,
+  getEasyCardClient
 } from "@hiilo/easycard";
+import z from "zod";
 import { logger } from "../../lib/logger";
 import type {
   CreatePaymentIntentRequest,
@@ -15,30 +14,70 @@ import type {
   PaymentResult,
 } from "./types";
 
-/**
- * Create a payment intent for processing
- */
+const CreatePaymentIntentRequestSchema = z.object({
+  currency: z.enum(CurrencyEnum).optional().default("USD"),
+  firstName: z.string(),
+  lastName: z.string(),
+  phoneNumber: z.string().optional(),
+  email: z.string().email().optional(),
+  userId: z.string(),
+  bundleId: z.string(),
+  price: z.number(),
+  description: z.string(),
+  redirectUrl: z.string(),
+  orderReference: z.string(),
+});
+
+export type CreatePaymentIntentRequestV2 = z.infer<
+  typeof CreatePaymentIntentRequestSchema
+>;
+
+const transformCreatePaymentIntentRequest = (
+  request: CreatePaymentIntentRequest
+) => {
+  return CreatePaymentIntentRequestSchema.transform((data) => {
+    return {
+      ...data,
+      costumer: {
+        id: data.userId,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phoneNumber: data.phoneNumber,
+      },
+      item: { name: data.bundleId, price: data.price, currency: data.currency },
+    };
+  }).parse(request);
+};
+
 export async function createPaymentIntent({
   currency = "USD",
-  costumer: { id, email, firstName, lastName, phoneNumber },
-  item,
+  firstName,
+  lastName,
+  phoneNumber,
+  email,
+  userId,
+  bundleId,
+  price,
   description,
+  orderReference,
   redirectUrl,
-  order,
   ...request
-}: CreatePaymentIntentRequest): Promise<PaymentResult> {
+}: CreatePaymentIntentRequestV2): Promise<PaymentResult> {
   logger.info("Creating EasyCard payment intent", {
-    amount: request.amount,
+    price: price,
     currency,
-    customerId: id,
+    userId,
+    bundleId,
     operationType: "payment-intent-create",
   });
 
   try {
-    logger.info("Starting payment intent creation", {
-      amount: request.amount,
+    logger.debug("Starting payment intent creation", {
+      price,
       currency,
-      customerId: id,
+      userId,
+      bundleId,
       operationType: "payment-intent-create-start",
     });
 
@@ -53,7 +92,7 @@ export async function createPaymentIntent({
 
     logger.info("Calling EasyCard API", {
       terminalID: easycardEnv.EASYCARD_TERMINAL_ID,
-      amount: request.amount,
+      price,
       dueDate: dueDate.toISOString(),
       operationType: "payment-intent-api-call",
     });
@@ -70,16 +109,16 @@ export async function createPaymentIntent({
           consumerNameReadonly: true,
           currency: "USD",
           dealDetails: {
-            externalUserID: id,
+            externalUserID: userId,
             consumerPhone: phoneNumber,
             consumerEmail: email,
             consumerName:
               firstName && lastName ? `${firstName} ${lastName}` : undefined,
-            dealReference: order.reference,
+            dealReference: orderReference,
 
             dealDescription: description,
           },
-          paymentRequestAmount: request.amount,
+          paymentRequestAmount: price,
           transactionType: TransactionTypeEnum.REGULAR_DEAL,
           invoiceDetails: {
             invoiceType: InvoiceTypeEnum.INVOICE_WITH_PAYMENT_INFO,
@@ -98,7 +137,7 @@ export async function createPaymentIntent({
       }
     );
 
-    logger.info("EasyCard API response received", {
+    logger.debug("EasyCard API response received", {
       status: paymentIntent.status,
       hasAdditionalData: !!paymentIntent.additionalData,
       entityUID: paymentIntent.entityUID,

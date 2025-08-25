@@ -388,6 +388,7 @@ input CalculatePriceInput {
   paymentMethod: PaymentMethod
   promo: String
   regionId: String
+  strategyId: String
 }
 
 type CatalogBundle implements Bundle {
@@ -468,6 +469,7 @@ type Checkout {
   bundle: CheckoutBundle
   delivery: CheckoutDelivery
   id: ID!
+  payment: CheckoutPayment
 }
 
 type CheckoutAuth implements CheckoutAuthInterface {
@@ -525,6 +527,14 @@ type CheckoutBundle {
 type CheckoutDelivery {
   completed: Boolean!
   email: String
+  phone: String
+}
+
+type CheckoutPayment {
+  completed: Boolean!
+  email: String
+  intent: PaymentIntent
+  nameForBilling: String
   phone: String
 }
 
@@ -894,6 +904,7 @@ type Mutation {
   toggleHighDemandCountry(countryId: String!): ToggleHighDemandResponse
   togglePricingRule(id: ID!): PricingRule!
   triggerCatalogSync(params: TriggerSyncParams!): TriggerSyncResponse
+  triggerCheckoutPayment(nameForBilling: String, sessionId: String!): CheckoutPayment!
   updateCheckoutAuth(email: String, firstName: String, lastName: String, phone: String, sessionId: String!): CheckoutAuth!
   updateCheckoutAuthName(firstName: String, lastName: String, sessionId: String!): CheckoutAuth!
   updateCheckoutDelivery(email: String, phone: String, sessionId: String!): CheckoutDelivery!
@@ -965,6 +976,12 @@ type PageInfo {
 input PaginationInput {
   limit: Int = 50
   offset: Int = 0
+}
+
+type PaymentIntent {
+  applePayJavaScriptUrl: String
+  id: ID!
+  url: String!
 }
 
 enum PaymentMethod {

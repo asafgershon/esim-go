@@ -2,12 +2,15 @@ import { createLogger } from "@hiilo/utils";
 import type { PubSubInstance } from "../../context/pubsub";
 import type { CheckoutSessionServiceV2 } from "./session";
 import type { ESimGoClient } from "@hiilo/esim-go";
-import type { EasyCardClient } from "@hiilo/easycard";
+import { getEasyCardClient, type EasyCardClient } from "@hiilo/easycard";
 import type { UserRepository } from "../../repositories";
 import * as pricingEngine from "@hiilo/rules-engine-2";
 import { WEB_APP_BUNDLE_GROUP } from "../../lib/constants/bundle-groups";
 import { supabaseAdmin } from "../../context/supabase-auth";
 import { z } from "zod";
+import type { Checkout } from "../../types";
+import type { PaymentServiceInstance } from "../payment";
+import type { CreatePaymentIntentRequestV2 } from "../payment/intent";
 
 /* ===============================
  * Variables
@@ -17,7 +20,7 @@ let pubsub: PubSubInstance | null = null;
 let sessionService: CheckoutSessionServiceV2 | null = null;
 let userRepository: UserRepository | null = null;
 let esimAPI: ESimGoClient | null = null;
-let paymentAPI: EasyCardClient | null = null;
+let paymentAPI: PaymentServiceInstance | null = null;
 let engine: typeof pricingEngine | null = null;
 
 const init = async (context: {
@@ -25,7 +28,7 @@ const init = async (context: {
   sessionService: CheckoutSessionServiceV2;
   userRepository: UserRepository;
   esimAPI: ESimGoClient;
-  paymentAPI: EasyCardClient;
+  paymentAPI: PaymentServiceInstance;
 }) => {
   pubsub = context.pubsub;
   sessionService = context.sessionService;
@@ -146,7 +149,10 @@ const authenticate = async ({
     if (phone) {
       const phoneValidation = z.e164().safeParse(phone);
       if (!phoneValidation.success) {
-        throw new CheckoutStepError("authenticate", "Phone number must be in E164 format");
+        throw new CheckoutStepError(
+          "authenticate",
+          "Phone number must be in E164 format"
+        );
       }
       await supabaseAdmin.auth.signInWithOtp({
         phone: phoneValidation.data,
@@ -158,7 +164,7 @@ const authenticate = async ({
     const session = await sessionService.updateSessionStep(sessionId, "auth", {
       completed: false,
       email: email !== "" ? email : undefined,
-      phone: phone !== "" ? (phone || undefined) : undefined,
+      phone: phone !== "" ? phone || undefined : undefined,
       otpSent: true,
     });
 
@@ -383,8 +389,82 @@ const setDelivery = async ({
   return nextSession;
 };
 
-const preparePayment = async ({}) => {
-  throw new Error("Not implemented");
+const triggerPayment = async ({
+  sessionId,
+  ...details
+}: { sessionId: string } & NonNullable<Checkout["payment"]>) => {
+  if (!sessionService) {
+    throw new NotInitializedError();
+  }
+
+  const session = await sessionService.getSession(sessionId);
+  if (!session) {
+    throw new SessionNotFound();
+  }
+
+  if (!session.bundle.price || session.bundle.price === 0) {
+    throw new CheckoutStepError("triggerPayment", "Price is required");
+  }
+
+  if (!session.bundle.externalId) {
+    throw new CheckoutStepError("triggerPayment", "Bundle ID is required");
+  }
+
+  if (!session.auth.userId) {
+    throw new CheckoutStepError("triggerPayment", "User ID is required");
+  }
+  // email or phone is required
+  if (!session.auth.email && !session.auth.phone) {
+    throw new CheckoutStepError("triggerPayment", "Email or phone is required");
+  }
+
+  const request: CreatePaymentIntentRequestV2 = {
+    userId: session.auth.userId,
+    bundleId: session.bundle.externalId,
+    price: session.bundle.price,
+    description: "Test payment",
+    redirectUrl: "https://www.hiilo.com",
+    firstName: session.payment.nameForBilling || session.auth.firstName || "",
+    lastName: session.payment.nameForBilling || session.auth.lastName || "",
+    currency: "USD",
+    orderReference: session.id,
+    phoneNumber: session.auth.phone || "",
+    email: session.auth.email || "",
+  };
+
+  const result = await paymentAPI?.createPaymentIntent(request);
+
+  if (!result || !result.success || !result.payment_intent) {
+    throw new CheckoutStepError(
+      "triggerPayment",
+      "Failed to create payment intent"
+    );
+  }
+
+  const intent = {
+    id: result.payment_intent.entityUID || "",
+    url: result.payment_intent.additionalData?.url || "",
+    applePayJavaScriptUrl:
+      result.payment_intent.additionalData?.applePayJavaScriptUrl || "",
+  };
+
+  const nextSession = await sessionService.updateSessionStep(
+    sessionId,
+    "payment",
+    {
+      ...session.payment,
+      completed: details.completed,
+      intent: {
+        id: intent.id,
+        url: intent.url,
+        applePayJavaScriptUrl: intent.applePayJavaScriptUrl,
+      },
+      phone: session.auth.phone || undefined,
+      email: session.auth.email || undefined,
+      nameForBilling: session.payment.nameForBilling || undefined,
+    }
+  );
+  return nextSession;
 };
 
 // For success page only
@@ -405,7 +485,7 @@ export const checkoutWorkflow = {
   verifyOTP,
   updateAuthName,
   setDelivery,
-  preparePayment,
+  triggerPayment,
   completePayment,
   captruePayment,
 };

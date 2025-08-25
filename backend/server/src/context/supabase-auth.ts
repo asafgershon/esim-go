@@ -74,8 +74,18 @@ export const createSupabaseAuthContext = async (
         supabaseUser.user_metadata?.last_name ||
         supabaseUser.user_metadata?.lastName ||
         "",
-      phoneNumber:
-        supabaseUser.phone || supabaseUser.user_metadata?.phone_number || null,
+      phoneNumber: (() => {
+        // Prioritize user_metadata.phone_number which should be in E164 format
+        const metadataPhone = supabaseUser.user_metadata?.phone_number;
+        if (metadataPhone) return metadataPhone;
+        
+        // Fallback to phone field, add + if missing
+        const phone = supabaseUser.phone;
+        if (!phone) return null;
+        
+        // Check if already has + prefix
+        return phone.startsWith('+') ? phone : `+${phone}`;
+      })(),
       role: getUserRole(supabaseUser),
       createdAt: supabaseUser.created_at,
       updatedAt: supabaseUser.updated_at || supabaseUser.created_at,

@@ -1729,6 +1729,10 @@ extend type Mutation {
     email: String
     phone: String
   ): CheckoutDelivery!
+  triggerCheckoutPayment(
+    sessionId: String!
+    nameForBilling: String
+  ): CheckoutPayment!
 }
 
 extend type Subscription {
@@ -1743,6 +1747,22 @@ type Checkout {
   auth: CheckoutAuth
 
   delivery: CheckoutDelivery
+
+  payment: CheckoutPayment
+}
+
+type CheckoutPayment {
+  completed: Boolean!
+  phone: String
+  email: String
+  nameForBilling: String
+  intent: PaymentIntent
+}
+
+type PaymentIntent {
+  id: ID!
+  url: String!
+  applePayJavaScriptUrl: String
 }
 
 type CheckoutDelivery {

@@ -18,7 +18,7 @@ const logger = createLogger({
 export const authResolvers: Partial<Resolvers> = {
   Query: {
     me: async (_, __, context: Context) => {
-      return { ...context.auth.user, phoneNumber: z.string().e164().safeParse(`+${context.auth.user?.phoneNumber}`).data || null };
+      return context.auth.user;
     },
   },
   Mutation: {

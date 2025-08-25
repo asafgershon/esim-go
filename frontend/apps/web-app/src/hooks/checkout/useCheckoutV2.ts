@@ -44,6 +44,13 @@ const CHECKOUT_SUBSCRIPTION = gql(`subscription Checkout($id: ID!) {
         email
         phone
     }
+
+    payment {
+        completed
+        email
+        phone
+        nameForBilling
+    }
   }
 }`);
 

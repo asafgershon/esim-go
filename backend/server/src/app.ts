@@ -54,7 +54,7 @@ import { TripRepository } from "./repositories/trip.repository";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
-import * as EasycardPayment from "./services/payment";
+import {paymentService} from "./services/payment";
 import { checkoutSessionService } from "./services/checkout";
 import { checkoutWorkflow } from "./services/checkout/workflow";
 
@@ -146,7 +146,7 @@ async function startServer() {
 
     const userRepository = new UserRepository();
 
-    const paymentService = EasycardPayment.init();
+     paymentService.init();
 
     // Initialize Easycard payment service (optional)
     const [checkoutSessionServiceV2, checkoutWorkflowService] =
@@ -157,7 +157,7 @@ async function startServer() {
           sessionService: checkoutSessionService,
           userRepository,
           esimAPI: esimGoClient,
-          paymentAPI: await  paymentService,
+          paymentAPI: paymentService,
         }),
       ]);
 
@@ -465,7 +465,7 @@ async function startServer() {
               syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
               esimGoClient,
               airHaloClient,
-              easycardPayment: EasycardPayment,
+              easycardPayment: paymentService,
               db: supabaseAdmin,
               checkoutSessionService: undefined, // Will be initialized lazily in resolvers
               checkoutSessionServiceV2: checkoutSessionServiceV2,

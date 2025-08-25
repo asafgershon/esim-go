@@ -35,6 +35,7 @@ import type {
 
   // Common types
   Address,
+  OperationResponse,
 } from "@hiilo/easycard";
 
 // Import enum types
@@ -142,6 +143,6 @@ export interface PaymentError {
 
 export interface PaymentResult {
   success: boolean;
-  payment_intent?: TransactionResponse;
+  payment_intent?: OperationResponse;
   error?: PaymentError;
 }

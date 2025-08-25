@@ -397,6 +397,7 @@ export type Checkout = {
   bundle?: Maybe<CheckoutBundle>;
   delivery?: Maybe<CheckoutDelivery>;
   id: Scalars['ID']['output'];
+  payment?: Maybe<CheckoutPayment>;
 };
 
 export type CheckoutAuth = CheckoutAuthInterface & {
@@ -458,6 +459,15 @@ export type CheckoutDelivery = {
   __typename?: 'CheckoutDelivery';
   completed: Scalars['Boolean']['output'];
   email?: Maybe<Scalars['String']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+};
+
+export type CheckoutPayment = {
+  __typename?: 'CheckoutPayment';
+  completed: Scalars['Boolean']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  intent?: Maybe<PaymentIntent>;
+  nameForBilling?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
 };
 
@@ -840,6 +850,7 @@ export type Mutation = {
   toggleHighDemandCountry?: Maybe<ToggleHighDemandResponse>;
   togglePricingRule: PricingRule;
   triggerCatalogSync?: Maybe<TriggerSyncResponse>;
+  triggerCheckoutPayment: CheckoutPayment;
   updateCheckoutAuth: CheckoutAuth;
   updateCheckoutAuthName: CheckoutAuth;
   updateCheckoutDelivery: CheckoutDelivery;
@@ -1005,6 +1016,12 @@ export type MutationTriggerCatalogSyncArgs = {
 };
 
 
+export type MutationTriggerCheckoutPaymentArgs = {
+  nameForBilling?: InputMaybe<Scalars['String']['input']>;
+  sessionId: Scalars['String']['input'];
+};
+
+
 export type MutationUpdateCheckoutAuthArgs = {
   email?: InputMaybe<Scalars['String']['input']>;
   firstName?: InputMaybe<Scalars['String']['input']>;
@@ -1149,6 +1166,13 @@ export type PageInfo = {
 export type PaginationInput = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type PaymentIntent = {
+  __typename?: 'PaymentIntent';
+  applePayJavaScriptUrl?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  url: Scalars['String']['output'];
 };
 
 export enum PaymentMethod {
@@ -2118,6 +2142,7 @@ export type ResolversTypes = {
   CheckoutAuthWithOTP: ResolverTypeWrapper<CheckoutAuthWithOtp>;
   CheckoutBundle: ResolverTypeWrapper<CheckoutBundle>;
   CheckoutDelivery: ResolverTypeWrapper<CheckoutDelivery>;
+  CheckoutPayment: ResolverTypeWrapper<CheckoutPayment>;
   CheckoutSession: ResolverTypeWrapper<CheckoutSession>;
   CheckoutSessionUpdate: ResolverTypeWrapper<CheckoutSessionUpdate>;
   CheckoutStepType: CheckoutStepType;
@@ -2169,6 +2194,7 @@ export type ResolversTypes = {
   PackageAssignment: ResolverTypeWrapper<PackageAssignment>;
   PageInfo: ResolverTypeWrapper<PageInfo>;
   PaginationInput: PaginationInput;
+  PaymentIntent: ResolverTypeWrapper<PaymentIntent>;
   PaymentMethod: PaymentMethod;
   PaymentMethodInfo: ResolverTypeWrapper<PaymentMethodInfo>;
   PriceRange: ResolverTypeWrapper<PriceRange>;
@@ -2272,6 +2298,7 @@ export type ResolversParentTypes = {
   CheckoutAuthWithOTP: CheckoutAuthWithOtp;
   CheckoutBundle: CheckoutBundle;
   CheckoutDelivery: CheckoutDelivery;
+  CheckoutPayment: CheckoutPayment;
   CheckoutSession: CheckoutSession;
   CheckoutSessionUpdate: CheckoutSessionUpdate;
   ConflictingJobInfo: ConflictingJobInfo;
@@ -2318,6 +2345,7 @@ export type ResolversParentTypes = {
   PackageAssignment: PackageAssignment;
   PageInfo: PageInfo;
   PaginationInput: PaginationInput;
+  PaymentIntent: PaymentIntent;
   PaymentMethodInfo: PaymentMethodInfo;
   PriceRange: PriceRange;
   PricingBlock: PricingBlock;
@@ -2654,6 +2682,7 @@ export type CheckoutResolvers<ContextType = Context, ParentType extends Resolver
   bundle?: Resolver<Maybe<ResolversTypes['CheckoutBundle']>, ParentType, ContextType>;
   delivery?: Resolver<Maybe<ResolversTypes['CheckoutDelivery']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  payment?: Resolver<Maybe<ResolversTypes['CheckoutPayment']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2716,6 +2745,15 @@ export type CheckoutBundleResolvers<ContextType = Context, ParentType extends Re
 export type CheckoutDeliveryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['CheckoutDelivery'] = ResolversParentTypes['CheckoutDelivery']> = {
   completed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  phone?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CheckoutPaymentResolvers<ContextType = Context, ParentType extends ResolversParentTypes['CheckoutPayment'] = ResolversParentTypes['CheckoutPayment']> = {
+  completed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  intent?: Resolver<Maybe<ResolversTypes['PaymentIntent']>, ParentType, ContextType>;
+  nameForBilling?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   phone?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -3013,6 +3051,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   toggleHighDemandCountry?: Resolver<Maybe<ResolversTypes['ToggleHighDemandResponse']>, ParentType, ContextType, RequireFields<MutationToggleHighDemandCountryArgs, 'countryId'>>;
   togglePricingRule?: Resolver<ResolversTypes['PricingRule'], ParentType, ContextType, RequireFields<MutationTogglePricingRuleArgs, 'id'>>;
   triggerCatalogSync?: Resolver<Maybe<ResolversTypes['TriggerSyncResponse']>, ParentType, ContextType, RequireFields<MutationTriggerCatalogSyncArgs, 'params'>>;
+  triggerCheckoutPayment?: Resolver<ResolversTypes['CheckoutPayment'], ParentType, ContextType, RequireFields<MutationTriggerCheckoutPaymentArgs, 'sessionId'>>;
   updateCheckoutAuth?: Resolver<ResolversTypes['CheckoutAuth'], ParentType, ContextType, RequireFields<MutationUpdateCheckoutAuthArgs, 'sessionId'>>;
   updateCheckoutAuthName?: Resolver<ResolversTypes['CheckoutAuth'], ParentType, ContextType, RequireFields<MutationUpdateCheckoutAuthNameArgs, 'sessionId'>>;
   updateCheckoutDelivery?: Resolver<ResolversTypes['CheckoutDelivery'], ParentType, ContextType, RequireFields<MutationUpdateCheckoutDeliveryArgs, 'sessionId'>>;
@@ -3067,6 +3106,13 @@ export type PageInfoResolvers<ContextType = Context, ParentType extends Resolver
   offset?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   total?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type PaymentIntentResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PaymentIntent'] = ResolversParentTypes['PaymentIntent']> = {
+  applePayJavaScriptUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  url?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3533,6 +3579,7 @@ export type Resolvers<ContextType = Context> = {
   CheckoutAuthWithOTP?: CheckoutAuthWithOtpResolvers<ContextType>;
   CheckoutBundle?: CheckoutBundleResolvers<ContextType>;
   CheckoutDelivery?: CheckoutDeliveryResolvers<ContextType>;
+  CheckoutPayment?: CheckoutPaymentResolvers<ContextType>;
   CheckoutSession?: CheckoutSessionResolvers<ContextType>;
   CheckoutSessionUpdate?: CheckoutSessionUpdateResolvers<ContextType>;
   ConflictingJobInfo?: ConflictingJobInfoResolvers<ContextType>;
@@ -3567,6 +3614,7 @@ export type Resolvers<ContextType = Context> = {
   Order?: OrderResolvers<ContextType>;
   PackageAssignment?: PackageAssignmentResolvers<ContextType>;
   PageInfo?: PageInfoResolvers<ContextType>;
+  PaymentIntent?: PaymentIntentResolvers<ContextType>;
   PaymentMethodInfo?: PaymentMethodInfoResolvers<ContextType>;
   PriceRange?: PriceRangeResolvers<ContextType>;
   PricingBlock?: PricingBlockResolvers<ContextType>;

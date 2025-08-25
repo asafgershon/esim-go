@@ -112,7 +112,7 @@ export const AuthCard = ({
           onSuccess={() => onAuthUpdate(data?.auth)}
         />
       )}
-      {!auth.firstName && !auth.lastName && data && (
+      {!auth.firstName && !auth.lastName && auth.userId && data?.id && (
         <NameForm
           sessionId={data?.id}
           firstName={auth.firstName || ""}

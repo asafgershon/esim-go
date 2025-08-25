@@ -6,6 +6,7 @@ import { useSelectorQueryState } from "@/hooks/useSelectorQueryState";
 import { AuthCard } from "./auth-card";
 import { DeliveryCard } from "./delivery-card";
 import { OrderCard } from "./order-card";
+import { PaymentCard } from "./payment-card";
 
 export const CheckoutContainerV2 = () => {
   const { numOfDays, countryId } = useSelectorQueryState();
@@ -32,6 +33,7 @@ export const CheckoutContainerV2 = () => {
       />
 
       <AuthCard
+        loading={loading}
         completed={Boolean(data?.checkout.auth?.completed)}
         data={data?.checkout}
         sectionNumber={2}
@@ -45,6 +47,15 @@ export const CheckoutContainerV2 = () => {
         data={data?.checkout}
         onDeliveryUpdate={handleAuthUpdate}
       />
+
+      <PaymentCard
+        loading={loading}
+        completed={Boolean(data?.checkout.payment?.completed)}
+        sectionNumber={4}
+        data={data?.checkout}
+        onPaymentUpdate={handleAuthUpdate}
+      />
+
     </main>
   );
 };
