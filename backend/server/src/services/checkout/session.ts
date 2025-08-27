@@ -124,9 +124,11 @@ const getSessionByPaymentIntentId = async (
   const sessionId = await redis.get(indexKey);
 
   if (!sessionId) {
-    logger.debug("No session found for payment intent ID", { paymentIntentId });
+    logger.warn("No session found for payment intent ID", { paymentIntentId, indexKey });
     return null;
   }
+
+  logger.debug("Found session ID for payment intent", { paymentIntentId, sessionId });
 
   // Then get the actual session
   return getSession(sessionId);

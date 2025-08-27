@@ -622,6 +622,7 @@ export type CheckoutPayment = {
   nameForBilling?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
   redirectUrl?: Maybe<Scalars['String']['output']>;
+  transaction?: Maybe<Transaction>;
 };
 
 export type CheckoutSession = {
@@ -1002,7 +1003,7 @@ export type Mutation = {
   invalidateCacheByRuleChange?: Maybe<CacheOperationResult>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
-  processPaymentCallback: Scalars['Boolean']['output'];
+  processPaymentCallback: Scalars['String']['output'];
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
   removeUserFromTenant: TenantOperationResponse;
   reorderPricingRules: Array<PricingRule>;
@@ -2152,6 +2153,13 @@ export type ToggleHighDemandResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type Transaction = {
+  __typename?: 'Transaction';
+  amount?: Maybe<Scalars['Float']['output']>;
+  currency?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+};
+
 export type TriggerSyncParams = {
   bundleGroup?: InputMaybe<Scalars['String']['input']>;
   countryId?: InputMaybe<Scalars['String']['input']>;
@@ -2307,7 +2315,7 @@ export type ProcessPaymentCallbackMutationVariables = Exact<{
 }>;
 
 
-export type ProcessPaymentCallbackMutation = { __typename?: 'Mutation', processPaymentCallback: boolean };
+export type ProcessPaymentCallbackMutation = { __typename?: 'Mutation', processPaymentCallback: string };
 
 export type UpdateCheckoutAuthMutationVariables = Exact<{
   sessionId: Scalars['String']['input'];

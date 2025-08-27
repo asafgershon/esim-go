@@ -11,10 +11,17 @@ import {
   type PhoneFormData,
   type OTPFormData,
 } from "@/lib/validation/auth-schemas";
+import { SignInResponse } from "@/lib/types";
 
 interface UseLoginFormProps {
   onSuccess?: () => void;
   redirectTo?: string;
+}
+
+export interface SocialUserData {
+  email?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 interface UseLoginFormReturn {
@@ -42,7 +49,7 @@ interface UseLoginFormReturn {
   handlePhoneSubmit: (data: PhoneFormData) => Promise<void>;
   handleOTPSubmit: (data: OTPFormData) => Promise<void>;
   handleResendOTP: () => Promise<void>;
-  handleSocialSignIn: (provider: "apple" | "google") => Promise<void>;
+  handleSocialSignIn: (provider: "apple" | "google") => Promise<SocialUserData | void>;
   handleBackToPhone: () => void;
   handlePhoneInputChange: (value: string) => void;
   handleOTPChange: (value: string) => void;
@@ -191,12 +198,12 @@ export const useLoginForm = ({
   }, [phoneNumber, resendCooldown, sendOTP]);
 
   // Social sign-in
-  const handleSocialSignIn = useCallback(async (provider: "apple" | "google") => {
+  const handleSocialSignIn = useCallback(async (provider: "apple" | "google"): Promise<SocialUserData | void> => {
     try {
       setIsLoading(true);
       setError(null);
 
-      let result;
+      let result: SignInResponse;
       try {
         result = provider === "apple" 
           ? await signInWithApple(false)
@@ -206,11 +213,17 @@ export const useLoginForm = ({
       }
 
       if (result && result.success) {
+        // Extract user data from the result
+        const userData: SocialUserData = result.user || {};
+        
         if (onSuccess) {
           onSuccess();
         } else {
           window.location.href = redirectTo;
         }
+        
+        // Return the user data
+        return userData;
       } else {
         const errorMessage = provider === "apple"
           ? "התחברות עם Apple נכשלה"

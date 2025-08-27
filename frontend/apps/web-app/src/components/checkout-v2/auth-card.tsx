@@ -36,6 +36,7 @@ type AuthCardProps = {
   sectionNumber?: number;
   data: Pick<Checkout, "auth" | "id"> | undefined;
   onAuthUpdate: (auth: Checkout["auth"]) => void;
+  onLogout?: () => void;
   loading: boolean;
 };
 
@@ -73,6 +74,7 @@ export const AuthCard = ({
   data,
   completed,
   onAuthUpdate,
+  onLogout,
   loading,
 }: AuthCardProps) => {
   const { auth } = data || {};
@@ -95,9 +97,10 @@ export const AuthCard = ({
             email: data.auth.email || "",
             phoneNumber: data.auth.phone || "",
           }}
+          onLogout={onLogout}
         />
       )}
-      {!auth.otpSent && !auth.otpVerified && data?.id && (
+      {!auth.completed && !auth.otpSent && !auth.otpVerified && data?.id && (
         <PhoneEmailForm
           sessionId={data.id}
           defaultPhone={auth.phone || undefined}
@@ -126,10 +129,18 @@ export const AuthCard = ({
 
 const LoggedInAuthCard = ({
   user,
+  onLogout,
 }: {
   user: Pick<User, "firstName" | "lastName" | "email" | "phoneNumber">;
+  onLogout?: () => void;
 }) => {
   const { signOut } = useAuth();
+  
+  const handleLogout = () => {
+    signOut(false);
+    onLogout?.();
+  };
+  
   return (
     <CardContent className="space-y-4 flex flex-row items-center justify-between gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
       <div className="flex-1">
@@ -140,7 +151,7 @@ const LoggedInAuthCard = ({
           {user.email || user.phoneNumber}
         </p>
       </div>
-      <Button variant="ghost" size="sm" onClick={() => signOut(false)}>
+      <Button variant="ghost" size="sm" onClick={handleLogout}>
         <LogOut className="h-4 w-4" />
       </Button>
     </CardContent>
@@ -396,12 +407,16 @@ const PhoneEmailForm = ({
   defaultEmail?: string;
   onSuccess: () => void;
 }) => {
-  const { handleSocialSignIn } = useLoginForm({
-    onSuccess,
-  });
-
   const [updateCheckoutAuth, { loading: isLoading }] =
     useMutation<UpdateCheckoutAuthMutation>(UPDATE_CHECKOUT_AUTH_MUTATION);
+
+  const { handleSocialSignIn } = useLoginForm({
+    onSuccess: async () => {
+      // After successful social login, the user data has been returned
+      // and we've already called updateCheckoutAuth with it
+      onSuccess();
+    },
+  });
 
   const { register, handleSubmit, watch, formState } = useForm({
     resolver: zodResolver(PhoneOrEmailSchema),
@@ -434,11 +449,39 @@ const PhoneEmailForm = ({
         <div className="grid grid-cols-2 gap-2">
           <AppleSignInButton
             className="justify-center"
-            onClick={() => handleSocialSignIn("apple")}
+            onClick={async () => {
+              const userData = await handleSocialSignIn("apple");
+              if (userData) {
+                // Update checkout auth with social login data
+                await updateCheckoutAuth({
+                  variables: {
+                    sessionId,
+                    email: userData.email,
+                    firstName: userData.firstName,
+                    lastName: userData.lastName,
+                    phone: undefined, // Social login doesn't provide phone
+                  },
+                });
+              }
+            }}
           />
           <GoogleSignInButton
             className="justify-center"
-            onClick={() => handleSocialSignIn("google")}
+            onClick={async () => {
+              const userData = await handleSocialSignIn("google");
+              if (userData) {
+                // Update checkout auth with social login data
+                await updateCheckoutAuth({
+                  variables: {
+                    sessionId,
+                    email: userData.email,
+                    firstName: userData.firstName,
+                    lastName: userData.lastName,
+                    phone: undefined, // Social login doesn't provide phone
+                  },
+                });
+              }
+            }}
           />
         </div>
         <SeparatorWithText text="או" />

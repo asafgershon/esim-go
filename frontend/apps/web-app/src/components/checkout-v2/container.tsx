@@ -11,13 +11,18 @@ import { PaymentCard } from "./payment-card";
 export const CheckoutContainerV2 = () => {
   const { numOfDays, countryId } = useSelectorQueryState();
   const { refreshAuth } = useAuth();
-  const { data, loading} = useCheckout({
+  const { data, loading, refreshCheckout} = useCheckout({
     numOfDays,
     countryId,
   });
 
   const handleAuthUpdate = () => {
     refreshAuth();
+  };
+
+  const handleLogout = () => {
+    // Force create a new checkout session to clear auth data
+    refreshCheckout();
   };
 
   //   if (loading) return <div>Loading...</div>;
@@ -38,6 +43,7 @@ export const CheckoutContainerV2 = () => {
         data={data?.checkout}
         sectionNumber={2}
         onAuthUpdate={handleAuthUpdate}
+        onLogout={handleLogout}
       />
 
        <DeliveryCard

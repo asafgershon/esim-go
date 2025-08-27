@@ -46,6 +46,8 @@ const PaymentSchema = z.object({
   nameForBilling: z.string().optional(),
   transaction: z.object({
     id: z.string(),
+    amount: z.number().optional(),
+    currency: z.string().optional(),
   }).optional(),
   // For webhook integration
   // capture: z

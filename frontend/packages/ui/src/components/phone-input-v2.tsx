@@ -93,7 +93,8 @@ const PhoneInputV2 = React.forwardRef<HTMLInputElement, PhoneInputProps>(
     return (
       <RPNInput.default
         ref={ref as any}
-        className={cn("flex flex-row-reverse", className)}
+        className={cn("flex flex-row", className)}
+        style={{ direction: "ltr" }}
         international
         defaultCountry={defaultCountry}
         flagComponent={FlagComponent}

@@ -537,6 +537,7 @@ type CheckoutPayment {
   nameForBilling: String
   phone: String
   redirectUrl: String
+  transaction: Transaction
 }
 
 type CheckoutSession {
@@ -890,7 +891,7 @@ type Mutation {
   invalidateCacheByRuleChange(affectedEntities: [String!]!, ruleType: String!): CacheOperationResult
   inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse
   processCheckoutPayment(input: ProcessCheckoutPaymentInput!): ProcessCheckoutPaymentResponse!
-  processPaymentCallback(transactionId: String!): Boolean!
+  processPaymentCallback(transactionId: String!): String!
   purchaseESIM(input: PurchaseESIMInput!, planId: ID!): PurchaseESIMResponse
   removeUserFromTenant(tenantSlug: ID!, userId: ID!): TenantOperationResponse!
   reorderPricingRules(updates: [PricingRulePriorityUpdate!]!): [PricingRule!]!
@@ -1542,6 +1543,12 @@ type ToggleHighDemandResponse {
   error: String
   isHighDemand: Boolean!
   success: Boolean!
+}
+
+type Transaction {
+  amount: Float
+  currency: String
+  id: ID!
 }
 
 input TriggerSyncParams {

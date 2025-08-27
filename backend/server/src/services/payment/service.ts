@@ -1,20 +1,17 @@
 import {
   CurrencyEnum,
-  getEasyCardClient,
+  EasyCardClient,
   env as easycardEnv,
-  TransactionTypeEnum,
+  getEasyCardClient,
   InvoiceTypeEnum,
   StatusEnum,
-  EasyCardClient,
-  type ApiPaymentIntentPostRequest,
+  TransactionTypeEnum
 } from "@hiilo/easycard";
+import { cleanEnv } from "envalid";
 import { logger } from "../../lib/logger";
 import type {
-  PaymentIntent,
-  PaymentResult,
-  PaymentWebhookEvent,
+  PaymentResult
 } from "./types";
-import { cleanEnv } from "envalid";
 
 import { z } from "zod";
 

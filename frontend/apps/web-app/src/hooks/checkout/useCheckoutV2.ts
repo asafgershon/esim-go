@@ -91,10 +91,15 @@ export const useCheckout = ({
     createCheckout({ variables: { numOfDays, countryId } });
   }, [called, createCheckout, numOfDays, countryId, checkoutId]);
 
+  const refreshCheckout = () => {
+    createCheckout({ variables: { numOfDays, countryId } });
+  };
+
   return {
     data,
     loading,
     error,
     checkout: { id: checkoutId, ...(data?.checkout || {}) },
+    refreshCheckout,
   };
 };

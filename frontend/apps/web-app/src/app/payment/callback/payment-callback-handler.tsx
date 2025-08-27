@@ -5,13 +5,11 @@ import {
   ProcessPaymentCallbackMutation,
   ProcessPaymentCallbackMutationVariables,
 } from "@/__generated__/graphql";
-import { useCheckoutPayment } from "@/hooks/useCheckoutSteps";
 import { useMutation } from "@apollo/client";
 import { Button, Card } from "@workspace/ui";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
-import { Jacques_Francois } from "next/font/google";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface PaymentCallbackHandlerProps {
   params: {
@@ -21,7 +19,7 @@ interface PaymentCallbackHandlerProps {
 
 const PROCESS_PAYMENT_CALLBACK_MUTATION = gql(`
   mutation ProcessPaymentCallback($transactionId: String!) {
-    processPaymentCallback(transactionId: $transactionId)
+    processPaymentCallback(transactionId: $transactionId) 
   }
 `);
 
@@ -29,37 +27,34 @@ export function PaymentCallbackHandler({
   params,
 }: PaymentCallbackHandlerProps) {
   const router = useRouter();
-  const [processPaymentCallback, { error, loading: isProcessing, data: response }] =
-    useMutation<
-      ProcessPaymentCallbackMutation,
-      ProcessPaymentCallbackMutationVariables
-    >(PROCESS_PAYMENT_CALLBACK_MUTATION);
-  const { handlePayment } = useCheckoutPayment();
+  const { transactionID } = params;
+  const hasAttempted = useRef(false);
+  
+  const [
+    processPaymentCallback,
+    { error,loading },
+  ] = useMutation<
+    ProcessPaymentCallbackMutation,
+    ProcessPaymentCallbackMutationVariables
+  >(PROCESS_PAYMENT_CALLBACK_MUTATION,{
+    variables:{
+      transactionId: transactionID || "",
+    },
+    onCompleted: (data) => {
+      if (data?.processPaymentCallback) {
+        router.push(`/orders/${data.processPaymentCallback}`);
+      }
+    },
+  });
 
   useEffect(() => {
-    if (error || response?.processPaymentCallback === false || isProcessing) {
-      return;
+    if (hasAttempted.current) return;
+    if (transactionID) {
+      hasAttempted.current = true;
+      processPaymentCallback();
     }
-
-    const handlePaymentCallback = async () => {
-      if (!params.transactionID) {
-        throw new Error("Transaction ID is required");
-      }
-
-      const { data } = await processPaymentCallback({
-        variables: { transactionId: params.transactionID },
-      });
-
-      // if (data?.processPaymentCallback) {
-      //   router.push(`/orders/orderId`);
-      // } else {
-      //   throw new Error("Failed to process payment callback");
-      // }
-    };
-
-    handlePaymentCallback();
-  }, [params, handlePayment, router, processPaymentCallback, error, isProcessing]);
-
+  }, [transactionID, processPaymentCallback]);
+  
 
   if (error) {
     return (
@@ -70,7 +65,7 @@ export function PaymentCallbackHandler({
         <div className="space-y-2">
           <Button
             onClick={() => {
-              router.push("/");
+              router.refresh();
             }}
             className="w-full"
           >
@@ -86,6 +81,13 @@ export function PaymentCallbackHandler({
         </div>
       </Card>
     );
+  }
+
+  if (loading) {
+    return     <Card className="p-8 max-w-md mx-auto text-center" dir="rtl">
+    <Loader2 className="h-12 w-12 mx-auto mb-4 text-green-500 animate-spin" />
+    <h2 className="text-2xl font-bold mb-2">מעביר אותך לדף ההזמנה...</h2>
+  </Card>
   }
 
   return (

@@ -7,7 +7,7 @@ import {
 } from "@/__generated__/graphql";
 import { useMutation } from "@apollo/client";
 import { Button, Card } from "@workspace/ui";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 
 type PaymentCardProps = {
   completed: boolean;
@@ -47,7 +47,9 @@ export const PaymentCard = ({
         variables: {
           sessionId: data?.id,
           nameForBilling: payment?.nameForBilling,
-          redirectUrl: process.env.NODE_ENV === "production" ? `${window.location.href}/payment/callback` : "https://app.hiilo.yarinsa.me/payment/callback",
+          redirectUrl: process.env.NODE_ENV === "production" 
+            ? `${window.location.protocol}//${window.location.host}/payment/callback` 
+            : "https://app.hiiilo.yarinsa.me/payment/callback",
         },
       });
     }

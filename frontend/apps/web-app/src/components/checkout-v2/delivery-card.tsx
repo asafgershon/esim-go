@@ -79,7 +79,6 @@ export const DeliveryCard = ({
 
   const {
     register,
-    setValue,
     watch,
     handleSubmit,
     reset,
@@ -87,8 +86,8 @@ export const DeliveryCard = ({
   } = useForm<DeliveryFormData>({
     resolver: zodResolver(DeliverySchema),
     defaultValues: {
-      email: delivery?.email || auth?.email || "",
-      phone: delivery?.phone || auth?.phone || "",
+      email: auth?.email || delivery?.email || "",
+      phone: auth?.phone || delivery?.phone || "",
     },
     mode: "onChange",
     resetOptions: {
@@ -100,20 +99,19 @@ export const DeliveryCard = ({
 
   const isAuthCompleted = auth?.completed;
 
-  useEffect(() => {
-    if (auth?.completed) {
-      setValue("email", auth?.email || "");
-      setValue("phone", auth?.phone || "");
-    }
-  }, [auth?.completed, auth?.email, auth?.phone, setValue]);
 
   const onSubmit = useCallback(
     async (formData: DeliveryFormData) => {
       if (!data?.id) return;
 
+      const defaultValues = {
+        email: auth?.email,
+        phone: auth?.phone,
+      };
+
       const cleanedData = {
-        email: formData.email?.trim() || null,
-        phone: formData.phone?.trim() || null,
+        email: formData.email?.trim() || defaultValues.email || null,
+        phone: formData.phone?.trim() || defaultValues.phone || null,
       };
 
       // Only send fields that have actual values
@@ -133,7 +131,7 @@ export const DeliveryCard = ({
         reset();
       }
     },
-    [data?.id, updateCheckoutDelivery, onDeliveryUpdate, reset]
+    [data?.id, updateCheckoutDelivery, onDeliveryUpdate, reset, auth?.email, auth?.phone]
   );
 
   useEffect(() => {
@@ -183,8 +181,9 @@ export const DeliveryCard = ({
                 <Input
                   autoComplete="email"
                   id="email"
+                  className="placeholder:opacity-50"
                   type="email"
-                  placeholder="ben@hiiloworld.com"
+                  placeholder={auth?.email || `${isEnglish(auth?.firstName || "") ? auth?.firstName : "israel"}@hiiloworld.com`}
                   {...register("email")}
                   disabled={loading || Boolean(!isAuthCompleted)}
                 />
@@ -248,3 +247,7 @@ const DeliveryCardSkeleton = () => {
     </Card>
   );
 };
+
+const isEnglish = (name: string) => {
+  return name.match(/[a-zA-Z]/);
+}

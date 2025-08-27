@@ -142,6 +142,7 @@ async function startServer() {
 
     const bundleRepository = new BundleRepository();
     const deliveryService = new DeliveryService(new SESEmailService());
+    const orderRepository = new OrderRepository();
 
     // Initialize Easycard payment service (optional)
     const [checkoutSessionServiceV2, checkoutWorkflowService] =
@@ -155,12 +156,12 @@ async function startServer() {
           paymentAPI: paymentService,
           bundleRepository,
           deliveryService,
+          orderRepository,
         }),
       ]);
 
     // Initialize repositories
     const checkoutSessionRepository = new CheckoutSessionRepository();
-    const orderRepository = new OrderRepository();
     const esimRepository = new ESIMRepository();
     const tripRepository = new TripRepository();
     const highDemandCountryRepository = new HighDemandCountryRepository();
@@ -505,7 +506,6 @@ async function startServer() {
         },
       })
     );
-
 
     const PORT = process.env.PORT || 4000;
 

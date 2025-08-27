@@ -1,24 +1,12 @@
-import { nanoid } from "nanoid";
+import { GraphQLError } from "graphql";
 import type { Context } from "../../context/types";
 import { logger } from "../../lib/logger";
-import {
-  mockESIMData,
-  purchaseAndDeliverESIM,
-} from "../../services/esim-purchase";
 import type {
   Country,
-  MutationResolvers,
-  SubscriptionResolvers,
+  MutationResolvers
 } from "../../types";
+import { CheckoutSessionNotFoundError } from "./errors";
 import { publish } from "./subscriptions";
-import { randomUUIDv5 } from "bun";
-import {
-  BundleOrderTypeEnum,
-  OrderRequestTypeEnum,
-  type OrderResponseTransaction,
-} from "@hiilo/esim-go";
-import { env } from "../../config/env";
-import type { ESIMDeliveryData } from "../../services/delivery";
 
 export const checkoutMutationsV2: MutationResolvers = {
   createCheckout: {
@@ -303,7 +291,7 @@ export const checkoutMutationsV2: MutationResolvers = {
         throw new Error("Session not found");
       }
 
-      const completedSession = await context.services.checkoutWorkflow.completeCheckout({ sessionId: session.id });
+      const {order,session: completedSession} = await context.services.checkoutWorkflow.completeCheckout({ sessionId: session.id });
 
       publish(context.services.pubsub)(session.id, {
         ...completedSession,
@@ -323,10 +311,17 @@ export const checkoutMutationsV2: MutationResolvers = {
         delivery: session.delivery,
         payment: session.payment,
       });
-      return session.payment.completed;
+      return order.id;
     } catch (error: any) {
+      if (error instanceof CheckoutSessionNotFoundError) {
+        return "Session not found";
+      }
       logger.error("Error in processPaymentCallback", error);
-      return false;
+      throw new GraphQLError("Internal server error", {
+        extensions: {
+          code: "INTERNAL_SERVER_ERROR",
+        },
+      });
     }
   },
 };

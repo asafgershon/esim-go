@@ -11,8 +11,8 @@ import { z } from "zod";
 import type { PubSubInstance } from "../../context/pubsub";
 import { supabaseAdmin } from "../../context/supabase-auth";
 import { WEB_APP_BUNDLE_GROUP } from "../../lib/constants/bundle-groups";
-import type { BundleRepository, UserRepository } from "../../repositories";
-import type { Checkout } from "../../types";
+import type { BundleRepository, OrderRepository, UserRepository } from "../../repositories";
+import { OrderStatus, type Checkout } from "../../types";
 import type {
   CreatePaymentIntentRequest,
   PaymentServiceInstance,
@@ -23,6 +23,7 @@ import type { DeliveryService, ESIMDeliveryData } from "../delivery";
 import { env } from "../../config/env";
 import { mockESIMData } from "../esim-purchase";
 import { getCountryData, type TCountryCode } from "countries-list";
+import { OrderStatusEnum } from "../../repositories/order.repository";
 
 /* ===============================
  * Variables
@@ -36,7 +37,7 @@ let paymentAPI: PaymentServiceInstance | null = null;
 let engine: typeof pricingEngine | null = null;
 let deliveryService: DeliveryService | null = null;
 let bundleRepository: BundleRepository | null = null;
-
+let orderRepository: OrderRepository | null = null;
 
 /* ===============================
  * Helper Functions
@@ -66,6 +67,7 @@ const init = async (context: {
   paymentAPI: PaymentServiceInstance;
   deliveryService: DeliveryService;
   bundleRepository: BundleRepository;
+  orderRepository: OrderRepository;
 }) => {
   pubsub = context.pubsub;
   sessionService = context.sessionService;
@@ -75,6 +77,7 @@ const init = async (context: {
   engine = pricingEngine;
   deliveryService = context.deliveryService;
   bundleRepository = context.bundleRepository;
+  orderRepository = context.orderRepository;
   return checkoutWorkflow;
 };
 
@@ -524,6 +527,8 @@ const triggerPayment = async ({
       },
       transaction: {
         id: result.payment_intent.entityUID || "",
+        amount: request.price,
+        currency: env.isDev ? "ILS" : "USD",
       },
       phone: session.auth.phone || undefined,
       email: session.auth.email || undefined,
@@ -567,6 +572,11 @@ const captruePayment = async ({ transactionId }: { transactionId: string }) => {
   );
 
   if (!session) {
+    logger.error("Session not found for payment intent", { 
+      paymentIntentId, 
+      transactionId,
+      quickStatus 
+    });
     throw new CheckoutStepError("captruePayment", "Session not found");
   }
 
@@ -586,7 +596,7 @@ const captruePayment = async ({ transactionId }: { transactionId: string }) => {
 };
 
 const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
-  if (!sessionService || !esimAPI || !deliveryService || !bundleRepository) {
+  if (!sessionService || !esimAPI || !deliveryService || !bundleRepository || !orderRepository) {
     throw new NotInitializedError();
   }
 
@@ -621,6 +631,24 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
       })
       .then((res) => res.data);
   }
+
+  const orderReference = orderResponse?.orderReference;
+  // Create a new order in the database
+  const order = await orderRepository.create({
+    reference: orderReference || session.id,
+    user_id: session.auth.userId!,
+    data_plan_id: session.bundle.externalId,
+    total_price: session.bundle.price || 0,
+    plan_data: {
+      ...session.bundle,
+    },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: OrderStatus.Completed,
+    esim_go_order_ref: orderReference,
+    // Don't set id - let the database generate a UUID
+    quantity: 1,
+  });
 
   const esimInfo = orderResponse?.order?.[0]?.esims?.[0];
   const { iccid, matchingId, smdpAddress } = esimInfo ?? {};
@@ -681,7 +709,10 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
     }
   );
 
-  return nextSession;
+  return {
+    order,
+    session
+  };
   // TODO: Save the session to the database
 };
 

@@ -840,7 +840,7 @@ export type Mutation = {
   deleteUser?: Maybe<DeleteUserResponse>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
-  processPaymentCallback: Scalars['Boolean']['output'];
+  processPaymentCallback: Scalars['String']['output'];
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
   removeUserFromTenant: TenantOperationResponse;
   restoreESIM?: Maybe<EsimActionResponse>;
@@ -1891,6 +1891,8 @@ export type ToggleHighDemandResponse = {
 
 export type Transaction = {
   __typename?: 'Transaction';
+  amount?: Maybe<Scalars['Float']['output']>;
+  currency?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
 };
 
@@ -3057,7 +3059,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   deleteUser?: Resolver<Maybe<ResolversTypes['DeleteUserResponse']>, ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'userId'>>;
   inviteAdminUser?: Resolver<Maybe<ResolversTypes['InviteAdminUserResponse']>, ParentType, ContextType, RequireFields<MutationInviteAdminUserArgs, 'input'>>;
   processCheckoutPayment?: Resolver<ResolversTypes['ProcessCheckoutPaymentResponse'], ParentType, ContextType, RequireFields<MutationProcessCheckoutPaymentArgs, 'input'>>;
-  processPaymentCallback?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationProcessPaymentCallbackArgs, 'transactionId'>>;
+  processPaymentCallback?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationProcessPaymentCallbackArgs, 'transactionId'>>;
   purchaseESIM?: Resolver<Maybe<ResolversTypes['PurchaseESIMResponse']>, ParentType, ContextType, RequireFields<MutationPurchaseEsimArgs, 'input' | 'planId'>>;
   removeUserFromTenant?: Resolver<ResolversTypes['TenantOperationResponse'], ParentType, ContextType, RequireFields<MutationRemoveUserFromTenantArgs, 'tenantSlug' | 'userId'>>;
   restoreESIM?: Resolver<Maybe<ResolversTypes['ESIMActionResponse']>, ParentType, ContextType, RequireFields<MutationRestoreEsimArgs, 'esimId'>>;
@@ -3491,6 +3493,8 @@ export type ToggleHighDemandResponseResolvers<ContextType = Context, ParentType 
 };
 
 export type TransactionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Transaction'] = ResolversParentTypes['Transaction']> = {
+  amount?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  currency?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

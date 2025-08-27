@@ -49,6 +49,7 @@ export const useAppleSignIn = () => {
 
             const firstName = user?.name?.firstName || '';
             const lastName = user?.name?.lastName || '';
+            const email = user?.email || '';
 
             const result = await signInWithAppleMutation({
               variables: {
@@ -62,7 +63,11 @@ export const useAppleSignIn = () => {
 
             if (result.data?.signInWithApple.success && result.data.signInWithApple.sessionToken) {
               localStorage.setItem('authToken', result.data.signInWithApple.sessionToken);
-              resolve(result.data.signInWithApple);
+              // Return the sign-in response with user data
+              resolve({
+                ...result.data.signInWithApple,
+                userData: { email, firstName, lastName }
+              });
             } else {
               reject(new Error(result.data?.signInWithApple.error || 'Sign in failed'));
             }

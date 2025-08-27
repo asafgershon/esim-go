@@ -54,6 +54,7 @@ export const useGoogleSignIn = () => {
             const payload = parseJwt(response.credential);
             const firstName = payload.given_name || '';
             const lastName = payload.family_name || '';
+            const email = payload.email || '';
 
             const result = await signInWithGoogleMutation({
               variables: {
@@ -67,7 +68,11 @@ export const useGoogleSignIn = () => {
 
             if (result.data?.signInWithGoogle.success && result.data.signInWithGoogle.sessionToken) {
               localStorage.setItem('authToken', result.data.signInWithGoogle.sessionToken);
-              resolve(result.data.signInWithGoogle);
+              // Return the sign-in response with user data
+              resolve({
+                ...result.data.signInWithGoogle,
+                userData: { email, firstName, lastName }
+              });
             } else {
               reject(new Error(result.data?.signInWithGoogle.error || 'Sign in failed'));
             }
@@ -121,6 +126,7 @@ export const useGoogleSignIn = () => {
         const payload = parseJwt(response.credential);
         const firstName = payload.given_name || '';
         const lastName = payload.family_name || '';
+        const email = payload.email || '';
 
         const result = await signInWithGoogleMutation({
           variables: {

@@ -1736,8 +1736,10 @@ extend type Mutation {
   ): CheckoutPayment!
   processPaymentCallback(
     transactionId: String!
-  ): Boolean!
+  ): String!
 }
+
+
 
 extend type Subscription {
   checkout(id: ID!): Checkout!
@@ -1767,6 +1769,8 @@ type CheckoutPayment {
 
 type Transaction {
   id: ID!
+  amount: Float
+  currency: String
 }
 
 type PaymentIntent {
