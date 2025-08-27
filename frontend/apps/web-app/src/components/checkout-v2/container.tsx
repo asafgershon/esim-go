@@ -49,11 +49,9 @@ export const CheckoutContainerV2 = () => {
       />
 
       <PaymentCard
-        loading={loading}
         completed={Boolean(data?.checkout.payment?.completed)}
-        sectionNumber={4}
+        loading={loading}
         data={data?.checkout}
-        onPaymentUpdate={handleAuthUpdate}
       />
 
     </main>

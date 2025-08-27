@@ -469,6 +469,7 @@ export type CheckoutPayment = {
   intent?: Maybe<PaymentIntent>;
   nameForBilling?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
+  redirectUrl?: Maybe<Scalars['String']['output']>;
 };
 
 export type CheckoutSession = {
@@ -838,6 +839,7 @@ export type Mutation = {
   deleteUser?: Maybe<DeleteUserResponse>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
+  processPaymentCallback: Scalars['Boolean']['output'];
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
   removeUserFromTenant: TenantOperationResponse;
   restoreESIM?: Maybe<EsimActionResponse>;
@@ -954,6 +956,11 @@ export type MutationProcessCheckoutPaymentArgs = {
 };
 
 
+export type MutationProcessPaymentCallbackArgs = {
+  transactionId: Scalars['String']['input'];
+};
+
+
 export type MutationPurchaseEsimArgs = {
   input: PurchaseEsimInput;
   planId: Scalars['ID']['input'];
@@ -1018,6 +1025,7 @@ export type MutationTriggerCatalogSyncArgs = {
 
 export type MutationTriggerCheckoutPaymentArgs = {
   nameForBilling?: InputMaybe<Scalars['String']['input']>;
+  redirectUrl: Scalars['String']['input'];
   sessionId: Scalars['String']['input'];
 };
 
@@ -2755,6 +2763,7 @@ export type CheckoutPaymentResolvers<ContextType = Context, ParentType extends R
   intent?: Resolver<Maybe<ResolversTypes['PaymentIntent']>, ParentType, ContextType>;
   nameForBilling?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   phone?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  redirectUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3039,6 +3048,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   deleteUser?: Resolver<Maybe<ResolversTypes['DeleteUserResponse']>, ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'userId'>>;
   inviteAdminUser?: Resolver<Maybe<ResolversTypes['InviteAdminUserResponse']>, ParentType, ContextType, RequireFields<MutationInviteAdminUserArgs, 'input'>>;
   processCheckoutPayment?: Resolver<ResolversTypes['ProcessCheckoutPaymentResponse'], ParentType, ContextType, RequireFields<MutationProcessCheckoutPaymentArgs, 'input'>>;
+  processPaymentCallback?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationProcessPaymentCallbackArgs, 'transactionId'>>;
   purchaseESIM?: Resolver<Maybe<ResolversTypes['PurchaseESIMResponse']>, ParentType, ContextType, RequireFields<MutationPurchaseEsimArgs, 'input' | 'planId'>>;
   removeUserFromTenant?: Resolver<ResolversTypes['TenantOperationResponse'], ParentType, ContextType, RequireFields<MutationRemoveUserFromTenantArgs, 'tenantSlug' | 'userId'>>;
   restoreESIM?: Resolver<Maybe<ResolversTypes['ESIMActionResponse']>, ParentType, ContextType, RequireFields<MutationRestoreEsimArgs, 'esimId'>>;
@@ -3051,7 +3061,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   toggleHighDemandCountry?: Resolver<Maybe<ResolversTypes['ToggleHighDemandResponse']>, ParentType, ContextType, RequireFields<MutationToggleHighDemandCountryArgs, 'countryId'>>;
   togglePricingRule?: Resolver<ResolversTypes['PricingRule'], ParentType, ContextType, RequireFields<MutationTogglePricingRuleArgs, 'id'>>;
   triggerCatalogSync?: Resolver<Maybe<ResolversTypes['TriggerSyncResponse']>, ParentType, ContextType, RequireFields<MutationTriggerCatalogSyncArgs, 'params'>>;
-  triggerCheckoutPayment?: Resolver<ResolversTypes['CheckoutPayment'], ParentType, ContextType, RequireFields<MutationTriggerCheckoutPaymentArgs, 'sessionId'>>;
+  triggerCheckoutPayment?: Resolver<ResolversTypes['CheckoutPayment'], ParentType, ContextType, RequireFields<MutationTriggerCheckoutPaymentArgs, 'redirectUrl' | 'sessionId'>>;
   updateCheckoutAuth?: Resolver<ResolversTypes['CheckoutAuth'], ParentType, ContextType, RequireFields<MutationUpdateCheckoutAuthArgs, 'sessionId'>>;
   updateCheckoutAuthName?: Resolver<ResolversTypes['CheckoutAuth'], ParentType, ContextType, RequireFields<MutationUpdateCheckoutAuthNameArgs, 'sessionId'>>;
   updateCheckoutDelivery?: Resolver<ResolversTypes['CheckoutDelivery'], ParentType, ContextType, RequireFields<MutationUpdateCheckoutDeliveryArgs, 'sessionId'>>;

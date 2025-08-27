@@ -89,28 +89,6 @@ export type {
 // Create type aliases for backward compatibility with existing code
 export type PaymentIntent = TransactionResponse;
 
-export interface CreatePaymentIntentRequest {
-  /**
-   * The customer who is buying the deal
-   * @example { id: "123", email: "john.doe@example.com" }
-   */
-  costumer: Pick<User, "id" | "email" | "firstName" | "lastName" | "phoneNumber">;
-  amount: number;
-  currency?: CurrencyEnum;
-  /**
-   * A humreadable description of the deal
-   * @example "eSIM purchase: Unlimited data for 30 days in US"
-   */
-  description: string;
-  item: CheckoutSessionPlanSnapshot;
-  metadata?: Record<string, string>;
-  order: Pick<Order, "id" | "reference">;
-  /**
-   * The URL to redirect the user to after the payment is complete
-   * @example "https://www.hiilo.com/checkout/success"
-   */
-  redirectUrl: string;
-}
 
 export interface PaymentWebhookEvent {
   id: string;

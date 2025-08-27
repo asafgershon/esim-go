@@ -1732,7 +1732,11 @@ extend type Mutation {
   triggerCheckoutPayment(
     sessionId: String!
     nameForBilling: String
+    redirectUrl: String!
   ): CheckoutPayment!
+  processPaymentCallback(
+    transactionId: String!
+  ): Boolean!
 }
 
 extend type Subscription {
@@ -1757,6 +1761,12 @@ type CheckoutPayment {
   email: String
   nameForBilling: String
   intent: PaymentIntent
+  redirectUrl: String
+  transaction: Transaction
+}
+
+type Transaction {
+  id: ID!
 }
 
 type PaymentIntent {

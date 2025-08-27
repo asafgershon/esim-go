@@ -621,6 +621,7 @@ export type CheckoutPayment = {
   intent?: Maybe<PaymentIntent>;
   nameForBilling?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
+  redirectUrl?: Maybe<Scalars['String']['output']>;
 };
 
 export type CheckoutSession = {
@@ -1001,6 +1002,7 @@ export type Mutation = {
   invalidateCacheByRuleChange?: Maybe<CacheOperationResult>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
+  processPaymentCallback: Scalars['Boolean']['output'];
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
   removeUserFromTenant: TenantOperationResponse;
   reorderPricingRules: Array<PricingRule>;
@@ -1136,6 +1138,11 @@ export type MutationProcessCheckoutPaymentArgs = {
 };
 
 
+export type MutationProcessPaymentCallbackArgs = {
+  transactionId: Scalars['String']['input'];
+};
+
+
 export type MutationPurchaseEsimArgs = {
   input: PurchaseEsimInput;
   planId: Scalars['ID']['input'];
@@ -1205,6 +1212,7 @@ export type MutationTriggerCatalogSyncArgs = {
 
 export type MutationTriggerCheckoutPaymentArgs = {
   nameForBilling?: InputMaybe<Scalars['String']['input']>;
+  redirectUrl: Scalars['String']['input'];
   sessionId: Scalars['String']['input'];
 };
 
@@ -2294,6 +2302,13 @@ export type VerifyOtpInput = {
   phoneNumber: Scalars['String']['input'];
 };
 
+export type ProcessPaymentCallbackMutationVariables = Exact<{
+  transactionId: Scalars['String']['input'];
+}>;
+
+
+export type ProcessPaymentCallbackMutation = { __typename?: 'Mutation', processPaymentCallback: boolean };
+
 export type UpdateCheckoutAuthMutationVariables = Exact<{
   sessionId: Scalars['String']['input'];
   firstName?: InputMaybe<Scalars['String']['input']>;
@@ -2334,6 +2349,7 @@ export type UpdateCheckoutDeliveryMutation = { __typename?: 'Mutation', updateCh
 export type TriggerCheckoutPaymentMutationVariables = Exact<{
   sessionId: Scalars['String']['input'];
   nameForBilling?: InputMaybe<Scalars['String']['input']>;
+  redirectUrl: Scalars['String']['input'];
 }>;
 
 
@@ -2344,7 +2360,7 @@ export type CheckoutSubscriptionVariables = Exact<{
 }>;
 
 
-export type CheckoutSubscription = { __typename?: 'Subscription', checkout: { __typename?: 'Checkout', id: string, bundle?: { __typename?: 'CheckoutBundle', completed: boolean, id: string, numOfDays: number, dataAmount: string, price: number, pricePerDay: number, currency: string, speed: Array<string>, discounts: Array<string>, validated?: boolean | null, country?: { __typename?: 'Country', iso: any, name: string } | null } | null, auth?: { __typename?: 'CheckoutAuth', completed: boolean, userId?: string | null, email?: string | null, phone?: string | null, firstName?: string | null, lastName?: string | null, method?: string | null, otpSent?: boolean | null, otpVerified?: boolean | null } | null, delivery?: { __typename?: 'CheckoutDelivery', completed: boolean, email?: string | null, phone?: string | null } | null, payment?: { __typename?: 'CheckoutPayment', completed: boolean, email?: string | null, phone?: string | null, nameForBilling?: string | null } | null } };
+export type CheckoutSubscription = { __typename?: 'Subscription', checkout: { __typename?: 'Checkout', id: string, bundle?: { __typename?: 'CheckoutBundle', completed: boolean, id: string, numOfDays: number, dataAmount: string, price: number, pricePerDay: number, currency: string, speed: Array<string>, discounts: Array<string>, validated?: boolean | null, country?: { __typename?: 'Country', iso: any, name: string } | null } | null, auth?: { __typename?: 'CheckoutAuth', completed: boolean, userId?: string | null, email?: string | null, phone?: string | null, firstName?: string | null, lastName?: string | null, method?: string | null, otpSent?: boolean | null, otpVerified?: boolean | null } | null, delivery?: { __typename?: 'CheckoutDelivery', completed: boolean, email?: string | null, phone?: string | null } | null, payment?: { __typename?: 'CheckoutPayment', completed: boolean, email?: string | null, phone?: string | null, nameForBilling?: string | null, redirectUrl?: string | null, intent?: { __typename?: 'PaymentIntent', id: string, url: string, applePayJavaScriptUrl?: string | null } | null } | null } };
 
 export type CreateCheckoutMutationVariables = Exact<{
   numOfDays: Scalars['Int']['input'];

@@ -87,7 +87,7 @@ export const AuthCard = ({
         icon={<UserIcon className="h-5 w-5 text-primary" />}
         isCompleted={completed}
       />
-      {data?.auth?.completed && (
+      {data?.auth?.userId && (
         <LoggedInAuthCard
           user={{
             firstName: data.auth.firstName || "",
@@ -277,6 +277,8 @@ const NameForm = ({
   lastName: string;
   onSuccess: () => void;
 }) => {
+
+
   const [updateCheckoutAuthName, { loading: isLoading }] =
     useMutation<UpdateCheckoutAuthNameMutation>(
       UPDATE_CHECKOUT_AUTH_NAME_MUTATION
@@ -295,8 +297,8 @@ const NameForm = ({
       const result = await updateCheckoutAuthName({
         variables: {
           sessionId,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+          firstName: firstName && formData.firstName === "" ? undefined : formData.firstName,
+          lastName: lastName && formData.lastName === "" ? undefined : formData.lastName,
         },
       });
 
@@ -308,7 +310,7 @@ const NameForm = ({
   );
   return (
     <CardContent className="space-y-4 flex flex-col items-center">
-      {formState.isSubmitSuccessful && !firstName && !lastName && (
+      {!firstName && !lastName && (
         <>
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
@@ -372,7 +374,7 @@ const AuthCardSkeleton = () => {
 
 const SeparatorWithText = ({ text }: { text: string }) => {
   return (
-    <div className="relative">
+    <div className="relative my-4">
       <div className="absolute inset-0 flex items-center">
         <Separator className="w-full" />
       </div>
@@ -440,7 +442,7 @@ const PhoneEmailForm = ({
           />
         </div>
         <SeparatorWithText text="או" />
-        <div className="space-y-2">
+        <div className="space-y-2 my-4">
           <Label htmlFor="phone">מספר טלפון</Label>
           <PhoneInput
             id="phone"
@@ -450,9 +452,9 @@ const PhoneEmailForm = ({
             disabled={isLoading}
           />
         </div>
-        <SeparatorWithText text="או" />
+        {/* <SeparatorWithText text="או" /> */}
 
-        <EmailControl {...register("email")} isLoading={isLoading} />
+        {/* <EmailControl {...register("email")} isLoading={isLoading} /> */}
         <AnimatePresence mode="wait">
           <motion.div
             key="footer"

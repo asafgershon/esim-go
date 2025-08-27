@@ -270,29 +270,6 @@ const FlagComponent = ({ country, countryName }: RPNInput.FlagProps) => {
   );
 };
 
-// Helper function to validate phone number (backward compatibility)
-export const validatePhoneNumber = (
-  phoneNumber: string,
-  countryCode?: CountryCode
-) => {
-  if (!phoneNumber) return false;
-
-  try {
-    // Ensure the phone number has a + prefix for validation
-    const numberToValidate = phoneNumber.startsWith("+")
-      ? phoneNumber
-      : `+${phoneNumber}`;
-
-    if (countryCode) {
-      return isValidPhoneNumberLib(numberToValidate, countryCode);
-    } else {
-      return isValidPhoneNumberLib(numberToValidate);
-    }
-  } catch (error) {
-    return false;
-  }
-};
-
 // Helper function to format phone number (backward compatibility)
 export const formatPhoneNumber = (
   phoneNumber: string,

@@ -1,16 +1,20 @@
-import { createLogger } from "@hiilo/utils";
-import type { PubSubInstance } from "../../context/pubsub";
-import type { CheckoutSessionServiceV2 } from "./session";
+import {
+  QuickStatusFilterTypeEnum
+} from "@hiilo/easycard";
 import type { ESimGoClient } from "@hiilo/esim-go";
-import { getEasyCardClient, type EasyCardClient } from "@hiilo/easycard";
-import type { UserRepository } from "../../repositories";
 import * as pricingEngine from "@hiilo/rules-engine-2";
-import { WEB_APP_BUNDLE_GROUP } from "../../lib/constants/bundle-groups";
-import { supabaseAdmin } from "../../context/supabase-auth";
+import { createLogger } from "@hiilo/utils";
 import { z } from "zod";
+import type { PubSubInstance } from "../../context/pubsub";
+import { supabaseAdmin } from "../../context/supabase-auth";
+import { WEB_APP_BUNDLE_GROUP } from "../../lib/constants/bundle-groups";
+import type { UserRepository } from "../../repositories";
 import type { Checkout } from "../../types";
-import type { PaymentServiceInstance } from "../payment";
-import type { CreatePaymentIntentRequestV2 } from "../payment/intent";
+import type {
+  CreatePaymentIntentRequest,
+  PaymentServiceInstance,
+} from "../payment";
+import type { CheckoutSessionServiceV2 } from "./session";
 
 /* ===============================
  * Variables
@@ -22,6 +26,26 @@ let userRepository: UserRepository | null = null;
 let esimAPI: ESimGoClient | null = null;
 let paymentAPI: PaymentServiceInstance | null = null;
 let engine: typeof pricingEngine | null = null;
+
+/* ===============================
+ * Helper Functions
+ * =============================== */
+export const isAuthComplete = (
+  userId?: string | null,
+  email?: string | null,
+  phone?: string | null,
+  firstName?: string | null,
+  lastName?: string | null
+): boolean => {
+  const hasUserId = Boolean(userId);
+  const hasContactInfo = Boolean(
+    (email && email !== "") || (phone && phone !== "")
+  );
+  const hasFirstName = Boolean(firstName && firstName !== "");
+  const hasLastName = Boolean(lastName && lastName !== "");
+
+  return hasUserId && hasContactInfo && hasFirstName && hasLastName;
+};
 
 const init = async (context: {
   pubsub: PubSubInstance;
@@ -147,25 +171,32 @@ const authenticate = async ({
     // We need to autheticate this session using OTP to email or phone
     // Send OTP to email or phone (validate E164 format first)
     if (phone) {
-      const phoneValidation = z.e164().safeParse(phone);
-      if (!phoneValidation.success) {
-        throw new CheckoutStepError(
-          "authenticate",
-          "Phone number must be in E164 format"
-        );
-      }
-      await supabaseAdmin.auth.signInWithOtp({
-        phone: phoneValidation.data,
+      // remove the + from the phone number
+      const phoneValidation = z.e164().parse(phone).replace("+", "");
+      const { data, error } = await supabaseAdmin.auth.signInWithOtp({
+        phone: phoneValidation,
         options: { shouldCreateUser: true },
       });
+
+      if (error) {
+        throw new CheckoutStepError(
+          "authenticate",
+          "Failed to sign in with OTP"
+        );
+      }
     }
 
     // Update the session with the email, phone and otpSent status
     const session = await sessionService.updateSessionStep(sessionId, "auth", {
       completed: false,
-      email: email !== "" ? email : undefined,
+      email: email && email !== "" ? email : undefined,
       phone: phone !== "" ? phone || undefined : undefined,
       otpSent: true,
+      userId,
+      firstName: firstName && firstName !== "" ? firstName : undefined,
+      lastName: lastName && lastName !== "" ? lastName : undefined,
+      method: "phone",
+      otpVerified: false,
     });
 
     return session;
@@ -207,15 +238,19 @@ const authenticate = async ({
     }
   }
 
-  const isCompleted =
-    (user.email || user.user_metadata?.phone_number) &&
-    user.user_metadata?.first_name &&
-    user.user_metadata?.last_name;
+  const isCompleted = isAuthComplete(
+    userId,
+    user.email,
+    user.user_metadata?.phone_number,
+    user.user_metadata?.first_name,
+    user.user_metadata?.last_name
+  );
 
   const nextSession = await sessionService.updateSessionStep(
     sessionId,
     "auth",
     {
+      ...session.auth,
       completed: isCompleted,
       userId,
       email: user.email,
@@ -277,16 +312,22 @@ const verifyOTP = async ({
   const lastName = data?.user?.user_metadata?.last_name;
   const email = data?.user?.email;
   const phone = session.auth.phone;
-  const isCompleted =
-    data?.user?.id && session.auth.phone && firstName && lastName;
+  const isCompleted = isAuthComplete(
+    data?.user?.id,
+    email,
+    phone,
+    firstName,
+    lastName
+  );
 
   const nextSession = await sessionService.updateSessionStep(
     sessionId,
     "auth",
     {
       otpVerified: true,
+      otpSent: true,
       userId: data?.user?.id,
-      completed: Boolean(isCompleted),
+      completed: isCompleted,
       firstName: firstName,
       lastName: lastName,
       email: email === "" ? undefined : email,
@@ -342,16 +383,24 @@ const updateAuthName = async ({
     }
   );
 
+  // Get current session to have all auth fields for completion check
+  const currentSession = await sessionService.getSession(sessionId);
+
+  const isCompleted = isAuthComplete(
+    session.auth.userId,
+    currentSession?.auth.email,
+    currentSession?.auth.phone,
+    updatedUser?.user_metadata?.first_name,
+    updatedUser?.user_metadata?.last_name
+  );
+
   const nextSession = await sessionService.updateSessionStep(
     sessionId,
     "auth",
     {
       firstName: updatedUser?.user_metadata?.first_name,
       lastName: updatedUser?.user_metadata?.last_name,
-      completed: Boolean(
-        updatedUser?.user_metadata?.first_name &&
-          updatedUser?.user_metadata?.last_name
-      ),
+      completed: isCompleted,
     }
   );
 
@@ -391,6 +440,7 @@ const setDelivery = async ({
 
 const triggerPayment = async ({
   sessionId,
+  redirectUrl,
   ...details
 }: { sessionId: string } & NonNullable<Checkout["payment"]>) => {
   if (!sessionService) {
@@ -418,18 +468,17 @@ const triggerPayment = async ({
     throw new CheckoutStepError("triggerPayment", "Email or phone is required");
   }
 
-  const request: CreatePaymentIntentRequestV2 = {
+  const request: CreatePaymentIntentRequest = {
     userId: session.auth.userId,
     bundleId: session.bundle.externalId,
     price: session.bundle.price,
     description: "Test payment",
-    redirectUrl: "https://www.hiilo.com",
+    redirectUrl: redirectUrl || session.payment.intent?.redirectUrl || "",
     firstName: session.payment.nameForBilling || session.auth.firstName || "",
     lastName: session.payment.nameForBilling || session.auth.lastName || "",
-    currency: "USD",
-    orderReference: session.id,
+    orderRef: session.id,
     phoneNumber: session.auth.phone || "",
-    email: session.auth.email || "",
+    email: session.auth.email,
   };
 
   const result = await paymentAPI?.createPaymentIntent(request);
@@ -459,6 +508,9 @@ const triggerPayment = async ({
         url: intent.url,
         applePayJavaScriptUrl: intent.applePayJavaScriptUrl,
       },
+      transaction: {
+        id: result.payment_intent.entityUID || "",
+      },
       phone: session.auth.phone || undefined,
       email: session.auth.email || undefined,
       nameForBilling: session.payment.nameForBilling || undefined,
@@ -467,14 +519,70 @@ const triggerPayment = async ({
   return nextSession;
 };
 
-// For success page only
-const completePayment = async ({}) => {
-  throw new Error("Not implemented");
+// For webhoooks only
+const captruePayment = async ({ transactionId }: { transactionId: string }) => {
+  if (!paymentAPI) {
+    throw new NotInitializedError();
+  }
+
+  const response = await paymentAPI?.getTransaction(transactionId);
+  const quickStatus = response?.transaction.quickStatus;
+  const paymentIntentId = response?.transaction.paymentIntentID;
+  if (!paymentIntentId) {
+    throw new CheckoutStepError(
+      "captruePayment",
+      "Payment intent ID not found"
+    );
+  }
+  const isSuccess = isSuccessStatus(quickStatus);
+  if (!isSuccess) {
+    throw new CheckoutStepError(
+      "captruePayment",
+      "Transaction is not successful"
+    );
+  }
+  const session = await sessionService?.getSessionByPaymentIntentId(
+    paymentIntentId
+  );
+
+  if (!session) {
+    throw new CheckoutStepError("captruePayment", "Session not found");
+  }
+
+  const nextSession = await sessionService?.updateSessionStep(
+    session.id,
+    "payment",
+    {
+      completed: isSuccess,
+      nameForBilling: response.transaction.creditCardDetails?.cardOwnerName || undefined,
+      transaction: {
+        id: transactionId,
+      },
+    }
+  );
+  return nextSession;
 };
 
-// For webhoooks only
-const captruePayment = async ({ sessionId }: { sessionId: string }) => {
-  throw new Error("Not implemented");
+/**
+ * Check if a transaction status represents a successful payment
+ * @param quickStatus - The quickStatus from EasyCard transaction
+ * @returns true if the payment was successful
+ */
+const isSuccessStatus = (
+  quickStatus: QuickStatusFilterTypeEnum | undefined
+): boolean => {
+  // EasyCard successful statuses
+  const successStatuses = [
+    "Approved",
+    QuickStatusFilterTypeEnum.COMPLETED,
+    QuickStatusFilterTypeEnum.AWAITING_FOR_TRANSMISSION,
+    QuickStatusFilterTypeEnum.PENDING,
+  ];
+
+  return (
+    Boolean(quickStatus) &&
+    successStatuses.includes(quickStatus as (typeof successStatuses)[number])
+  );
 };
 
 export const checkoutWorkflow = {
@@ -486,7 +594,6 @@ export const checkoutWorkflow = {
   updateAuthName,
   setDelivery,
   triggerPayment,
-  completePayment,
   captruePayment,
 };
 export type CheckoutWorkflowInstance = typeof checkoutWorkflow;

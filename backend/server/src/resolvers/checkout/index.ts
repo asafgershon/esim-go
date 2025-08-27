@@ -254,6 +254,8 @@ export const checkoutResolvers: Partial<Resolvers> = {
       }
     },
 
+
+
     /**
      * Process checkout payment
      */
@@ -313,6 +315,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         };
       }
     },
+    
 
     /**
      * Validate order (kept for backward compatibility)

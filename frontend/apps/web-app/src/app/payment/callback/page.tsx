@@ -3,16 +3,14 @@ import { PaymentCallbackHandler } from "./payment-callback-handler";
 
 interface PaymentCallbackPageProps {
   searchParams: Promise<{
-    token?: string;
-    status?: string;
-    transactionId?: string;
-    error?: string;
+    transactionID?: string;
   }>;
 }
 
+
 export default async function PaymentCallbackPage({ searchParams }: PaymentCallbackPageProps) {
   const params = await searchParams;
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center">
       <Suspense fallback={

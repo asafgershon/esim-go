@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import easycardService, { clearAccessToken } from "../easycard.service";
+import easycardService, { clearAccessToken } from "../service";
 import { createLogger } from "../../../lib/logger";
 
 const logger = createLogger({ component: "easycard-e2e-test" });

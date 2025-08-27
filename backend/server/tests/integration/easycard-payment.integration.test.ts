@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { createTestContext } from '../../src/test-utils/prism-context';
-import easycardService from '../../src/services/payment/easycard.service';
+import easycardService from '../../src/services/payment/service';
 import { EasyCardClient } from '@hiilo/easycard';
 import type { Context } from '../../src/context/types';
 

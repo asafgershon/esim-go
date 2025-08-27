@@ -54,7 +54,7 @@ import { TripRepository } from "./repositories/trip.repository";
 import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
-import {paymentService} from "./services/payment";
+import { paymentService } from "./services/payment";
 import { checkoutSessionService } from "./services/checkout";
 import { checkoutWorkflow } from "./services/checkout/workflow";
 
@@ -104,23 +104,14 @@ const env = cleanEnv(process.env, {
 
 async function startServer() {
   try {
-    console.log("Creating executable schema...");
     // Create the schema
     const executableSchema = makeExecutableSchema({ typeDefs, resolvers });
-    console.log("Applying auth directive transformer...");
     const schemaWithDirectives = authDirectiveTransformer(executableSchema);
 
-    console.log("Getting Redis connection...");
-    // Redis is now configured at Apollo Server level for caching
     const redis = await getRedis();
-
-    // Initialize PubSub for WebSocket subscriptions
-    console.log("🔄 Initializing PubSub for WebSocket subscriptions...");
     const pubsub = await getPubSub(redis);
-    console.log("✅ PubSub initialized successfully");
 
     // Initialize eSIM Go client
-    console.log("Initializing eSIM Go client...");
     const esimGoClient = new ESimGoClient({
       apiKey: env.ESIM_GO_API_KEY,
       baseUrl: "https://api.esim-go.com/v2.5",
@@ -146,7 +137,7 @@ async function startServer() {
 
     const userRepository = new UserRepository();
 
-     paymentService.init();
+    paymentService.init();
 
     // Initialize Easycard payment service (optional)
     const [checkoutSessionServiceV2, checkoutWorkflowService] =
@@ -507,6 +498,7 @@ async function startServer() {
         },
       })
     );
+
 
     const PORT = process.env.PORT || 4000;
 

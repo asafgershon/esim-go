@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import easycardService, { clearAccessToken, getAccessToken } from "../easycard.service";
+import easycardService, { clearAccessToken, getAccessToken } from "../service";
 
 // Integration tests - these test the actual service with mocked HTTP calls
 describe("EasyCard Integration Tests", () => {

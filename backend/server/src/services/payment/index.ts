@@ -1,7 +1,7 @@
-export { default } from "./easycard.service";
+export { default } from "./service";
 
-export * from "./easycard.service";
+export * from "./service";
 export * from "./types";
-import * as easycard from "./easycard.service";
-export type PaymentServiceInstance = typeof easycard;
-export { easycard as paymentService };
+import * as payment from "./service";
+export type PaymentServiceInstance = typeof payment;
+export { payment as paymentService };

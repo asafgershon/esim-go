@@ -15,14 +15,14 @@ const BundleSelectionSchema = z.object({
 
 const AuthSchema = z.object({
   completed: z.boolean().default(false),
-  email: z.string().email().nullable().optional(),
-  phone: z.string().optional(),
+  email: z.union([z.email().nullable(), z.literal('')]).optional().default(null).transform((val) => val === '' ? null : val),
+  phone: z.union([z.string().nullable(), z.null()]).optional().default(null),
   userId: z.string().optional(),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   method: z.enum(["email", "phone", "apple", "google"]).optional(),
-  otpSent: z.boolean().optional(),
-  otpVerified: z.boolean().optional(),
+  otpSent: z.boolean().optional().default(false),
+  otpVerified: z.boolean().optional().default(false),
 });
 
 const DeliverySchema = z.object({
@@ -35,6 +35,7 @@ const PaymentIntentSchema = z.object({
   id: z.string(),
   url: z.string(),
   applePayJavaScriptUrl: z.string().optional(),
+  redirectUrl: z.string().optional(),
 });
 
 const PaymentSchema = z.object({
@@ -43,6 +44,9 @@ const PaymentSchema = z.object({
   phone: z.e164().optional(),
   email: z.email().optional(),
   nameForBilling: z.string().optional(),
+  transaction: z.object({
+    id: z.string(),
+  }).optional(),
   // For webhook integration
   // capture: z
   //   .object({

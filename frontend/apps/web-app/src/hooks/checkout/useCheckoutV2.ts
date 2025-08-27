@@ -50,6 +50,12 @@ const CHECKOUT_SUBSCRIPTION = gql(`subscription Checkout($id: ID!) {
         email
         phone
         nameForBilling
+        intent {
+            id
+            url
+            applePayJavaScriptUrl
+        }
+        redirectUrl
     }
   }
 }`);

@@ -1,3 +1,5 @@
+import type { Context } from "../../context/types";
+import { logger } from "../../lib/logger";
 import type {
   Country,
   MutationResolvers,
@@ -16,17 +18,32 @@ export const checkoutMutationsV2: MutationResolvers = {
         auth.user?.id || ""
       );
 
-      const isAuthCompleted = (loggedInUser?.email || loggedInUser?.user_metadata?.phone_number) && loggedInUser?.user_metadata?.first_name !== "" && loggedInUser?.user_metadata?.last_name !== "";
+      const { isAuthComplete } = await import("../../services/checkout/workflow");
+      
+      const cleanEmail = loggedInUser?.email && loggedInUser.email !== "" ? loggedInUser.email : undefined;
+      const cleanPhone = loggedInUser?.user_metadata?.phone_number && loggedInUser.user_metadata?.phone_number !== "" ? loggedInUser.user_metadata?.phone_number : undefined;
+      const cleanFirstName = loggedInUser?.user_metadata?.first_name && loggedInUser.user_metadata?.first_name !== "" ? loggedInUser.user_metadata?.first_name : undefined;
+      const cleanLastName = loggedInUser?.user_metadata?.last_name && loggedInUser.user_metadata?.last_name !== "" ? loggedInUser.user_metadata?.last_name : undefined;
+
+      const isAuthCompleted = isAuthComplete(
+        auth.user?.id,
+        cleanEmail,
+        cleanPhone,
+        cleanFirstName,
+        cleanLastName
+      );
 
       const initialState = loggedInUser
         ? {
             auth: {
               completed: isAuthCompleted,
               userId: auth.user?.id,
-              email: loggedInUser.email && loggedInUser.email !== "" ? loggedInUser.email : undefined,
-              phone: loggedInUser.user_metadata?.phone_number && loggedInUser.user_metadata?.phone_number !== "" ? loggedInUser.user_metadata?.phone_number : undefined,
-              firstName: loggedInUser.user_metadata?.first_name && loggedInUser.user_metadata?.first_name !== "" ? loggedInUser.user_metadata?.first_name : undefined,
-              lastName: loggedInUser.user_metadata?.last_name && loggedInUser.user_metadata?.last_name !== "" ? loggedInUser.user_metadata?.last_name : undefined,
+              email: cleanEmail || null,
+              phone: cleanPhone,
+              firstName: cleanFirstName,
+              lastName: cleanLastName,
+              otpVerified: false,
+              otpSent: false,
             },
           }
         : undefined;
@@ -103,8 +120,8 @@ export const checkoutMutationsV2: MutationResolvers = {
         userId: auth.user?.id || "",
         firstName,
         lastName,
-        email,
-        phone,
+        email: email && email !== "" ? email : undefined,
+        phone: phone && phone !== "" ? phone : undefined,
       });
 
       publish(services.pubsub)(sessionId, {
@@ -211,10 +228,16 @@ export const checkoutMutationsV2: MutationResolvers = {
     },
   },
   triggerCheckoutPayment: {
-    resolve: async (_, { sessionId }, { services }) => {
+    resolve: async (_, { sessionId,redirectUrl }, { services }) => {
       const session = await services.checkoutWorkflow.triggerPayment({
         sessionId,
         completed: false,
+        intent:{
+          id: '',
+          url: '',
+          applePayJavaScriptUrl: '',
+        },
+        redirectUrl,
       });
 
       publish(services.pubsub)(sessionId, {
@@ -238,5 +261,36 @@ export const checkoutMutationsV2: MutationResolvers = {
 
       return session.payment;
     },
+  },
+  processPaymentCallback: async (_, args, context: Context) => {
+    try {
+      const { transactionId } = args;
+      const session = await context.services.checkoutWorkflow.captruePayment({ transactionId });
+      if (!session) {
+        throw new Error("Session not found");
+      }
+      publish(context.services.pubsub)(session.id, {
+        ...session,
+        bundle: {
+          id: session.bundle.externalId || "",
+          country: {
+            iso: session.bundle.countryId || "",
+            __typename: "Country",
+            // We rely on field resolver
+          } as Country,
+          price: session.bundle.price || Infinity,
+          pricePerDay: session.bundle.pricePerDay || Infinity,
+          currency: "USD",
+          ...session.bundle,
+        },
+        auth: session.auth,
+        delivery: session.delivery,
+        payment: session.payment,
+      });
+      return session.payment.completed;
+    } catch (error: any) {
+      logger.error("Error in processPaymentCallback", error);
+      return false;
+    }
   },
 };

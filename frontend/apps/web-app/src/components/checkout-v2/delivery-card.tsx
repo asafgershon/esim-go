@@ -10,6 +10,8 @@ import {
   Button,
   Card,
   CardContent,
+  CollapsibleContent,
+  CollapsibleTrigger,
   Input,
   Label,
   PhoneInputV2 as PhoneInput,
@@ -19,6 +21,7 @@ import { useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { SectionHeader } from "./section-header";
+import { Collapsible } from "@workspace/ui";
 
 type DeliveryCardProps = {
   completed: boolean;
@@ -34,7 +37,6 @@ const DeliverySchema = z
     phone: z
       .e164({ message: "מספר טלפון לא תקין" })
       .optional()
-      .or(z.literal("")),
   })
   .refine(
     (data) => {
@@ -78,14 +80,15 @@ export const DeliveryCard = ({
   const {
     register,
     setValue,
+    watch,
     handleSubmit,
     reset,
     formState: { errors, isDirty, isSubmitSuccessful },
   } = useForm<DeliveryFormData>({
     resolver: zodResolver(DeliverySchema),
     defaultValues: {
-      email: delivery?.email || "",
-      phone: delivery?.phone || "",
+      email: delivery?.email || auth?.email || "",
+      phone: delivery?.phone || auth?.phone || "",
     },
     mode: "onChange",
     resetOptions: {
@@ -162,54 +165,61 @@ export const DeliveryCard = ({
 
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
-      <SectionHeader
-        sectionNumber={sectionNumber || 3}
-        title="פרטי משלוח"
-        icon={<Package className="h-5 w-5 text-primary" />}
-        isCompleted={completed}
-      />
+      <Collapsible open={auth?.completed || delivery?.completed}>
+        <CollapsibleTrigger>
+          <SectionHeader
+            className="mb-4"
+            sectionNumber={sectionNumber || 3}
+            title="פרטי משלוח"
+            icon={<Package className="h-5 w-5 text-primary" />}
+            isCompleted={completed}
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">אימייל</Label>
+                <Input
+                  autoComplete="email"
+                  id="email"
+                  type="email"
+                  placeholder="ben@hiiloworld.com"
+                  {...register("email")}
+                  disabled={loading || Boolean(!isAuthCompleted)}
+                />
+                {errors.email && (
+                  <p className="text-sm text-red-500">{errors.email.message}</p>
+                )}
+              </div>
 
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">אימייל</Label>
-            <Input
-              autoComplete="email"
-              id="email"
-              type="email"
-              placeholder="ben@hiiloworld.com"
-              {...register("email")}
-              disabled={loading || Boolean(!isAuthCompleted)}
-            />
-            {errors.email && (
-              <p className="text-sm text-red-500">{errors.email.message}</p>
-            )}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">טלפון</Label>
+                <PhoneInput
+                  id="phone"
+                  value={watch("phone")}
+                  defaultCountry="IL"
+                  placeholder="הכנס מספר טלפון"
+                  {...register("phone")}
+                  disabled={loading || Boolean(!isAuthCompleted)}
+                />
+                {errors.phone && (
+                  <p className="text-sm text-red-500">{errors.phone.message}</p>
+                )}
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="phone">טלפון</Label>
-            <PhoneInput
-              id="phone"
-              defaultCountry="IL"
-              placeholder="הכנס מספר טלפון"
-              {...register("phone")}
-              disabled={loading || Boolean(!isAuthCompleted)}
-            />
-            {errors.phone && (
-              <p className="text-sm text-red-500">{errors.phone.message}</p>
-            )}
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            disabled={loading || !isDirty}
-          >
-            {getButtonLabel()}
-          </Button>
-        </form>
-      </CardContent>
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={loading || !isDirty}
+              >
+                {getButtonLabel()}
+              </Button>
+            </form>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 };
