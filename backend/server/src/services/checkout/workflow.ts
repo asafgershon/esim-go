@@ -1,20 +1,28 @@
+import { QuickStatusFilterTypeEnum } from "@hiilo/easycard";
 import {
-  QuickStatusFilterTypeEnum
-} from "@hiilo/easycard";
-import type { ESimGoClient } from "@hiilo/esim-go";
+  BundleOrderTypeEnum,
+  OrderRequestTypeEnum,
+  type ESimGoClient,
+  type OrderResponseTransaction,
+} from "@hiilo/esim-go";
 import * as pricingEngine from "@hiilo/rules-engine-2";
 import { createLogger } from "@hiilo/utils";
 import { z } from "zod";
 import type { PubSubInstance } from "../../context/pubsub";
 import { supabaseAdmin } from "../../context/supabase-auth";
 import { WEB_APP_BUNDLE_GROUP } from "../../lib/constants/bundle-groups";
-import type { UserRepository } from "../../repositories";
+import type { BundleRepository, UserRepository } from "../../repositories";
 import type { Checkout } from "../../types";
 import type {
   CreatePaymentIntentRequest,
   PaymentServiceInstance,
+  TransactionResponse,
 } from "../payment";
 import type { CheckoutSessionServiceV2 } from "./session";
+import type { DeliveryService, ESIMDeliveryData } from "../delivery";
+import { env } from "../../config/env";
+import { mockESIMData } from "../esim-purchase";
+import { getCountryData, type TCountryCode } from "countries-list";
 
 /* ===============================
  * Variables
@@ -26,6 +34,9 @@ let userRepository: UserRepository | null = null;
 let esimAPI: ESimGoClient | null = null;
 let paymentAPI: PaymentServiceInstance | null = null;
 let engine: typeof pricingEngine | null = null;
+let deliveryService: DeliveryService | null = null;
+let bundleRepository: BundleRepository | null = null;
+
 
 /* ===============================
  * Helper Functions
@@ -53,6 +64,8 @@ const init = async (context: {
   userRepository: UserRepository;
   esimAPI: ESimGoClient;
   paymentAPI: PaymentServiceInstance;
+  deliveryService: DeliveryService;
+  bundleRepository: BundleRepository;
 }) => {
   pubsub = context.pubsub;
   sessionService = context.sessionService;
@@ -60,7 +73,8 @@ const init = async (context: {
   esimAPI = context.esimAPI;
   paymentAPI = context.paymentAPI;
   engine = pricingEngine;
-
+  deliveryService = context.deliveryService;
+  bundleRepository = context.bundleRepository;
   return checkoutWorkflow;
 };
 
@@ -525,7 +539,14 @@ const captruePayment = async ({ transactionId }: { transactionId: string }) => {
     throw new NotInitializedError();
   }
 
-  const response = await paymentAPI?.getTransaction(transactionId);
+  let response: { success: boolean; transaction: TransactionResponse } | null =
+    null;
+  try {
+    response = await paymentAPI?.getTransaction(transactionId);
+  } catch (error) {
+    throw new CheckoutStepError("captruePayment", "Failed to get transaction");
+  }
+
   const quickStatus = response?.transaction.quickStatus;
   const paymentIntentId = response?.transaction.paymentIntentID;
   if (!paymentIntentId) {
@@ -554,13 +575,114 @@ const captruePayment = async ({ transactionId }: { transactionId: string }) => {
     "payment",
     {
       completed: isSuccess,
-      nameForBilling: response.transaction.creditCardDetails?.cardOwnerName || undefined,
+      nameForBilling:
+        response.transaction.creditCardDetails?.cardOwnerName || undefined,
       transaction: {
         id: transactionId,
       },
     }
   );
   return nextSession;
+};
+
+const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
+  if (!sessionService || !esimAPI || !deliveryService || !bundleRepository) {
+    throw new NotInitializedError();
+  }
+
+  const session = await sessionService.getSession(sessionId);
+  if (!session) {
+    throw new SessionNotFound();
+  }
+
+  let orderResponse: OrderResponseTransaction | null = null;
+  if (env.ESIM_GO_MODE === "mock") {
+    orderResponse = {
+      order: [
+        {
+          esims: [mockESIMData],
+        },
+      ],
+    } as OrderResponseTransaction;
+  } else {
+    orderResponse = await esimAPI?.ordersApi
+      .ordersPost({
+        orderRequest: {
+          type: OrderRequestTypeEnum.TRANSACTION,
+          assign: true, // Auto-assign eSIM
+          order: [
+            {
+              type: BundleOrderTypeEnum.BUNDLE,
+              item: session.bundle.externalId || "",
+              quantity: 1,
+            },
+          ],
+        },
+      })
+      .then((res) => res.data);
+  }
+
+  const esimInfo = orderResponse?.order?.[0]?.esims?.[0];
+  const { iccid, matchingId, smdpAddress } = esimInfo ?? {};
+
+  if (!iccid || !matchingId || !smdpAddress) {
+    throw new Error("No eSIM data returned from eSIM Go API");
+  }
+
+  const lpaString = `LPA:1$${smdpAddress}$${matchingId}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
+    lpaString
+  )}&size=400x400`;
+
+  const bundleSearchResult = await bundleRepository.search({
+    name: session.bundle.externalId || "",
+    limit: 1
+  });
+
+  const bundle = bundleSearchResult.data[0] ?? null;
+  const country = getCountryData(bundle?.countries?.[0] as TCountryCode || "");
+  const { getCountryNameHebrew } = await import("../../datasources/esim-go/hebrew-names");
+
+  const hebrewName = getCountryNameHebrew(country?.iso2 || "");
+  const period = `${bundle?.validity_in_days} ${bundle?.validity_in_days === 1 ? 'יום' : 'ימים'}`;
+  const bundleNiceName = `${period} ל${hebrewName || country?.name || ''}`;
+
+  const deliveryData: ESIMDeliveryData = {
+    esimId: iccid,
+    iccid,
+    qrCode: qrCodeUrl,
+    activationCode: matchingId,
+    activationUrl: smdpAddress,
+    instructions: `1. Go to Settings > Cellular > Add eSIM
+    2. Select "Use QR Code" 
+    3. Scan the QR code or enter details manually
+    4. Follow the on-screen instructions to complete setup`,
+    planName: bundleNiceName,
+    customerName: session.auth?.firstName || "",
+    orderReference: session.payment.intent?.id || "",
+    matchingId,
+    validity: String(bundle?.validity_in_days || 0),
+    smdpAddress,
+  };
+
+  const deliveryResult = await deliveryService.deliverESIM(
+    deliveryData,
+    {
+      type: "EMAIL",
+      email: session.delivery?.email || "yarinsasson2@gmail.com",
+      phoneNumber: session.delivery?.phone || "",
+    }
+  );
+
+  const nextSession = await sessionService.updateSessionStep(sessionId, "delivery", {
+    completed: deliveryResult.success,
+      email: session.delivery?.email || "yarinsasson2@gmail.com",
+      phone: session.delivery?.phone || "",
+    }
+  );
+
+  return nextSession;
+  // TODO: Save the session to the database
 };
 
 /**
@@ -595,6 +717,7 @@ export const checkoutWorkflow = {
   setDelivery,
   triggerPayment,
   captruePayment,
+  completeCheckout,
 };
 export type CheckoutWorkflowInstance = typeof checkoutWorkflow;
 

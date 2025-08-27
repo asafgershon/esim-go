@@ -2,9 +2,13 @@ import { createLogger } from "@hiilo/utils";
 import { nanoid } from "nanoid";
 import { type RedisInstance } from "../redis";
 import { CheckoutSessionSchema, type CheckoutSession } from "./schema";
+import { env } from "../../config/env";
 
 const logger = createLogger({ component: "checkout-session-service-v2" });
 let redis: RedisInstance | null = null;
+
+// 1 day on dev, 30 min on prod
+const ttl = env.isDev ? 24 * 60 * 60 : 30 * 60; // 1 day on dev, 30 min on prod
 
 const init = async (context: { redis: RedisInstance }) => {
   redis = context.redis;

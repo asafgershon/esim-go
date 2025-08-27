@@ -36,6 +36,7 @@ import type {
 import * as EasycardPayment from "../services/payment";
 import type { CheckoutSessionServiceV2 } from "../services/checkout/session";
 import type { CheckoutWorkflowInstance } from "../services/checkout/workflow";
+import type { DeliveryService, EmailService } from "../services/delivery";
 
 export type Context = {
   auth: SupabaseAuthContext;
@@ -50,6 +51,7 @@ export type Context = {
     pubsub: RedisPubSub;
     checkoutSessionServiceV2: CheckoutSessionServiceV2;
     checkoutWorkflow: CheckoutWorkflowInstance;
+    deliveryService: DeliveryService;
   };
   repositories: {
     checkoutSessions: CheckoutSessionRepository;

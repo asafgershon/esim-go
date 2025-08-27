@@ -470,6 +470,7 @@ export type CheckoutPayment = {
   nameForBilling?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
   redirectUrl?: Maybe<Scalars['String']['output']>;
+  transaction?: Maybe<Transaction>;
 };
 
 export type CheckoutSession = {
@@ -1888,6 +1889,11 @@ export type ToggleHighDemandResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type Transaction = {
+  __typename?: 'Transaction';
+  id: Scalars['ID']['output'];
+};
+
 export type TriggerSyncParams = {
   bundleGroup?: InputMaybe<Scalars['String']['input']>;
   countryId?: InputMaybe<Scalars['String']['input']>;
@@ -2252,6 +2258,7 @@ export type ResolversTypes = {
   TenantType: TenantType;
   TestPricingContext: TestPricingContext;
   ToggleHighDemandResponse: ResolverTypeWrapper<ToggleHighDemandResponse>;
+  Transaction: ResolverTypeWrapper<Transaction>;
   TriggerSyncParams: TriggerSyncParams;
   TriggerSyncResponse: ResolverTypeWrapper<TriggerSyncResponse>;
   Trip: ResolverTypeWrapper<Trip>;
@@ -2398,6 +2405,7 @@ export type ResolversParentTypes = {
   TenantOperationResponse: TenantOperationResponse;
   TestPricingContext: TestPricingContext;
   ToggleHighDemandResponse: ToggleHighDemandResponse;
+  Transaction: Transaction;
   TriggerSyncParams: TriggerSyncParams;
   TriggerSyncResponse: TriggerSyncResponse;
   Trip: Trip;
@@ -2764,6 +2772,7 @@ export type CheckoutPaymentResolvers<ContextType = Context, ParentType extends R
   nameForBilling?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   phone?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   redirectUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  transaction?: Resolver<Maybe<ResolversTypes['Transaction']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3481,6 +3490,11 @@ export type ToggleHighDemandResponseResolvers<ContextType = Context, ParentType 
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type TransactionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Transaction'] = ResolversParentTypes['Transaction']> = {
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type TriggerSyncResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['TriggerSyncResponse'] = ResolversParentTypes['TriggerSyncResponse']> = {
   conflictingJob?: Resolver<Maybe<ResolversTypes['ConflictingJobInfo']>, ParentType, ContextType>;
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -3652,6 +3666,7 @@ export type Resolvers<ContextType = Context> = {
   TenantConnection?: TenantConnectionResolvers<ContextType>;
   TenantOperationResponse?: TenantOperationResponseResolvers<ContextType>;
   ToggleHighDemandResponse?: ToggleHighDemandResponseResolvers<ContextType>;
+  Transaction?: TransactionResolvers<ContextType>;
   TriggerSyncResponse?: TriggerSyncResponseResolvers<ContextType>;
   Trip?: TripResolvers<ContextType>;
   UpdateCheckoutStepResponse?: UpdateCheckoutStepResponseResolvers<ContextType>;

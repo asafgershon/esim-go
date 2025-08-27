@@ -57,6 +57,7 @@ import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
 import { paymentService } from "./services/payment";
 import { checkoutSessionService } from "./services/checkout";
 import { checkoutWorkflow } from "./services/checkout/workflow";
+import { DeliveryService, SESEmailService } from "./services/delivery";
 
 // Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
@@ -139,6 +140,9 @@ async function startServer() {
 
     paymentService.init();
 
+    const bundleRepository = new BundleRepository();
+    const deliveryService = new DeliveryService(new SESEmailService());
+
     // Initialize Easycard payment service (optional)
     const [checkoutSessionServiceV2, checkoutWorkflowService] =
       await Promise.all([
@@ -149,6 +153,8 @@ async function startServer() {
           userRepository,
           esimAPI: esimGoClient,
           paymentAPI: paymentService,
+          bundleRepository,
+          deliveryService,
         }),
       ]);
 
@@ -160,7 +166,6 @@ async function startServer() {
     const highDemandCountryRepository = new HighDemandCountryRepository();
     const syncJobRepository = new SyncJobRepository();
     const pricingRulesRepository = new PricingRulesRepository();
-    const bundleRepository = new BundleRepository();
     const tenantRepository = new TenantRepository(supabaseAdmin);
     const strategiesRepository = new StrategiesRepository();
 
@@ -204,6 +209,7 @@ async function startServer() {
               checkoutSessionService: undefined, // Will be initialized lazily in resolvers
               checkoutSessionServiceV2: checkoutSessionServiceV2,
               checkoutWorkflow: checkoutWorkflowService,
+              deliveryService,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,
@@ -461,6 +467,7 @@ async function startServer() {
               checkoutSessionService: undefined, // Will be initialized lazily in resolvers
               checkoutSessionServiceV2: checkoutSessionServiceV2,
               checkoutWorkflow: checkoutWorkflowService,
+              deliveryService,
             },
             repositories: {
               checkoutSessions: checkoutSessionRepository,

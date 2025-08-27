@@ -1,8 +1,8 @@
-import { GraphQLError } from 'graphql';
-import { generateESIMEmailTemplate } from './email-templates';
+import { GraphQLError } from "graphql";
+import { generateESIMEmailTemplate } from "./email-templates";
 
 export interface DeliveryMethod {
-  type: 'EMAIL' | 'SMS' | 'BOTH';
+  type: "EMAIL" | "SMS" | "BOTH";
   email?: string;
   phoneNumber?: string;
 }
@@ -17,6 +17,7 @@ export interface ESIMDeliveryData {
   matchingId?: string;
   instructions: string;
   planName: string;
+  validity: string;
   customerName: string;
   orderReference: string;
 }
@@ -24,12 +25,17 @@ export interface ESIMDeliveryData {
 export interface DeliveryResult {
   success: boolean;
   messageId?: string;
-  deliveredVia: ('EMAIL' | 'SMS')[];
+  deliveredVia: ("EMAIL" | "SMS")[];
   error?: string;
 }
 
 export interface EmailService {
-  sendEmail(to: string, subject: string, htmlContent: string, attachments?: any[]): Promise<{
+  sendEmail(
+    to: string,
+    subject: string,
+    htmlContent: string,
+    attachments?: any[]
+  ): Promise<{
     success: boolean;
     messageId?: string;
     error?: string;
@@ -37,7 +43,10 @@ export interface EmailService {
 }
 
 export interface SMSService {
-  sendSMS(to: string, message: string): Promise<{
+  sendSMS(
+    to: string,
+    message: string
+  ): Promise<{
     success: boolean;
     messageId?: string;
     error?: string;
@@ -60,28 +69,34 @@ export class DeliveryService {
     };
 
     try {
-      if (deliveryMethod.type === 'EMAIL' || deliveryMethod.type === 'BOTH') {
+      if (deliveryMethod.type === "EMAIL" || deliveryMethod.type === "BOTH") {
         if (!deliveryMethod.email) {
-          throw new Error('Email address is required for email delivery');
+          throw new Error("Email address is required for email delivery");
         }
-        
-        const emailResult = await this.deliverViaEmail(deliveryData, deliveryMethod.email);
+
+        const emailResult = await this.deliverViaEmail(
+          deliveryData,
+          deliveryMethod.email
+        );
         if (emailResult.success) {
-          result.deliveredVia.push('EMAIL');
+          result.deliveredVia.push("EMAIL");
           result.messageId = emailResult.messageId;
         } else {
           result.error = emailResult.error;
         }
       }
 
-      if (deliveryMethod.type === 'SMS' || deliveryMethod.type === 'BOTH') {
+      if (deliveryMethod.type === "SMS" || deliveryMethod.type === "BOTH") {
         if (!deliveryMethod.phoneNumber) {
-          throw new Error('Phone number is required for SMS delivery');
+          throw new Error("Phone number is required for SMS delivery");
         }
-        
-        const smsResult = await this.deliverViaSMS(deliveryData, deliveryMethod.phoneNumber);
+
+        const smsResult = await this.deliverViaSMS(
+          deliveryData,
+          deliveryMethod.phoneNumber
+        );
         if (smsResult.success) {
-          result.deliveredVia.push('SMS');
+          result.deliveredVia.push("SMS");
           if (!result.messageId) {
             result.messageId = smsResult.messageId;
           }
@@ -95,11 +110,11 @@ export class DeliveryService {
       result.success = result.deliveredVia.length > 0;
       return result;
     } catch (error: any) {
-      console.error('Delivery service error:', error);
+      console.error("Delivery service error:", error);
       return {
         success: false,
         deliveredVia: [],
-        error: error.message || 'Failed to deliver eSIM',
+        error: error.message || "Failed to deliver eSIM",
       };
     }
   }
@@ -111,7 +126,7 @@ export class DeliveryService {
     if (!this.emailService) {
       return {
         success: false,
-        error: 'Email service not configured',
+        error: "Email service not configured",
       };
     }
 
@@ -125,13 +140,13 @@ export class DeliveryService {
         emailContent.html
       );
 
-      console.log('Email delivery result:', result);
+      console.log("Email delivery result:", result);
       return result;
     } catch (error: any) {
-      console.error('Email delivery error:', error);
+      console.error("Email delivery error:", error);
       return {
         success: false,
-        error: error.message || 'Failed to send email',
+        error: error.message || "Failed to send email",
       };
     }
   }
@@ -143,7 +158,7 @@ export class DeliveryService {
     if (!this.smsService) {
       return {
         success: false,
-        error: 'SMS service not configured',
+        error: "SMS service not configured",
       };
     }
 
@@ -151,23 +166,22 @@ export class DeliveryService {
       const smsContent = this.generateSMSContent(deliveryData);
       const result = await this.smsService.sendSMS(phoneNumber, smsContent);
 
-      console.log('SMS delivery result:', result);
+      console.log("SMS delivery result:", result);
       return result;
     } catch (error: any) {
-      console.error('SMS delivery error:', error);
+      console.error("SMS delivery error:", error);
       return {
         success: false,
-        error: error.message || 'Failed to send SMS',
+        error: error.message || "Failed to send SMS",
       };
     }
   }
-
 
   private generateSMSContent(deliveryData: ESIMDeliveryData): string {
     return `Your eSIM (${deliveryData.planName}) is ready! 
 
 ICCID: ${deliveryData.iccid}
-${deliveryData.activationCode ? `Code: ${deliveryData.activationCode}` : ''}
+${deliveryData.activationCode ? `Code: ${deliveryData.activationCode}` : ""}
 
 Install: ${deliveryData.qrCode}
 

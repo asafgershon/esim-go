@@ -1,11 +1,24 @@
+import { nanoid } from "nanoid";
 import type { Context } from "../../context/types";
 import { logger } from "../../lib/logger";
+import {
+  mockESIMData,
+  purchaseAndDeliverESIM,
+} from "../../services/esim-purchase";
 import type {
   Country,
   MutationResolvers,
   SubscriptionResolvers,
 } from "../../types";
 import { publish } from "./subscriptions";
+import { randomUUIDv5 } from "bun";
+import {
+  BundleOrderTypeEnum,
+  OrderRequestTypeEnum,
+  type OrderResponseTransaction,
+} from "@hiilo/esim-go";
+import { env } from "../../config/env";
+import type { ESIMDeliveryData } from "../../services/delivery";
 
 export const checkoutMutationsV2: MutationResolvers = {
   createCheckout: {
@@ -18,12 +31,29 @@ export const checkoutMutationsV2: MutationResolvers = {
         auth.user?.id || ""
       );
 
-      const { isAuthComplete } = await import("../../services/checkout/workflow");
-      
-      const cleanEmail = loggedInUser?.email && loggedInUser.email !== "" ? loggedInUser.email : undefined;
-      const cleanPhone = loggedInUser?.user_metadata?.phone_number && loggedInUser.user_metadata?.phone_number !== "" ? loggedInUser.user_metadata?.phone_number : undefined;
-      const cleanFirstName = loggedInUser?.user_metadata?.first_name && loggedInUser.user_metadata?.first_name !== "" ? loggedInUser.user_metadata?.first_name : undefined;
-      const cleanLastName = loggedInUser?.user_metadata?.last_name && loggedInUser.user_metadata?.last_name !== "" ? loggedInUser.user_metadata?.last_name : undefined;
+      const { isAuthComplete } = await import(
+        "../../services/checkout/workflow"
+      );
+
+      const cleanEmail =
+        loggedInUser?.email && loggedInUser.email !== ""
+          ? loggedInUser.email
+          : undefined;
+      const cleanPhone =
+        loggedInUser?.user_metadata?.phone_number &&
+        loggedInUser.user_metadata?.phone_number !== ""
+          ? loggedInUser.user_metadata?.phone_number
+          : undefined;
+      const cleanFirstName =
+        loggedInUser?.user_metadata?.first_name &&
+        loggedInUser.user_metadata?.first_name !== ""
+          ? loggedInUser.user_metadata?.first_name
+          : undefined;
+      const cleanLastName =
+        loggedInUser?.user_metadata?.last_name &&
+        loggedInUser.user_metadata?.last_name !== ""
+          ? loggedInUser.user_metadata?.last_name
+          : undefined;
 
       const isAuthCompleted = isAuthComplete(
         auth.user?.id,
@@ -228,14 +258,14 @@ export const checkoutMutationsV2: MutationResolvers = {
     },
   },
   triggerCheckoutPayment: {
-    resolve: async (_, { sessionId,redirectUrl }, { services }) => {
+    resolve: async (_, { sessionId, redirectUrl }, { services }) => {
       const session = await services.checkoutWorkflow.triggerPayment({
         sessionId,
         completed: false,
-        intent:{
-          id: '',
-          url: '',
-          applePayJavaScriptUrl: '',
+        intent: {
+          id: "",
+          url: "",
+          applePayJavaScriptUrl: "",
         },
         redirectUrl,
       });
@@ -265,12 +295,18 @@ export const checkoutMutationsV2: MutationResolvers = {
   processPaymentCallback: async (_, args, context: Context) => {
     try {
       const { transactionId } = args;
-      const session = await context.services.checkoutWorkflow.captruePayment({ transactionId });
+      const session = await context.services.checkoutWorkflow.captruePayment({
+        transactionId,
+      });
+
       if (!session) {
         throw new Error("Session not found");
       }
+
+      const completedSession = await context.services.checkoutWorkflow.completeCheckout({ sessionId: session.id });
+
       publish(context.services.pubsub)(session.id, {
-        ...session,
+        ...completedSession,
         bundle: {
           id: session.bundle.externalId || "",
           country: {
