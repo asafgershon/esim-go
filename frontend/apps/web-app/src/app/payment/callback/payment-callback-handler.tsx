@@ -29,7 +29,7 @@ export function PaymentCallbackHandler({
   params,
 }: PaymentCallbackHandlerProps) {
   const router = useRouter();
-  const [processPaymentCallback, { error, loading: isProcessing }] =
+  const [processPaymentCallback, { error, loading: isProcessing, data: response }] =
     useMutation<
       ProcessPaymentCallbackMutation,
       ProcessPaymentCallbackMutationVariables
@@ -37,7 +37,7 @@ export function PaymentCallbackHandler({
   const { handlePayment } = useCheckoutPayment();
 
   useEffect(() => {
-    if (error || isProcessing) {
+    if (error || response?.processPaymentCallback === false || isProcessing) {
       return;
     }
 
@@ -50,15 +50,15 @@ export function PaymentCallbackHandler({
         variables: { transactionId: params.transactionID },
       });
 
-      if (data?.processPaymentCallback) {
-        router.push(`/orders/orderId`);
-      } else {
-        throw new Error("Failed to process payment callback");
-      }
+      // if (data?.processPaymentCallback) {
+      //   router.push(`/orders/orderId`);
+      // } else {
+      //   throw new Error("Failed to process payment callback");
+      // }
     };
 
     handlePaymentCallback();
-  }, [params, handlePayment, router, processPaymentCallback]);
+  }, [params, handlePayment, router, processPaymentCallback, error, isProcessing]);
 
 
   if (error) {

@@ -1,6 +1,6 @@
 import type { Context } from '../context/types';
 import { createLogger } from '../lib/logger';
-import { OrderRequestTypeEnum, BundleOrderTypeEnum } from '@hiilo/esim-go';
+import { OrderRequestTypeEnum, BundleOrderTypeEnum, type OrderResponseTransaction } from '@hiilo/esim-go';
 import { cleanEnv, str } from 'envalid';
 import { createDeliveryService, type ESIMDeliveryData } from './delivery';
 
@@ -14,6 +14,13 @@ const env = cleanEnv(process.env, {
 
 const logger = createLogger({ component: 'esim-purchase' });
 
+export const mockESIMData = {
+  iccid: `MOCK_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+  qrCode: 'https://upload.wikimedia.org/wikipedia/commons/3/31/MM_QRcode.png',
+  activationCode: `MOCK-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+  smdpAddress: 'mock.esim-go.com',
+  matchingId: 'MOCK-MATCHING-ID',
+};
 /**
  * Purchase and deliver eSIM after successful payment
  * Supports both mock mode (for testing) and production mode (real eSIM Go API)
@@ -45,18 +52,7 @@ export async function purchaseAndDeliverESIM(
     };
 
     if (env.ESIM_GO_MODE === 'mock') {
-      // Generate mock eSIM data for testing
-      esimData = {
-        iccid: `MOCK_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-        qrCode: 'https://upload.wikimedia.org/wikipedia/commons/3/31/MM_QRcode.png',
-        activationCode: `MOCK-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-        smdpAddress: 'mock.esim-go.com',
-        matchingId: 'MOCK-MATCHING-ID',
-      };
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      esimData = mockESIMData;
     } else {
       // Real eSIM Go API call
       try {
@@ -77,8 +73,10 @@ export async function purchaseAndDeliverESIM(
           }
         });
 
+        const data = response.data as OrderResponseTransaction;
+
         // Extract eSIM details from response
-        const orderData = response.data?.order?.[0];
+        const orderData = data?.order?.[0] ?? {};
         const esimInfo = orderData?.esims?.[0];
         const iccid = esimInfo?.iccid;
         
@@ -102,7 +100,7 @@ export async function purchaseAndDeliverESIM(
           activationCode: matchingId, // The matching ID is the activation code
           smdpAddress,
           matchingId,
-          esimGoOrderRef: response.data?.orderReference,
+          // esimGoOrderRef: response.data?.,
         };
 
         logger.info('eSIM purchased successfully from eSIM Go', {

@@ -1,0 +1,67 @@
+//- Order Summary Section
+tr
+  td(style="background-color: #ffffff;")
+    table(width="100%" cellpadding="0" cellspacing="0")
+      tr
+        td.mobile-padding(style="padding: 40px;")
+          h3(style="font-family: 'Rubik', Arial, sans-serif; color: #0a232e; font-size: 18px; font-weight: 600; margin: 0 0 20px 0;")
+            | סיכום הזמנה
+          
+          //- Order Details
+          table(width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-radius: 12px; margin-bottom: 30px;")
+            tr
+              td(style="padding: 25px;")
+                table(width="100%" cellpadding="0" cellspacing="0")
+                  tr
+                    td(style="padding-bottom: 15px;")
+                      table(width="100%" cellpadding="0" cellspacing="0")
+                        tr
+                          td(width="50%" style="color: #0a232e; font-family: 'Rubik', Arial, sans-serif; font-size: 14px;")
+                            | יעד:
+                          td(width="50%" style="color: #0a232e; font-family: 'Rubik', Arial, sans-serif; font-size: 14px; font-weight: 600; text-align: left;")
+                            | #{destination}
+                  
+                  tr
+                    td(style="padding-bottom: 15px;")
+                      table(width="100%" cellpadding="0" cellspacing="0")
+                        tr
+                          td(width="50%" style="color: #0a232e; font-family: 'Rubik', Arial, sans-serif; font-size: 14px;")
+                            | גודל חבילה:
+                          td(width="50%" style="color: #0a232e; font-family: 'Rubik', Arial, sans-serif; font-size: 14px; font-weight: 600; text-align: left;")
+                            | #{planSize}
+                  
+                  tr
+                    td(style="padding-bottom: 15px;")
+                      table(width="100%" cellpadding="0" cellspacing="0")
+                        tr
+                          td(width="50%" style="color: #0a232e; font-family: 'Rubik', Arial, sans-serif; font-size: 14px;")
+                            | תקופה:
+                          td(width="50%" style="color: #0a232e; font-family: 'Rubik', Arial, sans-serif; font-size: 14px; font-weight: 600; text-align: left;")
+                            | #{validity} ימים
+                  
+                  if discount && discount > 0
+                    tr
+                      td(style="padding-bottom: 15px;")
+                        table(width="100%" cellpadding="0" cellspacing="0")
+                          tr
+                            td(width="50%" style="color: #0a232e; font-family: 'Rubik', Arial, sans-serif; font-size: 14px;")
+                              | הנחת Hiilo:
+                            td(width="50%" style="color: #00e095; font-family: 'Rubik', Arial, sans-serif; font-size: 14px; font-weight: 600; text-align: left;")
+                              | #{discount}
+                  
+                  tr
+                    td
+                      table(width="100%" cellpadding="0" cellspacing="0")
+                        tr
+                          td(width="50%" style="color: #0a232e; font-family: 'Rubik', Arial, sans-serif; font-size: 16px; font-weight: 600;")
+                            | סה"כ לתשלום:
+                          td(width="50%" style="color: #0a232e; font-family: 'Rubik', Arial, sans-serif; font-size: 16px; font-weight: 700; text-align: left;")
+                            | #{totalPrice}
+          
+          //- CTA Button
+          table(width="100%" cellpadding="0" cellspacing="0")
+            tr
+              td(align="center")
+                a(href="#{ctaUrl}" 
+                  style="display: inline-block; padding: 16px 32px; background-color: #00e095; color: #ffffff; text-decoration: none; border-radius: 100px; font-family: 'Rubik', Arial, sans-serif; font-size: 16px; font-weight: 600; box-shadow: 0 10px 25px rgba(0, 224, 149, 0.3); transition: all 0.3s ease;")
+                  | התקן עכשיו

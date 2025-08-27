@@ -1,0 +1,50 @@
+//- Main Content
+tr
+  td(style="background-color: #fcfcfc;")
+    table(width="100%" cellpadding="0" cellspacing="0")
+      tr
+        td.mobile-padding(style="padding: 40px;")
+          
+          //- Title
+          h1(style="font-family: 'Rubik', Arial, sans-serif; color: #0a232e; font-size: 30px; font-weight: 700; text-align: center; margin: 0 0 20px 0;")
+            | ה-eSIM שלך מוכן להתקנה
+          
+          //- Greeting
+          p(style="font-family: 'Rubik', Arial, sans-serif; color: #0a232e; font-size: 16px; text-align: center; margin: 0 0 10px 0;")
+            | שלום #{name},
+          
+          p(style="font-family: 'Rubik', Arial, sans-serif; color: #0a232e; font-size: 14px; text-align: center; margin: 0 0 30px 0;")
+            | חדשות נהדרות! ה-eSIM שלך הגיע וממתין להתקנה.
+          
+          //- Order Info Box
+          table(width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a232e; border-radius: 12px; margin-bottom: 30px;")
+            tr
+              td(style="padding: 25px;")
+                p(style="font-family: 'Rubik', Arial, sans-serif; color: #fcfcfc; font-size: 14px; text-align: center; margin: 0;")
+                  strong מספר הזמנה: 
+                  | #{orderReference}
+          
+          //- eSIM Details Card
+          table(width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, rgba(0,224,149,0.1), rgba(83,95,200,0.1)); border-radius: 12px; margin-bottom: 30px;")
+            tr
+              td(align="center" style="padding: 30px;")
+                table(cellpadding="0" cellspacing="0" style="margin-bottom: 15px;")
+                  tr
+                    td(align="center")
+                      img(src="https://hiiloworld.com/_next/image?url=%2Fimages%2Fillustrations%2Flocation-pin.png&w=48&q=75" alt="Location" style="width: 32px; height: 32px; display: block; margin: 0 auto;")
+                h2(style="font-family: 'Rubik', Arial, sans-serif; color: #0a232e; font-size: 24px; font-weight: 600; margin: 0 0 15px 0;")
+                  | #{destination}
+                p(style="font-family: 'Rubik', Arial, sans-serif; color: #00e095; font-size: 18px; font-weight: 500; margin: 0;")
+                  | #{planSize} | #{validity} ימים
+          
+          //- QR Code Section
+          table(width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a232e; border-radius: 12px; margin-bottom: 30px;")
+            tr
+              td(align="center" style="padding: 30px;")
+                h3(style="font-family: 'Rubik', Arial, sans-serif; color: #fcfcfc; font-size: 20px; font-weight: 600; margin: 0 0 20px 0;")
+                  | סרוק כדי להתקין את ה-eSIM
+                if qrCode
+                  div(style="padding: 20px; background-color: #fcfcfc; border-radius: 12px; display: inline-block;")
+                    img(src=qrCode alt="QR Code" style="width: 200px; height: 200px; display: block;")
+                p(style="font-family: 'Rubik', Arial, sans-serif; color: #fdfdfd; font-size: 12px; margin: 20px 0 0 0;")
+                  | סרוק את הקוד מהגדרות המכשיר שלך

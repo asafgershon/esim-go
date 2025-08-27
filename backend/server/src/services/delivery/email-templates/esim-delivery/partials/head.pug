@@ -1,0 +1,53 @@
+doctype html
+html(lang="he" dir="rtl")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    meta(name="x-apple-disable-message-reformatting")
+    meta(http-equiv="X-UA-Compatible" content="IE=edge")
+    title ה-eSIM שלך מוכן! | Hiilo
+    
+    //- Preheader text
+    <!--[if !mso]><!-->
+    meta(name="preheader" content="ה-eSIM שלך מוכן לשימוש! התקן אותו בקלות וצא לדרך")
+    <!--<![endif]-->
+    
+    style.
+      /* Email Client Reset */
+      #outlook a { padding: 0; }
+      .ReadMsgBody { width: 100%; }
+      .ExternalClass { width: 100%; }
+      .ExternalClass * { line-height: 100%; }
+      body { margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+      table, td { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+      img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
+      p { display: block; margin: 0; }
+      
+      /* Web Font Import */
+      @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&display=swap');
+      
+      /* RTL Support */
+      [dir="rtl"] { direction: rtl; text-align: right; }
+      
+      /* Hiiilo Brand Colors */
+      :root {
+        --color-brand-green: #00e095;
+        --color-brand-purple: #535fc8;
+        --color-brand-dark: #0a232e;
+        --color-brand-light-blue: #f8fafc;
+        --color-brand-white: #fefefe;
+        --color-hiiilo-teal: #2a4a5a;
+        --color-hiiilo-green: #00d4aa;
+        --color-hiiilo-white: #ffffff;
+        --color-hiiilo-light-gray: #e2e8f0;
+      }
+      
+      /* Responsive Styles */
+      @media screen and (max-width: 640px) {
+        .container { width: 100% !important; }
+        .mobile-padding { padding: 20px !important; }
+        .mobile-center { text-align: center !important; }
+        .mobile-hide { display: none !important; }
+        .mobile-full-width { width: 100% !important; }
+        .two-columns td { display: block !important; width: 100% !important; padding: 10px 0 !important; }
+      }

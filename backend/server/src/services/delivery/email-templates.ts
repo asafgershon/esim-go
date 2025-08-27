@@ -25,8 +25,8 @@ interface EmailTemplateData extends ESIMDeliveryData {
   name?: string;
   // Additional template variables
   destination?: string;
-  planSize?: string;
-  validity?: string;
+  dataAmountReadable: string;
+  validity: string;
   subtotal?: string;
   discount?: string;
   total?: string;
@@ -76,7 +76,7 @@ export async function generateESIMEmailTemplate(data: EmailTemplateData): Promis
     logoBase64: ESIM_GO_LOGO_BASE64,
     // Map existing data to template variables
     destination: data.destination || data.planName,
-    planSize: data.planSize || `${data.planName}`,
+    planSize: data.dataAmountReadable || `${data.planName}`,
     validity: data.validity || 'Check plan details',
     subtotal: data.subtotal || data.total,
     discount: data.discount,
