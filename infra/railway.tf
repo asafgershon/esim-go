@@ -1,9 +1,9 @@
 # Railway Provider Configuration
 
 provider "railway" {
-  # Token should be set via RAILWAY_TOKEN environment variable
-  # or uncomment below and use terraform variable
-  # token = var.railway_token
+  # Token can be set via RAILWAY_TOKEN environment variable
+  # or using terraform variable (which we're using now)
+  token = var.railway_token
 }
 
 # Variables for Railway configuration
@@ -18,17 +18,23 @@ variable "railway_token" {
 # terraform import railway_project.hiilo cedece0b-a6c2-4ffe-8d19-460090acf032
 resource "railway_project" "hiilo" {
   name        = "Hiilo"
-  description = "Hiilo eSIM Platform"
+  # description = "Hiilo eSIM Platform"  # Commenting out to avoid update errors
   
   # Private project (not publicly accessible source)
   private = true
   
-  # Enable PR deployments
-  has_pr_deploys = true
+  # PR deployments (keep existing state)
+  has_pr_deploys = false
   
-  # Default environment configuration
-  default_environment = {
-    name = "production"
+  # Team ID from import - commenting out to prevent replacement
+  # team_id = "435da450-e1d1-46bc-8fc1-548944b22bdd"
+  
+  lifecycle {
+    ignore_changes = [
+      team_id,  # Ignore team_id to prevent replacement
+      default_environment,  # Keep existing environment
+      description  # Also ignore description changes
+    ]
   }
 }
 

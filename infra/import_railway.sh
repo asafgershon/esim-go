@@ -37,11 +37,11 @@ echo ""
 
 # Import Railway Project
 echo "1. Importing Railway project 'Hiilo'..."
-terraform import railway_project.hiilo cedece0b-a6c2-4ffe-8d19-460090acf032
+terraform import -var-file=railway.tfvars railway_project.hiilo cedece0b-a6c2-4ffe-8d19-460090acf032
 
 # Import Apollo Server Service
 echo "2. Importing Apollo Server service..."
-terraform import railway_service.apollo_server 4afbf8ed-9842-4b63-afe9-239a1f0ed91c
+terraform import -var-file=railway.tfvars railway_service.apollo_server 4afbf8ed-9842-4b63-afe9-239a1f0ed91c
 
 # Import other services (need to get their IDs first)
 echo ""

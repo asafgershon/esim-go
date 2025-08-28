@@ -10,6 +10,10 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 5.0"
     }
+    appstore = {
+      source  = "fintreal/appstore"
+      version = "~> 1.1.5"
+    }
   }
 }
 

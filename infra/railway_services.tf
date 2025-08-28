@@ -8,13 +8,13 @@ resource "railway_service" "apollo_server" {
   
   # Source configuration (assuming GitHub repo connection)
   source_repo = "yarinsa/esim-go"
-  root_directory = "server/server"
+  root_directory = "/server"  # Match actual state
   
-  # Build and start commands are defined in railway.json or package.json
-  
-  # Enable regions and replicas as needed
-  # regions = ["us-west-1"]
-  # num_replicas = 1
+  lifecycle {
+    ignore_changes = [
+      config_path  # Ignore config_path that was set during import
+    ]
+  }
 }
 
 # Redis Service
@@ -33,7 +33,7 @@ resource "railway_service" "redis" {
 # Next.js Web Application
 # Import: terraform import railway_service.next_web_app <service-id>
 resource "railway_service" "next_web_app" {
-  name       = "next-web-app"
+  name       = "web-app"  # Changed from next-web-app to avoid conflict
   project_id = railway_project.hiilo.id
   
   source_repo = "yarinsa/esim-go"

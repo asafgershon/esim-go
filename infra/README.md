@@ -1,161 +1,278 @@
-# Infrastructure as Code - AWS Organization Setup
+# eSIM Go Infrastructure
 
-This Terraform configuration manages the AWS Organization structure with separate accounts for billing clarity.
+This directory contains the Terraform configuration for managing the eSIM Go platform infrastructure across AWS and Railway.
 
-## Architecture
+## Overview
 
-- **Management Account** (052299608953): Root organization account
-- **Hiilo Production Account** (167524898689): Dedicated account for Hiilo eSIM resources
-
-## Structure
-
-```
-infra/
-├── *.tf                              # Management account resources
-└── environments/
-    └── hiilo-production/
-        └── main.tf                   # Hiilo account resources
-```
+The infrastructure includes:
+- **AWS Resources**: Organizations, SES (Simple Email Service), DynamoDB, IAM
+- **Railway Resources**: Project, services (API, Redis, Web Apps), environment variables
+- **Multi-environment support**: Development and Production configurations
 
 ## Prerequisites
 
-1. AWS CLI configured with appropriate credentials
-2. Terraform >= 1.5.0 installed
+### Required Tools
+- [Terraform](https://www.terraform.io/downloads) >= 1.0
+- [AWS CLI](https://aws.amazon.com/cli/) configured with appropriate credentials
+- [Railway CLI](https://docs.railway.app/develop/cli) authenticated (`railway login`)
 
-## Setup Instructions
+### Required Access
+- AWS account with appropriate IAM permissions
+- Railway account with project access
+- Access to environment secrets (stored in tfvars files)
 
-### Step 1: Management Account Setup
+## Initial Setup
+
+### 1. Initialize Terraform
 
 ```bash
-# In the infra/ directory
+make init
+```
+
+Or manually:
+```bash
 terraform init
-
-# Import existing organization
-terraform import aws_organizations_organization.main o-gs0qfk09ws
-
-# Review and apply
-terraform plan
-terraform apply
 ```
 
-This will create:
-- IAM user `hiilo-admin` for managing Hiilo account
-- Terraform state bucket and locking table
-- Organization structure
+### 2. Configure Environment Variables
 
-### Step 2: Configure Hiilo Account Access
-
-After running terraform apply, create access keys for the hiilo-admin user:
+Copy the example tfvars file and update with your values:
 
 ```bash
-# Create access keys
-aws iam create-access-key --user-name hiilo-admin
-
-# Configure AWS CLI profile
-aws configure --profile hiilo-production
-# Enter the access key ID and secret from above
-# Region: us-east-1
+cp environments/development.tfvars.example environments/development.tfvars
+cp environments/production.tfvars.example environments/production.tfvars
 ```
 
-### Step 3: Deploy Hiilo Account Resources
+Edit the files with your specific configuration:
+- Supabase credentials
+- AWS credentials
+- Railway token
+- API keys and secrets
+
+### 3. Import Existing Resources
+
+If you have existing resources that need to be managed by Terraform:
+
+#### Import Railway Resources
+```bash
+make import-railway ENV=development
+```
+
+#### Import AWS SES Resources
+```bash
+make import-ses ENV=development
+```
+
+## Usage
+
+### Planning Changes
+
+Review planned changes before applying:
 
 ```bash
-# Navigate to Hiilo environment
-cd environments/hiilo-production/
+# Development environment (default)
+make plan
 
-# Use the Hiilo profile or assume role
-export AWS_PROFILE=hiilo-production
-# OR
-aws sts assume-role \
-  --role-arn "arn:aws:iam::167524898689:role/OrganizationAccountAccessRole" \
-  --role-session-name "TerraformSession"
+# Production environment
+make plan ENV=production
 
-# Initialize and apply
-terraform init
-terraform plan
-terraform apply
+# Or use shortcuts
+make dev-plan
+make prod-plan
 ```
 
-## Resources Created
+### Applying Changes
 
-### Management Account Resources:
-- **SES Configuration**:
-  - 5 verified domains (hiiloworld.com, yarinsa.me, etc.)
-  - 3 verified email addresses
-  - Configuration set for email tracking
-  - DKIM enabled for email authentication
-  - WorkMail integration for incoming emails
-
-### Railway Platform Resources:
-- **Project**: Hiilo (Production environment)
-- **Services**:
-  - Apollo Server (GraphQL API)
-  - Redis (Caching and sessions)
-  - Next.js Web App (Customer portal)
-  - Management Portal (Admin dashboard)
-- **Custom Domains**:
-  - api.hiiloworld.com
-  - hiiloworld.com
-  - manage.hiiloworld.com
-- **Environment Variables**: 40+ configured variables
-
-### Hiilo Account Resources:
-- **S3 Buckets**: 
-  - `hiilo-esim-resources`: eSIM data and resources
-  - `hiilo-cdn`: Static assets and CDN content
-- **IAM Roles**: Cross-account access and application roles
-
-## Cross-Account Access
-
-To access Hiilo account from management account:
+Apply infrastructure changes:
 
 ```bash
-# Configure AWS CLI profile for Hiilo account
-aws configure --profile hiilo-production
+# Development environment
+make apply
 
-# Or assume role programmatically
-aws sts assume-role \
-  --role-arn "arn:aws:iam::167524898689:role/OrganizationAccountAccessRole" \
-  --role-session-name "HiiloSession"
+# Production environment
+make apply ENV=production
+
+# Or use shortcuts
+make dev-apply
+make prod-apply
 ```
 
-## Next Steps
+### Destroying Infrastructure
 
-1. Create IAM access keys for `hiilo-admin` user
-2. Configure application credentials to use Hiilo account
-3. Migrate existing resources from management account
-4. Set up CloudWatch billing alerts
-5. Configure budget limits
+⚠️ **Use with caution** - this will destroy resources:
 
-## Railway Setup
-
-### Prerequisites
-1. Get Railway API token from [Railway Dashboard > Account Settings > Tokens](https://railway.app/account/tokens)
-2. Set the token: `export RAILWAY_TOKEN=your_token_here`
-
-### Import Railway Resources
 ```bash
-# Copy and fill in the variables file
-cp railway.tfvars.example railway.tfvars
-# Edit railway.tfvars with your actual values
+# Development environment
+make destroy ENV=development
 
-# Run the import script
-./import_railway.sh
-
-# Verify the import
-terraform plan -var-file=railway.tfvars
+# Production environment
+make destroy ENV=production
 ```
 
-### Managing Railway Variables
-Railway environment variables are managed in `railway_variables.tf`. To update:
-1. Edit the variables in the terraform file
-2. Run `terraform apply -var-file=railway.tfvars`
-3. Railway will automatically redeploy affected services
+## Environment Management
 
-## Cost Tracking
+### Environment Variables Structure
 
-With separate accounts, you can now:
-- View Hiilo-specific costs in AWS Cost Explorer
-- Set up account-specific budgets
-- Generate detailed billing reports per account
-- Track Railway usage in Railway dashboard
+Each environment has its own tfvars file in `environments/`:
+
+```
+environments/
+├── development.tfvars    # Development environment configuration
+└── production.tfvars     # Production environment configuration
+```
+
+### Key Configuration Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `environment` | Environment name | `development` or `production` |
+| `aws_region` | AWS region | `us-east-1` |
+| `supabase_url` | Supabase project URL | `https://xxx.supabase.co` |
+| `railway_token` | Railway API token | Auto-extracted from CLI |
+| `redis_password` | Redis password | Generated secure password |
+| `jwt_secret` | JWT signing secret | Generated secure secret |
+
+### Getting Railway Token
+
+The Railway token is automatically extracted from the CLI configuration:
+
+```bash
+./get_railway_token.sh
+```
+
+This token is stored in `~/.railway/config.json` after running `railway login`.
+
+## Resource Organization
+
+### File Structure
+
+```
+infra/
+├── Makefile                    # Simplified commands
+├── README.md                   # This file
+├── versions.tf                 # Provider versions
+├── variables_common.tf         # Common variable definitions
+├── backend.tf                  # Terraform state backend
+├── aws_organization.tf         # AWS Organizations setup
+├── aws_ses.tf                  # SES email service
+├── railway.tf                  # Railway project configuration
+├── railway_services.tf         # Railway service definitions
+├── railway_variables.tf        # Railway environment variables
+├── outputs.tf                  # Output values
+├── environments/              
+│   ├── development.tfvars     # Development environment
+│   └── production.tfvars      # Production environment
+└── scripts/
+    ├── get_railway_token.sh   # Extract Railway token
+    ├── import_railway.sh      # Import Railway resources
+    └── import_ses.sh          # Import SES resources
+```
+
+### Managed Services
+
+#### Railway Services
+- **apollo-server**: GraphQL API server
+- **redis**: Redis cache database
+- **web-app**: Next.js customer-facing application
+- **management-portal**: Admin dashboard application
+
+#### AWS Resources
+- **SES**: Email sending service with domain verification
+- **DynamoDB**: Terraform state locking
+- **Organizations**: Multi-account structure for billing separation
+- **IAM**: Users, roles, and policies for service access
+
+## Common Operations
+
+### Update Environment Variables
+
+1. Edit the appropriate service variables in `railway_variables.tf`
+2. Plan the changes: `make plan ENV=<environment>`
+3. Apply if changes look correct: `make apply ENV=<environment>`
+
+### Add New Railway Service
+
+1. Add service definition in `railway_services.tf`
+2. Add environment variables in `railway_variables.tf`
+3. Update outputs in `outputs.tf` if needed
+4. Apply changes: `make apply ENV=<environment>`
+
+### Update AWS Resources
+
+1. Modify the appropriate AWS resource file
+2. Plan changes to verify: `make plan ENV=<environment>`
+3. Apply changes: `make apply ENV=<environment>`
+
+## Troubleshooting
+
+### Railway Rate Limiting
+
+If you encounter rate limiting errors when creating multiple Railway variables:
+1. Wait 30-60 seconds between applies
+2. Use targeted applies for specific resources
+3. Variables are created in batches automatically
+
+### Import Conflicts
+
+If resources already exist and Terraform tries to recreate them:
+1. Import the existing resource: `terraform import <resource_type>.<name> <id>`
+2. Add lifecycle rules to ignore certain changes if needed
+3. Verify the imported state matches the configuration
+
+### Variable Prompts
+
+If Terraform prompts for variables during plan/apply:
+1. Ensure you're using the Makefile commands which include `-var-file`
+2. Check that all variables have defaults in `variables_common.tf`
+3. Verify your tfvars file exists and contains all required values
+
+## Security Best Practices
+
+1. **Never commit tfvars files** - They contain sensitive credentials
+2. **Use environment-specific credentials** - Don't share tokens between environments
+3. **Rotate secrets regularly** - Update JWT secrets, API keys periodically
+4. **Limit access** - Use IAM policies with least privilege principle
+5. **Enable MFA** - For AWS root account and IAM users
+
+## Additional Commands
+
+### Format Terraform Files
+```bash
+make fmt
+```
+
+### Validate Configuration
+```bash
+make validate
+```
+
+### Show Current State
+```bash
+make show
+```
+
+### Clean Local Files
+```bash
+make clean
+```
+
+### Get Help
+```bash
+make help
+```
+
+## Support
+
+For issues or questions:
+1. Check the troubleshooting section above
+2. Review Terraform plan output carefully before applying
+3. Consult the Railway and AWS documentation
+4. Check the project's main documentation in `/docs`
+
+## Important Notes
+
+- Always review `terraform plan` output before applying changes
+- Production changes should be reviewed by another team member
+- Keep tfvars files secure and out of version control
+- Regular backups of Terraform state are recommended
+- Test infrastructure changes in development first

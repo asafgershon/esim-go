@@ -17,6 +17,10 @@ tfplan
 # Keep example files
 !*.tfvars.example
 
+# Environment-specific tfvars
+environments/*.tfvars
+!environments/*.tfvars.example
+
 # Environment variables
 .env
 .env.local

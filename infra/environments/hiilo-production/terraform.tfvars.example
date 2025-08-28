@@ -1,0 +1,23 @@
+# Apple Sign In Configuration
+# Copy this file to terraform.tfvars and fill in your actual values
+
+# Apple Developer Account Credentials
+# These can be obtained from App Store Connect:
+# 1. Go to Users and Access > Keys
+# 2. Create a new key with appropriate permissions
+# 3. Download the .p8 private key file
+
+apple_issuer_id = "YOUR_ISSUER_ID"  # Found in App Store Connect > Users and Access > Keys
+apple_key_id    = "YOUR_KEY_ID"     # The Key ID from your API key
+
+# The contents of your .p8 private key file
+# Make sure to include the entire content between BEGIN and END lines
+apple_private_key = <<-EOT
+-----BEGIN PRIVATE KEY-----
+YOUR_PRIVATE_KEY_CONTENT_HERE
+-----END PRIVATE KEY-----
+EOT
+
+# App IDs - These should match your bundle identifiers
+apple_app_id_dev  = "com.hiiloworld.app.dev"  # Development bundle ID
+apple_app_id_prod = "com.hiiloworld.app"      # Production bundle ID

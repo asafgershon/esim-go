@@ -36,7 +36,7 @@ locals {
     ios_app = {
       name      = "production-esim-go-ios"
       type      = "iOS"
-      bundle_id = "com.hiilo.esimgo"
+      bundle_id = var.apple_app_id_prod  # Using the new variable
     }
   }
   
@@ -79,7 +79,7 @@ locals {
     ios_app = {
       name      = "dev-esim-go-ios"
       type      = "iOS"
-      bundle_id = "com.hiilo.esimgo.dev"
+      bundle_id = var.apple_app_id_dev  # Using the new variable
     }
   }
 }
