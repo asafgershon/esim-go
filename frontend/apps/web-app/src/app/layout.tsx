@@ -4,6 +4,7 @@ import Script from "next/script";
 import { Providers } from "./providers";
 import AuthMetaTags from "./AuthMetaTags";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { CookieBannerWrapper } from "@/components/cookie-banner/CookieBannerWrapper";
 import "@workspace/ui/theme.css";
 import "@workspace/ui/globals.css";
 import "./globals.css";
@@ -39,6 +40,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>{children}</Providers>
         </ErrorBoundary>
+        <CookieBannerWrapper />
 
         <Script
           src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"
