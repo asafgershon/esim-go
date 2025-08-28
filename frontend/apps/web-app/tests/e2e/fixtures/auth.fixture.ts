@@ -34,7 +34,7 @@ export const test = base.extend<AuthFixtures>({
    */
   authenticatedPage: async ({ page, authHelpers }, use) => {
     // Get test credentials from environment or use defaults
-    const phoneNumber = process.env.TEST_PHONE_NUMBER || '+972501234567';
+    const phoneNumber = process.env.TEST_PHONE_NUMBER || '+972559899925';
     
     // Perform login before test
     await page.goto('/login');
@@ -55,7 +55,7 @@ export const test = base.extend<AuthFixtures>({
    */
   testUser: async ({}, use) => {
     const user: TestUser = {
-      phoneNumber: process.env.TEST_PHONE_NUMBER || '+972501234567',
+      phoneNumber: process.env.TEST_PHONE_NUMBER || '+972559899925',
       email: process.env.TEST_USER_EMAIL || 'test@example.com',
       firstName: 'Test',
       lastName: 'User',

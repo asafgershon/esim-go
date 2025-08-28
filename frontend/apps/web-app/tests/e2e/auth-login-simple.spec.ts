@@ -32,7 +32,7 @@ test.describe('Authentication - Simple Login Test', () => {
     await expect(page.locator('button:has-text("המשך עם Google")')).toBeVisible();
     
     // Fill in phone number
-    await phoneInput.fill('+972501234567');
+    await phoneInput.fill('+972559899925');
     
     // Verify the phone number was entered (it gets formatted automatically)
     await expect(phoneInput).toHaveValue('+972 50-123-4567');
@@ -116,7 +116,7 @@ test.describe('Authentication - Simple Login Test', () => {
     await page.waitForLoadState('networkidle');
     
     // Fill and submit phone number
-    await page.fill('input[type="tel"]', '+972501234567');
+    await page.fill('input[type="tel"]', '+972559899925');
     await page.click('button:has-text("שלח קוד אימות")');
     
     // Wait for potential navigation to OTP step

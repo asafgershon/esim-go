@@ -31,7 +31,7 @@ export const authResolvers: Partial<Resolvers> = {
           if (!phoneValidation.success) {
             return {
               success: false,
-              error: "Phone number must be in E164 format (e.g., +972501234567)",
+              error: "Phone number must be in E164 format (e.g., +972559899925)",
               user: null,
               sessionToken: null,
               refreshToken: null,

@@ -156,7 +156,7 @@ export class UserRepository extends BaseSupabaseRepository<
         // Validate phone number is in E164 format
         const phoneValidation = z.string().e164().safeParse(updates.phoneNumber);
         if (!phoneValidation.success) {
-          throw new GraphQLError("Phone number must be in E164 format (e.g., +972501234567)", {
+          throw new GraphQLError("Phone number must be in E164 format (e.g., +972559899925)", {
             extensions: { code: "INVALID_PHONE_FORMAT" },
           });
         }

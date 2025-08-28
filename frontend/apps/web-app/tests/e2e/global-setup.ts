@@ -47,7 +47,7 @@ async function globalSetup(config: FullConfig) {
       await page.waitForSelector('input[type="tel"]', { timeout: 10000 });
       
       // Fill in test credentials
-      const phoneNumber = process.env.TEST_PHONE_NUMBER || '+972501234567';
+      const phoneNumber = process.env.TEST_PHONE_NUMBER || '+972559899925';
       await page.fill('input[type="tel"]', phoneNumber);
       await page.click('button:has-text("שלח קוד אימות")');
       
