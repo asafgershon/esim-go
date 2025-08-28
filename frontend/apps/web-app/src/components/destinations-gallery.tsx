@@ -306,7 +306,7 @@ function DestinationCard({
         {/* Content Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
           <h4 className="text-2xl font-bold mb-2 font-birzia">
-            {destination.name}
+            {destination.nameHebrew}
           </h4>
 
           {/* Price Badge - Shows skeleton or actual price */}

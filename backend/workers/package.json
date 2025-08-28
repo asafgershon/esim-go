@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@hiilo/esim-go": "workspace:*",
+    "@hiilo/supabase": "workspace:*",
     "@hiilo/utils": "workspace:*",
     "@supabase/supabase-js": "^2.50.5",
     "bullmq": "^5.0.0",

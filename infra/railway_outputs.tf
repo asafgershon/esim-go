@@ -17,11 +17,11 @@ output "railway_environment_id" {
   value       = local.production_environment_id
 }
 
-# Service IDs (from manually created services)
+# Service IDs (from manually created services + apollo-server from Terraform)
 output "railway_service_ids" {
-  description = "Railway service IDs (manually created services)"
+  description = "Railway service IDs"
   value = {
-    apollo_server     = local.apollo_server_id
+    apollo_server     = railway_service.apollo_server.id
     redis            = local.redis_id
     next_web_app     = local.next_web_app_id
     management_portal = local.management_portal_id
@@ -63,7 +63,8 @@ output "railway_custom_domains" {
 output "railway_variables_count" {
   description = "Number of environment variables configured per service"
   value = {
-    apollo_server     = length(railway_variable.apollo_server)
+    apollo_server_prod = length(railway_variable.apollo_server_prod)
+    apollo_server_dev  = length(railway_variable.apollo_server_dev)
     redis            = length(railway_variable.redis)
     next_web_app     = length(railway_variable.next_web_app)
     management_portal = length(railway_variable.management_portal)

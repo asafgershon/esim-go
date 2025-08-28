@@ -58,5 +58,6 @@ resource "railway_project" "hiilo" {
 # Note: The railway provider doesn't have a data source for environments
 # We'll use the default environment from the project resource
 locals {
-  production_environment_id = "5bfb2c21-601c-47e7-8828-a1c1a1781e74" # From railway variables output
+  production_environment_id = "5bfb2c21-601c-47e7-8828-a1c1a1781e74"
+  development_environment_id = "86b1c6a6-509d-4097-8d51-f0ebd298143e"
 }
