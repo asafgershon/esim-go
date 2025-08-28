@@ -42,6 +42,9 @@ locals {
     AWS_REGION             = "il-central-1"
     AWS_SMS_TYPE           = "Transactional"
     AWS_SNS_SENDER_ID      = "ESIM"
+    
+    # CDN URL
+    CDN_URL                = var.environment == "production" ? "https://${aws_cloudfront_distribution.hiilo_cdn_prod.domain_name}" : "https://${aws_cloudfront_distribution.hiilo_cdn_dev.domain_name}"
   }
 }
 

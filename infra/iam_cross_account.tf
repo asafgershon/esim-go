@@ -35,3 +35,8 @@ resource "aws_iam_user_policy_attachment" "hiilo_admin_assume_role" {
   user       = aws_iam_user.hiilo_admin.name
   policy_arn = aws_iam_policy.assume_hiilo_role.arn
 }
+
+# Create access keys for hiilo_admin user
+resource "aws_iam_access_key" "hiilo_admin" {
+  user = aws_iam_user.hiilo_admin.name
+}

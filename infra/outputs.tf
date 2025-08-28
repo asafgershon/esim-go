@@ -18,6 +18,18 @@ output "hiilo_admin_user_arn" {
   value       = aws_iam_user.hiilo_admin.arn
 }
 
+output "hiilo_admin_access_key_id" {
+  description = "Access key ID for hiilo-admin user"
+  value       = aws_iam_access_key.hiilo_admin.id
+  sensitive   = true
+}
+
+output "hiilo_admin_secret_access_key" {
+  description = "Secret access key for hiilo-admin user"
+  value       = aws_iam_access_key.hiilo_admin.secret
+  sensitive   = true
+}
+
 output "terraform_state_bucket" {
   description = "The S3 bucket for Terraform state"
   value       = aws_s3_bucket.terraform_state.id

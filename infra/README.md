@@ -142,6 +142,17 @@ The Railway token is automatically extracted from the CLI configuration:
 
 This token is stored in `~/.railway/config.json` after running `railway login`.
 
+### GitHub Personal Access Token
+
+You need a GitHub Personal Access Token with the following scopes:
+- `repo` - Full repository access
+- `admin:repo_hook` - Repository webhooks and services
+
+To create one:
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Generate new token with the required scopes
+3. Add it to your environment tfvars files
+
 ## Resource Organization
 
 ### File Structure

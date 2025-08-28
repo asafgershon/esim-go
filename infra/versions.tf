@@ -11,6 +11,11 @@ terraform {
       source  = "terraform-community-providers/railway"
       version = "~> 0.2.0"
     }
+    
+    github = {
+      source  = "integrations/github"
+      version = "~> 5.0"
+    }
   }
   
   # Uncomment when ready to use remote backend
