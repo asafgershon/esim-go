@@ -35,6 +35,7 @@ interface EmailTemplateData extends ESIMDeliveryData {
   supportUrl?: string;
   termsUrl?: string;
   privacyUrl?: string;
+  aboutUrl?: string;
 }
 
 // Initialize email templates instance
@@ -68,6 +69,9 @@ export async function generateESIMEmailTemplate(data: EmailTemplateData): Promis
     }) : null);
 
   // Prepare template data with enhanced variables
+  // Use CDN URL from environment or fallback to production
+  const cdnUrl = process.env.CDN_URL || 'https://d2xwkodhgzm144.cloudfront.net';
+  
   const templateData = {
     ...data,
     name: data.customerName ? `שלום, ${data.customerName} 👋` : 'שלום 👋',
@@ -83,10 +87,11 @@ export async function generateESIMEmailTemplate(data: EmailTemplateData): Promis
     total: data.total || 'Contact support for pricing',
     // Additional URLs (can be configured via environment or passed in)
     invoiceUrl: data.invoiceUrl,
-    websiteUrl: data.websiteUrl || 'https://hiilo.com',
-    supportUrl: data.supportUrl || 'https://hiilo.com/support',
-    termsUrl: data.termsUrl || 'https://hiilo.com/terms',
-    privacyUrl: data.privacyUrl || 'https://hiilo.com/privacy'
+    websiteUrl: data.websiteUrl || 'https://hiiloworld.com',
+    supportUrl: data.supportUrl || 'https://hiiloworld.com/support',
+    termsUrl: data.termsUrl || `${cdnUrl}/files/terms.pdf`,
+    privacyUrl: data.privacyUrl || `${cdnUrl}/files/privacy.pdf`,
+    aboutUrl: data.aboutUrl || `${cdnUrl}/files/about.pdf`
   };
 
   try {

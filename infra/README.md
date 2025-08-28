@@ -137,7 +137,7 @@ environments/
 The Railway token is automatically extracted from the CLI configuration:
 
 ```bash
-./get_railway_token.sh
+./scripts/railway/get_railway_token.sh
 ```
 
 This token is stored in `~/.railway/config.json` after running `railway login`.
@@ -174,9 +174,17 @@ infra/
 │   ├── development.tfvars     # Development environment
 │   └── production.tfvars      # Production environment
 └── scripts/
-    ├── get_railway_token.sh   # Extract Railway token
-    ├── import_railway.sh      # Import Railway resources
-    └── import_ses.sh          # Import SES resources
+    ├── oauth/                  # OAuth and authentication scripts
+    │   ├── import-supabase.sh
+    │   ├── import_google_oauth.sh
+    │   ├── manage-oauth-clients.sh
+    │   └── oauth-setup.sh
+    ├── railway/                # Railway deployment scripts
+    │   ├── get_railway_token.sh
+    │   ├── import_railway.sh
+    │   └── update-railway-vars.sh
+    └── aws/                    # AWS infrastructure scripts
+        └── migrate-hiilo-resources.sh
 ```
 
 ### Managed Services

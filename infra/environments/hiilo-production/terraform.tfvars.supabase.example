@@ -1,0 +1,31 @@
+# Supabase Authentication Configuration
+# Copy this to terraform.tfvars and fill in your actual values
+
+# Get your Supabase access token from:
+# https://supabase.com/dashboard/account/tokens
+supabase_access_token = "your-supabase-access-token"
+
+# Google OAuth Configuration
+# Get these from Google Cloud Console:
+# https://console.cloud.google.com/apis/credentials?project=hiilo-470409
+google_oauth_client_id     = "your-google-client-id.apps.googleusercontent.com"
+google_oauth_client_secret = "your-google-client-secret"
+
+# Apple Sign In Configuration
+# Service ID: com.hiiloworld.signin (already created via Terraform)
+# Generate client secret JWT from Apple Developer Portal
+apple_signin_service_id     = "com.hiiloworld.signin"
+apple_signin_client_secret  = "your-apple-signin-jwt-secret"
+
+# Twilio SMS Authentication
+# Get these from Twilio Console: https://console.twilio.com
+twilio_account_sid         = "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+twilio_auth_token         = "your-twilio-auth-token"
+twilio_message_service_sid = "MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Apple Sign In configuration (for Apple OAuth bundle identifiers)
+apple_issuer_id    = "your-apple-issuer-id"
+apple_key_id       = "your-apple-key-id"
+apple_private_key  = "-----BEGIN PRIVATE KEY-----\nyour-apple-private-key\n-----END PRIVATE KEY-----"
+apple_app_id_dev   = "com.hiiloworld.app.dev"
+apple_app_id_prod  = "com.hiiloworld.app"

@@ -5,6 +5,7 @@ import { useLoginForm } from "@/hooks/useLoginForm";
 import { ErrorType } from "@/lib/error-types";
 import { cn } from "@/lib/utils";
 import { formatPhoneForDisplay } from "@/lib/validation/auth-schemas";
+import { CDN_LINKS } from "@/lib/constants/cdn";
 import {
   Button,
   Input,
@@ -295,7 +296,7 @@ export function LoginForm({
       <div className="text-muted-foreground text-center text-xs text-balance">
         על ידי המשך, אתה מסכים ל
         <a
-          href="/docs/terms.pdf"
+          href={CDN_LINKS.terms}
           target="_blank"
           rel="noopener noreferrer"
           className="underline underline-offset-4 hover:text-primary mx-1"
@@ -304,7 +305,7 @@ export function LoginForm({
         </a>
         ו
         <a
-          href="/docs/privacy.pdf"
+          href={CDN_LINKS.privacy}
           target="_blank"
           rel="noopener noreferrer"
           className="underline underline-offset-4 hover:text-primary mx-1"

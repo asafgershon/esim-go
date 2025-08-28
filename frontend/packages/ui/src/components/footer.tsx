@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { cn } from "../lib/utils";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { CDN_LINKS } from "../constants/cdn";
 
 interface FooterLink {
   href: string;
@@ -19,13 +20,12 @@ interface FooterProps {
 }
 
 const defaultLinks: FooterLink[] = [
-  { href: "/other", label: "תקנון אתר" },
-  { href: "/docs/privacy.pdf", target: "_blank", label: "הצהרת פרטיות" },
+  { href: CDN_LINKS.terms, target: "_blank", label: "תנאי שימוש" },
+  { href: CDN_LINKS.privacy, target: "_blank", label: "מדיניות פרטיות" },
+  { href: CDN_LINKS.about, target: "_blank", label: "אודות" },
   { href: "#reviews", label: "ביקורות" },
-  { href: "#about", label: "עלינו" },
   { href: "#what-is-esim", label: "מה זה eSim?" },
   { href: "#faq", label: "שאלות ותשובות" },
-  { href: "/docs/about-hiilo.pdf", target: "_blank", label: "HIILO החברה" },
   { href: "https://wa.me/972XXXXXXXXX", target: "_blank", label: "צרו קשר" },
 ];
 

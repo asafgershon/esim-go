@@ -5,10 +5,11 @@
 2. [Current Infrastructure Status](#current-infrastructure-status)
 3. [Google OAuth Setup](#google-oauth-setup)
 4. [Apple Sign In Setup](#apple-sign-in-setup)
-5. [Service Accounts](#service-accounts)
-6. [Environment Variables](#environment-variables)
-7. [Terraform Management](#terraform-management)
-8. [Troubleshooting](#troubleshooting)
+5. [Supabase Authentication](#supabase-authentication)
+6. [Service Accounts](#service-accounts)
+7. [Environment Variables](#environment-variables)
+8. [Terraform Management](#terraform-management)
+9. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -189,6 +190,198 @@ For web implementations, you'll need to generate a client secret JWT. Use the Se
 
 ---
 
+## Supabase Authentication
+
+### Overview
+
+Supabase provides the main authentication layer for the eSIM Go platform, integrating with Google OAuth, Apple Sign In, Email/Password, and Phone/SMS authentication.
+
+### Project Details
+
+- **Project ID**: `dgkyjkzkwzmjjurzvcxy`
+- **Organization ID**: `qrkwrmtgxmotpppdynzl`
+- **Region**: `eu-central-1`
+- **Project URL**: `https://dgkyjkzkwzmjjurzvcxy.supabase.co`
+- **Auth Endpoint**: `https://dgkyjkzkwzmjjurzvcxy.supabase.co/auth/v1`
+
+### Terraform Configuration
+
+The Supabase authentication is managed through Terraform with the official Supabase provider.
+
+#### Configuration File: `supabase.tf`
+
+This file manages:
+- API settings (database schemas, search paths)
+- Authentication providers configuration
+- JWT settings
+- Password requirements
+- Redirect URLs
+- SMS/Phone authentication via Twilio
+
+### Setting Up Supabase with Terraform
+
+#### Step 1: Get Supabase Access Token
+
+1. Go to: https://supabase.com/dashboard/account/tokens
+2. Create a new access token with full permissions
+3. Export it: `export TF_VAR_supabase_access_token="your-token"`
+
+#### Step 2: Import Existing Configuration
+
+```bash
+# Import existing project settings
+terraform import supabase_settings.esim_go dgkyjkzkwzmjjurzvcxy
+
+# Or use the import script
+../../scripts/oauth/import-supabase.sh
+```
+
+#### Step 3: Configure Providers
+
+Create or update `terraform.tfvars`:
+
+```hcl
+# Supabase Management
+supabase_access_token = "your-supabase-access-token"
+
+# Enable authentication providers
+enable_google_auth = true
+enable_apple_auth = true
+enable_phone_auth = true
+
+# Google OAuth (use same credentials from Google OAuth setup)
+google_oauth_client_id = "your-client-id.apps.googleusercontent.com"
+google_oauth_client_secret = "your-client-secret"
+
+# Apple Sign In (use same Service ID from Apple setup)
+apple_signin_service_id = "com.hiiloworld.signin"
+apple_signin_client_secret = "your-jwt-secret"
+
+# Twilio for SMS/Phone Auth
+twilio_account_sid = "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+twilio_auth_token = "your-twilio-auth-token"
+twilio_message_service_sid = "MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+### Authentication Methods
+
+#### 1. Email/Password
+- **Status**: Always enabled
+- **Settings**: 
+  - Signup enabled
+  - Minimum password length: 8 characters
+  - Rate limiting: 10 emails per hour
+
+#### 2. Google OAuth
+- **Status**: Optional (controlled by `enable_google_auth`)
+- **Configuration**: Uses OAuth clients created in Google Cloud Console
+- **Redirect**: `https://dgkyjkzkwzmjjurzvcxy.supabase.co/auth/v1/callback`
+
+#### 3. Apple Sign In
+- **Status**: Optional (controlled by `enable_apple_auth`)
+- **Configuration**: Uses Service IDs from Apple Developer Portal
+- **Redirect**: `https://dgkyjkzkwzmjjurzvcxy.supabase.co/auth/v1/callback`
+
+#### 4. Phone/SMS (via Twilio)
+- **Status**: Optional (controlled by `enable_phone_auth`)
+- **Provider**: Twilio
+- **Settings**:
+  - OTP length: 6 digits
+  - OTP expiry: 60 seconds
+  - Rate limiting: Max 1 SMS per minute, 10 per hour
+  - Template: "Your Hiilo verification code is: {{ .Code }}"
+
+### Configured Redirect URLs
+
+The following redirect URLs are allowed for OAuth flows:
+
+#### Development
+- `http://localhost:3000/**`
+- `http://localhost:3001/**`
+
+#### Production Web
+- `https://esim-go.com/**`
+- `https://app.esim-go.com/**`
+- `https://hiiloworld.com/**`
+- `https://app.hiiloworld.com/**`
+
+#### Mobile Apps
+- `com.hiiloworld.app://auth/callback`
+- `com.hiiloworld.app.dev://auth/callback`
+
+### Supabase Dashboard Access
+
+- **Dashboard**: https://supabase.com/dashboard/project/dgkyjkzkwzmjjurzvcxy
+- **Auth Settings**: https://supabase.com/dashboard/project/dgkyjkzkwzmjjurzvcxy/auth/providers
+
+### Integration with Frontend
+
+#### Environment Variables for Frontend
+
+```env
+# Supabase Connection
+NEXT_PUBLIC_SUPABASE_URL=https://dgkyjkzkwzmjjurzvcxy.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+
+# Service Role (Backend only - never expose publicly)
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+```
+
+#### Client-Side Integration Example
+
+```typescript
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+// Sign in with Google
+const { data, error } = await supabase.auth.signInWithOAuth({
+  provider: 'google',
+  options: {
+    redirectTo: `${window.location.origin}/auth/callback`
+  }
+})
+
+// Sign in with Apple
+const { data, error } = await supabase.auth.signInWithOAuth({
+  provider: 'apple',
+  options: {
+    redirectTo: `${window.location.origin}/auth/callback`
+  }
+})
+
+// Sign in with Phone
+const { data, error } = await supabase.auth.signInWithOtp({
+  phone: '+1234567890'
+})
+```
+
+### Managing Authentication State
+
+```bash
+# View current settings
+terraform state show supabase_settings.esim_go
+
+# Plan changes
+terraform plan
+
+# Apply changes
+terraform apply
+```
+
+### Security Considerations
+
+1. **Access Token Security**: Never commit the Supabase access token to version control
+2. **Service Role Key**: Only use in secure backend environments, never expose to frontend
+3. **Rate Limiting**: Configured to prevent abuse (10 emails/SMS per hour)
+4. **JWT Expiry**: Set to 1 hour (3600 seconds) for security
+5. **Redirect URLs**: Strictly limited to known domains
+
+---
+
 ## Service Accounts
 
 Service accounts are used for server-to-server authentication and have been created via Terraform.
@@ -227,6 +420,20 @@ Service accounts can be used for:
 ---
 
 ## Environment Variables
+
+### Supabase Variables
+
+```env
+# Supabase Core (Frontend & Backend)
+NEXT_PUBLIC_SUPABASE_URL=https://dgkyjkzkwzmjjurzvcxy.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<from-supabase-dashboard>
+
+# Supabase Service Role (Backend Only - NEVER expose publicly)
+SUPABASE_SERVICE_ROLE_KEY=<from-supabase-dashboard>
+
+# Supabase Management (Terraform Only)
+TF_VAR_supabase_access_token=<from-supabase-account-tokens>
+```
 
 ### Google OAuth Variables
 
@@ -267,6 +474,15 @@ APPLE_BUNDLE_ID_PROD=com.hiiloworld.app
 APPLE_BUNDLE_ID_DEV=com.hiiloworld.app.dev
 ```
 
+### Twilio Variables (for SMS/Phone Auth)
+
+```env
+# Twilio Configuration
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=<from-twilio-console>
+TWILIO_MESSAGE_SERVICE_SID=MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
 ### Deployment Locations
 
 Add these environment variables to:
@@ -283,13 +499,27 @@ Add these environment variables to:
 
 ```
 hiilo-production/
-├── main.tf                      # Main AWS and Google provider config
-├── variables.tf                 # Project variables
-├── apple-oauth.tf              # Apple Sign In configuration
-├── service-account-oauth.tf   # Google service accounts
-├── oauth-clients-config.tf    # OAuth client documentation
-├── google-apis.tf              # Google API enablement
-└── *.sh                        # Helper scripts
+├── main.tf                          # Main AWS, Google, and Supabase provider config
+├── variables.tf                     # Project variables
+├── supabase.tf                      # Supabase authentication configuration
+├── apple-oauth.tf                   # Apple Sign In configuration
+├── service-account-oauth.tf         # Google service accounts
+├── oauth-clients-config.tf          # OAuth client documentation
+├── google-apis.tf                   # Google API enablement
+└── terraform.tfvars.supabase.example # Example Supabase variables
+
+infra/scripts/
+├── oauth/                           # OAuth and authentication scripts
+│   ├── import-supabase.sh
+│   ├── import_google_oauth.sh
+│   ├── manage-oauth-clients.sh
+│   └── oauth-setup.sh
+├── railway/                         # Railway deployment scripts
+│   ├── get_railway_token.sh
+│   ├── import_railway.sh
+│   └── update-railway-vars.sh
+└── aws/                            # AWS infrastructure scripts
+    └── migrate-hiilo-resources.sh
 ```
 
 ### Common Terraform Commands
@@ -379,10 +609,13 @@ gcloud alpha projects move esim-go-465108 \
 - **Google Cloud Console**: https://console.cloud.google.com/apis/credentials?project=esim-go-465108
 - **Apple Developer**: https://developer.apple.com/account/resources/identifiers/list
 - **OAuth Consent**: https://console.cloud.google.com/apis/credentials/consent?project=esim-go-465108
+- **Supabase Dashboard**: https://supabase.com/dashboard/project/dgkyjkzkwzmjjurzvcxy
+- **Supabase Auth Settings**: https://supabase.com/dashboard/project/dgkyjkzkwzmjjurzvcxy/auth/providers
 
 ### Project Details
-- **GCP Project**: `esim-go-465108`
+- **GCP Project**: `esim-go-465108` (currently `hiilo-470409` in organization)
 - **Organization**: `hiiloworld.com` (751064751797)
+- **Supabase Project**: `dgkyjkzkwzmjjurzvcxy`
 - **Support Email**: support@esim-go.com
 - **Domains**: esim-go.com, hiiloworld.com
 
@@ -408,6 +641,6 @@ terraform output -json service_accounts
 
 ---
 
-*Last Updated: August 28, 2024*
-*Terraform Managed Resources: Service Accounts, Apple Bundle IDs, AWS Infrastructure*
-*Manual Setup Required: Google OAuth Clients, Apple Service ID Configuration*
+*Last Updated: January 2025*
+*Terraform Managed Resources: Supabase Authentication, Service Accounts, Apple Bundle IDs, AWS Infrastructure*
+*Manual Setup Required: Google OAuth Clients, Apple Service ID Configuration, Supabase Provider Credentials*

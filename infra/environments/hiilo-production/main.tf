@@ -14,6 +14,10 @@ terraform {
       source  = "fintreal/appstore"
       version = "~> 1.1.5"
     }
+    supabase = {
+      source  = "supabase/supabase"
+      version = "~> 1.0"
+    }
   }
 }
 

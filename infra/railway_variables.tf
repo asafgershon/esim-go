@@ -2,6 +2,13 @@
 # SECURITY NOTE: Store sensitive values in terraform.tfvars or use environment variables
 
 locals {
+  # Service IDs from existing manually created services
+  apollo_server_id = "4afbf8ed-9842-4b63-afe9-239a1f0ed91c"
+  next_web_app_id = "828d900a-6ec3-4353-a6fa-0a6426e44b9d" 
+  management_portal_id = "17fc26ce-0b65-436f-8ae8-8b6b0e941e8e"
+  workers_id = "7a2e0d52-1572-4a59-a443-281f654770d4"
+  redis_id = "827f0f60-b06f-44a4-80a7-f815b464e8ac"
+  
   # Common environment variables used across services
   common_env_vars = {
     NODE_ENV                = var.node_env
@@ -55,7 +62,7 @@ resource "railway_variable" "apollo_server" {
   name           = each.key
   value          = each.value
   environment_id = local.production_environment_id
-  service_id     = railway_service.apollo_server.id
+  service_id     = local.apollo_server_id
 }
 
 # Redis Environment Variables
@@ -67,7 +74,7 @@ resource "railway_variable" "redis" {
   name           = each.key
   value          = each.value
   environment_id = local.production_environment_id
-  service_id     = railway_service.redis.id
+  service_id     = local.redis_id
 }
 
 # Next.js Web App Environment Variables
@@ -82,7 +89,7 @@ resource "railway_variable" "next_web_app" {
   name           = each.key
   value          = each.value
   environment_id = local.production_environment_id
-  service_id     = railway_service.next_web_app.id
+  service_id     = local.next_web_app_id
 }
 
 # Management Portal Environment Variables
@@ -97,7 +104,7 @@ resource "railway_variable" "management_portal" {
   name           = each.key
   value          = each.value
   environment_id = local.production_environment_id
-  service_id     = railway_service.management_portal.id
+  service_id     = local.management_portal_id
 }
 
 # Note: Variable definitions are in variables_common.tf to avoid duplication

@@ -14,6 +14,23 @@ variable "railway_token" {
   default     = ""
 }
 
+# IMPORTANT: Railway Terraform Provider Limitations
+# The terraform-community/railway provider (v0.2.0) has significant limitations:
+# 1. Cannot connect GitHub repositories to services
+# 2. Cannot configure build settings (root directory, build commands, etc.)
+# 3. Cannot trigger deployments
+# 4. Cannot manage deployment environments properly
+#
+# Therefore, we only manage the project and environment variables through Terraform.
+# Services must be created and connected manually through the Railway dashboard.
+#
+# Existing services (created manually with deployments):
+# - apollo-server (ID: 4afbf8ed-9842-4b63-afe9-239a1f0ed91c)
+# - next-web-app (ID: 828d900a-6ec3-4353-a6fa-0a6426e44b9d)
+# - managment-portal (ID: 17fc26ce-0b65-436f-8ae8-8b6b0e941e8e)
+# - workers (ID: 7a2e0d52-1572-4a59-a443-281f654770d4)
+# - Redis (ID: 827f0f60-b06f-44a4-80a7-f815b464e8ac)
+
 # Import existing Railway project
 # terraform import railway_project.hiilo cedece0b-a6c2-4ffe-8d19-460090acf032
 resource "railway_project" "hiilo" {

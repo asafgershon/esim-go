@@ -17,14 +17,15 @@ output "railway_environment_id" {
   value       = local.production_environment_id
 }
 
-# Service IDs
+# Service IDs (from manually created services)
 output "railway_service_ids" {
-  description = "Railway service IDs"
+  description = "Railway service IDs (manually created services)"
   value = {
-    apollo_server     = railway_service.apollo_server.id
-    redis            = railway_service.redis.id
-    next_web_app     = railway_service.next_web_app.id
-    management_portal = railway_service.management_portal.id
+    apollo_server     = local.apollo_server_id
+    redis            = local.redis_id
+    next_web_app     = local.next_web_app_id
+    management_portal = local.management_portal_id
+    workers          = local.workers_id
   }
 }
 

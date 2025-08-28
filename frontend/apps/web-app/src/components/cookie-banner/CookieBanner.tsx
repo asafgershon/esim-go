@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@workspace/ui/components/button";
 import { X } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
+import { CDN_LINKS } from "@/lib/constants/cdn";
 
 export interface CookiePreferences {
   necessary: boolean;
@@ -59,13 +60,15 @@ export function CookieBanner({
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex-1 ml-8 md:ml-12">
             <p className="text-dark-brand text-sm leading-relaxed">
-            כדי לייעל, האתר עושה שימוש ב-"Cookies" ("עוגיות") ו/או בטכנולוגיות דומות ליצירת מידע אודותיך וכן למטרות אנליטיות, כמו גם למטרה מהותית להבנת הצרכים שלך ופרסונליזציה, למטרות שיווק וניתוח התנהגותך באתר, למידע נוסף ניתן ללחוץ כאן,{' '} 
-              <button
-                onClick={onManageSettings}
+            כדי לייעל, האתר עושה שימוש ב-"Cookies" ("עוגיות") ו/או בטכנולוגיות דומות ליצירת מידע אודותיך וכן למטרות אנליטיות, כמו גם למטרה מהותית להבנת הצרכים שלך ופרסונליזציה, למטרות שיווק וניתוח התנהגותך באתר, למידע נוסף ניתן ללחוץ{' '} 
+              <a
+                href={CDN_LINKS.privacy}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-purple-brand hover:text-purple-brand/80 underline transition-colors"
               >
                 במדיניות הפרטיות
-              </button>
+              </a>
               .
             </p>
           </div>
