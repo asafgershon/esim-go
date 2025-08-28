@@ -555,11 +555,20 @@ const captruePayment = async ({ transactionId }: { transactionId: string }) => {
   const quickStatus = response?.transaction.quickStatus;
   const paymentIntentId = response?.transaction.paymentIntentID;
   if (!paymentIntentId) {
+    logger.error("Payment intent ID missing from transaction", { 
+      transactionId,
+      transaction: response?.transaction 
+    });
     throw new CheckoutStepError(
       "captruePayment",
       "Payment intent ID not found"
     );
   }
+  
+  logger.debug("Looking for session with payment intent", { 
+    paymentIntentId, 
+    transactionId 
+  });
   const isSuccess = isSuccessStatus(quickStatus);
   if (!isSuccess) {
     throw new CheckoutStepError(
