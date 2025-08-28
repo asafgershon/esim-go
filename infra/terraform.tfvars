@@ -1,0 +1,5 @@
+aws_region          = "us-east-1"
+environment         = "management"
+organization_name   = "YarinSasson"
+hiilo_account_email = "hiilo@yarinsasson.com"
+hiilo_account_name  = "Hiilo Production"
