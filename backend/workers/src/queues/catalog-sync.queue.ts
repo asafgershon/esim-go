@@ -43,6 +43,7 @@ const connection = new Redis({
   port: config.redis.port,
   password: config.redis.password,
   maxRetriesPerRequest: config.redis.maxRetriesPerRequest,
+  family: 0,
 });
 
 // Create the queue
