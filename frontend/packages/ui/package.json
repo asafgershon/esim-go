@@ -130,6 +130,7 @@
     "react": "^19.1.0",
     "react-circle-flags": "^0.0.23",
     "react-day-picker": "^9.8.1",
+    "react-device-detect": "^2.2.3",
     "react-dom": "^19.1.0",
     "react-phone-number-input": "^3.4.12",
     "tailwind-merge": "^2.5.4",

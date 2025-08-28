@@ -6,7 +6,7 @@ import {
   TriggerCheckoutPaymentMutationVariables,
 } from "@/__generated__/graphql";
 import { useMutation } from "@apollo/client";
-import { Button, Card } from "@workspace/ui";
+import { SelectorButton, Card } from "@workspace/ui";
 import { useEffect } from "react";
 
 type PaymentCardProps = {
@@ -69,14 +69,13 @@ export const PaymentCard = ({
 
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl h-fit">
-      <Button
+      <SelectorButton
         disabled={!payment?.intent?.url}
         type="button"
-        className="w-full"
         onClick={() => window.open(payment?.intent?.url, "_blank")}
       >
         {getButtonLabel()}
-      </Button>
+      </SelectorButton>
     </Card>
   );
 };

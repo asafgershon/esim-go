@@ -14,7 +14,7 @@ export function CompatibilitySection({
   ariaLabel: string;
 }) {
   // Use the eSIM detection hook with manual start
-  const { isSupported, loading, start } = useESIMDetection({
+  const { isSupported, loading, start, deviceInfo } = useESIMDetection({
     autoStart: false,
     enableCanvasFingerprint: true,
     enableWebGLDetection: true,
@@ -39,6 +39,7 @@ export function CompatibilitySection({
         variant: "brand-primary" as const,
         emphasized: true,
         className: "",
+        deviceName: null,
       };
     }
 
@@ -49,25 +50,30 @@ export function CompatibilitySection({
         variant: "brand-primary" as const,
         emphasized: false,
         className: "opacity-70 cursor-not-allowed",
+        deviceName: null,
       };
     }
 
+    const deviceName = hasStarted && deviceInfo ? deviceInfo.deviceName : null;
+
     if (isSupported) {
       return {
-        text: "המכשיר תומך",
+        text: deviceName ? `${deviceName} תומך` : "המכשיר תומך",
         icon: <Check className="w-5 h-5" />,
         variant: "brand-success" as const,
         emphasized: true,
         className: "",
+        deviceName,
       };
     }
 
     return {
-      text: "המכשיר לא תומך",
+      text: deviceName ? `${deviceName} לא תומך` : "המכשיר לא תומך",
       icon: <X className="w-5 h-5" />,
       variant: "destructive" as const,
       emphasized: false,
       className: "",
+      deviceName,
     };
   };
 
@@ -110,6 +116,14 @@ export function CompatibilitySection({
               {buttonState.icon}
             </div>
           </Button>
+          {/* Device info */}
+          {buttonState.deviceName && hasStarted && !loading && (
+            <div className="mt-2 text-center">
+              <p className="text-sm text-white/70" dir="rtl">
+                מכשיר זוהה: {buttonState.deviceName}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -144,6 +158,14 @@ export function CompatibilitySection({
               <span>{buttonState.text}</span>
             </div>
           </Button>
+          {/* Device info */}
+          {buttonState.deviceName && hasStarted && !loading && (
+            <div className="mt-2 text-center">
+              <p className="text-sm text-white/70" dir="rtl">
+                מכשיר זוהה: {buttonState.deviceName}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </section>

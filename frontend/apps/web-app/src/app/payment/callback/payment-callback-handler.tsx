@@ -42,7 +42,7 @@ export function PaymentCallbackHandler({
     },
     onCompleted: (data) => {
       if (data?.processPaymentCallback) {
-        router.push(`/orders/${data.processPaymentCallback}`);
+        router.push(`/order/${data.processPaymentCallback}`);
       }
     },
   });

@@ -7,23 +7,23 @@ import {
 } from "@hiilo/esim-go";
 import * as pricingEngine from "@hiilo/rules-engine-2";
 import { createLogger } from "@hiilo/utils";
+import { getCountryData, type TCountryCode } from "countries-list";
 import { z } from "zod";
+import { env } from "../../config/env";
 import type { PubSubInstance } from "../../context/pubsub";
 import { supabaseAdmin } from "../../context/supabase-auth";
 import { WEB_APP_BUNDLE_GROUP } from "../../lib/constants/bundle-groups";
 import type { BundleRepository, OrderRepository, UserRepository } from "../../repositories";
+import type { ESIMRepository } from "../../repositories/esim.repository";
 import { OrderStatus, type Checkout } from "../../types";
+import type { DeliveryService, ESIMDeliveryData } from "../delivery";
+import { createMockESIMData } from "../esim-purchase";
 import type {
   CreatePaymentIntentRequest,
   PaymentServiceInstance,
   TransactionResponse,
 } from "../payment";
 import type { CheckoutSessionServiceV2 } from "./session";
-import type { DeliveryService, ESIMDeliveryData } from "../delivery";
-import { env } from "../../config/env";
-import { mockESIMData } from "../esim-purchase";
-import { getCountryData, type TCountryCode } from "countries-list";
-import { OrderStatusEnum } from "../../repositories/order.repository";
 
 /* ===============================
  * Variables
@@ -38,6 +38,7 @@ let engine: typeof pricingEngine | null = null;
 let deliveryService: DeliveryService | null = null;
 let bundleRepository: BundleRepository | null = null;
 let orderRepository: OrderRepository | null = null;
+let esimRepository: ESIMRepository | null = null;
 
 /* ===============================
  * Helper Functions
@@ -68,6 +69,7 @@ const init = async (context: {
   deliveryService: DeliveryService;
   bundleRepository: BundleRepository;
   orderRepository: OrderRepository;
+  esimRepository: ESIMRepository;
 }) => {
   pubsub = context.pubsub;
   sessionService = context.sessionService;
@@ -78,6 +80,7 @@ const init = async (context: {
   deliveryService = context.deliveryService;
   bundleRepository = context.bundleRepository;
   orderRepository = context.orderRepository;
+  esimRepository = context.esimRepository;
   return checkoutWorkflow;
 };
 
@@ -555,7 +558,7 @@ const captruePayment = async ({ transactionId }: { transactionId: string }) => {
   const quickStatus = response?.transaction.quickStatus;
   const paymentIntentId = response?.transaction.paymentIntentID;
   if (!paymentIntentId) {
-    logger.error("Payment intent ID missing from transaction", { 
+    logger.error("Payment intent ID missing from transaction", new Error("Payment intent ID missing from transaction"),{ 
       transactionId,
       transaction: response?.transaction 
     });
@@ -581,7 +584,7 @@ const captruePayment = async ({ transactionId }: { transactionId: string }) => {
   );
 
   if (!session) {
-    logger.error("Session not found for payment intent", { 
+    logger.error("Session not found for payment intent", new Error("Session not found"),{
       paymentIntentId, 
       transactionId,
       quickStatus 
@@ -619,7 +622,7 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
     orderResponse = {
       order: [
         {
-          esims: [mockESIMData],
+          esims: [createMockESIMData()],
         },
       ],
     } as OrderResponseTransaction;
@@ -646,7 +649,7 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
   const order = await orderRepository.create({
     reference: orderReference || session.id,
     user_id: session.auth.userId!,
-    data_plan_id: session.bundle.externalId,
+    // data_plan_id: session.bundle.externalId,
     total_price: session.bundle.price || 0,
     plan_data: {
       ...session.bundle,
@@ -665,6 +668,24 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
   if (!iccid || !matchingId || !smdpAddress) {
     throw new Error("No eSIM data returned from eSIM Go API");
   }
+
+  // Create eSIM record in database
+  if (!esimRepository) {
+    throw new CheckoutStepError("completeCheckout", "ESIM repository not initialized");
+  }
+
+  const esim = await esimRepository.create({
+    iccid,
+    matching_id: matchingId,
+    smdp_address: smdpAddress,
+    order_id: order.id,
+    user_id: session.auth.userId!,
+    status: 'ASSIGNED',
+    // plan_name: session.bundle.externalId || '',
+    assigned_date: new Date().toISOString(),
+    last_action: 'ASSIGNED',
+    action_date: new Date().toISOString(),
+  });
 
   const lpaString = `LPA:1$${smdpAddress}$${matchingId}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
@@ -720,7 +741,7 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
 
   return {
     order,
-    session
+    session: nextSession
   };
   // TODO: Save the session to the database
 };

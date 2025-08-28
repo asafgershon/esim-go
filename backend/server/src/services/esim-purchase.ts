@@ -14,13 +14,13 @@ const env = cleanEnv(process.env, {
 
 const logger = createLogger({ component: 'esim-purchase' });
 
-export const mockESIMData = {
+export const createMockESIMData = () => ({
   iccid: `MOCK_${Date.now()}_${Math.random().toString(36).substring(7)}`,
   qrCode: 'https://upload.wikimedia.org/wikipedia/commons/3/31/MM_QRcode.png',
   activationCode: `MOCK-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
   smdpAddress: 'mock.esim-go.com',
   matchingId: 'MOCK-MATCHING-ID',
-};
+});
 /**
  * Purchase and deliver eSIM after successful payment
  * Supports both mock mode (for testing) and production mode (real eSIM Go API)

@@ -77,13 +77,13 @@ export default function OrderPage() {
           </div>
         </header>
 
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
+        <main className="flex flex-col gap-8 max-w-7xl mx-auto px-4 py-6">
           <ErrorDisplay
             error={parseGraphQLError(error)}
             onRetry={() => refetch()}
             onGoHome={() => router.push('/profile')}
           />
-        </div>
+        </main>
       </div>
     );
   }
@@ -134,16 +134,15 @@ export default function OrderPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
+      <main className="flex flex-col gap-8 max-w-7xl mx-auto px-4 py-6">
         {/* Success Banner */}
         {showSuccessAnimation && (
-          <Card className="p-6 mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+          <Card className="flex flex-col gap-4 shadow-xl bg-gradient-to-r from-green-50 to-emerald-50 border-green-200" dir="rtl">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <h2 className="text-xl font-semibold">הזמנה הושלמה</h2>
+            </div>
             <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="rounded-full bg-green-100 p-3">
-                  <CheckCircle className="h-8 w-8 text-green-600 animate-pulse" />
-                </div>
-              </div>
               <h2 className="text-xl font-bold text-green-800 mb-2">🎉 ההזמנה הושלמה בהצלחה!</h2>
               <p className="text-green-700">
                 כרטיס ה-eSIM שלך מוכן לשימוש. סרוק את קוד ה-QR להתחיל.
@@ -153,10 +152,14 @@ export default function OrderPage() {
         )}
 
         {/* Order Info */}
-        <Card className="p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
+        <Card className="flex flex-col gap-4 shadow-xl" dir="rtl">
+          <div className="flex items-center gap-3">
+            <Smartphone className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">פרטי הזמנה</h2>
+          </div>
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold">הזמנה #{order.reference}</h2>
+              <h3 className="text-lg font-semibold">הזמנה #{order.reference}</h3>
               <p className="text-sm text-muted-foreground">מזהה: {order.id}</p>
             </div>
             <div className="text-left">
@@ -170,62 +173,71 @@ export default function OrderPage() {
 
         {/* Smart eSIM Activation */}
         {primaryEsim && primaryEsim.installationLinks && (
-          <ActivationMethodSelector
-            installationLinks={primaryEsim.installationLinks}
-            qrCode={primaryEsim.qrCode}
-            iccid={primaryEsim.iccid}
-          />
+          <Card className="flex flex-col gap-4 shadow-xl" dir="rtl">
+            <div className="flex items-center gap-3">
+              <Smartphone className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">הפעלה חכמה</h2>
+            </div>
+            <ActivationMethodSelector
+              installationLinks={primaryEsim.installationLinks}
+              qrCode={primaryEsim.qrCode}
+              iccid={primaryEsim.iccid}
+            />
+          </Card>
         )}
 
         {/* Fallback for old data without installationLinks */}
         {primaryEsim && !primaryEsim.installationLinks && (
-          <Card className="p-6 mb-6">
-            <div className="text-center mb-6">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Smartphone className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-semibold">קוד QR להפעלה</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
+          <Card className="flex flex-col gap-4 shadow-xl" dir="rtl">
+            <div className="flex items-center gap-3">
+              <Smartphone className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">קוד QR להפעלה</h2>
+            </div>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground text-center">
                 סרוק את הקוד להתקנת כרטיס ה-eSIM במכשיר שלך
               </p>
-            </div>
-            
-            <div className="flex justify-center mb-6">
-              <div className="p-4 rounded-lg border shadow-sm">
-                <Image 
-                  src={primaryEsim.qrCode || ''} 
-                  alt="QR Code for eSIM activation"
-                  width={256}
-                  height={256}
-                  className="w-64 h-64"
-                />
-              </div>
-            </div>
-            
-            <div className="text-center space-y-2 text-sm text-muted-foreground">
-              <p>ICCID: {primaryEsim.iccid}</p>
-              <p>סטטוס eSIM: {getStatusText(primaryEsim.status)}</p>
               
-              {/* LPA Link for manual installation */}
-              {primaryEsim.smdpAddress && primaryEsim.matchingId && (
-                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <p className="text-xs font-medium mb-1">להתקנה ידנית או בלחיצה:</p>
-                  <a 
-                    href={`LPA:1$${primaryEsim.smdpAddress}$${primaryEsim.matchingId}`}
-                    className="text-primary hover:underline break-all text-xs"
-                  >
-                    LPA:1${primaryEsim.smdpAddress}${primaryEsim.matchingId}
-                  </a>
+              <div className="flex justify-center">
+                <div className="p-4 rounded-lg border shadow-sm">
+                  <Image 
+                    src={primaryEsim.qrCode || ''} 
+                    alt="QR Code for eSIM activation"
+                    width={256}
+                    height={256}
+                    className="w-64 h-64"
+                  />
                 </div>
-              )}
+              </div>
+              
+              <div className="text-center space-y-2 text-sm text-muted-foreground">
+                <p>ICCID: {primaryEsim.iccid}</p>
+                <p>סטטוס eSIM: {getStatusText(primaryEsim.status)}</p>
+                
+                {/* LPA Link for manual installation */}
+                {primaryEsim.smdpAddress && primaryEsim.matchingId && (
+                  <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-xs font-medium mb-1">להתקנה ידנית או בלחיצה:</p>
+                    <a 
+                      href={`LPA:1$${primaryEsim.smdpAddress}$${primaryEsim.matchingId}`}
+                      className="text-primary hover:underline break-all text-xs"
+                    >
+                      LPA:1${primaryEsim.smdpAddress}${primaryEsim.matchingId}
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
         )}
 
         {/* eSIM Details */}
         {order.esims.length > 1 && (
-          <Card className="p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">כרטיסי eSIM</h3>
+          <Card className="flex flex-col gap-4 shadow-xl" dir="rtl">
+            <div className="flex items-center gap-3">
+              <Smartphone className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">כרטיסי eSIM</h2>
+            </div>
             <div className="space-y-4">
               {order.esims.map((esim, index) => (
                 <div key={esim.id} className="border rounded-lg p-4">
@@ -247,8 +259,11 @@ export default function OrderPage() {
         )}
 
         {/* Actions */}
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">פעולות נוספות</h3>
+        <Card className="flex flex-col gap-4 shadow-xl" dir="rtl">
+          <div className="flex items-center gap-3">
+            <Download className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">פעולות נוספות</h2>
+          </div>
           <div className="space-y-3">
             {primaryEsim && (
               <Button 
@@ -287,7 +302,7 @@ export default function OrderPage() {
             </Button>
           </div>
         </Card>
-      </div>
+      </main>
     </div>
   );
 }

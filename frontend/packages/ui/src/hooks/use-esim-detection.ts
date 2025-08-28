@@ -1,6 +1,39 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import isMobile from 'is-mobile';
+import { 
+  isIOS, 
+  isAndroid, 
+  isMobile as isMobileDevice,
+  isTablet,
+  isDesktop,
+  deviceType,
+  browserName,
+  browserVersion,
+  osName,
+  osVersion,
+  mobileModel,
+  mobileVendor,
+  isSafari,
+  isChrome,
+  isFirefox
+} from 'react-device-detect';
+
+export interface DeviceInfo {
+  deviceName: string;
+  deviceType: string;
+  osName: string;
+  osVersion: string;
+  browserName: string;
+  browserVersion: string;
+  isIOS: boolean;
+  isAndroid: boolean;
+  isMobile: boolean;
+  isTablet: boolean;
+  isDesktop: boolean;
+  iosVersion: number[] | null;
+  supportsDirectESIMActivation: boolean;
+}
 
 export interface ESIMDetectionResult {
   isSupported: boolean;
@@ -9,6 +42,7 @@ export interface ESIMDetectionResult {
   loading: boolean;
   error: Error | null;
   start: () => void;
+  deviceInfo: DeviceInfo | null;
 }
 
 export interface DetectionMethod {
@@ -103,15 +137,90 @@ const cancelIdleCallbackPolyfill = (handle: number) => {
   return clearTimeout(handle);
 };
 
-// New detection method using is-mobile library
+// iOS version detection function
+const getIOSVersion = (): number[] | null => {
+  if (typeof navigator === 'undefined') {
+    return null;
+  }
+  
+  if (/iP(hone|od|ad)/.test(navigator.platform)) {
+    // Supports iOS 2.0 and later
+    const v = (navigator.appVersion).match(/OS (\d+)_(\d+)_?(\d+)?/);
+    if (v && v.length >= 3) {
+      return [
+        parseInt(v[1] || '0', 10), 
+        parseInt(v[2] || '0', 10), 
+        parseInt(v[3] || '0', 10)
+      ];
+    }
+  }
+  return null; // Not an iOS device or version not found
+};
+
+// Check if iOS version supports direct eSIM activation (iOS 17.4+)
+const supportsDirectESIMActivation = (iosVersion: number[] | null): boolean => {
+  if (!iosVersion || iosVersion.length < 2) return false;
+  
+  const [major, minor] = iosVersion;
+  return major > 17 || (major === 17 && minor >= 4);
+};
+
+// Create device info using react-device-detect
+const createDeviceInfo = (): DeviceInfo => {
+  // Create a friendly device name
+  let deviceName = 'Device';
+  
+  if (mobileModel && mobileVendor) {
+    deviceName = `${mobileVendor} ${mobileModel}`;
+  } else if (mobileVendor) {
+    deviceName = mobileVendor;
+  } else if (isIOS) {
+    if (isTablet) {
+      deviceName = 'iPad';
+    } else {
+      deviceName = 'iPhone';
+    }
+  } else if (isAndroid) {
+    if (isTablet) {
+      deviceName = 'Android Tablet';
+    } else {
+      deviceName = 'Android Device';
+    }
+  } else if (isTablet) {
+    deviceName = 'Tablet';
+  } else if (isMobileDevice) {
+    deviceName = 'Mobile Device';
+  } else if (isDesktop) {
+    deviceName = 'Desktop';
+  }
+
+  // Get iOS version information
+  const iosVersion = isIOS ? getIOSVersion() : null;
+  const directESIMSupport = supportsDirectESIMActivation(iosVersion);
+
+  return {
+    deviceName,
+    deviceType,
+    osName,
+    osVersion,
+    browserName,
+    browserVersion,
+    isIOS,
+    isAndroid,
+    isMobile: isMobileDevice,
+    isTablet,
+    isDesktop,
+    iosVersion,
+    supportsDirectESIMActivation: directESIMSupport,
+  };
+};
+
+// New detection method using react-device-detect
 const detectMobileDeviceType = (): DetectionMethod => {
   if (typeof navigator === 'undefined') {
     return { name: 'mobileDeviceType', result: false, confidence: 0 };
   }
 
-  const isMobileDevice = isMobile();
-  const isTablet = isMobile({ tablet: true });
-  
   // Higher confidence for tablets as they're more likely to have eSIM
   if (isTablet) {
     return {
@@ -253,9 +362,6 @@ const detectPlatformBehavior = (): DetectionMethod => {
     return { name: 'platformBehavior', result: false, confidence: 0 };
   }
 
-  // Use is-mobile for basic mobile detection
-  const isMobileDevice = isMobile();
-  
   if (!isMobileDevice) {
     return {
       name: 'platformBehavior',
@@ -264,39 +370,45 @@ const detectPlatformBehavior = (): DetectionMethod => {
     };
   }
 
-  // Mobile device detected, now check for eSIM capabilities
-  const userAgent = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(userAgent);
-  
+  // iOS device detection using accurate version parsing
   if (isIOS) {
-    // Check iOS version for web eSIM activation support
-    const iosVersion = userAgent.match(/OS (\d+)_(\d+)/);
-    const supportsWebESIM = iosVersion && 
-      parseFloat(`${iosVersion[1]}.${iosVersion[2]}`) >= 17.5;
+    const iosVersion = getIOSVersion();
+    const supportsWebESIM = iosVersion && iosVersion.length >= 2 && 
+      (iosVersion[0] > 17 || (iosVersion[0] === 17 && iosVersion[1] >= 5));
     
     return {
       name: 'platformBehavior',
       result: !!supportsWebESIM,
-      confidence: supportsWebESIM ? 0.9 : 0.3 // Higher confidence with is-mobile
+      confidence: supportsWebESIM ? 0.9 : 0.3
     };
   }
 
-  // Check for known Android eSIM-capable devices
-  const androidESIMPatterns = [
-    /Pixel [2-9]/i,
-    /Pixel \d{2}/i, // Pixel 10+
-    /SM-[SG]9[0-9]{2}/i, // Samsung Galaxy S9xx series
-    /SM-[SG]2[0-9]{2}/i, // Samsung Galaxy S20+ series
-    /SM-F9[0-9]{2}/i, // Samsung Galaxy Fold series
-    /SM-F7[0-9]{2}/i, // Samsung Galaxy Flip series
-  ];
+  // Android device detection using react-device-detect
+  if (isAndroid) {
+    // Check for known Android eSIM-capable devices
+    const userAgent = navigator.userAgent;
+    const androidESIMPatterns = [
+      /Pixel [2-9]/i,
+      /Pixel \d{2}/i, // Pixel 10+
+      /SM-[SG]9[0-9]{2}/i, // Samsung Galaxy S9xx series
+      /SM-[SG]2[0-9]{2}/i, // Samsung Galaxy S20+ series
+      /SM-F9[0-9]{2}/i, // Samsung Galaxy Fold series
+      /SM-F7[0-9]{2}/i, // Samsung Galaxy Flip series
+    ];
 
-  const hasAndroidESIM = androidESIMPatterns.some(pattern => pattern.test(userAgent));
+    const hasAndroidESIM = androidESIMPatterns.some(pattern => pattern.test(userAgent));
+
+    return {
+      name: 'platformBehavior',
+      result: hasAndroidESIM,
+      confidence: hasAndroidESIM ? 0.7 : 0.2
+    };
+  }
 
   return {
     name: 'platformBehavior',
-    result: hasAndroidESIM,
-    confidence: hasAndroidESIM ? 0.7 : 0.2
+    result: false,
+    confidence: 0.1
   };
 };
 
@@ -341,7 +453,8 @@ export function useESIMDetection(
     confidence: 0,
     methods: [],
     loading: autoStart,
-    error: null
+    error: null,
+    deviceInfo: null
   });
 
   // Refs for cleanup
@@ -382,6 +495,9 @@ export function useESIMDetection(
     try {
       setResult(prev => ({ ...prev, loading: true, error: null }));
 
+      // Create device info immediately
+      const deviceInfo = createDeviceInfo();
+
       // Phase 1: Immediate lightweight detection
       const lightweightMethods: DetectionMethod[] = [];
       
@@ -402,7 +518,8 @@ export function useESIMDetection(
           confidence: initialConfidence,
           methods: lightweightMethods,
           loading: false,
-          error: null
+          error: null,
+          deviceInfo
         });
       }
 
@@ -435,7 +552,8 @@ export function useESIMDetection(
               confidence: updatedConfidence,
               methods: allMethods,
               loading: false,
-              error: null
+              error: null,
+              deviceInfo
             });
           }
         }, { timeout: 1000 }); // Give up after 1 second
@@ -460,7 +578,8 @@ export function useESIMDetection(
                 confidence: finalConfidence,
                 methods: allMethods,
                 loading: false,
-                error: null
+                error: null,
+                deviceInfo
               };
             });
           }
@@ -524,5 +643,8 @@ export const detectionUtils = {
   detectPerformanceCharacteristics,
   detectPlatformBehavior,
   detectMobileDeviceType,
-  calculateConfidence
+  calculateConfidence,
+  createDeviceInfo,
+  getIOSVersion,
+  supportsDirectESIMActivation
 };
