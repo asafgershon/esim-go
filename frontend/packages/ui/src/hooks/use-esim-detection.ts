@@ -162,7 +162,7 @@ const supportsDirectESIMActivation = (iosVersion: number[] | null): boolean => {
   if (!iosVersion || iosVersion.length < 2) return false;
   
   const [major, minor] = iosVersion;
-  return major > 17 || (major === 17 && minor >= 4);
+  return (major || 0) > 17 || ((major || 0) === 17 && (minor || 0) >= 4);
 };
 
 // Create device info using react-device-detect
@@ -374,7 +374,7 @@ const detectPlatformBehavior = (): DetectionMethod => {
   if (isIOS) {
     const iosVersion = getIOSVersion();
     const supportsWebESIM = iosVersion && iosVersion.length >= 2 && 
-      (iosVersion[0] > 17 || (iosVersion[0] === 17 && iosVersion[1] >= 5));
+      ((iosVersion?.[0] || 0) > 17 || (iosVersion[0] === 17 && (iosVersion?.[1] || 0) >= 5));
     
     return {
       name: 'platformBehavior',
