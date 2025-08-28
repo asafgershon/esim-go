@@ -7,7 +7,7 @@ variable "gcp_project_id" {
 variable "gcp_project_number" {
   description = "Google Cloud Project Number"
   type        = string
-  default     = "696343664827"  # Will update after verification
+  default     = "177752062147"  # Updated project number
 }
 
 variable "gcp_organization_id" {
