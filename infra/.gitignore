@@ -4,6 +4,7 @@
 .terraform/
 .terraform.lock.hcl
 *.tfplan
+*.tfvars
 *.tfvars.local
 override.tf
 override.tf.json
@@ -11,6 +12,10 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+tfplan
+
+# Keep example files
+!*.tfvars.example
 
 # Environment variables
 .env
@@ -21,3 +26,7 @@ terraform.rc
 credentials
 aws_access_key_id
 aws_secret_access_key
+
+# Railway
+railway.tfvars
+.railway

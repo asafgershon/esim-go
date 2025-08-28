@@ -1,0 +1,30 @@
+# Railway Terraform Variables
+# Copy this file to railway.tfvars and fill in the actual values
+# NEVER commit railway.tfvars to version control!
+
+# Railway API Token - Get from Railway dashboard > Account Settings > Tokens
+railway_token = "YOUR_RAILWAY_API_TOKEN"
+
+# Node Environment
+node_env = "production"
+
+# Supabase Configuration
+supabase_url               = "https://dgkyjkzkwzmjjurzvcxy.supabase.co"
+supabase_anon_key          = "YOUR_SUPABASE_ANON_KEY"
+supabase_service_role_key  = "YOUR_SUPABASE_SERVICE_ROLE_KEY"
+
+# Redis Configuration
+redis_password = "YOUR_REDIS_PASSWORD"
+
+# eSIM Go API Configuration
+esim_go_api_key        = "YOUR_ESIM_GO_API_KEY"
+esim_go_mode           = "production"  # or "mock" for development
+esim_go_webhook_secret = "YOUR_WEBHOOK_SECRET"
+
+# JWT Secrets
+jwt_secret          = "YOUR_JWT_SECRET"
+checkout_jwt_secret = "YOUR_CHECKOUT_JWT_SECRET"
+
+# AWS Credentials for SES/SNS
+aws_access_key_id     = "YOUR_AWS_ACCESS_KEY"
+aws_secret_access_key = "YOUR_AWS_SECRET_KEY"

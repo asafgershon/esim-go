@@ -1,7 +1,7 @@
 variable "gcp_project_id" {
   description = "Google Cloud Project ID"
   type        = string
-  default     = "hiilo-production-971026346752"
+  default     = "esim-go-465108"
 }
 
 variable "gcp_project_number" {

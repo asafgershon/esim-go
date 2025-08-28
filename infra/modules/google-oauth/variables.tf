@@ -32,3 +32,15 @@ variable "common_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "create_brand" {
+  description = "Whether to create a new IAP brand or use existing"
+  type        = bool
+  default     = true
+}
+
+variable "support_email" {
+  description = "Support email for OAuth consent screen"
+  type        = string
+  default     = "support@esim-go.com"
+}

@@ -86,6 +86,19 @@ terraform apply
   - DKIM enabled for email authentication
   - WorkMail integration for incoming emails
 
+### Railway Platform Resources:
+- **Project**: Hiilo (Production environment)
+- **Services**:
+  - Apollo Server (GraphQL API)
+  - Redis (Caching and sessions)
+  - Next.js Web App (Customer portal)
+  - Management Portal (Admin dashboard)
+- **Custom Domains**:
+  - api.hiiloworld.com
+  - hiiloworld.com
+  - manage.hiiloworld.com
+- **Environment Variables**: 40+ configured variables
+
 ### Hiilo Account Resources:
 - **S3 Buckets**: 
   - `hiilo-esim-resources`: eSIM data and resources
@@ -114,9 +127,35 @@ aws sts assume-role \
 4. Set up CloudWatch billing alerts
 5. Configure budget limits
 
+## Railway Setup
+
+### Prerequisites
+1. Get Railway API token from [Railway Dashboard > Account Settings > Tokens](https://railway.app/account/tokens)
+2. Set the token: `export RAILWAY_TOKEN=your_token_here`
+
+### Import Railway Resources
+```bash
+# Copy and fill in the variables file
+cp railway.tfvars.example railway.tfvars
+# Edit railway.tfvars with your actual values
+
+# Run the import script
+./import_railway.sh
+
+# Verify the import
+terraform plan -var-file=railway.tfvars
+```
+
+### Managing Railway Variables
+Railway environment variables are managed in `railway_variables.tf`. To update:
+1. Edit the variables in the terraform file
+2. Run `terraform apply -var-file=railway.tfvars`
+3. Railway will automatically redeploy affected services
+
 ## Cost Tracking
 
 With separate accounts, you can now:
 - View Hiilo-specific costs in AWS Cost Explorer
 - Set up account-specific budgets
 - Generate detailed billing reports per account
+- Track Railway usage in Railway dashboard

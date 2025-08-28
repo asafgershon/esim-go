@@ -6,6 +6,11 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    
+    railway = {
+      source  = "terraform-community-providers/railway"
+      version = "~> 0.2.0"
+    }
   }
   
   # Uncomment when ready to use remote backend
