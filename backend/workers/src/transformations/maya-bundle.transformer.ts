@@ -1,125 +1,84 @@
 import { z } from "zod";
 import { default as byteSize } from "byte-size";
 import countries from "i18n-iso-countries";
-
-// Input schemas matching the eSIM Go API response
-const CountrySchema = z.object({
-  name: z.string().optional(),
-  region: z.string().optional(),
-  iso: z.string().optional(),
-});
-
-const BillingTypeEnum = z.enum(["FixedCost"]);
-
-const CatalogueResponseInnerSchema = z.object({
-  name: z.string().optional(),
-  description: z.string().optional(),
-  groups: z.array(z.string()).optional(),
-  countries: z.array(CountrySchema).optional(),
-  dataAmount: z.number().optional(),
-  duration: z.number().optional(),
-  speed: z.array(z.string()).nullable().optional().default([]),
-  autostart: z.boolean().optional(),
-  unlimited: z.boolean().optional(),
-  roamingEnabled: z.array(CountrySchema).optional(),
-  price: z.number().optional(),
-  billingType: BillingTypeEnum.optional(),
-});
-
-// Output schema matching the catalog_bundles table
-const CatalogBundleSchema = z.object({
-  esim_go_name: z.string(),
-  groups: z.array(z.string()).default([]),
-  description: z.string().nullable(),
-  validity_in_days: z.number().positive(),
-  data_amount_mb: z.number().nullable(),
-  data_amount_readable: z.string(),
-  is_unlimited: z.boolean(),
-  price: z.number().nonnegative(),
-  currency: z.string().length(3),
-  countries: z.array(z.string()).default([]), // ISO codes
-  region: z.string().nullable(),
-  speed: z.array(z.string()).default([]),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
-  synced_at: z.string().datetime(),
-});
-
-type CatalogBundleSchema = z.infer<typeof CatalogBundleSchema>;
+import { MayaBundle } from "@/services/maya-sync.service";
+import { CatalogBundleSchema } from "./esimgo-bundle.transformer";
 
 // Transformation function with validation and filtering
-export function transformAndValidateCatalogBundle(
-  apiBundle: unknown,
+export function transformAndValidateMayaBundle(
+  apiBundle: MayaBundle,
   organizationCurrency: string = "USD"
 ): z.infer<typeof CatalogBundleSchema> | null {
   try {
-    // First, validate the input
-    const validated = CatalogueResponseInnerSchema.parse(apiBundle);
-
     // Check required fields for valid bundles
     if (
-      !validated.name ||
-      !validated.duration ||
-      validated.price === undefined
+      !apiBundle.uid ||
+      !apiBundle.name ||
+      !apiBundle.validity_days ||
+      apiBundle.wholesale_price_usd === undefined
     ) {
       console.warn("Skipping bundle: missing required fields", {
-        name: validated.name,
-        duration: validated.duration,
-        price: validated.price,
+        uid: apiBundle.uid,
+        name: apiBundle.name,
+        validity_days: apiBundle.validity_days,
+        wholesale_price_usd: apiBundle.wholesale_price_usd,
       });
       return null;
     }
 
+    const price = parseFloat(apiBundle.wholesale_price_usd);
+
     // Skip bundles with zero or negative price
-    if (validated.price <= 0) {
+    if (price <= 0) {
       console.warn("Skipping bundle: invalid price", {
-        name: validated.name,
-        price: validated.price,
+        uid: apiBundle.uid,
+        name: apiBundle.name,
+        wholesale_price_usd: apiBundle.wholesale_price_usd,
       });
       return null;
     }
 
     // Skip bundles with invalid duration
-    if (validated.duration <= 0) {
+    if (apiBundle.validity_days <= 0) {
       console.warn("Skipping bundle: invalid duration", {
-        name: validated.name,
-        duration: validated.duration,
+        uid: apiBundle.uid,
+        name: apiBundle.name,
+        validity_days: apiBundle.validity_days,
       });
       return null;
     }
 
     // Extract and validate country ISO codes
     const countryCodes =
-      validated.countries
+      apiBundle.countries_enabled
         ?.filter((country) => {
-          if (!country.iso) return false;
+          if (!country) return false;
           // Validate ISO code using i18n-iso-countries
-          const isValid = countries.isValid(country.iso);
+          const isValid = countries.isValid(country);
           if (!isValid) {
             console.warn(
-              `Invalid ISO code: ${country.iso} for country: ${country.name}`
+              `Invalid ISO code: ${country} for country: ${country}`
             );
           }
           return isValid;
         })
-        .map((country) => country.iso!.toUpperCase()) || // Ensure uppercase ISO codes
+        .map((country) => country.toUpperCase()) || // Ensure uppercase ISO codes
       [];
 
     // Skip bundles without any valid countries
     if (countryCodes.length === 0) {
       console.warn("Skipping bundle: no valid countries", {
-        name: validated.name,
+        uid: apiBundle.uid,
+        name: apiBundle.name,
       });
       return null;
     }
 
-    // Determine if bundle is unlimited based on dataAmount being -1
-    const isUnlimited =
-      validated.dataAmount === -1 || validated.unlimited === true;
+    const isUnlimited = apiBundle.name.toLowerCase().includes("unlimited");
 
     // Determine primary region (from first country or most common region)
-    const regions = validated.countries
-      ?.map((c) => c.region)
+    const regions = apiBundle.countries_enabled
+      ?.map((c) => c)
       .filter((r): r is string => r !== undefined);
 
     const primaryRegion =
@@ -128,29 +87,24 @@ export function transformAndValidateCatalogBundle(
     // Create human-readable data amount using byte-size
     const dataAmountReadable = createDataAmountReadable(
       isUnlimited,
-      validated.dataAmount
+      apiBundle.data_quota_bytes
     );
 
     // Transform to catalog bundle format
     const transformed: CatalogBundleSchema = {
-      esim_go_name: validated.name,
-      groups: (validated.groups || []).map(
-        (g) =>
-          g
-            .replace(/-/g, " ") // Replace hyphens with spaces
-            .replace(/\s+/g, " ") // Replace multiple spaces with single space
-            .trim() // Remove leading/trailing spaces
-      ),
-      description: validated.description || null,
-      validity_in_days: validated.duration,
-      data_amount_mb: isUnlimited ? null : validated.dataAmount || null,
+      provider: "maya",
+      esim_go_name: apiBundle.uid,
+      groups: [],
+      description: apiBundle.name || null,
+      duration: apiBundle.validity_days,
+      data_amount_mb: isUnlimited ? null : apiBundle.data_quota_bytes || null,
       data_amount_readable: dataAmountReadable,
       is_unlimited: isUnlimited,
-      price: validated.price,
+      price: price,
       currency: organizationCurrency,
       countries: countryCodes,
       region: primaryRegion,
-      speed: validated.speed ?? [], // Use nullish coalescing to handle null values
+      speed: ["4G", "5G"],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       synced_at: new Date().toISOString(),
@@ -218,12 +172,12 @@ function getMostCommonElement(arr: string[]): string | null {
 
 // Batch transformation function with filtering
 export async function transformCatalogBundles(
-  apiBundles: unknown[],
+  apiBundles: MayaBundle[],
   organizationCurrency: string = "USD"
 ): Promise<CatalogBundleSchema[]> {
   const transformed = apiBundles
     .map((bundle) =>
-      transformAndValidateCatalogBundle(bundle, organizationCurrency)
+      transformAndValidateMayaBundle(bundle, organizationCurrency)
     )
     .filter((bundle): bundle is CatalogBundleSchema => bundle !== null);
 
@@ -233,9 +187,3 @@ export async function transformCatalogBundles(
 
   return transformed;
 }
-
-// Type exports
-export type CatalogBundle = z.infer<typeof CatalogBundleSchema>;
-export type CatalogueResponseInner = z.infer<
-  typeof CatalogueResponseInnerSchema
->;

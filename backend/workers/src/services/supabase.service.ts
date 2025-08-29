@@ -1,9 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../config/index.js';
 import { createLogger } from '@hiilo/utils';
-
-// Import repository types
-import type { Database } from '../types/database.types.js';
+import type { Database } from '@hiilo/supabase';
 
 const logger = createLogger({ component: 'SupabaseService' });
 
@@ -24,16 +22,13 @@ export const supabase = createClient<Database>(
 
 // Sync Job Repository
 export const syncJobRepository = {
-  async createJob(data: any) {
+  async createJob(data: Database['public']['Tables']['catalog_sync_jobs']['Insert']) {
     const { data: job, error } = await supabase
       .from('catalog_sync_jobs')
       .insert({
-        job_type: data.jobType,
+        ...data,
         priority: data.priority || 'normal',
-        bundle_group: data.bundleGroup,
-        country_id: data.countryId,
-        metadata: data.metadata,
-        status: 'pending',
+        status: 'pending' as const,
       })
       .select()
       .single();
@@ -46,7 +41,7 @@ export const syncJobRepository = {
     const { error } = await supabase
       .from('catalog_sync_jobs')
       .update({
-        status: 'running',
+        status: 'running' as const,
         started_at: new Date().toISOString(),
       })
       .eq('id', jobId);

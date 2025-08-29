@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { createLogger, withPerformanceLogging } from '@hiilo/utils';
 import { config } from '../config/index.js';
-import type { Database } from '../types/database.types.js';
+import type { Database } from '@hiilo/supabase';
 
 const logger = createLogger({ 
   component: 'BundleDatabaseService',
@@ -31,7 +31,7 @@ export class BundleDatabaseService {
    * Bulk upsert transformed bundles to database
    * This method expects pre-transformed bundles from the transformer
    */
-  async bulkUpsert(transformedBundles: DBBundle[]): Promise<{
+  async bulkUpsert(transformedBundles: DBBundleInsert[]): Promise<{
     added: number;
     updated: number;
     errors: string[];
@@ -57,9 +57,10 @@ export class BundleDatabaseService {
           const batch = transformedBundles.slice(i, i + batchSize);
 
           try {
+
             const { data, error } = await this.supabase
               .from('catalog_bundles')
-              .upsert(batch as DBBundleInsert[], {
+              .upsert(batch, {
                 onConflict: 'esim_go_name',
                 ignoreDuplicates: false,
               })

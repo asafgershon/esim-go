@@ -71,7 +71,7 @@ export const workerApiService = {
       throw new Error(`A sync for country ${countryId} is already in progress`);
     }
 
-    const job = await catalogSyncQueueManager.addCountrySyncJob(countryId);
+    const job = await catalogSyncQueueManager.addCountrySyncJob(countryId,'maya');
     
     return {
       jobId: job.id,

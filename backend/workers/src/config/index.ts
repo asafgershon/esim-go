@@ -40,6 +40,10 @@ const env = cleanEnv(process.env, {
   // Environment
   NODE_ENV: str({ choices: ['development', 'production', 'test'], default: 'development' }),
   LOG_LEVEL: str({ choices: ['debug', 'info', 'warn', 'error'], default: 'info' }),
+
+  // Maya API configuration
+  MAYA_API_KEY: str(),
+  MAYA_API_SECRET: str(),
 });
 
 // Build configuration object from validated env vars
@@ -61,6 +65,10 @@ export const config = {
     apiKey: env.ESIM_GO_API_KEY,
     baseUrl: env.ESIM_GO_BASE_URL,
     retryAttempts: env.ESIM_GO_RETRY_ATTEMPTS,
+  },
+
+  maya: {
+    auth: `Basic ${Buffer.from(`${env.MAYA_API_KEY}:${env.MAYA_API_SECRET}`).toString('base64')}`,
   },
   
   worker: {

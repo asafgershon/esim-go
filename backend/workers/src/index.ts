@@ -31,7 +31,7 @@ async function start() {
     logger.info("Starting catalog sync worker");
 
     // Start the scheduler
-    startScheduler();
+    // startScheduler();
 
     // Start health check server
     startHealthServer(config.worker.port);
@@ -81,8 +81,11 @@ async function start() {
 }
 
 const runManualSync = async () => {
-  logger.info("Manual sync requested, triggering catalog sync");
-  await catalogSyncQueueManager.addFullSyncJob("manual");
+  const provider = process.argv.slice(2).includes("--maya")
+    ? "maya"
+    : "esim-go";
+  logger.info("Manual sync requested, triggering catalog sync", { provider });
+  await catalogSyncQueueManager.addFullSyncJob("manual", provider);
   try {
     // Check Supabase connection
     const supabaseHealthy = await checkSupabaseConnection();
@@ -91,7 +94,10 @@ const runManualSync = async () => {
     }
 
     // Add a manual sync job
-    const job = await catalogSyncQueueManager.addFullSyncJob("manual");
+    const job = await catalogSyncQueueManager.addFullSyncJob(
+      "manual",
+      provider
+    );
     logger.info("Manual sync job created", { jobId: job.id });
 
     // Give it a moment to be picked up
@@ -116,7 +122,7 @@ const runManualSync = async () => {
 const args = process.argv.slice(2);
 if (args.includes("--sync") || args.includes("sync")) {
   logger.info("Manual sync requested, triggering catalog sync");
-   runManualSync();
+  runManualSync();
 } else if (args.includes("--clean") || args.includes("clean")) {
   logger.info("Cleaning up old jobs");
   await catalogSyncQueueManager.cleanOldJobs();

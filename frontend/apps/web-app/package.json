@@ -28,7 +28,7 @@
     "@radix-ui/react-popover": "^1.1.14",
     "@radix-ui/react-slider": "^1.3.5",
     "@radix-ui/react-slot": "^1.2.3",
-    "@supabase/supabase-js": "^2.50.3",
+    "@supabase/supabase-js": "*",
     "@tailwindcss/postcss": "^4.1.11",
     "@tailwindcss/vite": "^4.1.11",
     "@workspace/ui": "workspace:*",

@@ -1,18 +1,15 @@
-import { Worker } from 'bullmq';
-import { createLogger } from '@hiilo/utils';
-import { config } from '../config/index.js';
-import { catalogSyncQueueManager } from '../queues/catalog-sync.queue.js';
-import { CatalogSyncService } from '../services/catalog-sync.service.js';
-import { catalogMetadataRepository } from '../services/supabase.service.js';
-import IORedis from 'ioredis';
+import { createLogger } from "@hiilo/utils";
+import { catalogSyncQueueManager } from "../queues/catalog-sync.queue.js";
+import { ESIMGoSyncService } from "../services/esim-go-sync.service.js";
+import { catalogMetadataRepository } from "../services/supabase.service.js";
 
-const logger = createLogger({ 
-  component: 'SchedulerWorker',
-  operationType: 'scheduler' 
+const logger = createLogger({
+  component: "SchedulerWorker",
+  operationType: "scheduler",
 });
 
 // Create catalog sync service
-const catalogSyncService = new CatalogSyncService();
+const catalogSyncService = new ESIMGoSyncService();
 
 // Scheduler tasks
 const schedulerTasks = {
@@ -22,20 +19,21 @@ const schedulerTasks = {
   async checkAndScheduleSync(): Promise<void> {
     try {
       const isDue = await catalogMetadataRepository.isSyncDue(168); // 7 days = 168 hours
-      
+
       if (isDue) {
-        logger.info('Full sync is due, scheduling job');
-        await catalogSyncQueueManager.addFullSyncJob('scheduled');
+        logger.info("Full sync is due, scheduling job");
+        await catalogSyncQueueManager.addFullSyncJob("scheduled", "esim-go");
+        await catalogSyncQueueManager.addFullSyncJob("scheduled", "maya");
       } else {
         const stats = await catalogMetadataRepository.getSyncStats();
-        logger.info('Full sync not due', {
+        logger.info("Full sync not due", {
           lastFullSync: stats.last_full_sync,
           totalBundles: stats.total_bundles,
           apiHealthStatus: stats.api_health_status,
         });
       }
     } catch (error) {
-      logger.error('Failed to check sync schedule', error as Error);
+      logger.error("Failed to check sync schedule", error as Error);
     }
   },
 
@@ -46,7 +44,7 @@ const schedulerTasks = {
     try {
       await catalogSyncService.checkApiHealth();
     } catch (error) {
-      logger.error('API health check failed', error as Error);
+      logger.error("API health check failed", error as Error);
     }
   },
 
@@ -57,7 +55,7 @@ const schedulerTasks = {
     try {
       await catalogSyncService.handleStuckJobs();
     } catch (error) {
-      logger.error('Failed to handle stuck jobs', error as Error);
+      logger.error("Failed to handle stuck jobs", error as Error);
     }
   },
 
@@ -69,7 +67,7 @@ const schedulerTasks = {
       await catalogSyncService.cleanupOldJobs();
       await catalogSyncQueueManager.cleanOldJobs();
     } catch (error) {
-      logger.error('Failed to cleanup old jobs', error as Error);
+      logger.error("Failed to cleanup old jobs", error as Error);
     }
   },
 
@@ -79,12 +77,12 @@ const schedulerTasks = {
   async logQueueStats(): Promise<void> {
     try {
       const stats = await catalogSyncQueueManager.getQueueStats();
-      logger.info('Queue statistics', {
+      logger.info("Queue statistics", {
         ...stats,
-        operationType: 'queue-stats',
+        operationType: "queue-stats",
       });
     } catch (error) {
-      logger.error('Failed to get queue stats', error as Error);
+      logger.error("Failed to get queue stats", error as Error);
     }
   },
 };
@@ -97,7 +95,7 @@ let cleanupInterval: NodeJS.Timeout;
 let statsInterval: NodeJS.Timeout;
 
 export function startScheduler() {
-  logger.info('Starting scheduler worker');
+  logger.info("Starting scheduler worker");
 
   // Check for due syncs every hour
   checkSyncInterval = setInterval(
@@ -134,28 +132,28 @@ export function startScheduler() {
   schedulerTasks.checkApiHealth();
   schedulerTasks.logQueueStats();
 
-  logger.info('Scheduler worker started successfully');
+  logger.info("Scheduler worker started successfully");
 }
 
 export function stopScheduler() {
-  logger.info('Stopping scheduler worker');
-  
+  logger.info("Stopping scheduler worker");
+
   clearInterval(checkSyncInterval);
   clearInterval(healthCheckInterval);
   clearInterval(stuckJobsInterval);
   clearInterval(cleanupInterval);
   clearInterval(statsInterval);
-  
-  logger.info('Scheduler worker stopped');
+
+  logger.info("Scheduler worker stopped");
 }
 
 // Handle graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, stopping scheduler');
+process.on("SIGTERM", () => {
+  logger.info("SIGTERM received, stopping scheduler");
   stopScheduler();
 });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, stopping scheduler');
+process.on("SIGINT", () => {
+  logger.info("SIGINT received, stopping scheduler");
   stopScheduler();
 });

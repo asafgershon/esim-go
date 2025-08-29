@@ -60,7 +60,7 @@
     "@keyv/redis": "^4.6.0",
     "@mikro-orm/postgresql": "^6.4.16",
     "@types/cors": "^2.8.19",
-    "@supabase/supabase-js": "^2.50.5",
+    "@supabase/supabase-js": "*",
     "@types/email-templates": "^10.0.4",
     "@types/express": "^4.17.21",
     "@types/ws": "^8.18.1",
