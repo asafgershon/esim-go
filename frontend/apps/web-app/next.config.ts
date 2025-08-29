@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       allowedOrigins: [
 
+        'hiiloworld.com',
         'app.hiiilo.yarinsa.me',
         'appleid.apple.com',
         'accounts.google.com',

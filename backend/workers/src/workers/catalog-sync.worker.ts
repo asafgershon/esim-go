@@ -186,7 +186,7 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, closing worker gracefully');
-  await catalogSyncWorker.close();
+  await catalogSyncWorker.close(true);
   await connection.quit();
   process.exit(0);
 });
