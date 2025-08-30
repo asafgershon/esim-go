@@ -92,7 +92,7 @@ export function transformAndValidateMayaBundle(
 
     // Transform to catalog bundle format
     const transformed: CatalogBundleSchema = {
-      provider: "maya",
+      provider: "MAYA",
       esim_go_name: apiBundle.uid,
       groups: [],
       description: apiBundle.name || null,

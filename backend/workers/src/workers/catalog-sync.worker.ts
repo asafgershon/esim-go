@@ -58,7 +58,7 @@ async function routeToProvider(job: Job<CatalogSyncJobData>, dbJobId: string) {
   });
 
   // Select the appropriate service based on provider
-  const syncService = provider === 'maya' ? mayaSyncService : esimGoSyncService;
+  const syncService = provider === 'MAYA' ? mayaSyncService : esimGoSyncService;
 
   switch (type) {
     case SyncJobType.FullSync:
@@ -71,7 +71,7 @@ async function routeToProvider(job: Job<CatalogSyncJobData>, dbJobId: string) {
       };
 
     case SyncJobType.GroupSync:
-      if ((provider as any) === 'maya') {
+      if ((provider as any) === 'MAYA') {
         throw new Error('Maya provider does not support group sync');
       }
       const groupResult = await esimGoSyncService.syncBundleGroup(

@@ -43,7 +43,7 @@ export const CatalogBundleSchema = z.object({
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
   synced_at: z.string().datetime(),
-  provider: z.union([z.literal("maya"), z.literal("esimgo")]),
+  provider: z.union([z.literal("MAYA"), z.literal("ESIM_GO")]),
 });
 
 export type CatalogBundleSchema = z.infer<typeof CatalogBundleSchema>;
@@ -134,7 +134,7 @@ export function transformAndValidateCatalogBundle(
 
     // Transform to catalog bundle format
     const transformed: CatalogBundleSchema = {
-      provider: "esimgo",
+      provider: "ESIM_GO",
       esim_go_name: validated.name,
       groups: (validated.groups || []).map(
         (g) =>

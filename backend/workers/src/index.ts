@@ -81,8 +81,8 @@ async function start() {
 }
 
 const runManualSync = async () => {
-  const provider = process.argv.slice(2).includes("--maya")
-    ? "maya"
+  const provider = process.argv.slice(2).includes("--MAYA")
+    ? "MAYA"
     : "esim-go";
   logger.info("Manual sync requested, triggering catalog sync", { provider });
   await catalogSyncQueueManager.addFullSyncJob("manual", provider);

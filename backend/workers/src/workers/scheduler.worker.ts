@@ -23,7 +23,7 @@ const schedulerTasks = {
       if (isDue) {
         logger.info("Full sync is due, scheduling job");
         await catalogSyncQueueManager.addFullSyncJob("scheduled", "esim-go");
-        await catalogSyncQueueManager.addFullSyncJob("scheduled", "maya");
+        await catalogSyncQueueManager.addFullSyncJob("scheduled", "MAYA");
       } else {
         const stats = await catalogMetadataRepository.getSyncStats();
         logger.info("Full sync not due", {

@@ -358,12 +358,12 @@ export function CatalogSplitView({
             order={1}
           >
             <List.Container
-              className="h-full"
+              className="h-full overflow-scroll"
               itemCount={
                 showRegions ? regionsData.length : filteredCountriesData.length
               }
             >
-              <List.Header>
+              <List.Header className="bg-brand-white">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-medium text-gray-700">
                     {showRegions

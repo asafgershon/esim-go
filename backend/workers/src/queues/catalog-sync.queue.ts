@@ -6,7 +6,7 @@ import { SyncJobType } from "../generated/types.js";
 
 const logger = createLogger({ component: "CatalogSyncQueue" });
 
-type Provider = "esim-go" | "maya";
+type Provider = "esim-go" | "MAYA";
 // Job data types (using generated GraphQL enum)
 export interface FullSyncJobData {
   type: SyncJobType.FullSync;
@@ -18,7 +18,7 @@ export interface FullSyncJobData {
 export interface GroupSyncJobData {
   type: SyncJobType.GroupSync;
   bundleGroup: string;
-  provider: Exclude<Provider, "maya">;
+  provider: Exclude<Provider, "MAYA">;
   metadata?: Record<string, any>;
 }
 

@@ -133,6 +133,7 @@ export type Bundle = {
   isUnlimited: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
   region?: Maybe<Scalars['String']['output']>;
   speed: Array<Scalars['String']['output']>;
   validityInDays: Scalars['Int']['output'];
@@ -1452,6 +1453,11 @@ export type ProcessingFeeConfigurationInput = {
   threeDSecureFee: Scalars['Float']['input'];
 };
 
+export enum Provider {
+  EsimGo = 'ESIM_GO',
+  Maya = 'MAYA'
+}
+
 export type PurchaseEsimInput = {
   autoActivate?: InputMaybe<Scalars['Boolean']['input']>;
   customerReference?: InputMaybe<Scalars['String']['input']>;
@@ -2231,6 +2237,7 @@ export type ResolversTypes = {
   ProcessCheckoutPaymentResponse: ResolverTypeWrapper<ProcessCheckoutPaymentResponse>;
   ProcessingFeeConfiguration: ResolverTypeWrapper<ProcessingFeeConfiguration>;
   ProcessingFeeConfigurationInput: ProcessingFeeConfigurationInput;
+  Provider: Provider;
   PurchaseESIMInput: PurchaseEsimInput;
   PurchaseESIMResponse: ResolverTypeWrapper<PurchaseEsimResponse>;
   Query: ResolverTypeWrapper<{}>;
@@ -2522,6 +2529,7 @@ export type BundleResolvers<ContextType = Context, ParentType extends ResolversP
   isUnlimited?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   pricingBreakdown?: Resolver<Maybe<ResolversTypes['PricingBreakdown']>, ParentType, ContextType, Partial<BundlePricingBreakdownArgs>>;
+  provider?: Resolver<ResolversTypes['Provider'], ParentType, ContextType>;
   region?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   speed?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   validityInDays?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
