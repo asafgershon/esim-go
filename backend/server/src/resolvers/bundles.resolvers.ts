@@ -6,6 +6,7 @@ import type {
   CatalogBundle,
   Country,
   CustomerBundle,
+  Provider,
   Resolvers,
 } from "../types";
 
@@ -519,6 +520,7 @@ export function transformJsonBundle(jsonBundle: any) {
     speed: jsonBundle.speed || ["4G"],
     basePrice: Number(jsonBundle.price) || 0,
     currency: jsonBundle.currency || "USD",
+    provider: jsonBundle.provider as Provider,
   };
 }
 

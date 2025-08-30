@@ -1,6 +1,7 @@
-import { type Database } from "../../database.types";
+import { type Database } from "@hiilo/supabase";
 import { createLogger } from "../../lib/logger";
 import { BaseSupabaseRepository } from "../base-supabase.repository";
+import type { Provider } from "../../types";
 
 // Database types from Supabase
 type CatalogBundle = Database["public"]["Tables"]["catalog_bundles"]["Row"];
@@ -482,6 +483,7 @@ export class BundleRepository extends BaseSupabaseRepository<
       speed: dbBundle.speed || ["4G"],
       basePrice: dbBundle.price || 0,
       currency: dbBundle.currency || "USD",
+      provider: dbBundle.provider as Provider,
     };
   }
 }

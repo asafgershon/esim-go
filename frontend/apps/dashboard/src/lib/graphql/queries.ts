@@ -807,6 +807,7 @@ export const GET_COUNTRY_BUNDLES = gql(`
           region
           basePrice
           currency
+          provider
         }
       }
     }

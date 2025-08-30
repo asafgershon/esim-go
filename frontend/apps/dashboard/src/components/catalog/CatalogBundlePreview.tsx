@@ -1,4 +1,4 @@
-import { CatalogBundle } from "@/__generated__/graphql";
+import { CatalogBundle, Provider } from "@/__generated__/graphql";
 import { Badge } from "@workspace/ui/components/badge";
 import {
   Clock,
@@ -7,7 +7,8 @@ import {
   WifiOff
 } from "lucide-react";
 import React from "react";
-
+import EsimGoLogo from "@/assets/esimgo.jpeg?url";
+import MayaLogo from "@/assets/maya.png?url";
 
 
 interface CatalogBundlePreviewProps {
@@ -73,7 +74,8 @@ export const CatalogBundlePreview: React.FC<CatalogBundlePreviewProps> = ({ bund
                 {formatPrice(bundle.basePrice || 0, bundle.currency)}
               </span>
             </div>
-            
+            {bundle.provider === Provider.EsimGo && (<img src={EsimGoLogo} alt="EsimGo" className="h-4 w-4 rounded-xl" />)}
+            {bundle.provider === Provider.Maya && (<img src={MayaLogo} alt="Maya" className="h-4 w-4 rounded-xl" />)}
             {bundle.basePrice && bundle.validityInDays && (
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>Per Day</span>

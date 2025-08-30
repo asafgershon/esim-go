@@ -25,10 +25,11 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
-
+    
     serverActions: {
       allowedOrigins: [
         'fonts.cdnfonts.com',
+        'demo.hiiloworld.com',
         'hiiloworld.com',
         'app.hiiilo.yarinsa.me',
         'appleid.apple.com',

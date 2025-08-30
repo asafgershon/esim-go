@@ -1,22 +1,21 @@
-import { BundlesByCountry, BundlesByRegion, BundlesForRegion, CatalogBundle } from "@/__generated__/graphql";
+import { BundlesByCountry, BundlesByRegion, CatalogBundle } from "@/__generated__/graphql";
 import {
+  BaseFilterState,
   Button,
+  FilterBar,
+  FilterConfig,
+  FilterOption,
   List,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-  FilterBar,
-  FilterConfig,
-  BaseFilterState,
-  FilterOption,
 } from "@workspace/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import Fuse from "fuse.js";
-import { Database, Globe, Package, RefreshCw, X, Package2, Clock, Infinity } from "lucide-react";
+import { Clock, Database, Globe, Infinity, Package, Package2, RefreshCw, X } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { Panel, PanelGroup } from "react-resizable-panels";
-import { toast } from "sonner";
 import { ResizeHandle } from "../resize-handle";
 import { CatalogBundlePreview } from "./CatalogBundlePreview";
 import { CatalogBundlesTable } from "./CatalogBundlesTable";

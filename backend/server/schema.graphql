@@ -407,11 +407,17 @@ enum CheckoutUpdateType {
   ORDER_CREATED
 }
 
+enum Provider {
+  ESIM_GO
+  MAYA
+}
+
 interface Bundle {
   # Identification
   name: String!
   description: String
   groups: [String!]!
+  provider: Provider!
 
   # Duration and data
   validityInDays: Int!
@@ -431,12 +437,14 @@ interface Bundle {
 
   # Calculated pricing (only computed when requested)
   pricingBreakdown(paymentMethod: PaymentMethod): PricingBreakdown
+  
 }
 
 type CatalogBundle implements Bundle {
   # Primary key
   esimGoName: ID!
   name: String!
+  provider: Provider!
   # Bundle interface fields
   description: String
   groups: [String!]!
@@ -475,6 +483,7 @@ type CustomerBundle implements Bundle {
   speed: [String!]!
   basePrice: Float!
   currency: String!
+  provider: Provider!
 
   # Calculated pricing (from Bundle interface)
   pricingBreakdown(paymentMethod: PaymentMethod): PricingBreakdown
