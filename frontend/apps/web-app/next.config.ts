@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
 
     serverActions: {
       allowedOrigins: [
-
+        'fonts.cdnfonts.com',
         'hiiloworld.com',
         'app.hiiilo.yarinsa.me',
         'appleid.apple.com',
