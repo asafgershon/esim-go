@@ -179,7 +179,7 @@ export const CatalogBundlesTable: React.FC<CatalogBundlesTableProps> = ({
                 <div className="flex items-center gap-3">
                   <div>
                     <h4 className="font-medium">
-                      {bundle.name || "Unknown Bundle"}
+                      {bundle.description || bundle.name || "Unknown Bundle"}
                     </h4>
                     <p className="text-sm text-gray-500">
                       {bundle.validityInDays || 0} day

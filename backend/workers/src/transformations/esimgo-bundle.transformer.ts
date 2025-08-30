@@ -17,7 +17,7 @@ const CatalogueResponseInnerSchema = z.object({
   groups: z.array(z.string()).optional(),
   countries: z.array(CountrySchema).optional(),
   dataAmount: z.number().optional(),
-  duration: z.number().optional(),
+  validity_in_days: z.number().optional(),
   speed: z.array(z.string()).nullable().optional().default([]),
   autostart: z.boolean().optional(),
   unlimited: z.boolean().optional(),
@@ -31,7 +31,7 @@ export const CatalogBundleSchema = z.object({
   esim_go_name: z.string(),
   groups: z.array(z.string()).default([]),
   description: z.string().nullable(),
-  duration: z.number().positive(),
+  validity_in_days: z.number().positive(),
   data_amount_mb: z.number().nullable(),
   data_amount_readable: z.string(),
   is_unlimited: z.boolean(),
@@ -60,12 +60,12 @@ export function transformAndValidateCatalogBundle(
     // Check required fields for valid bundles
     if (
       !validated.name ||
-      !validated.duration ||
+      !validated.validity_in_days ||
       validated.price === undefined
     ) {
       console.warn("Skipping bundle: missing required fields", {
         name: validated.name,
-        duration: validated.duration,
+        duration: validated.validity_in_days,
         price: validated.price,
       });
       return null;
@@ -81,10 +81,10 @@ export function transformAndValidateCatalogBundle(
     }
 
     // Skip bundles with invalid duration
-    if (validated.duration <= 0) {
+    if (validated.validity_in_days <= 0) {
       console.warn("Skipping bundle: invalid duration", {
         name: validated.name,
-        duration: validated.duration,
+        duration: validated.validity_in_days,
       });
       return null;
     }
@@ -103,7 +103,9 @@ export function transformAndValidateCatalogBundle(
           }
           return isValid;
         })
-        .map((country) => country.iso!.toUpperCase()) || // Ensure uppercase ISO codes
+        .map((country) => country.iso!.toUpperCase()) // Ensure uppercase ISO codes
+        .map((country) => countries.toAlpha2(country) || country) ||
+      // Replace ISO Alpha 3 with ISO Alpha 2
       [];
 
     // Skip bundles without any valid countries
@@ -144,7 +146,7 @@ export function transformAndValidateCatalogBundle(
             .trim() // Remove leading/trailing spaces
       ),
       description: validated.description || null,
-      duration: validated.duration,
+      validity_in_days: validated.validity_in_days,
       data_amount_mb: isUnlimited ? null : validated.dataAmount || null,
       data_amount_readable: dataAmountReadable,
       is_unlimited: isUnlimited,

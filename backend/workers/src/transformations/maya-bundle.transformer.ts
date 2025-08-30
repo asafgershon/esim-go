@@ -62,8 +62,10 @@ export function transformAndValidateMayaBundle(
           }
           return isValid;
         })
-        .map((country) => country.toUpperCase()) || // Ensure uppercase ISO codes
-      [];
+        .map((country) => country.toUpperCase())// Ensure uppercase ISO codes
+        .map((country) => countries.toAlpha2(country) || country) 
+        // Replace ISO Alpha 3 with ISO Alpha 2
+      || [];
 
     // Skip bundles without any valid countries
     if (countryCodes.length === 0) {
@@ -87,7 +89,7 @@ export function transformAndValidateMayaBundle(
     // Create human-readable data amount using byte-size
     const dataAmountReadable = createDataAmountReadable(
       isUnlimited,
-      apiBundle.data_quota_bytes
+      apiBundle.data_quota_bytes / 1024 / 1024
     );
 
     // Transform to catalog bundle format
@@ -96,8 +98,8 @@ export function transformAndValidateMayaBundle(
       esim_go_name: apiBundle.uid,
       groups: [],
       description: apiBundle.name || null,
-      duration: apiBundle.validity_days,
-      data_amount_mb: isUnlimited ? null : apiBundle.data_quota_bytes || null,
+      validity_in_days: apiBundle.validity_days,
+      data_amount_mb: isUnlimited ? null : apiBundle.data_quota_bytes / 1024 / 1024 || null,
       data_amount_readable: dataAmountReadable,
       is_unlimited: isUnlimited,
       price: price,

@@ -508,7 +508,7 @@ export const bundlesResolvers: Partial<Resolvers> = {
 export function transformJsonBundle(jsonBundle: any) {
   return {
     esimGoName: jsonBundle.esim_go_name,
-    name: jsonBundle.name || jsonBundle.esim_go_name,
+    name: jsonBundle.name || jsonBundle.description || jsonBundle.esim_go_name,
     description: jsonBundle.description,
     groups: jsonBundle.groups || [],
     validityInDays: jsonBundle.validity_in_days || 0,
