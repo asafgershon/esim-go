@@ -99,7 +99,7 @@ export function transformAndValidateMayaBundle(
       groups: [],
       description: apiBundle.name || null,
       validity_in_days: apiBundle.validity_days,
-      data_amount_mb: isUnlimited ? null : apiBundle.data_quota_bytes / 1024 / 1024 || null,
+      data_amount_mb: isUnlimited ? null : Math.ceil(apiBundle.data_quota_bytes / 1024 / 1024) || null,
       data_amount_readable: dataAmountReadable,
       is_unlimited: isUnlimited,
       price: price,

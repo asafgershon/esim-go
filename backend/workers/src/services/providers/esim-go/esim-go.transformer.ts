@@ -148,7 +148,7 @@ export function transformAndValidateCatalogBundle(
       ),
       description: validated.description || null,
       validity_in_days: validated.duration,
-      data_amount_mb: isUnlimited ? null : validated.dataAmount || null,
+      data_amount_mb: isUnlimited ? null : validated.dataAmount ? Math.ceil(validated.dataAmount) : null,
       data_amount_readable: dataAmountReadable,
       is_unlimited: isUnlimited,
       price: validated.price,
