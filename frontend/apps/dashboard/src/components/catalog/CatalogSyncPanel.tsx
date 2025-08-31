@@ -4,7 +4,6 @@ import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Progress } from '@workspace/ui/components/progress';
-import { ScrollArea } from '@workspace/ui/components/scroll-area';
 import { Skeleton } from '@workspace/ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@workspace/ui/components/tooltip';
 import {
@@ -241,8 +240,7 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[500px]">
+      <CardContent className='overflow-y-auto'>
           {loading ? (
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
@@ -411,7 +409,6 @@ export const CatalogSyncPanel: React.FC<CatalogSyncPanelProps> = ({
               ))}
             </div>
           )}
-        </ScrollArea>
       </CardContent>
     </Card>
   );

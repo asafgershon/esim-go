@@ -420,14 +420,14 @@ export function CountryPricingSplitView({
             order={1}
           >
             <List.Container
-              className="h-full"
+              className="h-full overflow-y-auto"
               itemCount={
                 showTrips
                   ? filteredTrips.length
                   : filteredBundlesByCountry.length
               }
             >
-              <List.Header>
+              <List.Header className='bg-brand-white'>
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-medium text-gray-700">
                     {showTrips ? "Trips" : "Countries"} (
@@ -562,7 +562,7 @@ export function CountryPricingSplitView({
 
           {/* Bundles Panel */}
           <Panel defaultSize={35} minSize={25} id="bundles-panel" order={2}>
-            <div className="h-full flex flex-col">
+            <div className="h-full flex flex-col overflow-y-auto">
               {/* Bundles Header */}
               <div className="sticky top-0 z-10 border-b border-gray-200 px-3 py-3 flex-shrink-0">
                 <h3 className="text-sm font-medium text-gray-700">
@@ -621,7 +621,7 @@ export function CountryPricingSplitView({
                   damping: 30,
                   mass: 0.8,
                 }}
-                style={{ display: "flex", overflow: "hidden" }}
+                style={{ display: "flex", overflow: "hidden", overflowY: "auto" }}
               >
                 <ResizeHandle />
                 <Panel
