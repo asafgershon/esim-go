@@ -1,7 +1,7 @@
-import { catalogSyncQueueManager } from '../queues/catalog-sync.queue.js';
-import { syncJobRepository, catalogMetadataRepository } from './supabase.service.js';
 import { createLogger } from '@hiilo/utils';
-import { SyncJobType } from '../generated/types.js';
+import { Provider, SyncJobType } from '../../types/generated/types.js';
+import { catalogSyncQueueManager } from '../../workers/catalog-sync/catalog-sync.queue.js';
+import { catalogMetadataRepository, syncJobRepository } from '../database/supabase.service.js';
 
 const logger = createLogger({ 
   component: 'WorkerApiService',
@@ -16,7 +16,7 @@ export const workerApiService = {
   /**
    * Trigger a full catalog sync
    */
-  async triggerFullSync(userId?: string) {
+  async triggerFullSync(userId?: string, provider: Provider = Provider.EsimGo) {
     logger.info('Triggering full catalog sync', { userId });
     
     // Check if there's already an active full sync
@@ -26,7 +26,7 @@ export const workerApiService = {
       throw new Error('A full sync is already in progress');
     }
 
-    const job = await catalogSyncQueueManager.addFullSyncJob('manual');
+    const job = await catalogSyncQueueManager.addFullSyncJob('manual', provider);
     
     return {
       jobId: job.id,
@@ -61,7 +61,7 @@ export const workerApiService = {
   /**
    * Trigger sync for a specific country
    */
-  async triggerCountrySync(countryId: string, userId?: string) {
+  async triggerCountrySync(countryId: string, userId?: string, provider: Provider = Provider.EsimGo) {
     logger.info('Triggering country sync', { countryId, userId });
     
     // Check if there's already an active sync for this country
@@ -71,7 +71,7 @@ export const workerApiService = {
       throw new Error(`A sync for country ${countryId} is already in progress`);
     }
 
-    const job = await catalogSyncQueueManager.addCountrySyncJob(countryId,'MAYA');
+    const job = await catalogSyncQueueManager.addCountrySyncJob(countryId, provider);
     
     return {
       jobId: job.id,

@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { default as byteSize } from "byte-size";
 import countries from "i18n-iso-countries";
-import { MayaBundle } from "@/services/maya-sync.service";
-import { CatalogBundleSchema } from "./esimgo-bundle.transformer";
+import { MayaBundle } from "./maya-sync.service";
+import { CatalogBundleSchema } from "../esim-go/esim-go.transformer";
 
 // Transformation function with validation and filtering
 export function transformAndValidateMayaBundle(

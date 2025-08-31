@@ -6,7 +6,7 @@ const config: CodegenConfig = {
     "../packages/rules-engine/schema.graphql"
   ],
   generates: {
-    "./src/generated/types.ts": {
+    "./src/types/generated/types.ts": {
       plugins: ["typescript"],
       config: {
         // Only generate types, not resolvers

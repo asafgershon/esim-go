@@ -1,11 +1,11 @@
 import { Worker, Job } from 'bullmq';
 import { createLogger, withPerformanceLogging } from '@hiilo/utils';
-import { config } from '../config/index.js';
-import { ESIMGoSyncService } from '../services/esim-go-sync.service.js';
-import { MayaSyncService } from '../services/maya-sync.service.js';
-import { syncJobRepository } from '../services/supabase.service.js';
-import type { CatalogSyncJobData } from '../queues/catalog-sync.queue.js';
-import { SyncJobType } from '../generated/types.js';
+import { config } from '../../config/index.js';
+import { ESIMGoSyncService } from '../../services/providers/esim-go/esim-go-sync.service.js';
+import { MayaSyncService } from '../../services/providers/maya/maya-sync.service.js';
+import { syncJobRepository } from '../../services/database/supabase.service.js';
+import type { CatalogSyncJobData } from './catalog-sync.queue.js';
+import { SyncJobType } from '../../types/generated/types.js';
 import { Redis } from 'ioredis';
 
 const logger = createLogger({ 

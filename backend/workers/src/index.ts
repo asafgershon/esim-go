@@ -1,11 +1,12 @@
 import { createLogger } from "@hiilo/utils";
-import { config } from "./config/index.js";
-import { catalogSyncWorker } from "./workers/catalog-sync.worker.js";
-import { startScheduler, stopScheduler } from "./workers/scheduler.worker.js";
-import { checkSupabaseConnection } from "./services/supabase.service.js";
-import { catalogSyncQueueManager } from "./queues/catalog-sync.queue.js";
-import { startHealthServer } from "./health.js";
 import dotenv from "dotenv";
+import { config } from "./config/index.js";
+import { startHealthServer } from "./health.js";
+import { checkSupabaseConnection } from "./services/database/supabase.service.js";
+import { catalogSyncQueueManager } from "./workers/catalog-sync/catalog-sync.queue.js";
+import { catalogSyncWorker } from "./workers/catalog-sync/catalog-sync.worker.js";
+import { stopScheduler } from "./workers/scheduler/scheduler.worker.js";
+import { Provider } from "./types/generated/types.js";
 
 dotenv.config();
 const logger = createLogger({
@@ -82,10 +83,9 @@ async function start() {
 
 const runManualSync = async () => {
   const provider = process.argv.slice(2).includes("--MAYA")
-    ? "MAYA"
-    : "esim-go";
+    ? Provider.Maya
+    : Provider.EsimGo;
   logger.info("Manual sync requested, triggering catalog sync", { provider });
-  await catalogSyncQueueManager.addFullSyncJob("manual", provider);
   try {
     // Check Supabase connection
     const supabaseHealthy = await checkSupabaseConnection();

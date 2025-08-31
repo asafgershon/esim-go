@@ -1,6 +1,6 @@
 import { createServer } from 'http';
-import { catalogSyncQueueManager } from './queues/catalog-sync.queue.js';
-import { checkSupabaseConnection } from './services/supabase.service.js';
+import { catalogSyncQueueManager } from './workers/catalog-sync/catalog-sync.queue.js';
+import { checkSupabaseConnection } from './services/database/supabase.service.js';
 import { createLogger } from '@hiilo/utils';
 import { config } from './config/index.js';
 

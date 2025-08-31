@@ -1,15 +1,15 @@
-import { transformAndValidateMayaBundle } from "@/transformations/maya-bundle.transformer.js";
+import { transformAndValidateMayaBundle } from "./maya.transformer.js";
 import { createLogger, withPerformanceLogging } from "@hiilo/utils";
 import { parse } from "csv";
 import { readFileSync } from "fs";
 import path from "path";
 import z from "zod";
-import { config } from "../config/index.js";
-import { BundleDatabaseService } from "./bundle-database.service.js";
+import { config } from "../../../config/index.js";
+import { BundleDatabaseService } from "../../database/bundle-database.service.js";
 import {
   catalogMetadataRepository,
   syncJobRepository,
-} from "./supabase.service.js";
+} from "../../database/supabase.service.js";
 const logger = createLogger({
   component: "MayaSyncService",
   operationType: "maya-sync",
@@ -17,7 +17,7 @@ const logger = createLogger({
 
 // Parse CSV data into an array
 const csvContent = readFileSync(
-  path.join(__dirname, "maya-regions.csv"),
+  path.join(__dirname, "../../../data/maya-regions.csv"),
   "utf8"
 );
 const countriesData: Array<MayaCountry> = [];
@@ -411,6 +411,3 @@ export class MayaSyncService {
     }
   }
 }
-
-const instance = new MayaSyncService();
-instance.performFullSync(crypto.randomUUID());

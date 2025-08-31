@@ -1,12 +1,11 @@
 import { Queue, QueueEvents } from "bullmq";
 import { Redis } from "ioredis";
-import { config } from "../config/index.js";
+import { config } from "../../config/index.js";
 import { createLogger } from "@hiilo/utils";
-import { SyncJobType } from "../generated/types.js";
+import { Provider, SyncJobType } from "../../types/generated/types.js";
 
 const logger = createLogger({ component: "CatalogSyncQueue" });
 
-type Provider = "esim-go" | "MAYA";
 // Job data types (using generated GraphQL enum)
 export interface FullSyncJobData {
   type: SyncJobType.FullSync;
@@ -104,7 +103,7 @@ export const catalogSyncQueueManager = {
       {
         type: SyncJobType.GroupSync,
         bundleGroup,
-        provider: "esim-go",
+        provider: Provider.EsimGo,
         metadata: {
           timestamp: new Date().toISOString(),
         },

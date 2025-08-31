@@ -1,13 +1,13 @@
 import type { CatalogueResponseInner } from "@hiilo/esim-go";
 import { ESimGoClient } from "@hiilo/esim-go";
 import { createLogger, withPerformanceLogging } from "@hiilo/utils";
-import { config } from "../config/index.js";
-import { transformAndValidateCatalogBundle } from "../transformations/esimgo-bundle.transformer.js";
-import { BundleDatabaseService } from "./bundle-database.service.js";
+import { config } from "../../../config/index.js";
+import { transformAndValidateCatalogBundle } from "./esim-go.transformer.js";
+import { BundleDatabaseService } from "../../database/bundle-database.service.js";
 import {
   catalogMetadataRepository,
   syncJobRepository,
-} from "./supabase.service.js";
+} from "../../database/supabase.service.js";
 
 const logger = createLogger({
   component: "ESIMGoSyncService",

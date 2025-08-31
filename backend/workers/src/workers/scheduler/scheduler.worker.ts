@@ -1,7 +1,7 @@
 import { createLogger } from "@hiilo/utils";
-import { catalogSyncQueueManager } from "../queues/catalog-sync.queue.js";
-import { ESIMGoSyncService } from "../services/esim-go-sync.service.js";
-import { catalogMetadataRepository } from "../services/supabase.service.js";
+import { catalogSyncQueueManager } from "../catalog-sync/catalog-sync.queue.js";
+import { ESIMGoSyncService } from "../../services/providers/esim-go/esim-go-sync.service.js";
+import { catalogMetadataRepository } from "../../services/database/supabase.service.js";
 
 const logger = createLogger({
   component: "SchedulerWorker",

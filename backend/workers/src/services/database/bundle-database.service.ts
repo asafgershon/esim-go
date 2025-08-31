@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { createLogger, withPerformanceLogging } from '@hiilo/utils';
-import { config } from '../config/index.js';
+import { config } from '../../config/index.js';
 import type { Database } from '@hiilo/supabase';
 
 const logger = createLogger({ 
