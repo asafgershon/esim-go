@@ -9,11 +9,6 @@ import "@workspace/ui/theme.css";
 import "@workspace/ui/globals.css";
 import "./globals.css";
 
-const rubik = Rubik({
-  variable: "--font-rubik",
-  subsets: ["latin", "hebrew"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Hilo ESIM - Unlimited Travel. Unlimited Data",
@@ -36,7 +31,7 @@ export default function RootLayout({
         />
         <meta name="apple-mobile-web-app-title" content="Hiilo ESIM" />
       </head>
-      <body className={`${rubik.variable} antialiased font-hebrew`}>
+      <body className={`antialiased font-hebrew`}>
         <ErrorBoundary>
           <Providers>{children}</Providers>
         </ErrorBoundary>
