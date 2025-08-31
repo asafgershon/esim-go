@@ -9,6 +9,7 @@
   "scripts": {
     "link": "supabase link .",
     "codegen": "[ ! -f .env ] || export $(grep -v '^#' .env | xargs) && supabase gen types typescript --project-id ${SUPABASE_PROJECT_ID} --schema public --schema auth > types.ts",
+    "codegen:dev": "[ ! -f .env ] || export $(grep -v '^#' .env | xargs) && supabase gen types typescript --project-id ${SUPABASE_PROJECT_ID:-ucgetkcgpgnotvkierzo} --schema public --schema auth > types.ts",
     "codegen:local": "supabase gen types typescript --local > types.ts"
   },
   "devDependencies": {

@@ -2175,6 +2175,7 @@ export type TriggerSyncParams = {
   countryId?: InputMaybe<Scalars['String']['input']>;
   force?: InputMaybe<Scalars['Boolean']['input']>;
   priority?: InputMaybe<Scalars['String']['input']>;
+  provider?: InputMaybe<Provider>;
   type: SyncJobType;
 };
 
@@ -2184,6 +2185,7 @@ export type TriggerSyncResponse = {
   error?: Maybe<Scalars['String']['output']>;
   jobId?: Maybe<Scalars['String']['output']>;
   message?: Maybe<Scalars['String']['output']>;
+  provider?: Maybe<Provider>;
   success: Scalars['Boolean']['output'];
 };
 

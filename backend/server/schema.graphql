@@ -1641,6 +1641,7 @@ input TriggerSyncParams {
   countryId: String
   priority: String = "normal"
   force: Boolean = false
+  provider: Provider
 }
 
 type TriggerSyncResponse {
@@ -1648,6 +1649,7 @@ type TriggerSyncResponse {
   jobId: String
   message: String
   error: String
+  provider: Provider
   conflictingJob: ConflictingJobInfo
 }
 

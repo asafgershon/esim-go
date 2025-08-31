@@ -2,19 +2,24 @@ import byteSize from "byte-size";
 import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
-import type {
-  CatalogBundle,
-  CustomerBundle,
-  Resolvers,
-  SyncJobType,
-  PaymentMethod,
+import {
+  type CatalogBundle,
+  type CustomerBundle,
+  type Resolvers,
+  type SyncJobType,
+  type PaymentMethod,
+  Provider,
 } from "../types";
 import { extractPricingKey } from "../dataloaders/pricing-dataloader";
+import { getRedis } from "../services";
+import { env } from "../config/env";
 
 const logger = createLogger({
   component: "CatalogResolvers",
   operationType: "resolver",
 });
+
+let redis = getRedis();
 
 // Helper function to map payment method enum
 const mapPaymentMethodEnum = (paymentMethod: any) => {
@@ -30,20 +35,35 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         // Get all filter data from repository methods
-        logger.info("Fetching groups...", { operationType: "pricing-filters-fetch" });
+        logger.info("Fetching groups...", {
+          operationType: "pricing-filters-fetch",
+        });
         const groups = (await context.repositories.bundles.getGroups()).map(
           (g) => g.replace("-", "")
         );
-        logger.info("Groups fetched", { groups, operationType: "pricing-filters-fetch" });
+        logger.info("Groups fetched", {
+          groups,
+          operationType: "pricing-filters-fetch",
+        });
 
-        logger.info("Fetching data types...", { operationType: "pricing-filters-fetch" });
+        logger.info("Fetching data types...", {
+          operationType: "pricing-filters-fetch",
+        });
         const dataTypes = await context.repositories.bundles.getDataTypes();
-        logger.info("Data types fetched", { dataTypes, operationType: "pricing-filters-fetch" });
+        logger.info("Data types fetched", {
+          dataTypes,
+          operationType: "pricing-filters-fetch",
+        });
 
-        logger.info("Fetching distinct durations...", { operationType: "pricing-filters-fetch" });
+        logger.info("Fetching distinct durations...", {
+          operationType: "pricing-filters-fetch",
+        });
         const durations =
           await context.repositories.bundles.getDistinctDurations();
-        logger.info("Distinct durations fetched", { durations, operationType: "pricing-filters-fetch" });
+        logger.info("Distinct durations fetched", {
+          durations,
+          operationType: "pricing-filters-fetch",
+        });
 
         const result = {
           groups,
@@ -238,6 +258,7 @@ export const catalogResolvers: Partial<Resolvers> = {
         countryId,
         priority = "normal",
         force = false,
+        provider = Provider.EsimGo,
       } = params;
 
       try {
@@ -309,24 +330,22 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         // Import the BullMQ queue to actually queue jobs
         const { Queue } = await import("bullmq");
-        const { default: IORedis } = await import("ioredis");
-        const { cleanEnv, str } = await import("envalid");
-
-        // Get Redis config from environment
-        const env = cleanEnv(process.env, {
-          REDIS_HOST: str({ default: "localhost" }),
-          REDIS_PORT: str({ default: "6379" }),
-          REDIS_PASSWORD: str({ default: "mypassword" }),
-          REDIS_USER: str({ default: "default" }),
+        // Create the same queue as workers use
+        const catalogQueue = new Queue("catalog-sync", {
+          connection: {
+            host: env.REDIS_HOST,
+            port: env.REDIS_PORT,
+            password: env.REDIS_PASSWORD,
+            family: 0,
+          },
         });
 
-       
 
-        // Create the same queue as workers use
-        const catalogQueue = new Queue("catalog-sync", { connection: context.services.redis });
-
-        // Generate proper UUID for the job ID
-        const { randomUUID } = await import("crypto");
+        if (!provider) {
+          throw new GraphQLError("Provider is required", {
+            extensions: { code: "INVALID_ARGUMENT" },
+          });
+        }
 
         // Create a sync job record using repository
         const syncJob = await context.repositories.syncJob.createJob({
@@ -334,6 +353,7 @@ export const catalogResolvers: Partial<Resolvers> = {
           priority: (priority || "normal") as any,
           bundleGroup: bundleGroup || undefined,
           countryId: countryId || undefined,
+          provider: provider,
           metadata: {
             force,
             triggeredBy: context.auth?.user?.id || "test-user",
@@ -344,10 +364,11 @@ export const catalogResolvers: Partial<Resolvers> = {
         const bullmqJob = await catalogQueue.add(
           `catalog-sync-${type}`,
           {
-            type: type, // Use GraphQL enum directly
+            type: type,
             bundleGroup: bundleGroup,
             countryId: countryId,
             priority: priority,
+            provider: provider,
             metadata: {
               dbJobId: syncJob.id,
               force,
@@ -373,8 +394,6 @@ export const catalogResolvers: Partial<Resolvers> = {
             bullmqJobId: bullmqJob.id,
           },
         });
-
-
 
         logger.info("Catalog sync job queued successfully", {
           dbJobId: syncJob.id,
@@ -446,7 +465,9 @@ export const catalogResolvers: Partial<Resolvers> = {
           context
         );
 
-        const pricingBreakdown = await context.dataLoaders.pricing.load(pricingKey);
+        const pricingBreakdown = await context.dataLoaders.pricing.load(
+          pricingKey
+        );
         return pricingBreakdown.appliedRules || [];
       } catch (error) {
         logger.error("Failed to get applied rules for bundle", error as Error, {
@@ -603,6 +624,7 @@ export const catalogResolvers: Partial<Resolvers> = {
             speed: bundle.speed || [],
             syncedAt: bundle?.updated_at,
             updatedAt: bundle?.updated_at,
+            provider: bundle?.provider as Provider,
             dataAmountMB: bundle?.data_amount_mb,
             description: bundle?.description,
             region: bundle?.region,

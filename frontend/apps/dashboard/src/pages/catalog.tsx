@@ -1,19 +1,16 @@
 import {
   GetBundlesByGroupQuery,
   GetBundlesByGroupQueryVariables,
+  Provider,
   SyncJobType,
-  type BundleFilter,
   type GetBundlesByCountryQuery,
   type GetBundlesByCountryQueryVariables,
   type GetBundlesByRegionQuery,
   type GetBundlesByRegionQueryVariables,
-  type GetBundlesQuery,
-  type GetBundlesQueryVariables,
   type GetCatalogSyncHistoryQuery,
   type GetCatalogSyncHistoryQueryVariables,
-  type PaginationInput,
   type TriggerCatalogSyncMutation,
-  type TriggerCatalogSyncMutationVariables,
+  type TriggerCatalogSyncMutationVariables
 } from "@/__generated__/graphql";
 import { CatalogSplitView } from "@/components/catalog/CatalogSplitView";
 import { PageLayout } from "@/components/common/PageLayout";
@@ -24,16 +21,16 @@ import {
 } from "@/components/SyncConflictModal";
 import {
   GET_BUNDLES_BY_COUNTRY,
-  GET_BUNDLES_BY_REGION,
   GET_BUNDLES_BY_GROUP,
+  GET_BUNDLES_BY_REGION,
   GET_CATALOG_SYNC_HISTORY,
   TRIGGER_CATALOG_SYNC,
 } from "@/lib/graphql/queries";
 import { gql, useMutation, useQuery } from "@apollo/client";
 import { Database } from "lucide-react";
-import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 
 const GET_BUNDLES = gql(`
   query GetBundles($filter: BundleFilter, $pagination: PaginationInput) {
@@ -65,61 +62,6 @@ const GET_BUNDLES = gql(`
     }
   }
 `);
-
-// Custom hook for fetching catalog bundles with filters and pagination
-function useCatalogBundles(options?: {
-  filter?: BundleFilter;
-  pagination?: PaginationInput;
-  skip?: boolean;
-}) {
-  const { data, loading, error, fetchMore, refetch } = useQuery<
-    GetBundlesQuery,
-    GetBundlesQueryVariables
-  >(GET_BUNDLES, {
-    variables: {
-      filter: options?.filter,
-      pagination: options?.pagination || { limit: 50, offset: 0 },
-    },
-    skip: options?.skip,
-    notifyOnNetworkStatusChange: true,
-  });
-
-  const loadMore = useCallback(async () => {
-    if (!data?.bundles.pageInfo.hasNextPage) return;
-
-    const currentOffset = options?.pagination?.offset || 0;
-    const currentLimit = options?.pagination?.limit || 50;
-
-    await fetchMore({
-      variables: {
-        pagination: {
-          limit: currentLimit,
-          offset: currentOffset + currentLimit,
-        },
-      },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        if (!fetchMoreResult) return prev;
-        return {
-          ...prev,
-          bundles: {
-            ...fetchMoreResult.bundles,
-            nodes: [...prev.bundles.nodes, ...fetchMoreResult.bundles.nodes],
-          },
-        };
-      },
-    });
-  }, [data, fetchMore, options?.pagination]);
-
-  return {
-    bundles: data?.bundles.nodes || [],
-    totalCount: data?.bundles.totalCount || 0,
-    pageInfo: data?.bundles.pageInfo,
-    loading,
-    error,
-    refetch,
-    loadMore,
-  };
-}
 
 function CatalogPageContent() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -192,7 +134,6 @@ function CatalogPageContent() {
     },
   });
 
-
   const handleSyncClick = async () => {
     // Check for running sync jobs
     const syncHistory = syncHistoryData?.catalogSyncHistory?.jobs || [];
@@ -223,16 +164,23 @@ function CatalogPageContent() {
     }
 
     // No conflicts, proceed with sync
-    await performSync(false);
+    await Promise.all([
+      performSync(false, Provider.EsimGo),
+      performSync(false, Provider.Maya),
+    ]);
   };
 
-  const performSync = async (force: boolean) => {
+  const performSync = async (
+    force: boolean,
+    provider: Provider = Provider.EsimGo
+  ) => {
     try {
       await triggerCatalogSync({
         variables: {
           params: {
             type: SyncJobType.FullSync,
             force,
+            provider: provider,
           },
         },
       });
@@ -273,12 +221,12 @@ function CatalogPageContent() {
             loading={catalogLoading || regionsLoading}
             onSync={handleSyncClick}
             syncLoading={syncLoading}
-            selectedCountryId={searchParams.get('country') || undefined}
+            selectedCountryId={searchParams.get("country") || undefined}
             onCountrySelect={(countryId) => {
               if (countryId) {
                 setSearchParams({ country: countryId });
               } else {
-                searchParams.delete('country');
+                searchParams.delete("country");
                 setSearchParams(searchParams);
               }
             }}

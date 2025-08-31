@@ -322,6 +322,7 @@ export type CatalogBundle = Bundle & {
   isUnlimited: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
   region?: Maybe<Scalars['String']['output']>;
   speed: Array<Scalars['String']['output']>;
   syncedAt: Scalars['DateTime']['output'];
@@ -621,6 +622,7 @@ export type CustomerBundle = Bundle & {
   isUnlimited: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
   region?: Maybe<Scalars['String']['output']>;
   speed: Array<Scalars['String']['output']>;
   validityInDays: Scalars['Int']['output'];
@@ -1907,6 +1909,7 @@ export type TriggerSyncParams = {
   countryId?: InputMaybe<Scalars['String']['input']>;
   force?: InputMaybe<Scalars['Boolean']['input']>;
   priority?: InputMaybe<Scalars['String']['input']>;
+  provider?: InputMaybe<Provider>;
   type: SyncJobType;
 };
 
@@ -1916,6 +1919,7 @@ export type TriggerSyncResponse = {
   error?: Maybe<Scalars['String']['output']>;
   jobId?: Maybe<Scalars['String']['output']>;
   message?: Maybe<Scalars['String']['output']>;
+  provider?: Maybe<Provider>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -2637,6 +2641,7 @@ export type CatalogBundleResolvers<ContextType = Context, ParentType extends Res
   isUnlimited?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   pricingBreakdown?: Resolver<Maybe<ResolversTypes['PricingBreakdown']>, ParentType, ContextType, Partial<CatalogBundlePricingBreakdownArgs>>;
+  provider?: Resolver<ResolversTypes['Provider'], ParentType, ContextType>;
   region?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   speed?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   syncedAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
@@ -2872,6 +2877,7 @@ export type CustomerBundleResolvers<ContextType = Context, ParentType extends Re
   isUnlimited?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   pricingBreakdown?: Resolver<Maybe<ResolversTypes['PricingBreakdown']>, ParentType, ContextType, Partial<CustomerBundlePricingBreakdownArgs>>;
+  provider?: Resolver<ResolversTypes['Provider'], ParentType, ContextType>;
   region?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   speed?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   validityInDays?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -3512,6 +3518,7 @@ export type TriggerSyncResponseResolvers<ContextType = Context, ParentType exten
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   jobId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  provider?: Resolver<Maybe<ResolversTypes['Provider']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

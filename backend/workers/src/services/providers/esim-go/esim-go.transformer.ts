@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { default as byteSize } from "byte-size";
 import countries from "i18n-iso-countries";
+import { BundleCatalogueResponse } from "@hiilo/esim-go";
 
 // Input schemas matching the eSIM Go API response
 const CountrySchema = z.object({
@@ -11,13 +12,13 @@ const CountrySchema = z.object({
 
 const BillingTypeEnum = z.enum(["FixedCost"]);
 
-const CatalogueResponseInnerSchema = z.object({
+const EsimGOAPIBundle = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
   groups: z.array(z.string()).optional(),
   countries: z.array(CountrySchema).optional(),
   dataAmount: z.number().optional(),
-  validity_in_days: z.number().optional(),
+  duration: z.number().optional(),
   speed: z.array(z.string()).nullable().optional().default([]),
   autostart: z.boolean().optional(),
   unlimited: z.boolean().optional(),
@@ -50,22 +51,22 @@ export type CatalogBundleSchema = z.infer<typeof CatalogBundleSchema>;
 
 // Transformation function with validation and filtering
 export function transformAndValidateCatalogBundle(
-  apiBundle: unknown,
+  apiBundle: BundleCatalogueResponse,
   organizationCurrency: string = "USD"
 ): z.infer<typeof CatalogBundleSchema> | null {
   try {
     // First, validate the input
-    const validated = CatalogueResponseInnerSchema.parse(apiBundle);
+    const validated = EsimGOAPIBundle.parse(apiBundle);
 
     // Check required fields for valid bundles
     if (
       !validated.name ||
-      !validated.validity_in_days ||
+      !validated.duration ||
       validated.price === undefined
     ) {
       console.warn("Skipping bundle: missing required fields", {
         name: validated.name,
-        duration: validated.validity_in_days,
+        duration: validated.duration,
         price: validated.price,
       });
       return null;
@@ -81,10 +82,10 @@ export function transformAndValidateCatalogBundle(
     }
 
     // Skip bundles with invalid duration
-    if (validated.validity_in_days <= 0) {
+    if (validated.duration <= 0) {
       console.warn("Skipping bundle: invalid duration", {
         name: validated.name,
-        duration: validated.validity_in_days,
+        duration: validated.duration,
       });
       return null;
     }
@@ -146,7 +147,7 @@ export function transformAndValidateCatalogBundle(
             .trim() // Remove leading/trailing spaces
       ),
       description: validated.description || null,
-      validity_in_days: validated.validity_in_days,
+      validity_in_days: validated.duration,
       data_amount_mb: isUnlimited ? null : validated.dataAmount || null,
       data_amount_readable: dataAmountReadable,
       is_unlimited: isUnlimited,
@@ -241,5 +242,5 @@ export async function transformCatalogBundles(
 // Type exports
 export type CatalogBundle = z.infer<typeof CatalogBundleSchema>;
 export type CatalogueResponseInner = z.infer<
-  typeof CatalogueResponseInnerSchema
+  typeof EsimGOAPIBundle
 >;

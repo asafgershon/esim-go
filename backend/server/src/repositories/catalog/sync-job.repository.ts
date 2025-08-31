@@ -1,29 +1,43 @@
-import { BaseSupabaseRepository } from '../base-supabase.repository';
-import { type Database, type Json } from '../../database.types';
-import { createLogger, withPerformanceLogging } from '../../lib/logger';
-import { z } from 'zod';
+import { type Database } from "@hiilo/supabase";
+import { z } from "zod";
+import { createLogger, withPerformanceLogging } from "../../lib/logger";
+import { BaseSupabaseRepository } from "../base-supabase.repository";
 
-type CatalogSyncJob = Database['public']['Tables']['catalog_sync_jobs']['Row'];
-type CatalogSyncJobInsert = Database['public']['Tables']['catalog_sync_jobs']['Insert'];
-type CatalogSyncJobUpdate = Database['public']['Tables']['catalog_sync_jobs']['Update'];
+type CatalogSyncJob = Database["public"]["Tables"]["catalog_sync_jobs"]["Row"];
+type CatalogSyncJobInsert =
+  Database["public"]["Tables"]["catalog_sync_jobs"]["Insert"];
+type CatalogSyncJobUpdate =
+  Database["public"]["Tables"]["catalog_sync_jobs"]["Update"];
 
-import { SyncJobType } from '../../types';
+import { Provider, SyncJobType } from "../../types";
 
 export type JobType = SyncJobType;
-export type JobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-export type JobPriority = 'high' | 'normal' | 'low';
+export type JobStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
+export type JobPriority = "high" | "normal" | "low";
 
 // Zod schemas for validation and type safety
 const JobTypeSchema = z.nativeEnum(SyncJobType);
-const JobStatusSchema = z.enum(['pending', 'running', 'completed', 'failed', 'cancelled']);
-const JobPrioritySchema = z.enum(['high', 'normal', 'low']);
+const JobStatusSchema = z.enum([
+  "pending",
+  "running",
+  "completed",
+  "failed",
+  "cancelled",
+]);
+const JobPrioritySchema = z.enum(["high", "normal", "low"]);
 
 const CreateSyncJobParamsSchema = z.object({
   jobType: JobTypeSchema,
   priority: JobPrioritySchema.optional(),
   bundleGroup: z.string().optional(),
   countryId: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  provider: z.enum(Provider),
 });
 
 const UpdateSyncJobParamsSchema = z.object({
@@ -32,30 +46,18 @@ const UpdateSyncJobParamsSchema = z.object({
   bundlesProcessed: z.number().int().min(0).optional(),
   bundlesAdded: z.number().int().min(0).optional(),
   bundlesUpdated: z.number().int().min(0).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
-export interface CreateSyncJobParams {
-  jobType: JobType;
-  priority?: JobPriority;
-  bundleGroup?: string;
-  countryId?: string;
-  metadata?: Record<string, any>;
-}
-
-export interface UpdateSyncJobParams {
-  status?: JobStatus;
-  errorMessage?: string;
-  bundlesProcessed?: number;
-  bundlesAdded?: number;
-  bundlesUpdated?: number;
-  metadata?: Record<string, any>;
-}
+type CreateSyncJobParams = z.infer<typeof CreateSyncJobParamsSchema>;
+type UpdateSyncJobParams = z.infer<typeof UpdateSyncJobParamsSchema>;
 
 // Helper function to map camelCase params to snake_case database fields
-function mapUpdateParamsToDbFields(params: UpdateSyncJobParams): CatalogSyncJobUpdate {
+function mapUpdateParamsToDbFields(
+  params: UpdateSyncJobParams
+): CatalogSyncJobUpdate {
   const updateData: CatalogSyncJobUpdate = {
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
   };
 
   // Validate input
@@ -84,14 +86,18 @@ function mapUpdateParamsToDbFields(params: UpdateSyncJobParams): CatalogSyncJobU
   return updateData;
 }
 
-export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, CatalogSyncJobInsert, CatalogSyncJobUpdate> {
-  private logger = createLogger({ 
-    component: 'SyncJobRepository',
-    operationType: 'sync-job-management'
+export class SyncJobRepository extends BaseSupabaseRepository<
+  CatalogSyncJob,
+  CatalogSyncJobInsert,
+  CatalogSyncJobUpdate
+> {
+  private logger = createLogger({
+    component: "SyncJobRepository",
+    operationType: "sync-job-management",
   });
 
   constructor() {
-    super('catalog_sync_jobs');
+    super("catalog_sync_jobs");
   }
 
   /**
@@ -100,37 +106,40 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
   async createJob(params: CreateSyncJobParams): Promise<CatalogSyncJob> {
     return withPerformanceLogging(
       this.logger,
-      'create-sync-job',
+      "create-sync-job",
       async () => {
         // Validate input with Zod
         const validatedParams = CreateSyncJobParamsSchema.parse(params);
 
         const jobData: CatalogSyncJobInsert = {
           job_type: validatedParams.jobType,
-          status: 'pending',
-          priority: validatedParams.priority || 'normal',
+          status: "pending",
+          priority: validatedParams.priority || "normal",
           bundle_group: validatedParams.bundleGroup || null,
           country_id: validatedParams.countryId || null,
-          metadata: validatedParams.metadata ? JSON.stringify(validatedParams.metadata) : undefined,
-          created_at: new Date().toISOString()
+          metadata: validatedParams.metadata
+            ? JSON.stringify(validatedParams.metadata)
+            : undefined,
+          created_at: new Date().toISOString(),
         };
 
         const { data, error } = await this.supabase
-          .from('catalog_sync_jobs')
+          .from("catalog_sync_jobs")
           .insert(jobData)
           .select()
           .single();
 
         if (error) {
-          this.logger.error('Failed to create sync job', error, { params });
+          this.logger.error("Failed to create sync job", error, { params });
           throw error;
         }
 
-        this.logger.info('Sync job created', {
+        this.logger.info("Sync job created", {
           jobId: data.id,
           jobType: data.job_type,
           priority: data.priority,
-          operationType: 'job-created'
+          provider: data.provider,
+          operationType: "job-created",
         });
 
         return data;
@@ -145,23 +154,23 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
   async getNextPendingJob(): Promise<CatalogSyncJob | null> {
     return withPerformanceLogging(
       this.logger,
-      'get-next-pending-job',
+      "get-next-pending-job",
       async () => {
         // Use the active_sync_jobs view for better query
         const { data, error } = await this.supabase
-          .from('catalog_sync_jobs')
-          .select('*')
-          .eq('status', 'pending')
-          .order('priority', { ascending: true })
-          .order('created_at', { ascending: true })
+          .from("catalog_sync_jobs")
+          .select("*")
+          .eq("status", "pending")
+          .order("priority", { ascending: true })
+          .order("created_at", { ascending: true })
           .limit(1)
           .single();
 
         if (error) {
-          if (error.code === 'PGRST116') {
+          if (error.code === "PGRST116") {
             return null; // No pending jobs
           }
-          this.logger.error('Failed to get pending job', error);
+          this.logger.error("Failed to get pending job", error);
           throw error;
         }
 
@@ -175,30 +184,30 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
    */
   async startJob(jobId: string): Promise<CatalogSyncJob> {
     const { data, error } = await this.supabase
-      .from('catalog_sync_jobs')
+      .from("catalog_sync_jobs")
       .update({
-        status: 'running',
+        status: "running",
         started_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', jobId)
-      .eq('status', 'pending') // Only start if still pending
+      .eq("id", jobId)
+      .eq("status", "pending") // Only start if still pending
       .select()
       .single();
 
     if (error) {
-      this.logger.error('Failed to start job', error, { jobId });
+      this.logger.error("Failed to start job", error, { jobId });
       throw error;
     }
 
     if (!data) {
-      throw new Error('Job not found or already started');
+      throw new Error("Job not found or already started");
     }
 
-    this.logger.info('Sync job started', {
+    this.logger.info("Sync job started", {
       jobId: data.id,
       jobType: data.job_type,
-      operationType: 'job-started'
+      operationType: "job-started",
     });
 
     return data;
@@ -208,7 +217,7 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
    * Update job progress
    */
   async updateJobProgress(
-    jobId: string, 
+    jobId: string,
     params: UpdateSyncJobParams
   ): Promise<CatalogSyncJob> {
     try {
@@ -216,45 +225,53 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
       const updateData = mapUpdateParamsToDbFields(params);
 
       // If completing or failing, set completed_at
-      if (params.status === 'completed' || params.status === 'failed') {
+      if (params.status === "completed" || params.status === "failed") {
         updateData.completed_at = new Date().toISOString();
       }
 
-      this.logger.debug('Updating job progress with validated data', {
+      this.logger.debug("Updating job progress with validated data", {
         jobId,
         updateData,
-        operationType: 'job-progress-update'
+        operationType: "job-progress-update",
       });
 
       const { data, error } = await this.supabase
-        .from('catalog_sync_jobs')
+        .from("catalog_sync_jobs")
         .update(updateData)
-        .eq('id', jobId)
+        .eq("id", jobId)
         .select()
         .single();
 
       if (error) {
-        this.logger.error('Failed to update job progress', error, { jobId, params, updateData });
+        this.logger.error("Failed to update job progress", error, {
+          jobId,
+          params,
+          updateData,
+        });
         throw error;
       }
 
-      this.logger.info('Job progress updated successfully', {
+      this.logger.info("Job progress updated successfully", {
         jobId: data.id,
         status: data.status,
         bundlesProcessed: data.bundles_processed,
-        operationType: 'job-progress-updated'
+        operationType: "job-progress-updated",
       });
 
       return data;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        this.logger.error('Validation error in updateJobProgress', undefined, {
+        this.logger.error("Validation error in updateJobProgress", undefined, {
           jobId,
           params,
-          validationErrors: error.errors,
-          operationType: 'job-progress-validation-error'
+          validationErrors: error.issues,
+          operationType: "job-progress-validation-error",
         });
-        throw new Error(`Invalid job progress parameters: ${error.errors.map(e => e.message).join(', ')}`);
+        throw new Error(
+          `Invalid job progress parameters: ${error.issues
+            .map((e) => e.message)
+            .join(", ")}`
+        );
       }
       throw error;
     }
@@ -273,11 +290,11 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
     }
   ): Promise<CatalogSyncJob> {
     return this.updateJobProgress(jobId, {
-      status: 'completed',
+      status: "completed",
       bundlesProcessed: results.bundlesProcessed,
       bundlesAdded: results.bundlesAdded,
       bundlesUpdated: results.bundlesUpdated,
-      metadata: results.metadata
+      metadata: results.metadata,
     });
   }
 
@@ -286,12 +303,12 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
    */
   async failJob(jobId: string, error: Error): Promise<CatalogSyncJob> {
     return this.updateJobProgress(jobId, {
-      status: 'failed',
+      status: "failed",
       errorMessage: error.message,
       metadata: {
         errorStack: error.stack,
-        errorName: error.name
-      }
+        errorName: error.name,
+      },
     });
   }
 
@@ -300,13 +317,13 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
    */
   async getActiveJobs(): Promise<CatalogSyncJob[]> {
     const { data, error } = await this.supabase
-      .from('catalog_sync_jobs')
-      .select('*')
-      .in('status', ['pending', 'running'])
-      .order('created_at', { ascending: true });
+      .from("catalog_sync_jobs")
+      .select("*")
+      .in("status", ["pending", "running"])
+      .order("created_at", { ascending: true });
 
     if (error) {
-      this.logger.error('Failed to get active jobs', error);
+      this.logger.error("Failed to get active jobs", error);
       throw error;
     }
 
@@ -321,21 +338,21 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
     thresholdTime.setMinutes(thresholdTime.getMinutes() - minutesThreshold);
 
     const { data, error } = await this.supabase
-      .from('catalog_sync_jobs')
-      .select('*')
-      .eq('status', 'running')
-      .lt('started_at', thresholdTime.toISOString());
+      .from("catalog_sync_jobs")
+      .select("*")
+      .eq("status", "running")
+      .lt("started_at", thresholdTime.toISOString());
 
     if (error) {
-      this.logger.error('Failed to get stuck jobs', error);
+      this.logger.error("Failed to get stuck jobs", error);
       throw error;
     }
 
     if (data && data.length > 0) {
-      this.logger.warn('Found stuck jobs', {
+      this.logger.warn("Found stuck jobs", {
         count: data.length,
         minutesThreshold,
-        operationType: 'stuck-jobs-detected'
+        operationType: "stuck-jobs-detected",
       });
     }
 
@@ -352,20 +369,22 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
     for (const job of stuckJobs) {
       try {
         await this.updateJobProgress(job.id, {
-          status: 'cancelled',
-          errorMessage: `Job cancelled after running for more than ${minutesThreshold} minutes`
+          status: "cancelled",
+          errorMessage: `Job cancelled after running for more than ${minutesThreshold} minutes`,
         });
         cancelledCount++;
       } catch (error) {
-        this.logger.error('Failed to cancel stuck job', error as Error, { jobId: job.id });
+        this.logger.error("Failed to cancel stuck job", error as Error, {
+          jobId: job.id,
+        });
       }
     }
 
     if (cancelledCount > 0) {
-      this.logger.info('Cancelled stuck jobs', {
+      this.logger.info("Cancelled stuck jobs", {
         cancelledCount,
         minutesThreshold,
-        operationType: 'stuck-jobs-cancelled'
+        operationType: "stuck-jobs-cancelled",
       });
     }
 
@@ -385,34 +404,34 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
     totalCount: number;
   }> {
     let query = this.supabase
-      .from('catalog_sync_jobs')
-      .select('*', { count: 'exact' });
+      .from("catalog_sync_jobs")
+      .select("*", { count: "exact" });
 
     if (params.status) {
-      query = query.eq('status', params.status);
+      query = query.eq("status", params.status);
     }
 
     if (params.jobType) {
-      query = query.eq('job_type', params.jobType);
+      query = query.eq("job_type", params.jobType);
     }
 
     const limit = params.limit || 50;
     const offset = params.offset || 0;
 
     query = query
-      .order('created_at', { ascending: false })
+      .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     const { data, error, count } = await query;
 
     if (error) {
-      this.logger.error('Failed to get job history', error, { params });
+      this.logger.error("Failed to get job history", error, { params });
       throw error;
     }
 
     return {
       jobs: data || [],
-      totalCount: count || 0
+      totalCount: count || 0,
     };
   }
 
@@ -425,23 +444,23 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
     countryId?: string;
   }): Promise<boolean> {
     let query = this.supabase
-      .from('catalog_sync_jobs')
-      .select('id')
-      .in('status', ['pending', 'running'])
-      .eq('job_type', params.jobType);
+      .from("catalog_sync_jobs")
+      .select("id")
+      .in("status", ["pending", "running"])
+      .eq("job_type", params.jobType);
 
     if (params.bundleGroup) {
-      query = query.eq('bundle_group', params.bundleGroup);
+      query = query.eq("bundle_group", params.bundleGroup);
     }
 
     if (params.countryId) {
-      query = query.eq('country_id', params.countryId);
+      query = query.eq("country_id", params.countryId);
     }
 
     const { data, error } = await query.limit(1);
 
     if (error) {
-      this.logger.error('Failed to check for active job', error, { params });
+      this.logger.error("Failed to check for active job", error, { params });
       throw error;
     }
 
@@ -458,43 +477,43 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
   }): Promise<number> {
     return withPerformanceLogging(
       this.logger,
-      'cancel-pending-jobs',
+      "cancel-pending-jobs",
       async () => {
         let query = this.supabase
-          .from('catalog_sync_jobs')
+          .from("catalog_sync_jobs")
           .update({
-            status: 'cancelled',
-            error_message: 'Cancelled to allow new sync job',
+            status: "cancelled",
+            error_message: "Cancelled to allow new sync job",
             updated_at: new Date().toISOString(),
-            completed_at: new Date().toISOString()
+            completed_at: new Date().toISOString(),
           })
-          .eq('status', 'pending')
-          .eq('job_type', params.jobType);
+          .eq("status", "pending")
+          .eq("job_type", params.jobType);
 
         if (params.bundleGroup) {
-          query = query.eq('bundle_group', params.bundleGroup);
+          query = query.eq("bundle_group", params.bundleGroup);
         }
 
         if (params.countryId) {
-          query = query.eq('country_id', params.countryId);
+          query = query.eq("country_id", params.countryId);
         }
 
-        const { data, error } = await query.select('id');
+        const { data, error } = await query.select("id");
 
         if (error) {
-          this.logger.error('Failed to cancel pending jobs', error, { params });
+          this.logger.error("Failed to cancel pending jobs", error, { params });
           throw error;
         }
 
         const cancelledCount = data?.length || 0;
 
         if (cancelledCount > 0) {
-          this.logger.info('Cancelled pending sync jobs', {
+          this.logger.info("Cancelled pending sync jobs", {
             cancelledCount,
             jobType: params.jobType,
             bundleGroup: params.bundleGroup,
             countryId: params.countryId,
-            operationType: 'pending-jobs-cancelled'
+            operationType: "pending-jobs-cancelled",
           });
         }
 
@@ -514,32 +533,34 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
   }): Promise<CatalogSyncJob | null> {
     return withPerformanceLogging(
       this.logger,
-      'get-active-job-details',
+      "get-active-job-details",
       async () => {
         let query = this.supabase
-          .from('catalog_sync_jobs')
-          .select('*')
-          .in('status', ['pending', 'running'])
-          .eq('job_type', params.jobType);
+          .from("catalog_sync_jobs")
+          .select("*")
+          .in("status", ["pending", "running"])
+          .eq("job_type", params.jobType);
 
         if (params.bundleGroup) {
-          query = query.eq('bundle_group', params.bundleGroup);
+          query = query.eq("bundle_group", params.bundleGroup);
         }
 
         if (params.countryId) {
-          query = query.eq('country_id', params.countryId);
+          query = query.eq("country_id", params.countryId);
         }
 
         const { data, error } = await query
-          .order('created_at', { ascending: true })
+          .order("created_at", { ascending: true })
           .limit(1)
           .single();
 
         if (error) {
-          if (error.code === 'PGRST116') {
+          if (error.code === "PGRST116") {
             return null; // No active jobs
           }
-          this.logger.error('Failed to get active job details', error, { params });
+          this.logger.error("Failed to get active job details", error, {
+            params,
+          });
           throw error;
         }
 
@@ -557,24 +578,24 @@ export class SyncJobRepository extends BaseSupabaseRepository<CatalogSyncJob, Ca
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
     const { data, error } = await this.supabase
-      .from('catalog_sync_jobs')
+      .from("catalog_sync_jobs")
       .delete()
-      .in('status', ['completed', 'failed', 'cancelled'])
-      .lt('completed_at', cutoffDate.toISOString())
-      .select('id');
+      .in("status", ["completed", "failed", "cancelled"])
+      .lt("completed_at", cutoffDate.toISOString())
+      .select("id");
 
     if (error) {
-      this.logger.error('Failed to cleanup old jobs', error, { daysToKeep });
+      this.logger.error("Failed to cleanup old jobs", error, { daysToKeep });
       throw error;
     }
 
     const deletedCount = data?.length || 0;
 
     if (deletedCount > 0) {
-      this.logger.info('Cleaned up old sync jobs', {
+      this.logger.info("Cleaned up old sync jobs", {
         deletedCount,
         daysToKeep,
-        operationType: 'job-cleanup'
+        operationType: "job-cleanup",
       });
     }
 
