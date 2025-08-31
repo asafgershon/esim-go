@@ -5,7 +5,11 @@ import path from "path";
 import dotenv from "dotenv";
 import { cleanEnv, str } from "envalid";
 
-dotenv.config();
+dotenv.config({
+  path: [".env", ".env.local", ".env.development", ".env.production"],
+});
+
+console.log(process.env)
 
 const env = cleanEnv(process.env, {
   VITE_ALLOWED_HOSTS: str({ desc: "Allowed hosts", default: "" }),
@@ -33,7 +37,10 @@ export default defineConfig(() => {
     },
     define: {
       process: {
-        env: {},
+        env: {
+          ...process.env,
+          ...env,
+        },
       },
     },
     optimizeDeps: {
@@ -41,6 +48,7 @@ export default defineConfig(() => {
     },
     resolve: {
       alias: {
+        
         "@": path.resolve(__dirname, "./src"),
       },
     },
