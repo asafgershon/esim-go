@@ -59,5 +59,7 @@ ENV NODE_ENV=production
 # # Expose port if needed for health checks
 EXPOSE 5002
 
+WORKDIR /app/workers
+
 # # Run the workers directly with Bun
-CMD ["bun", "run", "dev:workers"]
+CMD ["bun", "run", "start"]
