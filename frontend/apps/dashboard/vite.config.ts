@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import { cleanEnv, str } from "envalid";
 
 dotenv.config({
-  path: [".env", ".env.local", ".env.development", ".env.production"],
+  // path: [".env", ".env.local", ".env.development", ".env.production"],
 });
 
 console.log(process.env)
