@@ -1,5 +1,7 @@
 import {
   calculatePricing,
+  Provider,
+  type PricingEngineV2Result,
   type RequestFacts,
 } from "@hiilo/rules-engine-2";
 import DataLoader from "dataloader";
@@ -48,8 +50,8 @@ function createCacheKey(key: PricingKey): string {
  */
 export function createPricingDataLoader(
   context: Context
-): DataLoader<PricingKey, PricingResult> {
-  return new DataLoader<PricingKey, PricingResult>(
+): DataLoader<PricingKey, PricingResult, string> {
+  return new DataLoader<PricingKey, PricingResult, string>(
     withPerformanceMonitoring(
       async (keys: readonly PricingKey[]): Promise<PricingResult[]> => {
         const startTime = Date.now();
@@ -77,23 +79,31 @@ export function createPricingDataLoader(
                   return cachedResult;
                 }
 
-                // Prepare request facts for the rules engine
-                const requestFacts: RequestFacts = {
+                const requestFacts = {
                   group: key.group || "Standard Unlimited Essential",
                   days: key.validityInDays,
                   paymentMethod: key.paymentMethod,
                   ...(key.countries?.[0] ? { country: key.countries[0] } : {}),
                   ...(key.region ? { region: key.region } : {}),
+                  // Add coupon code from promo field
                   ...(key.promo ? { couponCode: key.promo } : {}),
-                  ...(key.userId ? { userId: key.userId } : {}),
-                  ...(key.userEmail ? { userEmail: key.userEmail } : {}),
-                };
+                  // Add user information from context for coupon validation and corporate discounts
+                  ...(context.auth?.user?.id
+                    ? { userId: context.auth.user.id }
+                    : {}),
+                  ...(context.auth?.user?.email
+                    ? { userEmail: context.auth.user.email }
+                    : {}),
+                  includeDebugInfo: false,
+                } as RequestFacts;
 
                 // Calculate pricing using the rules engine
                 const result = await calculatePricing(requestFacts);
 
                 // Map to PricingBreakdown format
-                const pricingBreakdown: PricingResult = {
+                const pricingBreakdown: PricingResult & {
+                  _pricingCalculation: PricingEngineV2Result;
+                } = {
                   __typename: "PricingBreakdown",
                   cacheKey,
 
@@ -109,10 +119,11 @@ export function createPricingDataLoader(
                     isUnlimited: result.selectedBundle?.is_unlimited || false,
                     currency: "USD",
                     group: key.group || "Standard Unlimited Essential",
+                    provider: result.selectedBundle?.provider! as Provider,
                     country: {
                       __typename: "Country",
                       iso: key.countries?.[0] || "",
-                    } as Country // We let the field resolver, 
+                    } as Country, // We let the field resolver,
                   },
 
                   country: {
@@ -165,7 +176,9 @@ export function createPricingDataLoader(
             operationType: "batch-complete",
           });
 
-          return results.filter((result): result is PricingResult => result !== null);
+          return results.filter(
+            (result): result is PricingResult => result !== null
+          );
         } catch (error) {
           logger.error(
             "Failed to batch load pricing calculations",

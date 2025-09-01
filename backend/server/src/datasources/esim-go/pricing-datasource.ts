@@ -9,9 +9,9 @@ import { BundleRepository } from "../../repositories/catalog/bundle.repository";
  */
 export class PricingDataSource extends ESIMGoDataSource {
   private bundleRepository: BundleRepository;
-  private logger = createLogger({ 
-    component: 'PricingDataSource',
-    operationType: 'pricing-operations'
+  private logger = createLogger({
+    component: "PricingDataSource",
+    operationType: "pricing-operations",
   });
 
   // Cache TTL for pricing data - 30 days as per eSIM Go recommendations
@@ -19,7 +19,7 @@ export class PricingDataSource extends ESIMGoDataSource {
 
   constructor(config?: any) {
     super(config);
-    this.bundleRepository = new BundleRepository('catalog_bundles');
+    this.bundleRepository = new BundleRepository("catalog_bundles");
   }
 
   /**
@@ -31,13 +31,16 @@ export class PricingDataSource extends ESIMGoDataSource {
   async getBundlePricing(
     bundleName: string,
     countryCode: string,
-    quantity: number = 1,
+    quantity: number = 1
   ): Promise<{ basePrice: number; currency: string; bundleName: string }> {
-    const cacheKey = this.getCacheKey("pricing:bundle", { bundleName, countryCode });
+    const cacheKey = this.getCacheKey("pricing:bundle", {
+      bundleName,
+      countryCode,
+    });
 
     return withPerformanceLogging(
       this.logger,
-      'get-bundle-pricing',
+      "get-bundle-pricing",
       async () => {
         // TEMPORARILY SKIP CACHE to ensure we get fresh data for debugging
         // const cacheResult = await this.cacheHealth.safeGet(cacheKey);
@@ -50,177 +53,135 @@ export class PricingDataSource extends ESIMGoDataSource {
         //     this.logger.warn('Failed to parse cached pricing data', { error, cacheKey });
         //   }
         // }
-        
-        this.logger.info('Skipping cache to get fresh pricing data', { 
-          bundleName, 
+
+        this.logger.info("Skipping cache to get fresh pricing data", {
+          bundleName,
           countryCode,
-          operationType: 'cache-bypass-debug'
+          operationType: "cache-bypass-debug",
         });
 
         // Get bundle price from catalog database
         try {
-          this.logger.info('Fetching bundle pricing from database', { 
+          this.logger.info("Fetching bundle pricing from database", {
             bundleName,
             countryCode,
-            operationType: 'database-pricing-request'
+            operationType: "database-pricing-request",
           });
 
           // Search for bundles in the specific country
           const searchResult = await this.bundleRepository.search({
             countries: [countryCode],
-            limit: 100 // Get a reasonable number to find the bundle
+            limit: 100, // Get a reasonable number to find the bundle
           });
-          
+
           if (searchResult.data.length === 0) {
-            this.logger.error('No bundles found for country in database', undefined, {
-              countryCode,
-              bundleName,
-              operationType: 'database-pricing-error'
-            });
-            throw new Error(`No bundles found for country ${countryCode} in catalog database`);
+            this.logger.error(
+              "No bundles found for country in database",
+              undefined,
+              {
+                countryCode,
+                bundleName,
+                operationType: "database-pricing-error",
+              }
+            );
+            throw new Error(
+              `No bundles found for country ${countryCode} in catalog database`
+            );
           }
 
-          this.logger.info('Database bundles retrieved', {
+          this.logger.info("Database bundles retrieved", {
             countryCode,
             totalBundles: searchResult.data.length,
             searchingFor: bundleName,
-            operationType: 'database-response'
+            operationType: "database-response",
           });
 
           // Find the specific bundle in the database results
-          const bundle = searchResult.data.find(b => b.bundle_name === bundleName || b.name === bundleName);
-          
+          const bundle = searchResult.data.find(
+            (b) => b.bundle_name === bundleName || b.name === bundleName
+          );
+
           if (!bundle) {
-            this.logger.warn('Bundle search details', {
+            this.logger.warn("Bundle search details", {
               bundleName,
               countryCode,
-              availableNames: searchResult.data.map(b => b.bundle_name || b.name),
-              operationType: 'bundle-search-debug'
+              availableNames: searchResult.data.map(
+                (b) => b.bundle_name || b.name
+              ),
+              operationType: "bundle-search-debug",
             });
-            
+
             // Return 0 instead of estimating - as requested
             return {
               basePrice: 0,
-              currency: 'USD',
+              currency: "USD",
               bundleName,
             };
           }
 
-          this.logger.info('Bundle found in database', {
+          this.logger.info("Bundle found in database", {
             bundleName,
             foundBundle: {
               name: bundle.bundle_name || bundle.name,
               price: bundle.cost,
               currency: bundle.currency,
-              description: bundle.description
+              description: bundle.description,
             },
-            operationType: 'bundle-found-debug'
+            operationType: "bundle-found-debug",
           });
 
           const pricingData = {
             basePrice: bundle.cost || 0,
-            currency: bundle.currency || 'USD',
+            currency: bundle.currency || "USD",
             bundleName,
           };
 
           // Cache the result
           try {
-            await this.cache.set(
-              cacheKey, 
-              JSON.stringify(pricingData), 
-              { ttl: this.PRICING_CACHE_TTL }
-            );
+            await this.cache.set(cacheKey, JSON.stringify(pricingData), {
+              ttl: this.PRICING_CACHE_TTL,
+            });
           } catch (error) {
-            this.logger.warn('Failed to cache pricing data', error as Error, { 
-              cacheKey 
+            this.logger.warn("Failed to cache pricing data", error as Error, {
+              cacheKey,
             });
           }
 
-          this.logger.info('Real catalog pricing retrieved', { 
+          this.logger.info("Real catalog pricing retrieved", {
             bundleName,
             countryCode,
             basePrice: pricingData.basePrice,
             currency: pricingData.currency,
-            operationType: 'catalog-pricing-success'
+            operationType: "catalog-pricing-success",
           });
 
           return pricingData;
-
         } catch (error) {
-          this.logger.error('Failed to get pricing from catalog', error as Error, { 
-            bundleName, 
-            countryCode,
-            operationType: 'catalog-pricing-error'
-          });
-          
+          this.logger.error(
+            "Failed to get pricing from catalog",
+            error as Error,
+            {
+              bundleName,
+              countryCode,
+              operationType: "catalog-pricing-error",
+            }
+          );
+
           // Return 0 instead of cached fallback - no estimates
-          this.logger.warn('Returning zero price - no real data available', {
+          this.logger.warn("Returning zero price - no real data available", {
             bundleName,
             countryCode,
-            operationType: 'pricing-zero-fallback'
+            operationType: "pricing-zero-fallback",
           });
 
           return {
             basePrice: 0,
-            currency: 'USD',
+            currency: "USD",
             bundleName,
           };
         }
       },
       { bundleName, countryCode }
-    );
-  }
-
-  /**
-   * Get pricing for multiple bundles in batch
-   * Uses Promise.allSettled to handle partial failures gracefully
-   */
-  async getBatchPricing(
-    requests: Array<{ bundleName: string; quantity?: number }>
-  ): Promise<Array<{
-    bundleName: string;
-    basePrice?: number;
-    currency?: string;
-    error?: string;
-  }>> {
-    return withPerformanceLogging(
-      this.logger,
-      'get-batch-pricing',
-      async () => {
-        const results = await Promise.allSettled(
-          requests.map(async (req) => {
-            try {
-              const pricing = await this.getBundlePricing(req.bundleName, req.quantity || 1);
-              return {
-                bundleName: req.bundleName,
-                basePrice: pricing.basePrice,
-                currency: pricing.currency,
-              };
-            } catch (error) {
-              this.logger.warn('Failed to get pricing for bundle in batch', { 
-                bundleName: req.bundleName,
-                error: error instanceof Error ? error.message : String(error)
-              });
-              return {
-                bundleName: req.bundleName,
-                error: error instanceof Error ? error.message : 'Unknown pricing error',
-              };
-            }
-          })
-        );
-
-        return results.map((result, index) => {
-          if (result.status === 'fulfilled') {
-            return result.value;
-          } else {
-            return {
-              bundleName: requests[index].bundleName,
-              error: result.reason instanceof Error ? result.reason.message : 'Batch pricing failed',
-            };
-          }
-        });
-      },
-      { batchSize: requests.length }
     );
   }
 
@@ -231,12 +192,15 @@ export class PricingDataSource extends ESIMGoDataSource {
     if (bundleName) {
       // Clear specific bundle cache
       const pattern = `esim-go:pricing:bundle:*${bundleName}*`;
-      this.logger.info('Clearing pricing cache for bundle', { bundleName, pattern });
+      this.logger.info("Clearing pricing cache for bundle", {
+        bundleName,
+        pattern,
+      });
       // Note: This would require a pattern-based cache clear which depends on cache implementation
       // For now, we'll document this as a future enhancement
     } else {
       // Clear all pricing cache
-      this.logger.info('Clearing all pricing cache');
+      this.logger.info("Clearing all pricing cache");
       // Note: This would require pattern-based cache clear for all pricing keys
       // For now, we'll document this as a future enhancement
     }
@@ -258,6 +222,6 @@ export class PricingDataSource extends ESIMGoDataSource {
    */
   async cleanup(): Promise<void> {
     await this.cacheHealth.cleanup();
-    this.logger.info('PricingDataSource cleanup completed');
+    this.logger.info("PricingDataSource cleanup completed");
   }
 }

@@ -7,33 +7,35 @@ const supabase = getSupabaseClient();
 
 type Bundle = Database["public"]["Views"]["bundles_by_group"]["Row"];
 /**
- * Returns list of available providers based on bundle availability
+ * Returns providers with available providers list and selected provider
+ * Maya is preferred first, then eSIM-Go
  */
-export const availableProviders = async (
+export const providers = async (
   _params: Record<string, any>,
   almanac: Almanac
-): Promise<Provider[]> => {
+): Promise<{ names: Provider[], selected: Provider }> => {
   const bundles = await almanac.factValue<Bundle[]>("availableBundles");
-  const providers = new Set<Provider>();
-
-  bundles.forEach((bundle) => {
+  const availableProviders = new Set<Provider>();
+  
+  bundles.forEach(bundle => {
     if (bundle.provider) {
-      providers.add(bundle.provider as Provider);
+      availableProviders.add(bundle.provider as Provider);
     }
   });
-
-  return Array.from(providers);
-};
-
-/**
- * Returns the preferred provider based on configuration
- */
-export const preferredProvider = async (
-  _params: Record<string, any>,
-  almanac: Almanac
-): Promise<Provider> => {
-  // Default to Maya as preferred provider
-  return Provider.Maya;
+  
+  // Create ordered list with Maya first, then eSIM-Go
+  const names: Provider[] = [];
+  if (availableProviders.has(Provider.Maya)) {
+    names.push(Provider.Maya);
+  }
+  if (availableProviders.has(Provider.EsimGo)) {
+    names.push(Provider.EsimGo);
+  }
+  
+  // Select the first available provider (Maya preferred)
+  const selected = names.length > 0 ? names[0] : Provider.Maya;
+  
+  return { names, selected };
 };
 
 /**
@@ -43,8 +45,8 @@ export const isProviderAvailable = async (
   params: { provider: Provider },
   almanac: Almanac
 ): Promise<boolean> => {
-  const providers = await almanac.factValue<Provider[]>("availableProviders");
-  return providers.includes(params.provider);
+  const providersInfo = await almanac.factValue<{ names: Provider[], selected: Provider }>("providers");
+  return providersInfo.names.includes(params.provider);
 };
 
 /**

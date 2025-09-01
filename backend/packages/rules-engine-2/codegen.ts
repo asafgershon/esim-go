@@ -10,7 +10,7 @@ const config: CodegenConfig = {
       plugins: ["typescript"],
       config: {
         // Only generate types, not resolvers
-        skipTypename: true,
+        skipTypename: false,
         // Use TypeScript enums for GraphQL enums
         enumsAsTypes: false,
         // Add __typename to interfaces/unions

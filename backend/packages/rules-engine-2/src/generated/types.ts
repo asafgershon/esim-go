@@ -28,12 +28,14 @@ export enum ActionType {
 }
 
 export type ActivateEsimResponse = {
+  __typename?: 'ActivateESIMResponse';
   error?: Maybe<Scalars['String']['output']>;
   esim?: Maybe<Esim>;
   success: Scalars['Boolean']['output'];
 };
 
 export type AdminEsim = {
+  __typename?: 'AdminESIM';
   actionDate?: Maybe<Scalars['String']['output']>;
   activationCode?: Maybe<Scalars['String']['output']>;
   apiStatus?: Maybe<Scalars['String']['output']>;
@@ -57,6 +59,7 @@ export type AdminEsim = {
 };
 
 export type AdminEsimDetails = {
+  __typename?: 'AdminESIMDetails';
   actionDate?: Maybe<Scalars['String']['output']>;
   activationCode?: Maybe<Scalars['String']['output']>;
   apiDetails?: Maybe<Scalars['JSON']['output']>;
@@ -78,12 +81,14 @@ export type AdminEsimDetails = {
 };
 
 export type AdminEsimOrder = {
+  __typename?: 'AdminESIMOrder';
   bundleName?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   reference: Scalars['String']['output'];
 };
 
 export type AdminEsimUser = {
+  __typename?: 'AdminESIMUser';
   email?: Maybe<Scalars['String']['output']>;
   firstName?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
@@ -91,6 +96,7 @@ export type AdminEsimUser = {
 };
 
 export type AppliedRule = {
+  __typename?: 'AppliedRule';
   category: RuleCategory;
   id: Scalars['ID']['output'];
   impact: Scalars['Float']['output'];
@@ -98,6 +104,7 @@ export type AppliedRule = {
 };
 
 export type AssignPackageResponse = {
+  __typename?: 'AssignPackageResponse';
   assignment?: Maybe<PackageAssignment>;
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
@@ -134,12 +141,14 @@ export type Bundle_PricingBreakdownArgs = {
 };
 
 export type BundleConnection = {
+  __typename?: 'BundleConnection';
   nodes: Array<Bundle>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
 };
 
 export type BundleDataAggregation = {
+  __typename?: 'BundleDataAggregation';
   byDataAmount: Array<DataAmountGroup>;
   byDuration: Array<DurationGroup>;
   byGroup: Array<GroupDataStats>;
@@ -158,6 +167,7 @@ export type BundleFilter = {
 };
 
 export type BundleFilterOptions = {
+  __typename?: 'BundleFilterOptions';
   /** Available countries */
   countries: Array<FilterOption>;
   /** Available groups */
@@ -176,6 +186,7 @@ export enum BundleState {
 }
 
 export type BundleStats = {
+  __typename?: 'BundleStats';
   /** Total number of active bundles in the system */
   totalBundles: Scalars['Int']['output'];
   /** Number of countries covered */
@@ -187,6 +198,7 @@ export type BundleStats = {
 };
 
 export type BundlesByCountry = {
+  __typename?: 'BundlesByCountry';
   bundleCount: Scalars['Int']['output'];
   bundles: Array<Bundle>;
   country: Country;
@@ -200,6 +212,7 @@ export type BundlesByCountry_BundlesArgs = {
 };
 
 export type BundlesByGroup = {
+  __typename?: 'BundlesByGroup';
   bundleCount: Scalars['Int']['output'];
   bundles: Array<Bundle>;
   group: Scalars['String']['output'];
@@ -213,6 +226,7 @@ export type BundlesByGroup_BundlesArgs = {
 };
 
 export type BundlesByRegion = {
+  __typename?: 'BundlesByRegion';
   bundleCount: Scalars['Int']['output'];
   bundles: Array<Bundle>;
   pricingRange?: Maybe<PricingRange>;
@@ -226,6 +240,7 @@ export type BundlesByRegion_BundlesArgs = {
 };
 
 export type BundlesForCountry = {
+  __typename?: 'BundlesForCountry';
   /** Total number of bundles */
   bundleCount: Scalars['Int']['output'];
   /** All bundles available for this country */
@@ -243,6 +258,7 @@ export type BundlesForCountry = {
 };
 
 export type BundlesForGroup = {
+  __typename?: 'BundlesForGroup';
   /** Total number of bundles */
   bundleCount: Scalars['Int']['output'];
   /** All bundles in this group */
@@ -260,6 +276,7 @@ export type BundlesForGroup = {
 };
 
 export type BundlesForRegion = {
+  __typename?: 'BundlesForRegion';
   /** Total number of bundles */
   bundleCount: Scalars['Int']['output'];
   /** All bundles available for this region */
@@ -288,6 +305,7 @@ export type CalculatePriceInput = {
 };
 
 export type CatalogBundle = Bundle & {
+  __typename?: 'CatalogBundle';
   basePrice: Scalars['Float']['output'];
   countries: Array<Scalars['String']['output']>;
   createdAt: Scalars['DateTime']['output'];
@@ -314,22 +332,26 @@ export type CatalogBundle_PricingBreakdownArgs = {
 };
 
 export type CatalogBundleConnection = {
+  __typename?: 'CatalogBundleConnection';
   bundles: Array<CatalogBundle>;
   totalCount: Scalars['Int']['output'];
 };
 
 export type CatalogCountryBundles = {
+  __typename?: 'CatalogCountryBundles';
   bundleCount: Scalars['Int']['output'];
   bundles: Array<CatalogBundle>;
   country: Scalars['String']['output'];
 };
 
 export type CatalogSyncHistoryConnection = {
+  __typename?: 'CatalogSyncHistoryConnection';
   jobs: Array<CatalogSyncJob>;
   totalCount: Scalars['Int']['output'];
 };
 
 export type CatalogSyncJob = {
+  __typename?: 'CatalogSyncJob';
   bundlesAdded?: Maybe<Scalars['Int']['output']>;
   bundlesProcessed?: Maybe<Scalars['Int']['output']>;
   bundlesUpdated?: Maybe<Scalars['Int']['output']>;
@@ -350,6 +372,7 @@ export type CatalogSyncJob = {
 };
 
 export type CatalogSyncProgressUpdate = {
+  __typename?: 'CatalogSyncProgressUpdate';
   bundleGroup?: Maybe<Scalars['String']['output']>;
   bundlesAdded: Scalars['Int']['output'];
   bundlesProcessed: Scalars['Int']['output'];
@@ -367,6 +390,7 @@ export type CatalogSyncProgressUpdate = {
 };
 
 export type Checkout = {
+  __typename?: 'Checkout';
   auth?: Maybe<CheckoutAuth>;
   bundle?: Maybe<CheckoutBundle>;
   delivery?: Maybe<CheckoutDelivery>;
@@ -375,6 +399,7 @@ export type Checkout = {
 };
 
 export type CheckoutAuth = CheckoutAuthInterface & {
+  __typename?: 'CheckoutAuth';
   completed: Scalars['Boolean']['output'];
   email?: Maybe<Scalars['String']['output']>;
   firstName?: Maybe<Scalars['String']['output']>;
@@ -399,6 +424,7 @@ export type CheckoutAuthInterface = {
 };
 
 export type CheckoutAuthWithOtp = CheckoutAuthInterface & {
+  __typename?: 'CheckoutAuthWithOTP';
   authToken: Scalars['String']['output'];
   completed: Scalars['Boolean']['output'];
   email?: Maybe<Scalars['String']['output']>;
@@ -413,6 +439,7 @@ export type CheckoutAuthWithOtp = CheckoutAuthInterface & {
 };
 
 export type CheckoutBundle = {
+  __typename?: 'CheckoutBundle';
   completed: Scalars['Boolean']['output'];
   country?: Maybe<Country>;
   currency: Scalars['String']['output'];
@@ -427,12 +454,14 @@ export type CheckoutBundle = {
 };
 
 export type CheckoutDelivery = {
+  __typename?: 'CheckoutDelivery';
   completed: Scalars['Boolean']['output'];
   email?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
 };
 
 export type CheckoutPayment = {
+  __typename?: 'CheckoutPayment';
   completed: Scalars['Boolean']['output'];
   email?: Maybe<Scalars['String']['output']>;
   intent?: Maybe<PaymentIntent>;
@@ -443,6 +472,7 @@ export type CheckoutPayment = {
 };
 
 export type CheckoutSession = {
+  __typename?: 'CheckoutSession';
   createdAt: Scalars['DateTime']['output'];
   expiresAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
@@ -461,6 +491,7 @@ export type CheckoutSession = {
 };
 
 export type CheckoutSessionUpdate = {
+  __typename?: 'CheckoutSessionUpdate';
   session: CheckoutSession;
   timestamp: Scalars['DateTime']['output'];
   updateType: CheckoutUpdateType;
@@ -494,6 +525,7 @@ export enum ConditionOperator {
 }
 
 export type ConflictingJobInfo = {
+  __typename?: 'ConflictingJobInfo';
   createdAt: Scalars['String']['output'];
   id: Scalars['String']['output'];
   jobType: Scalars['String']['output'];
@@ -502,6 +534,7 @@ export type ConflictingJobInfo = {
 };
 
 export type Country = {
+  __typename?: 'Country';
   flag?: Maybe<Scalars['String']['output']>;
   isHighDemand?: Maybe<Scalars['Boolean']['output']>;
   iso: Scalars['ISOCountryCode']['output'];
@@ -511,6 +544,7 @@ export type Country = {
 };
 
 export type CountryBundle = {
+  __typename?: 'CountryBundle';
   appliedRules?: Maybe<Array<AppliedRule>>;
   country: Country;
   currency: Scalars['String']['output'];
@@ -533,6 +567,7 @@ export type CreateCheckoutSessionInput = {
 };
 
 export type CreateCheckoutSessionResponse = {
+  __typename?: 'CreateCheckoutSessionResponse';
   error?: Maybe<Scalars['String']['output']>;
   session?: Maybe<CheckoutSession>;
   success: Scalars['Boolean']['output'];
@@ -565,12 +600,14 @@ export type CreateTripInput = {
 };
 
 export type CreateTripResponse = {
+  __typename?: 'CreateTripResponse';
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
   trip?: Maybe<Trip>;
 };
 
 export type CustomerBundle = Bundle & {
+  __typename?: 'CustomerBundle';
   basePrice: Scalars['Float']['output'];
   countries: Array<Scalars['String']['output']>;
   currency: Scalars['String']['output'];
@@ -594,6 +631,7 @@ export type CustomerBundle_PricingBreakdownArgs = {
 };
 
 export type CustomerDiscount = {
+  __typename?: 'CustomerDiscount';
   amount: Scalars['Float']['output'];
   name: Scalars['String']['output'];
   percentage?: Maybe<Scalars['Float']['output']>;
@@ -601,12 +639,14 @@ export type CustomerDiscount = {
 };
 
 export type DataAmountGroup = {
+  __typename?: 'DataAmountGroup';
   count: Scalars['Int']['output'];
   dataAmount: Scalars['Int']['output'];
   percentage: Scalars['Float']['output'];
 };
 
 export type DataType = {
+  __typename?: 'DataType';
   isUnlimited: Scalars['Boolean']['output'];
   label: Scalars['String']['output'];
   maxDataMB?: Maybe<Scalars['Int']['output']>;
@@ -615,16 +655,19 @@ export type DataType = {
 };
 
 export type DeleteTripResponse = {
+  __typename?: 'DeleteTripResponse';
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
 };
 
 export type DeleteUserResponse = {
+  __typename?: 'DeleteUserResponse';
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
 };
 
 export type DiscountApplication = {
+  __typename?: 'DiscountApplication';
   amount: Scalars['Float']['output'];
   description?: Maybe<Scalars['String']['output']>;
   percentage?: Maybe<Scalars['Float']['output']>;
@@ -633,6 +676,7 @@ export type DiscountApplication = {
 };
 
 export type DurationGroup = {
+  __typename?: 'DurationGroup';
   category: Scalars['String']['output'];
   count: Scalars['Int']['output'];
   duration: Scalars['Int']['output'];
@@ -640,6 +684,7 @@ export type DurationGroup = {
 };
 
 export type DurationRange = {
+  __typename?: 'DurationRange';
   label: Scalars['String']['output'];
   maxDays: Scalars['Int']['output'];
   minDays: Scalars['Int']['output'];
@@ -647,6 +692,7 @@ export type DurationRange = {
 };
 
 export type Esim = {
+  __typename?: 'ESIM';
   actionDate?: Maybe<Scalars['String']['output']>;
   assignedDate?: Maybe<Scalars['String']['output']>;
   bundleId: Scalars['String']['output'];
@@ -668,12 +714,14 @@ export type Esim = {
 };
 
 export type EsimActionResponse = {
+  __typename?: 'ESIMActionResponse';
   error?: Maybe<Scalars['String']['output']>;
   esim?: Maybe<Esim>;
   success: Scalars['Boolean']['output'];
 };
 
 export type EsimBundle = {
+  __typename?: 'ESIMBundle';
   dataRemaining?: Maybe<Scalars['Float']['output']>;
   dataUsed: Scalars['Float']['output'];
   endDate?: Maybe<Scalars['String']['output']>;
@@ -693,6 +741,7 @@ export enum EsimStatus {
 }
 
 export type EsimStatusUpdate = {
+  __typename?: 'ESIMStatusUpdate';
   dataRemaining?: Maybe<Scalars['Float']['output']>;
   dataUsed?: Maybe<Scalars['Float']['output']>;
   esimId: Scalars['ID']['output'];
@@ -701,12 +750,14 @@ export type EsimStatusUpdate = {
 };
 
 export type EsimUsage = {
+  __typename?: 'ESIMUsage';
   activeBundles: Array<EsimBundle>;
   totalRemaining?: Maybe<Scalars['Float']['output']>;
   totalUsed: Scalars['Float']['output'];
 };
 
 export type FilterOption = {
+  __typename?: 'FilterOption';
   label: Scalars['String']['output'];
   value: Scalars['String']['output'];
 };
@@ -717,12 +768,14 @@ export type FloatRange = {
 };
 
 export type GetCheckoutSessionResponse = {
+  __typename?: 'GetCheckoutSessionResponse';
   error?: Maybe<Scalars['String']['output']>;
   session?: Maybe<CheckoutSession>;
   success: Scalars['Boolean']['output'];
 };
 
 export type GroupDataStats = {
+  __typename?: 'GroupDataStats';
   averageDataAmount: Scalars['Float']['output'];
   group: Scalars['String']['output'];
   limited: Scalars['Int']['output'];
@@ -731,6 +784,7 @@ export type GroupDataStats = {
 };
 
 export type InstallationLinks = {
+  __typename?: 'InstallationLinks';
   /** LPA scheme for Android/Windows direct activation */
   lpaScheme: Scalars['String']['output'];
   /** Manual entry components for all devices */
@@ -753,12 +807,14 @@ export type InviteAdminUserInput = {
 };
 
 export type InviteAdminUserResponse = {
+  __typename?: 'InviteAdminUserResponse';
   error?: Maybe<Scalars['String']['output']>;
   invitedEmail?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
 };
 
 export type ManualInstallation = {
+  __typename?: 'ManualInstallation';
   /** Activation code */
   activationCode: Scalars['String']['output'];
   /** Optional confirmation code */
@@ -768,6 +824,7 @@ export type ManualInstallation = {
 };
 
 export type Mutation = {
+  __typename?: 'Mutation';
   activateESIM?: Maybe<ActivateEsimResponse>;
   assignPackageToUser?: Maybe<AssignPackageResponse>;
   assignUserToTenant: TenantOperationResponse;
@@ -1069,6 +1126,7 @@ export type Mutation_VerifyPhoneOtpArgs = {
 };
 
 export type Order = {
+  __typename?: 'Order';
   bundleId?: Maybe<Scalars['String']['output']>;
   bundleName?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
@@ -1098,6 +1156,7 @@ export enum OrderStatus {
 }
 
 export type PackageAssignment = {
+  __typename?: 'PackageAssignment';
   assignedAt: Scalars['String']['output'];
   assignedBy: User;
   bundleId: Scalars['String']['output'];
@@ -1110,6 +1169,7 @@ export type PackageAssignment = {
 };
 
 export type PageInfo = {
+  __typename?: 'PageInfo';
   currentPage: Scalars['Int']['output'];
   hasNextPage: Scalars['Boolean']['output'];
   hasPreviousPage: Scalars['Boolean']['output'];
@@ -1125,6 +1185,7 @@ export type PaginationInput = {
 };
 
 export type PaymentIntent = {
+  __typename?: 'PaymentIntent';
   applePayJavaScriptUrl?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   url: Scalars['String']['output'];
@@ -1139,6 +1200,7 @@ export enum PaymentMethod {
 }
 
 export type PaymentMethodInfo = {
+  __typename?: 'PaymentMethodInfo';
   description: Scalars['String']['output'];
   icon?: Maybe<Scalars['String']['output']>;
   isActive: Scalars['Boolean']['output'];
@@ -1148,6 +1210,7 @@ export type PaymentMethodInfo = {
 };
 
 export type PriceRange = {
+  __typename?: 'PriceRange';
   /** Average price (optional) */
   avg?: Maybe<Scalars['Float']['output']>;
   /** Currency code */
@@ -1159,6 +1222,7 @@ export type PriceRange = {
 };
 
 export type PricingBlock = {
+  __typename?: 'PricingBlock';
   action: Scalars['JSON']['output'];
   category: Scalars['String']['output'];
   conditions: Scalars['JSON']['output'];
@@ -1183,6 +1247,7 @@ export type PricingBlockFilter = {
 };
 
 export type PricingBreakdown = {
+  __typename?: 'PricingBreakdown';
   appliedRules?: Maybe<Array<AppliedRule>>;
   bundle: CountryBundle;
   calculationTimeMs?: Maybe<Scalars['Float']['output']>;
@@ -1215,6 +1280,7 @@ export type PricingBreakdown = {
 };
 
 export type PricingConfiguration = {
+  __typename?: 'PricingConfiguration';
   bundleGroup?: Maybe<Scalars['String']['output']>;
   countryId?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
@@ -1232,12 +1298,14 @@ export type PricingConfiguration = {
 };
 
 export type PricingFilters = {
+  __typename?: 'PricingFilters';
   dataTypes: Array<DataType>;
   durations: Array<DurationRange>;
   groups: Array<Scalars['String']['output']>;
 };
 
 export type PricingPipelineStepUpdate = {
+  __typename?: 'PricingPipelineStepUpdate';
   appliedRules?: Maybe<Array<Scalars['String']['output']>>;
   correlationId: Scalars['String']['output'];
   debug?: Maybe<Scalars['JSON']['output']>;
@@ -1247,11 +1315,13 @@ export type PricingPipelineStepUpdate = {
 };
 
 export type PricingRange = {
+  __typename?: 'PricingRange';
   max: Scalars['Float']['output'];
   min: Scalars['Float']['output'];
 };
 
 export type PricingRule = {
+  __typename?: 'PricingRule';
   actions: Array<RuleAction>;
   category: RuleCategory;
   conditions: Array<RuleCondition>;
@@ -1269,6 +1339,7 @@ export type PricingRule = {
 };
 
 export type PricingRuleCalculation = {
+  __typename?: 'PricingRuleCalculation';
   appliedRules: Array<AppliedRule>;
   baseCost: Scalars['Float']['output'];
   discounts: Array<DiscountApplication>;
@@ -1301,6 +1372,7 @@ export type PricingRulePriorityUpdate = {
 };
 
 export type PricingStep = {
+  __typename?: 'PricingStep';
   impact: Scalars['Float']['output'];
   metadata?: Maybe<Scalars['JSON']['output']>;
   name: Scalars['String']['output'];
@@ -1312,6 +1384,7 @@ export type PricingStep = {
 };
 
 export type PricingStepUpdate = {
+  __typename?: 'PricingStepUpdate';
   completedSteps: Scalars['Int']['output'];
   correlationId: Scalars['String']['output'];
   error?: Maybe<Scalars['String']['output']>;
@@ -1322,6 +1395,7 @@ export type PricingStepUpdate = {
 };
 
 export type PricingStrategy = {
+  __typename?: 'PricingStrategy';
   activationCount?: Maybe<Scalars['Int']['output']>;
   archivedAt?: Maybe<Scalars['String']['output']>;
   blocks: Array<StrategyBlock>;
@@ -1346,6 +1420,7 @@ export type ProcessCheckoutPaymentInput = {
 };
 
 export type ProcessCheckoutPaymentResponse = {
+  __typename?: 'ProcessCheckoutPaymentResponse';
   error?: Maybe<Scalars['String']['output']>;
   orderId?: Maybe<Scalars['ID']['output']>;
   paymentIntentId?: Maybe<Scalars['String']['output']>;
@@ -1355,6 +1430,7 @@ export type ProcessCheckoutPaymentResponse = {
 };
 
 export type ProcessingFeeConfiguration = {
+  __typename?: 'ProcessingFeeConfiguration';
   appleGooglePayFee: Scalars['Float']['output'];
   bankWithdrawalFee: Scalars['Float']['output'];
   bitPaymentRate: Scalars['Float']['output'];
@@ -1415,12 +1491,14 @@ export type PurchaseEsimInput = {
 };
 
 export type PurchaseEsimResponse = {
+  __typename?: 'PurchaseESIMResponse';
   error?: Maybe<Scalars['String']['output']>;
   order?: Maybe<Order>;
   success: Scalars['Boolean']['output'];
 };
 
 export type Query = {
+  __typename?: 'Query';
   allTenants: TenantConnection;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
@@ -1603,6 +1681,7 @@ export type Query_TenantArgs = {
 };
 
 export type RuleAction = {
+  __typename?: 'RuleAction';
   metadata?: Maybe<Scalars['JSON']['output']>;
   type: ActionType;
   value: Scalars['Float']['output'];
@@ -1623,6 +1702,7 @@ export enum RuleCategory {
 }
 
 export type RuleCondition = {
+  __typename?: 'RuleCondition';
   field: Scalars['String']['output'];
   operator: ConditionOperator;
   type?: Maybe<Scalars['String']['output']>;
@@ -1649,6 +1729,7 @@ export type SearchCatalogCriteria = {
 };
 
 export type SendOtpResponse = {
+  __typename?: 'SendOTPResponse';
   error?: Maybe<Scalars['String']['output']>;
   messageId?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
@@ -1660,6 +1741,7 @@ export type SignInInput = {
 };
 
 export type SignInResponse = {
+  __typename?: 'SignInResponse';
   error?: Maybe<Scalars['String']['output']>;
   refreshToken?: Maybe<Scalars['String']['output']>;
   sessionToken?: Maybe<Scalars['String']['output']>;
@@ -1676,6 +1758,7 @@ export type SignUpInput = {
 };
 
 export type SignUpResponse = {
+  __typename?: 'SignUpResponse';
   error?: Maybe<Scalars['String']['output']>;
   refreshToken?: Maybe<Scalars['String']['output']>;
   sessionToken?: Maybe<Scalars['String']['output']>;
@@ -1690,6 +1773,7 @@ export type SocialSignInInput = {
 };
 
 export type StrategyBlock = {
+  __typename?: 'StrategyBlock';
   configOverrides?: Maybe<Scalars['JSON']['output']>;
   isEnabled: Scalars['Boolean']['output'];
   pricingBlock: PricingBlock;
@@ -1703,6 +1787,7 @@ export type StrategyFilter = {
 };
 
 export type Subscription = {
+  __typename?: 'Subscription';
   calculatePricesBatchStream: PricingBreakdown;
   catalogSyncProgress: CatalogSyncProgressUpdate;
   checkout: Checkout;
@@ -1768,6 +1853,7 @@ export enum SyncJobType {
 }
 
 export type Tenant = {
+  __typename?: 'Tenant';
   createdAt: Scalars['String']['output'];
   imgUrl: Scalars['String']['output'];
   name: Scalars['String']['output'];
@@ -1778,6 +1864,7 @@ export type Tenant = {
 };
 
 export type TenantConnection = {
+  __typename?: 'TenantConnection';
   nodes: Array<Tenant>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
@@ -1789,6 +1876,7 @@ export type TenantFilter = {
 };
 
 export type TenantOperationResponse = {
+  __typename?: 'TenantOperationResponse';
   message?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
 };
@@ -1813,6 +1901,7 @@ export type TestPricingContext = {
 };
 
 export type ToggleHighDemandResponse = {
+  __typename?: 'ToggleHighDemandResponse';
   countryId: Scalars['String']['output'];
   error?: Maybe<Scalars['String']['output']>;
   isHighDemand: Scalars['Boolean']['output'];
@@ -1820,6 +1909,7 @@ export type ToggleHighDemandResponse = {
 };
 
 export type Transaction = {
+  __typename?: 'Transaction';
   amount?: Maybe<Scalars['Float']['output']>;
   currency?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
@@ -1835,6 +1925,7 @@ export type TriggerSyncParams = {
 };
 
 export type TriggerSyncResponse = {
+  __typename?: 'TriggerSyncResponse';
   conflictingJob?: Maybe<ConflictingJobInfo>;
   error?: Maybe<Scalars['String']['output']>;
   jobId?: Maybe<Scalars['String']['output']>;
@@ -1844,6 +1935,7 @@ export type TriggerSyncResponse = {
 };
 
 export type Trip = {
+  __typename?: 'Trip';
   bundleName?: Maybe<Scalars['String']['output']>;
   countries: Array<Country>;
   countryIds: Array<Scalars['ISOCountryCode']['output']>;
@@ -1864,6 +1956,7 @@ export type UpdateCheckoutStepInput = {
 };
 
 export type UpdateCheckoutStepResponse = {
+  __typename?: 'UpdateCheckoutStepResponse';
   error?: Maybe<Scalars['String']['output']>;
   nextStep?: Maybe<CheckoutStepType>;
   session?: Maybe<CheckoutSession>;
@@ -1885,6 +1978,7 @@ export type UpdatePricingConfigurationInput = {
 };
 
 export type UpdatePricingConfigurationResponse = {
+  __typename?: 'UpdatePricingConfigurationResponse';
   configuration?: Maybe<PricingConfiguration>;
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
@@ -1909,6 +2003,7 @@ export type UpdateProfileInput = {
 };
 
 export type UpdateProfileResponse = {
+  __typename?: 'UpdateProfileResponse';
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
   user?: Maybe<User>;
@@ -1929,12 +2024,14 @@ export type UpdateTripInput = {
 };
 
 export type UpdateTripResponse = {
+  __typename?: 'UpdateTripResponse';
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
   trip?: Maybe<Trip>;
 };
 
 export type User = {
+  __typename?: 'User';
   createdAt: Scalars['String']['output'];
   email: Scalars['String']['output'];
   firstName: Scalars['String']['output'];
@@ -1953,6 +2050,7 @@ export type ValidateOrderInput = {
 };
 
 export type ValidateOrderResponse = {
+  __typename?: 'ValidateOrderResponse';
   bundleDetails?: Maybe<Scalars['JSON']['output']>;
   currency?: Maybe<Scalars['String']['output']>;
   error?: Maybe<Scalars['String']['output']>;

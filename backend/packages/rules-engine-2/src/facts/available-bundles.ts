@@ -63,10 +63,11 @@ export const availableBundlesByProvider = async (
   try {
     const allBundles = await almanac.factValue<Bundle[]>("availableBundles");
 
-    // Try to get provider selection from runtime facts
+    // Try to get provider selection from providers fact
     let selectedProvider: Provider | null = null;
     try {
-      selectedProvider = await almanac.factValue<Provider>("preferredProvider");
+      const providersInfo = await almanac.factValue<{names: Provider[], selected: Provider}>("providers");
+      selectedProvider = providersInfo.selected;
     } catch (error) {
       // Provider not selected yet, return all bundles
       return allBundles || [];

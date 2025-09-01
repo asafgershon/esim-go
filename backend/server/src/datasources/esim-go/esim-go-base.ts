@@ -1,4 +1,8 @@
-import { RESTDataSource, type DataSourceConfig, type GetRequest } from "@apollo/datasource-rest";
+import {
+  RESTDataSource,
+  type DataSourceConfig,
+  type GetRequest,
+} from "@apollo/datasource-rest";
 import type { KeyValueCache } from "@apollo/utils.keyvaluecache";
 import { cleanEnv, str } from "envalid";
 import { GraphQLError } from "graphql";
@@ -22,7 +26,7 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
   protected cache?: KeyValueCache;
 
   // Logger instance
-  protected log = createLogger({ component: 'ESIMGoDataSource' });
+  protected log = createLogger({ component: "ESIMGoDataSource" });
 
   // Rate limiting properties
   private requestCount = 0;
@@ -40,7 +44,7 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
   override willSendRequest(_path: string, request: any) {
     // Check rate limit
     this.enforceRateLimit();
-    
+
     const apiKey = env.ESIM_GO_API_KEY;
     if (!apiKey) {
       throw new GraphQLError("eSIM Go API key not configured", {
@@ -49,18 +53,17 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
         },
       });
     }
-    
+
     // Set headers
     request.headers["X-API-Key"] = apiKey;
     request.headers["Content-Type"] = "application/json";
     request.headers["User-Agent"] = "curl/8.7.1"; // Mimic curl user agent
-    
-    
+
     // Set timeout to prevent hanging requests
     request.timeout = 15000; // 15 seconds
-    
+
     // Set body size limits to handle large API responses
-    request.maxBodyLength = Infinity
+    request.maxBodyLength = Infinity;
     request.maxContentLength = 50 * 1024 * 1024; // 50MB
   }
 
@@ -70,39 +73,40 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
   private enforceRateLimit() {
     const now = Date.now();
     const timeWindow = 60 * 1000; // 1 minute
-    
+
     // Reset counter if time window passed
     if (now - this.lastResetTime > timeWindow) {
       this.requestCount = 0;
       this.lastResetTime = now;
     }
-    
+
     // Check if we're over the limit
     if (this.requestCount >= this.MAX_REQUESTS_PER_MINUTE) {
       throw new GraphQLError("API rate limit exceeded", {
         extensions: {
           code: "RATE_LIMIT_EXCEEDED",
-          retryAfter: Math.ceil((timeWindow - (now - this.lastResetTime)) / 1000),
+          retryAfter: Math.ceil(
+            (timeWindow - (now - this.lastResetTime)) / 1000
+          ),
         },
       });
     }
-    
+
     this.requestCount++;
   }
 
   protected async get<TResult = any>(
     path: string,
-    request?: GetRequest<any>,
+    request?: GetRequest<any>
   ): Promise<TResult> {
     // willSendRequest already sets the headers, so we don't need to duplicate them here
     return (
       await this.fetch<TResult>(path, {
-        method: 'GET',
+        method: "GET",
         ...request,
       })
     ).parsedBody;
   }
-
 
   /**
    * Wrapper for GET requests with error handling
@@ -120,34 +124,35 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
           url.searchParams.append(key, String(value));
         });
       }
-      
+
       const response = await fetch(url.toString(), {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'X-API-Key': env.ESIM_GO_API_KEY,
-          'Content-Type': 'application/json',
-          'User-Agent': 'curl/8.7.1',
+          "X-API-Key": env.ESIM_GO_API_KEY,
+          "Content-Type": "application/json",
+          "User-Agent": "curl/8.7.1",
         },
         signal: AbortSignal.timeout(15 * 1000),
       });
-      
+
       if (!response.ok) {
         const errorBody = await response.text();
-        this.log.error('Native fetch failed', undefined, {
+        this.log.error("Native fetch failed", undefined, {
           status: response.status,
           statusText: response.statusText,
           errorBody,
-          operationType: 'api-request-fallback'
+          operationType: "api-request-fallback",
         });
         throw new Error(`${response.status}: ${response.statusText}`);
       }
-      
+
       const result = await response.json();
       return result as T;
-      
     } catch (error: any) {
-      this.log.error('Native fetch error', error, { operationType: 'api-request-fallback' });
-      this.log.error('eSIM Go API error', error);
+      this.log.error("Native fetch error", error, {
+        operationType: "api-request-fallback",
+      });
+      this.log.error("eSIM Go API error", error);
       this.handleApiError(error);
       throw error; // This line won't be reached but TypeScript needs it
     }
@@ -162,8 +167,8 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     init?: any
   ): Promise<T> {
     try {
-      return await this.post<T>(path, { 
-        body, 
+      return await this.post<T>(path, {
+        body,
         ...init,
         timeout: 15000, // 15 second timeout
       });
@@ -279,7 +284,9 @@ export abstract class ESIMGoDataSource extends RESTDataSource {
     }
 
     if (page > maxPages) {
-      this.log.warn(`Pagination stopped at maximum pages (${maxPages}) for endpoint: ${endpoint}`);
+      this.log.warn(
+        `Pagination stopped at maximum pages (${maxPages}) for endpoint: ${endpoint}`
+      );
     }
 
     return results;

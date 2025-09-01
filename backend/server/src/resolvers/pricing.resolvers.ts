@@ -1,7 +1,8 @@
 import {
+  Provider,
   type RequestFacts,
   calculatePricing,
-  streamCalculatePricing
+  streamCalculatePricing,
 } from "@hiilo/rules-engine-2";
 import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
@@ -13,6 +14,7 @@ import type {
   PricingBreakdown,
   QueryResolvers,
 } from "../types";
+import { env } from "../config/env";
 
 const logger = createLogger({
   component: "PricingResolvers",
@@ -155,20 +157,20 @@ export const pricingQueries: QueryResolvers = {
       // Use enhanced version if we need detailed tracking or debug info
       const useEnhanced =
         input.includeDebugInfo || context.auth?.user?.role === "ADMIN";
-      
+
       const pricingBreakdown = useEnhanced
         ? await streamCalculatePricing({
             ...requestFacts,
             includeEnhancedData: true,
-            includeDebugInfo: requestFacts.includeDebugInfo
+            includeDebugInfo: env.isDev,
           })
         : await streamCalculatePricing({
             ...requestFacts,
             includeEnhancedData: false,
-            includeDebugInfo: false
+            includeDebugInfo: false,
           });
 
-      // Add GraphQL __typename fields
+      // Add __typename to the bundle and country objects
       pricingBreakdown.__typename = "PricingBreakdown";
       if (pricingBreakdown.bundle) {
         pricingBreakdown.bundle.__typename = "CountryBundle";
@@ -288,6 +290,7 @@ export const pricingQueries: QueryResolvers = {
               isUnlimited: result.selectedBundle?.is_unlimited || false,
               currency: "USD",
               group,
+              provider: result.selectedBundle?.provider! as Provider,
               country: {
                 __typename: "Country",
                 iso:

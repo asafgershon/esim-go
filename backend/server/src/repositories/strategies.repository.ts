@@ -201,21 +201,7 @@ export class StrategiesRepository extends BaseSupabaseRepository<
       .from("strategy_blocks")
       .select(`
         *,
-        pricing_blocks (
-          id,
-          code,
-          name,
-          description,
-          type,
-          category,
-          conditions,
-          action,
-          is_active,
-          is_editable,
-          priority,
-          created_at,
-          updated_at
-        )
+        pricing_blocks (*)
       `)
       .eq("strategy_id", id)
       .order("priority", { ascending: false }); // Respect priority order from strategy_blocks table
@@ -234,18 +220,18 @@ export class StrategiesRepository extends BaseSupabaseRepository<
       isEnabled: blockRow.is_enabled ?? true,
       configOverrides: blockRow.config_overrides,
       block: {
-        id: blockRow.pricing_blocks.block_id,
+        id: blockRow.pricing_blocks.id,
         name: blockRow.pricing_blocks.name,
         description: blockRow.pricing_blocks.description,
-        eventType: blockRow.pricing_blocks.type,
+        eventType: blockRow.pricing_blocks.event_type,
         category: blockRow.pricing_blocks.category,
         conditions: blockRow.pricing_blocks.conditions,
-        params: blockRow.pricing_blocks.action,
-        isActive: blockRow.pricing_blocks.is_active,
-        isEditable: blockRow.pricing_blocks.is_editable,
-        priority: blockRow.pricing_blocks.priority,
-        createdAt: blockRow.pricing_blocks.created_at,
-        updatedAt: blockRow.pricing_blocks.updated_at,
+        params: blockRow.pricing_blocks.params,
+        isActive: blockRow.pricing_blocks.is_active ?? false,
+        isEditable: blockRow.pricing_blocks.is_editable ?? false,
+        priority: blockRow.pricing_blocks.priority ?? 0,
+        createdAt: blockRow.pricing_blocks.created_at || '',
+        updatedAt: blockRow.pricing_blocks.updated_at || '',
       }
     }));
 

@@ -1,5 +1,6 @@
 import type { AirHaloClient } from "@hiilo/airalo";
 import type { ESimGoClient } from "@hiilo/esim-go";
+import type { Database } from "@hiilo/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type DataLoader from "dataloader";
 import type { RedisPubSub } from "graphql-redis-subscriptions";
@@ -21,9 +22,8 @@ import {
   ESIMRepository,
   HighDemandCountryRepository,
   OrderRepository,
-  PricingRulesRepository,
   TenantRepository,
-  UserRepository,
+  UserRepository
 } from "../repositories";
 import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
 import { StrategiesRepository } from "../repositories/strategies.repository";
@@ -36,7 +36,6 @@ import type { DeliveryService } from "../services/delivery";
 import * as EasycardPayment from "../services/payment";
 import type { RedisInstance } from "../services/redis";
 import type { SupabaseAuthContext } from "./supabase-auth";
-import type { Database } from "@hiilo/supabase";
 
 export type Context = {
   auth: SupabaseAuthContext;

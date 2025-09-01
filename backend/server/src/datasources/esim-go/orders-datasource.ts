@@ -1,12 +1,12 @@
-import { GraphQLError } from 'graphql';
-import { ESIMGoDataSource } from './esim-go-base';
+import { GraphQLError } from "graphql";
+import { ESIMGoDataSource } from "./esim-go-base";
 import type {
   AssignmentResponse,
   CreateOrderRequest,
   ESIMGoAssignment,
   ESIMGoOrder,
-  OrderResponse
-} from './types';
+  OrderResponse,
+} from "./types";
 
 /**
  * DataSource for eSIM Go Orders API
@@ -19,7 +19,7 @@ export class OrdersDataSource extends ESIMGoDataSource {
   async createOrder(request: CreateOrderRequest): Promise<ESIMGoOrder> {
     try {
       const response = await this.postWithErrorHandling<OrderResponse>(
-        '/orders',
+        "/orders",
         {
           bundle_name: request.bundleName,
           quantity: request.quantity,
@@ -29,9 +29,9 @@ export class OrdersDataSource extends ESIMGoDataSource {
       );
 
       if (!response.success || !response.order) {
-        throw new GraphQLError(response.error || 'Failed to create order', {
+        throw new GraphQLError(response.error || "Failed to create order", {
           extensions: {
-            code: response.errorCode || 'ORDER_CREATION_FAILED',
+            code: response.errorCode || "ORDER_CREATION_FAILED",
           },
         });
       }
@@ -42,9 +42,9 @@ export class OrdersDataSource extends ESIMGoDataSource {
       if (error instanceof GraphQLError) {
         throw error;
       }
-      throw new GraphQLError('Failed to create eSIM order', {
+      throw new GraphQLError("Failed to create eSIM order", {
         extensions: {
-          code: 'ORDER_CREATION_ERROR',
+          code: "ORDER_CREATION_ERROR",
           originalError: error,
         },
       });
@@ -55,8 +55,8 @@ export class OrdersDataSource extends ESIMGoDataSource {
    * Get details of a specific order
    */
   async getOrder(orderReference: string): Promise<ESIMGoOrder | null> {
-    const cacheKey = this.getCacheKey('order', { orderReference });
-    
+    const cacheKey = this.getCacheKey("order", { orderReference });
+
     // Try cache first (short TTL for order status updates)
     const cached = await this.cache?.get(cacheKey);
     if (cached) {
@@ -91,7 +91,7 @@ export class OrdersDataSource extends ESIMGoDataSource {
     page?: number;
   }): Promise<ESIMGoOrder[]> {
     const queryParams: Record<string, string> = {};
-    
+
     if (params?.status) {
       queryParams.status = params.status;
     }
@@ -105,15 +105,17 @@ export class OrdersDataSource extends ESIMGoDataSource {
       queryParams.page = params.page.toString();
     }
 
-    return await this.getAllPages<ESIMGoOrder>('/orders', queryParams);
+    return await this.getAllPages<ESIMGoOrder>("/orders", queryParams);
   }
 
   /**
    * Download QR codes and assignment details for an order
    */
-  async getOrderAssignments(orderReference: string): Promise<ESIMGoAssignment[]> {
-    const cacheKey = this.getCacheKey('assignments', { orderReference });
-    
+  async getOrderAssignments(
+    orderReference: string
+  ): Promise<ESIMGoAssignment[]> {
+    const cacheKey = this.getCacheKey("assignments", { orderReference });
+
     // Try cache first (24 hours - assignments don't change)
     const cached = await this.cache?.get(cacheKey);
     if (cached) {
@@ -126,28 +128,26 @@ export class OrdersDataSource extends ESIMGoDataSource {
       );
 
       if (!response.success || !response.assignments) {
-        throw new GraphQLError(response.error || 'Failed to get assignments', {
+        throw new GraphQLError(response.error || "Failed to get assignments", {
           extensions: {
-            code: 'ASSIGNMENTS_FETCH_FAILED',
+            code: "ASSIGNMENTS_FETCH_FAILED",
           },
         });
       }
 
       // Cache for 24 hours (assignments are immutable)
-      await this.cache?.set(
-        cacheKey, 
-        JSON.stringify(response.assignments), 
-        { ttl: 86400 }
-      );
+      await this.cache?.set(cacheKey, JSON.stringify(response.assignments), {
+        ttl: 86400,
+      });
 
       return response.assignments;
     } catch (error) {
       if (error instanceof GraphQLError) {
         throw error;
       }
-      throw new GraphQLError('Failed to get order assignments', {
+      throw new GraphQLError("Failed to get order assignments", {
         extensions: {
-          code: 'ASSIGNMENTS_FETCH_ERROR',
+          code: "ASSIGNMENTS_FETCH_ERROR",
           originalError: error,
         },
       });
@@ -164,15 +164,15 @@ export class OrdersDataSource extends ESIMGoDataSource {
       );
 
       if (!response.success || !response.order) {
-        throw new GraphQLError(response.error || 'Failed to cancel order', {
+        throw new GraphQLError(response.error || "Failed to cancel order", {
           extensions: {
-            code: response.errorCode || 'ORDER_CANCELLATION_FAILED',
+            code: response.errorCode || "ORDER_CANCELLATION_FAILED",
           },
         });
       }
 
       // Clear cache
-      const cacheKey = this.getCacheKey('order', { orderReference });
+      const cacheKey = this.getCacheKey("order", { orderReference });
       await this.cache?.delete(cacheKey);
 
       return response.order;
@@ -180,9 +180,9 @@ export class OrdersDataSource extends ESIMGoDataSource {
       if (error instanceof GraphQLError) {
         throw error;
       }
-      throw new GraphQLError('Failed to cancel order', {
+      throw new GraphQLError("Failed to cancel order", {
         extensions: {
-          code: 'ORDER_CANCELLATION_ERROR',
+          code: "ORDER_CANCELLATION_ERROR",
           originalError: error,
         },
       });
@@ -213,8 +213,8 @@ export class OrdersDataSource extends ESIMGoDataSource {
         currency?: string;
         error?: string;
         error_code?: string;
-      }>('/orders', {
-        type: 'validate', // Key parameter for validation
+      }>("/orders", {
+        type: "validate", // Key parameter for validation
         bundle_name: bundleName,
         quantity,
         customer_reference: customerReference,
@@ -223,8 +223,8 @@ export class OrdersDataSource extends ESIMGoDataSource {
       if (!response.success) {
         return {
           isValid: false,
-          error: response.error || 'Validation failed',
-          errorCode: response.error_code || 'VALIDATION_FAILED',
+          error: response.error || "Validation failed",
+          errorCode: response.error_code || "VALIDATION_FAILED",
         };
       }
 
@@ -239,13 +239,13 @@ export class OrdersDataSource extends ESIMGoDataSource {
         return {
           isValid: false,
           error: error.message,
-          errorCode: error.extensions?.code as string || 'VALIDATION_ERROR',
+          errorCode: (error.extensions?.code as string) || "VALIDATION_ERROR",
         };
       }
       return {
         isValid: false,
-        error: 'Failed to validate order',
-        errorCode: 'VALIDATION_ERROR',
+        error: "Failed to validate order",
+        errorCode: "VALIDATION_ERROR",
       };
     }
   }
@@ -263,15 +263,15 @@ export class OrdersDataSource extends ESIMGoDataSource {
         total_price: number;
         currency: string;
         error?: string;
-      }>('/orders/calculate', {
+      }>("/orders/calculate", {
         bundle_name: bundleName,
         quantity,
       });
 
       if (!response.success) {
-        throw new GraphQLError(response.error || 'Failed to calculate price', {
+        throw new GraphQLError(response.error || "Failed to calculate price", {
           extensions: {
-            code: 'PRICE_CALCULATION_FAILED',
+            code: "PRICE_CALCULATION_FAILED",
           },
         });
       }
@@ -284,9 +284,9 @@ export class OrdersDataSource extends ESIMGoDataSource {
       if (error instanceof GraphQLError) {
         throw error;
       }
-      throw new GraphQLError('Failed to calculate order price', {
+      throw new GraphQLError("Failed to calculate order price", {
         extensions: {
-          code: 'PRICE_CALCULATION_ERROR',
+          code: "PRICE_CALCULATION_ERROR",
           originalError: error,
         },
       });
