@@ -12,9 +12,16 @@ export const selectBundle = async (
   let bundle: SelectedBundleFact | null = null;
   const days = await almanac.factValue<number>("requestedValidityDays");
   const durations = await almanac.factValue<number[]>("durations");
-  const availableBundles = await almanac.factValue<BundleByGroupRow[]>(
-    "availableBundles"
-  );
+    
+  // Try to get provider-filtered bundles first, fallback to all bundles
+  let availableBundles: BundleByGroupRow[];
+  try {
+    availableBundles = await almanac.factValue<BundleByGroupRow[]>("availableBundlesByProvider");
+  } catch {
+    availableBundles = await almanac.factValue<BundleByGroupRow[]>("availableBundles");
+  }
+
+  console.log("availableBundles", availableBundles);
 
   // Check for exact match
   if (durations.includes(days)) {
@@ -45,9 +52,15 @@ export const previousBundle = async (
   const selectedBundle = await almanac.factValue<SelectedBundleFact>(
     "selectedBundle"
   );
-  const availableBundles = await almanac.factValue<BundleByGroupRow[]>(
-    "availableBundles"
-  );
+  
+  // Try to get provider-filtered bundles first, fallback to all bundles
+  let availableBundles: BundleByGroupRow[];
+  try {
+    availableBundles = await almanac.factValue<BundleByGroupRow[]>("availableBundlesByProvider");
+  } catch {
+    availableBundles = await almanac.factValue<BundleByGroupRow[]>("availableBundles");
+  }
+  
   const durations = await almanac.factValue<number[]>("durations");
 
   const previousDuration = durations

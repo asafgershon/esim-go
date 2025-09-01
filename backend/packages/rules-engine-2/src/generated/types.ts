@@ -1420,7 +1420,6 @@ export type PurchaseEsimResponse = {
 };
 
 export type Query = {
-  activePricingRules: Array<PricingRule>;
   allTenants: TenantConnection;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
@@ -1436,7 +1435,6 @@ export type Query = {
   calculatePrices: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
-  conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   defaultPricingStrategy?: Maybe<PricingStrategy>;
   esimDetails?: Maybe<Esim>;
@@ -1460,7 +1458,6 @@ export type Query = {
   pricingRules: Array<PricingRule>;
   pricingStrategies: Array<PricingStrategy>;
   pricingStrategy?: Maybe<PricingStrategy>;
-  simulatePricingRule: PricingBreakdown;
   tenant?: Maybe<Tenant>;
   tenants: Array<Tenant>;
   trips: Array<Trip>;
@@ -1535,11 +1532,6 @@ export type Query_CatalogSyncHistoryArgs = {
 };
 
 
-export type Query_ConflictingPricingRulesArgs = {
-  ruleId: Scalars['ID']['input'];
-};
-
-
 export type Query_EsimDetailsArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1605,12 +1597,6 @@ export type Query_PricingStrategyArgs = {
 };
 
 
-export type Query_SimulatePricingRuleArgs = {
-  rule: CreatePricingRuleInput;
-  testContext: TestPricingContext;
-};
-
-
 export type Query_TenantArgs = {
   slug: Scalars['ID']['input'];
 };
@@ -1628,6 +1614,7 @@ export type RuleActionInput = {
 };
 
 export enum RuleCategory {
+  ProviderSelection = 'PROVIDER_SELECTION',
   BundleAdjustment = 'BUNDLE_ADJUSTMENT',
   Constraint = 'CONSTRAINT',
   Discount = 'DISCOUNT',

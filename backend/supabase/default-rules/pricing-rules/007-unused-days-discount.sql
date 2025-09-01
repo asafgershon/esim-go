@@ -3,7 +3,7 @@
 -- ============================================================================
 -- Description: Apply discount for unused days in bundle
 -- Category: DISCOUNT
--- Event: apply_unused_days_discount
+-- Event: apply-unused-days-discount
 -- Priority: 80
 -- Created: 2025-08-03
 -- ============================================================================
@@ -31,7 +31,7 @@ INSERT INTO public.pricing_blocks (
     80,
     true,
     true,
-    'apply_unused_days_discount',
+    'apply-unused-days-discount',
     '{}'::jsonb,
     '00000000-0000-0000-0000-000000000000'::uuid,
     '2025-08-03 16:32:22.278637+00'::timestamptz,
