@@ -11,28 +11,31 @@
 -- Apply Pricing Blocks in priority order (highest to lowest priority)
 \echo 'Applying pricing blocks...'
 
-\echo '  1. Cost Block (Priority 99)...'
+\echo '  1. Provider Selection (Priority 100)...'
+\i pricing-rules/009-provider-selection.sql
+
+\echo '  2. Cost Block (Priority 99)...'
 \i pricing-rules/001-cost-base.sql
 
-\echo '  2. Unlimited Bundle Markup (Priority 90)...'
+\echo '  3. Unlimited Bundle Markup (Priority 90)...'
 \i pricing-rules/003-bundle-markup-matrix.sql
 
-\echo '  3. Unused Days Discount (Priority 80)...'
+\echo '  4. Unused Days Discount (Priority 80)...'
 \i pricing-rules/007-unused-days-discount.sql
 
-\echo '  4. Processing Fee Matrix (Priority 40)...'
+\echo '  5. Processing Fee Matrix (Priority 40)...'
 \i pricing-rules/004-processing-fee-matrix.sql
 
-\echo '  5. Minimum Profit Protection (Priority 20)...'
+\echo '  6. Minimum Profit Protection (Priority 20)...'
 \i pricing-rules/002-keep-profit-standard.sql
 
-\echo '  6. Psychological Rounding (Priority 10)...'
+\echo '  7. Psychological Rounding (Priority 10)...'
 \i pricing-rules/005-psychological-rounding.sql
 
-\echo '  7. Region Rounding (Priority 5)...'
+\echo '  8. Region Rounding (Priority 5)...'
 \i pricing-rules/006-region-rounding.sql
 
-\echo '  8. Fixed Price Ukraine (Priority 1)...'
+\echo '  9. Fixed Price Ukraine (Priority 1)...'
 \i pricing-rules/008-fixed-price-ukraine.sql
 
 \echo 'All pricing blocks have been applied successfully!'
