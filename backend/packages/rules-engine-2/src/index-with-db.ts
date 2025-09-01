@@ -1,6 +1,12 @@
 import { createLogger } from "@hiilo/utils";
 import { Engine, Rule } from "json-rules-engine";
-import { availableBundles } from "./facts/available-bundles";
+import { availableBundles, availableBundlesByProvider } from "./facts/available-bundles";
+import { 
+  selectedProvider,
+  availableProviders,
+  preferredProvider,
+  isProviderAvailable
+} from "./facts/provider-facts";
 import {
   isExactMatch,
   PreviousBundleFact,
@@ -115,9 +121,15 @@ export async function calculatePricing({
   // Add static facts
   engine.addFact("durations", durations);
   engine.addFact("availableBundles", availableBundles);
+  
+  // Add provider selection facts
+  engine.addFact("availableBundlesByProvider", availableBundlesByProvider);
+  engine.addFact("selectedProvider", selectedProvider);
+  engine.addFact("availableProviders", availableProviders);
+  engine.addFact("preferredProvider", preferredProvider);
+  
   // Add calculated dynamic facts to be used in rules
   engine.addFact("selectedBundle", selectBundle);
-
   engine.addFact("previousBundle", previousBundleFact);
   engine.addFact("unusedDays", unusedDaysFact);
   engine.addFact("isExactMatch", isExactMatch);
@@ -196,7 +208,8 @@ export async function calculatePricing({
       currentPrice,
       appliedRules,
       { selectedBundle, previousBundle, unusedDays, paymentMethod },
-      logger
+      logger,
+      almanac
     );
 
     logger.info(
@@ -314,7 +327,13 @@ export {
   type PreviousBundleFact,
 } from "./facts/bundle-facts";
 export { durations } from "./facts/durations";
-export { availableBundles } from "./facts/available-bundles";
+export { availableBundles, availableBundlesByProvider } from "./facts/available-bundles";
+export {
+  selectedProvider,
+  availableProviders,
+  preferredProvider,
+  isProviderAvailable
+} from "./facts/provider-facts";
 export {
   getCachedPricingRules,
   loadStrategyBlocks,
@@ -325,4 +344,5 @@ export {
   PaymentMethod,
   PricingBreakdown,
   RuleCategory,
+  Provider
 } from "./generated/types";

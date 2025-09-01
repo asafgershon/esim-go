@@ -14,19 +14,17 @@ import {
 import { durations } from "./facts/durations";
 import {
   AppliedRule,
+  CustomerDiscount,
   PaymentMethod,
   PricingBreakdown,
-  RuleCategory,
   PricingStep,
-  CustomerDiscount,
+  RuleCategory,
 } from "./generated/types";
-import { processEventType } from "./processors/process-event";
-import { selectEvents } from "./strategies/process-events";
 import {
   getCachedPricingRules,
-  loadStrategyBlocks,
-  clearRulesCache,
+  loadStrategyBlocks
 } from "./loaders/database-loader";
+import { processEventType } from "./processors/process-event";
 
 const logger = createLogger({
   name: "pricing-engine-v2-enhanced",

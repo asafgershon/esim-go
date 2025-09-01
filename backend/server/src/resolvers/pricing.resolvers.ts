@@ -1,6 +1,6 @@
 import {
   type RequestFacts,
-  calculatePricingWithDB,
+  calculatePricing,
   calculatePricingEnhanced
 } from "@hiilo/rules-engine-2";
 import { GraphQLError } from "graphql";
@@ -157,7 +157,7 @@ export const pricingQueries: QueryResolvers = {
       const useEnhanced = input.includeDebugInfo || context.auth?.user?.role === 'ADMIN';
       const result = useEnhanced 
         ? await calculatePricingEnhanced(requestFacts)
-        : await calculatePricingWithDB(requestFacts);
+        : await calculatePricing(requestFacts);
 
       // Map the result to PricingBreakdown format
       const pricingBreakdown: PricingBreakdown = {
@@ -189,9 +189,6 @@ export const pricingQueries: QueryResolvers = {
         },
 
         duration: numOfDays,
-
-        // Rule-based pricing breakdown
-        appliedRules: result.appliedRules,
 
         // Pipeline metadata
         unusedDays: result.unusedDays,
@@ -286,7 +283,7 @@ export const pricingQueries: QueryResolvers = {
           } as RequestFacts;
 
           // Run the database-driven pricing engine
-          const result = await calculatePricingWithDB(requestFacts);
+          const result = await calculatePricing(requestFacts);
 
           // Map the result to PricingBreakdown format
           const pricingBreakdown: PricingBreakdown = {

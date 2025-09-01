@@ -1,5 +1,6 @@
 # Pricing Rules Engine Types
 enum RuleCategory {
+  PROVIDER_SELECTION
   DISCOUNT
   CONSTRAINT
   FEE

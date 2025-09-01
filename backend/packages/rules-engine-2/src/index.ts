@@ -1,16 +1,12 @@
 import { createLogger } from "@hiilo/utils";
 import { Engine } from "json-rules-engine";
-import {
-  SelectedBundleFact
-} from "./facts/bundle-facts";
+import { SelectedBundleFact } from "./facts/bundle-facts";
 import {
   AppliedRule,
   PaymentMethod,
-  PricingBreakdown
+  PricingBreakdown,
 } from "./generated/types";
-import {
-  clearRulesCache
-} from "./loaders/database-loader";
+import { clearRulesCache } from "./loaders/database-loader";
 
 // Export cache clear function for manual cache invalidation
 export { clearRulesCache };
@@ -45,31 +41,42 @@ export type PricingEngineV2Result = {
   pricing: Omit<PricingBreakdown, "bundle" | "country" | "duration">;
   appliedRules: AppliedRule[];
 };
-
+export { calculatePricing } from "./index-with-db";
 // Export enhanced version with step tracking
 export {
   calculatePricingEnhanced,
-  EnhancedPricingEngineResult
+  EnhancedPricingEngineResult,
 } from "./calculate-pricing-enhanced";
-export { availableBundles } from "./facts/available-bundles";
+export {
+  availableBundles,
+  availableBundlesByProvider,
+} from "./facts/available-bundles";
 export {
   isExactMatch,
   previousBundle as previousBundleFact,
   previousBundleMarkup,
   selectBundle,
   selectedBundleMarkup,
-  unusedDays as unusedDaysFact, type PreviousBundleFact, type SelectedBundleFact
+  unusedDays as unusedDaysFact,
+  type PreviousBundleFact,
+  type SelectedBundleFact,
 } from "./facts/bundle-facts";
 export { durations } from "./facts/durations";
+export {
+  availableProviders,
+  isProviderAvailable,
+  preferredProvider,
+  selectedProvider,
+} from "./facts/provider-facts";
 export {
   AppliedRule,
   PaymentMethod,
   PricingBreakdown,
-  RuleCategory
+  Provider,
+  RuleCategory,
 } from "./generated/types";
 export {
   getCachedPricingRules,
-  loadStrategyBlocks
+  loadStrategyBlocks,
 } from "./loaders/database-loader";
 export { processEventType } from "./processors/process-event";
-

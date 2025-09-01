@@ -1,5 +1,5 @@
 import { Event } from "json-rules-engine";
-import { AppliedRule, RuleCategory } from "../generated/types";
+import { AppliedRule, RuleCategory, Provider } from "../generated/types";
 import { SelectedBundleFact, PreviousBundleFact } from "../facts/bundle-facts";
 import type { StructuredLogger } from "@hiilo/utils";
 
@@ -20,6 +20,7 @@ function mapEventTypeToCategory(eventType: string): RuleCategory {
       return RuleCategory.BundleAdjustment;
     case "apply-discount":
     case "apply-unused-days-discount":
+    case "apply_unused_days_discount": // Handle both formats for backwards compatibility
       return RuleCategory.Discount;
     case "apply-processing-fee":
       return RuleCategory.Fee;
@@ -28,6 +29,9 @@ function mapEventTypeToCategory(eventType: string): RuleCategory {
     case "apply-region-rounding":
     case "apply-fixed-price":
       return RuleCategory.Constraint;
+    case "select_provider":
+    case "select-provider":
+      return RuleCategory.ProviderSelection;
     default:
       return RuleCategory.BundleAdjustment;
   }
@@ -41,7 +45,8 @@ export function processEventType(
   currentPrice: number,
   appliedRules: AppliedRule[],
   context: ProcessContext,
-  logger: StructuredLogger
+  logger: StructuredLogger,
+  almanac?: any
 ): number {
   const { selectedBundle, previousBundle, unusedDays } = context;
   
@@ -106,6 +111,7 @@ export function processEventType(
       break;
 
     case "apply-unused-days-discount":
+    case "apply_unused_days_discount": // Handle both formats for backwards compatibility
       // Apply discount for unused days
       if (unusedDays > 0 && selectedBundle && selectedBundle.price && selectedBundle.validity_in_days) {
         const dailyRate = selectedBundle.price / selectedBundle.validity_in_days;
@@ -193,12 +199,41 @@ export function processEventType(
       details = { fixedPrice: newPrice };
       break;
 
+    case "select_provider":
+    case "select-provider":
+      // Handle provider selection
+      const providerParams = event.params as any;
+      const preferredProvider = providerParams.preferredProvider;
+      const fallbackProvider = providerParams.fallbackProvider;
+      
+      // Set provider selection in almanac runtime facts if available
+      if (almanac) {
+        // Determine which provider to use based on availability
+        let selectedProvider = preferredProvider;
+        
+        // This doesn't change the price directly, but affects bundle selection
+        // The actual impact happens when bundles are re-evaluated
+        almanac.addRuntimeFact('providerSelection', selectedProvider);
+        
+        description = `Selected provider: ${selectedProvider} (preferred: ${preferredProvider}, fallback: ${fallbackProvider})`;
+        details = { 
+          selectedProvider,
+          preferredProvider, 
+          fallbackProvider 
+        };
+      } else {
+        description = `Provider selection attempted but no almanac available`;
+        details = { preferredProvider, fallbackProvider };
+      }
+      // No price change for provider selection itself
+      break;
+
     default:
       logger.warn(`Unknown event type: ${event.type}`);
   }
 
-  // Add to applied rules if price changed
-  if (newPrice !== currentPrice) {
+  // Add to applied rules if price changed or if it's a provider selection event
+  if (newPrice !== currentPrice || normalizedType === "select-provider") {
     const rule: AppliedRule = {
       id: event.params?.ruleId || event.type,
       name: description,
