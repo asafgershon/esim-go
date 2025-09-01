@@ -1088,30 +1088,6 @@ COMMENT ON COLUMN "public"."checkout_sessions"."token_hash" IS 'SHA256 hash of J
 COMMENT ON COLUMN "public"."checkout_sessions"."order_id" IS 'References the created order when checkout session is completed successfully';
 
 
-
-CREATE OR REPLACE VIEW "public"."active_checkout_sessions" AS
- SELECT "id",
-    "user_id",
-    "plan_id",
-    "plan_snapshot",
-    "pricing",
-    "steps",
-    "token_hash",
-    "expires_at",
-    "payment_intent_id",
-    "payment_status",
-    "created_at",
-    "updated_at",
-    "metadata",
-    "public"."is_checkout_session_complete"("id") AS "is_complete",
-    ("expires_at" - "now"()) AS "time_remaining"
-   FROM "public"."checkout_sessions" "cs"
-  WHERE ("expires_at" > "now"());
-
-
-ALTER VIEW "public"."active_checkout_sessions" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."catalog_bundles" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "esim_go_name" character varying NOT NULL,
@@ -2104,10 +2080,6 @@ GRANT ALL ON TABLE "public"."checkout_sessions" TO "authenticated";
 GRANT ALL ON TABLE "public"."checkout_sessions" TO "service_role";
 
 
-
-GRANT ALL ON TABLE "public"."active_checkout_sessions" TO "anon";
-GRANT ALL ON TABLE "public"."active_checkout_sessions" TO "authenticated";
-GRANT ALL ON TABLE "public"."active_checkout_sessions" TO "service_role";
 
 
 
