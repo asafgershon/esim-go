@@ -36,10 +36,7 @@
 \echo '  7. Psychological Rounding (Priority 10)...'
 \i pricing-rules/005-psychological-rounding.sql
 
-\echo '  8. Region Rounding (Priority 5)...'
-\i pricing-rules/006-region-rounding.sql
-
-\echo '  9. Fixed Price Ukraine (Priority 1)...'
+\echo '  8. Fixed Price Ukraine (Priority 1)...'
 \i pricing-rules/008-fixed-price-ukraine.sql
 
 \echo 'All pricing blocks have been applied successfully!'
