@@ -9,7 +9,6 @@ import { useLoginForm } from "@/hooks/useLoginForm";
 import { useMutation } from "@apollo/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  AppleSignInButton,
   Button,
   Card,
   CardContent,
@@ -446,25 +445,7 @@ const PhoneEmailForm = ({
   return (
     <CardContent className="space-y-4">
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-2 gap-2">
-          <AppleSignInButton
-            className="justify-center"
-            onClick={async () => {
-              const userData = await handleSocialSignIn("apple");
-              if (userData) {
-                // Update checkout auth with social login data
-                await updateCheckoutAuth({
-                  variables: {
-                    sessionId,
-                    email: userData.email,
-                    firstName: userData.firstName,
-                    lastName: userData.lastName,
-                    phone: undefined, // Social login doesn't provide phone
-                  },
-                });
-              }
-            }}
-          />
+        <div className="grid gap-2">
           <GoogleSignInButton
             className="justify-center"
             onClick={async () => {

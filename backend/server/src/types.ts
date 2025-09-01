@@ -850,7 +850,6 @@ export type Mutation = {
   restoreESIM?: Maybe<EsimActionResponse>;
   sendPhoneOTP?: Maybe<SendOtpResponse>;
   signIn?: Maybe<SignInResponse>;
-  signInWithApple?: Maybe<SignInResponse>;
   signInWithGoogle?: Maybe<SignInResponse>;
   signUp?: Maybe<SignUpResponse>;
   suspendESIM?: Maybe<EsimActionResponse>;
@@ -990,11 +989,6 @@ export type MutationSendPhoneOtpArgs = {
 
 export type MutationSignInArgs = {
   input: SignInInput;
-};
-
-
-export type MutationSignInWithAppleArgs = {
-  input: SocialSignInInput;
 };
 
 
@@ -3056,7 +3050,6 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   restoreESIM?: Resolver<Maybe<ResolversTypes['ESIMActionResponse']>, ParentType, ContextType, RequireFields<MutationRestoreEsimArgs, 'esimId'>>;
   sendPhoneOTP?: Resolver<Maybe<ResolversTypes['SendOTPResponse']>, ParentType, ContextType, RequireFields<MutationSendPhoneOtpArgs, 'phoneNumber'>>;
   signIn?: Resolver<Maybe<ResolversTypes['SignInResponse']>, ParentType, ContextType, RequireFields<MutationSignInArgs, 'input'>>;
-  signInWithApple?: Resolver<Maybe<ResolversTypes['SignInResponse']>, ParentType, ContextType, RequireFields<MutationSignInWithAppleArgs, 'input'>>;
   signInWithGoogle?: Resolver<Maybe<ResolversTypes['SignInResponse']>, ParentType, ContextType, RequireFields<MutationSignInWithGoogleArgs, 'input'>>;
   signUp?: Resolver<Maybe<ResolversTypes['SignUpResponse']>, ParentType, ContextType, RequireFields<MutationSignUpArgs, 'input'>>;
   suspendESIM?: Resolver<Maybe<ResolversTypes['ESIMActionResponse']>, ParentType, ContextType, RequireFields<MutationSuspendEsimArgs, 'esimId'>>;

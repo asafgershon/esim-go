@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/auth-context'
-import { AppleSignInButton, Button, Card, GoogleSignInButton } from '@workspace/ui'
+import { Button, Card, GoogleSignInButton } from '@workspace/ui'
 import { Input } from '@workspace/ui/components/input'
 import { Loader2, Mail, Eye, EyeOff, Shield } from 'lucide-react'
 import { useState, useEffect } from 'react'
@@ -15,9 +15,9 @@ interface LoginFormData {
 export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null)
+  const [socialLoading, setSocialLoading] = useState<'google' | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const { signIn, signInWithGoogle, signInWithApple, user } = useAuth()
+  const { signIn, signInWithGoogle, user } = useAuth()
   const navigate = useNavigate()
 
   // React Hook Form setup
@@ -72,16 +72,12 @@ export function LoginPage() {
     }
   }
 
-  const handleSocialSignIn = async (provider: 'google' | 'apple') => {
+  const handleSocialSignIn = async (provider: 'google') => {
     setSocialLoading(provider)
     setError(null)
 
     try {
-      if (provider === 'google') {
-        await signInWithGoogle()
-      } else {
-        await signInWithApple()
-      }
+      await signInWithGoogle()
     } catch (err) {
       console.error(`${provider} sign-in error:`, err)
       
@@ -89,13 +85,13 @@ export function LoginPage() {
       if (err instanceof Error) {
         const errorMessage = err.message.toLowerCase()
         if (errorMessage.includes('popup')) {
-          setError(`${provider === 'google' ? 'Google' : 'Apple'} sign-in popup was blocked. Please allow popups and try again.`)
+          setError('Google sign-in popup was blocked. Please allow popups and try again.')
         } else if (errorMessage.includes('cancelled')) {
           setError('Sign-in was cancelled. Please try again.')
         } else if (errorMessage.includes('network')) {
           setError('Connection error. Please check your internet connection and try again.')
         } else {
-          setError(`Unable to sign in with ${provider === 'google' ? 'Google' : 'Apple'}. Please try again or use email instead.`)
+          setError('Unable to sign in with Google. Please try again or use email instead.')
         }
       } else {
         setError('An unexpected error occurred. Please try again.')
@@ -136,14 +132,6 @@ export function LoginPage() {
             >
               Continue with Google
             </GoogleSignInButton>
-            <AppleSignInButton
-              loading={socialLoading === 'apple'}
-              onClick={() => handleSocialSignIn('apple')}
-              disabled={loading || socialLoading !== null}
-              className="w-full h-11"
-            >
-              Continue with Apple
-            </AppleSignInButton>
           </div>
 
           {/* Separator */}

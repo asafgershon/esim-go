@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { usePhoneOTP } from "./usePhoneOTP";
-import { useAppleSignIn } from "./useAppleSignIn";
 import { useGoogleSignIn } from "./useGoogleSignIn";
 import {
   phoneFormSchema,
@@ -42,14 +41,13 @@ interface UseLoginFormReturn {
   otpLoading: boolean;
   
   // Social sign-in loading states
-  appleLoading: boolean;
   googleLoading: boolean;
   
   // Handlers
   handlePhoneSubmit: (data: PhoneFormData) => Promise<void>;
   handleOTPSubmit: (data: OTPFormData) => Promise<void>;
   handleResendOTP: () => Promise<void>;
-  handleSocialSignIn: (provider: "apple" | "google") => Promise<SocialUserData | void>;
+  handleSocialSignIn: (provider: "google") => Promise<SocialUserData | void>;
   handleBackToPhone: () => void;
   handlePhoneInputChange: (value: string) => void;
   handleOTPChange: (value: string) => void;
@@ -72,7 +70,6 @@ export const useLoginForm = ({
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
 
   // Hooks
-  const { signInWithApple, loading: appleLoading } = useAppleSignIn();
   const { signInWithGoogle, loading: googleLoading } = useGoogleSignIn();
   const {
     loading: otpLoading,
@@ -198,16 +195,14 @@ export const useLoginForm = ({
   }, [phoneNumber, resendCooldown, sendOTP]);
 
   // Social sign-in
-  const handleSocialSignIn = useCallback(async (provider: "apple" | "google"): Promise<SocialUserData | void> => {
+  const handleSocialSignIn = useCallback(async (provider: "google"): Promise<SocialUserData | void> => {
     try {
       setIsLoading(true);
       setError(null);
 
       let result: SignInResponse;
       try {
-        result = provider === "apple" 
-          ? await signInWithApple(false)
-          : await signInWithGoogle(false);
+        result = await signInWithGoogle(false);
       } catch (signInError) {
         result = { success: false, error: (signInError as Error).message };
       }
@@ -225,23 +220,19 @@ export const useLoginForm = ({
         // Return the user data
         return userData;
       } else {
-        const errorMessage = provider === "apple"
-          ? "התחברות עם Apple נכשלה"
-          : "התחברות עם Google נכשלה";
+        const errorMessage = "התחברות עם Google נכשלה";
         
         if (result?.error && !result.error.includes("dismissed") && !result.error.includes("skipped")) {
           setError(`${errorMessage}: ${result.error}`);
         }
       }
     } catch (error) {
-      const errorMessage = provider === "apple"
-        ? "התחברות עם Apple נכשלה"
-        : "התחברות עם Google נכשלה";
+      const errorMessage = "התחברות עם Google נכשלה";
       setError(`${errorMessage}: ${(error as Error).message}`);
     } finally {
       setIsLoading(false);
     }
-  }, [onSuccess, redirectTo, signInWithApple, signInWithGoogle]);
+  }, [onSuccess, redirectTo, signInWithGoogle]);
 
   // Back to phone step
   const handleBackToPhone = useCallback(() => {
@@ -303,7 +294,6 @@ export const useLoginForm = ({
     otpLoading,
     
     // Social sign-in loading states
-    appleLoading,
     googleLoading,
     
     // Handlers

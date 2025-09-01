@@ -1,5 +1,4 @@
 import {
-  signInWithApple,
   signInWithGoogle,
   sendPhoneOTP,
   supabaseAdmin,
@@ -159,56 +158,6 @@ export const authResolvers: Partial<Resolvers> = {
     },
 
     // Social Authentication
-    signInWithApple: async (_, { input }) => {
-      try {
-        const result = await signInWithApple(
-          input.idToken,
-          input.firstName || "",
-          input.lastName || ""
-        );
-
-        if (!result.success) {
-          return {
-            success: false,
-            error: result.error,
-            user: null,
-            sessionToken: null,
-            refreshToken: null,
-          };
-        }
-
-        // Map Supabase user to GraphQL User type
-        const user = {
-          id: result.user!.id,
-          email: result.user!.email || "",
-          firstName:
-            result.user!.user_metadata?.first_name || input.firstName || "",
-          lastName:
-            result.user!.user_metadata?.last_name || input.lastName || "",
-          phoneNumber: result.user!.phone || null,
-          role: result.user!.user_metadata?.role || "USER",
-          createdAt: result.user!.created_at,
-          updatedAt: result.user!.updated_at || result.user!.created_at,
-          orderCount: 0, // Will be resolved by field resolver
-        };
-
-        return {
-          success: true,
-          error: null,
-          user,
-          sessionToken: result.session?.access_token || null,
-          refreshToken: result.session?.refresh_token || null,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          error: "Apple sign-in failed",
-          user: null,
-          sessionToken: null,
-          refreshToken: null,
-        };
-      }
-    },
 
     signInWithGoogle: async (_, { input }) => {
       try {

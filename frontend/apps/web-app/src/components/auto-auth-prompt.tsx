@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useDeviceInfo } from '@/lib/device-detection';
-import { useAppleSignIn } from '@/hooks/useAppleSignIn';
 import { useGoogleSignIn } from '@/hooks/useGoogleSignIn';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -19,22 +18,9 @@ export function AutoAuthPrompt({
 }: AutoAuthPromptProps) {
   const [hasTriggered, setHasTriggered] = useState(false);
   const deviceInfo = useDeviceInfo();
-  const { signInWithApple } = useAppleSignIn();
   const { signInWithGoogle } = useGoogleSignIn();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  const handleAppleSignIn = useCallback(async () => {
-    try {
-      const result = await signInWithApple(true); // true for auto prompt
-      if (result.success) {
-        onSuccess?.();
-      } else {
-        throw new Error(result.error || "Apple Sign-In failed");
-      }
-    } catch (error) {
-      throw error;
-    }
-  }, [signInWithApple, onSuccess]);
 
   const handleGoogleOneTap = useCallback(async () => {
     try {
@@ -55,9 +41,7 @@ export function AutoAuthPrompt({
     setHasTriggered(true);
 
     try {
-      if (deviceInfo.shouldShowAppleSignIn) {
-        await handleAppleSignIn();
-      } else if (deviceInfo.shouldShowGoogleOneTap) {
+      if (deviceInfo.shouldShowGoogleOneTap) {
         await handleGoogleOneTap();
       }
     } catch (error) {
@@ -71,9 +55,7 @@ export function AutoAuthPrompt({
     }
   }, [
     hasTriggered,
-    deviceInfo.shouldShowAppleSignIn,
     deviceInfo.shouldShowGoogleOneTap,
-    handleAppleSignIn,
     handleGoogleOneTap,
     onError,
   ]);
@@ -119,7 +101,6 @@ export function AutoAuthPrompt({
 // Hook version for programmatic use
 export function useAutoAuth() {
   const deviceInfo = useDeviceInfo();
-  const { signInWithApple } = useAppleSignIn();
   const { signInWithGoogle } = useGoogleSignIn();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -128,10 +109,7 @@ export function useAutoAuth() {
     if (isAuthenticated) return false;
 
     try {
-      if (deviceInfo.shouldShowAppleSignIn) {
-        const result = await signInWithApple(true);
-        return result.success;
-      } else if (deviceInfo.shouldShowGoogleOneTap) {
+      if (deviceInfo.shouldShowGoogleOneTap) {
         const result = await signInWithGoogle(true);
         return result.success;
       }
@@ -144,7 +122,7 @@ export function useAutoAuth() {
 
   return {
     triggerAutoAuth,
-    canTriggerAutoAuth: !isAuthenticated && !authLoading && (deviceInfo.shouldShowAppleSignIn || deviceInfo.shouldShowGoogleOneTap),
+    canTriggerAutoAuth: !isAuthenticated && !authLoading && deviceInfo.shouldShowGoogleOneTap,
     deviceInfo,
   };
 }

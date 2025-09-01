@@ -180,45 +180,6 @@ export const getUserRole = (
   );
 };
 
-/**
- * Sign in with Apple ID token
- */
-export const signInWithApple = async (
-  idToken: string,
-  firstName?: string,
-  lastName?: string
-) => {
-  try {
-    const { data, error } = await supabaseAdmin.auth.signInWithIdToken({
-      provider: "apple",
-      token: idToken,
-    });
-
-    if (error) {
-      return {
-        success: false,
-        error: error.message,
-        user: null,
-        session: null,
-      };
-    }
-
-    return {
-      success: true,
-      error: null,
-      user: data.user,
-      session: data.session,
-    };
-  } catch (error) {
-    console.error("Apple sign-in error:", error);
-    return {
-      success: false,
-      error: "Apple sign-in failed",
-      user: null,
-      session: null,
-    };
-  }
-};
 
 /**
  * Sign in with Google ID token

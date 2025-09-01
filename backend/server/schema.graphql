@@ -309,7 +309,6 @@ type Mutation {
   signUp(input: SignUpInput!): SignUpResponse
 
   # Social Authentication
-  signInWithApple(input: SocialSignInInput!): SignInResponse
   signInWithGoogle(input: SocialSignInInput!): SignInResponse
 
   # Phone Authentication

@@ -3,7 +3,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useLoginForm } from "@/hooks/useLoginForm";
 import {
-  AppleSignInButton,
   Button,
   Card,
   GoogleSignInButton,
@@ -67,7 +66,6 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
     step,
     phoneNumber,
     otpLoading,
-    appleLoading,
     googleLoading,
     handlePhoneSubmit,
     handleOTPSubmit: originalHandleOTPSubmit,
@@ -244,14 +242,6 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
             >
               המשך עם Google
             </GoogleSignInButton>
-            <AppleSignInButton
-              loading={appleLoading}
-              onClick={() => handleSocialSignIn("apple")}
-              disabled={appleLoading}
-              className="w-full"
-            >
-              המשך עם Apple
-            </AppleSignInButton>
           </div>
 
           <div className="relative">

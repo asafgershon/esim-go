@@ -240,6 +240,7 @@ interface Bundle {
   isUnlimited: Boolean!
   name: String!
   pricingBreakdown(paymentMethod: PaymentMethod): PricingBreakdown
+  provider: Provider!
   region: String
   speed: [String!]!
   validityInDays: Int!
@@ -404,6 +405,7 @@ type CatalogBundle implements Bundle {
   isUnlimited: Boolean!
   name: String!
   pricingBreakdown(paymentMethod: PaymentMethod): PricingBreakdown
+  provider: Provider!
   region: String
   speed: [String!]!
   syncedAt: DateTime!
@@ -620,6 +622,7 @@ type CountryBundle {
   name: String!
   price: Float
   pricingBreakdown: PricingBreakdown
+  provider: Provider!
 }
 
 input CreateCheckoutSessionInput {
@@ -679,6 +682,7 @@ type CustomerBundle implements Bundle {
   isUnlimited: Boolean!
   name: String!
   pricingBreakdown(paymentMethod: PaymentMethod): PricingBreakdown
+  provider: Provider!
   region: String
   speed: [String!]!
   validityInDays: Int!
@@ -887,7 +891,6 @@ type Mutation {
   deleteTenant(slug: ID!): TenantOperationResponse!
   deleteTrip(id: ID!): DeleteTripResponse
   deleteUser(userId: ID!): DeleteUserResponse
-  """Smart cache invalidation based on rule changes (Admin only)"""
   inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse
   processCheckoutPayment(input: ProcessCheckoutPaymentInput!): ProcessCheckoutPaymentResponse!
   processPaymentCallback(transactionId: String!): String!
@@ -899,7 +902,6 @@ type Mutation {
   restoreESIM(esimId: ID!): ESIMActionResponse
   sendPhoneOTP(phoneNumber: String!): SendOTPResponse
   signIn(input: SignInInput!): SignInResponse
-  signInWithApple(input: SocialSignInInput!): SignInResponse
   signInWithGoogle(input: SocialSignInInput!): SignInResponse
   signUp(input: SignUpInput!): SignUpResponse
   suspendESIM(esimId: ID!): ESIMActionResponse
@@ -1291,6 +1293,11 @@ input ProcessingFeeConfigurationInput {
   threeDSecureFee: Float!
 }
 
+enum Provider {
+  ESIM_GO
+  MAYA
+}
+
 input PurchaseESIMInput {
   autoActivate: Boolean
   customerReference: String
@@ -1304,7 +1311,6 @@ type PurchaseESIMResponse {
 }
 
 type Query {
-  activePricingRules: [PricingRule!]!
   airHaloCompatibleDevices: AirHaloCompatibleDevicesResponse!
   airHaloPackages(filter: AirHaloPackageFilter): AirHaloPackagesResponse!
   airHaloPricingData(packageIds: [String!]!): [AirHaloPackage!]!
@@ -1324,7 +1330,6 @@ type Query {
   catalogBundles(criteria: SearchCatalogCriteria): CatalogBundleConnection!
   catalogSyncHistory(params: SyncHistoryParams): CatalogSyncHistoryConnection!
   compareAirHaloPackages(countryCode: String!): [AirHaloPackageData!]!
-  conflictingPricingRules(ruleId: ID!): [PricingRule!]!
   countries: [Country!]!
   defaultPricingStrategy: PricingStrategy
   esimDetails(id: ID!): ESIM
@@ -1375,6 +1380,7 @@ enum RuleCategory {
   CONSTRAINT
   DISCOUNT
   FEE
+  PROVIDER_SELECTION
 }
 
 type RuleCondition {
@@ -1554,6 +1560,7 @@ input TriggerSyncParams {
   countryId: String
   force: Boolean = false
   priority: String = "normal"
+  provider: Provider
   type: SyncJobType!
 }
 
@@ -1562,6 +1569,7 @@ type TriggerSyncResponse {
   error: String
   jobId: String
   message: String
+  provider: Provider
   success: Boolean!
 }
 

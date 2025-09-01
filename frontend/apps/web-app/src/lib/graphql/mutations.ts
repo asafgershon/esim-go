@@ -40,25 +40,6 @@ export const SIGN_UP = gql`
   }
 `;
 
-export const SIGN_IN_WITH_APPLE = gql`
-  mutation SignInWithApple($input: SocialSignInInput!) {
-    signInWithApple(input: $input) {
-      success
-      error
-      user {
-        id
-        email
-        firstName
-        lastName
-        phoneNumber
-        createdAt
-        updatedAt
-      }
-      sessionToken
-      refreshToken
-    }
-  }
-`;
 
 export const SIGN_IN_WITH_GOOGLE = gql`
   mutation SignInWithGoogle($input: SocialSignInInput!) {

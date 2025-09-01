@@ -274,6 +274,7 @@ export type Bundle = {
   isUnlimited: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
   region?: Maybe<Scalars['String']['output']>;
   speed: Array<Scalars['String']['output']>;
   validityInDays: Scalars['Int']['output'];
@@ -473,6 +474,7 @@ export type CatalogBundle = Bundle & {
   isUnlimited: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
   region?: Maybe<Scalars['String']['output']>;
   speed: Array<Scalars['String']['output']>;
   syncedAt: Scalars['DateTime']['output'];
@@ -710,6 +712,7 @@ export type CountryBundle = {
   name: Scalars['String']['output'];
   price?: Maybe<Scalars['Float']['output']>;
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
 };
 
 export type CreateCheckoutSessionInput = {
@@ -772,6 +775,7 @@ export type CustomerBundle = Bundle & {
   isUnlimited: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
   region?: Maybe<Scalars['String']['output']>;
   speed: Array<Scalars['String']['output']>;
   validityInDays: Scalars['Int']['output'];
@@ -999,7 +1003,6 @@ export type Mutation = {
   deleteTenant: TenantOperationResponse;
   deleteTrip?: Maybe<DeleteTripResponse>;
   deleteUser?: Maybe<DeleteUserResponse>;
-  /** Smart cache invalidation based on rule changes (Admin only) */
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
   processPaymentCallback: Scalars['String']['output'];
@@ -1011,7 +1014,6 @@ export type Mutation = {
   restoreESIM?: Maybe<EsimActionResponse>;
   sendPhoneOTP?: Maybe<SendOtpResponse>;
   signIn?: Maybe<SignInResponse>;
-  signInWithApple?: Maybe<SignInResponse>;
   signInWithGoogle?: Maybe<SignInResponse>;
   signUp?: Maybe<SignUpResponse>;
   suspendESIM?: Maybe<EsimActionResponse>;
@@ -1122,12 +1124,6 @@ export type MutationDeleteUserArgs = {
 };
 
 
-export type MutationInvalidateCacheByRuleChangeArgs = {
-  affectedEntities: Array<Scalars['String']['input']>;
-  ruleType: Scalars['String']['input'];
-};
-
-
 export type MutationInviteAdminUserArgs = {
   input: InviteAdminUserInput;
 };
@@ -1172,11 +1168,6 @@ export type MutationSendPhoneOtpArgs = {
 
 export type MutationSignInArgs = {
   input: SignInInput;
-};
-
-
-export type MutationSignInWithAppleArgs = {
-  input: SocialSignInInput;
 };
 
 
@@ -1692,6 +1683,11 @@ export type ProcessingFeeConfigurationInput = {
   threeDSecureFee: Scalars['Float']['input'];
 };
 
+export enum Provider {
+  EsimGo = 'ESIM_GO',
+  Maya = 'MAYA'
+}
+
 export type PurchaseEsimInput = {
   autoActivate?: InputMaybe<Scalars['Boolean']['input']>;
   customerReference?: InputMaybe<Scalars['String']['input']>;
@@ -1707,7 +1703,6 @@ export type PurchaseEsimResponse = {
 
 export type Query = {
   __typename?: 'Query';
-  activePricingRules: Array<PricingRule>;
   airHaloCompatibleDevices: AirHaloCompatibleDevicesResponse;
   airHaloPackages: AirHaloPackagesResponse;
   airHaloPricingData: Array<AirHaloPackage>;
@@ -1727,7 +1722,6 @@ export type Query = {
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
   compareAirHaloPackages: Array<AirHaloPackageData>;
-  conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   defaultPricingStrategy?: Maybe<PricingStrategy>;
   esimDetails?: Maybe<Esim>;
@@ -1755,7 +1749,6 @@ export type Query = {
   pricingRules: Array<PricingRule>;
   pricingStrategies: Array<PricingStrategy>;
   pricingStrategy?: Maybe<PricingStrategy>;
-  simulatePricingRule: PricingBreakdown;
   tenant?: Maybe<Tenant>;
   tenants: Array<Tenant>;
   trips: Array<Trip>;
@@ -1845,11 +1838,6 @@ export type QueryCompareAirHaloPackagesArgs = {
 };
 
 
-export type QueryConflictingPricingRulesArgs = {
-  ruleId: Scalars['ID']['input'];
-};
-
-
 export type QueryEsimDetailsArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1915,12 +1903,6 @@ export type QueryPricingStrategyArgs = {
 };
 
 
-export type QuerySimulatePricingRuleArgs = {
-  rule: CreatePricingRuleInput;
-  testContext: TestPricingContext;
-};
-
-
 export type QueryTenantArgs = {
   slug: Scalars['ID']['input'];
 };
@@ -1942,7 +1924,8 @@ export enum RuleCategory {
   BundleAdjustment = 'BUNDLE_ADJUSTMENT',
   Constraint = 'CONSTRAINT',
   Discount = 'DISCOUNT',
-  Fee = 'FEE'
+  Fee = 'FEE',
+  ProviderSelection = 'PROVIDER_SELECTION'
 }
 
 export type RuleCondition = {
@@ -2164,6 +2147,7 @@ export type TriggerSyncParams = {
   countryId?: InputMaybe<Scalars['String']['input']>;
   force?: InputMaybe<Scalars['Boolean']['input']>;
   priority?: InputMaybe<Scalars['String']['input']>;
+  provider?: InputMaybe<Provider>;
   type: SyncJobType;
 };
 
@@ -2173,6 +2157,7 @@ export type TriggerSyncResponse = {
   error?: Maybe<Scalars['String']['output']>;
   jobId?: Maybe<Scalars['String']['output']>;
   message?: Maybe<Scalars['String']['output']>;
+  provider?: Maybe<Provider>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -2451,13 +2436,6 @@ export type SignUpMutationVariables = Exact<{
 
 
 export type SignUpMutation = { __typename?: 'Mutation', signUp?: { __typename?: 'SignUpResponse', success: boolean, error?: string | null, sessionToken?: string | null, refreshToken?: string | null, user?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, createdAt: string, updatedAt: string } | null } | null };
-
-export type SignInWithAppleMutationVariables = Exact<{
-  input: SocialSignInInput;
-}>;
-
-
-export type SignInWithAppleMutation = { __typename?: 'Mutation', signInWithApple?: { __typename?: 'SignInResponse', success: boolean, error?: string | null, sessionToken?: string | null, refreshToken?: string | null, user?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, phoneNumber?: string | null, createdAt: string, updatedAt: string } | null } | null };
 
 export type SignInWithGoogleMutationVariables = Exact<{
   input: SocialSignInInput;
