@@ -888,7 +888,6 @@ type Mutation {
   deleteTrip(id: ID!): DeleteTripResponse
   deleteUser(userId: ID!): DeleteUserResponse
   """Smart cache invalidation based on rule changes (Admin only)"""
-  invalidateCacheByRuleChange(affectedEntities: [String!]!, ruleType: String!): CacheOperationResult
   inviteAdminUser(input: InviteAdminUserInput!): InviteAdminUserResponse
   processCheckoutPayment(input: ProcessCheckoutPaymentInput!): ProcessCheckoutPaymentResponse!
   processPaymentCallback(transactionId: String!): String!
@@ -1353,7 +1352,6 @@ type Query {
   pricingRules(filter: PricingRuleFilter): [PricingRule!]!
   pricingStrategies(filter: StrategyFilter): [PricingStrategy!]!
   pricingStrategy(id: ID!): PricingStrategy
-  simulatePricingRule(rule: CreatePricingRuleInput!, testContext: TestPricingContext!): PricingBreakdown!
   tenant(slug: ID!): Tenant
   tenants: [Tenant!]!
   trips: [Trip!]!

@@ -49,6 +49,11 @@ export const getDefaultConfig = (type: string): { [key: string]: any } => {
       return {}; // No params needed - uses bundle price directly
     case "unused-days-discount":
       return {}; // No params needed - calculated dynamically
+    case "provider-selection":
+      return {
+        preferredProvider: "MAYA",
+        fallbackProvider: "ESIM_GO",
+      };
     default:
       return {};
   }

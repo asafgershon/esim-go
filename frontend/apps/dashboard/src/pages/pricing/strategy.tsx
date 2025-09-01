@@ -1,7 +1,8 @@
 import { DragDropContext } from "@hello-pangea/dnd";
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePricingBlocks } from "../../hooks/usePricingBlocks";
+import { useLoadDefaultStrategy } from "../../hooks/useLoadStrategy";
 import { StepConfigurationModal } from "./components/modals";
 import {
   AvailableBlocksSidebar,
@@ -24,6 +25,7 @@ const StrategyPage: React.FC = () => {
   // State for tracking loaded strategy
   const [loadedStrategyId, setLoadedStrategyId] = useState<string | undefined>();
   const [loadedStrategyCode, setLoadedStrategyCode] = useState<string | undefined>();
+  const [hasLoadedDefaultStrategy, setHasLoadedDefaultStrategy] = useState<boolean>(false);
   
   // State for notifications
   const [notification, setNotification] = useState<{
@@ -36,6 +38,14 @@ const StrategyPage: React.FC = () => {
   const { blocks: databaseBlocks, loading: blocksLoading, error: blocksError } = usePricingBlocks({
     isActive: true // Only show active blocks by default
   });
+
+  // Hook to load default pricing strategy
+  const { 
+    strategy: defaultStrategy, 
+    loading: defaultStrategyLoading, 
+    error: defaultStrategyError,
+    loadStrategyIntoBuilder
+  } = useLoadDefaultStrategy();
 
   // Map database blocks to UI format with icons and colors
   const allBlocks = mapDatabaseBlocksToUI(databaseBlocks);
@@ -65,6 +75,75 @@ const StrategyPage: React.FC = () => {
     openEditModal,
     saveStepConfig,
   } = useDragAndDrop(allBlocks, showNotification);
+
+  // Effect to automatically load default strategy when component mounts
+  useEffect(() => {
+    // Only load default strategy if:
+    // 1. No strategy has been loaded yet
+    // 2. There are no current strategy steps
+    // 3. Default strategy is available
+    // 4. We haven't already tried to load it
+    if (
+      !hasLoadedDefaultStrategy && 
+      strategySteps.length === 0 && 
+      defaultStrategy && 
+      !defaultStrategyLoading &&
+      !loadedStrategyId
+    ) {
+      try {
+        const defaultStrategySteps = loadStrategyIntoBuilder();
+        
+        if (defaultStrategySteps.length > 0) {
+          setStrategySteps(defaultStrategySteps);
+          setLoadedStrategyId(defaultStrategy.id);
+          setLoadedStrategyCode(defaultStrategy.code);
+          setStrategyName(defaultStrategy.name);
+          
+          if (defaultStrategy.description) {
+            setStrategyDescription(defaultStrategy.description);
+          }
+          
+          setHasLoadedDefaultStrategy(true);
+          
+          showNotification(
+            'success', 
+            `Default strategy "${defaultStrategy.name}" loaded`,
+            `${defaultStrategySteps.length} blocks loaded automatically`
+          );
+        }
+      } catch (error) {
+        console.error('Failed to load default strategy:', error);
+        showNotification(
+          'error', 
+          'Failed to load default strategy',
+          'Using empty strategy instead'
+        );
+        setHasLoadedDefaultStrategy(true); // Mark as attempted to prevent retry
+      }
+    }
+  }, [
+    hasLoadedDefaultStrategy,
+    strategySteps.length,
+    defaultStrategy,
+    defaultStrategyLoading,
+    loadedStrategyId,
+    loadStrategyIntoBuilder,
+    setStrategySteps,
+    showNotification
+  ]);
+
+  // Show error for default strategy loading if it fails
+  useEffect(() => {
+    if (defaultStrategyError && !hasLoadedDefaultStrategy) {
+      console.error('Default strategy loading error:', defaultStrategyError);
+      showNotification(
+        'warning',
+        'Could not load default strategy',
+        'Starting with empty strategy. You can manually load a strategy if needed.'
+      );
+      setHasLoadedDefaultStrategy(true); // Mark as attempted to prevent retry
+    }
+  }, [defaultStrategyError, hasLoadedDefaultStrategy, showNotification]);
 
   // Handle strategy loading
   const handleLoadStrategy = (strategyBlocks: Block[], strategyMetadata?: { id: string; name: string; code: string; description?: string }) => {
@@ -149,6 +228,9 @@ const StrategyPage: React.FC = () => {
         setStrategyName('Loaded Strategy');
       }
 
+      // Mark that a strategy has been manually loaded (prevents default strategy auto-load)
+      setHasLoadedDefaultStrategy(true);
+
       // Show success notification
       const strategyNameDisplay = strategyMetadata?.name || 'Unknown Strategy';
       if (invalidBlocks.length === 0) {
@@ -170,13 +252,17 @@ const StrategyPage: React.FC = () => {
   const usedBlockTypes = new Set(strategySteps.map(step => step.type));
   const availableBlocksForSidebar = allBlocks.filter(block => !usedBlockTypes.has(block.type));
 
-  // Show loading state for blocks
-  if (blocksLoading) {
+  // Show loading state for blocks and default strategy
+  if (blocksLoading || (defaultStrategyLoading && !hasLoadedDefaultStrategy)) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading pricing blocks...</p>
+          <p className="mt-2 text-gray-600">
+            {blocksLoading && defaultStrategyLoading ? 'Loading pricing blocks and default strategy...' :
+             blocksLoading ? 'Loading pricing blocks...' :
+             'Loading default strategy...'}
+          </p>
         </div>
       </div>
     );
@@ -275,6 +361,7 @@ const StrategyPage: React.FC = () => {
                     setLoadedStrategyCode(undefined);
                     setStrategyName("New Strategy #1");
                     setStrategyDescription("Add a description for your pricing strategy...");
+                    setHasLoadedDefaultStrategy(false); // Reset to allow default strategy to load again if needed
                     if (blockCount > 0) {
                       showNotification('success', 'Strategy cleared', `${blockCount} blocks removed`);
                     }

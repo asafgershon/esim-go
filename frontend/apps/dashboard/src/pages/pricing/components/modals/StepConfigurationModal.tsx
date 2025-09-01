@@ -18,6 +18,7 @@ import { StepConfigurationModalProps } from "../../types";
 import CouponConfigurationModal from "./CouponConfigurationModal";
 import MarkupConfigurationModal from "./MarkupConfigurationModal";
 import ProcessingFeeModal from "./ProcessingFeeModal";
+import ProviderSelectionModal from "./ProviderSelectionModal";
 
 const StepConfigurationModal: React.FC<StepConfigurationModalProps> = ({
   editingStep,
@@ -41,6 +42,13 @@ const StepConfigurationModal: React.FC<StepConfigurationModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {editingStep?.type === "provider-selection" && (
+            <ProviderSelectionModal
+              tempConfig={tempConfig}
+              setTempConfig={setTempConfig}
+            />
+          )}
+
           {editingStep?.type === "discount" && (
             <>
               <div className="space-y-2">

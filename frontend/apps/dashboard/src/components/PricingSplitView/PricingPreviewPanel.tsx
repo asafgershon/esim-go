@@ -1,13 +1,10 @@
 import {
+  ActionType,
   Bundle,
+  ConditionOperator,
   Country,
   PaymentMethodInfo,
-  CreatePricingRuleInput,
-  CreatePricingRuleMutation,
-  CreatePricingRuleMutationVariables,
   RuleCategory,
-  ActionType,
-  ConditionOperator,
 } from "@/__generated__/graphql";
 import {
   Badge,
@@ -45,13 +42,6 @@ import React, {
   useState,
 } from "react";
 import { toast } from "sonner";
-import { useMutation } from "@apollo/client";
-import {
-  CREATE_PRICING_RULE,
-  CALCULATE_BATCH_ADMIN_PRICING,
-} from "../../lib/graphql/queries";
-import { cleanPricingRuleForMutation } from "../../utils/graphql-utils";
-import { ConfigurationLevelIndicator } from "../configuration-level-indicator";
 import { AppliedRules } from "../applied-rules";
 
 interface PricingPreviewPanelProps {
@@ -76,12 +66,6 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
   onClose,
   onConfigurationSaved,
 }) => {
-  // Mutations
-  const [createPricingRule, { loading: savingConfig }] = useMutation<
-    CreatePricingRuleMutation,
-    CreatePricingRuleMutationVariables
-  >(CREATE_PRICING_RULE);
-
   // State for inline editing
   const [isEditingMarkup, setIsEditingMarkup] = useState(false);
   const [customMarkup, setCustomMarkup] = useState("");
@@ -246,26 +230,6 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
         isActive: true,
       };
 
-      const result = await createPricingRule({
-        variables: {
-          input: cleanPricingRuleForMutation(ruleInput),
-        },
-        refetchQueries: [
-          {
-            query: CALCULATE_BATCH_ADMIN_PRICING,
-            variables: {
-              inputs: [
-                {
-                  countryId: countryCode,
-                  numOfDays: bundle.validityInDays,
-                  groups: bundle.groups,
-                },
-              ],
-            },
-          },
-        ],
-      });
-
       setIsEditingMarkup(false);
       toast.success(`Markup of $${markupValue} applied for ${country.name}`);
       onConfigurationSaved?.();
@@ -315,26 +279,6 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
         priority: 100,
         isActive: true,
       };
-
-      const result = await createPricingRule({
-        variables: {
-          input: cleanPricingRuleForMutation(ruleInput),
-        },
-        refetchQueries: [
-          {
-            query: CALCULATE_BATCH_ADMIN_PRICING,
-            variables: {
-              inputs: [
-                {
-                  countryId: countryCode,
-                  numOfDays: bundle.validityInDays,
-                  groups: bundle.groups,
-                },
-              ],
-            },
-          },
-        ],
-      });
 
       setIsEditingDiscount(false);
       toast.success(
@@ -504,11 +448,12 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
                           >
                             <div className="text-sm">
                               <p className="font-medium">
-                                Maximum discount: {maxAllowedDiscount.toFixed(1)}%
+                                Maximum discount:{" "}
+                                {maxAllowedDiscount.toFixed(1)}%
                               </p>
                               <p className="text-xs text-gray-300 mt-1">
-                                Higher discounts would violate the minimum profit
-                                margin of $1.50 above cost.
+                                Higher discounts would violate the minimum
+                                profit margin of $1.50 above cost.
                               </p>
                             </div>
                           </TooltipContent>
@@ -553,14 +498,19 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
                     </div>
                   )}
                 </div>
-                {bundle.pricingBreakdown?.unusedDays && bundle.pricingBreakdown.unusedDays > 0 && (
-                  <div className="flex justify-between items-center text-xs text-blue-600 italic">
-                    <span>  ↳ Includes unused days:</span>
-                    <span className="font-mono">
-                      -{formatCurrency((bundle.pricingBreakdown.unusedDays || 0) * (bundle.pricingBreakdown.discountPerDay || 0))}
-                    </span>
-                  </div>
-                )}
+                {bundle.pricingBreakdown?.unusedDays &&
+                  bundle.pricingBreakdown.unusedDays > 0 && (
+                    <div className="flex justify-between items-center text-xs text-blue-600 italic">
+                      <span> ↳ Includes unused days:</span>
+                      <span className="font-mono">
+                        -
+                        {formatCurrency(
+                          (bundle.pricingBreakdown.unusedDays || 0) *
+                            (bundle.pricingBreakdown.discountPerDay || 0)
+                        )}
+                      </span>
+                    </div>
+                  )}
               </>
             )}
 
@@ -620,7 +570,9 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
                   </PopoverContent>
                 </Popover>
               </div>
-              <span className="font-mono">{formatCurrency(processingCost)}</span>
+              <span className="font-mono">
+                {formatCurrency(processingCost)}
+              </span>
             </div>
 
             {/* Customer Price */}
@@ -633,26 +585,48 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
 
             {/* Revenue Breakdown */}
             <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
-              <div className="text-xs font-medium text-gray-500 mb-1">Revenue Breakdown</div>
-              <div className="flex justify-between items-center py-1">
-                <span className="text-muted-foreground text-xs">Customer Price</span>
-                <span className="font-mono text-xs">{formatCurrency(customerPrice)}</span>
+              <div className="text-xs font-medium text-gray-500 mb-1">
+                Revenue Breakdown
               </div>
               <div className="flex justify-between items-center py-1">
-                <span className="text-muted-foreground text-xs">- Processing Fee</span>
-                <span className="font-mono text-xs text-orange-600">-{formatCurrency(processingCost)}</span>
+                <span className="text-muted-foreground text-xs">
+                  Customer Price
+                </span>
+                <span className="font-mono text-xs">
+                  {formatCurrency(customerPrice)}
+                </span>
               </div>
               <div className="flex justify-between items-center py-1">
-                <span className="text-xs font-medium">Revenue After Processing</span>
-                <span className="font-mono text-xs font-medium">{formatCurrency(revenueAfterProcessing)}</span>
+                <span className="text-muted-foreground text-xs">
+                  - Processing Fee
+                </span>
+                <span className="font-mono text-xs text-orange-600">
+                  -{formatCurrency(processingCost)}
+                </span>
               </div>
               <div className="flex justify-between items-center py-1">
-                <span className="text-muted-foreground text-xs">- Base Cost</span>
-                <span className="font-mono text-xs text-red-600">-{formatCurrency(cost)}</span>
+                <span className="text-xs font-medium">
+                  Revenue After Processing
+                </span>
+                <span className="font-mono text-xs font-medium">
+                  {formatCurrency(revenueAfterProcessing)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-muted-foreground text-xs">
+                  - Base Cost
+                </span>
+                <span className="font-mono text-xs text-red-600">
+                  -{formatCurrency(cost)}
+                </span>
               </div>
               <div className="flex justify-between items-center py-1 pt-1 border-t">
                 <span className="text-xs font-medium">Net Profit</span>
-                <span className={`font-mono text-sm font-bold ${netProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <span
+                  className={`font-mono text-sm font-bold ${
+                    netProfit > 0 ? "text-green-600" : "text-red-600"
+                  }`}
+                >
                   {formatCurrency(netProfit)}
                   <span className="text-xs font-normal ml-1">
                     ({((netProfit / customerPrice) * 100).toFixed(1)}% margin)
@@ -678,26 +652,40 @@ export const PricingPreviewPanel: React.FC<PricingPreviewPanelProps> = ({
         {/* Actions & Warnings */}
         <div className="space-y-3">
           {/* Unused Days Discount Info */}
-          {bundle.pricingBreakdown?.unusedDays && bundle.pricingBreakdown.unusedDays > 0 && (
-            <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-md border border-blue-200">
-              <TrendingDown className="h-4 w-4 text-blue-600 mt-0.5" />
-              <div className="flex-1">
-                <div className="text-xs font-medium text-blue-900 mb-1">
-                  Unused Days Discount Applied
-                </div>
-                <div className="text-xs text-blue-800 space-y-1">
-                  <div>
-                    You requested fewer days than the bundle provides, so we're giving you a discount for the unused days.
+          {bundle.pricingBreakdown?.unusedDays &&
+            bundle.pricingBreakdown.unusedDays > 0 && (
+              <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-md border border-blue-200">
+                <TrendingDown className="h-4 w-4 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <div className="text-xs font-medium text-blue-900 mb-1">
+                    Unused Days Discount Applied
                   </div>
-                  <div className="flex items-center gap-4 text-xs">
-                    <span>• Unused days: {bundle.pricingBreakdown.unusedDays}</span>
-                    <span>• Discount per day: ${bundle.pricingBreakdown.discountPerDay?.toFixed(2) || '0.00'}</span>
-                    <span>• Total discount: ${(bundle.pricingBreakdown.unusedDays * (bundle.pricingBreakdown.discountPerDay || 0)).toFixed(2)}</span>
+                  <div className="text-xs text-blue-800 space-y-1">
+                    <div>
+                      You requested fewer days than the bundle provides, so
+                      we're giving you a discount for the unused days.
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <span>
+                        • Unused days: {bundle.pricingBreakdown.unusedDays}
+                      </span>
+                      <span>
+                        • Discount per day: $
+                        {bundle.pricingBreakdown.discountPerDay?.toFixed(2) ||
+                          "0.00"}
+                      </span>
+                      <span>
+                        • Total discount: $
+                        {(
+                          bundle.pricingBreakdown.unusedDays *
+                          (bundle.pricingBreakdown.discountPerDay || 0)
+                        ).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Minimum Profit Warning */}
           {netProfit < 1.5 && (

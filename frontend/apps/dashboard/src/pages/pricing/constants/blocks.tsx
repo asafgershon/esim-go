@@ -9,10 +9,19 @@ import {
   TrendingUp,
   PlayCircle,
   Clock,
+  Settings,
 } from "lucide-react";
 import { Block } from "../types";
 
 export const availableBlocks: Block[] = [
+  {
+    id: "provider-selection",
+    type: "provider-selection",
+    name: "Provider Selection",
+    description: "Select preferred and fallback eSIM providers",
+    icon: <Settings className="h-4 w-4" />,
+    color: "bg-slate-100 border-slate-300 text-slate-800",
+  },
   {
     id: "base-price",
     type: "base-price", 

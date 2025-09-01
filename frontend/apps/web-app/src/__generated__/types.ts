@@ -1000,7 +1000,6 @@ export type Mutation = {
   deleteTrip?: Maybe<DeleteTripResponse>;
   deleteUser?: Maybe<DeleteUserResponse>;
   /** Smart cache invalidation based on rule changes (Admin only) */
-  invalidateCacheByRuleChange?: Maybe<CacheOperationResult>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
   processPaymentCallback: Scalars['String']['output'];

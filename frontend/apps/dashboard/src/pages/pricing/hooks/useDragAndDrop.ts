@@ -49,7 +49,15 @@ export const useDragAndDrop = (blocks: Block[], onNotification?: (type: 'success
         };
         
         const newSteps = [...strategySteps];
-        newSteps.splice(destination.index, 0, newStep);
+        
+        // Provider selection blocks always go first (priority 100)
+        if (block.type === "provider-selection") {
+          newSteps.unshift(newStep);
+          onNotification?.('success', 'Provider selection added', 'Provider selection block added at the beginning (priority 100)');
+        } else {
+          newSteps.splice(destination.index, 0, newStep);
+        }
+        
         setStrategySteps(newSteps);
         
         console.log(`Added block "${block.type}" to strategy at position ${destination.index}`);

@@ -18,7 +18,13 @@ const StrategyFlowBuilder: React.FC<StrategyFlowBuilderProps> = ({
       <div className="mt-3 pt-3 border-t border-current opacity-50">
         <p className="text-xs font-medium mb-1">Configuration:</p>
         <div className="text-xs space-y-0.5">
-          {step.type === "markup" ? (
+          {step.type === "provider-selection" ? (
+            <>
+              <div>Preferred: {step.config.preferredProvider || "MAYA"}</div>
+              <div>Fallback: {step.config.fallbackProvider || "ESIM_GO"}</div>
+              <div className="text-slate-600">Priority: 100 (First)</div>
+            </>
+          ) : step.type === "markup" ? (
             <>
               <div>Type: Fixed Amount</div>
               <div>Default: ${step.config.markupValue || 0}</div>
@@ -52,7 +58,9 @@ const StrategyFlowBuilder: React.FC<StrategyFlowBuilderProps> = ({
                 .slice(0, 2)
                 .map(([key, value]) => (
                   <div key={key}>
-                    {key}: {value}
+                    {key}: {typeof value === 'object' && value !== null 
+                      ? JSON.stringify(value) 
+                      : String(value)}
                   </div>
                 ))}
               {Object.keys(step.config).length > 2 && (
@@ -121,7 +129,14 @@ const StrategyFlowBuilder: React.FC<StrategyFlowBuilderProps> = ({
                               </div>
                               {step.icon}
                               <div className="flex-1">
-                                <h4 className="font-medium">{step.name}</h4>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium">{step.name}</h4>
+                                  {step.type === "provider-selection" && (
+                                    <span className="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-medium">
+                                      Priority 100
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-xs opacity-75">
                                   {step.description}
                                 </p>

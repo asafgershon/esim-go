@@ -138,9 +138,9 @@ export const mapDatabaseBlockToUIBlock = (
 export const mapStrategyToUIFormat = (
   strategy: PricingStrategyWithBlocks
 ): StrategyStep[] => {
-  return strategy.blocks
-    .sort((a, b) => a.priority - b.priority)
-    .map(mapDatabaseBlockToUIBlock);
+  return [...strategy.blocks]
+    .sort((a, b) => b.priority - a.priority)
+    .map((block) => mapDatabaseBlockToUIBlock(block));
 };
 
 // Strategy summary types for display
