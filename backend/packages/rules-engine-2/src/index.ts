@@ -49,9 +49,7 @@ export {
 } from "./facts/bundle-facts";
 export { durations } from "./facts/durations";
 export {
-  availableProviders,
   isProviderAvailable,
-  preferredProvider,
 } from "./facts/provider-facts";
 export {
   AppliedRule,

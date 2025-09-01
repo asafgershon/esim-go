@@ -1,6 +1,7 @@
 import { Almanac } from "json-rules-engine";
 import { Database } from "@hiilo/supabase";
 import { MarkupRule } from "src/blocks/markups";
+import { Provider } from "src/index-with-db";
 
 type BundleByGroupRow = Database["public"]["Views"]["bundles_by_group"]["Row"];
 export type SelectedBundleFact = BundleByGroupRow | null;
@@ -25,9 +26,12 @@ export const selectBundle = async (
     );
   }
 
+  const preferredProvider = await almanac.factValue<Provider>("preferredProvider");
+
   // Check for exact match
   if (durations.includes(days)) {
-    bundle = availableBundles?.find((b) => b.validity_in_days === days) || null;
+    const bundles = availableBundles?.filter((b) => b.validity_in_days === days) || null;
+    bundle = bundles.find((b) => b.provider === preferredProvider) || bundles[0] || null;
   } else {
     const nextLongerDuration = durations.find((d) => d > days);
     if (nextLongerDuration) {
