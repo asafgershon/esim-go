@@ -120,9 +120,12 @@ export const useDragAndDrop = (blocks: Block[], onNotification?: (type: 'success
         return;
       }
 
+      // Create a deep copy of the config to avoid mutations
+      const configCopy = JSON.parse(JSON.stringify(step.config || getDefaultConfig(step.type)));
+      
       setEditingStep(step);
-      setTempConfig(step.config || getDefaultConfig(step.type));
-      console.log(`Opening edit modal for step: ${step.type}`);
+      setTempConfig(configCopy);
+      console.log(`Opening edit modal for step: ${step.type}`, configCopy);
     } catch (error) {
       console.error('Error opening edit modal:', error);
     }
@@ -152,6 +155,12 @@ export const useDragAndDrop = (blocks: Block[], onNotification?: (type: 'success
     }
   };
 
+  const cancelEditModal = () => {
+    console.log('Canceling edit modal, resetting config');
+    setEditingStep(null);
+    setTempConfig({});
+  };
+
   return {
     strategySteps,
     setStrategySteps,
@@ -165,5 +174,6 @@ export const useDragAndDrop = (blocks: Block[], onNotification?: (type: 'success
     removeStep,
     openEditModal,
     saveStepConfig,
+    cancelEditModal,
   };
 };

@@ -74,6 +74,7 @@ const StrategyPage: React.FC = () => {
     removeStep,
     openEditModal,
     saveStepConfig,
+    cancelEditModal,
   } = useDragAndDrop(allBlocks, showNotification);
 
   // Effect to automatically load default strategy when component mounts
@@ -382,6 +383,7 @@ const StrategyPage: React.FC = () => {
         tempConfig={tempConfig}
         setTempConfig={setTempConfig}
         saveStepConfig={saveStepConfig}
+        cancelEditModal={cancelEditModal}
       />
     </DragDropContext>
   );

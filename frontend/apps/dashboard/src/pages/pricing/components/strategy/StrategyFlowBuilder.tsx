@@ -22,20 +22,47 @@ const StrategyFlowBuilder: React.FC<StrategyFlowBuilderProps> = ({
             <>
               <div>Preferred: {step.config.preferredProvider || "MAYA"}</div>
               <div>Fallback: {step.config.fallbackProvider || "ESIM_GO"}</div>
-              <div className="text-slate-600">Priority: 100 (First)</div>
+              <div className="text-slate-600">Priority: {step.config.priority}</div>
             </>
           ) : step.type === "markup" ? (
             <>
               <div>Type: Fixed Amount</div>
-              <div>Default: ${step.config.markupValue || 0}</div>
               {step.config.groupDurationConfigs &&
-                Object.keys(step.config.groupDurationConfigs).length > 0 && (
+                Object.keys(step.config.groupDurationConfigs).length > 0 ? (
                   <div>
-                    Custom configs:{" "}
-                    {Object.keys(step.config.groupDurationConfigs).length}{" "}
-                    group(s)
+                    Matrix: {Object.keys(step.config.groupDurationConfigs).length} groups configured
                   </div>
+                ) : (
+                  <div>Default: ${step.config.markupValue || 0}</div>
                 )}
+            </>
+          ) : step.type === "fixed-price" ? (
+            <>
+              <div>Fixed Price: ${step.config.basePrice || 0}</div>
+              <div>Currency: {step.config.currency || "USD"}</div>
+            </>
+          ) : step.type === "profit-constraint" || step.type === "keep-profit" ? (
+            <>
+              <div>Minimum Profit: ${step.config.value || 1.5}</div>
+            </>
+          ) : step.type === "psychological-rounding" ? (
+            <>
+              <div>Strategy: {step.config.strategy === "nearest-whole" ? "Nearest Whole" : "Charm Pricing"}</div>
+              <div>Round to: {step.config.roundTo || 0.99}</div>
+            </>
+          ) : step.type === "region-rounding" ? (
+            <>
+              <div>Region: {step.config.region || "US"}</div>
+              <div>Rounding: ${step.config.value || 0.99}</div>
+            </>
+          ) : step.type === "unused-days-discount" || step.type === "discount" ? (
+            <>
+              <div>Type: {step.config.type || "Dynamic"}</div>
+              {step.config.value && <div>Value: {step.config.value}%</div>}
+            </>
+          ) : step.type === "base-price" || step.type === "INITIALIZATION" ? (
+            <>
+              <div>Initialize from bundle cost</div>
             </>
           ) : step.type === "coupon" ? (
             <>
@@ -55,6 +82,7 @@ const StrategyFlowBuilder: React.FC<StrategyFlowBuilderProps> = ({
           ) : (
             <>
               {Object.entries(step.config)
+                .filter(([key]) => !["priority", "isEnabled"].includes(key))
                 .slice(0, 2)
                 .map(([key, value]) => (
                   <div key={key}>
@@ -63,7 +91,7 @@ const StrategyFlowBuilder: React.FC<StrategyFlowBuilderProps> = ({
                       : String(value)}
                   </div>
                 ))}
-              {Object.keys(step.config).length > 2 && (
+              {Object.keys(step.config).filter(key => !["priority", "isEnabled"].includes(key)).length > 2 && (
                 <div className="text-gray-500">...</div>
               )}
             </>

@@ -63,6 +63,7 @@ export interface StepConfigurationModalProps {
   tempConfig: { [key: string]: any };
   setTempConfig: (config: { [key: string]: any }) => void;
   saveStepConfig: () => void;
+  cancelEditModal?: () => void;
 }
 
 export interface StrategyLoadModalProps {

@@ -26,12 +26,13 @@ const StepConfigurationModal: React.FC<StepConfigurationModalProps> = ({
   tempConfig,
   setTempConfig,
   saveStepConfig,
+  cancelEditModal,
 }) => {
   return (
     <Dialog
       open={!!editingStep}
       modal={true}
-      onOpenChange={(open) => !open && setEditingStep(null)}
+      onOpenChange={(open) => !open && cancelEditModal?.()}
     >
       <DialogContent className={"max-h-[90vh] !max-w-none w-[calc(100vw-100px)] overflow-y-auto"}>
         <DialogHeader>
@@ -209,7 +210,7 @@ const StepConfigurationModal: React.FC<StepConfigurationModalProps> = ({
             </div>
           )}
 
-          {editingStep?.type === "profit-constraint" && (
+          {(editingStep?.type === "profit-constraint" || editingStep?.type === "keep-profit") && (
             <>
               <div className="space-y-2">
                 <Label>Minimum Profit ($)</Label>
@@ -250,6 +251,7 @@ const StepConfigurationModal: React.FC<StepConfigurationModalProps> = ({
                       Prestige Pricing (.00)
                     </SelectItem>
                     <SelectItem value="odd">Odd Pricing (.95)</SelectItem>
+                    <SelectItem value="nearest-whole">Nearest Whole</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -311,12 +313,29 @@ const StepConfigurationModal: React.FC<StepConfigurationModalProps> = ({
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Rounding Value</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={tempConfig.value || 0.99}
+                  onChange={(e) =>
+                    setTempConfig({
+                      ...tempConfig,
+                      value: parseFloat(e.target.value),
+                    })
+                  }
+                />
+                <p className="text-xs text-gray-500">
+                  Add this value to achieve psychological pricing (e.g., $X.99)
+                </p>
+              </div>
             </>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setEditingStep(null)}>
+          <Button variant="outline" onClick={() => cancelEditModal?.()}>
             Cancel
           </Button>
           <Button onClick={saveStepConfig}>Save Configuration</Button>
