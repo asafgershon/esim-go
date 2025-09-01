@@ -78,7 +78,6 @@ export function transformAndValidateMayaBundle(
       return null;
     }
 
-    const isUnlimited = apiBundle.name.toLowerCase().includes("unlimited");
 
     // Determine primary region (from first country or most common region)
     const regions = apiBundle.countries_enabled
@@ -90,7 +89,7 @@ export function transformAndValidateMayaBundle(
 
     // Create human-readable data amount using byte-size
     const dataAmountReadable = createDataAmountReadable(
-      isUnlimited,
+      true,
       apiBundle.data_quota_bytes / 1024 / 1024
     );
 
@@ -101,11 +100,9 @@ export function transformAndValidateMayaBundle(
       groups: [],
       description: apiBundle.name || null,
       validity_in_days: validityDays,
-      data_amount_mb: isUnlimited
-        ? null
-        : Math.ceil(apiBundle.data_quota_bytes / 1024 / 1024) || null,
+      data_amount_mb: null,
       data_amount_readable: dataAmountReadable,
-      is_unlimited: isUnlimited,
+      is_unlimited: true,
       price: price,
       currency: organizationCurrency,
       countries: countryCodes,
