@@ -1,7 +1,7 @@
 import {
   type RequestFacts,
   calculatePricing,
-  calculatePricingEnhanced
+  streamCalculatePricing
 } from "@hiilo/rules-engine-2";
 import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
@@ -155,55 +155,37 @@ export const pricingQueries: QueryResolvers = {
       // Use enhanced version if we need detailed tracking or debug info
       const useEnhanced =
         input.includeDebugInfo || context.auth?.user?.role === "ADMIN";
-      const result = useEnhanced
-        ? await calculatePricingEnhanced(requestFacts)
-        : await calculatePricing(requestFacts);
+      
+      const pricingBreakdown = useEnhanced
+        ? await streamCalculatePricing({
+            ...requestFacts,
+            includeEnhancedData: true,
+            includeDebugInfo: requestFacts.includeDebugInfo
+          })
+        : await streamCalculatePricing({
+            ...requestFacts,
+            includeEnhancedData: false,
+            includeDebugInfo: false
+          });
 
-      // Map the result to PricingBreakdown format
-      const pricingBreakdown: PricingBreakdown = {
-        __typename: "PricingBreakdown",
-
-        ...result.pricing,
-        // Bundle Information
-        bundle: {
-          __typename: "CountryBundle",
-          id:
-            result.selectedBundle?.esim_go_name ||
-            `bundle_${countryId || regionId}_${numOfDays}d`,
-          name: result.selectedBundle?.esim_go_name || "",
-          duration: numOfDays,
-          data: result.selectedBundle?.data_amount_mb || 0,
-          isUnlimited: result.selectedBundle?.is_unlimited || false,
-          currency: "USD",
-          group,
-          country: {
-            __typename: "Country",
-            iso: result.selectedBundle?.countries?.[0] || countryId || "",
-          } as Country,
-        },
-
-        country: {
-          iso: countryId || "",
-          name: countryId || "",
-          region: regionId || "",
-        },
-
-        duration: numOfDays,
-
-        // Pipeline metadata
-        unusedDays: result.unusedDays,
-        selectedReason: "calculated",
-
-        // Additional fields
-        totalCostBeforeProcessing: result.pricing.totalCostBeforeProcessing,
-      };
+      // Add GraphQL __typename fields
+      pricingBreakdown.__typename = "PricingBreakdown";
+      if (pricingBreakdown.bundle) {
+        pricingBreakdown.bundle.__typename = "CountryBundle";
+        if (pricingBreakdown.bundle.country) {
+          pricingBreakdown.bundle.country.__typename = "Country";
+        }
+      }
+      if (pricingBreakdown.country) {
+        pricingBreakdown.country.__typename = "Country";
+      }
 
       logger.info("Price calculated successfully with database engine", {
         correlationId,
-        selectedBundle: result.selectedBundle?.esim_go_name,
-        finalPrice: result.pricing.finalPrice,
-        totalCost: result.pricing.totalCost,
-        markup: result.pricing.markup,
+        selectedBundle: pricingBreakdown.bundle?.name,
+        finalPrice: pricingBreakdown.finalPrice,
+        totalCost: pricingBreakdown.totalCost,
+        markup: pricingBreakdown.markup,
         operationType: "calculate-price-db-success",
       });
 

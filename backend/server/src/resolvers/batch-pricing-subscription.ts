@@ -1,5 +1,5 @@
 import {
-  calculatePricingEnhanced,
+  streamCalculatePricing,
   type RequestFacts,
 } from "@hiilo/rules-engine-2";
 import { GraphQLError } from "graphql";
@@ -38,16 +38,16 @@ const createPricingBreakdown = (
 ): PricingBreakdown => {
   return {
     __typename: "PricingBreakdown",
-    ...result.pricing,
+    ...result,
 
     // Bundle Information
     bundle: {
       __typename: "CountryBundle",
-      id: result.selectedBundle?.esim_go_name || "",
-      name: result.selectedBundle?.name || "",
-      duration: result.selectedBundle?.validity_in_days || duration,
-      data: result.selectedBundle?.data_amount_mb || null,
-      isUnlimited: result.selectedBundle?.is_unlimited || false,
+      id: result.bundle?.id || "",
+      name: result.bundle?.name || "",
+      duration: result.bundle?.duration || duration,
+      data: result.bundle?.data || null,
+      isUnlimited: result.bundle?.isUnlimited || false,
       country: {
         __typename: "Country",
         iso: country.iso,
@@ -56,8 +56,8 @@ const createPricingBreakdown = (
         region: country.region,
         flag: country.flag,
       },
-      group: result.selectedBundle?.group || null,
-      price: result.pricing.totalCost || 0,
+      group: result.bundle?.group || null,
+      price: result.totalCost || 0,
     },
 
     // Country Information
@@ -74,10 +74,10 @@ const createPricingBreakdown = (
     duration,
 
     // Additional fields
-    totalCostBeforeProcessing: result.pricing.totalCostBeforeProcessing,
+    totalCostBeforeProcessing: result.totalCostBeforeProcessing,
     
     // Include pricing steps explicitly
-    pricingSteps: result.pricing.pricingSteps || [],
+    pricingSteps: result.pricingSteps || [],
   };
 };
 
@@ -179,13 +179,13 @@ async function processInputsBatch({
 
       // Calculate pricing
       const startTime = Date.now();
-      const result = await calculatePricingEnhanced(requestFacts);
+      const result = await streamCalculatePricing(requestFacts);
       const calculationTime = Date.now() - startTime;
 
       logger.debug("Calculated price for day", {
         subscriptionId,
         days: input.numOfDays,
-        price: result.pricing.finalPrice,
+        price: result.finalPrice,
         calculationTime,
       });
 

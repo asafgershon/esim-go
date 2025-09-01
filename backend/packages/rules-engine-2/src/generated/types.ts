@@ -1614,11 +1614,11 @@ export type RuleActionInput = {
 };
 
 export enum RuleCategory {
-  ProviderSelection = 'PROVIDER_SELECTION',
   BundleAdjustment = 'BUNDLE_ADJUSTMENT',
   Constraint = 'CONSTRAINT',
   Discount = 'DISCOUNT',
-  Fee = 'FEE'
+  Fee = 'FEE',
+  ProviderSelection = 'PROVIDER_SELECTION'
 }
 
 export type RuleCondition = {

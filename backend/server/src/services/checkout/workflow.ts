@@ -104,7 +104,7 @@ const selectBundle = async ({
     throw new SessionNotFound();
   }
 
-  const result = await engine?.calculatePricingEnhanced({
+  const result = await engine?.streamCalculatePricing({
     days: numOfDays,
     country: countryId,
     group,
@@ -126,10 +126,10 @@ const selectBundle = async ({
       dataAmount: selectedBundle.data_amount_readable || "",
       discounts: [],
       speed: selectedBundle.speed || [],
-      pricePerDay: result.pricing.finalPrice / numOfDays,
+      pricePerDay: result.finalPrice / numOfDays,
       countryId,
       validated: false,
-      price: result.pricing.finalPrice,
+      price: result.finalPrice,
     }
   );
 

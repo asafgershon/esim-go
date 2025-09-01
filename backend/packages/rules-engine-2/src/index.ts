@@ -33,11 +33,6 @@ export type PricingEngineV2Result = {
   appliedRules: AppliedRule[];
 };
 export { calculatePricing, streamCalculatePricing } from "./index-with-db";
-// Export enhanced version with step tracking
-export {
-  calculatePricingEnhanced,
-  EnhancedPricingEngineResult,
-} from "./calculate-pricing-enhanced";
 export {
   availableBundles,
   availableBundlesByProvider,

@@ -9,7 +9,7 @@ import type {
   CalculatePriceInput,
   PaymentMethod,
 } from "../types";
-import { calculatePricingEnhancedWithStreaming } from "./pricing-stream-handler";
+import { streamCalculatePricing } from "@hiilo/rules-engine-2";
 
 const logger = createLogger({
   component: "PricingSubscriptionResolvers",
@@ -52,14 +52,51 @@ export const pricingSubscriptions: SubscriptionResolvers = {
         const correlationId = `sub-pricing-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
         
         // Start the async calculation with streaming
-        const calculationPromise = calculatePricingEnhancedWithStreaming({
-          input,
-          context,
+        const calculationPromise = streamCalculatePricing({
+          days: input.numOfDays,
+          group: input.groups?.[0] || "Standard Unlimited Essential",
+          ...(input.countryId ? { country: input.countryId } : {}),
+          ...(input.regionId ? { region: input.regionId } : {}),
+          paymentMethod: input.paymentMethod || "ISRAELI_CARD" as PaymentMethod,
+          ...(input.promo ? { couponCode: input.promo } : {}),
+          ...(context.auth?.user?.id ? { userId: context.auth.user.id } : {}),
+          ...(context.auth?.user?.email ? { userEmail: context.auth.user.email } : {}),
+          includeEnhancedData: true,
+          includeDebugInfo: input.includeDebugInfo || false,
           correlationId,
-          onStep: async (stepUpdate: PricingStepUpdate) => {
+          onStep: async (stepUpdate) => {
+            // Transform the step update to match GraphQL type
+            const graphqlStepUpdate: PricingStepUpdate = {
+              __typename: "PricingStepUpdate",
+              correlationId,
+              step: stepUpdate.step,
+              isComplete: stepUpdate.isComplete,
+              totalSteps: stepUpdate.totalSteps,
+              completedSteps: stepUpdate.completedSteps,
+              ...(stepUpdate.error ? { error: stepUpdate.error } : {}),
+              ...(stepUpdate.finalBreakdown ? {
+                finalBreakdown: {
+                  ...stepUpdate.finalBreakdown,
+                  __typename: "PricingBreakdown",
+                  bundle: stepUpdate.finalBreakdown.bundle ? {
+                    ...stepUpdate.finalBreakdown.bundle,
+                    __typename: "CountryBundle",
+                    country: stepUpdate.finalBreakdown.bundle.country ? {
+                      ...stepUpdate.finalBreakdown.bundle.country,
+                      __typename: "Country",
+                    } : undefined,
+                  } : undefined,
+                  country: stepUpdate.finalBreakdown.country ? {
+                    ...stepUpdate.finalBreakdown.country,
+                    __typename: "Country",
+                  } : undefined,
+                }
+              } : {}),
+            };
+            
             // Publish each step to the subscription channel
             await publishEvent(pubsub, `${PRICING_STEP_CHANNEL}:${correlationId}` as any, {
-              pricingCalculationSteps: stepUpdate,
+              pricingCalculationSteps: graphqlStepUpdate,
             });
           },
         });

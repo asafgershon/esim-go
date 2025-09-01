@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { 
+  Combobox,
   Select, 
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
   SelectValue,
   Input,
-  Button,
-  ScrollArea
+  Button
 } from '@workspace/ui';
 import { Play, Loader2 } from 'lucide-react';
 import { Country, PaymentMethod } from '@/__generated__/graphql';
@@ -59,6 +59,17 @@ export const PricingSimulatorLayout: React.FC<PricingSimulatorLayoutProps> = ({
     { value: PaymentMethod.Diners, label: 'Diners (6.4%)' },
   ];
 
+  // Transform countries data for Combobox component
+  const countryOptions = React.useMemo(() => 
+    countries.map((country) => ({
+      value: country.iso,
+      label: country.name,
+      icon: country.flag || undefined,
+      keywords: [country.name, country.iso] // Add keywords for better search
+    })), 
+    [countries]
+  );
+
   return (
     <div className="h-full flex flex-col">
       {/* Top Bar with Controls */}
@@ -69,23 +80,14 @@ export const PricingSimulatorLayout: React.FC<PricingSimulatorLayoutProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-600 whitespace-nowrap">Country:</span>
               <div className="w-64">
-                <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                <SelectContent>
-                  <ScrollArea className="h-[200px]">
-                    {countries.map((country) => (
-                      <SelectItem key={country.iso} value={country.iso}>
-                        <span className="flex items-center gap-2">
-                          <span>{country.flag}</span>
-                          <span>{country.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </ScrollArea>
-                </SelectContent>
-              </Select>
+                <Combobox
+                  options={countryOptions}
+                  value={selectedCountry}
+                  onValueChange={setSelectedCountry}
+                  placeholder="Select country"
+                  emptyMessage="No country found."
+                  className="h-9"
+                />
               </div>
             </div>
 
