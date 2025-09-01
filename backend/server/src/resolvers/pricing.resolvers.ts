@@ -11,14 +11,13 @@ import type {
   Country,
   PaymentMethod,
   PricingBreakdown,
-  QueryResolvers
+  QueryResolvers,
 } from "../types";
 
 const logger = createLogger({
   component: "PricingResolvers",
   operationType: "graphql-resolver",
 });
-
 
 // Helper function to map payment method enum
 const mapPaymentMethodEnum = (paymentMethod: any): PaymentMethod => {
@@ -29,7 +28,6 @@ const mapPaymentMethodEnum = (paymentMethod: any): PaymentMethod => {
 const generateCorrelationId = (): string => {
   return `pricing-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 };
-
 
 // Helper function to get correlation ID from context or generate new one
 const getCorrelationId = (context: Context): string => {
@@ -54,7 +52,6 @@ const getCorrelationId = (context: Context): string => {
   });
   return newCorrelationId;
 };
-
 
 // Payment method configurations - single source of truth
 const PAYMENT_METHODS_CONFIG = [
@@ -121,7 +118,7 @@ export const pricingQueries: QueryResolvers = {
 
     try {
       const { numOfDays, countryId, regionId, groups, paymentMethod } = input;
-      
+
       // Validate input
       if (!numOfDays || numOfDays < 1) {
         throw new GraphQLError("Invalid number of days", {
@@ -149,13 +146,16 @@ export const pricingQueries: QueryResolvers = {
         ...(input.promo ? { couponCode: input.promo } : {}),
         // Add user information from context for coupon validation and corporate discounts
         ...(context.auth?.user?.id ? { userId: context.auth.user.id } : {}),
-        ...(context.auth?.user?.email ? { userEmail: context.auth.user.email } : {}),
+        ...(context.auth?.user?.email
+          ? { userEmail: context.auth.user.email }
+          : {}),
         includeDebugInfo: input.includeDebugInfo || false,
       } as RequestFacts;
 
       // Use enhanced version if we need detailed tracking or debug info
-      const useEnhanced = input.includeDebugInfo || context.auth?.user?.role === 'ADMIN';
-      const result = useEnhanced 
+      const useEnhanced =
+        input.includeDebugInfo || context.auth?.user?.role === "ADMIN";
+      const result = useEnhanced
         ? await calculatePricingEnhanced(requestFacts)
         : await calculatePricing(requestFacts);
 
@@ -279,7 +279,9 @@ export const pricingQueries: QueryResolvers = {
             ...(input.promo ? { couponCode: input.promo } : {}),
             // Add user information from context for coupon validation and corporate discounts
             ...(context.auth?.user?.id ? { userId: context.auth.user.id } : {}),
-            ...(context.auth?.user?.email ? { userEmail: context.auth.user.email } : {}),
+            ...(context.auth?.user?.email
+              ? { userEmail: context.auth.user.email }
+              : {}),
           } as RequestFacts;
 
           // Run the database-driven pricing engine
@@ -295,7 +297,9 @@ export const pricingQueries: QueryResolvers = {
               __typename: "CountryBundle",
               id:
                 result.selectedBundle?.esim_go_name ||
-                `bundle_${input.countryId || input.regionId}_${input.numOfDays}d`,
+                `bundle_${input.countryId || input.regionId}_${
+                  input.numOfDays
+                }d`,
               name: result.selectedBundle?.esim_go_name || "",
               duration: input.numOfDays,
               data: result.selectedBundle?.data_amount_mb || 0,
@@ -304,7 +308,10 @@ export const pricingQueries: QueryResolvers = {
               group,
               country: {
                 __typename: "Country",
-                iso: result.selectedBundle?.countries?.[0] || input.countryId || "",
+                iso:
+                  result.selectedBundle?.countries?.[0] ||
+                  input.countryId ||
+                  "",
               } as Country,
             },
 
@@ -370,7 +377,6 @@ export const pricingQueries: QueryResolvers = {
     }
   },
 
-
   /**
    * Get available payment methods with their processing rates
    * This is the single source of truth for payment method configurations
@@ -408,7 +414,7 @@ export async function calculatePricingForBundle(
     args: { input: CalculatePriceInput },
     context: Context
   ) => Promise<PricingBreakdown>;
-  
+
   return calculatePriceResolver(null, { input }, context);
 }
 

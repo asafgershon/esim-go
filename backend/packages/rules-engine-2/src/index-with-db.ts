@@ -23,6 +23,9 @@ import {
   PaymentMethod,
   PricingBreakdown,
   RuleCategory,
+  CountryBundle, 
+  Country, 
+  CustomerDiscount 
 } from "./generated/types";
 import {
   clearRulesCache,
@@ -42,11 +45,36 @@ const logger = createLogger({
   level: "info",
 });
 
+// Streaming types (to avoid circular dependencies with server types)
+export type PricingStep = {
+  order: number;
+  name: string;
+  priceBefore: number;
+  priceAfter: number;
+  impact: number;
+  ruleId: string | null;
+  metadata?: any;
+  timestamp: number;
+};
+
+export type PricingStepUpdate = {
+  correlationId: string;
+  step: PricingStep;
+  isComplete: boolean;
+  totalSteps: number;
+  completedSteps: number;
+  error?: string;
+};
+
+export type StreamingCallback = (stepUpdate: PricingStepUpdate) => void | Promise<void>;
+
 export type RequestFacts = {
   group: string;
   days: number;
   paymentMethod?: PaymentMethod;
   strategyId?: string;
+  onStep?: StreamingCallback;
+  correlationId?: string;
 } & (
   | {
       country: string;
@@ -106,6 +134,170 @@ async function initializeEngine(strategyId?: string): Promise<Rule[]> {
   }
 }
 
+/**
+ * Generate customer-friendly discounts from applied rules
+ */
+function generateCustomerDiscounts(
+  appliedRules: AppliedRule[],
+  baseCost: number,
+  markup: number
+): CustomerDiscount[] {
+  const discounts: CustomerDiscount[] = [];
+
+  appliedRules.forEach((rule) => {
+    // Only include actual discounts (negative impact)
+    if (rule.impact < 0) {
+      const amount = Math.abs(rule.impact);
+      const basePrice = baseCost + markup;
+      const percentage = basePrice > 0 ? (amount / basePrice) * 100 : 0;
+
+      // Generate customer-friendly name and reason
+      let name = rule.name;
+      let reason = "";
+
+      if (rule.name.toLowerCase().includes("unused days")) {
+        name = "Multi-day Savings";
+        reason = "Save more with longer validity periods";
+      } else if (rule.name.toLowerCase().includes("volume")) {
+        name = "Volume Discount";
+        reason = "Bulk purchase savings";
+      } else if (rule.name.toLowerCase().includes("loyalty")) {
+        name = "Loyalty Reward";
+        reason = "Thank you for being a valued customer";
+      } else if (rule.name.toLowerCase().includes("promotional")) {
+        name = "Special Promotion";
+        reason = "Limited time offer";
+      } else {
+        reason = "Special discount applied";
+      }
+
+      discounts.push({
+        name,
+        amount,
+        percentage: Math.round(percentage * 10) / 10, // Round to 1 decimal
+        reason,
+      });
+    }
+  });
+
+  return discounts;
+}
+
+/**
+ * Convert PricingEngineV2Result to PricingBreakdown format
+ */
+function engineResultToPricingBreakdown(
+  result: PricingEngineV2Result,
+  input: {
+    numOfDays: number;
+    countryId?: string;
+    regionId?: string;
+    group?: string;
+  },
+  pricingSteps?: PricingStep[],
+  calculationTimeMs?: number,
+  rulesEvaluated?: number,
+  includeDebugInfo?: boolean,
+  debugInfo?: any
+): PricingBreakdown {
+  const { selectedBundle, unusedDays, pricing, appliedRules } = result;
+
+  // Create bundle object
+  const bundle: CountryBundle = {
+    id: selectedBundle?.esim_go_name || `bundle_${input.countryId || input.regionId}_${input.numOfDays}d`,
+    name: selectedBundle?.esim_go_name || "",
+    duration: input.numOfDays,
+    data: selectedBundle?.data_amount_mb || 0,
+    isUnlimited: selectedBundle?.is_unlimited || false,
+    currency: "USD",
+    group: input.group,
+    price: selectedBundle?.price,
+    country: {
+      iso: selectedBundle?.countries?.[0] || input.countryId || "",
+      name: input.countryId || "",
+      region: input.regionId || "",
+    } as Country,
+  };
+
+  // Create country object
+  const country: Country = {
+    iso: input.countryId || "",
+    name: input.countryId || "",
+    region: input.regionId || "",
+  };
+
+  // Calculate savings
+  const originalPrice = pricing.cost + pricing.markup;
+  const savingsAmount = pricing.discountValue;
+  const savingsPercentage = originalPrice > 0 ? (savingsAmount / originalPrice) * 100 : 0;
+
+  // Generate customer-friendly discounts
+  const customerDiscounts = generateCustomerDiscounts(
+    appliedRules,
+    pricing.cost,
+    pricing.markup
+  );
+
+  // Create PricingBreakdown
+  const pricingBreakdown: PricingBreakdown = {
+    // Bundle and country info
+    bundle,
+    country,
+    duration: input.numOfDays,
+
+    // Core pricing fields (flatten from pricing object)
+    cost: pricing.cost,
+    markup: pricing.markup,
+    currency: pricing.currency,
+    unusedDays: unusedDays,
+    processingCost: pricing.processingCost,
+    discountPerDay: pricing.discountPerDay,
+    discountValue: pricing.discountValue,
+    priceAfterDiscount: pricing.priceAfterDiscount,
+    discountRate: pricing.discountRate,
+    totalCost: pricing.totalCost,
+    processingRate: pricing.processingRate,
+    finalRevenue: pricing.finalRevenue,
+    revenueAfterProcessing: pricing.revenueAfterProcessing,
+    netProfit: pricing.netProfit,
+    totalCostBeforeProcessing: pricing.totalCostBeforeProcessing,
+    finalPrice: pricing.finalPrice,
+    appliedRules: pricing.appliedRules,
+    selectedReason: "calculated",
+
+    // Enhanced fields
+    pricingSteps: pricingSteps || [],
+    customerDiscounts,
+    savingsAmount: Number(savingsAmount.toFixed(2)),
+    savingsPercentage: Number(savingsPercentage.toFixed(1)),
+    calculationTimeMs: calculationTimeMs,
+    rulesEvaluated: rulesEvaluated,
+
+    // Optional debug info
+    ...(includeDebugInfo && debugInfo && { debugInfo }),
+  };
+
+  return pricingBreakdown;
+}
+
+/**
+ * Format event type to user-friendly step name
+ */
+function formatStepName(eventType: string): string {
+  const mapping: Record<string, string> = {
+    "set-base-price": "Base Price",
+    "apply-markup": "Markup Application",
+    "apply-unused-days-discount": "Multi-day Discount",
+    "apply-processing-fee": "Processing Fee",
+    "apply-profit-constraint": "Profit Adjustment",
+    "apply-psychological-rounding": "Price Rounding",
+    "select-provider": "Provider Selection",
+  };
+
+  const normalized = eventType.toLowerCase().replace(/_/g, "-");
+  return mapping[normalized] || eventType;
+}
+
 export async function calculatePricing({
   days,
   group,
@@ -113,6 +305,8 @@ export async function calculatePricing({
   region,
   paymentMethod = PaymentMethod.IsraeliCard,
   strategyId,
+  onStep,
+  correlationId,
 }: RequestFacts): Promise<PricingEngineV2Result> {
   engine = new Engine();
 
@@ -192,9 +386,38 @@ export async function calculatePricing({
 
   const appliedRules: AppliedRule[] = [];
   let currentPrice = selectedBundle?.price || previousBundle?.price || 0;
+  const pricingSteps: PricingStep[] = [];
+  let stepOrder = 0;
 
-  // Process events in the order they were fired by the engine (already sorted by priority DESC from database)
-  // The loadStrategyBlocks function returns rules sorted by priority DESC, so events are naturally in correct order
+  // Stream initial bundle selection step if streaming is enabled
+  if (onStep && correlationId) {
+    const bundleSelectionStep: PricingStep = {
+      order: stepOrder++,
+      name: "Bundle Selection",
+      priceBefore: 0,
+      priceAfter: currentPrice,
+      impact: currentPrice,
+      ruleId: null,
+      metadata: {
+        bundle: selectedBundle?.esim_go_name,
+        days: selectedBundle?.validity_in_days,
+        selectionReason: selectedBundle ? "exact_match" : "fallback",
+      },
+      timestamp: Date.now(),
+    };
+
+    pricingSteps.push(bundleSelectionStep);
+
+    await onStep({
+      correlationId,
+      step: bundleSelectionStep,
+      isComplete: false,
+      totalSteps: events.length + 1, // +1 for bundle selection
+      completedSteps: 1,
+    });
+  }
+
+  // Process events in the order they were fired by the engine (already sorted by priority DESC from database)  
   logger.info(
     `Processing ${events.length} events in database-defined priority order`
   );
@@ -202,6 +425,7 @@ export async function calculatePricing({
   for (const event of events) {
     logger.debug(`Processing event: ${event.type}`, { params: event.params });
     const previousPrice = currentPrice;
+    const stepTimestamp = Date.now();
 
     currentPrice = processEventType(
       event,
@@ -215,6 +439,36 @@ export async function calculatePricing({
     logger.info(
       `Price changed from ${previousPrice} to ${currentPrice} after ${event.type}`
     );
+
+    // Track step for streaming if enabled
+    if (onStep && correlationId) {
+      const impact = currentPrice - previousPrice;
+      const stepName = formatStepName(event.type);
+
+      const pricingStep: PricingStep = {
+        order: stepOrder++,
+        name: stepName,
+        priceBefore: previousPrice,
+        priceAfter: currentPrice,
+        impact,
+        ruleId: event.params?.ruleId || null,
+        metadata: event.params,
+        timestamp: stepTimestamp,
+      };
+
+      pricingSteps.push(pricingStep);
+
+      await onStep({
+        correlationId,
+        step: pricingStep,
+        isComplete: false,
+        totalSteps: events.length + 1,
+        completedSteps: stepOrder,
+      });
+
+      // Add a small delay for demonstration purposes (optional)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   }
 
   const endTime = performance.now();
@@ -306,6 +560,112 @@ export async function calculatePricing({
     pricing,
     appliedRules,
   };
+}
+
+/**
+ * Streaming wrapper for calculatePricing that returns PricingBreakdown
+ */
+export async function streamCalculatePricing({
+  days,
+  group,
+  country,
+  region,
+  paymentMethod = PaymentMethod.IsraeliCard,
+  strategyId,
+  onStep,
+  correlationId,
+  includeEnhancedData = true,
+  includeDebugInfo = false,
+}: RequestFacts & { 
+  includeEnhancedData?: boolean; 
+  includeDebugInfo?: boolean 
+}): Promise<PricingBreakdown> {
+  const startTime = performance.now();
+  
+  logger.info("Starting streaming pricing calculation", {
+    correlationId,
+    days,
+    group,
+    country,
+    region,
+  });
+
+  // Send initialization step if streaming
+  if (onStep && correlationId) {
+    await onStep({
+      correlationId,
+      step: {
+        order: 0,
+        name: "Initialization",
+        priceBefore: 0,
+        priceAfter: 0,
+        impact: 0,
+        ruleId: null,
+        metadata: { status: "Loading pricing rules" },
+        timestamp: Date.now(),
+      },
+      isComplete: false,
+      totalSteps: 0,
+      completedSteps: 0,
+    });
+  }
+
+  // Call the main calculatePricing function
+  const requestFacts: RequestFacts = country
+    ? { days, group, country, paymentMethod, strategyId, onStep, correlationId }
+    : { days, group, region: region!, paymentMethod, strategyId, onStep, correlationId };
+  
+  const result = await calculatePricing(requestFacts);
+
+  const endTime = performance.now();
+  const calculationTimeMs = endTime - startTime;
+
+  // Convert to PricingBreakdown format
+  const pricingBreakdown = engineResultToPricingBreakdown(
+    result,
+    {
+      numOfDays: days,
+      countryId: country,
+      regionId: region,
+      group,
+    },
+    undefined, // pricingSteps will be populated by streaming
+    calculationTimeMs,
+    undefined, // rulesEvaluated - we can add this later if needed
+    includeDebugInfo
+  );
+
+  // Send completion step if streaming
+  if (onStep && correlationId) {
+    await onStep({
+      correlationId,
+      step: {
+        order: 999,
+        name: "Calculation Complete",
+        priceBefore: pricingBreakdown.finalPrice,
+        priceAfter: pricingBreakdown.finalPrice,
+        impact: 0,
+        ruleId: null,
+        metadata: { 
+          calculationTimeMs,
+          finalPrice: pricingBreakdown.finalPrice 
+        },
+        timestamp: Date.now(),
+      },
+      isComplete: true,
+      totalSteps: 999,
+      completedSteps: 999,
+    });
+  }
+
+  logger.info("Streaming pricing calculation completed", {
+    correlationId,
+    selectedBundle: result.selectedBundle?.esim_go_name,
+    finalPrice: pricingBreakdown.finalPrice,
+    calculationTimeMs,
+  });
+
+  return pricingBreakdown;
 }
 
 // Export alias for backward compatibility

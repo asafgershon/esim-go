@@ -48,7 +48,6 @@ import {
   TenantRepository,
   UserRepository,
 } from "./repositories";
-import { PricingRulesRepository } from "./repositories/pricing-rules.repository";
 import { StrategiesRepository } from "./repositories/strategies.repository";
 import { TripRepository } from "./repositories/trip.repository";
 import { resolvers } from "./resolvers";
@@ -167,7 +166,6 @@ async function startServer() {
     const tripRepository = new TripRepository();
     const highDemandCountryRepository = new HighDemandCountryRepository();
     const syncJobRepository = new SyncJobRepository();
-    const pricingRulesRepository = new PricingRulesRepository();
     const tenantRepository = new TenantRepository(supabaseAdmin);
     const strategiesRepository = new StrategiesRepository();
 
@@ -222,7 +220,6 @@ async function startServer() {
               highDemandCountries: highDemandCountryRepository,
               syncJob: syncJobRepository,
               bundles: bundleRepository,
-              pricingRules: pricingRulesRepository,
               tenants: tenantRepository,
               strategies: strategiesRepository,
             },
@@ -480,7 +477,6 @@ async function startServer() {
               highDemandCountries: highDemandCountryRepository,
               syncJob: syncJobRepository,
               bundles: bundleRepository,
-              pricingRules: pricingRulesRepository,
               checkoutSessionServiceV2: checkoutSessionServiceV2,
               tenants: tenantRepository,
               strategies: strategiesRepository,

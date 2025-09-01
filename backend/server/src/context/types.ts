@@ -61,7 +61,6 @@ export type Context = {
     highDemandCountries: HighDemandCountryRepository;
     syncJob: SyncJobRepository;
     bundles: BundleRepository;
-    pricingRules: PricingRulesRepository;
     tenants: TenantRepository;
     strategies: StrategiesRepository;
   };

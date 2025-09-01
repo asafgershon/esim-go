@@ -1,5 +1,3 @@
-import { createLogger } from "@hiilo/utils";
-import { Engine } from "json-rules-engine";
 import { SelectedBundleFact } from "./facts/bundle-facts";
 import {
   AppliedRule,
@@ -10,13 +8,6 @@ import { clearRulesCache } from "./loaders/database-loader";
 
 // Export cache clear function for manual cache invalidation
 export { clearRulesCache };
-
-let engine: Engine;
-
-const logger = createLogger({
-  name: "pricing-engine-v2",
-  level: "info",
-});
 
 export type RequestFacts = {
   group: string;
@@ -41,7 +32,7 @@ export type PricingEngineV2Result = {
   pricing: Omit<PricingBreakdown, "bundle" | "country" | "duration">;
   appliedRules: AppliedRule[];
 };
-export { calculatePricing } from "./index-with-db";
+export { calculatePricing, streamCalculatePricing } from "./index-with-db";
 // Export enhanced version with step tracking
 export {
   calculatePricingEnhanced,
