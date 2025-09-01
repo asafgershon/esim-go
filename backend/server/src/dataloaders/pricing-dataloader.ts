@@ -1,6 +1,5 @@
 import {
   calculatePricing,
-  Provider,
   type PricingEngineV2Result,
   type RequestFacts,
 } from "@hiilo/rules-engine-2";
@@ -8,7 +7,7 @@ import DataLoader from "dataloader";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import { withPerformanceMonitoring } from "../services/pricing-performance-monitor";
-import type { Country, PaymentMethod, PricingBreakdown } from "../types";
+import type { Country, PaymentMethod, PricingBreakdown, Provider } from "../types";
 
 const logger = createLogger({
   component: "PricingDataLoader",

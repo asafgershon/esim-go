@@ -27,6 +27,8 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
 
-    "types": ["node", "bun"]
-  }
+    "types": ["node", "bun"],
+    
+  },
+  "exclude": ["../../packages/**/*"]
 }
