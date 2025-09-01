@@ -66,8 +66,8 @@ export async function calculatePricingEnhancedWithStreaming({
     const pricingBreakdown = await streamCalculatePricing({
       days: numOfDays,
       group,
-      country: countryId,
-      region: regionId,
+      country: countryId || undefined,
+      region: regionId || undefined,
       paymentMethod: mappedPaymentMethod,
       strategyId: input.strategyId,
       onStep: wrappedOnStep,

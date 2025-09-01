@@ -1185,6 +1185,7 @@ type CountryBundle {
   isUnlimited: Boolean!
   data: Float
   group: String
+  provider: Provider!
 
   # Rule-based pricing breakdown - Admin only
   appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
@@ -1813,4 +1814,37 @@ type CheckoutBundle {
   currency: String!
 
   discounts: [String!]!
+}
+
+enum RuleCategory {
+  PROVIDER_SELECTION
+  DISCOUNT
+  CONSTRAINT
+  FEE
+  BUNDLE_ADJUSTMENT
+}
+
+input RuleConditionInput {
+  field: String!
+  operator: ConditionOperator!
+  value: JSON!
+  type: String
+}
+input RuleActionInput {
+  type: ActionType!
+  value: Float!
+  metadata: JSON
+}
+
+type RuleCondition {
+  field: String!
+  operator: ConditionOperator!
+  value: JSON!
+  type: String
+}
+
+type RuleAction {
+  type: ActionType!
+  value: Float!
+  metadata: JSON
 }

@@ -36,11 +36,12 @@ import type { DeliveryService } from "../services/delivery";
 import * as EasycardPayment from "../services/payment";
 import type { RedisInstance } from "../services/redis";
 import type { SupabaseAuthContext } from "./supabase-auth";
+import type { Database } from "@hiilo/supabase";
 
 export type Context = {
   auth: SupabaseAuthContext;
   services: {
-    db: SupabaseClient;
+    db: SupabaseClient<Database>;
     redis: RedisInstance;
     syncs: CatalogSyncServiceV2;
     esimGoClient: ESimGoClient;

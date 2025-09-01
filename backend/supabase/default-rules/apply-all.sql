@@ -8,7 +8,11 @@
 -- First, ensure the required tables exist
 -- Note: These should already exist from your migrations
 
--- Apply Pricing Blocks in priority order (highest to lowest priority)
+-- Step 1: Set up the default pricing strategy
+\echo 'Setting up default pricing strategy...'
+\i pricing-strategies/001-create-default-strategy.sql
+
+-- Step 2: Apply Pricing Blocks in priority order (highest to lowest priority)
 \echo 'Applying pricing blocks...'
 
 \echo '  1. Provider Selection (Priority 100)...'
@@ -40,10 +44,22 @@
 
 \echo 'All pricing blocks have been applied successfully!'
 
--- Verify the blocks were applied
+-- Step 3: Associate blocks with the default strategy
 \echo ''
-\echo 'Verification:'
-\echo '============='
-SELECT 'Active Pricing Blocks:' as type, COUNT(*) as count FROM pricing_blocks WHERE is_active = true
+\echo 'Associating pricing blocks with default strategy...'
+\i pricing-strategies/002-associate-blocks-with-strategy.sql
+
+-- Step 4: Verify everything was applied correctly
+\echo ''
+\echo 'Verification Results:'
+\echo '===================='
+SELECT 'Active Strategies:' as type, COUNT(*) as count FROM pricing_strategies WHERE is_enabled = true
 UNION ALL
-SELECT 'Total Pricing Blocks:' as type, COUNT(*) as count FROM pricing_blocks;
+SELECT 'Default Strategies:' as type, COUNT(*) as count FROM pricing_strategies WHERE is_default = true  
+UNION ALL
+SELECT 'Active Pricing Blocks:' as type, COUNT(*) as count FROM pricing_blocks WHERE is_active = true
+UNION ALL  
+SELECT 'Strategy-Block Links:' as type, COUNT(*) as count FROM strategy_blocks WHERE is_enabled = true;
+
+\echo ''
+\echo '✅ Default pricing rules and strategy setup completed successfully!'

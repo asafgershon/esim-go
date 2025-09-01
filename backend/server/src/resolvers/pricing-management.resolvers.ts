@@ -203,7 +203,6 @@ export const pricingManagementResolvers = {
         });
       }
     },
-
     /**
      * Get cache statistics
      */
@@ -274,7 +273,7 @@ export const pricingManagementResolvers = {
       });
 
       try {
-        let query = context.supabaseClient
+        let query = context.services.db
           .from("pricing_blocks")
           .select("*")
           .order("priority", { ascending: true })
@@ -325,7 +324,7 @@ export const pricingManagementResolvers = {
             description: block.description,
             category: block.category,
             conditions: block.conditions,
-            action: block.action,
+            action: block.action || {},
             priority: block.priority,
             isActive: block.is_active,
             isEditable: block.is_editable,
@@ -604,47 +603,6 @@ export const pricingManagementResolvers = {
           operationType: "reset-metrics",
         });
         throw new GraphQLError("Failed to reset performance metrics", {
-          extensions: { code: "INTERNAL_ERROR" },
-        });
-      }
-    },
-
-    /**
-     * Smart cache invalidation based on rule changes
-     */
-    invalidateCacheByRuleChange: async (_, { ruleType, affectedEntities }, context: Context) => {
-      logger.info("Smart cache invalidation for rule change", {
-        ruleType,
-        affectedEntities,
-        userId: context.auth?.user?.id,
-        operationType: "smart-cache-invalidation",
-      });
-
-      try {
-        const cacheManager = new PricingCacheManager(context);
-        const clearedCount = await cacheManager.invalidateByRuleChange(ruleType, affectedEntities);
-
-        logger.info("Successfully invalidated cache by rule change", {
-          ruleType,
-          affectedEntities,
-          clearedCount,
-          userId: context.auth?.user?.id,
-          operationType: "smart-cache-invalidation-success",
-        });
-
-        return {
-          success: true,
-          message: `Invalidated ${clearedCount} cache entries for ${ruleType} rule change`,
-          clearedCount,
-        };
-      } catch (error) {
-        logger.error("Failed to invalidate cache by rule change", error as Error, {
-          ruleType,
-          affectedEntities,
-          userId: context.auth?.user?.id,
-          operationType: "smart-cache-invalidation",
-        });
-        throw new GraphQLError("Failed to invalidate cache by rule change", {
           extensions: { code: "INTERNAL_ERROR" },
         });
       }

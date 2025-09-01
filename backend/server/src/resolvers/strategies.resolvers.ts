@@ -26,21 +26,7 @@ const createStrategyBlocksLoader = (context: Context) => {
         .from("strategy_blocks")
         .select(`
           *,
-          pricing_blocks (
-            id,
-            code,
-            name,
-            description,
-            type,
-            category,
-            conditions,
-            action,
-            is_active,
-            is_editable,
-            priority,
-            created_at,
-            updated_at
-          )
+          pricing_blocks (*)
         `)
         .in("strategy_id", strategyIds as string[])
         .order("priority", { ascending: false });
@@ -73,18 +59,17 @@ const createStrategyBlocksLoader = (context: Context) => {
           isEnabled: blockRow.is_enabled ?? true,
           configOverrides: blockRow.config_overrides,
           pricingBlock: {
-            id: blockRow.pricing_blocks.id,
-            code: blockRow.pricing_blocks.code,
+            id: blockRow.block_id,
             name: blockRow.pricing_blocks.name,
             description: blockRow.pricing_blocks.description,
             category: blockRow.pricing_blocks.category,
             conditions: blockRow.pricing_blocks.conditions,
-            action: blockRow.pricing_blocks.action,
+            action: blockRow.pricing_blocks.params,
             priority: blockRow.pricing_blocks.priority,
             isActive: blockRow.pricing_blocks.is_active,
             isEditable: blockRow.pricing_blocks.is_editable,
             validFrom: blockRow.pricing_blocks.valid_from,
-            validUntil: blockRow.pricing_blocks.valid_until,
+              validUntil: blockRow.pricing_blocks.valid_until,
             createdBy: blockRow.pricing_blocks.created_by,
             createdAt: blockRow.pricing_blocks.created_at,
             updatedAt: blockRow.pricing_blocks.updated_at,

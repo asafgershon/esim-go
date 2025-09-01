@@ -1,5 +1,5 @@
 import { createLogger } from "../lib/logger";
-import type { Database } from "../database.types";
+import type { Database } from "@hiilo/supabase";
 import { BaseSupabaseRepository } from "./base-supabase.repository";
 
 // Database row types
@@ -36,8 +36,6 @@ export interface StrategyBlock {
   priority: number;
   isEnabled: boolean;
   configOverrides: any | null;
-  addedBy: string | null;
-  addedAt: string | null;
 }
 
 export interface PricingStrategyWithBlocks extends PricingStrategy {
@@ -229,22 +227,20 @@ export class StrategiesRepository extends BaseSupabaseRepository<
 
     // Map the joined data to our domain types
     const blocks: StrategyBlockWithDetails[] = (blocksData || []).map(blockRow => ({
-      id: blockRow.id,
+      id: blockRow.block_id,
       strategyId: blockRow.strategy_id,
       blockId: blockRow.block_id,
       priority: blockRow.priority,
       isEnabled: blockRow.is_enabled ?? true,
       configOverrides: blockRow.config_overrides,
-      addedBy: blockRow.added_by,
-      addedAt: blockRow.added_at,
       block: {
-        id: blockRow.pricing_blocks.id,
+        id: blockRow.pricing_blocks.block_id,
         name: blockRow.pricing_blocks.name,
         description: blockRow.pricing_blocks.description,
-        eventType: blockRow.pricing_blocks.event_type,
+        eventType: blockRow.pricing_blocks.type,
         category: blockRow.pricing_blocks.category,
         conditions: blockRow.pricing_blocks.conditions,
-        params: blockRow.pricing_blocks.params,
+        params: blockRow.pricing_blocks.action,
         isActive: blockRow.pricing_blocks.is_active,
         isEditable: blockRow.pricing_blocks.is_editable,
         priority: blockRow.pricing_blocks.priority,
@@ -589,8 +585,37 @@ export class StrategiesRepository extends BaseSupabaseRepository<
   /**
    * Get the default strategy
    */
-  async getDefaultStrategy(): Promise<PricingStrategyWithBlocks | null> {
+  async getDefaultStrategy(): Promise<PricingStrategy | null> {
     this.logger.info("Finding default pricing strategy");
+
+    const { data, error } = await this.supabase
+      .from("pricing_strategies")
+      .select("*")
+      .eq("is_default", true)
+      .is("archived_at", null)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        this.logger.info("No default pricing strategy found");
+        return null;
+      }
+      this.logger.error("Failed to find default pricing strategy", error);
+      this.handleError(error, "finding default pricing strategy");
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return this.mapRowToStrategy(data);
+  }
+
+  /**
+   * Get the default strategy with blocks
+   */
+  async getDefaultStrategyWithBlocks(): Promise<PricingStrategyWithBlocks | null> {
+    this.logger.info("Finding default pricing strategy with blocks");
 
     const { data, error } = await this.supabase
       .from("pricing_strategies")
@@ -672,7 +697,7 @@ export class StrategiesRepository extends BaseSupabaseRepository<
       code: row.code,
       name: row.name,
       description: row.description,
-      version: row.version,
+      version: row.version || 0,
       isDefault: row.is_default ?? false,
       activationCount: row.activation_count,
       parentStrategyId: row.parent_strategy_id,
@@ -680,7 +705,7 @@ export class StrategiesRepository extends BaseSupabaseRepository<
       validationErrors: row.validation_errors,
       lastActivatedAt: row.last_activated_at,
       archivedAt: row.archived_at,
-      createdBy: row.created_by,
+      createdBy: row.created_by || "",
       updatedBy: row.updated_by,
       createdAt: row.created_at || new Date().toISOString(),
       updatedAt: row.updated_at,
@@ -692,14 +717,12 @@ export class StrategiesRepository extends BaseSupabaseRepository<
    */
   private mapRowToStrategyBlock(row: StrategyBlockRow): StrategyBlock {
     return {
-      id: row.id,
+      id: row.block_id,
       strategyId: row.strategy_id,
       blockId: row.block_id,
       priority: row.priority,
       isEnabled: row.is_enabled ?? true,
       configOverrides: row.config_overrides,
-      addedBy: row.added_by,
-      addedAt: row.added_at,
     };
   }
 }
