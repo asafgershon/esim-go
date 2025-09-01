@@ -75,37 +75,36 @@ export const resolvers: Resolvers = {
         );
 
         // Get country codes from catalog bundles
-        const countryCodes = await context.repositories.bundles.getCountries();
 
-        // Enrich country codes with full data
-        const result = countryCodes
-          .map((iso) => {
-            const countryData = countriesList.getCountryData(iso as any);
-            if (!countryData) {
-              logger.warn("Country data not found in countries-list", {
-                iso,
-                operationType: "countries-query",
-              });
-              return null;
-            }
+        const countries = [];
 
-            return {
+        for (const iso of Object.keys(countriesList.countries)) {
+          const countryData = countriesList.getCountryData(iso as any);
+          if (!countryData) {
+            logger.warn("Country data not found in countries-list", {
               iso,
-              name: countryData.name,
-              nameHebrew: getCountryNameHebrew(iso) || countryData.name,
-              region: countryData.continent,
-              flag: countriesList.getEmojiFlag(iso as any) || "🌍",
-            };
-          })
-          .filter(Boolean) // Remove any null entries
-          .sort((a, b) => a!.name.localeCompare(b!.name));
+              operationType: "countries-query",
+            });
+            continue;
+          }
+
+          countries.push({
+            iso,
+            name: countryData.name,
+            nameHebrew: getCountryNameHebrew(iso) || countryData.name,
+            region: countryData.continent,
+            flag: countriesList.getEmojiFlag(iso as any) || "🌍",
+          });
+        }
+
+        countries.sort((a, b) => a!.name.localeCompare(b!.name));
 
         logger.info("Countries fetched from catalog", {
-          count: result.length,
+          count: countries.length,
           operationType: "countries-query",
         });
 
-        return result;
+        return countries;
       } catch (error) {
         logger.error("Error fetching countries", error as Error, {
           operationType: "countries-query",
