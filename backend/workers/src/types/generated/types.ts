@@ -522,6 +522,7 @@ export type CountryBundle = {
   name: Scalars['String']['output'];
   price?: Maybe<Scalars['Float']['output']>;
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
 };
 
 export type CreateCheckoutSessionInput = {
@@ -1394,7 +1395,6 @@ export type PurchaseEsimResponse = {
 };
 
 export type Query = {
-  activePricingRules: Array<PricingRule>;
   allTenants: TenantConnection;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
@@ -1410,7 +1410,6 @@ export type Query = {
   calculatePrices: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
-  conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   defaultPricingStrategy?: Maybe<PricingStrategy>;
   esimDetails?: Maybe<Esim>;
@@ -1430,11 +1429,8 @@ export type Query = {
   pricingBlock?: Maybe<PricingBlock>;
   pricingBlocks: Array<PricingBlock>;
   pricingFilters: PricingFilters;
-  pricingRule?: Maybe<PricingRule>;
-  pricingRules: Array<PricingRule>;
   pricingStrategies: Array<PricingStrategy>;
   pricingStrategy?: Maybe<PricingStrategy>;
-  simulatePricingRule: PricingBreakdown;
   tenant?: Maybe<Tenant>;
   tenants: Array<Tenant>;
   trips: Array<Trip>;
@@ -1509,11 +1505,6 @@ export type Query_CatalogSyncHistoryArgs = {
 };
 
 
-export type Query_ConflictingPricingRulesArgs = {
-  ruleId: Scalars['ID']['input'];
-};
-
-
 export type Query_EsimDetailsArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1559,16 +1550,6 @@ export type Query_PricingBlocksArgs = {
 };
 
 
-export type Query_PricingRuleArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type Query_PricingRulesArgs = {
-  filter?: InputMaybe<PricingRuleFilter>;
-};
-
-
 export type Query_PricingStrategiesArgs = {
   filter?: InputMaybe<StrategyFilter>;
 };
@@ -1576,12 +1557,6 @@ export type Query_PricingStrategiesArgs = {
 
 export type Query_PricingStrategyArgs = {
   id: Scalars['ID']['input'];
-};
-
-
-export type Query_SimulatePricingRuleArgs = {
-  rule: CreatePricingRuleInput;
-  testContext: TestPricingContext;
 };
 
 
@@ -1605,7 +1580,8 @@ export enum RuleCategory {
   BundleAdjustment = 'BUNDLE_ADJUSTMENT',
   Constraint = 'CONSTRAINT',
   Discount = 'DISCOUNT',
-  Fee = 'FEE'
+  Fee = 'FEE',
+  ProviderSelection = 'PROVIDER_SELECTION'
 }
 
 export type RuleCondition = {
@@ -1816,6 +1792,7 @@ export type TriggerSyncParams = {
   countryId?: InputMaybe<Scalars['String']['input']>;
   force?: InputMaybe<Scalars['Boolean']['input']>;
   priority?: InputMaybe<Scalars['String']['input']>;
+  provider?: InputMaybe<Provider>;
   type: SyncJobType;
 };
 
@@ -1824,6 +1801,7 @@ export type TriggerSyncResponse = {
   error?: Maybe<Scalars['String']['output']>;
   jobId?: Maybe<Scalars['String']['output']>;
   message?: Maybe<Scalars['String']['output']>;
+  provider?: Maybe<Provider>;
   success: Scalars['Boolean']['output'];
 };
 

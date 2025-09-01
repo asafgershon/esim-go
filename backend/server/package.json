@@ -26,7 +26,7 @@
     "email:watch": "bun run src/scripts/watch-email-template.ts",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist node_modules/.cache",
-    "postinstall": "bun run codegen && bun run codegen:dbtypes"
+    "postinstall": "bun run codegen"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.7",
