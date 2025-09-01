@@ -9,7 +9,6 @@ import { checkoutResolvers } from "./resolvers/checkout.resolvers";
 import { checkoutSubscriptionResolvers } from "./resolvers/checkout-subscription.resolvers";
 import { esimResolvers } from "./resolvers/esim.resolvers";
 import { ordersResolvers } from "./resolvers/orders.resolvers";
-import { pricingRulesResolvers } from "./resolvers/pricing-rules.resolvers";
 import { pricingResolvers } from "./resolvers/pricing.resolvers";
 import { tripsResolvers } from "./resolvers/trips.resolvers";
 import { usersResolvers } from "./resolvers/users.resolvers";
@@ -39,9 +38,6 @@ export const resolvers: Resolvers = {
     // Trips resolvers are merged from trips-resolvers.ts
     ...tripsResolvers.Query!,
 
-    // Pricing rules resolvers are merged from pricing-rules-resolvers.ts
-    ...pricingRulesResolvers.Query!,
-
     // Unified pricing resolvers (calculatePrice, calculatePrices, etc.)
     ...pricingResolvers.Query!,
 
@@ -50,7 +46,7 @@ export const resolvers: Resolvers = {
 
     // Bundle resolvers
     ...bundlesResolvers.Query!,
-    
+
     // Catalog resolvers
     ...catalogResolvers.Query!,
 
@@ -74,11 +70,13 @@ export const resolvers: Resolvers = {
       try {
         // Import countries-list for enrichment
         const countriesList = await import("countries-list");
-        const { getCountryNameHebrew } = await import("./datasources/esim-go/hebrew-names");
-        
+        const { getCountryNameHebrew } = await import(
+          "./datasources/esim-go/hebrew-names"
+        );
+
         // Get country codes from catalog bundles
         const countryCodes = await context.repositories.bundles.getCountries();
-        
+
         // Enrich country codes with full data
         const result = countryCodes
           .map((iso) => {
@@ -90,23 +88,23 @@ export const resolvers: Resolvers = {
               });
               return null;
             }
-            
+
             return {
               iso,
               name: countryData.name,
               nameHebrew: getCountryNameHebrew(iso) || countryData.name,
               region: countryData.continent,
-              flag: countriesList.getEmojiFlag(iso as any) || '🌍',
+              flag: countriesList.getEmojiFlag(iso as any) || "🌍",
             };
           })
           .filter(Boolean) // Remove any null entries
           .sort((a, b) => a!.name.localeCompare(b!.name));
-        
+
         logger.info("Countries fetched from catalog", {
           count: result.length,
           operationType: "countries-query",
         });
-        
+
         return result;
       } catch (error) {
         logger.error("Error fetching countries", error as Error, {
@@ -115,49 +113,12 @@ export const resolvers: Resolvers = {
         throw new GraphQLError("Failed to fetch countries");
       }
     },
-    // trips resolver moved to tripsResolvers
   },
-  // Field resolvers for User type
-  User: {
-    orderCount: async (parent, _, context: Context) => {
-      const { data, error } = await supabaseAdmin
-        .from("esim_orders")
-        .select("id")
-        .eq("user_id", parent.id);
-
-      if (error) {
-        logger.error("Error fetching order count", error as Error, {
-          userId: parent.id,
-          operationType: "order-count-fetch",
-        });
-        return 0;
-      }
-
-      return data?.length || 0;
-    },
-  },
-  // Field resolvers for Trip type
-  Trip: {
-    countries: async (parent, _, context: Context) => {
-      // Use the countryIds from the parent Trip object to fetch full country data
-      if (!parent.countryIds || parent.countryIds.length === 0) {
-        return [];
-      }
-
-      // Return empty array to prevent N+1 queries during initial load
-      // Frontend can fetch countries separately if needed
-      return [];
-
-      // TODO: Implement DataLoader pattern for batching country requests
-    },
-  },
-
   Mutation: {
     ...checkoutResolvers.Mutation!,
     ...checkoutMutationsV2,
     ...usersResolvers.Mutation!,
     ...tripsResolvers.Mutation!,
-    ...pricingRulesResolvers.Mutation!,
 
     // eSIM resolvers are merged from esim-resolvers.ts
     ...esimResolvers.Mutation!,
@@ -226,18 +187,50 @@ export const resolvers: Resolvers = {
       }
     },
   },
+  User: {
+    orderCount: async (parent, _, context: Context) => {
+      const { data, error } = await supabaseAdmin
+        .from("esim_orders")
+        .select("id")
+        .eq("user_id", parent.id);
 
-  // Field Resolvers
+      if (error) {
+        logger.error("Error fetching order count", error as Error, {
+          userId: parent.id,
+          operationType: "order-count-fetch",
+        });
+        return 0;
+      }
+
+      return data?.length || 0;
+    },
+  },
+  Trip: {
+    countries: async (parent, _, context: Context) => {
+      // Use the countryIds from the parent Trip object to fetch full country data
+      if (!parent.countryIds || parent.countryIds.length === 0) {
+        return [];
+      }
+
+      // Return empty array to prevent N+1 queries during initial load
+      // Frontend can fetch countries separately if needed
+      return [];
+
+      // TODO: Implement DataLoader pattern for batching country requests
+    },
+  },
   Order: {
     ...ordersResolvers.Order!,
   },
   Country: {
     name: async (parent, _, context: Context) => {
       const country = countriesList.getCountryData(parent.iso);
-      return country?.name || parent.name || '';
+      return country?.name || parent.name || "";
     },
     nameHebrew: async (parent, _, context: Context) => {
-      const { getCountryNameHebrew } = await import("./datasources/esim-go/hebrew-names");
+      const { getCountryNameHebrew } = await import(
+        "./datasources/esim-go/hebrew-names"
+      );
       return getCountryNameHebrew(parent.iso) || parent.name;
     },
     region: async (parent) => {
@@ -265,18 +258,17 @@ export const resolvers: Resolvers = {
 
     // Catalog subscriptions are merged from catalog-resolvers.ts
     ...catalogResolvers.Subscription!,
-    
+
     // Pricing subscriptions for real-time step streaming
     ...pricingSubscriptionResolvers.Subscription!,
-    
+
     // Checkout subscriptions for real-time session updates
     ...checkoutSubscriptionResolvers.Subscription!,
     ...checkoutSubscriptionsV2,
-    
+
     // Batch pricing subscription for progressive loading
     ...batchPricingSubscriptionResolvers,
   },
-  // Bundle field resolvers
   BundlesByCountry: {
     ...bundlesResolvers.BundlesByCountry,
   },
@@ -293,12 +285,9 @@ export const resolvers: Resolvers = {
     ...bundlesResolvers.CustomerBundle!,
     ...catalogResolvers.CustomerBundle!,
   },
-  // Tenant field resolvers
   Tenant: {
     ...tenantResolvers.Tenant!,
   },
-  
-  // Strategy field resolvers
   PricingStrategy: {
     ...strategiesResolvers.PricingStrategy!,
   },
