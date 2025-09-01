@@ -15,7 +15,6 @@
   },
   "scripts": {
     "dev": "bun tsc --watch",
-    "build": "bun tsc",
     "codegen:dbtypes": "bunx supabase gen types typescript --project-id \"dgkyjkzkwzmjjurzvcxy\" --schema public > src/generated/database.types.ts || echo \"Skipping Supabase codegen (no token available)\"",
     "clean": "rm -rf dist",
     "codegen": "graphql-codegen",
