@@ -110,7 +110,6 @@ export class MayaSyncService {
       },
     });
     const data = await response.json();
-    console.log("yarin", data);
     const parsedData = MayaProductsResponseSchema.parse(data);
     return parsedData;
   }

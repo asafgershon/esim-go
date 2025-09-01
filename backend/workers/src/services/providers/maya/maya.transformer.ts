@@ -26,6 +26,8 @@ export function transformAndValidateMayaBundle(
       return null;
     }
 
+    const validityDays = apiBundle.validity_days - 1;
+
     const price = parseFloat(apiBundle.wholesale_price_usd);
 
     // Skip bundles with zero or negative price
@@ -39,7 +41,7 @@ export function transformAndValidateMayaBundle(
     }
 
     // Skip bundles with invalid duration
-    if (apiBundle.validity_days <= 0) {
+    if (validityDays <= 0) {
       console.warn("Skipping bundle: invalid duration", {
         uid: apiBundle.uid,
         name: apiBundle.name,
@@ -62,10 +64,10 @@ export function transformAndValidateMayaBundle(
           }
           return isValid;
         })
-        .map((country) => country.toUpperCase())// Ensure uppercase ISO codes
-        .map((country) => countries.toAlpha2(country) || country) 
-        // Replace ISO Alpha 3 with ISO Alpha 2
-      || [];
+        .map((country) => country.toUpperCase()) // Ensure uppercase ISO codes
+        .map((country) => countries.toAlpha2(country) || country) ||
+      // Replace ISO Alpha 3 with ISO Alpha 2
+      [];
 
     // Skip bundles without any valid countries
     if (countryCodes.length === 0) {
@@ -98,8 +100,10 @@ export function transformAndValidateMayaBundle(
       esim_go_name: apiBundle.uid,
       groups: [],
       description: apiBundle.name || null,
-      validity_in_days: apiBundle.validity_days,
-      data_amount_mb: isUnlimited ? null : Math.ceil(apiBundle.data_quota_bytes / 1024 / 1024) || null,
+      validity_in_days: validityDays,
+      data_amount_mb: isUnlimited
+        ? null
+        : Math.ceil(apiBundle.data_quota_bytes / 1024 / 1024) || null,
       data_amount_readable: dataAmountReadable,
       is_unlimited: isUnlimited,
       price: price,
