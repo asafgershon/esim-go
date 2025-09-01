@@ -50,16 +50,6 @@ type Query {
   bundlesForRegion(region: String!): BundlesForRegion
   bundlesForGroup(group: String!): BundlesForGroup
 
-  # Pricing Rules Engine
-  pricingRules(filter: PricingRuleFilter): [PricingRule!]!
-  pricingRule(id: ID!): PricingRule
-  activePricingRules: [PricingRule!]!
-  conflictingPricingRules(ruleId: ID!): [PricingRule!]!
-  simulatePricingRule(
-    rule: CreatePricingRuleInput!
-    testContext: TestPricingContext!
-  ): PricingBreakdown!
-
   # Pricing filters
   pricingFilters: PricingFilters!
 
@@ -1200,13 +1190,7 @@ type CountryBundle {
   appliedRules: [AppliedRule!] @auth(role: "ADMIN") # Rules that affected the pricing (nullable)
 }
 
-# Pricing Rules Engine Types
-enum RuleCategory {
-  DISCOUNT
-  CONSTRAINT
-  FEE
-  BUNDLE_ADJUSTMENT
-}
+
 
 enum ConditionOperator {
   EQUALS
@@ -1230,31 +1214,6 @@ enum ActionType {
   SET_DISCOUNT_PER_UNUSED_DAY
 }
 
-type RuleCondition {
-  field: String!
-  operator: ConditionOperator!
-  value: JSON!
-  type: String
-}
-
-type RuleAction {
-  type: ActionType!
-  value: Float!
-  metadata: JSON
-}
-
-input RuleConditionInput {
-  field: String!
-  operator: ConditionOperator!
-  value: JSON!
-  type: String
-}
-
-input RuleActionInput {
-  type: ActionType!
-  value: Float!
-  metadata: JSON
-}
 
 input PricingRuleFilter {
   category: RuleCategory

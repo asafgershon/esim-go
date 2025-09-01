@@ -1,5 +1,5 @@
 import {
-  calculatePricingWithDB,
+  calculatePricing,
   type RequestFacts,
 } from "@hiilo/rules-engine-2";
 import DataLoader from "dataloader";
@@ -90,7 +90,7 @@ export function createPricingDataLoader(
                 };
 
                 // Calculate pricing using the rules engine
-                const result = await calculatePricingWithDB(requestFacts);
+                const result = await calculatePricing(requestFacts);
 
                 // Map to PricingBreakdown format
                 const pricingBreakdown: PricingResult = {
