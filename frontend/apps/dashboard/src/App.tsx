@@ -57,7 +57,6 @@ function App() {
                     <Route index element={<Navigate to="summary" replace />} />
                     <Route path="summary" element={<PricingSummaryPage />} />
                     <Route path="simulator" element={<PricingSimulatorPage />} />
-                    <Route path="rules" element={<UnifiedPricingRulesPage />} />
                     <Route path="airhalo" element={<AirHaloPricingPage />} />
                     <Route path="strategy" element={<StrategyPage />} />
                   </Route>

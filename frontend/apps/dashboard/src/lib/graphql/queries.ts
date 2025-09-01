@@ -71,137 +71,6 @@ export const GET_PAYMENT_METHODS = gql(`
   }
 `);
 
-// Pricing Rules Queries
-export const GET_PRICING_RULES = gql(`
-  query GetPricingRules($filter: PricingRuleFilter) {
-    pricingRules(filter: $filter) {
-      id
-      category
-      name
-      description
-      conditions {
-        field
-        operator
-        value
-        type
-      }
-      actions {
-        type
-        value
-        metadata
-      }
-      priority
-      isActive
-      isEditable
-      validFrom
-      validUntil
-      createdBy
-      createdAt
-      updatedAt
-    }
-  }
-`);
-
-export const CREATE_PRICING_RULE = gql(`
-  mutation CreatePricingRule($input: CreatePricingRuleInput!) {
-    createPricingRule(input: $input) {
-      id
-      category
-      name
-      description
-      conditions {
-        field
-        operator
-        value
-        type
-      }
-      actions {
-        type
-        value
-        metadata
-      }
-      priority
-      isActive
-      isEditable
-      validFrom
-      validUntil
-      createdBy
-      createdAt
-      updatedAt
-    }
-  }
-`);
-
-export const UPDATE_PRICING_RULE = gql(`
-  mutation UpdatePricingRule($id: ID!, $input: UpdatePricingRuleInput!) {
-    updatePricingRule(id: $id, input: $input) {
-      id
-      category
-      name
-      description
-      conditions {
-        field
-        operator
-        value
-        type
-      }
-      actions {
-        type
-        value
-        metadata
-      }
-      priority
-      isActive
-      isEditable
-      validFrom
-      validUntil
-      createdBy
-      createdAt
-      updatedAt
-    }
-  }
-`);
-
-export const DELETE_PRICING_RULE = gql(`
-  mutation DeletePricingRule($id: ID!) {
-    deletePricingRule(id: $id)
-  }
-`);
-
-export const TOGGLE_PRICING_RULE = gql(`
-  mutation TogglePricingRule($id: ID!) {
-    togglePricingRule(id: $id) {
-      id
-      isActive
-    }
-  }
-`);
-
-export const CLONE_PRICING_RULE = gql(`
-  mutation ClonePricingRule($id: ID!, $newName: String!) {
-    clonePricingRule(id: $id, newName: $newName) {
-      id
-      name
-      category
-      description
-      conditions {
-        field
-        operator
-        value
-        type
-      }
-      actions {
-        type
-        value
-        metadata
-      }
-      priority
-      isActive
-      isEditable
-    }
-  }
-`);
-
 export const GET_TRIPS = gql(`
   query GetTrips {
     trips {
@@ -814,7 +683,6 @@ export const GET_COUNTRY_BUNDLES = gql(`
   }
 `);
 
-
 export const GET_BUNDLE_GROUPS = gql(`
   query GetBundleGroups {
     pricingFilters {
@@ -1135,7 +1003,6 @@ export const GET_AIRHALO_PRICING_DATA = gql(`
     }
   }
 `);
-
 
 // Coupon Management Queries
 export const GET_COUPONS = gql(`
