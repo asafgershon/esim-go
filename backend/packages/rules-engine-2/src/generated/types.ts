@@ -122,6 +122,7 @@ export type Bundle = {
   isUnlimited: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
   region?: Maybe<Scalars['String']['output']>;
   speed: Array<Scalars['String']['output']>;
   validityInDays: Scalars['Int']['output'];
@@ -173,6 +174,17 @@ export enum BundleState {
   Processing = 'PROCESSING',
   Suspended = 'SUSPENDED'
 }
+
+export type BundleStats = {
+  /** Total number of active bundles in the system */
+  totalBundles: Scalars['Int']['output'];
+  /** Number of countries covered */
+  totalCountries: Scalars['Int']['output'];
+  /** Number of unique bundle groups */
+  totalGroups: Scalars['Int']['output'];
+  /** Number of regions covered */
+  totalRegions: Scalars['Int']['output'];
+};
 
 export type BundlesByCountry = {
   bundleCount: Scalars['Int']['output'];
@@ -272,6 +284,7 @@ export type CalculatePriceInput = {
   paymentMethod?: InputMaybe<PaymentMethod>;
   promo?: InputMaybe<Scalars['String']['input']>;
   regionId?: InputMaybe<Scalars['String']['input']>;
+  strategyId?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CatalogBundle = Bundle & {
@@ -287,6 +300,7 @@ export type CatalogBundle = Bundle & {
   isUnlimited: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
   region?: Maybe<Scalars['String']['output']>;
   speed: Array<Scalars['String']['output']>;
   syncedAt: Scalars['DateTime']['output'];
@@ -352,14 +366,93 @@ export type CatalogSyncProgressUpdate = {
   updatedAt: Scalars['String']['output'];
 };
 
+export type Checkout = {
+  auth?: Maybe<CheckoutAuth>;
+  bundle?: Maybe<CheckoutBundle>;
+  delivery?: Maybe<CheckoutDelivery>;
+  id: Scalars['ID']['output'];
+  payment?: Maybe<CheckoutPayment>;
+};
+
+export type CheckoutAuth = CheckoutAuthInterface & {
+  completed: Scalars['Boolean']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  lastName?: Maybe<Scalars['String']['output']>;
+  method?: Maybe<Scalars['String']['output']>;
+  otpSent?: Maybe<Scalars['Boolean']['output']>;
+  otpVerified?: Maybe<Scalars['Boolean']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+  userId?: Maybe<Scalars['String']['output']>;
+};
+
+export type CheckoutAuthInterface = {
+  completed: Scalars['Boolean']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  lastName?: Maybe<Scalars['String']['output']>;
+  method?: Maybe<Scalars['String']['output']>;
+  otpSent?: Maybe<Scalars['Boolean']['output']>;
+  otpVerified?: Maybe<Scalars['Boolean']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+  userId?: Maybe<Scalars['String']['output']>;
+};
+
+export type CheckoutAuthWithOtp = CheckoutAuthInterface & {
+  authToken: Scalars['String']['output'];
+  completed: Scalars['Boolean']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  lastName?: Maybe<Scalars['String']['output']>;
+  method?: Maybe<Scalars['String']['output']>;
+  otpSent?: Maybe<Scalars['Boolean']['output']>;
+  otpVerified?: Maybe<Scalars['Boolean']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+  refreshToken: Scalars['String']['output'];
+  userId?: Maybe<Scalars['String']['output']>;
+};
+
+export type CheckoutBundle = {
+  completed: Scalars['Boolean']['output'];
+  country?: Maybe<Country>;
+  currency: Scalars['String']['output'];
+  dataAmount: Scalars['String']['output'];
+  discounts: Array<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  numOfDays: Scalars['Int']['output'];
+  price: Scalars['Float']['output'];
+  pricePerDay: Scalars['Float']['output'];
+  speed: Array<Scalars['String']['output']>;
+  validated?: Maybe<Scalars['Boolean']['output']>;
+};
+
+export type CheckoutDelivery = {
+  completed: Scalars['Boolean']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+};
+
+export type CheckoutPayment = {
+  completed: Scalars['Boolean']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  intent?: Maybe<PaymentIntent>;
+  nameForBilling?: Maybe<Scalars['String']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+  redirectUrl?: Maybe<Scalars['String']['output']>;
+  transaction?: Maybe<Transaction>;
+};
+
 export type CheckoutSession = {
   createdAt: Scalars['DateTime']['output'];
   expiresAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
   isComplete: Scalars['Boolean']['output'];
+  isValidated: Scalars['Boolean']['output'];
   metadata?: Maybe<Scalars['JSON']['output']>;
   orderId?: Maybe<Scalars['ID']['output']>;
+  paymentIntentId?: Maybe<Scalars['String']['output']>;
   paymentStatus?: Maybe<Scalars['String']['output']>;
+  paymentUrl?: Maybe<Scalars['String']['output']>;
   planSnapshot?: Maybe<Scalars['JSON']['output']>;
   pricing?: Maybe<Scalars['JSON']['output']>;
   steps?: Maybe<Scalars['JSON']['output']>;
@@ -367,10 +460,25 @@ export type CheckoutSession = {
   token: Scalars['String']['output'];
 };
 
+export type CheckoutSessionUpdate = {
+  session: CheckoutSession;
+  timestamp: Scalars['DateTime']['output'];
+  updateType: CheckoutUpdateType;
+};
+
 export enum CheckoutStepType {
   Authentication = 'AUTHENTICATION',
   Delivery = 'DELIVERY',
   Payment = 'PAYMENT'
+}
+
+export enum CheckoutUpdateType {
+  Initial = 'INITIAL',
+  OrderCreated = 'ORDER_CREATED',
+  PaymentCompleted = 'PAYMENT_COMPLETED',
+  PaymentProcessing = 'PAYMENT_PROCESSING',
+  SessionExpired = 'SESSION_EXPIRED',
+  StepCompleted = 'STEP_COMPLETED'
 }
 
 export enum ConditionOperator {
@@ -449,10 +557,10 @@ export type CreateTenantInput = {
 };
 
 export type CreateTripInput = {
-  countryIds: Array<Scalars['ISOCountryCode']['input']>;
+  bundleName: Scalars['String']['input'];
   description: Scalars['String']['input'];
   name: Scalars['String']['input'];
-  regionId: Scalars['String']['input'];
+  title: Scalars['String']['input'];
 };
 
 export type CreateTripResponse = {
@@ -473,6 +581,7 @@ export type CustomerBundle = Bundle & {
   isUnlimited: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
   region?: Maybe<Scalars['String']['output']>;
   speed: Array<Scalars['String']['output']>;
   validityInDays: Scalars['Int']['output'];
@@ -663,6 +772,7 @@ export type Mutation = {
   assignUserToTenant: TenantOperationResponse;
   cancelESIM?: Maybe<EsimActionResponse>;
   clonePricingRule: PricingRule;
+  createCheckout?: Maybe<Scalars['String']['output']>;
   createCheckoutSession: CreateCheckoutSessionResponse;
   createPricingRule: PricingRule;
   createTenant: Tenant;
@@ -673,6 +783,7 @@ export type Mutation = {
   deleteUser?: Maybe<DeleteUserResponse>;
   inviteAdminUser?: Maybe<InviteAdminUserResponse>;
   processCheckoutPayment: ProcessCheckoutPaymentResponse;
+  processPaymentCallback: Scalars['String']['output'];
   purchaseESIM?: Maybe<PurchaseEsimResponse>;
   removeUserFromTenant: TenantOperationResponse;
   reorderPricingRules: Array<PricingRule>;
@@ -686,6 +797,10 @@ export type Mutation = {
   toggleHighDemandCountry?: Maybe<ToggleHighDemandResponse>;
   togglePricingRule: PricingRule;
   triggerCatalogSync?: Maybe<TriggerSyncResponse>;
+  triggerCheckoutPayment: CheckoutPayment;
+  updateCheckoutAuth: CheckoutAuth;
+  updateCheckoutAuthName: CheckoutAuth;
+  updateCheckoutDelivery: CheckoutDelivery;
   updateCheckoutStep: UpdateCheckoutStepResponse;
   updateESIMReference?: Maybe<EsimActionResponse>;
   updatePricingConfiguration?: Maybe<UpdatePricingConfigurationResponse>;
@@ -696,6 +811,7 @@ export type Mutation = {
   updateTrip?: Maybe<UpdateTripResponse>;
   updateUserRole?: Maybe<User>;
   validateOrder: ValidateOrderResponse;
+  verifyOTP: CheckoutAuthWithOtp;
   verifyPhoneOTP?: Maybe<SignInResponse>;
 };
 
@@ -726,6 +842,12 @@ export type Mutation_CancelEsimArgs = {
 export type Mutation_ClonePricingRuleArgs = {
   id: Scalars['ID']['input'];
   newName: Scalars['String']['input'];
+};
+
+
+export type Mutation_CreateCheckoutArgs = {
+  countryId: Scalars['String']['input'];
+  numOfDays: Scalars['Int']['input'];
 };
 
 
@@ -776,6 +898,11 @@ export type Mutation_InviteAdminUserArgs = {
 
 export type Mutation_ProcessCheckoutPaymentArgs = {
   input: ProcessCheckoutPaymentInput;
+};
+
+
+export type Mutation_ProcessPaymentCallbackArgs = {
+  transactionId: Scalars['String']['input'];
 };
 
 
@@ -846,6 +973,36 @@ export type Mutation_TriggerCatalogSyncArgs = {
 };
 
 
+export type Mutation_TriggerCheckoutPaymentArgs = {
+  nameForBilling?: InputMaybe<Scalars['String']['input']>;
+  redirectUrl: Scalars['String']['input'];
+  sessionId: Scalars['String']['input'];
+};
+
+
+export type Mutation_UpdateCheckoutAuthArgs = {
+  email?: InputMaybe<Scalars['String']['input']>;
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
+  sessionId: Scalars['String']['input'];
+};
+
+
+export type Mutation_UpdateCheckoutAuthNameArgs = {
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+  sessionId: Scalars['String']['input'];
+};
+
+
+export type Mutation_UpdateCheckoutDeliveryArgs = {
+  email?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
+  sessionId: Scalars['String']['input'];
+};
+
+
 export type Mutation_UpdateCheckoutStepArgs = {
   input: UpdateCheckoutStepInput;
 };
@@ -897,6 +1054,12 @@ export type Mutation_UpdateUserRoleArgs = {
 
 export type Mutation_ValidateOrderArgs = {
   input: ValidateOrderInput;
+};
+
+
+export type Mutation_VerifyOtpArgs = {
+  otp: Scalars['String']['input'];
+  sessionId: Scalars['String']['input'];
 };
 
 
@@ -960,6 +1123,12 @@ export type PaginationInput = {
   offset?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type PaymentIntent = {
+  applePayJavaScriptUrl?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  url: Scalars['String']['output'];
+};
+
 export enum PaymentMethod {
   Amex = 'AMEX',
   Bit = 'BIT',
@@ -986,6 +1155,30 @@ export type PriceRange = {
   max: Scalars['Float']['output'];
   /** Minimum price */
   min: Scalars['Float']['output'];
+};
+
+export type PricingBlock = {
+  action: Scalars['JSON']['output'];
+  category: Scalars['String']['output'];
+  conditions: Scalars['JSON']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdBy?: Maybe<Scalars['ID']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  isEditable: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  validFrom?: Maybe<Scalars['DateTime']['output']>;
+  validUntil?: Maybe<Scalars['DateTime']['output']>;
+};
+
+export type PricingBlockFilter = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  isEditable?: InputMaybe<Scalars['Boolean']['input']>;
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type PricingBreakdown = {
@@ -1118,15 +1311,36 @@ export type PricingStep = {
 };
 
 export type PricingStepUpdate = {
-  currentPrice: Scalars['Float']['output'];
+  completedSteps: Scalars['Int']['output'];
+  correlationId: Scalars['String']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  finalBreakdown?: Maybe<PricingBreakdown>;
   isComplete: Scalars['Boolean']['output'];
-  step: PricingStep;
-  totalSteps?: Maybe<Scalars['Int']['output']>;
+  step?: Maybe<PricingStep>;
+  totalSteps: Scalars['Int']['output'];
+};
+
+export type PricingStrategy = {
+  activationCount?: Maybe<Scalars['Int']['output']>;
+  archivedAt?: Maybe<Scalars['String']['output']>;
+  blocks: Array<StrategyBlock>;
+  code: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  createdBy: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isDefault: Scalars['Boolean']['output'];
+  lastActivatedAt?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  parentStrategyId?: Maybe<Scalars['String']['output']>;
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  updatedBy?: Maybe<Scalars['String']['output']>;
+  validatedAt?: Maybe<Scalars['String']['output']>;
+  validationErrors?: Maybe<Scalars['JSON']['output']>;
+  version: Scalars['Int']['output'];
 };
 
 export type ProcessCheckoutPaymentInput = {
-  paymentMethodId: Scalars['String']['input'];
-  savePaymentMethod?: InputMaybe<Scalars['Boolean']['input']>;
   token: Scalars['String']['input'];
 };
 
@@ -1188,6 +1402,11 @@ export type ProcessingFeeConfigurationInput = {
   threeDSecureFee: Scalars['Float']['input'];
 };
 
+export enum Provider {
+  EsimGo = 'ESIM_GO',
+  Maya = 'MAYA'
+}
+
 export type PurchaseEsimInput = {
   autoActivate?: InputMaybe<Scalars['Boolean']['input']>;
   customerReference?: InputMaybe<Scalars['String']['input']>;
@@ -1205,6 +1424,7 @@ export type Query = {
   allTenants: TenantConnection;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
+  bundleStats: BundleStats;
   bundles: BundleConnection;
   bundlesByCountry: Array<BundlesByCountry>;
   bundlesByGroup: Array<BundlesByGroup>;
@@ -1218,6 +1438,7 @@ export type Query = {
   catalogSyncHistory: CatalogSyncHistoryConnection;
   conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
+  defaultPricingStrategy?: Maybe<PricingStrategy>;
   esimDetails?: Maybe<Esim>;
   getAdminESIMDetails: AdminEsimDetails;
   getAllESIMs: Array<AdminEsim>;
@@ -1232,9 +1453,13 @@ export type Query = {
   orderDetails?: Maybe<Order>;
   orders: Array<Order>;
   paymentMethods: Array<PaymentMethodInfo>;
+  pricingBlock?: Maybe<PricingBlock>;
+  pricingBlocks: Array<PricingBlock>;
   pricingFilters: PricingFilters;
   pricingRule?: Maybe<PricingRule>;
   pricingRules: Array<PricingRule>;
+  pricingStrategies: Array<PricingStrategy>;
+  pricingStrategy?: Maybe<PricingStrategy>;
   simulatePricingRule: PricingBreakdown;
   tenant?: Maybe<Tenant>;
   tenants: Array<Tenant>;
@@ -1350,6 +1575,16 @@ export type Query_OrderDetailsArgs = {
 };
 
 
+export type Query_PricingBlockArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type Query_PricingBlocksArgs = {
+  filter?: InputMaybe<PricingBlockFilter>;
+};
+
+
 export type Query_PricingRuleArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1357,6 +1592,16 @@ export type Query_PricingRuleArgs = {
 
 export type Query_PricingRulesArgs = {
   filter?: InputMaybe<PricingRuleFilter>;
+};
+
+
+export type Query_PricingStrategiesArgs = {
+  filter?: InputMaybe<StrategyFilter>;
+};
+
+
+export type Query_PricingStrategyArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1456,11 +1701,43 @@ export type SocialSignInInput = {
   lastName?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type StrategyBlock = {
+  configOverrides?: Maybe<Scalars['JSON']['output']>;
+  isEnabled: Scalars['Boolean']['output'];
+  pricingBlock: PricingBlock;
+  priority: Scalars['Int']['output'];
+};
+
+export type StrategyFilter = {
+  archived?: InputMaybe<Scalars['Boolean']['input']>;
+  isDefault?: InputMaybe<Scalars['Boolean']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type Subscription = {
+  calculatePricesBatchStream: PricingBreakdown;
   catalogSyncProgress: CatalogSyncProgressUpdate;
+  checkout: Checkout;
+  checkoutSessionUpdated: CheckoutSessionUpdate;
   esimStatusUpdated: EsimStatusUpdate;
   pricingCalculationSteps: PricingStepUpdate;
   pricingPipelineProgress: PricingPipelineStepUpdate;
+};
+
+
+export type Subscription_CalculatePricesBatchStreamArgs = {
+  inputs: Array<CalculatePriceInput>;
+  requestedDays?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type Subscription_CheckoutArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type Subscription_CheckoutSessionUpdatedArgs = {
+  token: Scalars['String']['input'];
 };
 
 
@@ -1470,10 +1747,7 @@ export type Subscription_EsimStatusUpdatedArgs = {
 
 
 export type Subscription_PricingCalculationStepsArgs = {
-  bundleGroup: Scalars['String']['input'];
-  countryId: Scalars['ID']['input'];
-  duration: Scalars['Int']['input'];
-  paymentMethod: PaymentMethod;
+  input: CalculatePriceInput;
 };
 
 
@@ -1557,11 +1831,18 @@ export type ToggleHighDemandResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type Transaction = {
+  amount?: Maybe<Scalars['Float']['output']>;
+  currency?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+};
+
 export type TriggerSyncParams = {
   bundleGroup?: InputMaybe<Scalars['String']['input']>;
   countryId?: InputMaybe<Scalars['String']['input']>;
   force?: InputMaybe<Scalars['Boolean']['input']>;
   priority?: InputMaybe<Scalars['String']['input']>;
+  provider?: InputMaybe<Provider>;
   type: SyncJobType;
 };
 
@@ -1570,10 +1851,12 @@ export type TriggerSyncResponse = {
   error?: Maybe<Scalars['String']['output']>;
   jobId?: Maybe<Scalars['String']['output']>;
   message?: Maybe<Scalars['String']['output']>;
+  provider?: Maybe<Provider>;
   success: Scalars['Boolean']['output'];
 };
 
 export type Trip = {
+  bundleName?: Maybe<Scalars['String']['output']>;
   countries: Array<Country>;
   countryIds: Array<Scalars['ISOCountryCode']['output']>;
   createdAt: Scalars['String']['output'];
@@ -1582,6 +1865,7 @@ export type Trip = {
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   region: Scalars['String']['output'];
+  title?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['String']['output'];
 };
 
@@ -1649,11 +1933,11 @@ export type UpdateTenantInput = {
 };
 
 export type UpdateTripInput = {
-  countryIds: Array<Scalars['ISOCountryCode']['input']>;
+  bundleName: Scalars['String']['input'];
   description: Scalars['String']['input'];
   id: Scalars['ID']['input'];
   name: Scalars['String']['input'];
-  regionId: Scalars['String']['input'];
+  title: Scalars['String']['input'];
 };
 
 export type UpdateTripResponse = {

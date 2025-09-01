@@ -6,7 +6,7 @@ import DataLoader from "dataloader";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import { withPerformanceMonitoring } from "../services/pricing-performance-monitor";
-import type { PaymentMethod, PricingBreakdown } from "../types";
+import type { Country, PaymentMethod, PricingBreakdown } from "../types";
 
 const logger = createLogger({
   component: "PricingDataLoader",
@@ -112,7 +112,7 @@ export function createPricingDataLoader(
                     country: {
                       __typename: "Country",
                       iso: key.countries?.[0] || "",
-                    },
+                    } as Country // We let the field resolver, 
                   },
 
                   country: {
@@ -151,37 +151,8 @@ export function createPricingDataLoader(
                 return {
                   __typename: "PricingBreakdown",
                   cacheKey,
-                  basePrice: 0,
-                  markup: 0,
-                  processingFee: 0,
-                  totalCost: 0,
-                  finalPrice: 0,
-                  currency: "USD",
-                  bundle: {
-                    __typename: "CountryBundle",
-                    id: key.bundleId,
-                    name: "",
-                    duration: key.validityInDays,
-                    data: 0,
-                    isUnlimited: false,
-                    currency: "USD",
-                    group: key.group || "",
-                    country: {
-                      __typename: "Country",
-                      iso: key.countries?.[0] || "",
-                    },
-                  },
-                  country: {
-                    iso: key.countries?.[0] || "",
-                    name: key.countries?.[0] || "",
-                    region: key.region || "",
-                  },
-                  duration: key.validityInDays,
-                  appliedRules: [],
-                  unusedDays: 0,
-                  selectedReason: "error",
-                  totalCostBeforeProcessing: 0,
-                } as PricingResult;
+                  error: error as Error,
+                };
               }
             })
           );
@@ -194,7 +165,7 @@ export function createPricingDataLoader(
             operationType: "batch-complete",
           });
 
-          return results;
+          return results.filter((result): result is PricingResult => result !== null);
         } catch (error) {
           logger.error(
             "Failed to batch load pricing calculations",
@@ -211,8 +182,8 @@ export function createPricingDataLoader(
     {
       // DataLoader options
       cacheKeyFn: (key: PricingKey) => createCacheKey(key),
-      maxBatchSize: 100, // Limit batch size to avoid overwhelming the rules engine
-      batchScheduleFn: (callback) => setTimeout(callback, 10), // Small delay to allow batching
+      maxBatchSize: 100,
+      batchScheduleFn: (callback) => setTimeout(callback, 10),
     }
   );
 }
@@ -256,11 +227,9 @@ async function cachePricing(
       cachedAt: Date.now(),
     };
     // Cache for 1 hour
-    await context.services.redis.setex(
-      cacheKey,
-      3600,
-      JSON.stringify(cacheData)
-    );
+    await context.services.redis.set(cacheKey, JSON.stringify(cacheData), {
+      ttl: 3600,
+    });
 
     logger.debug("Cached pricing result", {
       cacheKey,
@@ -282,16 +251,21 @@ export async function invalidatePricingCache(
   pattern: string
 ): Promise<number> {
   try {
-    const keys = await context.services.redis.keys(`pricing:${pattern}*`);
-    if (keys.length > 0) {
-      await context.services.redis.del(...keys);
-      logger.info("Invalidated pricing cache", {
-        pattern,
-        keysDeleted: keys.length,
-        operationType: "cache-invalidate",
-      });
+    const deletePattern = "pricing:" + pattern;
+    const keysToDelete = [];
+    for await (const [key] of context.services.redis?.client.iterator?.(
+      deletePattern
+    ) ?? []) {
+      if (key.startsWith(deletePattern)) {
+        keysToDelete.push(key);
+      }
     }
-    return keys.length;
+    if (keysToDelete.length > 0) {
+      for (const key of keysToDelete) {
+        await context.services.redis.client.delete(key);
+      }
+    }
+    return keysToDelete.length;
   } catch (error) {
     logger.error("Failed to invalidate pricing cache", error as Error, {
       pattern,

@@ -54,9 +54,12 @@ export async function getRedis() {
     }
 
     redisInstance = new KeyvAdapter(keyv);
+    Object.defineProperty(redisInstance, 'client', {
+      value: keyv,
+    });
   }
 
   return redisInstance;
 }
 
-export type RedisInstance = typeof redisInstance;
+export type RedisInstance = typeof redisInstance & {client: Keyv};

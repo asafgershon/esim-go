@@ -1,14 +1,11 @@
-import { Almanac } from "json-rules-engine";
 import { createLogger } from "@hiilo/utils";
-import { 
-  loadCouponByCode, 
-  getCouponUsageCount, 
-  findCorporateEmailDomain, 
-  validateCouponApplicability,
-  type CouponRow,
-  type CorporateEmailDomainRow 
+import { Almanac } from "json-rules-engine";
+import {
+  findCorporateEmailDomain,
+  getCouponUsageCount,
+  loadCouponByCode,
+  validateCouponApplicability
 } from '../loaders/coupon-loader';
-import { Database } from '../generated/database.types';
 
 const logger = createLogger({
   name: "discount-facts",

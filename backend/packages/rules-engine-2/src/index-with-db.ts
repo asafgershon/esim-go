@@ -115,9 +115,9 @@ export async function calculatePricing({
   // Add static facts
   engine.addFact("durations", durations);
   engine.addFact("availableBundles", availableBundles);
-
   // Add calculated dynamic facts to be used in rules
   engine.addFact("selectedBundle", selectBundle);
+
   engine.addFact("previousBundle", previousBundleFact);
   engine.addFact("unusedDays", unusedDaysFact);
   engine.addFact("isExactMatch", isExactMatch);

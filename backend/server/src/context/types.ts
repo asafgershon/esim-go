@@ -1,48 +1,47 @@
-import type { User } from "../types";
-import type { Redis } from "ioredis";
-import type { RedisPubSub } from "graphql-redis-subscriptions";
-import type { SupabaseAuthContext } from "./supabase-auth";
-import type {
-  CatalogueDataSourceV2,
-  OrdersDataSource,
-  ESIMsDataSource,
-  RegionsDataSource,
-  InventoryDataSource,
-  PricingDataSource,
-} from "../datasources/esim-go";
-import {
-  CheckoutSessionRepository,
-  OrderRepository,
-  ESIMRepository,
-  UserRepository,
-  HighDemandCountryRepository,
-  PricingRulesRepository,
-  BundleRepository,
-  TenantRepository,
-} from "../repositories";
-import { StrategiesRepository } from "../repositories/strategies.repository";
-import { TripRepository } from "../repositories/trip.repository";
-import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CatalogSyncServiceV2 } from "../services";
-import type { CheckoutSessionService } from "../services/checkout-session.service";
-import type { ESimGoClient } from "@hiilo/esim-go";
 import type { AirHaloClient } from "@hiilo/airalo";
+import type { ESimGoClient } from "@hiilo/esim-go";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type DataLoader from "dataloader";
+import type { RedisPubSub } from "graphql-redis-subscriptions";
 import type {
   PricingKey,
   PricingResult,
 } from "../dataloaders/pricing-dataloader";
-import * as EasycardPayment from "../services/payment";
+import type {
+  CatalogueDataSourceV2,
+  ESIMsDataSource,
+  InventoryDataSource,
+  OrdersDataSource,
+  PricingDataSource,
+  RegionsDataSource,
+} from "../datasources/esim-go";
+import {
+  BundleRepository,
+  CheckoutSessionRepository,
+  ESIMRepository,
+  HighDemandCountryRepository,
+  OrderRepository,
+  PricingRulesRepository,
+  TenantRepository,
+  UserRepository,
+} from "../repositories";
+import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
+import { StrategiesRepository } from "../repositories/strategies.repository";
+import { TripRepository } from "../repositories/trip.repository";
+import type { CatalogSyncServiceV2 } from "../services";
+import type { CheckoutSessionService } from "../services/checkout-session.service";
 import type { CheckoutSessionServiceV2 } from "../services/checkout/session";
 import type { CheckoutWorkflowInstance } from "../services/checkout/workflow";
-import type { DeliveryService, EmailService } from "../services/delivery";
+import type { DeliveryService } from "../services/delivery";
+import * as EasycardPayment from "../services/payment";
+import type { RedisInstance } from "../services/redis";
+import type { SupabaseAuthContext } from "./supabase-auth";
 
 export type Context = {
   auth: SupabaseAuthContext;
   services: {
     db: SupabaseClient;
-    redis: Redis;
+    redis: RedisInstance;
     syncs: CatalogSyncServiceV2;
     esimGoClient: ESimGoClient;
     airHaloClient?: AirHaloClient;

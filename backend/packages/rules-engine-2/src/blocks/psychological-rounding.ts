@@ -1,4 +1,4 @@
-import { Event, Rule } from "json-rules-engine";
+import { Rule } from "json-rules-engine";
 import { z } from "zod";
 
 export const PsychologicalRoundingEventSchema = z.object({

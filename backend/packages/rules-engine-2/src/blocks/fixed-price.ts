@@ -1,5 +1,4 @@
 import { Event, Rule } from "json-rules-engine";
-import { ActionType } from "src/generated/types";
 
 export type FixedPriceEvent = Event & {
   type: "apply-fixed-price";

@@ -1,5 +1,4 @@
 import { Rule } from "json-rules-engine";
-import { ActionType } from "src/generated/types";
 import { z } from "zod";
 
 export const MarkUpEventSchema = z.object({

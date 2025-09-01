@@ -1,4 +1,4 @@
-import { Tables } from "src/generated/database.types";
+import { Tables } from "@hiilo/supabase";
 
 type PricingBlock = Tables<"pricing_blocks">;
 

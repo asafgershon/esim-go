@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { cleanEnv, str } from "envalid";
-import { type Database } from "./generated/database.types";
+import { type Database } from "@hiilo/supabase";
 
 const env = cleanEnv(process.env, {
   SUPABASE_URL: str(),
