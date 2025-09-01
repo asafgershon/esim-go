@@ -3,7 +3,6 @@ export { ESIMRepository } from "./esim.repository";
 export { OrderRepository } from "./order.repository";
 export { UserRepository } from "./user.repository";
 export { HighDemandCountryRepository } from "./high-demand-country.repository";
-export { PricingRulesRepository } from "./pricing-rules.repository";
 export { StrategiesRepository } from "./strategies.repository";
 export { TenantRepository } from "./tenant.repository";
 
