@@ -5,6 +5,11 @@ import {
   type ESimGoClient,
   type OrderResponseTransaction,
 } from "@hiilo/esim-go";
+import {
+  MayaApi,
+  type MayaCreateEsimResponse,
+  type MayaEsim,
+} from "@hiilo/esim-go/maya";
 import * as pricingEngine from "@hiilo/rules-engine-2";
 import { createLogger } from "@hiilo/utils";
 import { getCountryData, type TCountryCode } from "countries-list";
@@ -37,6 +42,7 @@ let pubsub: PubSubInstance | null = null;
 let sessionService: CheckoutSessionServiceV2 | null = null;
 let userRepository: UserRepository | null = null;
 let esimAPI: ESimGoClient | null = null;
+let mayaAPI: MayaApi | null = null;
 let paymentAPI: PaymentServiceInstance | null = null;
 let engine: typeof pricingEngine | null = null;
 let deliveryService: DeliveryService | null = null;
@@ -68,6 +74,7 @@ const init = async (context: {
   sessionService: CheckoutSessionServiceV2;
   userRepository: UserRepository;
   esimAPI: ESimGoClient;
+  mayaAPI?: MayaApi;
   paymentAPI: PaymentServiceInstance;
   deliveryService: DeliveryService;
   bundleRepository: BundleRepository;
@@ -78,6 +85,11 @@ const init = async (context: {
   sessionService = context.sessionService;
   userRepository = context.userRepository;
   esimAPI = context.esimAPI;
+  mayaAPI =
+    context.mayaAPI ||
+    (env.MAYA_API_KEY
+      ? new MayaApi({ auth: env.MAYA_API_KEY, baseUrl: env.MAYA_BASE_URL })
+      : null);
   paymentAPI = context.paymentAPI;
   engine = pricingEngine;
   deliveryService = context.deliveryService;
@@ -157,7 +169,7 @@ const validateBundle = async ({ sessionId }: { sessionId: string }) => {
 
   let validation = false;
   if (session.bundle.provider === Provider.EsimGo) {
-    validation = await esimAPI?.validateOrder(bundleName) || false;
+    validation = (await esimAPI?.validateOrder(bundleName)) || false;
   } else if (session.bundle.provider === Provider.Maya) {
     // For Maya, we always skip validation with Maya
     validation = true;
@@ -642,6 +654,8 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
   }
 
   let orderResponse: OrderResponseTransaction | null = null;
+  let mayaResponse: MayaCreateEsimResponse | null = null;
+
   if (env.ESIM_GO_MODE === "mock") {
     orderResponse = {
       order: [
@@ -650,7 +664,26 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
         },
       ],
     } as OrderResponseTransaction;
+  } else if (session.bundle.provider === Provider.Maya) {
+    // Use Maya API for Maya bundles
+    if (!mayaAPI) {
+      throw new CheckoutStepError(
+        "completeCheckout",
+        "Maya API not initialized"
+      );
+    }
+
+    mayaResponse = await mayaAPI.createEsim({
+      product_uid: session.bundle.externalId || "",
+      quantity: 1,
+      metadata: {
+        sessionId: session.id,
+        userId: session.auth.userId,
+        orderRef: session.payment.intent?.id,
+      },
+    });
   } else {
+    // Use eSIM Go API for eSIM Go bundles
     orderResponse = await esimAPI?.ordersApi
       .ordersPost({
         orderRequest: {
@@ -668,7 +701,51 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
       .then((res) => res.data);
   }
 
-  const orderReference = orderResponse?.orderReference;
+  // Extract order reference and eSIM data based on provider
+  let orderReference: string | undefined;
+  let iccid: string | undefined;
+  let matchingId: string | undefined;
+  let smdpAddress: string | undefined;
+
+  if (mayaResponse) {
+    // Maya response mapping
+    const mayaEsim = mayaResponse.esims?.[0];
+    if (!mayaEsim) {
+      throw new Error("No eSIM data returned from Maya API");
+    }
+
+    orderReference = mayaResponse.transaction_id || session.id;
+    iccid = mayaEsim.iccid;
+    matchingId = mayaEsim.activation.manual_activation_code || mayaEsim.esim_id;
+
+    // Extract SMDP address from LPA string (format: LPA:1$smdpAddress$matchingId)
+    const lpaMatch = mayaEsim.activation.lpa_string.match(
+      /LPA:1\$([^$]+)\$([^$]+)/
+    );
+    if (lpaMatch) {
+      smdpAddress = lpaMatch[1];
+      matchingId = lpaMatch[2]; // Use the matching ID from LPA string if available
+    } else {
+      // Fallback: try to parse the LPA string differently or use a default
+      smdpAddress = mayaEsim.activation.lpa_string.split("$")[1] || "";
+    }
+  } else if (orderResponse) {
+    // eSIM Go response mapping
+    orderReference = orderResponse.orderReference;
+    const esimInfo = orderResponse.order?.[0]?.esims?.[0];
+    iccid = esimInfo?.iccid;
+    matchingId = esimInfo?.matchingId;
+    smdpAddress = esimInfo?.smdpAddress;
+  }
+
+  if (!iccid || !matchingId || !smdpAddress) {
+    throw new Error(
+      `No eSIM data returned from ${
+        session.bundle.provider === Provider.Maya ? "Maya" : "eSIM Go"
+      } API`
+    );
+  }
+
   // Create a new order in the database
   const order = await orderRepository.create({
     reference: orderReference || session.id,
@@ -685,13 +762,6 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
     // Don't set id - let the database generate a UUID
     quantity: 1,
   });
-
-  const esimInfo = orderResponse?.order?.[0]?.esims?.[0];
-  const { iccid, matchingId, smdpAddress } = esimInfo ?? {};
-
-  if (!iccid || !matchingId || !smdpAddress) {
-    throw new Error("No eSIM data returned from eSIM Go API");
-  }
 
   // Create eSIM record in database
   if (!esimRepository) {

@@ -2,8 +2,18 @@
   "name": "@hiilo/esim-go",
   "version": "1.0.0",
   "description": "Type-safe eSIM Go API client",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./maya": {
+      "types": "./dist/maya.d.ts",
+      "import": "./dist/maya.js",
+      "require": "./dist/maya.js"
+    }
+  },
   "files": [
     "dist",
     "src"

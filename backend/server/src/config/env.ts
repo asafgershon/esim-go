@@ -16,6 +16,10 @@ export const env = cleanEnv(process.env, {
   ESIM_GO_WEBHOOK_SECRET: str({ default: "" }),
   ESIM_GO_MODE: str({ choices: ["mock", "production"], default: "mock" }),
   
+  // Maya API Configuration
+  MAYA_API_KEY: str({ default: "" }),
+  MAYA_BASE_URL: str({ default: "https://api.maya.net/connectivity/v1" }),
+  
   // Redis Configuration
   REDIS_HOST: str({ default: "localhost" }),
   REDIS_PORT: port({ default: 6379 }),
