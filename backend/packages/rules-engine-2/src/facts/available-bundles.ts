@@ -59,14 +59,15 @@ export const availableBundlesByProvider = async (
   _params: Record<string, any>,
   almanac: Almanac
 ): Promise<Bundle[]> => {
+  
   try {
     const allBundles = await almanac.factValue<Bundle[]>("availableBundles");
 
     // Try to get provider selection from runtime facts
     let selectedProvider: Provider | null = null;
     try {
-      selectedProvider = await almanac.factValue<Provider>("providerSelection");
-    } catch {
+      selectedProvider = await almanac.factValue<Provider>("preferredProvider");
+    } catch (error) {
       // Provider not selected yet, return all bundles
       return allBundles || [];
     }
@@ -76,7 +77,9 @@ export const availableBundlesByProvider = async (
     }
 
     // Filter bundles by selected provider
-    return allBundles.filter((bundle) => bundle.provider === selectedProvider);
+    const filtered = allBundles.filter((bundle) => bundle.provider === selectedProvider);
+    
+    return filtered;
   } catch (error) {
     console.error("Error in availableBundlesByProvider:", error);
     return [];

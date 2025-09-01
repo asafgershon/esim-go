@@ -1,12 +1,9 @@
 import { createLogger } from "@hiilo/utils";
 import { Engine, Rule } from "json-rules-engine";
-import { availableBundles, availableBundlesByProvider } from "./facts/available-bundles";
-import { 
-  selectedProvider,
-  availableProviders,
-  preferredProvider,
-  isProviderAvailable
-} from "./facts/provider-facts";
+import {
+  availableBundles,
+  availableBundlesByProvider,
+} from "./facts/available-bundles";
 import {
   isExactMatch,
   PreviousBundleFact,
@@ -20,20 +17,22 @@ import {
 import { durations } from "./facts/durations";
 import {
   AppliedRule,
+  Country,
+  CountryBundle,
+  CustomerDiscount,
   PaymentMethod,
   PricingBreakdown,
+  Provider,
   RuleCategory,
-  CountryBundle, 
-  Country, 
-  CustomerDiscount 
 } from "./generated/types";
 import {
   clearRulesCache,
   getCachedPricingRules,
-  loadStrategyBlocks,
   getDefaultStrategyId,
+  loadStrategyBlocks,
 } from "./loaders/database-loader";
 import { processEventType } from "./processors/process-event";
+import { preferredProvider } from "./facts/provider-facts";
 
 // Export cache clear function for manual cache invalidation
 export { clearRulesCache };
@@ -66,7 +65,9 @@ export type PricingStepUpdate = {
   error?: string;
 };
 
-export type StreamingCallback = (stepUpdate: PricingStepUpdate) => void | Promise<void>;
+export type StreamingCallback = (
+  stepUpdate: PricingStepUpdate
+) => void | Promise<void>;
 
 export type RequestFacts = {
   group: string;
@@ -204,7 +205,9 @@ function engineResultToPricingBreakdown(
 
   // Create bundle object
   const bundle: CountryBundle = {
-    id: selectedBundle?.esim_go_name || `bundle_${input.countryId || input.regionId}_${input.numOfDays}d`,
+    id:
+      selectedBundle?.esim_go_name ||
+      `bundle_${input.countryId || input.regionId}_${input.numOfDays}d`,
     name: selectedBundle?.esim_go_name || "",
     duration: input.numOfDays,
     data: selectedBundle?.data_amount_mb || 0,
@@ -212,6 +215,7 @@ function engineResultToPricingBreakdown(
     currency: "USD",
     group: input.group,
     price: selectedBundle?.price,
+    provider: selectedBundle?.provider! as Provider,
     country: {
       iso: selectedBundle?.countries?.[0] || input.countryId || "",
       name: input.countryId || "",
@@ -229,7 +233,8 @@ function engineResultToPricingBreakdown(
   // Calculate savings
   const originalPrice = pricing.cost + pricing.markup;
   const savingsAmount = pricing.discountValue;
-  const savingsPercentage = originalPrice > 0 ? (savingsAmount / originalPrice) * 100 : 0;
+  const savingsPercentage =
+    originalPrice > 0 ? (savingsAmount / originalPrice) * 100 : 0;
 
   // Generate customer-friendly discounts
   const customerDiscounts = generateCustomerDiscounts(
@@ -308,6 +313,9 @@ export async function calculatePricing({
   onStep,
   correlationId,
 }: RequestFacts): Promise<PricingEngineV2Result> {
+  // Clear cache to force fresh rule loading
+  clearRulesCache();
+
   engine = new Engine();
 
   const startTime = performance.now();
@@ -315,13 +323,10 @@ export async function calculatePricing({
   // Add static facts
   engine.addFact("durations", durations);
   engine.addFact("availableBundles", availableBundles);
-  
+  engine.addFact("preferredProvider", preferredProvider);
   // Add provider selection facts
   engine.addFact("availableBundlesByProvider", availableBundlesByProvider);
-  engine.addFact("selectedProvider", selectedProvider);
-  engine.addFact("availableProviders", availableProviders);
-  engine.addFact("preferredProvider", preferredProvider);
-  
+
   // Add calculated dynamic facts to be used in rules
   engine.addFact("selectedBundle", selectBundle);
   engine.addFact("previousBundle", previousBundleFact);
@@ -375,7 +380,6 @@ export async function calculatePricing({
     request,
   });
 
-  const paymentMethod_ = await almanac.factValue("paymentMethod");
   const selectedBundle = await almanac.factValue<SelectedBundleFact>(
     "selectedBundle"
   );
@@ -417,7 +421,7 @@ export async function calculatePricing({
     });
   }
 
-  // Process events in the order they were fired by the engine (already sorted by priority DESC from database)  
+  // Process events in the order they were fired by the engine (already sorted by priority DESC from database)
   logger.info(
     `Processing ${events.length} events in database-defined priority order`
   );
@@ -427,7 +431,7 @@ export async function calculatePricing({
     const previousPrice = currentPrice;
     const stepTimestamp = Date.now();
 
-    currentPrice = processEventType(
+    currentPrice = await processEventType(
       event,
       currentPrice,
       appliedRules,
@@ -576,12 +580,12 @@ export async function streamCalculatePricing({
   correlationId,
   includeEnhancedData = true,
   includeDebugInfo = false,
-}: RequestFacts & { 
-  includeEnhancedData?: boolean; 
-  includeDebugInfo?: boolean 
+}: RequestFacts & {
+  includeEnhancedData?: boolean;
+  includeDebugInfo?: boolean;
 }): Promise<PricingBreakdown> {
   const startTime = performance.now();
-  
+
   logger.info("Starting streaming pricing calculation", {
     correlationId,
     days,
@@ -613,8 +617,16 @@ export async function streamCalculatePricing({
   // Call the main calculatePricing function
   const requestFacts: RequestFacts = country
     ? { days, group, country, paymentMethod, strategyId, onStep, correlationId }
-    : { days, group, region: region!, paymentMethod, strategyId, onStep, correlationId };
-  
+    : {
+        days,
+        group,
+        region: region!,
+        paymentMethod,
+        strategyId,
+        onStep,
+        correlationId,
+      };
+
   const result = await calculatePricing(requestFacts);
 
   const endTime = performance.now();
@@ -646,9 +658,9 @@ export async function streamCalculatePricing({
         priceAfter: pricingBreakdown.finalPrice,
         impact: 0,
         ruleId: null,
-        metadata: { 
+        metadata: {
           calculationTimeMs,
-          finalPrice: pricingBreakdown.finalPrice 
+          finalPrice: pricingBreakdown.finalPrice,
         },
         timestamp: Date.now(),
       },
@@ -673,9 +685,9 @@ export { calculatePricing as calculatePricingWithDB };
 
 // Export enhanced version with step tracking
 export {
-  calculatePricingEnhanced,
-  EnhancedPricingEngineResult,
-} from "./calculate-pricing-enhanced";
+  availableBundles,
+  availableBundlesByProvider,
+} from "./facts/available-bundles";
 export {
   isExactMatch,
   previousBundle as previousBundleFact,
@@ -683,26 +695,20 @@ export {
   selectBundle,
   selectedBundleMarkup,
   unusedDays as unusedDaysFact,
-  type SelectedBundleFact,
   type PreviousBundleFact,
+  type SelectedBundleFact,
 } from "./facts/bundle-facts";
 export { durations } from "./facts/durations";
-export { availableBundles, availableBundlesByProvider } from "./facts/available-bundles";
+export { isProviderAvailable } from "./facts/provider-facts";
 export {
-  selectedProvider,
-  availableProviders,
-  preferredProvider,
-  isProviderAvailable
-} from "./facts/provider-facts";
+  AppliedRule,
+  PaymentMethod,
+  PricingBreakdown,
+  Provider,
+  RuleCategory,
+} from "./generated/types";
 export {
   getCachedPricingRules,
   loadStrategyBlocks,
 } from "./loaders/database-loader";
 export { processEventType } from "./processors/process-event";
-export {
-  AppliedRule,
-  PaymentMethod,
-  PricingBreakdown,
-  RuleCategory,
-  Provider
-} from "./generated/types";

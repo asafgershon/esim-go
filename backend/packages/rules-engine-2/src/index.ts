@@ -52,7 +52,6 @@ export {
   availableProviders,
   isProviderAvailable,
   preferredProvider,
-  selectedProvider,
 } from "./facts/provider-facts";
 export {
   AppliedRule,

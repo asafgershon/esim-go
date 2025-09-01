@@ -522,6 +522,7 @@ export type CountryBundle = {
   name: Scalars['String']['output'];
   price?: Maybe<Scalars['Float']['output']>;
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
 };
 
 export type CreateCheckoutSessionInput = {

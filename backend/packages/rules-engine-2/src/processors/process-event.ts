@@ -41,14 +41,14 @@ function mapEventTypeToCategory(eventType: string): RuleCategory {
 /**
  * Process a single pricing event and update the price
  */
-export function processEventType(
+export async function processEventType(
   event: Event,
   currentPrice: number,
   appliedRules: AppliedRule[],
   context: ProcessContext,
   logger: StructuredLogger,
   almanac?: any
-): number {
+): Promise<number> {
   const { selectedBundle, previousBundle, unusedDays } = context;
   
   logger.debug(`Processing event: ${event.type}`, { 
@@ -204,7 +204,15 @@ export function processEventType(
         
         // This doesn't change the price directly, but affects bundle selection
         // The actual impact happens when bundles are re-evaluated
-        almanac.addRuntimeFact('providerSelection', selectedProvider);
+        almanac.addFact('providerSelection', selectedProvider);
+        
+        // Verify it was set
+        try {
+          const retrieved = await almanac.factValue('providerSelection');
+          console.log("🔍 [SELECT_PROVIDER] Retrieved fact:", retrieved);
+        } catch (error) {
+          console.log("🔍 [SELECT_PROVIDER] Failed to retrieve fact:", error instanceof Error ? error.message : 'Unknown error');
+        }
         
         description = `Selected provider: ${selectedProvider} (preferred: ${preferredProvider}, fallback: ${fallbackProvider})`;
         details = { 

@@ -1,30 +1,11 @@
 import { Almanac } from "json-rules-engine";
 import { getSupabaseClient } from "../supabase";
 import { Database } from "@hiilo/supabase";
+import { Provider } from "../generated/types";
 
 const supabase = getSupabaseClient();
 
 type Bundle = Database["public"]["Views"]["bundles_by_group"]["Row"];
-
-export enum Provider {
-  Maya = "MAYA",
-  EsimGo = "ESIM_GO"
-}
-
-/**
- * Returns the selected provider from runtime facts if set
- */
-export const selectedProvider = async (
-  _params: Record<string, any>,
-  almanac: Almanac
-): Promise<Provider | null> => {
-  try {
-    return await almanac.factValue<Provider>("selectedProvider");
-  } catch {
-    return null;
-  }
-};
-
 /**
  * Returns list of available providers based on bundle availability
  */
@@ -34,13 +15,13 @@ export const availableProviders = async (
 ): Promise<Provider[]> => {
   const bundles = await almanac.factValue<Bundle[]>("availableBundles");
   const providers = new Set<Provider>();
-  
-  bundles.forEach(bundle => {
+
+  bundles.forEach((bundle) => {
     if (bundle.provider) {
       providers.add(bundle.provider as Provider);
     }
   });
-  
+
   return Array.from(providers);
 };
 
@@ -77,7 +58,9 @@ export const selectProvider = async (
   const group = await almanac.factValue<string>("requestedGroup");
   const region = await almanac.factValue<string>("region");
   const country = await almanac.factValue<string>("country");
-  const requestedDays = await almanac.factValue<number>("requestedValidityDays");
+  const requestedDays = await almanac.factValue<number>(
+    "requestedValidityDays"
+  );
 
   const bundlesQuery = supabase.from("bundles_by_group").select("*");
 
@@ -97,22 +80,22 @@ export const selectProvider = async (
   }
 
   // Get available durations for each provider
-  const mayaBundles = bundles.filter(b => b.provider === Provider.Maya);
-  const esimGoBundles = bundles.filter(b => b.provider === Provider.EsimGo);
+  const mayaBundles = bundles.filter((b) => b.provider === Provider.Maya);
+  const esimGoBundles = bundles.filter((b) => b.provider === Provider.EsimGo);
 
-  const mayaDurations = mayaBundles.map(b => b.validity_in_days || 0);
-  const esimGoDurations = esimGoBundles.map(b => b.validity_in_days || 0);
+  const mayaDurations = mayaBundles.map((b) => b.validity_in_days || 0);
+  const esimGoDurations = esimGoBundles.map((b) => b.validity_in_days || 0);
 
   // Check if Maya has exact match or next longer duration
   const mayaHasExact = mayaDurations.includes(requestedDays);
   const mayaNextLonger = mayaDurations
-    .filter(d => d > requestedDays)
+    .filter((d) => d > requestedDays)
     .sort((a, b) => a - b)[0];
 
   // Check if eSIM-Go has exact match or next longer duration
   const esimGoHasExact = esimGoDurations.includes(requestedDays);
   const esimGoNextLonger = esimGoDurations
-    .filter(d => d > requestedDays)
+    .filter((d) => d > requestedDays)
     .sort((a, b) => a - b)[0];
 
   // Prefer Maya if available, otherwise use eSIM-Go
@@ -134,7 +117,7 @@ export const availableBundlesByProvider = async (
   almanac: Almanac
 ): Promise<Bundle[]> => {
   const allBundles = await almanac.factValue<Bundle[]>("availableBundles");
-  
+
   // Get selected provider from runtime facts
   let selectedProvider: Provider | null = null;
   try {
@@ -149,7 +132,7 @@ export const availableBundlesByProvider = async (
   }
 
   // Filter bundles by selected provider
-  return allBundles.filter(bundle => bundle.provider === selectedProvider);
+  return allBundles.filter((bundle) => bundle.provider === selectedProvider);
 };
 
 /**

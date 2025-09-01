@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Provider } from "../../types";
 
 const BundleSelectionSchema = z.object({
   completed: z.boolean().default(false),
@@ -11,6 +12,7 @@ const BundleSelectionSchema = z.object({
   speed: z.array(z.string()).default([]),
   validated: z.boolean().default(false),
   discounts: z.array(z.string()).default([]),
+  provider: z.enum(Provider).optional(),
 });
 
 const AuthSchema = z.object({

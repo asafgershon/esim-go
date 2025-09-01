@@ -38,20 +38,11 @@ extend type Mutation {
   Reset pricing performance metrics (Admin only)
   """
   resetPricingMetrics: CacheOperationResult @auth(role:"ADMIN")
-  
-  """
-  Smart cache invalidation based on rule changes (Admin only)
-  """
-  invalidateCacheByRuleChange(
-    ruleType: String!
-    affectedEntities: [String!]!
-  ): CacheOperationResult @auth(role:"ADMIN")
 }
-
 """
 Performance metrics for pricing calculations
 """
-type PricingPerformanceMetrics {
+type  PricingPerformanceMetrics {
   """
   Recent average duration per batch (ms)
   """

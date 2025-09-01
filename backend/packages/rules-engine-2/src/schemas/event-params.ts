@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { ActionType } from '../generated/types';
+import { ActionType, Provider } from '../generated/types';
+
+export const SelectProviderParams = z.object({
+  preferredProvider: z.nativeEnum(Provider),
+  fallbackProvider: z.nativeEnum(Provider),
+});
 
 // Base price params
 export const SetBasePriceParams = z.object({

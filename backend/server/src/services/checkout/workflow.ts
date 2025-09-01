@@ -13,9 +13,13 @@ import { env } from "../../config/env";
 import type { PubSubInstance } from "../../context/pubsub";
 import { supabaseAdmin } from "../../context/supabase-auth";
 import { WEB_APP_BUNDLE_GROUP } from "../../lib/constants/bundle-groups";
-import type { BundleRepository, OrderRepository, UserRepository } from "../../repositories";
+import type {
+  BundleRepository,
+  OrderRepository,
+  UserRepository,
+} from "../../repositories";
 import type { ESIMRepository } from "../../repositories/esim.repository";
-import { OrderStatus, type Checkout } from "../../types";
+import { OrderStatus, Provider, type Checkout } from "../../types";
 import type { DeliveryService, ESIMDeliveryData } from "../delivery";
 import { createMockESIMData } from "../esim-purchase";
 import type {
@@ -39,7 +43,6 @@ let deliveryService: DeliveryService | null = null;
 let bundleRepository: BundleRepository | null = null;
 let orderRepository: OrderRepository | null = null;
 let esimRepository: ESIMRepository | null = null;
-
 /* ===============================
  * Helper Functions
  * =============================== */
@@ -110,9 +113,9 @@ const selectBundle = async ({
     group,
   });
 
-  const selectedBundle = result?.selectedBundle;
+  const selectedBundle = result?.bundle;
 
-  if (!selectedBundle || !selectedBundle.esim_go_name) {
+  if (!selectedBundle || !selectedBundle.name) {
     throw new CheckoutStepError("selectBundle", "Engine returned no bundle");
   }
 
@@ -121,15 +124,16 @@ const selectBundle = async ({
     "bundle",
     {
       completed: false,
-      externalId: selectedBundle.esim_go_name,
+      externalId: selectedBundle.name,
       numOfDays,
-      dataAmount: selectedBundle.data_amount_readable || "",
+      // dataAmount: selectedBundle. || "",
       discounts: [],
-      speed: selectedBundle.speed || [],
+      speed: [],
       pricePerDay: result.finalPrice / numOfDays,
       countryId,
       validated: false,
       price: result.finalPrice,
+      provider: selectedBundle.provider,
     }
   );
 
@@ -151,7 +155,13 @@ const validateBundle = async ({ sessionId }: { sessionId: string }) => {
     throw new CheckoutStepError("validateBundle", "Bundle name not found");
   }
 
-  const validation = await esimAPI?.validateOrder(bundleName);
+  let validation = false;
+  if (session.bundle.provider === Provider.EsimGo) {
+    validation = await esimAPI?.validateOrder(bundleName) || false;
+  } else if (session.bundle.provider === Provider.Maya) {
+    // For Maya, we always skip validation with Maya
+    validation = true;
+  }
   if (!validation) {
     throw new CheckoutStepError("validateBundle", "Failed to validate bundle");
   }
@@ -558,19 +568,23 @@ const captruePayment = async ({ transactionId }: { transactionId: string }) => {
   const quickStatus = response?.transaction.quickStatus;
   const paymentIntentId = response?.transaction.paymentIntentID;
   if (!paymentIntentId) {
-    logger.error("Payment intent ID missing from transaction", new Error("Payment intent ID missing from transaction"),{ 
-      transactionId,
-      transaction: response?.transaction 
-    });
+    logger.error(
+      "Payment intent ID missing from transaction",
+      new Error("Payment intent ID missing from transaction"),
+      {
+        transactionId,
+        transaction: response?.transaction,
+      }
+    );
     throw new CheckoutStepError(
       "captruePayment",
       "Payment intent ID not found"
     );
   }
-  
-  logger.debug("Looking for session with payment intent", { 
-    paymentIntentId, 
-    transactionId 
+
+  logger.debug("Looking for session with payment intent", {
+    paymentIntentId,
+    transactionId,
   });
   const isSuccess = isSuccessStatus(quickStatus);
   if (!isSuccess) {
@@ -584,11 +598,15 @@ const captruePayment = async ({ transactionId }: { transactionId: string }) => {
   );
 
   if (!session) {
-    logger.error("Session not found for payment intent", new Error("Session not found"),{
-      paymentIntentId, 
-      transactionId,
-      quickStatus 
-    });
+    logger.error(
+      "Session not found for payment intent",
+      new Error("Session not found"),
+      {
+        paymentIntentId,
+        transactionId,
+        quickStatus,
+      }
+    );
     throw new CheckoutStepError("captruePayment", "Session not found");
   }
 
@@ -608,7 +626,13 @@ const captruePayment = async ({ transactionId }: { transactionId: string }) => {
 };
 
 const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
-  if (!sessionService || !esimAPI || !deliveryService || !bundleRepository || !orderRepository) {
+  if (
+    !sessionService ||
+    !esimAPI ||
+    !deliveryService ||
+    !bundleRepository ||
+    !orderRepository
+  ) {
     throw new NotInitializedError();
   }
 
@@ -671,7 +695,10 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
 
   // Create eSIM record in database
   if (!esimRepository) {
-    throw new CheckoutStepError("completeCheckout", "ESIM repository not initialized");
+    throw new CheckoutStepError(
+      "completeCheckout",
+      "ESIM repository not initialized"
+    );
   }
 
   const esim = await esimRepository.create({
@@ -680,10 +707,10 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
     smdp_address: smdpAddress,
     order_id: order.id,
     user_id: session.auth.userId!,
-    status: 'ASSIGNED',
+    status: "ASSIGNED",
     // plan_name: session.bundle.externalId || '',
     assigned_date: new Date().toISOString(),
-    last_action: 'ASSIGNED',
+    last_action: "ASSIGNED",
     action_date: new Date().toISOString(),
   });
 
@@ -694,16 +721,22 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
 
   const bundleSearchResult = await bundleRepository.search({
     name: session.bundle.externalId || "",
-    limit: 1
+    limit: 1,
   });
 
   const bundle = bundleSearchResult.data[0] ?? null;
-  const country = getCountryData(bundle?.countries?.[0] as TCountryCode || "");
-  const { getCountryNameHebrew } = await import("../../datasources/esim-go/hebrew-names");
+  const country = getCountryData(
+    (bundle?.countries?.[0] as TCountryCode) || ""
+  );
+  const { getCountryNameHebrew } = await import(
+    "../../datasources/esim-go/hebrew-names"
+  );
 
   const hebrewName = getCountryNameHebrew(country?.iso2 || "");
-  const period = `${bundle?.validity_in_days} ${bundle?.validity_in_days === 1 ? 'יום' : 'ימים'}`;
-  const bundleNiceName = `${period} ל${hebrewName || country?.name || ''}`;
+  const period = `${bundle?.validity_in_days} ${
+    bundle?.validity_in_days === 1 ? "יום" : "ימים"
+  }`;
+  const bundleNiceName = `${period} ל${hebrewName || country?.name || ""}`;
 
   const deliveryData: ESIMDeliveryData = {
     esimId: iccid,
@@ -723,17 +756,17 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
     smdpAddress,
   };
 
-  const deliveryResult = await deliveryService.deliverESIM(
-    deliveryData,
-    {
-      type: "EMAIL",
-      email: session.delivery?.email || "yarinsasson2@gmail.com",
-      phoneNumber: session.delivery?.phone || "",
-    }
-  );
+  const deliveryResult = await deliveryService.deliverESIM(deliveryData, {
+    type: "EMAIL",
+    email: session.delivery?.email || "yarinsasson2@gmail.com",
+    phoneNumber: session.delivery?.phone || "",
+  });
 
-  const nextSession = await sessionService.updateSessionStep(sessionId, "delivery", {
-    completed: deliveryResult.success,
+  const nextSession = await sessionService.updateSessionStep(
+    sessionId,
+    "delivery",
+    {
+      completed: deliveryResult.success,
       email: session.delivery?.email || "yarinsasson2@gmail.com",
       phone: session.delivery?.phone || "",
     }
@@ -741,7 +774,7 @@ const completeCheckout = async ({ sessionId }: { sessionId: string }) => {
 
   return {
     order,
-    session: nextSession
+    session: nextSession,
   };
   // TODO: Save the session to the database
 };

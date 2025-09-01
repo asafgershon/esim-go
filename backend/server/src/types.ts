@@ -560,6 +560,7 @@ export type CountryBundle = {
   name: Scalars['String']['output'];
   price?: Maybe<Scalars['Float']['output']>;
   pricingBreakdown?: Maybe<PricingBreakdown>;
+  provider: Provider;
 };
 
 export type CreateCheckoutSessionInput = {
@@ -1475,7 +1476,6 @@ export type PurchaseEsimResponse = {
 
 export type Query = {
   __typename?: 'Query';
-  activePricingRules: Array<PricingRule>;
   allTenants: TenantConnection;
   bundle: Bundle;
   bundleFilterOptions: BundleFilterOptions;
@@ -1491,7 +1491,6 @@ export type Query = {
   calculatePrices: Array<PricingBreakdown>;
   catalogBundles: CatalogBundleConnection;
   catalogSyncHistory: CatalogSyncHistoryConnection;
-  conflictingPricingRules: Array<PricingRule>;
   countries: Array<Country>;
   defaultPricingStrategy?: Maybe<PricingStrategy>;
   esimDetails?: Maybe<Esim>;
@@ -1511,11 +1510,8 @@ export type Query = {
   pricingBlock?: Maybe<PricingBlock>;
   pricingBlocks: Array<PricingBlock>;
   pricingFilters: PricingFilters;
-  pricingRule?: Maybe<PricingRule>;
-  pricingRules: Array<PricingRule>;
   pricingStrategies: Array<PricingStrategy>;
   pricingStrategy?: Maybe<PricingStrategy>;
-  simulatePricingRule: PricingBreakdown;
   tenant?: Maybe<Tenant>;
   tenants: Array<Tenant>;
   trips: Array<Trip>;
@@ -1590,11 +1586,6 @@ export type QueryCatalogSyncHistoryArgs = {
 };
 
 
-export type QueryConflictingPricingRulesArgs = {
-  ruleId: Scalars['ID']['input'];
-};
-
-
 export type QueryEsimDetailsArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1640,16 +1631,6 @@ export type QueryPricingBlocksArgs = {
 };
 
 
-export type QueryPricingRuleArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QueryPricingRulesArgs = {
-  filter?: InputMaybe<PricingRuleFilter>;
-};
-
-
 export type QueryPricingStrategiesArgs = {
   filter?: InputMaybe<StrategyFilter>;
 };
@@ -1657,12 +1638,6 @@ export type QueryPricingStrategiesArgs = {
 
 export type QueryPricingStrategyArgs = {
   id: Scalars['ID']['input'];
-};
-
-
-export type QuerySimulatePricingRuleArgs = {
-  rule: CreatePricingRuleInput;
-  testContext: TestPricingContext;
 };
 
 
@@ -1687,7 +1662,8 @@ export enum RuleCategory {
   BundleAdjustment = 'BUNDLE_ADJUSTMENT',
   Constraint = 'CONSTRAINT',
   Discount = 'DISCOUNT',
-  Fee = 'FEE'
+  Fee = 'FEE',
+  ProviderSelection = 'PROVIDER_SELECTION'
 }
 
 export type RuleCondition = {
@@ -2848,6 +2824,7 @@ export type CountryBundleResolvers<ContextType = Context, ParentType extends Res
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   price?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   pricingBreakdown?: Resolver<Maybe<ResolversTypes['PricingBreakdown']>, ParentType, ContextType>;
+  provider?: Resolver<ResolversTypes['Provider'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3369,7 +3346,6 @@ export type PurchaseEsimResponseResolvers<ContextType = Context, ParentType exte
 };
 
 export type QueryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
-  activePricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType>;
   allTenants?: Resolver<ResolversTypes['TenantConnection'], ParentType, ContextType, Partial<QueryAllTenantsArgs>>;
   bundle?: Resolver<ResolversTypes['Bundle'], ParentType, ContextType, RequireFields<QueryBundleArgs, 'id'>>;
   bundleFilterOptions?: Resolver<ResolversTypes['BundleFilterOptions'], ParentType, ContextType>;
@@ -3385,7 +3361,6 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   calculatePrices?: Resolver<Array<ResolversTypes['PricingBreakdown']>, ParentType, ContextType, RequireFields<QueryCalculatePricesArgs, 'inputs'>>;
   catalogBundles?: Resolver<ResolversTypes['CatalogBundleConnection'], ParentType, ContextType, Partial<QueryCatalogBundlesArgs>>;
   catalogSyncHistory?: Resolver<ResolversTypes['CatalogSyncHistoryConnection'], ParentType, ContextType, Partial<QueryCatalogSyncHistoryArgs>>;
-  conflictingPricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<QueryConflictingPricingRulesArgs, 'ruleId'>>;
   countries?: Resolver<Array<ResolversTypes['Country']>, ParentType, ContextType>;
   defaultPricingStrategy?: Resolver<Maybe<ResolversTypes['PricingStrategy']>, ParentType, ContextType>;
   esimDetails?: Resolver<Maybe<ResolversTypes['ESIM']>, ParentType, ContextType, RequireFields<QueryEsimDetailsArgs, 'id'>>;
@@ -3405,11 +3380,8 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   pricingBlock?: Resolver<Maybe<ResolversTypes['PricingBlock']>, ParentType, ContextType, RequireFields<QueryPricingBlockArgs, 'id'>>;
   pricingBlocks?: Resolver<Array<ResolversTypes['PricingBlock']>, ParentType, ContextType, Partial<QueryPricingBlocksArgs>>;
   pricingFilters?: Resolver<ResolversTypes['PricingFilters'], ParentType, ContextType>;
-  pricingRule?: Resolver<Maybe<ResolversTypes['PricingRule']>, ParentType, ContextType, RequireFields<QueryPricingRuleArgs, 'id'>>;
-  pricingRules?: Resolver<Array<ResolversTypes['PricingRule']>, ParentType, ContextType, Partial<QueryPricingRulesArgs>>;
   pricingStrategies?: Resolver<Array<ResolversTypes['PricingStrategy']>, ParentType, ContextType, Partial<QueryPricingStrategiesArgs>>;
   pricingStrategy?: Resolver<Maybe<ResolversTypes['PricingStrategy']>, ParentType, ContextType, RequireFields<QueryPricingStrategyArgs, 'id'>>;
-  simulatePricingRule?: Resolver<ResolversTypes['PricingBreakdown'], ParentType, ContextType, RequireFields<QuerySimulatePricingRuleArgs, 'rule' | 'testContext'>>;
   tenant?: Resolver<Maybe<ResolversTypes['Tenant']>, ParentType, ContextType, RequireFields<QueryTenantArgs, 'slug'>>;
   tenants?: Resolver<Array<ResolversTypes['Tenant']>, ParentType, ContextType>;
   trips?: Resolver<Array<ResolversTypes['Trip']>, ParentType, ContextType>;
