@@ -1,6 +1,7 @@
 import { Event } from "json-rules-engine";
 import { AppliedRule, RuleCategory, Provider } from "../generated/types";
 import { SelectedBundleFact, PreviousBundleFact } from "../facts/bundle-facts";
+import { processMarkupEvent } from "./process-markup-event";
 import type { StructuredLogger } from "@hiilo/utils";
 
 interface ProcessContext {
@@ -75,21 +76,11 @@ export function processEventType(
       break;
 
     case "apply-markup":
-      // Apply markup to current price
-      const markupParams = event.params as any;
-      if (markupParams.markupMatrix && selectedBundle) {
-        const groupName = selectedBundle.group_name || '';
-        const days = (selectedBundle.validity_in_days || 0).toString();
-        const markupValue = groupName ? markupParams.markupMatrix[groupName]?.[days] || 0 : 0;
-        newPrice = currentPrice + markupValue;
-        description = `Applied markup of $${markupValue} for ${groupName} (${days} days)`;
-        details = { groupName, days, markupAmount: markupValue };
-      } else if (markupParams.value) {
-        const markupValue = markupParams.value;
-        newPrice = currentPrice + markupValue;
-        description = `Applied fixed markup of $${markupValue}`;
-        details = { markupAmount: markupValue };
-      }
+      // Apply markup to current price using dedicated processor
+      const markupResult = processMarkupEvent(event, currentPrice, appliedRules, context, logger);
+      newPrice = markupResult.newPrice;
+      description = markupResult.description;
+      details = markupResult.details;
       break;
 
     case "apply-discount":

@@ -12,16 +12,18 @@ export const selectBundle = async (
   let bundle: SelectedBundleFact | null = null;
   const days = await almanac.factValue<number>("requestedValidityDays");
   const durations = await almanac.factValue<number[]>("durations");
-    
+
   // Try to get provider-filtered bundles first, fallback to all bundles
   let availableBundles: BundleByGroupRow[];
   try {
-    availableBundles = await almanac.factValue<BundleByGroupRow[]>("availableBundlesByProvider");
+    availableBundles = await almanac.factValue<BundleByGroupRow[]>(
+      "availableBundlesByProvider"
+    );
   } catch {
-    availableBundles = await almanac.factValue<BundleByGroupRow[]>("availableBundles");
+    availableBundles = await almanac.factValue<BundleByGroupRow[]>(
+      "availableBundles"
+    );
   }
-
-  console.log("availableBundles", availableBundles);
 
   // Check for exact match
   if (durations.includes(days)) {
@@ -52,15 +54,19 @@ export const previousBundle = async (
   const selectedBundle = await almanac.factValue<SelectedBundleFact>(
     "selectedBundle"
   );
-  
+
   // Try to get provider-filtered bundles first, fallback to all bundles
   let availableBundles: BundleByGroupRow[];
   try {
-    availableBundles = await almanac.factValue<BundleByGroupRow[]>("availableBundlesByProvider");
+    availableBundles = await almanac.factValue<BundleByGroupRow[]>(
+      "availableBundlesByProvider"
+    );
   } catch {
-    availableBundles = await almanac.factValue<BundleByGroupRow[]>("availableBundles");
+    availableBundles = await almanac.factValue<BundleByGroupRow[]>(
+      "availableBundles"
+    );
   }
-  
+
   const durations = await almanac.factValue<number[]>("durations");
 
   const previousDuration = durations
@@ -130,10 +136,32 @@ export const selectedBundleMarkup = async (
     "selectedBundle"
   );
   const markupRule = await almanac.factValue<MarkupRule>("markupRule");
-  const markup =
-    markupRule?.event.params.markupMatrix[selectedBundle?.group_name || ""]?.[
-      selectedBundle?.validity_in_days || 0
-    ];
+
+  if (!markupRule || !selectedBundle) return 0;
+
+  const provider = selectedBundle.provider || "ESIM_GO";
+  const groupName = selectedBundle.group_name || "";
+  const days = selectedBundle.validity_in_days || 0;
+
+  let markupKey: string;
+
+  if (provider === "MAYA") {
+    // Maya has no groups, use MAYA key directly
+    markupKey = "MAYA";
+  } else if (groupName) {
+    // For ESIM_GO, try provider-specific key first, then legacy key
+    const providerSpecificKey = `${provider}-${groupName}`;
+    if (markupRule.event.params.markupMatrix[providerSpecificKey]) {
+      markupKey = providerSpecificKey;
+    } else {
+      // Fallback to legacy key (backward compatibility)
+      markupKey = groupName;
+    }
+  } else {
+    return 0;
+  }
+
+  const markup = markupRule.event.params.markupMatrix[markupKey]?.[days];
   return markup ?? 0;
 };
 
@@ -145,9 +173,31 @@ export const previousBundleMarkup = async (
     "previousBundle"
   );
   const markupRule = await almanac.factValue<MarkupRule>("markupRule");
-  const markup =
-    markupRule?.event.params.markupMatrix[previousBundle?.group_name || ""]?.[
-      previousBundle?.validity_in_days || 0
-    ];
+
+  if (!markupRule || !previousBundle) return 0;
+
+  const provider = previousBundle.provider || "ESIM_GO";
+  const groupName = previousBundle.group_name || "";
+  const days = previousBundle.validity_in_days || 0;
+
+  let markupKey: string;
+
+  if (provider === "MAYA") {
+    // Maya has no groups, use MAYA key directly
+    markupKey = "MAYA";
+  } else if (groupName) {
+    // For ESIM_GO, try provider-specific key first, then legacy key
+    const providerSpecificKey = `${provider}-${groupName}`;
+    if (markupRule.event.params.markupMatrix[providerSpecificKey]) {
+      markupKey = providerSpecificKey;
+    } else {
+      // Fallback to legacy key (backward compatibility)
+      markupKey = groupName;
+    }
+  } else {
+    return 0;
+  }
+
+  const markup = markupRule.event.params.markupMatrix[markupKey]?.[days];
   return markup ?? 0;
 };
