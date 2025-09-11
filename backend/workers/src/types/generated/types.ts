@@ -789,7 +789,6 @@ export type Mutation = {
   restoreESIM?: Maybe<EsimActionResponse>;
   sendPhoneOTP?: Maybe<SendOtpResponse>;
   signIn?: Maybe<SignInResponse>;
-  signInWithApple?: Maybe<SignInResponse>;
   signInWithGoogle?: Maybe<SignInResponse>;
   signUp?: Maybe<SignUpResponse>;
   suspendESIM?: Maybe<EsimActionResponse>;
@@ -929,11 +928,6 @@ export type Mutation_SendPhoneOtpArgs = {
 
 export type Mutation_SignInArgs = {
   input: SignInInput;
-};
-
-
-export type Mutation_SignInWithAppleArgs = {
-  input: SocialSignInInput;
 };
 
 
