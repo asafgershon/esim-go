@@ -22,7 +22,8 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
-    "workers:start": "bun run --filter ./workers start"
+    "workers:start": "bun run --filter ./workers start",
+    "start": "bun run --filter ./server dev"
   },
   "devDependencies": {
     "@apollo/client": "^3.13.8",
