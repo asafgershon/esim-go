@@ -440,6 +440,16 @@ export async function calculatePricing({
       almanac
     );
 
+    //asaf debug
+    logger.debug("Event details", {
+    eventType: event.type,
+    params: event.params,
+    previousPrice,
+    newPrice: currentPrice,
+    impact: currentPrice - previousPrice,
+    });
+
+
     logger.info(
       `Price changed from ${previousPrice} to ${currentPrice} after ${event.type}`
     );

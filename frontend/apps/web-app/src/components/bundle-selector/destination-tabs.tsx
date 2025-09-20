@@ -1,23 +1,25 @@
-"use client";
+// "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { cn } from "@workspace/ui";
+// import { useState, useEffect, useRef } from "react";
+// import { cn } from "@workspace/ui";
 
-interface DestinationTabsProps {
-  activeTab: "countries" | "trips";
-  onTabChange: (tab: "countries" | "trips") => void;
-  className?: string;
-}
+// interface DestinationTabsProps {
+//   activeTab: "countries" | "trips";
+//   onTabChange: (tab: "countries" | "trips") => void;
+//   className?: string;
+// }
 
-export function DestinationTabs({ activeTab, onTabChange, className }: DestinationTabsProps) {
-  const [sliderPosition, setSliderPosition] = useState<"left" | "right">(
-    activeTab === "countries" ? "right" : "left"  // Reversed for RTL
-  );
-  const containerRef = useRef<HTMLDivElement>(null);
+// export function DestinationTabs({ activeTab, onTabChange, className }: DestinationTabsProps) {
+//   const [sliderPosition, setSliderPosition] = useState<"left" | "right">(
+//     activeTab === "countries" ? "right" : "left"  // Reversed for RTL
+//   );
+//   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setSliderPosition(activeTab === "countries" ? "right" : "left");  // Reversed for RTL
-  }, [activeTab]);
+//   useEffect(() => {
+//     setSliderPosition(activeTab === "countries" ? "right" : "left");  // Reversed for RTL
+//   }, [activeTab]);
+
+{/*}
 
   return (
     <div 
@@ -25,7 +27,9 @@ export function DestinationTabs({ activeTab, onTabChange, className }: Destinati
       className={cn("relative bg-[#F1F5FA] rounded-[10px] md:rounded-2xl p-[2px] md:p-1", className)}
       dir="rtl"
     >
+      */}
       {/* Sliding background indicator */}
+      {/*
       <div
         className={cn(
           "absolute inset-[2px] md:inset-1 w-[calc(50%-2px)] md:w-[calc(50%-4px)]",
@@ -40,8 +44,9 @@ export function DestinationTabs({ activeTab, onTabChange, className }: Destinati
         }}
         aria-hidden="true"
       />
-
+      */}
       {/* Tab buttons */}
+      {/*
       <div className="relative flex" role="tablist" aria-label="בחירת סוג יעד">
         <button
           onClick={() => onTabChange("countries")}
@@ -85,3 +90,4 @@ export function DestinationTabs({ activeTab, onTabChange, className }: Destinati
     </div>
   );
 }
+  */}

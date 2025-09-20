@@ -24,6 +24,7 @@ environments/*.tfvars
 # Environment variables
 .env
 .env.local
+.env*
 
 # AWS credentials
 *.pem

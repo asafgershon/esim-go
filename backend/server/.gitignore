@@ -6,6 +6,7 @@ bun.lockb
 .env
 .env.local
 .env.*.local
+.env*
 
 # Build outputs
 dist/

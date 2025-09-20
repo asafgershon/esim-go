@@ -18,6 +18,7 @@ export const env = cleanEnv(process.env, {
   
   // Maya API Configuration
   MAYA_API_KEY: str({ default: "" }),
+  MAYA_API_SECRET: str({ default: "" }),
   MAYA_BASE_URL: str({ default: "https://api.maya.net/connectivity/v1" }),
   
   // Redis Configuration

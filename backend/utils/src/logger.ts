@@ -22,28 +22,61 @@ function generateId(): string {
 }
 
 // Create base Pino logger with structured configuration
+//yarin logger
+// const createBaseLogger = (): PinoLogger => {
+//   const isDevelopment = process.env.NODE_ENV !== 'production';
+//   const logLevel = process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info');
+
+//   return pino({
+//     level: logLevel,
+//     formatters: {
+//       level: (label) => ({ level: label.toUpperCase() }),
+//     },
+//     timestamp: pino.stdTimeFunctions.isoTime,
+//     ...(isDevelopment && {
+//       transport: {
+//         target: 'pino-pretty',
+//         options: {
+//           colorize: true,
+//           translateTime: 'HH:MM:ss Z',
+//           ignore: 'pid,hostname',
+//         },
+//       },
+//     }),
+//   });
+// };
+
+//asaf debug
 const createBaseLogger = (): PinoLogger => {
   const isDevelopment = process.env.NODE_ENV !== 'production';
   const logLevel = process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info');
 
   return pino({
     level: logLevel,
-    formatters: {
-      level: (label) => ({ level: label.toUpperCase() }),
-    },
     timestamp: pino.stdTimeFunctions.isoTime,
     ...(isDevelopment && {
       transport: {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname',
-        },
+        targets: [
+          {
+            target: 'pino-pretty',
+            options: {
+              colorize: true,
+              translateTime: 'HH:MM:ss Z',
+              ignore: 'pid,hostname',
+            },
+            level: logLevel,
+          },
+          {
+            target: 'pino/file',   // כותב לקובץ
+            options: { destination: './pricing-debug.log' },
+            level: 'debug',        // נשמור רק debug בקובץ
+          },
+        ],
       },
     }),
   });
 };
+
 
 export class StructuredLogger {
   private pinoLogger: PinoLogger;
