@@ -1,5 +1,5 @@
 [build]
-  base = "./apps/web-app"
+  base = "frontend/apps/web-app"
   command = "bun run build:web-app"
   publish = ".next"
 
