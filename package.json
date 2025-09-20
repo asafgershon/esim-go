@@ -3,3 +3,7 @@
     "@supabase/supabase-js": "^2.57.4"
   }
 }
+"scripts": {
+  "mock:easycard": "prism mock ./specs/easycard.yaml -p 4012",
+  "dev": "next dev"
+}

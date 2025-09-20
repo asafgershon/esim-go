@@ -29,12 +29,12 @@ export function OrderCard({
   if (!data || !data.bundle) return <OrderDetailsSkeleton />;
   const { bundle } = data;
   const {
-    dataAmount,
+    // dataAmount,
     price,
     numOfDays,
     country,
     pricePerDay,
-    speed,
+    // speed,
     // discounts,
   } = bundle;
 
@@ -89,10 +89,6 @@ export function OrderCard({
         <div className="space-y-3">
           <Row label="משך זמן" value={`${numOfDays} ימים`} />
         </div>
-
-        <Row label="נתונים" value={dataAmount} />
-
-        <Row label="מהירות" value={speed.join(", ")} />
 
         <Row
           label="מחיר יומי"
