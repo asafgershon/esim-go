@@ -33,7 +33,7 @@ import type { CheckoutSessionService } from "../services/checkout-session.servic
 import type { CheckoutSessionServiceV2 } from "../services/checkout/session";
 import type { CheckoutWorkflowInstance } from "../services/checkout/workflow";
 import type { DeliveryService } from "../services/delivery";
-import * as EasycardPayment from "../services/payment";
+import { paymentService } from "../services/payment";
 import type { RedisInstance } from "../services/redis";
 import type { SupabaseAuthContext } from "./supabase-auth";
 
@@ -45,8 +45,8 @@ export type Context = {
     syncs: CatalogSyncServiceV2;
     esimGoClient: ESimGoClient;
     airHaloClient?: AirHaloClient;
-    easycardPayment: typeof EasycardPayment;
-    checkoutSessionService: CheckoutSessionService;
+    easycardPayment: typeof paymentService;
+    checkoutSessionService?: CheckoutSessionService;
     pubsub: RedisPubSub;
     checkoutSessionServiceV2: CheckoutSessionServiceV2;
     checkoutWorkflow: CheckoutWorkflowInstance;
@@ -72,7 +72,7 @@ export type Context = {
     inventory: InventoryDataSource;
     pricing: PricingDataSource;
   };
-  dataLoaders: {
+  dataLoaders?: {
     pricing: DataLoader<PricingKey, PricingResult>;
   };
   // Legacy for backward compatibility during migration

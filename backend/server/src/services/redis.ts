@@ -16,7 +16,7 @@ const logger = createLogger({ component: 'redis' });
 
 let redisInstance: KeyvAdapter<any>;
 
-export async function getRedis() {
+export async function getRedis(): Promise<RedisInstance> {
   if (!redisInstance) {
     const redisUrl = `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}?family=0`;
     
@@ -59,7 +59,7 @@ export async function getRedis() {
     });
   }
 
-  return redisInstance;
+  return redisInstance as RedisInstance;
 }
 
 export type RedisInstance = typeof redisInstance & {client: Keyv};
