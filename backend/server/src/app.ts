@@ -509,8 +509,8 @@ async function startServer() {
     // Now that our HTTP server is fully set up, we can listen to it
     httpServer.listen(PORT, async () => {
       logger.info("eSIM Go Server is ready", {
-        httpEndpoint: `http://localhost:${PORT}/graphql`,
-        wsEndpoint: `ws://localhost:${PORT}/graphql`,
+        httpEndpoint: `http://0.0.0.0:${PORT}/graphql`,
+        wsEndpoint: `ws://0.0.0.0:${PORT}/graphql`,
         port: PORT,
         operationType: "server-startup",
       });
