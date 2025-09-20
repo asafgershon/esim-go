@@ -10,7 +10,7 @@ COPY apis ./apis
 COPY utils ./utils
 COPY server ./server
 COPY supabase ./supabase
-COPY backend/workers ./workers
+COPY workers ./workers
 
 # Prune the workspace for just the server
 RUN bunx turbo prune @hiilo/apollo-server --out-dir=out
