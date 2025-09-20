@@ -1,0 +1,13 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "dependencies": {
+        "@netlify/plugin-nextjs": "^5.13.3",
+      },
+    },
+  },
+  "packages": {
+    "@netlify/plugin-nextjs": ["@netlify/plugin-nextjs@5.13.3", "", {}, "sha512-QIEsiTLEySyXroAOhstY01xROokOFojTkhzqhewQAMddbqDrVaCUI6w649R/1MJ0XcD6cB3se/dn8KJXh40HLw=="],
+  }
+}
