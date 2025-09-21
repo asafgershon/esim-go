@@ -404,25 +404,8 @@ export async function calculatePricingForBundle(
   return calculatePriceResolver(null, { input }, context);
 }
 
+// Export unified pricing resolvers
 export const pricingResolvers = {
-  Query: {
-    ...pricingQueries,
-
-    pricingBlocks: async (
-      _parent: unknown,
-      args: Partial<QueryPricingBlocksArgs>,
-      context: Context
-    ) => {
-      const filter = args.filter ?? {};
-
-
-  const repositoryFilter = {
-    category: filter.category ?? undefined,
-    isActive: filter.isActive ?? undefined,
-    isEditable: filter.isEditable ?? undefined,
-    searchTerm: filter.searchTerm ?? undefined,
-  };
-      return context.repositories.pricingBlocks.find(repositoryFilter);
-    },
-  },
+  Query: pricingQueries,
 };
+

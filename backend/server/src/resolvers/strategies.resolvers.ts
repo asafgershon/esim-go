@@ -124,9 +124,10 @@ pricingStrategies: async (
       try {
         // Map GraphQL filter to repository filter
         const repositoryFilter = {
-          isDefault: filter.isDefault ?? undefined,
-          // isArchived: filter.archived ?? undefined,
-          searchTerm: filter.search ?? undefined,
+            category: filter.category ?? undefined,
+            isActive: filter.isActive ?? undefined,
+            isEditable: filter.isEditable ?? undefined,
+            searchTerm: filter.searchTerm ?? undefined,
         };
 
         const strategies = await context.repositories.strategies.getAllStrategies(repositoryFilter);

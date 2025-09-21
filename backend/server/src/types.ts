@@ -1,6 +1,6 @@
 import { GraphQLScalarType } from 'graphql';
 import type { GraphQLResolveInfo, GraphQLScalarTypeConfig } from 'graphql';
-import { Context } from './context/types';
+import type { Context } from './context/types';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };

@@ -504,7 +504,7 @@ async function startServer() {
       })
     );
 
-    const PORT = process.env.PORT || 4000;
+    const PORT = env.PORT;
 
     // Now that our HTTP server is fully set up, we can listen to it
     httpServer.listen(PORT, async () => {
