@@ -291,3 +291,4 @@ export const resolvers: Resolvers = {
     ...strategiesResolvers.PricingStrategy!,
   },
 };
+

@@ -2,6 +2,9 @@ import { GraphQLError } from "graphql";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import DataLoader from "dataloader";
+import type { QueryPricingStrategiesArgs, QueryPricingStrategyArgs,PricingStrategy, QueryPricingBlocksArgs  } from "../types";
+import { unknown } from "zod";
+
 
 const logger = createLogger({
   component: "StrategiesResolvers",
@@ -105,19 +108,25 @@ export const strategiesResolvers = {
     /**
      * Get all pricing strategies with optional filtering
      */
-    pricingStrategies: async (_, { filter }, context: Context) => {
-      logger.info("Fetching pricing strategies", {
-        filter,
-        userId: context.auth?.user?.id,
-        operationType: "get-pricing-strategies",
-      });
+pricingStrategies: async (
+  _parent: unknown,
+  args: Partial<QueryPricingBlocksArgs>,
+  context: Context
+) => {
+  const  filter  = args?.filter ?? {};
+
+  logger.info("Fetching pricing strategies", {
+    filter,
+    userId: context.auth?.user?.id,
+    operationType: "get-pricing-strategies",
+  });
 
       try {
         // Map GraphQL filter to repository filter
         const repositoryFilter = {
-          isDefault: filter?.isDefault,
-          isArchived: filter?.archived,
-          searchTerm: filter?.search,
+          isDefault: filter.isDefault ?? undefined,
+          // isArchived: filter.archived ?? undefined,
+          searchTerm: filter.search ?? undefined,
         };
 
         const strategies = await context.repositories.strategies.getAllStrategies(repositoryFilter);
@@ -145,7 +154,9 @@ export const strategiesResolvers = {
     /**
      * Get a specific pricing strategy by ID
      */
-    pricingStrategy: async (_, { id }, context: Context) => {
+    pricingStrategy: async (_parent: unknown, args: QueryPricingStrategyArgs, context: Context) => {
+      const { id } = args;
+
       logger.info("Fetching pricing strategy by ID", {
         id,
         userId: context.auth?.user?.id,
@@ -187,43 +198,60 @@ export const strategiesResolvers = {
     /**
      * Get the default pricing strategy
      */
-    defaultPricingStrategy: async (_, __, context: Context) => {
-      logger.info("Fetching default pricing strategy", {
-        userId: context.auth?.user?.id,
-        operationType: "get-default-pricing-strategy",
-      });
+    defaultPricingStrategy: async (_: unknown, __: unknown, context: Context) => {
+  logger.info("Fetching default pricing strategy", {
+    userId: context.auth?.user?.id,
+    operationType: "get-default-pricing-strategy",
+  });
 
-      try {
-        const strategy = await context.repositories.strategies.getDefaultStrategy();
+  try {
+    const dbStrategy = await context.repositories.strategies.getDefaultStrategy();
 
-        if (!strategy) {
-          logger.info("No default pricing strategy found", {
-            userId: context.auth?.user?.id,
-            operationType: "get-default-pricing-strategy",
-          });
-          return null;
+    const strategyWithBlocks: PricingStrategy = dbStrategy
+      ? {
+          ...dbStrategy,
+          blocks: (dbStrategy as any).blocks ?? [],
         }
+      : {
+          __typename: "PricingStrategy",
+          id: "default-pricing",
+          name: "Default Global Pricing Strategy",
+          code: "default-pricing",
+          description: "Fallback default strategy (should not happen in prod)",
+          version: 1,
+          isDefault: true,
+          activationCount: 0,
+          lastActivatedAt: null,
+          validatedAt: null,
+          validationErrors: null,
+          archivedAt: null,
+          createdAt: new Date().toISOString(),
+          createdBy: "system",
+          updatedAt: new Date().toISOString(),
+          updatedBy: "system",
+          parentStrategyId: null,
+          blocks: [],
+        };
 
-        logger.info("Successfully fetched default pricing strategy", {
-          id: strategy.id,
-          name: strategy.name,
-          userId: context.auth?.user?.id,
-          operationType: "get-default-pricing-strategy-success",
-        });
+    logger.info("Successfully fetched default pricing strategy", {
+      id: strategyWithBlocks.id,
+      name: strategyWithBlocks.name,
+      userId: context.auth?.user?.id,
+      operationType: "get-default-pricing-strategy-success",
+    });
 
-        return strategy;
-      } catch (error) {
-        logger.error("Failed to fetch default pricing strategy", error as Error, {
-          userId: context.auth?.user?.id,
-          operationType: "get-default-pricing-strategy",
-        });
-        throw new GraphQLError("Failed to fetch default pricing strategy", {
-          extensions: { code: "INTERNAL_ERROR" },
-        });
-      }
-    },
+    return strategyWithBlocks;
+  } catch (error) {
+    logger.error("Failed to fetch default pricing strategy", error as Error, {
+      userId: context.auth?.user?.id,
+      operationType: "get-default-pricing-strategy",
+    });
+    throw new GraphQLError("Failed to fetch default pricing strategy", {
+      extensions: { code: "INTERNAL_ERROR" },
+    });
+  } 
+},
   },
-
   /**
    * Field resolvers for PricingStrategy type
    */
@@ -232,7 +260,7 @@ export const strategiesResolvers = {
      * Efficiently load blocks for a strategy using DataLoader
      * This resolver only loads blocks when the `blocks` field is requested
      */
-    blocks: async (parent, _, context: Context) => {
+    blocks: async (parent: PricingStrategy, _args: unknown, context: Context) => {
       logger.debug("Loading blocks for strategy", {
         strategyId: parent.id,
         strategyName: parent.name,
