@@ -18,9 +18,7 @@ let redisInstance: KeyvAdapter<any>;
 
 export async function getRedis(): Promise<RedisInstance> {
   if (!redisInstance) {
-    const redisUrl =
-    process.env.REDIS_URL ||
-      `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`;
+    const redisUrl = process.env.REDIS_URL!;
     
     logger.info('Redis configuration', { 
       redisUrl,
