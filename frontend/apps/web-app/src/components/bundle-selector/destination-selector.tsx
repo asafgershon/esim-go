@@ -20,6 +20,7 @@ import {
   SEARCH_PLACEHOLDER,
   NO_RESULTS_MESSAGE,
 } from "./destination-selector.constants";
+import { getFlagUrl } from "@/utils/flags";
 
 const MobileDestinationDrawer = lazy(
   () => import("./mobile-destination-drawer")
@@ -67,7 +68,7 @@ export function DestinationSelector() {
         return {
           id: country.iso.toLowerCase(), // ISO code for countries
           name: country.nameHebrew || country.name || "",
-          icon: country.flag || "",
+          icon: getFlagUrl(country.iso), // Use flag URL utility
         };
       }
     } else if (tripId) {

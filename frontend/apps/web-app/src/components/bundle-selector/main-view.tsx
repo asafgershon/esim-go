@@ -14,7 +14,7 @@ import {
 } from "@workspace/ui";
 import { CalendarIcon } from "./icons";
 import { DestinationSelector } from "./destination-selector";
-import { DestinationTabs } from "./destination-tabs";
+// import { DestinationTabs } from "./destination-tabs";
 import { Pricing } from "./pricing";
 import { SliderWithValue } from "@workspace/ui";
 
@@ -52,11 +52,11 @@ export function MainView({
 }: MainViewProps) {
   // Get UI state and handlers from context
   const {
-    activeTab,
+    // activeTab,
     numOfDays,
     countryId,
     tripId,
-    handleTabChange,
+    // handleTabChange,
     setNumOfDays,
     setCurrentView,
     setCountryId,
@@ -103,7 +103,7 @@ export function MainView({
 
       <SelectorContent>
         {/* Tab Container with smooth sliding transition */}
-        <DestinationTabs activeTab={activeTab} onTabChange={handleTabChange} />
+        {/* <DestinationTabs activeTab={activeTab} onTabChange={handleTabChange} /> */}
 
         {/* Destination Selection */}
         <DestinationSelector />

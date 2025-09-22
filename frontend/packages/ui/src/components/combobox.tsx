@@ -70,9 +70,15 @@ export function Combobox({
           <div className="flex items-center gap-2">
             {selectedOption ? (
               <>
-                {selectedOption.icon && (
-                  <span className="text-lg">{selectedOption.icon}</span>
-                )}
+                  {selectedOption.icon && (
+                    <img
+                      src={selectedOption.icon}
+                      alt={selectedOption.label}
+                      width={12}
+                      height={9}
+                      className="inline-block align-middle rounded-[2px] object-cover"
+                    />
+                  )}
                 <span>{selectedOption.label}</span>
               </>
             ) : (
@@ -107,7 +113,13 @@ export function Combobox({
                 >
                   <div className="flex items-center gap-2">
                     {option.icon && (
-                      <span className="text-lg">{option.icon}</span>
+                      <img
+                        src={option.icon}
+                        alt={option.label}
+                        width={12}
+                        height={9}
+                        className="inline-block align-middle rounded-[2px] object-cover"
+                      />
                     )}
                     <span>{option.label}</span>
                   </div>
@@ -240,7 +252,13 @@ export function FuzzyCombobox({
             {selectedOption ? (
               <>
                 {selectedOption.icon && (
-                  <span className="text-lg">{selectedOption.icon}</span>
+                  <img
+                    src={selectedOption.icon}
+                    alt={selectedOption.label}
+                    width={12}
+                    height={9}
+                    className="inline-block align-middle rounded-[2px] object-cover"
+                  />
                 )}
                 <span>{selectedOption.label}</span>
               </>
@@ -286,9 +304,15 @@ export function FuzzyCombobox({
                     }}
                   >
                     <div className="flex items-center gap-2 flex-1" dir="rtl">
-                      {option.icon && (
-                        <span className="text-lg">{option.icon}</span>
-                      )}
+                        {option.icon && (
+                          <img
+                            src={option.icon}
+                            alt={option.label}
+                            width={12}
+                            height={9}
+                            className="inline-block align-middle rounded-[2px] object-cover"
+                          />
+                        )}
                       <span>{option.label}</span>
                     </div>
                   </CommandItem>
