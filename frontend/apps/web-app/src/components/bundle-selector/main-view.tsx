@@ -163,12 +163,11 @@ export function MainView({
       <SelectorAction className="mt-5">
         <SelectorButton
           onClick={() => {
-            // Always trigger the destination selector to open
-            triggerDestinationSelectorFocus();
-
-            // If valid pricing, also proceed with purchase
-            if (isPricingValid) {
+            if(isPricingValid) {
               handlePurchase();
+            }
+            else{
+              triggerDestinationSelectorFocus();
             }
           }}
           aria-label={

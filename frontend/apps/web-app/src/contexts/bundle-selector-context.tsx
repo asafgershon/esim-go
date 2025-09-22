@@ -288,6 +288,7 @@ export function BundleSelectorProvider({
   };
 
   const handleDestinationChange = (value: string) => {
+    console.log("[DEBUG] handleDestinationChange called with:", value);
     if (!value) {
       setQueryStates({
         countryId: "",
