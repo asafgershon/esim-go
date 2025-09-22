@@ -310,6 +310,7 @@ export class MayaSyncService {
 
           if (validBundles.length > 0) {
             console.log("validBundles", validBundles);
+            //old update
             upsertResult = await this.bundleDatabase.bulkUpsert(validBundles);
             allErrors.push(...upsertResult.errors);
           }

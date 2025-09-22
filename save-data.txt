@@ -1,0 +1,58 @@
+curl -X GET "https://api.maya.net/connectivity/v1/account/products?country=AFG" -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_MAYA_TOKEN"
+
+[
+  {
+    "uid": "42Esax0vHKIF",
+    "name": "Afghanistan 10GB - 10 Days",
+    "countries_enabled": ["AFG"],
+    "data_quota_mb": 10000,
+    "data_quota_bytes": 10000000000,
+    "validity_days": 11,
+    "policy_id": 9,
+    "policy_name": "Maximum Data 10GB",
+    "wholesale_price_usd": "39.99",
+    "rrp_usd": "49.99",
+    "rrp_eur": "49.99",
+    "rrp_gbp": "40.99",
+    "rrp_cad": "72.99",
+    "rrp_aud": "80.99",
+    "rrp_jpy": "7700"
+  }
+]
+
+
+curl -X GET "https://api.esim-go.com/v2.5/catalogue?perPage=1" -H "x-api-key: wAN0k_fjpOQoYn5E16yvc140TjnB5JQX11vMORIr" -H "Content-Type: application/json"
+
+{
+  "bundles": [
+    {
+      "name": "esim_1GB_7D_AD_V2",
+      "description": "eSIM, 1GB, 7 Days, Andorra, V2",
+      "countries": [
+        { "name": "Andorra", "region": "Europe", "iso": "AD" }
+      ],
+      "dataAmount": 1000,
+      "duration": 7,
+      "speed": ["2G", "3G", "4G", "5G"],
+      "autostart": true,
+      "unlimited": false,
+      "imageUrl": "https://esimgo-cms-images-prod.s3.eu-west-1.amazonaws.com/Andorra_5ad8a57392.jpg",
+      "price": 6.9,
+      "groups": ["Standard Fixed"],
+      "billingType": "FixedCost",
+      "allowances": [
+        {
+          "type": "DATA",
+          "service": "ROAMING",
+          "description": "ESIM_1GB_7D_ZONEC_U (data)",
+          "amount": 1000,
+          "unit": "MB",
+          "unlimited": false
+        }
+      ]
+    }
+  ],
+  "pageCount": 5148,
+  "rows": 5148,
+  "pageSize": 1
+}

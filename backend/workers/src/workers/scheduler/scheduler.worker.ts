@@ -2,6 +2,7 @@ import { createLogger } from "@hiilo/utils";
 import { catalogSyncQueueManager } from "../catalog-sync/catalog-sync.queue.js";
 import { ESIMGoSyncService } from "../../services/providers/esim-go/esim-go-sync.service.js";
 import { catalogMetadataRepository } from "../../services/database/supabase.service.js";
+import { Provider } from "@/types/generated/types.js";
 
 const logger = createLogger({
   component: "SchedulerWorker",
@@ -22,8 +23,8 @@ const schedulerTasks = {
 
       if (isDue) {
         logger.info("Full sync is due, scheduling job");
-        await catalogSyncQueueManager.addFullSyncJob("scheduled", "esim-go");
-        await catalogSyncQueueManager.addFullSyncJob("scheduled", "MAYA");
+        await catalogSyncQueueManager.addFullSyncJob("scheduled", Provider.EsimGo);
+        await catalogSyncQueueManager.addFullSyncJob("scheduled", Provider.Maya);
       } else {
         const stats = await catalogMetadataRepository.getSyncStats();
         logger.info("Full sync not due", {
