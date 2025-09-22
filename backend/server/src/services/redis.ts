@@ -18,7 +18,9 @@ let redisInstance: KeyvAdapter<any>;
 
 export async function getRedis(): Promise<RedisInstance> {
   if (!redisInstance) {
-    const redisUrl = `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`;
+    const redisUrl =
+    process.env.REDIS_URL ||
+      `redis://${env.REDIS_USER}:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}`;
     
     logger.info('Redis configuration', { 
       redisUrl,
@@ -39,19 +41,19 @@ export async function getRedis(): Promise<RedisInstance> {
       store,
     });
 
-    // keyv.set("connection-test", "test");
-    // // Wait for Redis connection to be established
-    // try {
-    //   const test = await keyv.get("connection-test");
-    //   console.log(test);
-    //   if (test !== "test") {
-    //     throw new Error("Redis connection test failed");
-    //   }
-    //   logger.info('Redis connected', { redisUrl, operationType: 'redis-connection' });
-    // } catch (error) {
-    //   logger.error('Redis connection error', error as Error, { redisUrl, operationType: 'redis-connection' });
-    //   throw error;
-    // }
+    keyv.set("connection-test", "test");
+    // Wait for Redis connection to be established
+    try {
+      const test = await keyv.get("connection-test");
+      console.log(test);
+      if (test !== "test") {
+        throw new Error("Redis connection test failed");
+      }
+      logger.info('Redis connected', { redisUrl, operationType: 'redis-connection' });
+    } catch (error) {
+      logger.error('Redis connection error', error as Error, { redisUrl, operationType: 'redis-connection' });
+      throw error;
+    }
 
     redisInstance = new KeyvAdapter(keyv);
     Object.defineProperty(redisInstance, 'client', {
