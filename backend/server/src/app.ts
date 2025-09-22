@@ -108,8 +108,8 @@ async function startServer() {
     const executableSchema = makeExecutableSchema({ typeDefs, resolvers });
     const schemaWithDirectives = authDirectiveTransformer(executableSchema);
 
-    const redis = await getRedis();
-    const pubsub = await getPubSub(redis);
+    //const redis = await getRedis();
+    //const pubsub = await getPubSub(redis);
 
     // Initialize eSIM Go client
     const esimGoClient = new ESimGoClient({
@@ -145,21 +145,21 @@ async function startServer() {
     const esimRepository = new ESIMRepository();
 
     // Initialize Easycard payment service (optional)
-    const [checkoutSessionServiceV2, checkoutWorkflowService] =
-      await Promise.all([
-        checkoutSessionService.init({ redis }),
-        checkoutWorkflow.init({
-          pubsub,
-          sessionService: checkoutSessionService,
-          userRepository,
-          esimAPI: esimGoClient,
-          paymentAPI: paymentService,
-          bundleRepository,
-          deliveryService,
-          orderRepository,  
-          esimRepository,
-        }),
-      ]);
+    // const [checkoutSessionServiceV2, checkoutWorkflowService] =
+    //   await Promise.all([
+    //     checkoutSessionService.init({ redis }),
+    //     checkoutWorkflow.init({
+    //       pubsub,
+    //       sessionService: checkoutSessionService,
+    //       userRepository,
+    //       esimAPI: esimGoClient,
+    //       paymentAPI: paymentService,
+    //       bundleRepository,
+    //       deliveryService,
+    //       orderRepository,  
+    //       esimRepository,
+    //     }),
+    //   ]);
 
     // Initialize repositories
     const checkoutSessionRepository = new CheckoutSessionRepository();
@@ -199,16 +199,16 @@ async function startServer() {
           const baseContext = {
             auth,
             services: {
-              redis,
-              pubsub,
+              //redis,
+              //pubsub,
               db: supabaseAdmin,
               syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
               esimGoClient,
               airHaloClient,
               easycardPayment: paymentService,
               checkoutSessionService: undefined, // Will be initialized lazily in resolvers
-              checkoutSessionServiceV2: checkoutSessionServiceV2,
-              checkoutWorkflow: checkoutWorkflowService,
+              //checkoutSessionServiceV2: checkoutSessionServiceV2,
+              //checkoutWorkflow: checkoutWorkflowService,
               deliveryService,
             },
             repositories: {
@@ -225,11 +225,11 @@ async function startServer() {
             },
             dataSources: {
               catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
-              orders: new OrdersDataSource({ cache: redis }),
-              esims: new ESIMsDataSource({ cache: redis }),
+              //orders: new OrdersDataSource({ cache: redis }),
+              //esims: new ESIMsDataSource({ cache: redis }),
               regions: RegionsDataSource,
-              inventory: new InventoryDataSource({ cache: redis }),
-              pricing: new PricingDataSource({ cache: redis }),
+              //inventory: new InventoryDataSource({ cache: redis }),
+              //pricing: new PricingDataSource({ cache: redis }),
             },
             // Legacy support
             token,
@@ -238,7 +238,7 @@ async function startServer() {
           return {
             ...baseContext,
             dataLoaders: {
-              pricing: createPricingDataLoader(baseContext),
+              //pricing: createPricingDataLoader(baseContext),
             },
           };
         },
@@ -252,7 +252,7 @@ async function startServer() {
       server = new ApolloServer({
         schema: schemaWithDirectives,
         introspection: true,
-        cache: redis,
+        //cache: redis,
         plugins: [
           // Proper shutdown for the HTTP server
           ApolloServerPluginDrainHttpServer({ httpServer }),
@@ -456,16 +456,16 @@ async function startServer() {
           const baseContext = {
             auth,
             services: {
-              redis,
-              pubsub,
+              //redis,
+              //pubsub,
               syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
               esimGoClient,
               airHaloClient,
               easycardPayment: paymentService,
               db: supabaseAdmin,
               checkoutSessionService: undefined, // Will be initialized lazily in resolvers
-              checkoutSessionServiceV2: checkoutSessionServiceV2,
-              checkoutWorkflow: checkoutWorkflowService,
+              //checkoutSessionServiceV2: checkoutSessionServiceV2,
+              //checkoutWorkflow: checkoutWorkflowService,
               deliveryService,
             },
             repositories: {
@@ -477,17 +477,17 @@ async function startServer() {
               highDemandCountries: highDemandCountryRepository,
               syncJob: syncJobRepository,
               bundles: bundleRepository,
-              checkoutSessionServiceV2: checkoutSessionServiceV2,
+              //checkoutSessionServiceV2: checkoutSessionServiceV2,
               tenants: tenantRepository,
               strategies: strategiesRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
-              orders: new OrdersDataSource({ cache: redis }),
-              esims: new ESIMsDataSource({ cache: redis }),
+              //orders: new OrdersDataSource({ cache: redis }),
+              //esims: new ESIMsDataSource({ cache: redis }),
               regions: RegionsDataSource,
-              inventory: new InventoryDataSource({ cache: redis }),
-              pricing: new PricingDataSource({ cache: redis }),
+              //inventory: new InventoryDataSource({ cache: redis }),
+              //pricing: new PricingDataSource({ cache: redis }),
             },
             // Legacy support
             req,
@@ -497,7 +497,7 @@ async function startServer() {
           return {
             ...baseContext,
             dataLoaders: {
-              pricing: createPricingDataLoader(baseContext),
+              //pricing: createPricingDataLoader(baseContext),
             },
           };
         },
