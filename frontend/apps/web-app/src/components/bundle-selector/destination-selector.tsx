@@ -90,7 +90,7 @@ export function DestinationSelector() {
       return countries.map((country) => ({
         value: `country-${country.id}`,
         label: country.nameHebrew || country.name || "",
-        icon: country.flag || undefined,
+        icon: getFlagUrl(country.iso),
         keywords: [country.nameHebrew, country.name].filter(
           Boolean
         ) as string[], // Hebrew and English names
