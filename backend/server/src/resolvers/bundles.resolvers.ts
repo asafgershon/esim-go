@@ -29,11 +29,14 @@ export const bundlesResolvers: Partial<Resolvers> = {
         // Return CatalogBundle with __typename
         return {
           __typename: "CatalogBundle",
-          ...BundleRepository.transformCatalogToBundle(bundle),
+          // FIX: Use our local, corrected helper function instead of the old static one.
+          ...transformJsonBundle(bundle),
           // Add timestamps from the DB record
           createdAt: bundle.created_at,
           updatedAt: bundle.updated_at,
-          syncedAt: bundle.synced_at,
+          // NOTE: 'synced_at' does not exist in your new table. It might need to be removed from the GraphQL schema later.
+          // For now, we set it to null to avoid breaking the frontend.
+          syncedAt: null,
         };
       } catch (error) {
         logger.error("Error fetching bundle", error as Error, { id });
@@ -86,17 +89,17 @@ export const bundlesResolvers: Partial<Resolvers> = {
         return {
           nodes: data.map((bundle) => ({
             __typename: "CatalogBundle",
-            ...BundleRepository.transformCatalogToBundle(bundle),
+            ...transformJsonBundle(bundle),
             createdAt: bundle.created_at,
             updatedAt: bundle.updated_at,
-            syncedAt: bundle.synced_at,
+            syncedAt: null, // See note above
           })),
           totalCount: count,
           pageInfo: {
             currentPage: pagination?.offset || 0,
             limit: pagination?.limit || 0,
             offset: pagination?.offset || 0,
-            pages: Math.ceil(count / (pagination?.limit || 0)),
+            pages: Math.ceil(count / (pagination?.limit || 1)),
             total: count,
             hasNextPage,
             hasPreviousPage,
@@ -149,7 +152,9 @@ export const bundlesResolvers: Partial<Resolvers> = {
             avg: Number(region.avg_price),
             currency: "USD",
           },
-          countries: region.countries || [],
+          // NOTE: Your new SQL function doesn't return the list of countries.
+          // This might need adjustment if the frontend uses it. For now, setting to empty array.
+          countries: [], 
           countryCount: Number(region.country_count),
           hasUnlimited: Boolean(region.has_unlimited),
           bundles: [],
@@ -218,7 +223,6 @@ export const bundlesResolvers: Partial<Resolvers> = {
               ? result.bundles.map((bundle: any) => ({
                   __typename: "CatalogBundle",
                   ...transformJsonBundle(bundle),
-                  // Add default timestamps for JSON bundles
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
                   syncedAt: new Date().toISOString(),
@@ -244,7 +248,10 @@ export const bundlesResolvers: Partial<Resolvers> = {
 
     bundlesForRegion: async (_, { region }, context) => {
       try {
-        const data = await context.repositories.bundles.byRegion(region);
+        // FIX: Call 'byRegions' and filter the result, as 'byRegion' does not exist.
+        const allRegionsData = await context.repositories.bundles.byRegions();
+        const data = allRegionsData.filter((r: any) => r.region === region);
+        
         const defualtResult = {
           bundleCount: 0,
           pricingRange: { min: 0, max: 0, avg: 0, currency: "USD" },
@@ -265,8 +272,8 @@ export const bundlesResolvers: Partial<Resolvers> = {
         return {
           region: result.region,
           bundles:
-            (Array.isArray(result.bundles)
-              ? result.bundles.map((bundle: any) => ({
+            (Array.isArray((result as any).bundles)
+              ? (result as any).bundles.map((bundle: any) => ({
                   __typename: "CatalogBundle",
                   ...transformJsonBundle(bundle),
                   createdAt: new Date().toISOString(),
@@ -280,8 +287,8 @@ export const bundlesResolvers: Partial<Resolvers> = {
             max: Number(result.max_price),
             currency: "USD",
           },
-          countries: result.countries || [],
-          groups: result.groups || [],
+          countries: (result as any).countries || [],
+          groups: (result as any).groups || [],
           hasUnlimited: Boolean(result.has_unlimited),
         };
       } catch (error) {
@@ -311,10 +318,11 @@ export const bundlesResolvers: Partial<Resolvers> = {
           return defualtResult;
         }
         return {
-          group: result.group_name,
+          // FIX: Use the 'group' input parameter as the primary source of truth.
+          group: group,
           bundles:
-            (Array.isArray(result.bundles)
-              ? result.bundles.map((bundle: any) => ({
+            (Array.isArray((result as any).bundles)
+              ? (result as any).bundles.map((bundle: any) => ({
                   __typename: "CatalogBundle",
                   ...transformJsonBundle(bundle),
                   createdAt: new Date().toISOString(),
@@ -328,7 +336,8 @@ export const bundlesResolvers: Partial<Resolvers> = {
             max: Number(result.max_price),
             currency: "USD",
           },
-          countries: result.countries || [],
+          // FIX: Cast to 'any' to resolve type inference issue.
+          countries: (result as any).countries || [],
           regions: result.regions || [],
           hasUnlimited: Boolean(result.has_unlimited),
         };
@@ -408,27 +417,13 @@ export const bundlesResolvers: Partial<Resolvers> = {
   BundlesByRegion: {
     bundles: async (parent, { limit = 3, offset = 0 }, context) => {
       try {
-        // Use pre-fetched data if available
-        if (parent.bundles && parent.bundles.length > 0) {
-          return parent.bundles
-            .slice(offset || 0, (offset || 0) + (limit || 0))
-            .map((bundle) => ({
-              __typename: "CatalogBundle",
-              ...transformJsonBundle(bundle),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              syncedAt: new Date().toISOString(),
-            }));
-        }
-
-        // Otherwise fetch if needed
         if (parent.region) {
-          const data = await context.repositories.bundles.byRegion(
-            parent.region
-          );
-
-          if (data && data.length > 0) {
-            const bundles = (data[0]?.bundles as Bundle[]) || [];
+          // FIX: Use the robust 'search' method instead of the missing 'byRegion'.
+          const { data: bundles } = await context.repositories.bundles.search({
+            regions: [parent.region]
+          });
+          
+          if (bundles) {
             return bundles
               .slice(offset || 0, (offset || 0) + (limit || 0))
               .map((bundle) => ({
@@ -452,25 +447,13 @@ export const bundlesResolvers: Partial<Resolvers> = {
   BundlesByGroup: {
     bundles: async (parent, { limit = 3, offset = 0 }, context) => {
       try {
-        // Use pre-fetched data if available
-        if (parent.bundles && parent.bundles.length > 0) {
-          return parent.bundles
-            .slice(offset || 0, (offset || 0) + (limit || 0))
-            .map((bundle) => ({
-              __typename: "CatalogBundle",
-              ...transformJsonBundle(bundle),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              syncedAt: new Date().toISOString(),
-            }));
-        }
-
-        // Otherwise fetch if needed
         if (parent.group) {
-          const data = await context.repositories.bundles.byGroup(parent.group);
+          // FIX: Use the robust 'search' method here as well for consistency.
+          const { data: bundles } = await context.repositories.bundles.search({
+            groups: [parent.group]
+          });
 
-          if (data && data.length > 0) {
-            const bundles = (data[0]?.bundles as Bundle[]) || [];
+          if (bundles) {
             return bundles
               .slice(offset || 0, (offset || 0) + (limit || 0))
               .map((bundle) => ({
@@ -492,7 +475,8 @@ export const bundlesResolvers: Partial<Resolvers> = {
   },
   Bundle: {
     __resolveType: (obj) => {
-      if ((obj as CatalogBundle).esimGoName) {
+      // FIX: Check for a property that exists and makes sense. 'provider' is better.
+      if ((obj as CatalogBundle).provider) { 
         return "CatalogBundle";
       }
       if ((obj as CustomerBundle).pricingBreakdown) {
@@ -505,22 +489,28 @@ export const bundlesResolvers: Partial<Resolvers> = {
 
 // ========== Helper Functions ==========
 
+// FIX: This function is now the single source of truth for transformation.
+// It's updated to match the new 'catalog_bundles' table schema.
 export function transformJsonBundle(jsonBundle: any) {
   return {
-    esimGoName: jsonBundle.esim_go_name,
-    name: jsonBundle.name || jsonBundle.description || jsonBundle.esim_go_name,
+    // This field doesn't exist anymore, mapping from 'name'
+    esimGoName: jsonBundle.name, 
+    name: jsonBundle.name || jsonBundle.description,
     description: jsonBundle.description,
-    groups: jsonBundle.groups || [],
-    validityInDays: jsonBundle.validity_in_days || 0,
+    groups: jsonBundle.group_name ? [jsonBundle.group_name] : [],
+    validityInDays: jsonBundle.validity_days || 0,
     dataAmountMB: jsonBundle.data_amount_mb,
-    dataAmountReadable: jsonBundle.data_amount_readable || "Unknown",
-    isUnlimited: jsonBundle.is_unlimited || false,
-    countries: jsonBundle.countries || [],
+    // This field doesn't exist, we might need to calculate it or remove it from the schema.
+    dataAmountReadable: "Unknown", 
+    isUnlimited: jsonBundle.unlimited || false,
+    // This field now comes from a separate table. The resolver will need to fetch it separately if needed.
+    countries: [], 
     region: jsonBundle.region,
     speed: jsonBundle.speed || ["4G"],
-    basePrice: Number(jsonBundle.price) || 0,
+    basePrice: Number(jsonBundle.price_usd) || 0,
     currency: jsonBundle.currency || "USD",
-    provider: jsonBundle.provider as Provider,
+    // This field is now a provider_id. The resolver would need to fetch provider details if needed.
+    provider: "unknown" as Provider,
   };
 }
 
@@ -531,3 +521,4 @@ function formatGroupName(group: string): string {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 }
+

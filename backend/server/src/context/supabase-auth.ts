@@ -1,4 +1,5 @@
-import type { Database } from "@hiilo/supabase";
+// FINAL FIX: This is the root of the problem. We change the import to use our new, locally generated types file.
+import type { Database } from "../types/database.types";
 import { createClient } from "@supabase/supabase-js";
 import { cleanEnv, str } from "envalid";
 import type { IncomingMessage } from "node:http";

@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '../context/supabase-auth';
 import { GraphQLError } from 'graphql';
 import type { PostgrestError } from '@supabase/supabase-js';
-import type { Database } from '@hiilo/supabase';
+import type { Database } from '../types/database.types';
 
 
 type TableName = keyof Database['public']['Tables'];

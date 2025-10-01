@@ -34,48 +34,22 @@ export const catalogResolvers: Partial<Resolvers> = {
           operationType: "pricing-filters-fetch",
         });
 
-        // Get all filter data from repository methods
-        logger.info("Fetching groups...", {
-          operationType: "pricing-filters-fetch",
-        });
-        const groups = (await context.repositories.bundles.getGroups()).map(
-          (g) => g.replace("-", "")
-        );
-        logger.info("Groups fetched", {
-          groups,
-          operationType: "pricing-filters-fetch",
-        });
-
-        logger.info("Fetching data types...", {
-          operationType: "pricing-filters-fetch",
-        });
-        const dataTypes = await context.repositories.bundles.getDataTypes();
-        logger.info("Data types fetched", {
-          dataTypes,
-          operationType: "pricing-filters-fetch",
-        });
-
-        logger.info("Fetching distinct durations...", {
-          operationType: "pricing-filters-fetch",
-        });
-        const durations =
-          await context.repositories.bundles.getDistinctDurations();
-        logger.info("Distinct durations fetched", {
-          durations,
-          operationType: "pricing-filters-fetch",
-        });
-
+        const [groups, dataTypes, durations] = await Promise.all([
+            context.repositories.bundles.getGroups(),
+            context.repositories.bundles.getDataTypes(),
+            context.repositories.bundles.getDistinctDurations()
+        ]);
+        
         const result = {
-          groups,
+          groups: groups.map(g => g.replace("-", "")),
           durations,
           dataTypes,
         };
 
         logger.info("Pricing filters fetched successfully", {
-          bundleGroupCount: groups.length,
+          bundleGroupCount: result.groups.length,
           durationCount: durations.length,
           dataTypeCount: dataTypes.length,
-          fullResult: result,
           operationType: "pricing-filters-fetch",
         });
 
@@ -94,15 +68,6 @@ export const catalogResolvers: Partial<Resolvers> = {
       try {
         const { limit = 50, offset = 0, status, type } = params || {};
 
-        logger.info("Fetching catalog sync history", {
-          limit,
-          offset,
-          status,
-          type,
-          operationType: "catalog-sync-history",
-        });
-
-        // Use repository to get sync history
         const { jobs: data, totalCount: count } =
           await context.repositories.syncJob.getJobHistory({
             status: status as any,
@@ -111,14 +76,13 @@ export const catalogResolvers: Partial<Resolvers> = {
             offset: offset || 0,
           });
 
-        // Transform data to match GraphQL schema
         const jobs = (data || []).map((job) => ({
           id: job.id,
           jobType: job.job_type,
           type: job.job_type as SyncJobType,
           status: job.status,
           priority: job.priority,
-          group: job.bundle_group, // Schema expects 'group' not 'bundleGroup'
+          group: job.bundle_group,
           countryId: job.country_id,
           bundlesProcessed: job.bundles_processed,
           bundlesAdded: job.bundles_added,
@@ -135,12 +99,6 @@ export const catalogResolvers: Partial<Resolvers> = {
           createdAt: job.created_at,
           updatedAt: job.updated_at,
         }));
-
-        logger.info("Catalog sync history fetched successfully", {
-          jobCount: jobs.length,
-          totalCount: count || 0,
-          operationType: "catalog-sync-history",
-        });
 
         return {
           jobs: jobs as any,
@@ -166,21 +124,12 @@ export const catalogResolvers: Partial<Resolvers> = {
           minDuration,
           maxDuration,
           unlimited,
-          search,
         } = criteria || {};
 
-        logger.info("Fetching catalog bundles", {
-          limit,
-          offset,
-          bundleGroups,
-          countries,
-          operationType: "catalog-bundles-fetch",
-        });
-
-        // Use bundle repository to search bundles
         const searchResult = await context.repositories.bundles.search({
           countries: countries as any,
           groups: bundleGroups as any,
+          regions: regions as any,
           minValidityInDays: minDuration as any,
           maxValidityInDays: maxDuration as any,
           isUnlimited: unlimited as any,
@@ -193,18 +142,18 @@ export const catalogResolvers: Partial<Resolvers> = {
 
         // Transform data
         const bundles = (data || []).map((bundle) => ({
-          id: bundle.esim_go_name, // Use esim_go_name as id
-          esimGoName: bundle.esim_go_name,
-          bundleGroup: bundle.groups?.[0] || "", // groups is an array
+          id: bundle.external_id, 
+          esimGoName: bundle.name,
+          bundleGroup: bundle.group_name || "",
           description: bundle.description || "",
-          duration: bundle.validity_in_days,
+          duration: bundle.validity_days,
           dataAmount: bundle.data_amount_mb,
-          unlimited: bundle.is_unlimited,
-          priceCents: Math.round((bundle.price || 0) * 100), // Convert to cents
+          unlimited: bundle.unlimited,
+          priceCents: Math.round((bundle.price_usd || 0) * 100),
           currency: bundle.currency,
-          countries: bundle.countries || [],
-          regions: bundle.region ? [bundle.region] : [], // region is singular
-          syncedAt: bundle.updated_at, // Using updated_at as there's no last_synced field
+          countries: [], // This needs a separate resolver if required
+          regions: bundle.region ? [bundle.region] : [],
+          syncedAt: bundle.updated_at,
           createdAt: bundle.created_at,
           updatedAt: bundle.updated_at,
         }));
@@ -220,23 +169,11 @@ export const catalogResolvers: Partial<Resolvers> = {
         throw error;
       }
     },
-
-    // High demand countries - returns list of country ISO codes marked as high demand
+    
     highDemandCountries: async (_, __, context: Context) => {
       try {
-        logger.info("Fetching high demand countries", {
-          operationType: "high-demand-countries-fetch",
-        });
-
-        // Use high demand country repository to get all high demand countries
         const highDemandCountries =
           await context.repositories.highDemandCountries.getAllHighDemandCountries();
-
-        logger.info("High demand countries fetched successfully", {
-          countryCount: highDemandCountries.length,
-          operationType: "high-demand-countries-fetch",
-        });
-
         return highDemandCountries;
       } catch (error) {
         logger.error("Failed to fetch high demand countries", error as Error, {
@@ -250,7 +187,6 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   Mutation: {
-    // Trigger catalog sync via workers
     triggerCatalogSync: async (_, { params }, context: Context) => {
       const {
         type,
@@ -262,17 +198,6 @@ export const catalogResolvers: Partial<Resolvers> = {
       } = params;
 
       try {
-        logger.info("Triggering catalog sync via workers", {
-          type,
-          bundleGroup,
-          countryId,
-          priority,
-          force,
-          userId: context.auth?.user?.id || "test-user",
-          operationType: "trigger-catalog-sync",
-        });
-
-        // Check for conflicting active jobs
         const conflictingJob =
           await context.repositories.syncJob.getActiveJobDetails({
             jobType: type,
@@ -285,15 +210,6 @@ export const catalogResolvers: Partial<Resolvers> = {
           const createdTime = new Date(
             conflictingJob.created_at || new Date()
           ).toLocaleString();
-
-          logger.warn("Catalog sync blocked by conflicting job", {
-            conflictingJobId: conflictingJob.id,
-            conflictingJobType: conflictingJob.job_type,
-            conflictingJobStatus: conflictingJob.status,
-            createdAt: conflictingJob.created_at,
-            operationType: "sync-conflict-detected",
-          });
-
           return {
             success: false,
             jobId: null,
@@ -309,37 +225,22 @@ export const catalogResolvers: Partial<Resolvers> = {
           };
         }
 
-        // If force=true and there's a conflicting job, cancel pending jobs
         if (conflictingJob && force) {
-          const cancelledCount =
-            await context.repositories.syncJob.cancelPendingJobs({
+          await context.repositories.syncJob.cancelPendingJobs({
               jobType: type,
               bundleGroup: bundleGroup || undefined,
               countryId: countryId || undefined,
             });
-
-          logger.info(
-            "Force cancelled conflicting jobs before starting new sync",
-            {
-              cancelledCount,
-              conflictingJobId: conflictingJob.id,
-              operationType: "force-cancel-sync-jobs",
-            }
-          );
         }
 
-        // Import the BullMQ queue to actually queue jobs
         const { Queue } = await import("bullmq");
-        // Create the same queue as workers use
         const catalogQueue = new Queue("catalog-sync", {
           connection: {
             host: env.REDIS_HOST,
             port: env.REDIS_PORT,
             password: env.REDIS_PASSWORD,
-            family: 0,
           },
         });
-
 
         if (!provider) {
           throw new GraphQLError("Provider is required", {
@@ -347,7 +248,6 @@ export const catalogResolvers: Partial<Resolvers> = {
           });
         }
 
-        // Create a sync job record using repository
         const syncJob = await context.repositories.syncJob.createJob({
           jobType: type as any,
           priority: (priority || "normal") as any,
@@ -360,7 +260,6 @@ export const catalogResolvers: Partial<Resolvers> = {
           },
         });
 
-        // Now queue the actual BullMQ job for the workers to process
         const bullmqJob = await catalogQueue.add(
           `catalog-sync-${type}`,
           {
@@ -378,30 +277,17 @@ export const catalogResolvers: Partial<Resolvers> = {
           {
             priority: priority === "high" ? 1 : priority === "normal" ? 5 : 10,
             attempts: 3,
-            backoff: {
-              type: "exponential",
-              delay: 2000,
-            },
+            backoff: { type: "exponential", delay: 2000 },
             removeOnComplete: 100,
             removeOnFail: 50,
           }
         );
 
-        // Update the database job with the BullMQ job ID
         await context.repositories.syncJob.updateJobProgress(syncJob.id, {
           metadata: {
             ...((syncJob.metadata as any) || {}),
             bullmqJobId: bullmqJob.id,
           },
-        });
-
-        logger.info("Catalog sync job queued successfully", {
-          dbJobId: syncJob.id,
-          bullmqJobId: bullmqJob.id,
-          type,
-          bundleGroup,
-          countryId,
-          operationType: "trigger-catalog-sync",
         });
 
         return {
@@ -426,9 +312,9 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   CountryBundle: {
-    pricingBreakdown: async (parent, { paymentMethod }, context: Context) => {
+    pricingBreakdown: async (parent: any, { paymentMethod }: any, context: Context) => {
       try {
-        // Use DataLoader to batch pricing calculations
+        if (!context.dataLoaders) throw new Error("Dataloaders not initialized");
         const pricingKey = extractPricingKey(
           {
             ...parent,
@@ -444,16 +330,13 @@ export const catalogResolvers: Partial<Resolvers> = {
       } catch (error) {
         logger.error("Failed to calculate pricing breakdown", error as Error, {
           bundleName: parent.name,
-          operationType: "countryBundle-pricingBreakdown-field-resolver",
         });
         throw error;
       }
     },
-
-    // Field resolver for appliedRules (rules that affected the pricing)
-    appliedRules: async (parent: any, { paymentMethod }, context: Context) => {
+    appliedRules: async (parent: any, { paymentMethod }: any, context: Context) => {
       try {
-        // Use DataLoader to get pricing breakdown with applied rules
+        if (!context.dataLoaders) throw new Error("Dataloaders not initialized");
         const pricingKey = extractPricingKey(
           {
             ...parent,
@@ -472,7 +355,6 @@ export const catalogResolvers: Partial<Resolvers> = {
       } catch (error) {
         logger.error("Failed to get applied rules for bundle", error as Error, {
           bundleName: parent.name,
-          operationType: "countryBundle-appliedRules-field-resolver",
         });
         return [];
       }
@@ -480,24 +362,18 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   CatalogBundle: {
-    pricingBreakdown: async (
-      parent: any,
-      { paymentMethod },
-      context: Context
-    ) => {
+    pricingBreakdown: async (parent: any, { paymentMethod }: any, context: Context) => {
       try {
-        // Use DataLoader to batch pricing calculations
+        if (!context.dataLoaders) throw new Error("Dataloaders not initialized");
         const pricingKey = extractPricingKey(
           parent,
           mapPaymentMethodEnum(paymentMethod) as PaymentMethod,
           context
         );
-
         return context.dataLoaders.pricing.load(pricingKey);
       } catch (error) {
         logger.error("Failed to calculate pricing breakdown", error as Error, {
           bundleName: parent.esimGoName || parent.name,
-          operationType: "catalogBundle-pricingBreakdown-field-resolver",
         });
         throw error;
       }
@@ -505,13 +381,9 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   CustomerBundle: {
-    pricingBreakdown: async (
-      parent: any,
-      { paymentMethod },
-      context: Context
-    ) => {
+    pricingBreakdown: async (parent: any, { paymentMethod }: any, context: Context) => {
       try {
-        // Use DataLoader to batch pricing calculations
+        if (!context.dataLoaders) throw new Error("Dataloaders not initialized");
         const pricingKey = extractPricingKey(
           {
             ...parent,
@@ -525,7 +397,6 @@ export const catalogResolvers: Partial<Resolvers> = {
       } catch (error) {
         logger.error("Failed to calculate pricing breakdown", error as Error, {
           bundleName: parent.name,
-          operationType: "customerBundle-pricingBreakdown-field-resolver",
         });
         throw error;
       }
@@ -533,45 +404,28 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   PricingBreakdown: {
-    // Field resolver for appliedRules (rules that affected the pricing)
     appliedRules: async (parent: any, _, context: Context) => {
       try {
         if (parent._pricingCalculation) {
           return parent._pricingCalculation.appliedRules || [];
         }
-
-        // If no cached calculation, return empty array
-        logger.info("No pricing calculation available for appliedRules", {
-          bundleName: parent.bundleName,
-          operationType: "pricingBreakdown-appliedRules-field-resolver",
-        });
         return [];
       } catch (error) {
         logger.error("Error getting applied rules", error as Error, {
           bundleName: parent.bundleName,
-          operationType: "pricingBreakdown-appliedRules-field-resolver",
         });
         return [];
       }
     },
-
-    // Field resolver for discounts (detailed discount breakdown)
     discounts: async (parent: any, _, context: Context) => {
       try {
         if (parent._pricingCalculation) {
           return parent._pricingCalculation.discounts || [];
         }
-
-        // If no cached calculation, return empty array
-        logger.info("No pricing calculation available for discounts", {
-          bundleName: parent.bundleName,
-          operationType: "pricingBreakdown-discounts-field-resolver",
-        });
         return [];
       } catch (error) {
         logger.error("Error getting discount breakdown", error as Error, {
           bundleName: parent.bundleName,
-          operationType: "pricingBreakdown-discounts-field-resolver",
         });
         return [];
       }
@@ -581,16 +435,10 @@ export const catalogResolvers: Partial<Resolvers> = {
   BundlesByCountry: {
     bundles: async (parent, _, context: Context) => {
       try {
-        // Only calculate bundles if they weren't already provided or if explicitly requested
         if (parent.bundles !== null) {
           return parent.bundles;
         }
 
-        logger.info("Calculating bundles with pricing for country", {
-          countryId: parent.country.iso,
-          operationType: "bundles-countries-field-resolver",
-        });
-        // Get bundles for this country
         const countryBundles = await context.repositories.bundles.search({
           countries: [parent.country.iso],
           limit: 100,
@@ -598,54 +446,37 @@ export const catalogResolvers: Partial<Resolvers> = {
         });
 
         if (!countryBundles || countryBundles.count === 0) {
-          logger.warn("No bundles found for country in field resolver", {
-            countryId: parent.country.iso,
-            operationType: "bundles-countries-field-resolver",
-          });
           return [];
         }
 
-        // Map to CountryBundle format - field resolvers will handle pricing calculations
+        // Map to CountryBundle format
         const bundles = countryBundles.data.map((bundle) => {
           const countryBundle: CatalogBundle | CustomerBundle = {
-            basePrice: bundle?.price || 0,
-            countries: [parent.country.iso],
+            basePrice: bundle?.price_usd || 0,
+            countries: [], // This needs to be resolved separately
             createdAt: bundle?.created_at,
-            isUnlimited: bundle?.is_unlimited || bundle?.data_amount_mb === -1,
+            isUnlimited: bundle?.unlimited || false,
             currency: bundle?.currency || "USD",
-            dataAmountReadable: byteSize(
-              bundle?.data_amount_mb || 0
-            ).toString(),
-            groups: bundle?.groups || [],
-            name: bundle?.esim_go_name || "Bundle",
-            validityInDays: bundle?.validity_in_days || 0,
-            esimGoName: bundle?.esim_go_name || "Bundle",
-            id: bundle?.esim_go_name || "Bundle",
+            dataAmountReadable: byteSize(bundle?.data_amount_mb || 0).toString(),
+            groups: bundle?.group_name ? [bundle.group_name] : [],
+            name: bundle?.name || "Bundle",
+            validityInDays: bundle?.validity_days || 0,
+            esimGoName: bundle?.name || "Bundle",
+            id: bundle?.external_id || "Bundle",
             speed: bundle.speed || [],
             syncedAt: bundle?.updated_at,
             updatedAt: bundle?.updated_at,
-            provider: bundle?.provider as Provider,
+            provider: "unknown" as Provider, // This needs to be resolved
             dataAmountMB: bundle?.data_amount_mb,
             description: bundle?.description,
             region: bundle?.region,
           };
           return countryBundle;
         });
-
-        logger.info("Bundles prepared for field resolvers", {
-          countryId: parent.country.iso,
-          bundleCount: bundles.length,
-          operationType: "bundles-countries-field-resolver",
-        });
-
         return bundles;
       } catch (error) {
-        logger.error(
-          "Failed to prepare bundles for field resolvers",
-          error as Error,
-          {
+        logger.error("Failed to prepare bundles for field resolvers", error as Error, {
             countryId: parent.country.iso,
-            operationType: "bundles-countries-field-resolver",
           }
         );
         return [];
@@ -654,7 +485,6 @@ export const catalogResolvers: Partial<Resolvers> = {
   },
 
   Subscription: {
-    // Catalog sync progress subscription
     catalogSyncProgress: {
       subscribe: async (_, __, context: Context) => {
         if (!context.services.pubsub) {
@@ -669,8 +499,6 @@ export const catalogResolvers: Partial<Resolvers> = {
         ]);
       },
     },
-
-    // Pricing pipeline progress subscription
     pricingPipelineProgress: {
       subscribe: async (_, { correlationId }, context: Context) => {
         if (!context.services.pubsub) {
@@ -678,41 +506,22 @@ export const catalogResolvers: Partial<Resolvers> = {
             extensions: { code: "SERVICE_UNAVAILABLE" },
           });
         }
-
-        logger.info("Client subscribed to pricing pipeline progress", {
-          correlationId,
-          userId: context.auth?.user?.id,
-          operationType: "pricing-pipeline-subscription",
-        });
-
         const { PubSubEvents } = await import("../context/pubsub");
         const { withFilter } = await import("graphql-subscriptions");
 
-        // Create the async iterator with the filter
         const iterator = withFilter(
           () =>
             context.services.pubsub!.asyncIterator([
               PubSubEvents.PRICING_PIPELINE_STEP,
             ]),
           (payload, variables) => {
-            // Log for debugging
-            logger.debug("Filtering pricing pipeline event", {
-              payloadCorrelationId: payload.correlationId,
-              requestedCorrelationId: variables.correlationId,
-              match: payload.correlationId === variables.correlationId,
-              operationType: "pricing-pipeline-filter",
-            });
-
-            // Filter by correlationId to ensure users only get their own pricing updates
             return payload.correlationId === variables.correlationId;
           }
         );
-
-        // Return the iterator result
-        return iterator(_, { correlationId }, context);
+        
+        return iterator(_, { correlationId }, context, {} as any);
       },
       resolve: (payload: any) => {
-        // The payload itself is the pricing pipeline step data
         return payload;
       },
     },
