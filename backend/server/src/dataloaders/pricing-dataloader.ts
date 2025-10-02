@@ -115,3 +115,14 @@ export function createPricingDataLoader(
   );
 }
 
+// +++ FIXED +++
+// הוספנו בחזרה את הפונקציה הזו כפונקציה ריקה כדי למנוע את שגיאת ה-import
+export async function invalidatePricingCache(
+ context: Context,
+ pattern: string
+): Promise<number> {
+  logger.info("Cache invalidation is disabled in simple-pricer mode.", { pattern });
+  // מחזירים 0 כי לא נמחקו מפתחות
+  return 0;
+}
+
