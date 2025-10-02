@@ -1,308 +1,117 @@
-import {
-  calculatePricing,
-  type PricingEngineV2Result,
-  type RequestFacts,
-} from "@hiilo/rules-engine-2";
 import DataLoader from "dataloader";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import { withPerformanceMonitoring } from "../services/pricing-performance-monitor";
 import type { Country, PaymentMethod, PricingBreakdown, Provider } from "../types";
 
+// מייבאים את הפונקציה החדשה שלנו מהמנוע הפשוט
+import { calculateSimplePrice } from "../../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
+
+
 const logger = createLogger({
-  component: "PricingDataLoader",
-  operationType: "dataloader",
+  component: "PricingDataLoader",
+  operationType: "dataloader",
 });
 
-// Key for the DataLoader that uniquely identifies a pricing request
 export interface PricingKey {
-  bundleId: string;
-  validityInDays: number;
-  countries: string[];
-  region?: string;
-  paymentMethod: PaymentMethod;
-  group?: string;
-  promo?: string;
-  userId?: string;
-  userEmail?: string;
+  bundleId: string;
+  validityInDays: number;
+  countries: string[];
+  region?: string;
+  paymentMethod: PaymentMethod;
+  group?: string;
+  promo?: string;
+  userId?: string;
+  userEmail?: string;
 }
 
-// Result from the pricing calculation
 export interface PricingResult extends PricingBreakdown {
-  cacheKey: string;
+  cacheKey: string; // We keep the key for DataLoader's internal caching, but not for Redis
 }
 
-/**
- * Creates a string cache key from the pricing key
- */
 function createCacheKey(key: PricingKey): string {
-  return `pricing:${key.bundleId}:${key.validityInDays}:${key.countries.join(
-    ","
-  )}:${key.region || "none"}:${key.paymentMethod}:${key.group || "default"}:${
-    key.promo || "none"
-  }:${key.userId || "anonymous"}`;
+  return `pricing:${key.bundleId}:${key.validityInDays}:${key.countries.join(
+    ","
+  )}:${key.region || "none"}:${key.paymentMethod}:${key.group || "default"}:${
+    key.promo || "none"
+  }:${key.userId || "anonymous"}`;
 }
 
-/**
- * Creates a DataLoader instance for batch loading pricing calculations
- * This is created per-request to ensure proper request isolation
- */
 export function createPricingDataLoader(
-  context: Context
+  context: Context
 ): DataLoader<PricingKey, PricingResult, string> {
-  return new DataLoader<PricingKey, PricingResult, string>(
-    withPerformanceMonitoring(
-      async (keys: readonly PricingKey[]): Promise<PricingResult[]> => {
+  return new DataLoader<PricingKey, PricingResult, string>(
+    withPerformanceMonitoring(
+      async (keys: readonly PricingKey[]): Promise<(PricingResult | Error)[]> => {
         const startTime = Date.now();
+        logger.info("Batch loading pricing calculations (No Redis)", { batchSize: keys.length });
 
-        logger.info("Batch loading pricing calculations", {
-          batchSize: keys.length,
-          operationType: "batch-load",
-        });
+          const results = await Promise.all(
+            keys.map(async (key) => {
+              const cacheKey = createCacheKey(key);
 
-        try {
-          // Process calculations in parallel
-          const results = await Promise.all(
-            keys.map(async (key) => {
-              const cacheKey = createCacheKey(key);
-
-              try {
-                // Check Redis cache first
-                const cachedResult = await getCachedPricing(context, cacheKey);
-                if (cachedResult) {
-                  logger.debug("Cache hit for pricing calculation", {
-                    cacheKey,
-                    bundleId: key.bundleId,
-                    operationType: "cache-hit",
-                  });
-                  return cachedResult;
+              try {
+                const countryIso = key.countries?.[0];
+                if (!countryIso) {
+                    throw new Error('Country ISO is required for pricing calculation.');
                 }
+                
+                const simpleResult = await calculateSimplePrice(countryIso, key.validityInDays);
 
-                const requestFacts = {
-                  group: key.group || "Standard Unlimited Essential",
-                  days: key.validityInDays,
-                  paymentMethod: key.paymentMethod,
-                  ...(key.countries?.[0] ? { country: key.countries[0] } : {}),
-                  ...(key.region ? { region: key.region } : {}),
-                  // Add coupon code from promo field
-                  ...(key.promo ? { couponCode: key.promo } : {}),
-                  // Add user information from context for coupon validation and corporate discounts
-                  ...(context.auth?.user?.id
-                    ? { userId: context.auth.user.id }
-                    : {}),
-                  ...(context.auth?.user?.email
-                    ? { userEmail: context.auth.user.email }
-                    : {}),
-                  includeDebugInfo: false,
-                } as RequestFacts;
-
-                // Calculate pricing using the rules engine
-                const result = await calculatePricing(requestFacts);
-
-                // Map to PricingBreakdown format
-                const pricingBreakdown: PricingResult & {
-                  _pricingCalculation: PricingEngineV2Result;
-                } = {
-                  __typename: "PricingBreakdown",
-                  cacheKey,
-
-                  ...result.pricing,
-
-                  // Bundle Information
-                  bundle: {
-                    __typename: "CountryBundle",
-                    id: result.selectedBundle?.esim_go_name || key.bundleId,
-                    name: result.selectedBundle?.esim_go_name || "",
-                    duration: key.validityInDays,
-                    data: result.selectedBundle?.data_amount_mb || 0,
-                    isUnlimited: result.selectedBundle?.is_unlimited || false,
-                    currency: "USD",
-                    group: key.group || "Standard Unlimited Essential",
-                    provider: result.selectedBundle?.provider! as Provider,
-                    country: {
-                      __typename: "Country",
-                      iso: key.countries?.[0] || "",
-                    } as Country, // We let the field resolver,
-                  },
-
-                  country: {
-                    iso: key.countries?.[0] || "",
-                    name: key.countries?.[0] || "",
-                    region: key.region || "",
-                  },
-
-                  duration: key.validityInDays,
-                  appliedRules: result.appliedRules,
-                  unusedDays: result.unusedDays,
-                  selectedReason: "calculated",
-                  totalCostBeforeProcessing:
-                    result.pricing.totalCostBeforeProcessing,
-
-                  // Store the full calculation for field resolvers
-                  _pricingCalculation: result,
-                };
-
-                // Cache the result
-                await cachePricing(context, cacheKey, pricingBreakdown);
-
-                return pricingBreakdown;
-              } catch (error) {
-                logger.error(
-                  "Failed to calculate pricing for key",
-                  error as Error,
-                  {
+                const pricingBreakdown: PricingResult = {
+                    __typename: "PricingBreakdown",
                     cacheKey,
-                    bundleId: key.bundleId,
-                    operationType: "calculation-error",
-                  }
-                );
-
-                // Return a default error result to avoid breaking the batch
-                return {
-                  __typename: "PricingBreakdown",
-                  cacheKey,
-                  error: error as Error,
+                    finalPrice: simpleResult.finalPrice,
+                    cost: simpleResult.calculation.upperPackagePrice - (simpleResult.calculation.totalDiscount || 0),
+                    markup: 0,
+                    currency: "USD",
+                    unusedDays: simpleResult.calculation.unusedDays,
+                    processingCost: 0,
+                    discountPerDay: 0,
+                    discountValue: simpleResult.calculation.totalDiscount,
+                    priceAfterDiscount: simpleResult.finalPrice,
+                    discountRate: 0,
+                    totalCost: 0,
+                    processingRate: 0,
+                    finalRevenue: 0,
+                    revenueAfterProcessing: 0,
+                    netProfit: 0,
+                    totalCostBeforeProcessing: 0,
+                    appliedRules: [],
+                    bundle: {
+                        __typename: "CountryBundle",
+                        id: simpleResult.bundleName || key.bundleId,
+                        name: simpleResult.bundleName || "",
+                        duration: key.validityInDays,
+                        data: 0,
+                        isUnlimited: false,
+                        currency: "USD",
+                        group: key.group || "default",
+                        provider: simpleResult.provider as Provider,
+                        country: { __typename: "Country", iso: key.countries?.[0] || "" } as Country,
+                    },
+                    country: {
+                        iso: key.countries?.[0] || "",
+                        name: key.countries?.[0] || "",
+                        region: key.region || "",
+                    },
+                    duration: key.validityInDays,
+                    selectedReason: "calculated_simple",
                 };
-              }
-            })
-          );
+                return pricingBreakdown;
 
-          const duration = Date.now() - startTime;
-          logger.info("Batch pricing calculations completed", {
-            batchSize: keys.length,
-            duration,
-            avgTimePerCalc: duration / keys.length,
-            operationType: "batch-complete",
-          });
-
-          return results.filter(
-            (result): result is PricingResult => result !== null
-          );
-        } catch (error) {
-          logger.error(
-            "Failed to batch load pricing calculations",
-            error as Error,
-            {
-              batchSize: keys.length,
-              operationType: "batch-error",
-            }
-          );
-          throw error;
-        }
-      }
-    ),
-    {
-      // DataLoader options
-      cacheKeyFn: (key: PricingKey) => createCacheKey(key),
-      maxBatchSize: 100,
-      batchScheduleFn: (callback) => setTimeout(callback, 10),
-    }
-  );
+              } catch (error) {
+                logger.error("Failed to calculate pricing for key", error as Error, { cacheKey });
+                return error as Error;
+              }
+            })
+          );
+        const duration = Date.now() - startTime;
+        logger.info("Batch pricing calculations completed", { duration });
+          return results;
+      }
+    ),
+    { cacheKeyFn: (key: PricingKey) => createCacheKey(key) }
+  );
 }
 
-/**
- * Get cached pricing from Redis
- */
-async function getCachedPricing(
-  context: Context,
-  cacheKey: string
-): Promise<PricingResult | null> {
-  try {
-    const cached = await context.services.redis.get(cacheKey);
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      // Add 1 hour TTL check
-      if (parsed.cachedAt && Date.now() - parsed.cachedAt < 3600000) {
-        return parsed.data;
-      }
-    }
-  } catch (error) {
-    logger.error("Failed to get cached pricing", error as Error, {
-      cacheKey,
-      operationType: "cache-get-error",
-    });
-  }
-  return null;
-}
-
-/**
- * Cache pricing result in Redis
- */
-async function cachePricing(
-  context: Context,
-  cacheKey: string,
-  result: PricingResult
-): Promise<void> {
-  try {
-    const cacheData = {
-      data: result,
-      cachedAt: Date.now(),
-    };
-    // Cache for 1 hour
-    await context.services.redis.set(cacheKey, JSON.stringify(cacheData), {
-      ttl: 3600,
-    });
-
-    logger.debug("Cached pricing result", {
-      cacheKey,
-      operationType: "cache-set",
-    });
-  } catch (error) {
-    logger.error("Failed to cache pricing", error as Error, {
-      cacheKey,
-      operationType: "cache-set-error",
-    });
-  }
-}
-
-/**
- * Invalidate cached pricing for a specific bundle or pattern
- */
-export async function invalidatePricingCache(
-  context: Context,
-  pattern: string
-): Promise<number> {
-  try {
-    const deletePattern = "pricing:" + pattern;
-    const keysToDelete = [];
-    for await (const [key] of context.services.redis?.client.iterator?.(
-      deletePattern
-    ) ?? []) {
-      if (key.startsWith(deletePattern)) {
-        keysToDelete.push(key);
-      }
-    }
-    if (keysToDelete.length > 0) {
-      for (const key of keysToDelete) {
-        await context.services.redis.client.delete(key);
-      }
-    }
-    return keysToDelete.length;
-  } catch (error) {
-    logger.error("Failed to invalidate pricing cache", error as Error, {
-      pattern,
-      operationType: "cache-invalidate-error",
-    });
-    return 0;
-  }
-}
-
-/**
- * Helper to extract pricing key from bundle data
- */
-export function extractPricingKey(
-  bundle: any,
-  paymentMethod: PaymentMethod,
-  context: Context
-): PricingKey {
-  return {
-    bundleId: bundle.esimGoName || bundle.id || bundle.name || "unknown",
-    validityInDays: bundle.validityInDays || bundle.duration || 1,
-    countries: bundle.countries || (bundle.country ? [bundle.country.iso] : []),
-    region: bundle.region,
-    paymentMethod,
-    group: bundle.group || bundle.groups?.[0] || "Standard Unlimited Essential",
-    userId: context.auth?.user?.id,
-    userEmail: context.auth?.user?.email,
-  };
-}
