@@ -10,33 +10,36 @@ const supabase = createClient(
   config.db.supabaseServiceKey
 );
 
-// פונקציית עזר לנרמול שמות provider
-function normalizeProvider(name?: string): string {
-  return name?.trim().toLowerCase() ?? "";
-}
+const BATCH_SIZE = 100;
 
-// פונקציה שמריצה upsert אחד-אחד
-async function safeUpsert(
-  table: string,
-  row: any,
-  onConflict?: string
-) {
-  const { error } = await supabase
-    .from(table)
-    .upsert([row], onConflict ? { onConflict } : {});
+async function batchUpsert(table: string, records: any[], onConflict?: string) {
+  if (records.length === 0) return;
 
-  if (error) {
-    console.error(`[Supabase] Error upserting row into ${table}:`, {
-      row,
-      message: error.message,
-      details: (error as any).details,
-      hint: (error as any).hint,
-      code: (error as any).code,
-    });
-    return false;
+  for (let i = 0; i < records.length; i += BATCH_SIZE) {
+    const chunk = records.slice(i, i + BATCH_SIZE);
+    
+    const { error } = await supabase
+      .from(table)
+      .upsert(chunk, onConflict ? { onConflict } : {});
+
+    if (error) {
+      console.warn(`[Supabase] Batch upsert failed for table ${table}. Retrying rows individually...`, error.message);
+      for (const record of chunk) {
+        const { error: singleError } = await supabase
+          .from(table)
+          .upsert([record], onConflict ? { onConflict } : {});
+        
+        if (singleError) {
+          console.error(`[Supabase] Failed to upsert single row in table ${table}:`, {
+             record,
+             message: singleError.message,
+          });
+        }
+      }
+    }
   }
-  return true;
 }
+
 
 export async function upsertBundles(bundles: any[]) {
   try {
@@ -45,140 +48,78 @@ export async function upsertBundles(bundles: any[]) {
       return;
     }
 
-    // --- Providers ---
-    const providerNames = [...new Set(
-      bundles
-        .map((b) => normalizeProvider(b.provider))
-        .filter((name) => !!name)
-    )];
-    for (const name of providerNames) {
-      await safeUpsert("catalog_providers", { name }, "name");
-    }
+    // --- 1. Providers ---
+    const providerNames = [...new Set(bundles.map((b) => b.provider?.trim().toLowerCase()).filter(Boolean))];
+    const providerRecords = providerNames.map(name => ({ name }));
+    await batchUpsert("catalog_providers", providerRecords, "name");
 
-    // שליפת IDs כדי למפות ל־bundles
-    const { data: allProviders } = await supabase
-      .from("catalog_providers")
-      .select("id, name");
+    const { data: allProviders } = await supabase.from("catalog_providers").select("id, name");
+    // FIX 1: Handle cases where the query returns no data (null) by providing a default empty array
+    const providerMap = new Map((allProviders || []).map((p: {name: string, id: number}) => [p.name.toLowerCase(), p.id]));
 
-    const providerMap: Record<string, number> = {};
-    allProviders?.forEach((p) => {
-      providerMap[normalizeProvider(p.name)] = p.id;
-    });
+    // --- 2. Bundles (כולם inactive בהתחלה) ---
+    const bundleRecords = bundles
+        .map(b => {
+            const providerId = providerMap.get(b.provider?.trim().toLowerCase());
+            if (!providerId || !b.external_id) return null;
+            return {
+                provider_id: providerId,
+                external_id: b.external_id,
+                name: b.name ?? null,
+                description: b.description ?? null,
+                data_amount_mb: b.data_amount_mb ?? null,
+                validity_days: b.validity_days ?? null,
+                price_usd: b.price_usd ?? null,
+                unlimited: b.unlimited ?? false,
+                plan_type: b.plan_type ?? null,
+                is_active: false,
+            };
+        })
+        .filter(Boolean);
 
-    console.log("ProviderMap keys:", Object.keys(providerMap));
+    await batchUpsert("catalog_bundles", bundleRecords, "provider_id,external_id");
+    
+    // --- 3. Bundle-Countries ---
+    const { data: allBundles } = await supabase.from("catalog_bundles").select("id, provider_id, external_id");
+    // FIX 2: Handle cases where the query returns no data (null) by providing a default empty array
+    const bundleMap = new Map((allBundles || []).map((b: {provider_id: number, external_id: string, id: number}) => [`${b.provider_id}_${b.external_id}`, b.id]));
 
-    const errors: any[] = [];
+    const countryLinks: {bundle_id: number, country_iso2: string}[] = [];
+    // FIX 3: Define the Set with a specific type (<number>) to avoid type errors
+    const bundlesToActivate = new Set<number>();
 
-    // --- Bundles (כולם inactive עד שנבדוק מדינות) ---
     for (const b of bundles) {
-      if (!b.provider || !b.external_id) {
-        errors.push({
-          reason: "INVALID_BUNDLE",
-          provider: b.provider,
-          external_id: b.external_id,
-        });
-        continue;
-      }
+        const providerId = providerMap.get(b.provider?.trim().toLowerCase());
+        const bundleId = bundleMap.get(`${providerId}_${b.external_id}`);
 
-      const providerId = providerMap[normalizeProvider(b.provider)];
-      if (!providerId) {
-        errors.push({
-          reason: "MISSING_PROVIDER",
-          provider: b.provider,
-          external_id: b.external_id,
-        });
-        continue;
-      }
-
-      await safeUpsert("catalog_bundles", {
-        provider_id: providerId,
-        external_id: b.external_id,
-        name: b.name ?? null,
-        description: b.description ?? null,
-        data_amount_mb: b.data_amount_mb ?? null,
-        validity_days: b.validity_days ?? null,
-        price_usd: b.price_usd ?? null,
-        unlimited: b.unlimited ?? false,
-        plan_type: b.plan_type ?? null,
-        group_name: b.group_name ?? null,
-        policy_id: b.policy_id ?? null,
-        policy_name: b.policy_name ?? null,
-        is_active: false,
-      }, "provider_id,external_id");
-    }
-
-    // שליפת IDs של bundles אחרי upsert
-    const { data: allBundles, error: fetchError } = await supabase
-      .from("catalog_bundles")
-      .select("id, provider_id, external_id");
-
-    if (fetchError) {
-      console.error(
-        "[Supabase] Error fetching catalog_bundles:",
-        fetchError.message
-      );
-      return;
-    }
-
-    const bundleMap: Record<string, number> = {};
-    allBundles?.forEach((b) => {
-      bundleMap[`${b.provider_id}_${b.external_id}`] = b.id;
-    });
-
-    // --- Bundle-Countries ---
-    for (const b of bundles) {
-      const providerId = providerMap[normalizeProvider(b.provider)];
-      const key = `${providerId}_${b.external_id}`;
-      const bundleId = bundleMap[key];
-
-      if (!bundleId) {
-        errors.push({
-          reason: "MISSING_BUNDLE",
-          provider: b.provider,
-          external_id: b.external_id,
-        });
-        continue;
-      }
-
-      const uniqueCountries = [...new Set<string>(b.countries ?? [])];
-      for (const iso2 of uniqueCountries) {
-        if (!iso2 || !countries.isValid(iso2)) {
-          errors.push({
-            reason: "INVALID_ISO2",
-            bundle_id: bundleId,
-            iso2,
-            external_id: b.external_id,
-          });
-          continue;
+        if (!bundleId || !Array.isArray(b.countries)) continue;
+        
+        const uniqueCountries = [...new Set<string>(b.countries)];
+        if (uniqueCountries.length > 0) {
+            // FIX 3 (cont.): Ensure we only add valid number IDs to the Set
+            if(bundleId !== undefined) {
+                bundlesToActivate.add(bundleId);
+            }
         }
 
-        await safeUpsert("catalog_bundle_countries", {
-          bundle_id: bundleId,
-          country_iso2: iso2,
-        }, "bundle_id,country_iso2");
-      }
-
-      // אם יש מדינות תקינות → נעדכן is_active
-      if (uniqueCountries.length > 0) {
-        await safeUpsert("catalog_bundles", {
-          id: bundleId,
-          is_active: true,
-        }, "id");
-      }
+        for (const iso2 of uniqueCountries) {
+            if (iso2 && countries.isValid(iso2)) {
+                countryLinks.push({
+                    bundle_id: bundleId,
+                    country_iso2: iso2,
+                });
+            }
+        }
     }
 
-    // שומר שגיאות בטבלה ייעודית
-    for (const e of errors) {
-      await safeUpsert("catalog_bundle_country_errors", e);
-    }
+    await batchUpsert("catalog_bundle_countries", countryLinks, "bundle_id,country_iso2");
 
-    if (errors.length > 0) {
-      console.warn(
-        `[UpsertBundles] ${errors.length} rows skipped (saved to catalog_bundle_country_errors)`
-      );
-    }
+    // --- 4. Activate Bundles ---
+    const activationRecords = [...bundlesToActivate].map(id => ({ id, is_active: true }));
+    await batchUpsert("catalog_bundles", activationRecords, "id");
+    
+    console.info(`[UpsertBundles] Upsert finished. Processed ${bundles.length} bundles. Activated ${activationRecords.length} bundles.`);
 
-    console.info("[UpsertBundles] Upsert finished ✅ (row by row)");
   } catch (err: any) {
     console.error("[Supabase] General error in upsertBundles:", err.message);
   }
