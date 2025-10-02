@@ -63,7 +63,8 @@ export async function upsertBundles(bundles: any[]) {
             if (!providerId || !b.external_id) return null;
             return {
                 provider_id: providerId,
-                external_id: b.external_id,
+                // FIX: Normalize the external_id before saving to the DB
+                external_id: String(b.external_id).trim(),
                 name: b.name ?? null,
                 description: b.description ?? null,
                 data_amount_mb: b.data_amount_mb ?? null,
@@ -80,6 +81,7 @@ export async function upsertBundles(bundles: any[]) {
     
     // --- 3. Bundle-Countries ---
     const { data: allBundles } = await supabase.from("catalog_bundles").select("id, provider_id, external_id");
+    // The external_id from the DB is now clean, so no need to normalize it here.
     const bundleMap = new Map((allBundles || []).map((b: {provider_id: number, external_id: string, id: number}) => [`${b.provider_id}_${b.external_id}`, b.id]));
 
     const countryLinks: {bundle_id: number, country_iso2: string}[] = [];
@@ -87,7 +89,9 @@ export async function upsertBundles(bundles: any[]) {
 
     for (const b of bundles) {
         const providerId = providerMap.get(b.provider?.trim().toLowerCase());
-        const bundleId = bundleMap.get(`${providerId}_${b.external_id}`);
+        // FIX: Use the same normalization for the lookup key
+        const normalizedExternalId = String(b.external_id).trim();
+        const bundleId = bundleMap.get(`${providerId}_${normalizedExternalId}`);
 
         if (!bundleId || !Array.isArray(b.countries)) continue;
         
@@ -111,7 +115,6 @@ export async function upsertBundles(bundles: any[]) {
     await batchUpsert("catalog_bundle_countries", countryLinks, "bundle_id,country_iso2");
 
     // --- 4. Activate Bundles ---
-    // FIX: Use a direct .update() for activation. This is more efficient and avoids the upsert bug.
     if (bundlesToActivate.size > 0) {
         const idsToActivate = [...bundlesToActivate];
         const { error } = await supabase
