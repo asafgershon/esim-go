@@ -115,14 +115,31 @@ export function createPricingDataLoader(
   );
 }
 
-// +++ FIXED +++
-// הוספנו בחזרה את הפונקציה הזו כפונקציה ריקה כדי למנוע את שגיאת ה-import
 export async function invalidatePricingCache(
  context: Context,
  pattern: string
 ): Promise<number> {
   logger.info("Cache invalidation is disabled in simple-pricer mode.", { pattern });
-  // מחזירים 0 כי לא נמחקו מפתחות
   return 0;
+}
+
+// +++ FIXED +++
+// הוספנו בחזרה את הפונקציה הזו כפונקציה ריקה כדי למנוע את שגיאת ה-import
+export function extractPricingKey(
+  bundle: any,
+  paymentMethod: PaymentMethod,
+  context: Context
+): PricingKey {
+  logger.warn("extractPricingKey is a dummy function in simple-pricer mode.");
+  return {
+    bundleId: bundle.id || "unknown",
+    validityInDays: bundle.duration || 1,
+    countries: bundle.country ? [bundle.country.iso] : [],
+    region: bundle.region,
+    paymentMethod,
+    group: bundle.group || "default",
+    userId: context.auth?.user?.id,
+    userEmail: context.auth?.user?.email,
+  };
 }
 
