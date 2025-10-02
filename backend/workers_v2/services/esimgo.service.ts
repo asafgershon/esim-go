@@ -36,7 +36,6 @@ export async function fetchEsimGoBundles() {
           b.groups.includes("Standard Unlimited Essential")
       )
       .flatMap((b: any) => {
-        // סינון מוקדם על רשומות בעייתיות
         if (!b.name || typeof b.name !== "string") {
           console.warn("[eSIM-Go] Skipping bundle without valid name:", b);
           return [];
@@ -54,23 +53,21 @@ export async function fetchEsimGoBundles() {
 
         return [{
           provider: "eSIM-Go",
-          external_id: b.name, // מזהה יציב: תמיד השם המקורי מה־API
+          external_id: b.name,
           name: b.description || b.name,
           description: b.description ?? null,
-          data_amount_mb: b.dataAmount ?? null,
+          data_amount_mb: b.unlimited ? null : (b.dataAmount ?? null),
           validity_days: b.duration ?? null,
           price_usd: Number(b.price) || null,
           unlimited: b.unlimited ?? false,
-          plan_type: b.groups?.[0] ?? null,
-          group_name: null,
+          plan_type: "STANDARD",
+          group_name: b.groups?.[0] ?? null,
           policy_id: null,
           policy_name: null,
           countries: iso2List,
-          allowances: Array.isArray(b.allowances) ? b.allowances : [],
         }];
       });
 
-    console.log(`[eSIM-Go] Final mapped bundles: ${mapped.length}`);
     return mapped;
   } catch (error: any) {
     console.error("[eSIM-Go] Error fetching bundles:", error.message);
