@@ -54,7 +54,6 @@ export async function upsertBundles(bundles: any[]) {
     await batchUpsert("catalog_providers", providerRecords, "name");
 
     const { data: allProviders } = await supabase.from("catalog_providers").select("id, name");
-    // FIX 1: Handle cases where the query returns no data (null) by providing a default empty array
     const providerMap = new Map((allProviders || []).map((p: {name: string, id: number}) => [p.name.toLowerCase(), p.id]));
 
     // --- 2. Bundles (כולם inactive בהתחלה) ---
@@ -81,11 +80,9 @@ export async function upsertBundles(bundles: any[]) {
     
     // --- 3. Bundle-Countries ---
     const { data: allBundles } = await supabase.from("catalog_bundles").select("id, provider_id, external_id");
-    // FIX 2: Handle cases where the query returns no data (null) by providing a default empty array
     const bundleMap = new Map((allBundles || []).map((b: {provider_id: number, external_id: string, id: number}) => [`${b.provider_id}_${b.external_id}`, b.id]));
 
     const countryLinks: {bundle_id: number, country_iso2: string}[] = [];
-    // FIX 3: Define the Set with a specific type (<number>) to avoid type errors
     const bundlesToActivate = new Set<number>();
 
     for (const b of bundles) {
@@ -96,7 +93,6 @@ export async function upsertBundles(bundles: any[]) {
         
         const uniqueCountries = [...new Set<string>(b.countries)];
         if (uniqueCountries.length > 0) {
-            // FIX 3 (cont.): Ensure we only add valid number IDs to the Set
             if(bundleId !== undefined) {
                 bundlesToActivate.add(bundleId);
             }
@@ -115,10 +111,20 @@ export async function upsertBundles(bundles: any[]) {
     await batchUpsert("catalog_bundle_countries", countryLinks, "bundle_id,country_iso2");
 
     // --- 4. Activate Bundles ---
-    const activationRecords = [...bundlesToActivate].map(id => ({ id, is_active: true }));
-    await batchUpsert("catalog_bundles", activationRecords, "id");
+    // FIX: Use a direct .update() for activation. This is more efficient and avoids the upsert bug.
+    if (bundlesToActivate.size > 0) {
+        const idsToActivate = [...bundlesToActivate];
+        const { error } = await supabase
+            .from("catalog_bundles")
+            .update({ is_active: true })
+            .in('id', idsToActivate);
+
+        if (error) {
+            console.error('[Supabase] Failed to activate bundles:', error.message);
+        }
+    }
     
-    console.info(`[UpsertBundles] Upsert finished. Processed ${bundles.length} bundles. Activated ${activationRecords.length} bundles.`);
+    console.info(`[UpsertBundles] Upsert finished. Processed ${bundles.length} bundles. Activated ${bundlesToActivate.size} bundles.`);
 
   } catch (err: any) {
     console.error("[Supabase] General error in upsertBundles:", err.message);
