@@ -15,7 +15,6 @@ interface PricingStep {
   name: string;
   priceBefore: number;
   priceAfter: number;
-
   impact: number;
   ruleId?: string | null;
   metadata?: Record<string, unknown> | null;
@@ -54,27 +53,26 @@ export function useBatchPricingStream({
       setError(null);
       
       try {
-        console.log(`[DEBUG] Firing fetch for country: ${countryId}, days: ${requestedDays}`);
-
-        // --- The fetch call to our new API will be here ---
-        // For example:
-        // const response = await fetch(`/api/calculate-price?countryId=${countryId}&numOfDays=${requestedDays}`);
-        // const data: PricingData = await response.json();
+        // ---> !!! שים לב !!! <---
+        // החלף את הכתובת הבאה בכתובת האמיתית של השרת שלך מ-Railway
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'https://api.hiiloworld.com';
         
-        // Using mock data for now to ensure the plumbing works
-        const mockData: PricingData = {
-          finalPrice: 19.99,
-          totalPrice: 19.99,
-          hasDiscount: false,
-          discountAmount: 0,
-          days: requestedDays,
-          currency: "USD",
-          pricingSteps: [],
-        };
+        console.log(`[REAL] Firing fetch to: ${backendUrl}`);
 
-        setPricingCache(() => { // The unused 'prev' variable is removed here
-          const newCache = new Map(); // Reset cache for new selection
-          newCache.set(requestedDays, mockData);
+        // --- This is the real call to the server! ---
+        const response = await fetch(`${backendUrl}/api/calculate-price?countryId=${countryId}&numOfDays=${requestedDays}`);
+        
+        if (!response.ok) {
+          const errorBody = await response.json();
+          throw new Error(`API responded with status ${response.status}: ${errorBody.error}`);
+        }
+
+        const data: PricingData = await response.json();
+        
+        // Update the cache with the real data from the server
+        setPricingCache(() => {
+          const newCache = new Map();
+          newCache.set(requestedDays, data);
           return newCache;
         });
 
