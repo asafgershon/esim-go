@@ -7,6 +7,7 @@ const supabase = getSupabaseClient();
 
 type Bundle = Database["public"]["Tables"]["catalog_bundles"]["Row"];
 
+// החלף את כל הפונקציה הזו בקוד המתוקן
 export const availableBundles = async (
   _params: Record<string, any>,
   almanac: Almanac
@@ -16,10 +17,17 @@ export const availableBundles = async (
     const region = await almanac.factValue<string>("region");
     const country = await almanac.factValue<string>("country");
 
+    // --- התיקון מתחיל כאן ---
+
+    // 1. בחרנו את כל העמודות (*), ובנוסף ביקשנו לקבל את עמודת 'unlimited' תחת השם 'is_unlimited'
     const bundlesQuery = supabase
       .from("catalog_bundles")
-      .select("*")
-      .eq("is_unlimited", true);
+      .select('*, is_unlimited:unlimited') 
+      
+    // 2. סיננו לפי העמודה 'unlimited' שקיימת במסד הנתונים
+      .eq("unlimited", true);
+
+    // --- התיקון מסתיים כאן ---
 
     if (region) {
       bundlesQuery.eq("region", region);

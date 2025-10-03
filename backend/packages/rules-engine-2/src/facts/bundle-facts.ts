@@ -2,6 +2,7 @@ import { Almanac } from "json-rules-engine";
 import { Database } from "@hiilo/supabase";
 import { MarkupRule } from "src/blocks/markups";
 import { Provider } from "src/index-with-db";
+import { durations } from "./durations";
 
 type BundleByGroupRow = Database["public"]["Views"]["bundles_by_group"]["Row"];
 export type SelectedBundleFact = BundleByGroupRow | null;
