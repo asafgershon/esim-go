@@ -47,7 +47,7 @@ export async function fetchMayaProducts() {
           description: p.policy_name ?? null,
           data_amount_mb: p.data_quota_mb ?? null,
           validity_days: p.validity_days ?? null,
-          price_usd: Number(p.rrp_usd) || null,
+          price_usd: Number(p.wholesale_price_usd) || null,
           unlimited: true,
           plan_type: planType,
           group_name: null,
