@@ -89,7 +89,6 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
   const upperPackagePrice = upperPackage.price_usd + upperMarkup;
 
   const markupDifference = upperMarkup - lowerMarkup;
-  // +++ FIXED BUG HERE +++
   const dayDifference = upperPackage.validity_days - lowerPackage.validity_days;
 
   const discountPerDay = dayDifference > 0 ? markupDifference / dayDifference : 0;

@@ -60,9 +60,9 @@ import { checkoutSessionService } from "./services/checkout";
 import { checkoutWorkflow } from "./services/checkout/workflow";
 import { DeliveryService, SESEmailService } from "./services/delivery";
 
-// --- START: IMPORT FOR NEW PRICING ENGINE ---
-import { calculatePricing } from '@hiilo/rules-engine-2';
-// --- END: IMPORT FOR NEW PRICING ENGINE ---
+// --- START: NEW PRICING API ENDPOINT (Corrected Version) ---
+// 1. שנה את הייבוא כך שיפנה לפונקציה החדשה שלך
+import { calculateSimplePrice } from '../../packages/rules-engine-2/src/simple-pricer/simple-pricer.ts';
 
 // Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
@@ -290,44 +290,6 @@ async function startServer() {
       }
     });
 
-    // --- START: NEW PRICING API ENDPOINT ---
-    app.get('/api/calculate-price', async (req, res) => {
-      console.log('[API] Received pricing request:', req.query);
-      const { countryId, numOfDays } = req.query;
-
-      if (typeof countryId !== 'string' || typeof numOfDays !== 'string') {
-        return res.status(400).json({ error: 'Missing or invalid countryId or numOfDays' });
-      }
-      const days = parseInt(numOfDays, 10);
-
-      try {
-        const engineResult = await calculatePricing({
-          country: countryId.toUpperCase(),
-          days: days,
-          group: 'WEB_APP_UNLIMITED',
-        });
-        
-        if (!engineResult || !engineResult.pricing) {
-            throw new Error("Pricing engine returned an invalid result.");
-        }
-
-        const responseData = {
-          finalPrice: engineResult.pricing.finalPrice,
-          totalPrice: engineResult.pricing.totalCost,
-          hasDiscount: engineResult.pricing.discountValue > 0,
-          discountAmount: engineResult.pricing.discountValue,
-          days: engineResult.requestedDays,
-          currency: engineResult.pricing.currency,
-        };
-
-        res.status(200).json(responseData);
-      } catch (error) {
-        console.error('Pricing engine failed:', error);
-        res.status(500).json({ error: 'Failed to calculate price' });
-      }
-    });
-    // --- END: NEW PRICING API ENDPOINT ---
-
     app.use(
       "/graphql",
       expressMiddleware(server, {
@@ -358,6 +320,38 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+app.get('/api/calculate-price', async (req, res) => {
+  console.log('[API] Received pricing request for SIMPLE PRICER:', req.query);
+  const { countryId, numOfDays } = req.query;
+
+  if (typeof countryId !== 'string' || typeof numOfDays !== 'string') {
+    return res.status(400).json({ error: 'Missing or invalid countryId or numOfDays' });
+  }
+  const days = parseInt(numOfDays, 10);
+
+  try {
+    // 2. קרא לפונקציה החדשה והפשוטה שלך
+    const simplePriceResult = await calculateSimplePrice(countryId, days);
+
+    // 3. המר את התוצאה מהמנוע החדש לפורמט שהאתר צריך
+    const responseData = {
+      finalPrice: simplePriceResult.finalPrice,
+      totalPrice: simplePriceResult.finalPrice, // For now, total price is the final price
+      hasDiscount: simplePriceResult.calculation.totalDiscount > 0,
+      discountAmount: simplePriceResult.calculation.totalDiscount,
+      days: simplePriceResult.requestedDays,
+      currency: 'USD', // The new engine doesn't return currency, so we assume USD
+    };
+
+    res.status(200).json(responseData);
+  } catch (error) {
+    console.error('Simple pricing engine failed:', error);
+    res.status(500).json({ error: 'Failed to calculate price' });
+  }
+});
+// --- END: NEW PRICING API ENDPOINT ---
+
 
 // ... (Graceful shutdown logic remains unchanged)
 process.on("SIGTERM", async () => { logger.info("Received SIGTERM, shutting down gracefully", { operationType: "shutdown", }); process.exit(0); });
