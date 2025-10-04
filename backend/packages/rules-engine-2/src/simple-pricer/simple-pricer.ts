@@ -1,10 +1,9 @@
 // backend/packages/rules-engine-2/src/simple-pricer/simple-pricer.ts
 
-import { getSupabaseClient } from '../supabase'; // ודא שהנתיב נכון
+import { getSupabaseClient } from '../supabase';
 
 const supabase = getSupabaseClient();
 
-// --- הוספנו הגדרת Type ברורה ---
 type Bundle = {
     id: number;
     name: string;
@@ -14,7 +13,7 @@ type Bundle = {
     plan_type: string;
 };
 
-// --- פונקציית עזר לשליפת ה-Markup המתאים ---
+// --- Helper function to fetch the corresponding Markup ---
 async function getMarkup(providerId: number, planType: string, duration: number): Promise<number> {
     const { data, error } = await supabase
         .from('markups')
@@ -31,7 +30,7 @@ async function getMarkup(providerId: number, planType: string, duration: number)
 }
 
 
-// --- פונקציית התמחור הראשית ---
+// --- Main pricing function (Final corrected version) ---
 export async function calculateSimplePrice(countryIso: string, requestedDays: number) {
 
     async function getBundlesForProvider(providerName: string, country: string): Promise<Bundle[]> {
@@ -44,7 +43,6 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
             console.error(`RPC failed for provider ${providerName} and country ${country}:`, error);
             return [];
         }
-        // אנו אומרים ל-TypeScript שהמידע שחזר הוא מערך של חבילות
         return data as Bundle[];
     }
     
@@ -72,12 +70,13 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
 
     const unusedDays = upperPackage.validity_days - requestedDays;
 
+    // --- Calculation for exact match or single available package ---
     if (upperPackage.validity_days === requestedDays || !lowerPackage) {
         const markup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, upperPackage.validity_days);
         const finalPrice = upperPackage.price_usd + markup;
         
         return {
-            finalPrice: Math.ceil(finalPrice),
+            finalPrice: finalPrice, // FIX #1: Removed Math.ceil()
             provider: providerName,
             bundleName: upperPackage.name,
             requestedDays,
@@ -91,6 +90,7 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
         };
     }
 
+    // --- Interpolation calculation for other cases ---
     const upperMarkup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, upperPackage.validity_days);
     const lowerMarkup = await getMarkup(lowerPackage.provider_id, lowerPackage.plan_type, lowerPackage.validity_days);
     const upperPackagePrice = upperPackage.price_usd + upperMarkup;
@@ -101,7 +101,7 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
     const discountPerDay = dayDifference > 0 ? markupDifference / dayDifference : 0;
     const totalDiscount = unusedDays * discountPerDay;
     const finalPriceBeforeRounding = upperPackagePrice - totalDiscount;
-    const finalPrice = Math.ceil(finalPriceBeforeRounding);
+    const finalPrice = finalPriceBeforeRounding; // FIX #2: Removed Math.ceil()
 
     return {
         finalPrice,
