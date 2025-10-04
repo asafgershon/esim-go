@@ -23,7 +23,6 @@ async function getMarkup(providerId: number, planType: string, duration: number)
         .eq('duration_days', duration)
         .single();
     if (error || !data) {
-        // This log is important to see if markups are missing
         console.log(`[DEBUG] Markup not found for provider ${providerId}, plan ${planType}, duration ${duration}. Returning 0.`);
         return 0;
     }
@@ -31,7 +30,7 @@ async function getMarkup(providerId: number, planType: string, duration: number)
 }
 
 
-// --- Main pricing function with detailed logging ---
+// --- Main pricing function with YOUR specified logic ---
 export async function calculateSimplePrice(countryIso: string, requestedDays: number) {
     console.log(`\n\n--- 🚀 STARTING NEW CALCULATION 🚀 ---`);
     console.log(`[INPUT] Country: ${countryIso}, Requested Days: ${requestedDays}`);
@@ -46,22 +45,30 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
             console.error(`[DB ERROR] RPC failed for provider ${providerName} and country ${country}:`, error);
             return [];
         }
-        console.log(`[DB] Found ${data?.length || 0} bundles from ${providerName}.`);
-        return data as Bundle[];
+        
+        let bundles = data as Bundle[];
+        console.log(`[DB] Found ${bundles.length} bundles from ${providerName} before filtering.`);
+
+        if (providerName === 'maya') {
+            bundles = bundles.filter(b => b.plan_type === 'STANDARD');
+            console.log(`[FILTER] After filtering for STANDARD plan, ${bundles.length} bundles remain from Maya.`);
+        }
+
+        return bundles;
     }
     
     let bundles: Bundle[] = await getBundlesForProvider('maya', countryIso);
     let providerName = 'maya';
     
     if (!bundles || bundles.length === 0) {
-        console.log(`[LOGIC] No bundles from Maya, switching to esim-go...`);
+        console.log(`[LOGIC] No STANDARD bundles from Maya, switching to esim-go...`);
         bundles = await getBundlesForProvider('esim-go', countryIso);
         providerName = 'esim-go';
     }
 
     if (!bundles || bundles.length === 0) {
-        console.error(`[FAIL] No bundles found for country ${countryIso} from any provider.`);
-        throw new Error(`No bundles found for country ${countryIso} from any provider.`);
+        console.error(`[FAIL] No bundles found for country ${countryIso} from any provider that match the criteria.`);
+        throw new Error(`No bundles found for country ${countryIso} from any provider that match the criteria.`);
     }
 
     console.log(`[LOGIC] Using provider: ${providerName}`);
@@ -96,27 +103,25 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
         return { finalPrice, provider: providerName, bundleName: upperPackage.name, requestedDays, calculation: { upperPackagePrice: finalPrice, totalDiscount: 0, unusedDays: 0, finalPriceBeforeRounding: finalPrice }, calculationDetails: 'Exact match or single available package.'};
     }
 
-    // --- Interpolation calculation ---
+    // --- Interpolation calculation with YOUR FORMULA ---
     console.log(`[LOGIC] Interpolation needed. Calculating discount...`);
     const upperMarkup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, upperPackage.validity_days);
+    // We don't need lowerMarkup for the discount calculation itself per your formula, but it's good for logging
     const lowerMarkup = await getMarkup(lowerPackage.provider_id, lowerPackage.plan_type, lowerPackage.validity_days);
     console.log(`[CALC] Upper Markup: $${upperMarkup}`);
     console.log(`[CALC] Lower Markup: $${lowerMarkup}`);
 
     const upperPackagePrice = upperPackage.price_usd + upperMarkup;
-    const lowerPackagePrice = lowerPackage.price_usd + lowerMarkup;
     console.log(`[CALC] Upper Package Selling Price: $${upperPackagePrice}`);
-    console.log(`[CALC] Lower Package Selling Price: $${lowerPackagePrice}`);
 
-    const priceDifference = upperPackagePrice - lowerPackagePrice;
     const dayDifference = upperPackage.validity_days - lowerPackage.validity_days;
-    console.log(`[CALC] Price Difference: $${priceDifference}`);
     console.log(`[CALC] Day Difference: ${dayDifference}`);
 
-    const pricePerExtraDay = dayDifference > 0 ? priceDifference / dayDifference : 0;
-    console.log(`[CALC] Price Per Extra Day (for discount): $${pricePerExtraDay}`);
+    // YOUR FORMULA IMPLEMENTED HERE:
+    const markupValuePerDay = dayDifference > 0 ? upperMarkup / dayDifference : 0;
+    console.log(`[CALC] Markup Value Per Day (for discount): $${markupValuePerDay}`);
 
-    const totalDiscount = unusedDays * pricePerExtraDay;
+    const totalDiscount = unusedDays * markupValuePerDay;
     console.log(`[CALC] Total Discount for ${unusedDays} unused days: $${totalDiscount}`);
     
     const finalPrice = upperPackagePrice - totalDiscount;

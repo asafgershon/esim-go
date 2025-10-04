@@ -14,8 +14,8 @@ async function safeRunSync() {
 }
 
 // 1. הרצה ראשונית ומיידית לבדיקה - בוטלה
-console.log("[Worker_v2] Performing initial run on startup.");
-safeRunSync();
+// console.log("[Worker_v2] Performing initial run on startup.");
+// safeRunSync();
 
 // 2. תזמון שבועי (יום ראשון ב-02:00)
 cron.schedule("0 2 * * 0", () => {
