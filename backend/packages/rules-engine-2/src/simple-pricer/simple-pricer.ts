@@ -26,16 +26,18 @@ async function getMarkup(providerId: number, planType: string, duration: number)
         console.log(`[DEBUG] Markup not found for provider ${providerId}, plan ${planType}, duration ${duration}. Returning 0.`);
         return 0;
     }
+    console.log(`[DEBUG] Markup FOUND for duration ${duration}: $${data.markup_amount}`);
     return data.markup_amount;
 }
 
 
-// --- Main pricing function with YOUR specified logic ---
+// --- Main pricing function with all fixes ---
 export async function calculateSimplePrice(countryIso: string, requestedDays: number) {
     console.log(`\n\n--- 🚀 STARTING NEW CALCULATION 🚀 ---`);
     console.log(`[INPUT] Country: ${countryIso}, Requested Days: ${requestedDays}`);
 
     async function getBundlesForProvider(providerName: string, country: string): Promise<Bundle[]> {
+        // ... (this function is correct and remains the same)
         console.log(`[DB] Fetching bundles for Provider: ${providerName}, Country: ${country}`);
         const { data, error } = await supabase.rpc('get_bundles_for_country_and_provider', {
             p_country_iso: country,
@@ -95,7 +97,8 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
 
     if (upperPackage.validity_days === requestedDays || !lowerPackage) {
         console.log(`[LOGIC] Exact match or no lower package. Calculating simple price.`);
-        const markup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, upperPackage.validity_days);
+        // --- FIX #1: Subtract 1 from validity_days before fetching markup ---
+        const markup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, upperPackage.validity_days - 1);
         console.log(`[CALC] Markup for Upper Package: $${markup}`);
         const finalPrice = upperPackage.price_usd + markup;
         console.log(`[RESULT] Final Price: $${finalPrice}`);
@@ -103,11 +106,11 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
         return { finalPrice, provider: providerName, bundleName: upperPackage.name, requestedDays, calculation: { upperPackagePrice: finalPrice, totalDiscount: 0, unusedDays: 0, finalPriceBeforeRounding: finalPrice }, calculationDetails: 'Exact match or single available package.'};
     }
 
-    // --- Interpolation calculation with YOUR FORMULA ---
+    // --- Interpolation calculation ---
     console.log(`[LOGIC] Interpolation needed. Calculating discount...`);
-    const upperMarkup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, upperPackage.validity_days);
-    // We don't need lowerMarkup for the discount calculation itself per your formula, but it's good for logging
-    const lowerMarkup = await getMarkup(lowerPackage.provider_id, lowerPackage.plan_type, lowerPackage.validity_days);
+    // --- FIX #2 & #3: Subtract 1 from validity_days before fetching markups ---
+    const upperMarkup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, upperPackage.validity_days - 1);
+    const lowerMarkup = await getMarkup(lowerPackage.provider_id, lowerPackage.plan_type, lowerPackage.validity_days - 1);
     console.log(`[CALC] Upper Markup: $${upperMarkup}`);
     console.log(`[CALC] Lower Markup: $${lowerMarkup}`);
 
@@ -117,7 +120,6 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
     const dayDifference = upperPackage.validity_days - lowerPackage.validity_days;
     console.log(`[CALC] Day Difference: ${dayDifference}`);
 
-    // YOUR FORMULA IMPLEMENTED HERE:
     const markupValuePerDay = dayDifference > 0 ? upperMarkup / dayDifference : 0;
     console.log(`[CALC] Markup Value Per Day (for discount): $${markupValuePerDay}`);
 
