@@ -60,9 +60,9 @@ import { checkoutSessionService } from "./services/checkout";
 import { checkoutWorkflow } from "./services/checkout/workflow";
 import { DeliveryService, SESEmailService } from "./services/delivery";
 
-// --- START: NEW PRICING API ENDPOINT (Corrected Version) ---
-// 1. שנה את הייבוא כך שיפנה לפונקציה החדשה שלך
-import { calculateSimplePrice } from '../../packages/rules-engine-2/src/simple-pricer/simple-pricer.ts';
+// --- ייבוא מנוע התמחור החדש ---
+import { calculateSimplePrice } from '../../packages/rules-engine-2/src/simple-pricer/simple-pricer';
+
 
 // Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
@@ -91,66 +91,45 @@ const typeDefs = mergeTypeDefs([
 ]);
 
 const env = cleanEnv(process.env, {
-  PORT: port({ default: 4000 }), // Changed to 4000 for local dev consistency
-  CORS_ORIGINS: str({ default: "http://localhost:3000" }),
-  ESIM_GO_API_KEY: str({ desc: "eSIM Go API key for V2 sync service" }),
-  AIRHALO_CLIENT_ID: str({
-    default: "",
-    desc: "AirHalo API client ID (optional)",
-  }),
-  AIRHALO_CLIENT_SECRET: str({
-    default: "",
-    desc: "AirHalo API client secret (optional)",
-  }),
-  AIRHALO_BASE_URL: str({
-    default: "https://api.airalo.com",
-    desc: "AirHalo API base URL",
-  }),
+  PORT: port({ default: 4000 }),
+  CORS_ORIGINS: str({ default: "http://localhost:3000,https://www.hiiloworld.com,https://hiiloworld.com" }),
+  ESIM_GO_API_KEY: str(),
+  AIRHALO_CLIENT_ID: str({ default: "" }),
+  AIRHALO_CLIENT_SECRET: str({ default: "" }),
+  AIRHALO_BASE_URL: str({ default: "https://api.airalo.com" }),
 });
 
 async function startServer() {
   try {
-    // Create the schema
     const executableSchema = makeExecutableSchema({ typeDefs, resolvers });
     const schemaWithDirectives = authDirectiveTransformer(executableSchema);
 
     const redis = await getRedis();
     const pubsub = await getPubSub(redis);
 
-    // Initialize eSIM Go client
     const esimGoClient = new ESimGoClient({
       apiKey: env.ESIM_GO_API_KEY,
       baseUrl: "https://api.esim-go.com/v2.5",
       retryAttempts: 3,
     });
 
-    // Initialize AirHalo client (optional)
     let airHaloClient: AirHaloClient | undefined;
     if (env.AIRHALO_CLIENT_ID && env.AIRHALO_CLIENT_SECRET) {
-      console.log("Initializing AirHalo client...");
       airHaloClient = new AirHaloClient({
         clientId: env.AIRHALO_CLIENT_ID,
         clientSecret: env.AIRHALO_CLIENT_SECRET,
         baseUrl: env.AIRHALO_BASE_URL,
         timeout: 30000,
       });
-      console.log("✅ AirHalo client initialized successfully");
-    } else {
-      console.log(
-        "⚠️ AirHalo credentials not provided - AirHalo features will be disabled"
-      );
     }
 
     const userRepository = new UserRepository();
-
     paymentService.init();
-
     const bundleRepository = new BundleRepository();
     const deliveryService = new DeliveryService(new SESEmailService());
     const orderRepository = new OrderRepository();
     const esimRepository = new ESIMRepository();
 
-    //Initialize Easycard payment service (optional)
     const [checkoutSessionServiceV2, checkoutWorkflowService] =
       await Promise.all([
         checkoutSessionService.init({ redis }),
@@ -167,7 +146,6 @@ async function startServer() {
         }),
       ]);
 
-    // Initialize repositories
     const checkoutSessionRepository = new CheckoutSessionRepository();
     const tripRepository = new TripRepository();
     const highDemandCountryRepository = new HighDemandCountryRepository();
@@ -175,126 +153,94 @@ async function startServer() {
     const tenantRepository = new TenantRepository(supabaseAdmin);
     const strategiesRepository = new StrategiesRepository();
 
-    // Create an Express app and HTTP server
+    // כאן אנחנו יוצרים את המשתנה app
     const app = express();
     const httpServer = createServer(app);
 
-    // Create our WebSocket server using the HTTP server we just set up
     const wsServer = new WebSocketServer({
       server: httpServer,
       path: "/graphql",
-      autoPong: true,
-      clientTracking: true,
     });
 
-    // Save the returned server's info so we can shutdown this server later
-    const serverCleanup = useServer(
-      {
-        schema: schemaWithDirectives,
-        context: async (ctx: WSContext) => {
-          // ... (WS context logic remains unchanged)
-          const connectionParams = ctx.connectionParams as Record<string, any> | undefined;
-          const token = getSupabaseTokenFromConnectionParams(connectionParams);
-          const auth = await createSupabaseAuthContext(token);
-          const baseContext = { auth, services: { redis, pubsub, db: supabaseAdmin, syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY), esimGoClient, airHaloClient, easycardPayment: paymentService, checkoutSessionService: undefined, checkoutSessionServiceV2, checkoutWorkflow: checkoutWorkflowService, deliveryService, }, repositories: { checkoutSessions: checkoutSessionRepository, orders: orderRepository, esims: esimRepository, users: userRepository, trips: tripRepository, highDemandCountries: highDemandCountryRepository, syncJob: syncJobRepository, bundles: bundleRepository, tenants: tenantRepository, strategies: strategiesRepository, }, dataSources: { catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY), orders: new OrdersDataSource({ cache: redis }), esims: new ESIMsDataSource({ cache: redis }), regions: RegionsDataSource, inventory: new InventoryDataSource({ cache: redis }), pricing: new PricingDataSource({ cache: redis }), }, token, };
-          return { ...baseContext, dataLoaders: { pricing: createPricingDataLoader(baseContext), }, };
-        },
+    const serverCleanup = useServer({ schema: schemaWithDirectives, context: async (ctx: WSContext) => {
+        const connectionParams = ctx.connectionParams as Record<string, any> | undefined;
+        const token = getSupabaseTokenFromConnectionParams(connectionParams);
+        const auth = await createSupabaseAuthContext(token);
+        const baseContext = { auth, services: { redis, pubsub, db: supabaseAdmin, syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY), esimGoClient, airHaloClient, easycardPayment: paymentService, checkoutSessionService: undefined, checkoutSessionServiceV2, checkoutWorkflow: checkoutWorkflowService, deliveryService, }, repositories: { checkoutSessions: checkoutSessionRepository, orders: orderRepository, esims: esimRepository, users: userRepository, trips: tripRepository, highDemandCountries: highDemandCountryRepository, syncJob: syncJobRepository, bundles: bundleRepository, tenants: tenantRepository, strategies: strategiesRepository, }, dataSources: { catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY), orders: new OrdersDataSource({ cache: redis }), esims: new ESIMsDataSource({ cache: redis }), regions: RegionsDataSource, inventory: new InventoryDataSource({ cache: redis }), pricing: new PricingDataSource({ cache: redis }), }, token, };
+        return { ...baseContext, dataLoaders: { pricing: createPricingDataLoader(baseContext), }, };
       },
-      wsServer
-    );
-    // Set up ApolloServer
-    console.log("Creating ApolloServer instance...");
-    let server;
-    try {
-      server = new ApolloServer({
-        schema: schemaWithDirectives,
-        introspection: true,
-        cache: redis,
-        plugins: [
-          ApolloServerPluginDrainHttpServer({ httpServer }),
-          { async serverWillStart() { return { async drainServer() { await serverCleanup.dispose(); }, }; }, },
-          { async requestDidStart() { const startTime = Date.now(); return { async willSendResponse(requestContext) { const duration = Date.now() - startTime; if (duration > 5000) { logger.warn("Slow GraphQL request detected", { duration, operationName: requestContext.request.operationName, operationType: "performance-warning", }); } }, }; }, },
-        ],
-        formatError: (formattedError, error: any) => {
-          logger.error("GraphQL Error:", error as Error, { code: formattedError.extensions?.code as string, path: formattedError.path, extensions: formattedError.extensions, });
-          return formattedError;
-        },
-      });
-    } catch (error) {
-      console.error("Error creating ApolloServer:", error);
-      throw error;
-    }
-    console.log("ApolloServer created successfully");
-    console.log("Starting server");
+    }, wsServer);
+    
+    const server = new ApolloServer({
+      schema: schemaWithDirectives,
+      plugins: [
+        ApolloServerPluginDrainHttpServer({ httpServer }),
+        { async serverWillStart() { return { async drainServer() { await serverCleanup.dispose(); }, }; }, },
+      ],
+    });
 
     await server.start();
-    console.log("Server started successfully");
 
-    const allowedOrigins = env.CORS_ORIGINS.split(",").map((origin) =>
-      origin.trim()
-    );
-    logger.info("CORS configuration", {
-      allowedOrigins,
-      rawCorsOrigins: env.CORS_ORIGINS,
-      originCount: allowedOrigins.length,
-      operationType: "cors-setup",
-    });
-
+    const allowedOrigins = env.CORS_ORIGINS.split(",");
     app.use((req, res, next) => {
-      const origin = req.headers.origin;
-      if (origin && allowedOrigins.includes(origin)) {
-        res.setHeader("Access-Control-Allow-Origin", origin);
-        res.setHeader("Access-Control-Allow-Credentials", "true");
-        res.setHeader("Vary", "Origin");
-      }
-      if (req.method === "OPTIONS") {
-        res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH");
-        res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,Accept,x-correlation-id");
-        res.setHeader("Access-Control-Max-Age", "86400");
-        return res.sendStatus(204);
-      }
-      next();
+        const origin = req.headers.origin;
+        if (origin && allowedOrigins.includes(origin)) {
+            res.setHeader("Access-Control-Allow-Origin", origin);
+            res.setHeader("Access-Control-Allow-Credentials", "true");
+        }
+        if (req.method === "OPTIONS") {
+            res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+            res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+            return res.sendStatus(204);
+        }
+        next();
     });
 
-    app.use(express.json({ limit: "50mb" }));
-    
-    app.use((req, res, next) => {
-      req.setTimeout(60000, () => {
-        logger.error("Request timeout", undefined, { method: req.method, path: req.path, operationType: "request-timeout", });
-        if (!res.headersSent) { res.status(408).json({ error: "Request timeout", message: "The request took too long to process", }); }
-      });
-      res.setTimeout(60000, () => {
-        logger.error("Response timeout", undefined, { method: req.method, path: req.path, operationType: "response-timeout", });
-        res.status(408).json({ error: "Response timeout", message: "The response took too long to send", });
-      });
-      next();
-    });
+    app.use(express.json());
 
-    app.get("/health", (req, res) => {
-      res.json({
-        status: "ok",
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        memory: process.memoryUsage(),
-      });
-    });
+    app.get("/health", (req, res) => res.json({ status: "ok" }));
 
     app.post("/webhooks/esim-go", async (req, res) => {
-      try {
-        const signature = req.headers["x-esim-go-signature"] as string;
-        const result = await handleESIMGoWebhook(req.body, signature);
-        res.json(result);
-      } catch (error: any) {
-        logger.error("Webhook error", error as Error, { operationType: "webhook", });
-        res.status(400).json({ success: false, message: error.message || "Webhook processing failed", });
-      }
+        try {
+            const signature = req.headers["x-esim-go-signature"] as string;
+            await handleESIMGoWebhook(req.body, signature);
+            res.json({ success: true });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
     });
 
-    app.use(
-      "/graphql",
-      expressMiddleware(server, {
+    // --- הוספנו את נקודת ה-API החדשה כאן, בתוך startServer, ואחרי ש-app נוצר ---
+    app.get('/api/calculate-price', async (req, res) => {
+      console.log('[API] Received pricing request for SIMPLE PRICER:', req.query);
+      const { countryId, numOfDays } = req.query;
+
+      if (typeof countryId !== 'string' || typeof numOfDays !== 'string') {
+        return res.status(400).json({ error: 'Missing or invalid countryId or numOfDays' });
+      }
+      const days = parseInt(numOfDays, 10);
+
+      try {
+        const simplePriceResult = await calculateSimplePrice(countryId, days);
+
+        const responseData = {
+          finalPrice: simplePriceResult.finalPrice,
+          totalPrice: simplePriceResult.finalPrice,
+          hasDiscount: simplePriceResult.calculation.totalDiscount > 0,
+          discountAmount: simplePriceResult.calculation.totalDiscount,
+          days: simplePriceResult.requestedDays,
+          currency: 'USD',
+        };
+        res.status(200).json(responseData);
+      } catch (error) {
+        console.error('Simple pricing engine failed:', error);
+        res.status(500).json({ error: 'Failed to calculate price' });
+      }
+    });
+    // --- סוף נקודת ה-API החדשה ---
+
+    app.use("/graphql", expressMiddleware(server, {
         context: async ({ req }) => {
-          // ... (GraphQL context logic remains unchanged)
           const token = getSupabaseToken(req);
           const auth = await createSupabaseAuthContext(token);
           const baseContext = { auth, services: { redis, pubsub, syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY), esimGoClient, airHaloClient, easycardPayment: paymentService, db: supabaseAdmin, checkoutSessionService: undefined, checkoutSessionServiceV2, checkoutWorkflow: checkoutWorkflowService, deliveryService, }, repositories: { checkoutSessions: checkoutSessionRepository, orders: orderRepository, esims: esimRepository, users: userRepository, trips: tripRepository, highDemandCountries: highDemandCountryRepository, syncJob: syncJobRepository, bundles: bundleRepository, checkoutSessionServiceV2, tenants: tenantRepository, strategies: strategiesRepository, }, dataSources: { catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY), orders: new OrdersDataSource({ cache: redis }), esims: new ESIMsDataSource({ cache: redis }), regions: RegionsDataSource, inventory: new InventoryDataSource({ cache: redis }), pricing: new PricingDataSource({ cache: redis }), }, req, token, };
@@ -302,60 +248,16 @@ async function startServer() {
         },
       })
     );
-
+    
     const PORT = env.PORT;
+    httpServer.listen(PORT, () => {
+      logger.info(`Server is ready at http://localhost:${PORT}`);
+    });
 
-    httpServer.listen(PORT, async () => {
-      logger.info("eSIM Go Server is ready", {
-        httpEndpoint: `http://0.0.0.0:${PORT}/graphql`,
-        wsEndpoint: `ws://0.0.0.0:${PORT}/graphql`,
-        port: PORT,
-        operationType: "server-startup",
-      });
-    });
   } catch (error) {
-    logger.error("Failed to start eSIM Go server", error as Error, {
-      operationType: "server-startup",
-    });
+    logger.error("Failed to start server", error as Error);
     process.exit(1);
   }
 }
 
-app.get('/api/calculate-price', async (req, res) => {
-  console.log('[API] Received pricing request for SIMPLE PRICER:', req.query);
-  const { countryId, numOfDays } = req.query;
-
-  if (typeof countryId !== 'string' || typeof numOfDays !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid countryId or numOfDays' });
-  }
-  const days = parseInt(numOfDays, 10);
-
-  try {
-    // 2. קרא לפונקציה החדשה והפשוטה שלך
-    const simplePriceResult = await calculateSimplePrice(countryId, days);
-
-    // 3. המר את התוצאה מהמנוע החדש לפורמט שהאתר צריך
-    const responseData = {
-      finalPrice: simplePriceResult.finalPrice,
-      totalPrice: simplePriceResult.finalPrice, // For now, total price is the final price
-      hasDiscount: simplePriceResult.calculation.totalDiscount > 0,
-      discountAmount: simplePriceResult.calculation.totalDiscount,
-      days: simplePriceResult.requestedDays,
-      currency: 'USD', // The new engine doesn't return currency, so we assume USD
-    };
-
-    res.status(200).json(responseData);
-  } catch (error) {
-    console.error('Simple pricing engine failed:', error);
-    res.status(500).json({ error: 'Failed to calculate price' });
-  }
-});
-// --- END: NEW PRICING API ENDPOINT ---
-
-
-// ... (Graceful shutdown logic remains unchanged)
-process.on("SIGTERM", async () => { logger.info("Received SIGTERM, shutting down gracefully", { operationType: "shutdown", }); process.exit(0); });
-process.on("SIGINT", async () => { logger.info("Received SIGINT, shutting down gracefully", { operationType: "shutdown", }); process.exit(0); });
-startServer().catch((error) => { logger.error("Failed to start eSIM Go server", error as Error, { operationType: "server-startup", }); process.exit(1); });
-process.on("uncaughtException", (error) => { logger.error("Uncaught Exception", error as Error, { operationType: "uncaught-exception", }); setTimeout(() => { logger.error("Exiting due to uncaught exception", undefined, { operationType: "uncaught-exception", }); process.exit(1); }, 1000); });
-process.on("unhandledRejection", (reason, promise) => { logger.error("Unhandled Promise Rejection", reason as Error, { promise: promise.toString(), operationType: "unhandled-rejection", }); });
+startServer();
