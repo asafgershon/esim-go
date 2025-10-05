@@ -7,12 +7,11 @@
     "apis/*",
     "utils",
     "server",
-    "workers",
     "supabase"
   ],
   "scripts": {
     "dev": "turbo run dev --parallel",
-    "dev:all": "turbo run dev:server dev:workers --parallel",
+    "dev:all": "turbo run dev:server --parallel",
     "dev:server": "bun run --filter ./server dev",
     "dev:workers": "bun run --filter ./workers dev",
     "build": "turbo run build",
