@@ -114,9 +114,11 @@ export default function MobileDestinationDrawer({
                       type="button"
                     >
                       {opt.icon && (
-                        <span className="text-xl flex-shrink-0">
-                          {opt.icon}
-                        </span>
+                        <img
+                          src={opt.icon}
+                          alt={`דגל ${opt.label}`}
+                          className="w-6 h-auto object-contain flex-shrink-0 rounded-sm"
+                        />
                       )}
                       <span className="flex-1 text-right">{opt.label}</span>
                       {value === opt.value && (
