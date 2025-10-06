@@ -1,0 +1,386 @@
+"use client";
+
+import { useAuth } from "@/hooks/useAuth";
+import { useLoginForm } from "@/hooks/useLoginForm";
+import {
+  Button,
+  Card,
+  GoogleSignInButton,
+  Input,
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+  Label,
+  PhoneInput,
+} from "@workspace/ui";
+import { LogOut, User } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
+import { NameCollectionForm } from "./name-collection-form";
+import { SectionHeader } from "./section-header";
+
+interface LoginSectionProps {
+  sectionNumber?: number;
+}
+
+export function LoginSection({ sectionNumber }: LoginSectionProps) {
+  const [showNameFields, setShowNameFields] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+
+  // Determine default country based on locale and environment
+  const getDefaultCountry = () => {
+    if (process.env.NODE_ENV === "development") {
+      return "US"; // Force US in development for test numbers
+    }
+
+    // Get user's locale
+    const locale = navigator.language || "en-US";
+
+    // Map common locales to country codes
+    const localeToCountry: Record<string, string> = {
+      he: "IL",
+      "he-IL": "IL",
+      "en-US": "US",
+      "en-GB": "GB",
+      "fr-FR": "FR",
+      "de-DE": "DE",
+      "es-ES": "ES",
+      "it-IT": "IT",
+      // Add more mappings as needed
+    };
+
+    // Try exact match first, then language code only
+    return (
+      localeToCountry[locale] || localeToCountry[locale.split("-")[0]] || "US"
+    ); // Default to US if no match
+  };
+
+  const { user, isAuthenticated, isLoading, signOut, refreshAuth } = useAuth();
+
+  const {
+    phoneForm,
+    otpForm,
+    error,
+    otp,
+    step,
+    phoneNumber,
+    otpLoading,
+    googleLoading,
+    handlePhoneSubmit,
+    handleOTPSubmit: originalHandleOTPSubmit,
+    handleSocialSignIn,
+    handleBackToPhone: originalHandleBackToPhone,
+    handlePhoneInputChange,
+    handleOTPChange,
+    setError,
+  } = useLoginForm({
+    onSuccess: refreshAuth,
+  });
+
+  // Extended OTP submit to handle name fields
+  const handleOTPSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (otp.length !== 6) {
+      setError("אנא הכנס את הקוד המלא בן 6 הספרות");
+      return;
+    }
+
+    // Check if we need name fields
+    if (showNameFields && (!firstName.trim() || !lastName.trim())) {
+      setError("אנא הכנס שם פרטי ושם משפחה");
+      return;
+    }
+
+    // For now, we'll use the original handler since the hook doesn't support name fields yet
+    // This would need to be extended in the useLoginForm hook
+    try {
+      await originalHandleOTPSubmit({ otp });
+    } catch (err) {
+      // Check if the error is because user exists but needs name info
+      const errorMessage = (err as Error).message;
+      if (errorMessage?.includes("name") || errorMessage?.includes("missing")) {
+        setShowNameFields(true);
+        setError("אנא הוסף את שמך המלא להשלמת ההרשמה");
+      }
+    }
+  };
+
+  const handleBackToPhone = () => {
+    originalHandleBackToPhone();
+    setShowNameFields(false);
+    setFirstName("");
+    setLastName("");
+  };
+
+  const handleFormPhoneSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const phoneNumber = phoneForm.getValues("phoneNumber");
+    if (phoneNumber) {
+      await handlePhoneSubmit({ phoneNumber, rememberMe: false });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="relative" dir="rtl">
+        <div className="flex items-center gap-2 mb-4">
+          <User className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-semibold">טוען...</h2>
+        </div>
+        <div className="animate-pulse space-y-3">
+          <div className="h-4 bg-muted rounded w-3/4"></div>
+          <div className="h-4 bg-muted rounded w-1/2"></div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (isAuthenticated && user) {
+    // Check if user needs to provide name information
+    const needsNameInfo = !user.firstName || !user.lastName;
+
+    if (needsNameInfo) {
+      return (
+        <Card className="relative" dir="rtl">
+          <div className="flex items-center gap-2 mb-4">
+            <User className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">השלם את הפרטים</h2>
+          </div>
+          <NameCollectionForm onComplete={refreshAuth} />
+        </Card>
+      );
+    }
+
+    // Format phone number for Israeli numbers
+    const formatPhoneNumber = (phoneNumber: string) => {
+      try {
+        // Remove any non-digit characters first
+        const cleaned = phoneNumber.replace(/\D/g, "");
+
+        // Israeli phone numbers
+        if (cleaned.startsWith("972") && cleaned.length === 12) {
+          // International format: +972-XX-XXX-XXXX
+          return `+972-${cleaned.slice(3, 5)}-${cleaned.slice(
+            5,
+            8
+          )}-${cleaned.slice(8, 12)}`;
+        } else if (cleaned.startsWith("0") && cleaned.length === 10) {
+          // Local format: 0XX-XXX-XXXX
+          return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(
+            6,
+            10
+          )}`;
+        } else if (cleaned.length === 9 && !cleaned.startsWith("0")) {
+          // Missing leading zero: XX-XXX-XXXX -> 0XX-XXX-XXXX
+          return `0${cleaned.slice(0, 2)}-${cleaned.slice(
+            2,
+            5
+          )}-${cleaned.slice(5, 9)}`;
+        }
+
+        return phoneNumber; // Return original if formatting fails
+      } catch {
+        return phoneNumber; // Return original if formatting fails
+      }
+    };
+
+    return (
+      <Card className="relative" dir="rtl">
+        <div className="flex items-center justify-between">
+          <SectionHeader
+            sectionNumber={sectionNumber || 2}
+            title="מחובר"
+            icon={<User className="h-5 w-5 text-primary" />}
+            isCompleted={true}
+          />
+          <Button
+            onClick={signOut}
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <div className="flex-1">
+            <p className="font-medium">
+              {user.firstName} {user.lastName}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {user.email ||
+                (user.phoneNumber && formatPhoneNumber(user.phoneNumber))}
+            </p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="relative" dir="rtl">
+      <SectionHeader
+        sectionNumber={sectionNumber || 2}
+        title="התחבר כדי להמשיך"
+        icon={<User className="h-5 w-5 text-primary" />}
+        isCompleted={false}
+      />
+
+      {step === "phone" && (
+        <div className="space-y-4">
+          {/* Social Login Buttons */}
+          <div className="space-y-3">
+            <GoogleSignInButton
+              loading={googleLoading}
+              onClick={() => handleSocialSignIn("google")}
+              disabled={googleLoading}
+              className="w-full"
+            >
+              המשך עם Google
+            </GoogleSignInButton>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                המשך כאורח עם מספר טלפון
+              </span>
+            </div>
+          </div>
+
+          {/* Phone Number Input */}
+          <form onSubmit={handleFormPhoneSubmit} className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="phone">מספר טלפון</Label>
+              <PhoneInput
+                id="phone"
+                value={phoneForm.watch("phoneNumber")}
+                onChange={handlePhoneInputChange}
+                placeholder="הכנס מספר טלפון"
+                disabled={otpLoading}
+                defaultCountry={getDefaultCountry()}
+                error={!!error && !phoneForm.watch("phoneNumber").trim()}
+              />
+            </div>
+
+            {phoneForm.watch("phoneNumber").trim() && (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key="footer"
+                  initial={{ opacity: 0, y: 10, height: 0, marginBottom: 0 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    height: "auto",
+                    marginBottom: 6,
+                  }}
+                  exit={{ opacity: 0, y: 10, height: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Button
+                    type="submit"
+                    disabled={
+                      otpLoading || !phoneForm.watch("phoneNumber").trim()
+                    }
+                    className="w-full"
+                  >
+                    {otpLoading ? "שולח..." : "שלח קוד אימות"}
+                  </Button>
+                </motion.div>
+              </AnimatePresence>
+            )}
+          </form>
+        </div>
+      )}
+
+      {step === "otp" && (
+        <div className="space-y-4">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              הכנס את הקוד בן 6 הספרות שנשלח ל
+            </p>
+            <p className="font-medium">{phoneNumber}</p>
+          </div>
+
+          <form onSubmit={handleOTPSubmit} className="space-y-4">
+            <div className="flex justify-center">
+              <InputOTP
+                value={otp}
+                onChange={handleOTPChange}
+                maxLength={6}
+                disabled={otpLoading}
+              >
+                <InputOTPGroup dir="ltr">
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={otpLoading || otp.length !== 6}
+              className="w-full"
+            >
+              {otpLoading ? "מאמת..." : "אמת קוד"}
+            </Button>
+          </form>
+
+          {showNameFields && (
+            <div className="space-y-3 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">שם פרטי</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="ישראל"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  disabled={otpLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">שם משפחה</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="ישראלי"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  disabled={otpLoading}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="text-center">
+            <Button
+              variant="ghost"
+              onClick={handleBackToPhone}
+              disabled={otpLoading}
+              className="text-sm"
+            >
+              חזור למספר טלפון →
+            </Button>
+          </div>
+        </div>
+      )}
+      {error && (
+        <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      )}
+    </Card>
+  );
+}
