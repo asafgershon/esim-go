@@ -55,7 +55,7 @@ export function useBatchPricingStream({
       try {
         // ---> !!! שים לב !!! <---
         // החלף את הכתובת הבאה בכתובת האמיתית של השרת שלך מ-Railway
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'https://api.hiiloworld.com';
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_ENDPOINT || 'https://api.hiiloworld.com';
         
         console.log(`[REAL] Firing fetch to: ${backendUrl}`);
 
