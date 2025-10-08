@@ -45,6 +45,7 @@ export const resolvers: Resolvers = {
     countries: async (_: any, __: any, context: Context) => {
       try {
         const countryIsosWithBundles = await context.repositories.bundles.getCountries();
+        console.log("[DEBUG] Total countries from DB:", countryIsosWithBundles.length);
 
         if (!countryIsosWithBundles || countryIsosWithBundles.length === 0) {
           return [];

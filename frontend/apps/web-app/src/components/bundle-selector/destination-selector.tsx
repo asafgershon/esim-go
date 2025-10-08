@@ -60,11 +60,6 @@ export function DestinationSelector() {
   const { countries = [] } = useCountries();
   const { trips = [] } = useTrips();
 
-      useEffect(() => {
-        console.log("Countries data from hook:", countries);
-        console.log("Trips data from hook:", trips);
-    }, [countries, trips]);
-
   // Compute destination from current selection
   const destination: Destination | null = useMemo(() => {
     if (countryId) {
@@ -109,10 +104,6 @@ export function DestinationSelector() {
       }));
     }
   }, [activeTab, countries, trips]);
-
-   useEffect(() => {
-        console.log("Generated Combobox options:", comboboxOptions);
-    }, [comboboxOptions]);
 
   const getDestinationValue = () => {
     if (countryId) return `country-${countryId}`;
