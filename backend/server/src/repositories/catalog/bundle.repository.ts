@@ -237,15 +237,13 @@ export class BundleRepository extends BaseSupabaseRepository<
 
   async getCountries(): Promise<string[]> {
     const { data, error } = await this.supabase
-      .from("catalog_bundle_countries") 
-      .select("country_iso2")
-      .order("country_iso2");
+    .rpc("get_distinct_bundle_countries"); 
 
     if (error) {
       this.logger.error("Failed to get countries", error);
       throw error;
     }
-    return [...new Set(data?.map((row) => row.country_iso2 || "") || [])];
+    return data?.map((row) => row.country_iso2) || [];
   }
 
   async getGroups(): Promise<string[]> {

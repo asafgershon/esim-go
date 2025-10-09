@@ -634,6 +634,44 @@ export type Database = {
         }
         Relationships: []
       }
+      markups: {
+        Row: {
+          created_at: string
+          duration_days: number
+          id: string
+          is_active: boolean
+          markup_amount: number
+          plan_type: string
+          provider_id: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration_days: number
+          id?: string
+          is_active?: boolean
+          markup_amount: number
+          plan_type: string
+          provider_id?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          markup_amount?: number
+          plan_type?: string
+          provider_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "markups_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       package_assignments: {
         Row: {
           assigned_at: string
@@ -1092,6 +1130,10 @@ export type Database = {
       }
     }
     Functions: {
+      apply_coupon_to_checkout: {
+        Args: { _coupon_code: string; _order_id: string; _user_id: string }
+        Returns: Json
+      }
       cleanup_expired_checkout_sessions: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -1184,6 +1226,17 @@ export type Database = {
           regions: string[]
         }[]
       }
+      get_bundles_for_country_and_provider: {
+        Args: { p_country_iso: string; p_provider_name: string }
+        Returns: {
+          id: number
+          name: string
+          plan_type: string
+          price_usd: number
+          provider_id: number
+          validity_days: number
+        }[]
+      }
       get_bundles_for_country_simple: {
         Args: { country_param: string }
         Returns: Json
@@ -1211,6 +1264,12 @@ export type Database = {
           max_price: number
           min_price: number
           region: string
+        }[]
+      }
+      get_distinct_bundle_countries: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          country_iso2: string
         }[]
       }
       get_distinct_durations: {
