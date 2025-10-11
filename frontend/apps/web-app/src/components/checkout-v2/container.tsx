@@ -3,7 +3,8 @@
 import { useCheckout } from "@/hooks/checkout/useCheckoutV2";
 import { useAuth } from "@/hooks/useAuth";
 import { useSelectorQueryState } from "@/hooks/useSelectorQueryState";
-import { AuthCard } from "./auth-card";
+// --- שינוי 1: מייבאים את הרכיב החדש ---
+import { CouponCard } from "./coupon-card"; 
 import { DeliveryCard } from "./delivery-card";
 import { OrderCard } from "./order-card";
 import { PaymentCard } from "./payment-card";
@@ -11,7 +12,7 @@ import { PaymentCard } from "./payment-card";
 export const CheckoutContainerV2 = () => {
   const { numOfDays, countryId } = useSelectorQueryState();
   const { refreshAuth } = useAuth();
-  const { data, loading, refreshCheckout} = useCheckout({
+  const { data, loading} = useCheckout({
     numOfDays,
     countryId,
   });
@@ -19,15 +20,6 @@ export const CheckoutContainerV2 = () => {
   const handleAuthUpdate = () => {
     refreshAuth();
   };
-
-  const handleLogout = () => {
-    // Force create a new checkout session to clear auth data
-    refreshCheckout();
-  };
-
-  //   if (loading) return <div>Loading...</div>;
-  //   if (error) return <div>Error: {error.message}</div>;
-  //   if (!data) return <div>No data</div>;
 
   return (
     <main className="flex flex-col gap-8 max-w-7xl mx-auto">
@@ -37,13 +29,12 @@ export const CheckoutContainerV2 = () => {
         sectionNumber={1}
       />
 
-      <AuthCard
+      {/* --- שינוי 2: משתמשים ברכיב החדש ומסירים props מיותרים --- */}
+      <CouponCard
         loading={loading}
-        completed={Boolean(data?.checkout.auth?.completed)}
+        completed={false} // אין לנו עדיין לוגיקה לקופון שהושלם
         data={data?.checkout}
         sectionNumber={2}
-        onAuthUpdate={handleAuthUpdate}
-        onLogout={handleLogout}
       />
 
        <DeliveryCard

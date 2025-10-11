@@ -2,7 +2,8 @@
 
 import { Checkout } from "@/__generated__/types";
 import { Card } from "@workspace/ui";
-import { Loader2Icon, ShoppingCart } from "lucide-react";
+// import { Loader2Icon } from "lucide-react"; 
+import { ShoppingCart } from "lucide-react";
 import { lazy, useEffect } from "react";
 import { useDebounceValue } from "usehooks-ts";
 import { SectionHeader } from "./section-header";
@@ -64,7 +65,7 @@ export function OrderCard({
           icon={<ShoppingCart className="h-5 w-5 text-primary" />}
           isCompleted={isCompleted}
         />
-        {!isCompleted && (
+        {/* {!isCompleted && (
           <span
             dir={"ltr"}
             className=" h-full text-sm text-muted-foreground flex items-center gap-1"
@@ -72,7 +73,7 @@ export function OrderCard({
             ...מוודא זמינות מול הספק
             <Loader2Icon className="h-4 w-4 text-muted-foreground animate-spin" />
           </span>
-        )}
+        )} */}
       </div>
 
       <div className="space-y-4">

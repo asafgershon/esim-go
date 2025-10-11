@@ -1,4 +1,4 @@
-import { gql } from "@/__generated__";
+import { gql } from "@/__generated__/gql"; // Corrected import path
 import {
   Checkout,
   UpdateCheckoutDeliveryMutation,
@@ -10,6 +10,7 @@ import {
   Button,
   Card,
   CardContent,
+  Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
   Input,
@@ -21,7 +22,6 @@ import { useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { SectionHeader } from "./section-header";
-import { Collapsible } from "@workspace/ui";
 
 type DeliveryCardProps = {
   completed: boolean;
@@ -33,10 +33,12 @@ type DeliveryCardProps = {
 
 const DeliverySchema = z
   .object({
-    email: z.email({ message: "אימייל לא תקין" }).optional().or(z.literal("")),
+    email: z.string().email({ message: "אימייל לא תקין" }).optional().or(z.literal("")),
+    confirmEmail: z.string().email({ message: "אימייל לא תקין" }).optional().or(z.literal("")),
     phone: z
-      .e164({ message: "מספר טלפון לא תקין" })
+      .string()
       .optional()
+      .or(z.literal(""))
   })
   .refine(
     (data) => {
@@ -48,7 +50,11 @@ const DeliverySchema = z
       message: "חובה למלא לפחות אימייל או טלפון",
       path: ["email"],
     }
-  );
+  )
+  .refine((data) => data.email === data.confirmEmail, {
+    message: "כתובות המייל אינן תואמות",
+    path: ["confirmEmail"],
+  });
 
 type DeliveryFormData = z.infer<typeof DeliverySchema>;
 
@@ -87,6 +93,7 @@ export const DeliveryCard = ({
     resolver: zodResolver(DeliverySchema),
     defaultValues: {
       email: auth?.email || delivery?.email || "",
+      confirmEmail: auth?.email || delivery?.email || "",
       phone: auth?.phone || delivery?.phone || "",
     },
     mode: "onChange",
@@ -96,8 +103,6 @@ export const DeliveryCard = ({
       keepDefaultValues: false,
     },
   });
-
-  const isAuthCompleted = auth?.completed;
 
 
   const onSubmit = useCallback(
@@ -183,12 +188,31 @@ export const DeliveryCard = ({
                   id="email"
                   className="placeholder:opacity-50"
                   type="email"
-                  placeholder={auth?.email || `${isEnglish(auth?.firstName || "") ? auth?.firstName : "israel"}@hiiloworld.com`}
+                  placeholder={auth?.email || "israel@hiiloworld.com"}
                   {...register("email")}
-                  disabled={loading || Boolean(!isAuthCompleted)}
+                  disabled={loading || Boolean(!auth?.completed)}
                 />
                 {errors.email && (
                   <p className="text-sm text-red-500">{errors.email.message}</p>
+                )}
+              </div>
+
+               <div className="space-y-2">
+                <Label htmlFor="confirmEmail">אימות אימייל</Label>
+                <Input
+                  autoComplete="off"
+                  id="confirmEmail"
+                  type="email"
+                  placeholder="הזן את המייל פעם נוספת"
+                  {...register("confirmEmail")}
+                  disabled={loading}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    return false;
+                  }}
+                />
+                {errors.confirmEmail && (
+                  <p className="text-sm text-red-500">{errors.confirmEmail.message}</p>
                 )}
               </div>
 
@@ -200,7 +224,7 @@ export const DeliveryCard = ({
                   defaultCountry="IL"
                   placeholder="הכנס מספר טלפון"
                   {...register("phone")}
-                  disabled={loading || Boolean(!isAuthCompleted)}
+                  disabled={loading || Boolean(!auth?.completed)}
                 />
                 {errors.phone && (
                   <p className="text-sm text-red-500">{errors.phone.message}</p>
@@ -247,7 +271,3 @@ const DeliveryCardSkeleton = () => {
     </Card>
   );
 };
-
-const isEnglish = (name: string) => {
-  return name.match(/[a-zA-Z]/);
-}

@@ -10,6 +10,7 @@ import {
   NO_RESULTS_MESSAGE,
   SELECT_DESTINATION_TITLE,
 } from "./destination-selector.constants";
+// import { fa } from "zod/v4/locales";
 
 type MobileDestinationDrawerProps = {
   options: ComboboxOption[];
@@ -32,7 +33,7 @@ export default function MobileDestinationDrawer({
   useScrollSmootherLock({
     autoLock: isOpen,
     preserveScrollPosition: true,
-    preventTouchMove: true,
+    preventTouchMove: false,
   });
 
   // Filter options by search
