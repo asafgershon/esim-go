@@ -22,7 +22,6 @@ export const CouponCard = ({
   completed,
   loading,
 }: CouponCardProps) => {
-
   if (loading) return <AuthCardSkeleton />;
 
   return (
@@ -37,19 +36,24 @@ export const CouponCard = ({
         <form className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="coupon">יש לך קוד קופון?</Label>
-            <Input
-              id="coupon"
-              name="coupon"
-              placeholder="הזן קוד קופון"
-            />
+
+            {/* שורה אחת עם אינפוט וכפתור קטן בצד שמאל */}
+            <div className="flex items-center gap-2">
+              <Input
+                id="coupon"
+                name="coupon"
+                placeholder="הזן קוד קופון"
+                className="flex-1"
+              />
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-green-500 hover:bg-green-600 text-white"
+              >
+                החל
+              </Button>
+            </div>
           </div>
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-          >
-            החל קופון
-          </Button>
         </form>
       </CardContent>
     </Card>
@@ -58,7 +62,6 @@ export const CouponCard = ({
 
 // שם השלד יכול להישאר כפי שהוא
 const AuthCardSkeleton = () => {
-  // ... a skeleton component ...
   return (
     <Card className="p-6">
       <div className="flex items-center gap-3 mb-4">
