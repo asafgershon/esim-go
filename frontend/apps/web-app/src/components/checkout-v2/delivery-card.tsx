@@ -29,7 +29,7 @@ type DeliveryCardProps = {
   completed: boolean;
   sectionNumber?: number;
   data: Pick<Checkout, "delivery" | "id"> | undefined;
-  onDeliveryUpdate: (delivery: Checkout["delivery"]) => void;
+  onDeliveryUpdateAction: (delivery: Checkout["delivery"]) => void;
   loading: boolean;
 };
 
@@ -69,7 +69,7 @@ export const DeliveryCard = ({
   data,
   completed,
   loading,
-  onDeliveryUpdate,
+  onDeliveryUpdateAction,
 }: DeliveryCardProps) => {
   const { delivery } = data || {};
 
@@ -114,11 +114,11 @@ export const DeliveryCard = ({
       });
 
       if (result?.updateCheckoutDelivery) {
-        onDeliveryUpdate(result.updateCheckoutDelivery);
+        onDeliveryUpdateAction(result.updateCheckoutDelivery);
         reset();
       }
     },
-    [data?.id, updateCheckoutDelivery, onDeliveryUpdate, reset]
+    [data?.id, updateCheckoutDelivery, onDeliveryUpdateAction, reset]
   );
 
   const getButtonLabel = () => {
