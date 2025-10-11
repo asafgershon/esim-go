@@ -42,7 +42,7 @@ export const CheckoutContainerV2 = () => {
         sectionNumber={3}
         loading={loading}
         data={data?.checkout}
-        onDeliveryUpdate={handleAuthUpdate}
+        onDeliveryUpdateAction={handleAuthUpdate}
       />
 
       <PaymentCard

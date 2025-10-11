@@ -1,3 +1,5 @@
+"use client";
+
 import { gql } from "@apollo/client";
 import {
   Checkout,
@@ -18,7 +20,7 @@ import {
   PhoneInputV2 as PhoneInput,
 } from "@workspace/ui";
 import { Package } from "lucide-react";
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { SectionHeader } from "./section-header";
@@ -26,19 +28,16 @@ import { SectionHeader } from "./section-header";
 type DeliveryCardProps = {
   completed: boolean;
   sectionNumber?: number;
-  data: Pick<Checkout, "delivery" | "id" | "auth"> | undefined;
+  data: Pick<Checkout, "delivery" | "id"> | undefined;
   onDeliveryUpdate: (delivery: Checkout["delivery"]) => void;
   loading: boolean;
 };
 
+// ✅ סכמת ולידציה חדשה - רק אימייל או טלפון חובה
 const DeliverySchema = z
   .object({
     email: z.string().email({ message: "אימייל לא תקין" }).optional().or(z.literal("")),
-    confirmEmail: z.string().email({ message: "אימייל לא תקין" }).optional().or(z.literal("")),
-    phone: z
-      .string()
-      .optional()
-      .or(z.literal(""))
+    phone: z.string().optional().or(z.literal("")),
   })
   .refine(
     (data) => {
@@ -50,19 +49,16 @@ const DeliverySchema = z
       message: "חובה למלא לפחות אימייל או טלפון",
       path: ["email"],
     }
-  )
-  .refine((data) => data.email === data.confirmEmail, {
-    message: "כתובות המייל אינן תואמות",
-    path: ["confirmEmail"],
-  });
+  );
 
 type DeliveryFormData = z.infer<typeof DeliverySchema>;
 
+// ✅ מייטשן לגרףQL
 const UPDATE_CHECKOUT_DELIVERY_MUTATION = gql(`
   mutation UpdateCheckoutDelivery($sessionId: String!, $email: String, $phone: String) {
     updateCheckoutDelivery(sessionId: $sessionId, email: $email, phone: $phone) {
-        phone
-        completed
+      phone
+      completed
       email
     }
   }
@@ -75,7 +71,7 @@ export const DeliveryCard = ({
   loading,
   onDeliveryUpdate,
 }: DeliveryCardProps) => {
-  const { delivery, auth } = data || {};
+  const { delivery } = data || {};
 
   const [updateCheckoutDelivery] = useMutation<
     UpdateCheckoutDeliveryMutation,
@@ -91,34 +87,21 @@ export const DeliveryCard = ({
   } = useForm<DeliveryFormData>({
     resolver: zodResolver(DeliverySchema),
     defaultValues: {
-      email: auth?.email || delivery?.email || "",
-      confirmEmail: auth?.email || delivery?.email || "",
-      phone: auth?.phone || delivery?.phone || "",
+      email: delivery?.email || "",
+      phone: delivery?.phone || "",
     },
     mode: "onChange",
-    resetOptions: {
-      keepIsSubmitSuccessful: false,
-      keepDirty: true,
-      keepDefaultValues: false,
-    },
   });
-
 
   const onSubmit = useCallback(
     async (formData: DeliveryFormData) => {
       if (!data?.id) return;
 
-      const defaultValues = {
-        email: auth?.email,
-        phone: auth?.phone,
-      };
-
       const cleanedData = {
-        email: formData.email?.trim() || defaultValues.email || null,
-        phone: formData.phone?.trim() || defaultValues.phone || null,
+        email: formData.email?.trim() || null,
+        phone: formData.phone?.trim() || null,
       };
 
-      // Only send fields that have actual values
       const variables: UpdateCheckoutDeliveryMutationVariables = {
         sessionId: data.id,
       };
@@ -135,26 +118,8 @@ export const DeliveryCard = ({
         reset();
       }
     },
-    [data?.id, updateCheckoutDelivery, onDeliveryUpdate, reset, auth?.email, auth?.phone]
+    [data?.id, updateCheckoutDelivery, onDeliveryUpdate, reset]
   );
-
-  useEffect(() => {
-    if (auth?.completed && data?.id) {
-      updateCheckoutDelivery({
-        variables: {
-          sessionId: data?.id,
-          email: auth?.email,
-          phone: auth?.phone,
-        },
-      });
-    }
-  }, [
-    auth?.completed,
-    auth?.email,
-    auth?.phone,
-    data?.id,
-    updateCheckoutDelivery,
-  ]);
 
   const getButtonLabel = () => {
     if (loading) return "שומר...";
@@ -167,7 +132,7 @@ export const DeliveryCard = ({
 
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
-      <Collapsible open={auth?.completed || delivery?.completed}>
+      <Collapsible defaultOpen>
         <CollapsibleTrigger>
           <SectionHeader
             className="mb-4"
@@ -177,9 +142,11 @@ export const DeliveryCard = ({
             isCompleted={completed}
           />
         </CollapsibleTrigger>
+
         <CollapsibleContent>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {/* אימייל */}
               <div className="space-y-2">
                 <Label htmlFor="email">אימייל</Label>
                 <Input
@@ -187,34 +154,16 @@ export const DeliveryCard = ({
                   id="email"
                   className="placeholder:opacity-50"
                   type="email"
-                  placeholder={auth?.email || "israel@hiiloworld.com"}
+                  placeholder="israel@hiiloworld.com"
                   {...register("email")}
-                  disabled={loading || Boolean(!auth?.completed)}
+                  disabled={loading}
                 />
                 {errors.email && (
                   <p className="text-sm text-red-500">{errors.email.message}</p>
                 )}
               </div>
 
-               <div className="space-y-2">
-                <Label htmlFor="confirmEmail">אימות אימייל</Label>
-                <Input
-                  autoComplete="off"
-                  id="confirmEmail"
-                  type="email"
-                  placeholder="הזן את המייל פעם נוספת"
-                  {...register("confirmEmail")}
-                  disabled={loading}
-                  onPaste={(e) => {
-                    e.preventDefault();
-                    return false;
-                  }}
-                />
-                {errors.confirmEmail && (
-                  <p className="text-sm text-red-500">{errors.confirmEmail.message}</p>
-                )}
-              </div>
-
+              {/* טלפון */}
               <div className="space-y-2">
                 <Label htmlFor="phone">טלפון</Label>
                 <PhoneInput
@@ -223,7 +172,7 @@ export const DeliveryCard = ({
                   defaultCountry="IL"
                   placeholder="הכנס מספר טלפון"
                   {...register("phone")}
-                  disabled={loading || Boolean(!auth?.completed)}
+                  disabled={loading}
                 />
                 {errors.phone && (
                   <p className="text-sm text-red-500">{errors.phone.message}</p>
@@ -246,6 +195,7 @@ export const DeliveryCard = ({
   );
 };
 
+// שלד טעינה
 const DeliveryCardSkeleton = () => {
   return (
     <Card className="p-6">

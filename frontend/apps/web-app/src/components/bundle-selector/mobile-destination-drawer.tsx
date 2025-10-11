@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useScrollSmootherLock } from "@workspace/ui";
 import { Drawer } from "vaul";
 import { Input, Button, ComboboxOption } from "@workspace/ui";
@@ -10,7 +10,6 @@ import {
   NO_RESULTS_MESSAGE,
   SELECT_DESTINATION_TITLE,
 } from "./destination-selector.constants";
-// import { fa } from "zod/v4/locales";
 
 type MobileDestinationDrawerProps = {
   options: ComboboxOption[];
@@ -29,14 +28,25 @@ export default function MobileDestinationDrawer({
 }: MobileDestinationDrawerProps) {
   const [search, setSearch] = useState("");
 
-  // Lock scroll when drawer is open
+  // ✅ מאפשר גלילה בתוך ה־drawer אבל נועל את הרקע מאחור
   useScrollSmootherLock({
     autoLock: isOpen,
     preserveScrollPosition: true,
     preventTouchMove: false,
   });
 
-  // Filter options by search
+  // ✅ מאפס חיפוש ו־scroll בכל פתיחה מחדש
+  useEffect(() => {
+    if (isOpen) {
+      setSearch("");
+      requestAnimationFrame(() => {
+        const list = document.querySelector("#destination-list");
+        if (list) list.scrollTo({ top: 0 });
+      });
+    }
+  }, [isOpen]);
+
+  // סינון לפי חיפוש
   const filtered = search.trim()
     ? options.filter(
         (opt) =>
@@ -61,12 +71,13 @@ export default function MobileDestinationDrawer({
     <Drawer.Root open={isOpen} onOpenChange={handleClose}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40" />
-        <Drawer.Content className="bg-card text-card-foreground flex flex-col rounded-t-[10px] h-[85vh] mt-24 fixed bottom-0 left-0 right-0 z-50 overflow-hidden">
+        {/* ✅ ביטלתי mt-24 שגרם לפתיחה “עקומה” */}
+        <Drawer.Content className="bg-card text-card-foreground flex flex-col rounded-t-[10px] h-[85vh] fixed bottom-0 left-0 right-0 z-50 overflow-hidden">
           <div className="p-4 bg-card rounded-t-[10px] flex-1 flex flex-col min-h-0">
-            {/* Drag Handle */}
+            {/* פס גרירה למעלה */}
             <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4" />
 
-            {/* Header */}
+            {/* כותרת וסגירה */}
             <div className="flex items-center justify-between mb-4">
               <Drawer.Title className="text-lg font-semibold">
                 {SELECT_DESTINATION_TITLE}
@@ -81,7 +92,7 @@ export default function MobileDestinationDrawer({
               </Button>
             </div>
 
-            {/* Search */}
+            {/* חיפוש */}
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -94,8 +105,12 @@ export default function MobileDestinationDrawer({
               />
             </div>
 
-            {/* Options List */}
-            <div className="flex-1 overflow-y-auto" dir="rtl">
+            {/* רשימת מדינות / טיולים */}
+            <div
+              id="destination-list"
+              className="flex-1 overflow-y-auto min-h-0 overscroll-contain"
+              dir="rtl"
+            >
               {filtered.length === 0 ? (
                 <div className="text-center text-muted-foreground py-8">
                   {NO_RESULTS_MESSAGE}
@@ -131,7 +146,7 @@ export default function MobileDestinationDrawer({
               )}
             </div>
 
-            {/* Bottom spacing for safe area */}
+            {/* שוליים לתחתית המסך */}
             <div className="h-4 flex-shrink-0" />
           </div>
         </Drawer.Content>

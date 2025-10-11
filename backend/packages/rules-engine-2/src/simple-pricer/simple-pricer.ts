@@ -1,7 +1,6 @@
 // backend/packages/rules-engine-2/src/simple-pricer/simple-pricer.ts
 
 import { getSupabaseClient } from '../supabase';
-
 const supabase = getSupabaseClient();
 
 type Bundle = {
@@ -13,7 +12,6 @@ type Bundle = {
     plan_type: string;
 };
 
-// --- FIX #1: Rewritten getMarkup function to find nearest lower duration ---
 async function getMarkup(providerId: number, planType: string, duration: number): Promise<number> {
     const { data, error } = await supabase
         .from('markups')
@@ -34,8 +32,6 @@ async function getMarkup(providerId: number, planType: string, duration: number)
     return data.markup_amount;
 }
 
-
-// --- Main pricing function with STANDARD & lowest-price priority ---
 export async function calculateSimplePrice(countryIso: string, requestedDays: number) {
     console.log(`\n\n--- 🚀 STARTING NEW CALCULATION 🚀 ---`);
     console.log(`[INPUT] Country: ${countryIso}, Requested Days: ${requestedDays}`);
@@ -52,12 +48,9 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
         }
 
         let bundles = data as Bundle[];
-
-        // Keep only STANDARD for Maya (for consistency)
         if (providerName === 'maya') {
             bundles = bundles.filter(b => b.plan_type?.toUpperCase() === 'STANDARD');
         }
-
         return bundles;
     }
 
@@ -74,77 +67,62 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
         throw new Error(`No bundles found for country ${countryIso}.`);
     }
 
-    // --- Filter STANDARD only and sort by validity_days ---
+    // --- Convert validity_days to clean days (supplier offset fix) ---
+    bundles = bundles.map(b => ({
+        ...b,
+        validity_days: b.validity_days - 1 // ✅ FIX: suppliers store +1 day artificially
+    }));
+
+    // --- Filter STANDARD only and sort ---
     let standardBundles = bundles.filter(b => b.plan_type?.toUpperCase() === 'STANDARD');
     if (standardBundles.length === 0) {
         console.warn(`[WARN] No STANDARD bundles found for ${countryIso}, using all bundles.`);
         standardBundles = bundles;
     }
 
-    // Sort ascending by validity days (e.g. 7, 15, 30, 60...)
     standardBundles.sort((a, b) => a.validity_days - b.validity_days);
 
-    // --- Select the cheapest eligible bundle ---
+    // --- Select eligible bundles based on clean days ---
     const eligibleBundles = standardBundles.filter(b => b.validity_days >= requestedDays);
     if (eligibleBundles.length === 0) {
         throw new Error(`No bundle covers ${requestedDays} days for ${countryIso}.`);
     }
 
     const upperPackage = eligibleBundles.sort((a, b) => a.price_usd - b.price_usd)[0];
+
+    // ✅ FIX 1: Handle case where no lowerPackage exists
     const lowerPackage = standardBundles
         .filter(b => b.validity_days < upperPackage.validity_days)
-        .sort((a, b) => b.validity_days - a.validity_days)[0];
+        .sort((a, b) => b.validity_days - a.validity_days)[0] || null;
 
-    // --- FIX #2: Corrected unusedDays calculation ---
-    const upperPackageCleanDays = upperPackage.validity_days - 1;
+    const upperPackageCleanDays = upperPackage.validity_days;
+    const lowerPackageCleanDays = lowerPackage ? lowerPackage.validity_days : 0; // ✅ fallback = 0
     const unusedDays = upperPackageCleanDays - requestedDays;
 
     console.log(`[LOGIC] Upper Package: ${upperPackage.name} (${upperPackageCleanDays} clean days) | Cost: $${upperPackage.price_usd}`);
     if (lowerPackage) {
-        console.log(`[LOGIC] Lower Package: ${lowerPackage.name} (${lowerPackage.validity_days - 1} clean days) | Cost: $${lowerPackage.price_usd}`);
+        console.log(`[LOGIC] Lower Package: ${lowerPackage.name} (${lowerPackageCleanDays} clean days) | Cost: $${lowerPackage.price_usd}`);
+    } else {
+        console.log(`[LOGIC] No lower package found — assuming 0 days.`);
     }
     console.log(`[CALC] Unused Days (Corrected): ${unusedDays}`);
 
-    // --- Exact match or no lower package ---
-    if (upperPackage.validity_days === requestedDays || !lowerPackage) {
-        const markup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, upperPackageCleanDays);
-        const finalPrice = upperPackage.price_usd + markup;
-        console.log(`[RESULT] Final Price (Exact Match): $${finalPrice}`);
-        console.log(`--- ✅ CALCULATION COMPLETE ✅ ---\n`);
-
-        return {
-            finalPrice,
-            provider: providerName,
-            bundleName: upperPackage.name,
-            requestedDays,
-            calculation: {
-                upperPackagePrice: finalPrice,
-                totalDiscount: 0,
-                unusedDays: 0,
-                finalPriceBeforeRounding: finalPrice
-            },
-            calculationDetails: 'Exact match or single available package.'
-        };
-    }
-
-    // --- Interpolation calculation ---
-    const lowerPackageCleanDays = lowerPackage.validity_days - 1;
-
+    // --- Calculate markups ---
     const upperMarkup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, upperPackageCleanDays);
-    const lowerMarkup = await getMarkup(lowerPackage.provider_id, lowerPackage.plan_type, lowerPackageCleanDays);
+    const lowerMarkup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, lowerPackageCleanDays);
     console.log(`[CALC] Upper Markup (for ${upperPackageCleanDays} days): $${upperMarkup}`);
     console.log(`[CALC] Lower Markup (for ${lowerPackageCleanDays} days): $${lowerMarkup}`);
 
     const upperPackagePrice = upperPackage.price_usd + upperMarkup;
     console.log(`[CALC] Upper Package Selling Price: $${upperPackagePrice}`);
 
-    const dayDifference = upperPackageCleanDays - lowerPackageCleanDays;
+    const dayDifference = Math.max(upperPackageCleanDays - lowerPackageCleanDays, 1);
     console.log(`[CALC] Day Difference (Clean): ${dayDifference}`);
 
-    const markupValuePerDay = dayDifference > 0 ? upperMarkup / dayDifference : 0;
+    const markupValuePerDay = upperMarkup / dayDifference;
     console.log(`[CALC] Markup Value Per Day (for discount): $${markupValuePerDay}`);
 
-    const totalDiscount = unusedDays * markupValuePerDay;
+    const totalDiscount = Math.max(unusedDays, 0) * markupValuePerDay;
     console.log(`[CALC] Total Discount for ${unusedDays} unused days: $${totalDiscount}`);
 
     const finalPrice = upperPackagePrice - totalDiscount;
