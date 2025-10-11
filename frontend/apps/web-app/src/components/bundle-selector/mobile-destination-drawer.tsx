@@ -61,8 +61,8 @@ export default function MobileDestinationDrawer({
     <Drawer.Root open={isOpen} onOpenChange={handleClose}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40" />
-        <Drawer.Content className="bg-card text-card-foreground flex flex-col rounded-t-[10px] h-[85vh] mt-24 fixed bottom-0 left-0 right-0 z-50">
-          <div className="p-4 bg-card rounded-t-[10px] flex-1 flex flex-col">
+        <Drawer.Content className="bg-card text-card-foreground flex flex-col rounded-t-[10px] h-[85vh] mt-24 fixed bottom-0 left-0 right-0 z-50 overflow-hidden">
+          <div className="p-4 bg-card rounded-t-[10px] flex-1 flex flex-col min-h-0">
             {/* Drag Handle */}
             <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4" />
 

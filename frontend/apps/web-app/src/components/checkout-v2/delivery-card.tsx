@@ -1,4 +1,4 @@
-import { gql } from "@/__generated__/gql";
+import { gql } from "@apollo/client";
 import {
   Checkout,
   UpdateCheckoutDeliveryMutation,
@@ -26,12 +26,11 @@ import { SectionHeader } from "./section-header";
 type DeliveryCardProps = {
   completed: boolean;
   sectionNumber?: number;
-  data: Pick<Checkout, "delivery" | "id" | "auth" | "bundle"> | undefined; // הוספתי bundle כדי שנוכל להשתמש בו
+  data: Pick<Checkout, "delivery" | "id" | "auth"> | undefined;
   onDeliveryUpdate: (delivery: Checkout["delivery"]) => void;
   loading: boolean;
 };
 
-// ... (schema and mutation remain the same) ...
 const DeliverySchema = z
   .object({
     email: z.string().email({ message: "אימייל לא תקין" }).optional().or(z.literal("")),
@@ -69,7 +68,6 @@ const UPDATE_CHECKOUT_DELIVERY_MUTATION = gql(`
   }
 `);
 
-
 export const DeliveryCard = ({
   sectionNumber,
   data,
@@ -98,10 +96,15 @@ export const DeliveryCard = ({
       phone: auth?.phone || delivery?.phone || "",
     },
     mode: "onChange",
+    resetOptions: {
+      keepIsSubmitSuccessful: false,
+      keepDirty: true,
+      keepDefaultValues: false,
+    },
   });
-  
-  // ... (onSubmit, useEffect, getButtonLabel remain the same) ...
-    const onSubmit = useCallback(
+
+
+  const onSubmit = useCallback(
     async (formData: DeliveryFormData) => {
       if (!data?.id) return;
 
@@ -115,6 +118,7 @@ export const DeliveryCard = ({
         phone: formData.phone?.trim() || defaultValues.phone || null,
       };
 
+      // Only send fields that have actual values
       const variables: UpdateCheckoutDeliveryMutationVariables = {
         sessionId: data.id,
       };
@@ -151,23 +155,20 @@ export const DeliveryCard = ({
     data?.id,
     updateCheckoutDelivery,
   ]);
-  
-    const getButtonLabel = () => {
+
+  const getButtonLabel = () => {
     if (loading) return "שומר...";
     if (isSubmitSuccessful && !isDirty) return "פרטי משלוח נשמרו";
     if (isSubmitSuccessful && isDirty) return "עדכון פרטי משלוח";
     return "שמירת פרטי משלוח";
   };
 
-
   if (loading) return <DeliveryCardSkeleton />;
 
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
-      {/* --- כאן בוצע התיקון --- */}
-      {/* שינינו את התנאי להיות תלוי בשלב הקודם (פרטי הזמנה) */}
-      <Collapsible defaultOpen={true}>
-        <CollapsibleTrigger className="w-full">
+      <Collapsible open={auth?.completed || delivery?.completed}>
+        <CollapsibleTrigger>
           <SectionHeader
             className="mb-4"
             sectionNumber={sectionNumber || 3}
@@ -179,24 +180,23 @@ export const DeliveryCard = ({
         <CollapsibleContent>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {/* Email Input */}
               <div className="space-y-2">
                 <Label htmlFor="email">אימייל</Label>
                 <Input
                   autoComplete="email"
                   id="email"
+                  className="placeholder:opacity-50"
                   type="email"
-                  placeholder="israel@hiiloworld.com"
+                  placeholder={auth?.email || "israel@hiiloworld.com"}
                   {...register("email")}
-                  disabled={loading}
+                  disabled={loading || Boolean(!auth?.completed)}
                 />
                 {errors.email && (
                   <p className="text-sm text-red-500">{errors.email.message}</p>
                 )}
               </div>
 
-              {/* Confirm Email Input */}
-              <div className="space-y-2">
+               <div className="space-y-2">
                 <Label htmlFor="confirmEmail">אימות אימייל</Label>
                 <Input
                   autoComplete="off"
@@ -215,7 +215,6 @@ export const DeliveryCard = ({
                 )}
               </div>
 
-              {/* Phone Input */}
               <div className="space-y-2">
                 <Label htmlFor="phone">טלפון</Label>
                 <PhoneInput
@@ -224,7 +223,7 @@ export const DeliveryCard = ({
                   defaultCountry="IL"
                   placeholder="הכנס מספר טלפון"
                   {...register("phone")}
-                  disabled={loading}
+                  disabled={loading || Boolean(!auth?.completed)}
                 />
                 {errors.phone && (
                   <p className="text-sm text-red-500">{errors.phone.message}</p>
@@ -247,7 +246,6 @@ export const DeliveryCard = ({
   );
 };
 
-
 const DeliveryCardSkeleton = () => {
   return (
     <Card className="p-6">
@@ -258,6 +256,7 @@ const DeliveryCardSkeleton = () => {
           <div className="h-3 md:h-4 w-16 bg-gray-100 rounded animate-pulse" />
         </div>
       </div>
+
       <div className="space-y-4">
         <div className="space-y-2">
           <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
