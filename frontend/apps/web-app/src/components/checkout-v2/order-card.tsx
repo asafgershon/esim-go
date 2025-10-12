@@ -31,7 +31,7 @@ export function OrderCard({
   const { bundle } = data;
   const {
     // dataAmount,
-    price,
+  price,
     numOfDays,
     country,
     pricePerDay,
