@@ -12,6 +12,11 @@ type Bundle = {
     plan_type: string;
 };
 
+// ✅ פונקציה לעיגול למעלה לספרה אחת אחרי הנקודה
+function roundUpToOneDecimal(value: number): number {
+    return Math.ceil(value * 10) / 10;
+}
+
 async function getMarkup(providerId: number, planType: string, duration: number): Promise<number> {
     const { data, error } = await supabase
         .from('markups')
@@ -126,19 +131,27 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
     console.log(`[CALC] Total Discount for ${unusedDays} unused days: $${totalDiscount}`);
 
     const finalPrice = upperPackagePrice - totalDiscount;
-    console.log(`[RESULT] Final Price: $${finalPrice}`);
+
+    // ✅ עיגול למעלה לספרה אחת אחרי הנקודה
+    const rounded = {
+        finalPrice: roundUpToOneDecimal(finalPrice),
+        upperPackagePrice: roundUpToOneDecimal(upperPackagePrice),
+        totalDiscount: roundUpToOneDecimal(totalDiscount),
+    };
+
+    console.log(`[RESULT] Final Price (rounded): $${rounded.finalPrice}`);
     console.log(`--- ✅ CALCULATION COMPLETE ✅ ---\n`);
 
     return {
-        finalPrice,
+        finalPrice: rounded.finalPrice,
         provider: providerName,
         bundleName: upperPackage.name,
         requestedDays,
         calculation: {
-            upperPackagePrice,
-            totalDiscount,
+            upperPackagePrice: rounded.upperPackagePrice,
+            totalDiscount: rounded.totalDiscount,
             unusedDays,
-            finalPriceBeforeRounding: finalPrice
+            finalPriceBeforeRounding: finalPrice,
         }
     };
 }

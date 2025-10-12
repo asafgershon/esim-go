@@ -64,6 +64,15 @@ export type Context = {
     tenants: TenantRepository;
     strategies: StrategiesRepository;
   };
+  checkoutWorkflow: {
+  init: any;
+  selectBundle: Function;
+  validateBundle: Function;
+  authenticate: Function;
+  setDelivery: Function;
+  applyCoupon: Function;
+  completeCheckout: Function;
+};
   dataSources: {
     catalogue: CatalogueDataSourceV2;
     orders: OrdersDataSource;

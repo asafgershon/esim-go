@@ -1,28 +1,101 @@
+"use client";
+
 import {
   Button,
   Card,
   CardContent,
   Input,
-  Label
+  Label,
 } from "@workspace/ui";
-import { Ticket as TicketIcon } from "lucide-react";
+import { Ticket as TicketIcon, Loader2 } from "lucide-react";
 import { SectionHeader } from "./section-header";
 import { Checkout } from "@/__generated__/graphql";
+import { gql, useMutation } from "@apollo/client";
+import { useState } from "react";
+
+// ✅ GraphQL Mutation
+const APPLY_COUPON_TO_CHECKOUT = gql`
+  mutation ApplyCouponToCheckout($input: ApplyCouponToCheckoutInput!) {
+    applyCouponToCheckout(input: $input) {
+      success
+      error {
+        message
+        code
+      }
+      checkout {
+        id
+        bundle {
+          id
+          currency
+          price
+          pricePerDay
+          discounts
+        }
+      }
+    }
+  }
+`;
 
 type CouponCardProps = {
   completed: boolean;
   sectionNumber?: number;
   data: Pick<Checkout, "auth" | "id"> | undefined;
   loading: boolean;
+  onCouponApplied?: () => void;
 };
 
-// שיניתי את שם הרכיב כאן כדי שיתאים לשם הקובץ
+// ✅ CouponCard Component
 export const CouponCard = ({
   sectionNumber,
   completed,
+  data,
   loading,
+  onCouponApplied,
 }: CouponCardProps) => {
+  const [coupon, setCoupon] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [applyCoupon, { loading: applying }] = useMutation(
+    APPLY_COUPON_TO_CHECKOUT
+  );
+
   if (loading) return <AuthCardSkeleton />;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage(null);
+
+    if (!coupon.trim()) {
+      setMessage("אנא הזן קוד קופון");
+      return;
+    }
+
+    try {
+      const { data: res } = await applyCoupon({
+        variables: {
+          input: {
+            sessionId: data?.id || "",
+            couponCode: coupon.trim(),
+          },
+        },
+      });
+
+      const result = res?.applyCouponToCheckout;
+      if (!result) {
+        setMessage("שגיאה בלתי צפויה");
+        return;
+      }
+
+      if (result.success) {
+        setMessage("✅ הקופון הוחל בהצלחה!");
+        onCouponApplied?.();
+      } else {
+        setMessage(`❌ ${result.error?.message || "קוד לא תקף"}`);
+      }
+    } catch (err) {
+      console.error("Apply coupon error:", err);
+      setMessage("אירעה שגיאה בעת ניסיון להחיל את הקופון");
+    }
+  };
 
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
@@ -33,26 +106,42 @@ export const CouponCard = ({
         isCompleted={completed}
       />
       <CardContent>
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label htmlFor="coupon">יש לך קוד קופון?</Label>
 
-            {/* שורה אחת עם אינפוט וכפתור קטן בצד שמאל */}
             <div className="flex items-center gap-2">
               <Input
                 id="coupon"
                 name="coupon"
                 placeholder="הזן קוד קופון"
                 className="flex-1"
+                value={coupon}
+                onChange={(e) => setCoupon(e.target.value)}
+                disabled={applying}
               />
               <Button
                 type="submit"
                 size="sm"
-                className="bg-green-500 hover:bg-green-600 text-white"
+                disabled={applying}
+                className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-1"
               >
+                {applying && <Loader2 className="h-4 w-4 animate-spin" />}
                 החל
               </Button>
             </div>
+
+            {message && (
+              <p
+                className={`text-sm mt-2 ${
+                  message.startsWith("✅")
+                    ? "text-green-600"
+                    : "text-red-500"
+                }`}
+              >
+                {message}
+              </p>
+            )}
           </div>
         </form>
       </CardContent>
@@ -60,7 +149,7 @@ export const CouponCard = ({
   );
 };
 
-// שם השלד יכול להישאר כפי שהוא
+// ✅ Skeleton
 const AuthCardSkeleton = () => {
   return (
     <Card className="p-6">

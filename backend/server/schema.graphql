@@ -85,6 +85,40 @@ type Query {
   getAdminESIMDetails(iccid: String!): AdminESIMDetails! @auth(role: "ADMIN")
 }
 
+input ApplyCouponToCheckoutInput {
+  sessionId: ID!
+  couponCode: String!
+}
+
+# הוסף את בלוק השגיאה
+type CouponError {
+    message: String!
+    code: String
+}
+
+# הוסף את בלוק התשובה (Payload) - זה מה שפותר את השגיאה!
+type ApplyCouponToCheckoutPayload {
+  success: Boolean!
+  checkout: Checkout
+  error: CouponError
+}
+
+input ApplyCouponToCheckoutInput {
+  sessionId: ID!
+  couponCode: String!
+}
+
+input ApplyCouponToCheckoutInput {
+  sessionId: ID!
+  couponCode: String!
+}
+
+type Discount {
+  code: String!
+  amount: Float!
+  description: String
+}
+
 type BundleConnection {
   nodes: [Bundle!]!
   totalCount: Int!
@@ -126,6 +160,8 @@ type BundlesForCountry {
   Whether unlimited bundles are available
   """
   hasUnlimited: Boolean!
+
+  discounts: [Discount!]
 }
 
 type BundlesForRegion {
@@ -163,6 +199,8 @@ type BundlesForRegion {
   Whether unlimited bundles are available
   """
   hasUnlimited: Boolean!
+
+  discounts: [Discount!]
 }
 
 type BundlesForGroup {
@@ -200,6 +238,8 @@ type BundlesForGroup {
   Whether unlimited bundles are available
   """
   hasUnlimited: Boolean!
+
+  discounts: [Discount!]
 }
 
 type PriceRange {
@@ -260,6 +300,8 @@ type BundleStats {
   Number of unique bundle groups
   """
   totalGroups: Int!
+
+  discounts: [Discount!]
 }
 
 input BundleFilter {
@@ -354,6 +396,9 @@ type Mutation {
   restoreESIM(esimId: ID!): ESIMActionResponse @auth
   cancelESIM(esimId: ID!): ESIMActionResponse @auth
   updateESIMReference(esimId: ID!, reference: String!): ESIMActionResponse @auth
+
+  # הוסף רק את השורה הזו בתוך ה-type Mutation הקיים
+  applyCouponToCheckout(input: ApplyCouponToCheckoutInput!): ApplyCouponToCheckoutPayload!
 }
 
 type Subscription {
@@ -483,6 +528,7 @@ type BundlesByCountry {
   bundles(limit: Int = 3, offset: Int): [Bundle!]!
   pricingRange: PricingRange
   bundleCount: Int!
+  discounts: [Discount!]
 }
 
 type BundlesByRegion {
@@ -490,6 +536,7 @@ type BundlesByRegion {
   bundles(limit: Int = 3, offset: Int): [Bundle!]!
   bundleCount: Int!
   pricingRange: PricingRange
+  discounts: [Discount!]
 }
 
 type BundlesByGroup {
@@ -497,6 +544,7 @@ type BundlesByGroup {
   bundles(limit: Int = 3, offset: Int): [Bundle!]!
   bundleCount: Int!
   pricingRange: PricingRange
+  discounts: [Discount!]
 }
 
 # User Types

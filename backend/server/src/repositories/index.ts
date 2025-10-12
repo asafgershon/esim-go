@@ -5,6 +5,7 @@ export { UserRepository } from "./user.repository";
 export { HighDemandCountryRepository } from "./high-demand-country.repository";
 export { StrategiesRepository } from "./strategies.repository";
 export { TenantRepository } from "./tenant.repository";
+export * from "./coupon.repository";
 
 // Catalog repositories
 export { 

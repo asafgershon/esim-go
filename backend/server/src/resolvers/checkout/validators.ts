@@ -21,7 +21,7 @@ export const UpdateCheckoutStepInputSchema = z.object({
     CHECKOUT_STEP_TYPE.DELIVERY,
     CHECKOUT_STEP_TYPE.PAYMENT,
   ]),
-  data: z.record(z.any()).optional(),
+  data: z.record(z.string(),z.any()).optional(),
 });
 
 // Authentication step data
@@ -59,6 +59,12 @@ export const GetCheckoutSessionInputSchema = z.object({
   token: z.string().min(1),
 });
 
+// Apply coupon input
+export const ApplyCouponInputSchema = z.object({
+  sessionId: z.string().uuid(),
+  couponCode: z.string().min(1, "Coupon code cannot be empty"),
+});
+
 /**
  * Validation helper functions
  */
@@ -83,6 +89,10 @@ export function validateOrderInput(input: unknown) {
   return ValidateOrderInputSchema.parse(input);
 }
 
+export function validateApplyCouponInput(input: unknown) {
+  return ApplyCouponInputSchema.parse(input);
+}
+
 /**
  * Type exports for validated inputs
  */
@@ -91,3 +101,4 @@ export type UpdateCheckoutStepInput = z.infer<typeof UpdateCheckoutStepInputSche
 export type ProcessCheckoutPaymentInput = z.infer<typeof ProcessCheckoutPaymentInputSchema>;
 export type ValidateOrderInput = z.infer<typeof ValidateOrderInputSchema>;
 export type GetCheckoutSessionInput = z.infer<typeof GetCheckoutSessionInputSchema>;
+export type ApplyCouponInput = z.infer<typeof ApplyCouponInputSchema>;

@@ -107,6 +107,18 @@ export type AppliedRule = {
   name: Scalars['String']['output'];
 };
 
+export type ApplyCouponToCheckoutInput = {
+  couponCode: Scalars['String']['input'];
+  sessionId: Scalars['ID']['input'];
+};
+
+export type ApplyCouponToCheckoutPayload = {
+  __typename?: 'ApplyCouponToCheckoutPayload';
+  checkout?: Maybe<Checkout>;
+  error?: Maybe<CouponError>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type AssignPackageResponse = {
   __typename?: 'AssignPackageResponse';
   assignment?: Maybe<PackageAssignment>;
@@ -191,6 +203,7 @@ export enum BundleState {
 
 export type BundleStats = {
   __typename?: 'BundleStats';
+  discounts?: Maybe<Array<Discount>>;
   /** Total number of active bundles in the system */
   totalBundles: Scalars['Int']['output'];
   /** Number of countries covered */
@@ -206,6 +219,7 @@ export type BundlesByCountry = {
   bundleCount: Scalars['Int']['output'];
   bundles: Array<Bundle>;
   country: Country;
+  discounts?: Maybe<Array<Discount>>;
   pricingRange?: Maybe<PricingRange>;
 };
 
@@ -219,6 +233,7 @@ export type BundlesByGroup = {
   __typename?: 'BundlesByGroup';
   bundleCount: Scalars['Int']['output'];
   bundles: Array<Bundle>;
+  discounts?: Maybe<Array<Discount>>;
   group: Scalars['String']['output'];
   pricingRange?: Maybe<PricingRange>;
 };
@@ -233,6 +248,7 @@ export type BundlesByRegion = {
   __typename?: 'BundlesByRegion';
   bundleCount: Scalars['Int']['output'];
   bundles: Array<Bundle>;
+  discounts?: Maybe<Array<Discount>>;
   pricingRange?: Maybe<PricingRange>;
   region: Scalars['String']['output'];
 };
@@ -251,6 +267,7 @@ export type BundlesForCountry = {
   bundles: Array<Bundle>;
   /** Country information */
   country: Country;
+  discounts?: Maybe<Array<Discount>>;
   /** Groups available in this country */
   groups: Array<Scalars['String']['output']>;
   /** Whether unlimited bundles are available */
@@ -269,6 +286,7 @@ export type BundlesForGroup = {
   bundles: Array<Bundle>;
   /** Countries covered by this group */
   countries: Array<Scalars['String']['output']>;
+  discounts?: Maybe<Array<Discount>>;
   /** Group name */
   group: Scalars['String']['output'];
   /** Whether unlimited bundles are available */
@@ -287,6 +305,7 @@ export type BundlesForRegion = {
   bundles: Array<Bundle>;
   /** Countries in this region */
   countries: Array<Scalars['String']['output']>;
+  discounts?: Maybe<Array<Discount>>;
   /** Groups available in this region */
   groups: Array<Scalars['String']['output']>;
   /** Whether unlimited bundles are available */
@@ -563,6 +582,12 @@ export type CountryBundle = {
   provider: Provider;
 };
 
+export type CouponError = {
+  __typename?: 'CouponError';
+  code?: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
+};
+
 export type CreateCheckoutSessionInput = {
   countryId?: InputMaybe<Scalars['String']['input']>;
   group?: InputMaybe<Scalars['String']['input']>;
@@ -668,6 +693,13 @@ export type DeleteUserResponse = {
   __typename?: 'DeleteUserResponse';
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type Discount = {
+  __typename?: 'Discount';
+  amount: Scalars['Float']['output'];
+  code: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
 };
 
 export type DiscountApplication = {
@@ -829,6 +861,7 @@ export type ManualInstallation = {
 export type Mutation = {
   __typename?: 'Mutation';
   activateESIM?: Maybe<ActivateEsimResponse>;
+  applyCouponToCheckout: ApplyCouponToCheckoutPayload;
   assignPackageToUser?: Maybe<AssignPackageResponse>;
   assignUserToTenant: TenantOperationResponse;
   cancelESIM?: Maybe<EsimActionResponse>;
@@ -877,6 +910,11 @@ export type Mutation = {
 
 export type MutationActivateEsimArgs = {
   esimId: Scalars['ID']['input'];
+};
+
+
+export type MutationApplyCouponToCheckoutArgs = {
+  input: ApplyCouponToCheckoutInput;
 };
 
 
@@ -2109,6 +2147,8 @@ export type ResolversTypes = {
   AdminESIMOrder: ResolverTypeWrapper<AdminEsimOrder>;
   AdminESIMUser: ResolverTypeWrapper<AdminEsimUser>;
   AppliedRule: ResolverTypeWrapper<AppliedRule>;
+  ApplyCouponToCheckoutInput: ApplyCouponToCheckoutInput;
+  ApplyCouponToCheckoutPayload: ResolverTypeWrapper<ApplyCouponToCheckoutPayload>;
   AssignPackageResponse: ResolverTypeWrapper<AssignPackageResponse>;
   AssignmentStatus: AssignmentStatus;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
@@ -2147,6 +2187,7 @@ export type ResolversTypes = {
   ConflictingJobInfo: ResolverTypeWrapper<ConflictingJobInfo>;
   Country: ResolverTypeWrapper<Country>;
   CountryBundle: ResolverTypeWrapper<CountryBundle>;
+  CouponError: ResolverTypeWrapper<CouponError>;
   CreateCheckoutSessionInput: CreateCheckoutSessionInput;
   CreateCheckoutSessionResponse: ResolverTypeWrapper<CreateCheckoutSessionResponse>;
   CreatePricingRuleInput: CreatePricingRuleInput;
@@ -2160,6 +2201,7 @@ export type ResolversTypes = {
   DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
   DeleteTripResponse: ResolverTypeWrapper<DeleteTripResponse>;
   DeleteUserResponse: ResolverTypeWrapper<DeleteUserResponse>;
+  Discount: ResolverTypeWrapper<Discount>;
   DiscountApplication: ResolverTypeWrapper<DiscountApplication>;
   DurationGroup: ResolverTypeWrapper<DurationGroup>;
   DurationRange: ResolverTypeWrapper<DurationRange>;
@@ -2269,6 +2311,8 @@ export type ResolversParentTypes = {
   AdminESIMOrder: AdminEsimOrder;
   AdminESIMUser: AdminEsimUser;
   AppliedRule: AppliedRule;
+  ApplyCouponToCheckoutInput: ApplyCouponToCheckoutInput;
+  ApplyCouponToCheckoutPayload: ApplyCouponToCheckoutPayload;
   AssignPackageResponse: AssignPackageResponse;
   Boolean: Scalars['Boolean']['output'];
   Bundle: ResolversInterfaceTypes<ResolversParentTypes>['Bundle'];
@@ -2302,6 +2346,7 @@ export type ResolversParentTypes = {
   ConflictingJobInfo: ConflictingJobInfo;
   Country: Country;
   CountryBundle: CountryBundle;
+  CouponError: CouponError;
   CreateCheckoutSessionInput: CreateCheckoutSessionInput;
   CreateCheckoutSessionResponse: CreateCheckoutSessionResponse;
   CreatePricingRuleInput: CreatePricingRuleInput;
@@ -2315,6 +2360,7 @@ export type ResolversParentTypes = {
   DateTime: Scalars['DateTime']['output'];
   DeleteTripResponse: DeleteTripResponse;
   DeleteUserResponse: DeleteUserResponse;
+  Discount: Discount;
   DiscountApplication: DiscountApplication;
   DurationGroup: DurationGroup;
   DurationRange: DurationRange;
@@ -2484,6 +2530,13 @@ export type AppliedRuleResolvers<ContextType = Context, ParentType extends Resol
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type ApplyCouponToCheckoutPayloadResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ApplyCouponToCheckoutPayload'] = ResolversParentTypes['ApplyCouponToCheckoutPayload']> = {
+  checkout?: Resolver<Maybe<ResolversTypes['Checkout']>, ParentType, ContextType>;
+  error?: Resolver<Maybe<ResolversTypes['CouponError']>, ParentType, ContextType>;
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type AssignPackageResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['AssignPackageResponse'] = ResolversParentTypes['AssignPackageResponse']> = {
   assignment?: Resolver<Maybe<ResolversTypes['PackageAssignment']>, ParentType, ContextType>;
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -2534,6 +2587,7 @@ export type BundleFilterOptionsResolvers<ContextType = Context, ParentType exten
 };
 
 export type BundleStatsResolvers<ContextType = Context, ParentType extends ResolversParentTypes['BundleStats'] = ResolversParentTypes['BundleStats']> = {
+  discounts?: Resolver<Maybe<Array<ResolversTypes['Discount']>>, ParentType, ContextType>;
   totalBundles?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   totalCountries?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   totalGroups?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -2545,6 +2599,7 @@ export type BundlesByCountryResolvers<ContextType = Context, ParentType extends 
   bundleCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   bundles?: Resolver<Array<ResolversTypes['Bundle']>, ParentType, ContextType, RequireFields<BundlesByCountryBundlesArgs, 'limit'>>;
   country?: Resolver<ResolversTypes['Country'], ParentType, ContextType>;
+  discounts?: Resolver<Maybe<Array<ResolversTypes['Discount']>>, ParentType, ContextType>;
   pricingRange?: Resolver<Maybe<ResolversTypes['PricingRange']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -2552,6 +2607,7 @@ export type BundlesByCountryResolvers<ContextType = Context, ParentType extends 
 export type BundlesByGroupResolvers<ContextType = Context, ParentType extends ResolversParentTypes['BundlesByGroup'] = ResolversParentTypes['BundlesByGroup']> = {
   bundleCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   bundles?: Resolver<Array<ResolversTypes['Bundle']>, ParentType, ContextType, RequireFields<BundlesByGroupBundlesArgs, 'limit'>>;
+  discounts?: Resolver<Maybe<Array<ResolversTypes['Discount']>>, ParentType, ContextType>;
   group?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   pricingRange?: Resolver<Maybe<ResolversTypes['PricingRange']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -2560,6 +2616,7 @@ export type BundlesByGroupResolvers<ContextType = Context, ParentType extends Re
 export type BundlesByRegionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['BundlesByRegion'] = ResolversParentTypes['BundlesByRegion']> = {
   bundleCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   bundles?: Resolver<Array<ResolversTypes['Bundle']>, ParentType, ContextType, RequireFields<BundlesByRegionBundlesArgs, 'limit'>>;
+  discounts?: Resolver<Maybe<Array<ResolversTypes['Discount']>>, ParentType, ContextType>;
   pricingRange?: Resolver<Maybe<ResolversTypes['PricingRange']>, ParentType, ContextType>;
   region?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -2569,6 +2626,7 @@ export type BundlesForCountryResolvers<ContextType = Context, ParentType extends
   bundleCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   bundles?: Resolver<Array<ResolversTypes['Bundle']>, ParentType, ContextType>;
   country?: Resolver<ResolversTypes['Country'], ParentType, ContextType>;
+  discounts?: Resolver<Maybe<Array<ResolversTypes['Discount']>>, ParentType, ContextType>;
   groups?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   hasUnlimited?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   pricingRange?: Resolver<ResolversTypes['PriceRange'], ParentType, ContextType>;
@@ -2580,6 +2638,7 @@ export type BundlesForGroupResolvers<ContextType = Context, ParentType extends R
   bundleCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   bundles?: Resolver<Array<ResolversTypes['Bundle']>, ParentType, ContextType>;
   countries?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  discounts?: Resolver<Maybe<Array<ResolversTypes['Discount']>>, ParentType, ContextType>;
   group?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   hasUnlimited?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   pricingRange?: Resolver<ResolversTypes['PriceRange'], ParentType, ContextType>;
@@ -2591,6 +2650,7 @@ export type BundlesForRegionResolvers<ContextType = Context, ParentType extends 
   bundleCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   bundles?: Resolver<Array<ResolversTypes['Bundle']>, ParentType, ContextType>;
   countries?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  discounts?: Resolver<Maybe<Array<ResolversTypes['Discount']>>, ParentType, ContextType>;
   groups?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   hasUnlimited?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   pricingRange?: Resolver<ResolversTypes['PriceRange'], ParentType, ContextType>;
@@ -2822,6 +2882,12 @@ export type CountryBundleResolvers<ContextType = Context, ParentType extends Res
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type CouponErrorResolvers<ContextType = Context, ParentType extends ResolversParentTypes['CouponError'] = ResolversParentTypes['CouponError']> = {
+  code?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type CreateCheckoutSessionResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['CreateCheckoutSessionResponse'] = ResolversParentTypes['CreateCheckoutSessionResponse']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   session?: Resolver<Maybe<ResolversTypes['CheckoutSession']>, ParentType, ContextType>;
@@ -2892,6 +2958,13 @@ export type DeleteTripResponseResolvers<ContextType = Context, ParentType extend
 export type DeleteUserResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['DeleteUserResponse'] = ResolversParentTypes['DeleteUserResponse']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DiscountResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Discount'] = ResolversParentTypes['Discount']> = {
+  amount?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  code?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3029,6 +3102,7 @@ export type ManualInstallationResolvers<ContextType = Context, ParentType extend
 
 export type MutationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   activateESIM?: Resolver<Maybe<ResolversTypes['ActivateESIMResponse']>, ParentType, ContextType, RequireFields<MutationActivateEsimArgs, 'esimId'>>;
+  applyCouponToCheckout?: Resolver<ResolversTypes['ApplyCouponToCheckoutPayload'], ParentType, ContextType, RequireFields<MutationApplyCouponToCheckoutArgs, 'input'>>;
   assignPackageToUser?: Resolver<Maybe<ResolversTypes['AssignPackageResponse']>, ParentType, ContextType, RequireFields<MutationAssignPackageToUserArgs, 'planId' | 'userId'>>;
   assignUserToTenant?: Resolver<ResolversTypes['TenantOperationResponse'], ParentType, ContextType, RequireFields<MutationAssignUserToTenantArgs, 'tenantSlug' | 'userId'>>;
   cancelESIM?: Resolver<Maybe<ResolversTypes['ESIMActionResponse']>, ParentType, ContextType, RequireFields<MutationCancelEsimArgs, 'esimId'>>;
@@ -3563,6 +3637,7 @@ export type Resolvers<ContextType = Context> = {
   AdminESIMOrder?: AdminEsimOrderResolvers<ContextType>;
   AdminESIMUser?: AdminEsimUserResolvers<ContextType>;
   AppliedRule?: AppliedRuleResolvers<ContextType>;
+  ApplyCouponToCheckoutPayload?: ApplyCouponToCheckoutPayloadResolvers<ContextType>;
   AssignPackageResponse?: AssignPackageResponseResolvers<ContextType>;
   Bundle?: BundleResolvers<ContextType>;
   BundleConnection?: BundleConnectionResolvers<ContextType>;
@@ -3593,6 +3668,7 @@ export type Resolvers<ContextType = Context> = {
   ConflictingJobInfo?: ConflictingJobInfoResolvers<ContextType>;
   Country?: CountryResolvers<ContextType>;
   CountryBundle?: CountryBundleResolvers<ContextType>;
+  CouponError?: CouponErrorResolvers<ContextType>;
   CreateCheckoutSessionResponse?: CreateCheckoutSessionResponseResolvers<ContextType>;
   CreateTripResponse?: CreateTripResponseResolvers<ContextType>;
   CustomerBundle?: CustomerBundleResolvers<ContextType>;
@@ -3602,6 +3678,7 @@ export type Resolvers<ContextType = Context> = {
   DateTime?: GraphQLScalarType;
   DeleteTripResponse?: DeleteTripResponseResolvers<ContextType>;
   DeleteUserResponse?: DeleteUserResponseResolvers<ContextType>;
+  Discount?: DiscountResolvers<ContextType>;
   DiscountApplication?: DiscountApplicationResolvers<ContextType>;
   DurationGroup?: DurationGroupResolvers<ContextType>;
   DurationRange?: DurationRangeResolvers<ContextType>;

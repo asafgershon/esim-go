@@ -3,45 +3,29 @@ import type { Context } from "../../context/types";
 import { logger } from "../../lib/logger";
 import type {
   Country,
-  MutationResolvers
+  MutationApplyCouponToCheckoutArgs,
+  MutationResolvers,
 } from "../../types";
-import { CheckoutSessionNotFoundError } from "./errors";
 import { publish } from "./subscriptions";
+import { validateApplyCouponInput } from "./validators";
 
 export const checkoutMutationsV2: MutationResolvers = {
+  // ======================
+  // ✅ Create Checkout Flow
+  // ======================
   createCheckout: {
     resolve: async (
       _,
       { numOfDays, countryId },
       { auth, repositories, services }
     ) => {
-      const loggedInUser = await repositories.users.getUserById(
-        auth.user?.id || ""
-      );
+      const loggedInUser = await repositories.users.getUserById(auth.user?.id || "");
+      const { isAuthComplete } = await import("../../services/checkout/workflow");
 
-      const { isAuthComplete } = await import(
-        "../../services/checkout/workflow"
-      );
-
-      const cleanEmail =
-        loggedInUser?.email && loggedInUser.email !== ""
-          ? loggedInUser.email
-          : undefined;
-      const cleanPhone =
-        loggedInUser?.user_metadata?.phone_number &&
-        loggedInUser.user_metadata?.phone_number !== ""
-          ? loggedInUser.user_metadata?.phone_number
-          : undefined;
-      const cleanFirstName =
-        loggedInUser?.user_metadata?.first_name &&
-        loggedInUser.user_metadata?.first_name !== ""
-          ? loggedInUser.user_metadata?.first_name
-          : undefined;
-      const cleanLastName =
-        loggedInUser?.user_metadata?.last_name &&
-        loggedInUser.user_metadata?.last_name !== ""
-          ? loggedInUser.user_metadata?.last_name
-          : undefined;
+      const cleanEmail = loggedInUser?.email || undefined;
+      const cleanPhone = loggedInUser?.user_metadata?.phone_number || undefined;
+      const cleanFirstName = loggedInUser?.user_metadata?.first_name || undefined;
+      const cleanLastName = loggedInUser?.user_metadata?.last_name || undefined;
 
       const isAuthCompleted = isAuthComplete(
         auth.user?.id,
@@ -72,89 +56,88 @@ export const checkoutMutationsV2: MutationResolvers = {
         initialState,
       });
 
+      // 🔄 Run async bundle selection + validation
       setImmediate(async () => {
-        const session = await services.checkoutWorkflow.selectBundle({
-          numOfDays,
-          countryId,
-          sessionId: checkout.id,
-        });
-
-        publish(services.pubsub)(checkout.id, {
-          ...session,
-          bundle: {
-            ...session.bundle,
-            id: session.bundle.externalId || "",
-            country: {
-              iso: session.bundle.countryId || "",
-              __typename: "Country",
-              // We rely on field resolver
-            } as Country,
-            price: session.bundle.price || Infinity,
-            pricePerDay: session.bundle.pricePerDay || Infinity,
-            currency: "USD",
-            validated: false,
-          },
-        });
-
-        const validatedSession = await services.checkoutWorkflow.validateBundle(
-          {
+        try {
+          const session = await services.checkoutWorkflow.selectBundle({
+            numOfDays,
+            countryId,
             sessionId: checkout.id,
-          }
-        );
+          });
 
-        publish(services.pubsub)(checkout.id, {
-          ...validatedSession,
-          bundle: {
-            ...validatedSession.bundle,
-            completed: true,
-            country: {
-              iso: validatedSession.bundle.countryId || "",
-              __typename: "Country",
-              // We rely on field resolver
-            } as Country,
-            id: validatedSession.bundle.externalId || "",
-            // TODO: format with currency
-            price: validatedSession.bundle.price || Infinity,
-            pricePerDay: validatedSession.bundle.pricePerDay || Infinity,
-            currency: "USD",
-            validated: validatedSession.bundle.validated,
-          },
-        });
+          publish(services.pubsub)(checkout.id, {
+            ...session,
+            bundle: {
+              ...session.bundle,
+              id: session.bundle.externalId || "",
+              currency: "USD",
+              price: session.bundle.price ?? 0,
+              pricePerDay: session.bundle.pricePerDay ?? 0,
+              country: {
+                iso: session.bundle.countryId || "",
+                __typename: "Country",
+              } as Country,
+            },
+          });
+
+          const validatedSession = await services.checkoutWorkflow.validateBundle({
+            sessionId: checkout.id,
+          });
+
+          publish(services.pubsub)(checkout.id, {
+            ...validatedSession,
+            bundle: {
+              ...validatedSession.bundle,
+              completed: true,
+              id: validatedSession.bundle.externalId || "",
+              currency: "USD",
+              price: validatedSession.bundle.price ?? 0,
+              pricePerDay: validatedSession.bundle.pricePerDay ?? 0,
+              country: {
+                iso: validatedSession.bundle.countryId || "",
+                __typename: "Country",
+              } as Country,
+            },
+          });
+        } catch (err) {
+          logger.warn("Async createCheckout background task failed", err as ErrorConstructor);
+        }
       });
 
       return checkout.id;
     },
   },
 
+  // ===========================
+  // ✅ Update Checkout Auth Info
+  // ===========================
   updateCheckoutAuth: {
     resolve: async (
       _,
       { sessionId, firstName, lastName, email, phone },
       { auth, services }
     ) => {
-      // We allow running this mutation only
       const session = await services.checkoutWorkflow.authenticate({
         sessionId,
         userId: auth.user?.id || "",
         firstName,
         lastName,
-        email: email && email !== "" ? email : undefined,
-        phone: phone && phone !== "" ? phone : undefined,
+        email,
+        phone,
       });
 
       publish(services.pubsub)(sessionId, {
         ...session,
         bundle: {
+          ...session.bundle,
           id: session.bundle.externalId || "",
+          currency: "USD",
+          price: session.bundle.price ?? 0,
+          pricePerDay: session.bundle.pricePerDay ?? 0,
           country: {
             iso: session.bundle.countryId || "",
             __typename: "Country",
-            // We rely on field resolver
           } as Country,
-          price: session.bundle.price || Infinity,
-          pricePerDay: session.bundle.pricePerDay || Infinity,
-          currency: "USD",
-          ...session.bundle,
         },
         auth: session.auth,
       });
@@ -162,82 +145,30 @@ export const checkoutMutationsV2: MutationResolvers = {
       return session.auth;
     },
   },
-  verifyOTP: {
-    resolve: async (_, { sessionId, otp }, { services }) => {
-      const session = await services.checkoutWorkflow.verifyOTP({
-        sessionId,
-        otp,
-      });
 
-      publish(services.pubsub)(sessionId, {
-        ...session,
-        bundle: {
-          id: session.bundle.externalId || "",
-          country: {
-            iso: session.bundle.countryId || "",
-            __typename: "Country",
-            // We rely on field resolver
-          } as Country,
-          price: session.bundle.price || Infinity,
-          pricePerDay: session.bundle.pricePerDay || Infinity,
-          currency: "USD",
-          ...session.bundle,
-        },
-        auth: session.auth,
-      });
-
-      return session.auth;
-    },
-  },
-  updateCheckoutAuthName: {
-    resolve: async (_, { sessionId, firstName, lastName }, { services }) => {
-      const session = await services.checkoutWorkflow.updateAuthName({
-        sessionId,
-        firstName: firstName || "",
-        lastName: lastName || "",
-      });
-
-      publish(services.pubsub)(sessionId, {
-        ...session,
-        bundle: {
-          id: session.bundle.externalId || "",
-          country: {
-            iso: session.bundle.countryId || "",
-            __typename: "Country",
-            // We rely on field resolver
-          } as Country,
-          price: session.bundle.price || Infinity,
-          pricePerDay: session.bundle.pricePerDay || Infinity,
-          currency: "USD",
-          ...session.bundle,
-        },
-        auth: session.auth,
-      });
-
-      return session.auth;
-    },
-  },
+  // ============================
+  // ✅ Update Checkout Delivery
+  // ============================
   updateCheckoutDelivery: {
     resolve: async (_, { sessionId, email, phone }, { services }) => {
       const session = await services.checkoutWorkflow.setDelivery({
         sessionId,
-        email: email !== "" ? email : undefined,
-        phone: phone !== "" ? phone : undefined,
+        email,
+        phone,
       });
 
       publish(services.pubsub)(sessionId, {
         ...session,
         bundle: {
+          ...session.bundle,
           id: session.bundle.externalId || "",
+          currency: "USD",
+          price: session.bundle.price ?? 0,
+          pricePerDay: session.bundle.pricePerDay ?? 0,
           country: {
             iso: session.bundle.countryId || "",
             __typename: "Country",
-            // We rely on field resolver
           } as Country,
-          price: session.bundle.price || Infinity,
-          pricePerDay: session.bundle.pricePerDay || Infinity,
-          currency: "USD",
-          ...session.bundle,
         },
         delivery: session.delivery,
       });
@@ -245,83 +176,67 @@ export const checkoutMutationsV2: MutationResolvers = {
       return session.delivery;
     },
   },
-  triggerCheckoutPayment: {
-    resolve: async (_, { sessionId, redirectUrl }, { services }) => {
-      const session = await services.checkoutWorkflow.triggerPayment({
-        sessionId,
-        completed: false,
-        intent: {
-          id: "",
-          url: "",
-          applePayJavaScriptUrl: "",
-        },
-        redirectUrl,
-      });
 
-      publish(services.pubsub)(sessionId, {
-        ...session,
-        bundle: {
-          id: session.bundle.externalId || "",
-          country: {
-            iso: session.bundle.countryId || "",
-            __typename: "Country",
-            // We rely on field resolver
-          } as Country,
-          price: session.bundle.price || Infinity,
-          pricePerDay: session.bundle.pricePerDay || Infinity,
-          currency: "USD",
-          ...session.bundle,
-        },
-        auth: session.auth,
-        delivery: session.delivery,
-        payment: session.payment,
-      });
+  // ==========================
+  // ✅ Apply Coupon to Checkout
+  // ==========================
+  applyCouponToCheckout: {
+    resolve: async (
+      _,
+      { input }: MutationApplyCouponToCheckoutArgs,
+      { services }: Context
+    ) => {
+      try {
+        const { sessionId, couponCode } = validateApplyCouponInput(input);
+        logger.info("Applying coupon", { sessionId, couponCode });
 
-      return session.payment;
+        const session = await services.checkoutWorkflow.applyCoupon({
+          sessionId,
+          couponCode,
+        });
+
+        publish(services.pubsub)(sessionId, {
+          ...session,
+          bundle: {
+            ...session.bundle,
+            id: session.bundle.externalId || "",
+            currency: "USD",
+            price: session.bundle.price ?? 0,
+            pricePerDay: session.bundle.pricePerDay ?? 0,
+            country: {
+              iso: session.bundle.countryId || "",
+              __typename: "Country",
+            } as Country,
+          },
+        });
+
+        return {
+          success: true,
+          checkout: {
+            ...session,
+            bundle: {
+              ...session.bundle,
+              id: session.bundle.externalId || "",
+              currency: "USD",
+              price: session.bundle.price ?? 0,
+              pricePerDay: session.bundle.pricePerDay ?? 0,
+            },
+          },
+          error: null,
+        };
+      } catch (error: any) {
+        logger.error("Failed to apply coupon", error);
+
+        return {
+          success: false,
+          checkout: null,
+          error: {
+            __typename: "CouponError",
+            message: error.message || "Failed to apply coupon",
+            code: error.extensions?.code || "COUPON_ERROR",
+          },
+        };
+      }
     },
-  },
-  processPaymentCallback: async (_, args, context: Context) => {
-    try {
-      const { transactionId } = args;
-      const session = await context.services.checkoutWorkflow.captruePayment({
-        transactionId,
-      });
-
-      if (!session) {
-        throw new Error("Session not found");
-      }
-
-      const {order,session: completedSession} = await context.services.checkoutWorkflow.completeCheckout({ sessionId: session.id });
-
-      publish(context.services.pubsub)(session.id, {
-        ...completedSession,
-        bundle: {
-          id: session.bundle.externalId || "",
-          country: {
-            iso: session.bundle.countryId || "",
-            __typename: "Country",
-            // We rely on field resolver
-          } as Country,
-          price: session.bundle.price || Infinity,
-          pricePerDay: session.bundle.pricePerDay || Infinity,
-          currency: "USD",
-          ...session.bundle,
-        },
-        auth: session.auth,
-        delivery: session.delivery,
-        payment: session.payment,
-      });
-      return order.id;
-    } catch (error: any) {
-      if (error instanceof CheckoutSessionNotFoundError) {
-        return "Session not found";
-      }
-      logger.error("Error in processPaymentCallback", error);
-      throw new GraphQLError("Internal server error", {
-        extensions: {
-          code: "INTERNAL_SERVER_ERROR",
-        },
-      });
-    }
   },
 };

@@ -1369,6 +1369,37 @@ type RuleAction {
   value: Float!
 }
 
+type ApplyCheckoutCouponResponse {
+  success: Boolean!
+  message: String
+  discountAmount: Float
+  finalPrice: Float
+}
+
+extend type Mutation {
+  applyCheckoutCoupon(sessionId: String!, couponCode: String!): ApplyCheckoutCouponResponse!
+}
+
+mutation ApplyCouponToCheckout($input: ApplyCouponToCheckoutInput!) {
+  applyCouponToCheckout(input: $input) {
+    success
+    checkout {
+      id
+      bundle {
+        price
+        discounts {
+          code
+          amount
+        }
+      }
+    }
+    error {
+      message
+      code
+    }
+  }
+}
+
 input RuleActionInput {
   metadata: JSON
   type: ActionType!
