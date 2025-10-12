@@ -90,6 +90,11 @@ export function validateOrderInput(input: unknown) {
 }
 
 export function validateApplyCouponInput(input: unknown) {
+    const schema = z.object({
+    sessionId: z.string().min(3), // 👈 במקום uuid()
+    couponCode: z.string().min(1),
+  });
+
   return ApplyCouponInputSchema.parse(input);
 }
 
