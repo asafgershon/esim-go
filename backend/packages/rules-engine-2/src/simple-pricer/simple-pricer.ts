@@ -124,7 +124,7 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
     const dayDifference = Math.max(upperPackageCleanDays - lowerPackageCleanDays, 1);
     console.log(`[CALC] Day Difference (Clean): ${dayDifference}`);
 
-    const markupValuePerDay = upperMarkup / dayDifference;
+    const markupValuePerDay = (upperMarkup - lowerMarkup) / dayDifference;
     console.log(`[CALC] Markup Value Per Day (for discount): $${markupValuePerDay}`);
 
     const totalDiscount = Math.max(unusedDays, 0) * markupValuePerDay;
