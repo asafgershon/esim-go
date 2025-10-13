@@ -46,10 +46,13 @@ export function DestinationSelector() {
   });
 
 useEffect(() => {
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.toString().length > 0) {
-    window.history.replaceState({}, "", window.location.pathname);
-    handleDestinationChange("");
+  const isReload = performance.navigation?.type === 1;
+  if (isReload) {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.toString().length > 0) {
+      window.history.replaceState({}, "", window.location.pathname);
+      handleDestinationChange("");
+    }
   }
 }, [handleDestinationChange]);
 
