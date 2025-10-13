@@ -4,6 +4,7 @@ import * as pricingEngine from "@hiilo/rules-engine-2";
 import { env } from "../../config/env";
 import type { PubSubInstance } from "../../context/pubsub";
 import type { CheckoutSessionServiceV2 } from "./session";
+import { calculateSimplePrice } from "../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer.ts";
 import type {
   BundleRepository,
   CouponRepository,
@@ -102,7 +103,8 @@ const selectBundle = async ({
   if (!session) throw new SessionNotFound();
 
   // simulate pricing logic
-  const price = numOfDays * 3; // simplified
+  const result = await calculateSimplePrice(countryId, numOfDays);
+  const price = result.finalPrice;
   const next = await sessionService.updateSessionStep(sessionId, "bundle", {
     ...session.bundle,
     completed: false,
