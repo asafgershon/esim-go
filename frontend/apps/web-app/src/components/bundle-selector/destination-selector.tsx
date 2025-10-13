@@ -45,16 +45,13 @@ export function DestinationSelector() {
     preventTouchMove: false,
   });
 
-  // ✅ פתרון 1: אם העמוד נטען עם country או trip בפרמטרים — נאפס וננקה URL
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasDestination = urlParams.has("country") || urlParams.has("trip");
-
-    if (hasDestination) {
-      window.history.replaceState({}, "", window.location.pathname);
-      handleDestinationChange("");
-    }
-  }, [handleDestinationChange]);
+useEffect(() => {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.toString().length > 0) {
+    window.history.replaceState({}, "", window.location.pathname);
+    handleDestinationChange("");
+  }
+}, [handleDestinationChange]);
 
   const sharedButtonStyles =
     "w-full bg-brand-white border border-[rgba(10,35,46,0.2)] rounded-lg md:rounded-[15px] h-[34px] md:h-[60px] px-3 flex items-center cursor-pointer hover:border-brand-purple transition-colors focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2 text-[12px] md:text-[18px]";

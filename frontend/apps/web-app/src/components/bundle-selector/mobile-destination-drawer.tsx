@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useScrollSmootherLock } from "@workspace/ui";
 import { Drawer } from "vaul";
 import { Input, Button, ComboboxOption } from "@workspace/ui";
 import { Search, X } from "lucide-react";
-import Image from "next/image"; // ✅ תיקון שימוש ב־<img>
+import Image from "next/image";
 import {
   SEARCH_DESTINATION_PLACEHOLDER,
   NO_RESULTS_MESSAGE,
@@ -14,7 +14,6 @@ import {
 
 type MobileDestinationDrawerProps = {
   options: ComboboxOption[];
-  // ✅ שינוי שמות לפורמט שמרגיע את Next.js ("Action")
   onValueChangeAction: (value: string) => void;
   onCloseAction?: () => void;
   isOpen: boolean;
@@ -27,22 +26,38 @@ export default function MobileDestinationDrawer({
   isOpen,
 }: MobileDestinationDrawerProps) {
   const [search, setSearch] = useState("");
+  const [shouldFocusInput, setShouldFocusInput] = useState(true); // ✅ מצב חדש
 
-  // ✅ נועל את הרקע אבל שומר גלילה פנימית
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // ✅ מאפשר גלילה פנימית אבל נועל את הרקע
   useScrollSmootherLock({
     autoLock: isOpen,
     preserveScrollPosition: true,
     preventTouchMove: false,
   });
 
-  // ✅ מאפס חיפוש וסקרול בכל פתיחה מחדש
+  // ✅ בכל פתיחה מחדש — איפוס חיפוש וסקירה
   useEffect(() => {
     if (isOpen) {
       setSearch("");
+
+      // ✅ אם זה לא הפתיחה הראשונה → אל תפתח מקלדת
+      if (!shouldFocusInput && inputRef.current) {
+        inputRef.current.blur();
+      }
+
       const list = document.querySelector("#destination-list");
       if (list) list.scrollTo({ top: 0 });
     }
-  }, [isOpen]);
+  }, [isOpen, shouldFocusInput]);
+
+  // ✅ אחרי סגירה ראשונה, נגדיר שלא נפתח אוטומטית שוב
+  useEffect(() => {
+    if (!isOpen && shouldFocusInput) {
+      setShouldFocusInput(false);
+    }
+  }, [isOpen, shouldFocusInput]);
 
   const filtered = search.trim()
     ? options.filter(
@@ -86,23 +101,22 @@ export default function MobileDestinationDrawer({
               </Button>
             </div>
 
+            {/* שדה חיפוש */}
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                ref={inputRef}
                 dir="rtl"
                 className="w-full pl-10 pr-4 border-border bg-background text-foreground placeholder:text-muted-foreground text-right text-base"
                 placeholder={SEARCH_DESTINATION_PLACEHOLDER}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                autoFocus
+                autoFocus={shouldFocusInput} // ✅ מקלדת רק בפעם הראשונה
               />
             </div>
 
-            <div
-              id="destination-list"
-              className="flex-1 overflow-y-auto min-h-0 overscroll-contain"
-              dir="rtl"
-            >
+            {/* רשימת יעדים */}
+            <div id="destination-list" className="flex-1 overflow-y-auto min-h-0 overscroll-contain" dir="rtl">
               {filtered.length === 0 ? (
                 <div className="text-center text-muted-foreground py-8">
                   {NO_RESULTS_MESSAGE}

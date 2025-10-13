@@ -17,6 +17,7 @@ import { DestinationSelector } from "./destination-selector";
 // import { DestinationTabs } from "./destination-tabs";
 import { Pricing } from "./pricing";
 import { SliderWithValue } from "@workspace/ui";
+import { useEffect } from "react";
 
 interface MainViewProps {
   pricing: {
@@ -64,6 +65,25 @@ export function MainView({
     isPricingValid,
     triggerDestinationSelectorFocus,
   } = useBundleSelector();
+
+  useEffect(() => {
+    // נבדוק אם מדובר ברענון אמיתי (ולא ניווט פנימי)
+    const isReload = performance.navigation?.type === 1;
+
+    if (isReload) {
+      const urlParams = new URLSearchParams(window.location.search);
+
+      if (urlParams.toString().length > 0) {
+        // מנקה את הכתובת מה-query string (בלי ריענון)
+        window.history.replaceState({}, "", window.location.pathname);
+
+        // מאפס את הנתונים שנשמרו ב-context
+        setCountryId(null);
+        setTripId(null);
+        setNumOfDays(1); // אפשר לשנות אם אתה רוצה לשמור ערך אחר כברירת מחדל
+      }
+    }
+  }, [setCountryId, setTripId, setNumOfDays]);
 
   // Fetch data for destination display
   const { countries = [] } = useCountries();

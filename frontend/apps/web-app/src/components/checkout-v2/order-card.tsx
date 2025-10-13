@@ -34,7 +34,7 @@ export function OrderCard({
   price,
     numOfDays,
     country,
-    pricePerDay,
+    // pricePerDay,
     // speed,
     // discounts,
   } = bundle;
@@ -95,7 +95,7 @@ export function OrderCard({
 
         {/* <Row label="מהירות" value={speed.join(", ")} /> */}
 
-        <Row
+        {/* <Row
           label="מחיר יומי"
           value={
             <CountUp
@@ -106,7 +106,7 @@ export function OrderCard({
               preserveValue
             />
           }
-        />
+        /> */}
       </div>
 
       {/* Pricing Section */}

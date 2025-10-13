@@ -8,11 +8,13 @@ import { CouponCard } from "./coupon-card";
 import { DeliveryCard } from "./delivery-card";
 import { OrderCard } from "./order-card";
 import { PaymentCard } from "./payment-card";
+import { useEffect } from "react";
+import error from "next/error";
 
 export const CheckoutContainerV2 = () => {
   const { numOfDays, countryId } = useSelectorQueryState();
   const { refreshAuth } = useAuth();
-  const { data, loading} = useCheckout({
+  const { checkout, loading} = useCheckout({
     numOfDays,
     countryId,
   });
@@ -21,11 +23,35 @@ export const CheckoutContainerV2 = () => {
     refreshAuth();
   };
 
+  useEffect(() => {
+  if (loading) {
+    console.log("🕓 Waiting for checkout data...");
+  }
+  if (error) {
+    console.error("❌ Checkout subscription error:", error);
+  }
+  if (checkout) {
+    console.log("✅ Checkout data received:", checkout);
+
+    if (checkout.bundle) {
+      console.log("📦 Bundle info:", {
+        id: checkout.bundle.id,
+        country: checkout.bundle.country?.name,
+        numOfDays: checkout.bundle.numOfDays,
+        price: checkout.bundle.price,
+        currency: checkout.bundle.currency,
+      });
+    } else {
+      console.warn("⚠️ Bundle still missing inside checkout:", checkout);
+    }
+  }
+}, [checkout, loading, error]);
+
   return (
     <main className="flex flex-col gap-8 max-w-7xl mx-auto">
       <OrderCard
-        completed={Boolean(data?.checkout.bundle?.completed)}
-        data={data?.checkout}
+        completed={Boolean(checkout?.bundle?.completed)}
+        data={checkout}
         sectionNumber={1}
       />
 
@@ -33,22 +59,22 @@ export const CheckoutContainerV2 = () => {
       <CouponCard
         loading={loading}
         completed={false} // אין לנו עדיין לוגיקה לקופון שהושלם
-        data={data?.checkout}
+        data={checkout}
         sectionNumber={2}
       />
 
        <DeliveryCard
-        completed={Boolean(data?.checkout.delivery?.completed)}
+        completed={Boolean(checkout?.delivery?.completed)}
         sectionNumber={3}
         loading={loading}
-        data={data?.checkout}
+        data={checkout}
         onDeliveryUpdateAction={handleAuthUpdate}
       />
 
       <PaymentCard
-        completed={Boolean(data?.checkout.payment?.completed)}
+        completed={Boolean(checkout?.payment?.completed)}
         loading={loading}
-        data={data?.checkout}
+        data={checkout}
       />
 
     </main>
