@@ -79,7 +79,7 @@ useEffect(() => {
       window.history.back();
     }
   }
-}, []); // שימו לב: אין יותר צורך בתלויות כאן
+}, []); // שימו לב: אין יותר צורך בתלויות כאן 
 
   // Fetch data for destination display
   const { countries = [] } = useCountries();
