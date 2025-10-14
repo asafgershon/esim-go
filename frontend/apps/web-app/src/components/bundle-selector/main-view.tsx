@@ -67,25 +67,19 @@ export function MainView({
   } = useBundleSelector();
 
 useEffect(() => {
-
   const navEntry = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
   const isReload = navEntry?.type === "reload";
 
   if (isReload) {
     const urlParams = new URLSearchParams(window.location.search);
 
-    // נבצע רק אם יש query params בכתובת
+    // התנאי נשאר זהה: נגיב רק אם יש פרמטרים בכתובת
     if (urlParams.toString().length > 0) {
-      // מנקה את הכתובת לכתובת המקורית
-      window.history.replaceState({}, "", window.location.pathname);
-
-      // מאפס את הבחירות ל-state דיפולטי
-      setCountryId(null);
-      setTripId(null);
-      setNumOfDays(7);
+      // ✅ הפקודה החדשה שמחזירה את המשתמש אחורה
+      window.history.back();
     }
   }
-}, [setCountryId, setTripId, setNumOfDays]);
+}, []); // שימו לב: אין יותר צורך בתלויות כאן
 
   // Fetch data for destination display
   const { countries = [] } = useCountries();
