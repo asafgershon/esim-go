@@ -73,13 +73,13 @@ useEffect(() => {
   if (isReload) {
     const urlParams = new URLSearchParams(window.location.search);
 
-    // התנאי נשאר זהה: נגיב רק אם יש פרמטרים בכתובת
+    // אם יש פרמטרים ב-URL...
     if (urlParams.toString().length > 0) {
-      // ✅ הפקודה החדשה שמחזירה את המשתמש אחורה
-      window.history.back();
+      // ✅ ...טען מחדש את העמוד עם כתובת נקייה
+      window.location.href = window.location.pathname;
     }
   }
-}, []); // שימו לב: אין יותר צורך בתלויות כאן 
+}, []); // אין יותר צורך בתלויות כאן
 
   // Fetch data for destination display
   const { countries = [] } = useCountries();
