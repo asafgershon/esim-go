@@ -107,12 +107,12 @@ const selectBundle = async ({
       completed: false,
       validated: false,
       countryId,
-      country, // 👈 new
+      country,
       numOfDays,
       price,
       pricePerDay: price / numOfDays,
       externalId: `bundle-${countryId}-${numOfDays}`,
-    } as any // 👈 allow extra country field
+    }
   );
 
   return next;

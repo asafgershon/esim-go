@@ -1,4 +1,53 @@
 import type { CheckoutState } from "../../services/checkout-session.service";
+// שורת הייבוא הבעייתית נמחקה
+
+// ==================================
+// --- הוספות חדשות ---
+// הגדרות ספציפיות כדי להחליף את 'any'
+// ==================================
+
+/**
+ * המידע על המדינה כפי שהוא נשמר ב-session
+ */
+export interface CountryInfo {
+  iso2: string;
+  name: string;
+}
+
+/**
+ * הגדרה מדויקת של המידע בשלב ה-bundle
+ */
+export interface BundleStep {
+  completed: boolean;
+  validated: boolean;
+  countryId: string;
+  country: CountryInfo | null; // <-- השדה החדש שהוספנו
+  numOfDays: number;
+  price: number;
+  pricePerDay: number;
+  externalId: string;
+  dataAmount: string;
+  speed: string[];
+  discounts: string[];
+  provider?: any; // <-- הוחזר ל-any כדי למנוע את השגיאה
+}
+
+/**
+ * מבנה כללי של כל השלבים בתהליך
+ */
+export interface CheckoutSteps {
+  bundle?: Partial<BundleStep>; // שימוש ב-Partial כי לא כל השדות קיימים תמיד
+  delivery?: {
+    completed: boolean;
+    email?: string;
+    phone?: string;
+  };
+  // ניתן להוסיף כאן הגדרות לשלבים נוספים בעתיד
+}
+
+// ==================================
+// --- קבצים קיימים שעודכנו ---
+// ==================================
 
 /**
  * Database session data with multiple possible field formats
@@ -19,7 +68,7 @@ export interface CheckoutSessionData {
   expires_at?: string;
   createdAt?: string;
   created_at?: string;
-  steps?: any;
+  steps?: CheckoutSteps; // <-- שונה מ-any
   metadata?: CheckoutMetadata;
 }
 
@@ -37,7 +86,7 @@ export interface CheckoutMetadata {
     currency?: string;
   };
   planSnapshot?: any;
-  steps?: any;
+  steps?: CheckoutSteps; // <-- שונה מ-any
   paymentIntent?: {
     url?: string;
     id?: string;

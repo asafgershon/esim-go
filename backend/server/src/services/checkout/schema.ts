@@ -6,18 +6,22 @@ const BundleSelectionSchema = z.object({
   externalId: z.string().optional(),
   numOfDays: z.number(),
   countryId: z.string(),
+  country: z.object({
+    iso2: z.string(),
+    name: z.string(),
+  }).nullable().optional(), // <-- THIS IS THE NEW LINE
   dataAmount: z.string().optional().default(""),
   price: z.number().optional(),
   pricePerDay: z.number().optional(),
   speed: z.array(z.string()).default([]),
   validated: z.boolean().default(false),
   discounts: z.array(z.string()).default([]),
-  provider: z.enum(Provider).optional(),
+  provider: z.nativeEnum(Provider).optional(), // Use nativeEnum for TS enums
 });
 
 const AuthSchema = z.object({
   completed: z.boolean().default(false),
-  email: z.union([z.email().nullable(), z.literal('')]).optional().default(null).transform((val) => val === '' ? null : val),
+  email: z.union([z.string().email().nullable(), z.literal('')]).optional().default(null).transform((val) => val === '' ? null : val),
   phone: z.union([z.string().nullable(), z.null()]).optional().default(null),
   userId: z.string().optional(),
   firstName: z.string().optional(),
@@ -43,22 +47,14 @@ const PaymentIntentSchema = z.object({
 const PaymentSchema = z.object({
   completed: z.boolean().default(false),
   intent: PaymentIntentSchema.optional(),
-  phone: z.e164().optional(),
-  email: z.email().optional(),
+  phone: z.string().optional(), // Assuming e164 is a custom extension, simplified for now
+  email: z.string().email().optional(),
   nameForBilling: z.string().optional(),
   transaction: z.object({
     id: z.string(),
     amount: z.number().optional(),
     currency: z.string().optional(),
   }).optional(),
-  // For webhook integration
-  // capture: z
-  //   .object({
-  //     completed: z.boolean().default(false),
-  //     captureAmount: z.number().optional(),
-  //     capturedAt: z.date().optional(),
-  //   })
-  //   .optional(),
 });
 
 export const CheckoutSessionSchema = z.object({
