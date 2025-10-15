@@ -28,11 +28,13 @@ export function OrderCard({
     setIsCompleted(completed);
   }, [completed, setIsCompleted]);
 
+  console.log("[DEBUG] bundle.country:", data?.bundle?.country);
+
   if (!data || !data.bundle) return <OrderDetailsSkeleton />;
   const { bundle } = data;
   const {
     // dataAmount,
-  price,
+    price,
     numOfDays,
     country,
     // pricePerDay,
