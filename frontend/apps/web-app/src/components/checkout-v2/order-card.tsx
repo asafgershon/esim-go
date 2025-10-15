@@ -7,6 +7,7 @@ import { ShoppingCart } from "lucide-react";
 import { lazy, useEffect } from "react";
 import { useDebounceValue } from "usehooks-ts";
 import { SectionHeader } from "./section-header";
+import { getFlagUrl } from "@/utils/flags";
 
 const CountUp = lazy(() => import("react-countup"));
 
@@ -78,13 +79,22 @@ export function OrderCard({
 
       <div className="space-y-4">
         {/* Destination Info */}
-        <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+<div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+        {country?.iso ? (
+          <img
+            src={getFlagUrl(country.iso)}
+            alt={country?.name || "flag"}
+            className="w-8 h-8 rounded-md object-cover"
+          />
+        ) : (
           <span className="text-2xl">🌍</span>
-          <div>
-            <h3 className="font-medium">{country?.name || bundle?.id}</h3>
-            <p className="text-sm text-muted-foreground">{bundle?.id}</p>
-          </div>
+        )}
+        <div>
+          <h3 className="font-medium">
+            {country?.name || "מדינה לא ידועה"}
+          </h3>
         </div>
+</div>
 
         {/* Package Details */}
         <div className="space-y-3">
