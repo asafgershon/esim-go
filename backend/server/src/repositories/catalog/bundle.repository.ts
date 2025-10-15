@@ -299,6 +299,18 @@ export class BundleRepository extends BaseSupabaseRepository<
     return data;
   }
 
+  async getCountryByIso(iso: string) {
+  const { data, error } = await this.supabase
+    .from("catalog_countries")
+    .select("iso2, name")
+    .eq("iso2", iso)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+
   async byGroups() {
     const { data, error } = await this.supabase.rpc("get_bundles_by_groups");
     if (error) {

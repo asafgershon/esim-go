@@ -465,6 +465,7 @@ export type CheckoutBundle = {
   __typename?: 'CheckoutBundle';
   completed: Scalars['Boolean']['output'];
   country?: Maybe<Country>;
+  countryId?: Maybe<Scalars['String']['output']>;
   currency: Scalars['String']['output'];
   dataAmount: Scalars['String']['output'];
   discounts: Array<Scalars['String']['output']>;
@@ -2791,6 +2792,7 @@ export type CheckoutAuthWithOtpResolvers<ContextType = Context, ParentType exten
 export type CheckoutBundleResolvers<ContextType = Context, ParentType extends ResolversParentTypes['CheckoutBundle'] = ResolversParentTypes['CheckoutBundle']> = {
   completed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   country?: Resolver<Maybe<ResolversTypes['Country']>, ParentType, ContextType>;
+  countryId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   currency?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   dataAmount?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   discounts?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;

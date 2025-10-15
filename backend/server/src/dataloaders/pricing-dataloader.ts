@@ -3,8 +3,6 @@ import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import { withPerformanceMonitoring } from "../services/pricing-performance-monitor";
 import type { Country, PaymentMethod, PricingBreakdown, Provider } from "../types";
-
-// מייבאים את הפונקציה החדשה שלנו מהמנוע הפשוט
 import { calculateSimplePrice } from "../../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
 
 

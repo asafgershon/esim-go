@@ -1,10 +1,9 @@
 import { GraphQLError } from "graphql";
 import { createLogger } from "@hiilo/utils";
-import * as pricingEngine from "@hiilo/rules-engine-2";
 import { env } from "../../config/env";
 import type { PubSubInstance } from "../../context/pubsub";
 import type { CheckoutSessionServiceV2 } from "./session";
-import { calculateSimplePrice } from "../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer.ts";
+import { calculateSimplePrice } from "../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
 import type {
   BundleRepository,
   CouponRepository,
@@ -24,33 +23,15 @@ const logger = createLogger({ component: "checkout-workflow" });
 // ==========================
 let pubsub: PubSubInstance | null = null;
 let sessionService: CheckoutSessionServiceV2 | null = null;
+let bundleRepository: BundleRepository | null = null;
+let couponRepository: CouponRepository | null = null;
 let userRepository: UserRepository | null = null;
 let esimAPI: ESimGoClient | null = null;
 let mayaAPI: MayaApi | null = null;
 let paymentAPI: PaymentServiceInstance | null = null;
 let deliveryService: DeliveryService | null = null;
-let bundleRepository: BundleRepository | null = null;
 let orderRepository: OrderRepository | null = null;
 let esimRepository: ESIMRepository | null = null;
-let couponRepository: CouponRepository | null = null;
-
-// ======================
-// ✅ Helper: Auth Check
-// ======================
-export const isAuthComplete = (
-  userId?: string | null,
-  email?: string | null,
-  phone?: string | null,
-  firstName?: string | null,
-  lastName?: string | null
-): boolean => {
-  return Boolean(
-    userId &&
-      ((email && email !== "") || (phone && phone !== "")) &&
-      firstName &&
-      lastName
-  );
-};
 
 // ======================
 // ✅ Init
@@ -58,36 +39,36 @@ export const isAuthComplete = (
 const init = async (context: {
   pubsub: PubSubInstance;
   sessionService: CheckoutSessionServiceV2;
+  bundleRepository: BundleRepository;
   userRepository: UserRepository;
   esimAPI: ESimGoClient;
-  mayaAPI?: MayaApi;
   paymentAPI: PaymentServiceInstance;
   deliveryService: DeliveryService;
-  bundleRepository: BundleRepository;
   orderRepository: OrderRepository;
   esimRepository: ESIMRepository;
   couponRepository: CouponRepository;
+  mayaAPI?: MayaApi;
 }) => {
   pubsub = context.pubsub;
   sessionService = context.sessionService;
+  bundleRepository = context.bundleRepository;
   userRepository = context.userRepository;
   esimAPI = context.esimAPI;
+  paymentAPI = context.paymentAPI;
+  deliveryService = context.deliveryService;
+  orderRepository = context.orderRepository;
+  esimRepository = context.esimRepository;
+  couponRepository = context.couponRepository;
   mayaAPI =
     context.mayaAPI ||
     (env.MAYA_API_KEY
       ? new MayaApi({ auth: env.MAYA_API_KEY, baseUrl: env.MAYA_BASE_URL })
       : null);
-  paymentAPI = context.paymentAPI;
-  deliveryService = context.deliveryService;
-  bundleRepository = context.bundleRepository;
-  orderRepository = context.orderRepository;
-  esimRepository = context.esimRepository;
-  couponRepository = context.couponRepository;
   return checkoutWorkflow;
 };
 
 // ==================================
-// ✅ Basic Steps (simplified stubs)
+// ✅ selectBundle – now adds country
 // ==================================
 const selectBundle = async ({
   sessionId,
@@ -99,24 +80,47 @@ const selectBundle = async ({
   numOfDays: number;
 }) => {
   if (!sessionService) throw new NotInitializedError();
+  if (!bundleRepository) throw new NotInitializedError();
+
   const session = await sessionService.getSession(sessionId);
   if (!session) throw new SessionNotFound();
 
-  // simulate pricing logic
+  // ✅ Get country info
+  let country: { iso2: string; name: string } | null = null;
+  try {
+    const found = await bundleRepository.getCountryByIso(countryId);
+    if (found) country = found;
+  } catch (err: any) {
+    logger.warn(`[WARN] Could not fetch country ${countryId}:`, err.message);
+  }
+
+  // ✅ Calculate price
   const result = await calculateSimplePrice(countryId, numOfDays);
   const price = result.finalPrice;
-  const next = await sessionService.updateSessionStep(sessionId, "bundle", {
-    ...session.bundle,
-    completed: false,
-    countryId,
-    numOfDays,
-    price,
-    pricePerDay: price / numOfDays,
-    externalId: `bundle-${countryId}-${numOfDays}`,
-  });
+
+  // ✅ Save bundle data
+  const next = await sessionService.updateSessionStep(
+    sessionId,
+    "bundle",
+    {
+      ...session.bundle,
+      completed: false,
+      validated: false,
+      countryId,
+      country, // 👈 new
+      numOfDays,
+      price,
+      pricePerDay: price / numOfDays,
+      externalId: `bundle-${countryId}-${numOfDays}`,
+    } as any // 👈 allow extra country field
+  );
+
   return next;
 };
 
+// ==================================
+// ✅ Other workflow methods
+// ==================================
 const validateBundle = async ({ sessionId }: { sessionId: string }) => {
   if (!sessionService) throw new NotInitializedError();
   const session = await sessionService.getSession(sessionId);
@@ -125,35 +129,6 @@ const validateBundle = async ({ sessionId }: { sessionId: string }) => {
     ...session.bundle,
     completed: true,
     validated: true,
-  });
-};
-
-const authenticate = async ({
-  sessionId,
-  userId,
-  firstName,
-  lastName,
-  email,
-  phone,
-}: {
-  sessionId: string;
-  userId: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  email?: string | null;
-  phone?: string | null;
-}) => {
-  if (!sessionService) throw new NotInitializedError();
-  const session = await sessionService.getSession(sessionId);
-  if (!session) throw new SessionNotFound();
-
-  return sessionService.updateSessionStep(sessionId, "auth", {
-    userId,
-    firstName: firstName ?? undefined,
-    lastName: lastName ?? undefined,
-    email: email ?? undefined,
-    phone: phone ?? undefined,
-    completed: isAuthComplete(userId, email, phone, firstName, lastName),
   });
 };
 
@@ -177,9 +152,6 @@ const setDelivery = async ({
   });
 };
 
-// ===========================
-// ✅ Apply Coupon to Checkout
-// ===========================
 const applyCoupon = async ({
   sessionId,
   couponCode,
@@ -214,13 +186,12 @@ const applyCoupon = async ({
 };
 
 // ===========================
-// ✅ Final Exported Workflow
+// ✅ Export workflow
 // ===========================
 export const checkoutWorkflow = {
   init,
   selectBundle,
   validateBundle,
-  authenticate,
   setDelivery,
   applyCoupon,
 };
@@ -228,7 +199,7 @@ export const checkoutWorkflow = {
 export type CheckoutWorkflowInstance = typeof checkoutWorkflow;
 
 // ===========================
-// ✅ Internal Errors
+// ✅ Errors
 // ===========================
 class NotInitializedError extends Error {
   constructor() {
