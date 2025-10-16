@@ -3,18 +3,23 @@ import { nanoid } from "nanoid";
 import { type RedisInstance } from "../redis";
 import { CheckoutSessionSchema, type CheckoutSession } from "./schema";
 import { env } from "../../config/env";
+import type { BundleRepository } from "../../repositories"; // Make sure this path is correct
 
 const logger = createLogger({ component: "checkout-session-service-v2" });
 let redis: RedisInstance | null = null;
+let bundleRepository: BundleRepository | null = null; // 👈 ADDED: Global variable for the repo
 
 // 1 day on dev, 30 min on prod
-const ttl = env.isDev ? 24 * 60 * 60 : 30 * 60; // 1 day on dev, 30 min on prod
+const ttl = env.isDev ? 24 * 60 * 60 : 30 * 60;
 
-const init = async (context: { redis: RedisInstance }) => {
+// 👇 MODIFIED: init now accepts bundleRepository
+const init = async (context: { redis: RedisInstance; bundleRepository: BundleRepository }) => {
   redis = context.redis;
+  bundleRepository = context.bundleRepository; // 👈 ADDED: Set the repo
   return checkoutSessionService;
 };
 
+// 👇 MODIFIED: createSession now fetches country data
 const createSession = async ({
   countryId,
   numOfDays,
@@ -26,15 +31,28 @@ const createSession = async ({
 }) => {
   const id = nanoid();
 
+  // --- Start of new logic ---
+  let countryData: { iso2: string; name: string } | null = null;
+  if (!bundleRepository) {
+      logger.error("BundleRepository not initialized in session service!");
+  } else {
+      try {
+        const found = await bundleRepository.getCountryByIso(countryId);
+        if (found) countryData = found;
+      } catch (err: any) {
+        logger.warn(`[WARN] Could not fetch country ${countryId} on session creation:`, err.message);
+      }
+  }
+  // --- End of new logic ---
+
   const session = CheckoutSessionSchema.parse({
     id,
-
     status: "select-bundle",
-
     bundle: {
       completed: false,
       countryId,
       numOfDays,
+      country: countryData, // ✅ ADDED: Country object is now included on creation
     },
     auth: {
       completed: initialState?.auth?.completed ?? false,
@@ -55,7 +73,6 @@ const createSession = async ({
     payment: {
       completed: false,
     },
-
     createdAt: new Date(),
     updatedAt: new Date(),
     expiresAt: new Date(Date.now() + 30 * 60 * 1000),
@@ -63,7 +80,7 @@ const createSession = async ({
 
   await saveSession(session);
 
-  logger.info("Created checkout session", { sessionId: session.id });
+  logger.info("Created checkout session with initial country data", { sessionId: session.id });
 
   return session;
 };
@@ -83,9 +100,9 @@ const saveSession = async (session: CheckoutSession) => {
   if (session.payment?.intent?.id) {
     const indexKey = `checkout:intent:${session.payment.intent.id}`;
     await redis.set(indexKey, session.id, { ttl });
-    logger.debug("Created payment intent index", { 
+    logger.debug("Created payment intent index", {
       sessionId: session.id,
-      paymentIntentId: session.payment.intent.id 
+      paymentIntentId: session.payment.intent.id
     });
   }
 };
@@ -107,11 +124,6 @@ const getSession = async (
   return CheckoutSessionSchema.parse(JSON.parse(data));
 };
 
-/**
- * Get a checkout session by its payment intent ID
- * @param paymentIntentId - The EasyCard payment intent ID (entityUID)
- * @returns The checkout session or null if not found
- */
 const getSessionByPaymentIntentId = async (
   paymentIntentId: string
 ): Promise<CheckoutSession | null> => {
@@ -119,7 +131,6 @@ const getSessionByPaymentIntentId = async (
     throw new NotInitializedError();
   }
 
-  // First, get the session ID from the payment intent index
   const indexKey = `checkout:intent:${paymentIntentId}`;
   const sessionId = await redis.get(indexKey);
 
@@ -130,7 +141,6 @@ const getSessionByPaymentIntentId = async (
 
   logger.debug("Found session ID for payment intent", { paymentIntentId, sessionId });
 
-  // Then get the actual session
   return getSession(sessionId);
 };
 
@@ -145,49 +155,41 @@ const updateSessionStep = async <K extends keyof CheckoutSession>(
     throw new SessionNotFound();
   }
 
-  // Store old payment intent ID to clean up old index if it changes
   const oldPaymentIntentId = session.payment?.intent?.id;
 
-  // Update the specific domain
   session[step] = {
     ...(session[step] as object),
     ...updates,
   } as CheckoutSession[K];
 
-  // Update metadata
   session.updatedAt = new Date();
   session.version += 1;
 
-  // Validate the entire session after update
   const validatedSession = CheckoutSessionSchema.parse(session);
 
-  // Handle payment intent ID index updates
   if (step === 'payment' && redis) {
     const newPaymentIntentId = validatedSession.payment?.intent?.id;
     
-    // Clean up old index if payment intent ID changed
     if (oldPaymentIntentId && oldPaymentIntentId !== newPaymentIntentId) {
       const oldIndexKey = `checkout:intent:${oldPaymentIntentId}`;
       await redis.delete(oldIndexKey);
-      logger.debug("Removed old payment intent index", { 
-        sessionId, 
-        oldPaymentIntentId 
+      logger.debug("Removed old payment intent index", {
+        sessionId,
+        oldPaymentIntentId
       });
     }
 
-    // Create new index if payment intent ID is set
     if (newPaymentIntentId) {
       const ttl = Math.floor((validatedSession.expiresAt.getTime() - Date.now()) / 1000);
       const newIndexKey = `checkout:intent:${newPaymentIntentId}`;
       await redis.set(newIndexKey, sessionId, { ttl });
-      logger.debug("Created payment intent index", { 
-        sessionId, 
-        paymentIntentId: newPaymentIntentId 
+      logger.debug("Created payment intent index", {
+        sessionId,
+        paymentIntentId: newPaymentIntentId
       });
     }
   }
 
-  // Save back to Redis
   await saveSession(validatedSession);
 
   return validatedSession;
@@ -201,10 +203,6 @@ const getSessionNextStep = (session: CheckoutSession): string => {
   return "confirmation";
 };
 
-/**
- * Clean up a session and its associated indexes
- * @param sessionId - The session ID to clean up
- */
 const deleteSession = async (sessionId: string): Promise<void> => {
   if (!redis) {
     throw new NotInitializedError();
@@ -213,11 +211,9 @@ const deleteSession = async (sessionId: string): Promise<void> => {
   const session = await getSession(sessionId);
   
   if (session) {
-    // Delete the main session
     const sessionKey = `checkout:session:${sessionId}`;
     await redis.delete(sessionKey);
 
-    // Delete payment intent index if exists
     if (session.payment?.intent?.id) {
       const indexKey = `checkout:intent:${session.payment.intent.id}`;
       await redis.delete(indexKey);
@@ -240,9 +236,6 @@ export const checkoutSessionService = {
 
 export type CheckoutSessionServiceV2 = typeof checkoutSessionService;
 
-/* ===============================
- * Errors
- * =============================== */
 class NotInitializedError extends Error {
   constructor() {
     super("Service not initialized");
