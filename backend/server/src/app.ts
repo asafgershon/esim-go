@@ -53,17 +53,15 @@ import {
 } from "./repositories";
 import { StrategiesRepository } from "./repositories/strategies.repository";
 import { TripRepository } from "./repositories/trip.repository";
-import { resolvers } from "./resolvers"; // 👈 FIX #1: Added missing import
+import { resolvers } from "./resolvers";
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
 import { checkoutSessionService } from "./services/checkout";
 import { checkoutWorkflow } from "./services/checkout/workflow";
 import { DeliveryService, SESEmailService } from "./services/delivery";
 import { paymentService } from "./services/payment";
+import { calculateSimplePrice } from "../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
 
-import { calculateSimplePrice } from '../../packages/rules-engine-2/src/simple-pricer/simple-pricer';
-
-// Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
 const rulesEngineSchema = readFileSync(
   join(__dirname, "../../packages/rules-engine-2/schema.graphql"),
@@ -77,6 +75,7 @@ const pricingManagementSchema = readFileSync(
   join(__dirname, "../schemas/pricing-management.graphql"),
   "utf-8"
 );
+
 const typeDefs = mergeTypeDefs([
   authDirectiveTypeDefs,
   mainSchema,
@@ -87,7 +86,10 @@ const typeDefs = mergeTypeDefs([
 
 const env = cleanEnv(process.env, {
   PORT: port({ default: 4000 }),
-  CORS_ORIGINS: str({ default: "http://localhost:3000,https://www.hiiloworld.com,https://hiiloworld.com" }),
+  CORS_ORIGINS: str({
+    default:
+      "http://localhost:3000,https://www.hiiloworld.com,https://hiiloworld.com",
+  }),
   ESIM_GO_API_KEY: str(),
   AIRHALO_CLIENT_ID: str({ default: "" }),
   AIRHALO_CLIENT_SECRET: str({ default: "" }),
@@ -120,8 +122,9 @@ async function startServer() {
 
     const userRepository = new UserRepository();
     paymentService.init();
+
     const bundleRepository = new BundleRepository();
-    const couponRepository = new CouponRepository(supabaseAdmin); // 👈 FIX #2: Passed database connection
+    const couponRepository = new CouponRepository(supabaseAdmin);
     const deliveryService = new DeliveryService(new SESEmailService());
     const orderRepository = new OrderRepository();
     const esimRepository = new ESIMRepository();
@@ -153,105 +156,207 @@ async function startServer() {
     const app = express();
     const httpServer = createServer(app);
 
+    // 🟣 GraphQL WebSocket Server
     const wsServer = new WebSocketServer({
       server: httpServer,
       path: "/graphql",
     });
 
-    const serverCleanup = useServer({ schema: schemaWithDirectives, context: async (ctx: WSContext) => {
-        const connectionParams = ctx.connectionParams as Record<string, any> | undefined;
-        const token = getSupabaseTokenFromConnectionParams(connectionParams);
-        const auth = await createSupabaseAuthContext(token);
-        // 👈 FIX #3: Added checkoutWorkflow to context
-        const baseContext = { auth, services: { redis, pubsub, db: supabaseAdmin, syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY), esimGoClient, airHaloClient, easycardPayment: paymentService, checkoutSessionService: checkoutSessionServiceV2, checkoutWorkflow: checkoutWorkflowService, deliveryService, }, repositories: { checkoutSessions: checkoutSessionRepository, orders: orderRepository, esims: esimRepository, users: userRepository, trips: tripRepository, highDemandCountries: highDemandCountryRepository, syncJob: syncJobRepository, bundles: bundleRepository, tenants: tenantRepository, strategies: strategiesRepository, }, dataSources: { catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY), orders: new OrdersDataSource({ cache: redis }), esims: new ESIMsDataSource({ cache: redis }), regions: RegionsDataSource, inventory: new InventoryDataSource({ cache: redis }), pricing: new PricingDataSource({ cache: redis }), }, token, };
-        return { ...baseContext, dataLoaders: { pricing: createPricingDataLoader(baseContext), }, };
+    const serverCleanup = useServer(
+      {
+        schema: schemaWithDirectives,
+        context: async (ctx: WSContext) => {
+          const connectionParams =
+            ctx.connectionParams as Record<string, any> | undefined;
+          const token = getSupabaseTokenFromConnectionParams(connectionParams);
+          const auth = await createSupabaseAuthContext(token);
+
+          const baseContext = {
+            auth,
+            services: {
+              redis,
+              pubsub,
+              db: supabaseAdmin,
+              syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
+              esimGoClient,
+              airHaloClient,
+              easycardPayment: paymentService,
+              checkoutSessionServiceV2,
+              checkoutWorkflow: checkoutWorkflowService,
+              deliveryService,
+            },
+            repositories: {
+              checkoutSessions: checkoutSessionRepository,
+              orders: orderRepository,
+              esims: esimRepository,
+              users: userRepository,
+              trips: tripRepository,
+              highDemandCountries: highDemandCountryRepository,
+              syncJob: syncJobRepository,
+              bundles: bundleRepository,
+              tenants: tenantRepository,
+              strategies: strategiesRepository,
+            },
+            dataSources: {
+              catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
+              orders: new OrdersDataSource({ cache: redis }),
+              esims: new ESIMsDataSource({ cache: redis }),
+              regions: RegionsDataSource,
+              inventory: new InventoryDataSource({ cache: redis }),
+              pricing: new PricingDataSource({ cache: redis }),
+            },
+            token,
+          };
+
+          return {
+            ...baseContext,
+            dataLoaders: { pricing: createPricingDataLoader(baseContext) },
+          };
+        },
       },
-    }, wsServer);
-    
+      wsServer
+    );
+
+    // 🟣 Apollo Server
     const server = new ApolloServer({
       schema: schemaWithDirectives,
       plugins: [
         ApolloServerPluginDrainHttpServer({ httpServer }),
-        { async serverWillStart() { return { async drainServer() { await serverCleanup.dispose(); }, }; }, },
+        {
+          async serverWillStart() {
+            return {
+              async drainServer() {
+                await serverCleanup.dispose();
+              },
+            };
+          },
+        },
       ],
     });
 
     await server.start();
 
+    // 🟢 Express Middleware
     const allowedOrigins = env.CORS_ORIGINS.split(",");
     app.use((req, res, next) => {
-        const origin = req.headers.origin;
-        if (origin && allowedOrigins.includes(origin)) {
-            res.setHeader("Access-Control-Allow-Origin", origin);
-            res.setHeader("Access-Control-Allow-Credentials", "true");
-        }
-        if (req.method === "OPTIONS") {
-            res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-            res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
-            return res.sendStatus(204);
-        }
-        next();
+      const origin = req.headers.origin;
+      if (origin && allowedOrigins.includes(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+      }
+      if (req.method === "OPTIONS") {
+        res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+        res.setHeader(
+          "Access-Control-Allow-Headers",
+          "Content-Type,Authorization"
+        );
+        return res.sendStatus(204);
+      }
+      next();
     });
 
     app.use(express.json());
 
-    app.get("/health", (req, res) => res.json({ status: "ok" }));
+    // 🩺 Health Check
+    app.get("/health", (_, res) => res.json({ status: "ok" }));
 
+    // 🧾 Webhook: ESIM-GO
     app.post("/webhooks/esim-go", async (req, res) => {
-        try {
-            const signature = req.headers["x-esim-go-signature"] as string;
-            await handleESIMGoWebhook(req.body, signature);
-            res.json({ success: true });
-        } catch (error: any) {
-            res.status(400).json({ success: false, message: error.message });
-        }
+      try {
+        const signature = req.headers["x-esim-go-signature"] as string;
+        await handleESIMGoWebhook(req.body, signature);
+        res.json({ success: true });
+      } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+      }
     });
 
-    app.get('/api/calculate-price', async (req, res) => {
-      console.log('[API] Received pricing request for SIMPLE PRICER:', req.query);
+    // 💰 Simple Pricing Endpoint
+    app.get("/api/calculate-price", async (req, res) => {
+      console.log("[API] SIMPLE PRICER:", req.query);
       const { countryId, numOfDays } = req.query;
-
-      if (typeof countryId !== 'string' || typeof numOfDays !== 'string') {
-        return res.status(400).json({ error: 'Missing or invalid countryId or numOfDays' });
+      if (typeof countryId !== "string" || typeof numOfDays !== "string") {
+        return res
+          .status(400)
+          .json({ error: "Missing or invalid countryId or numOfDays" });
       }
       const days = parseInt(numOfDays, 10);
-
       try {
         const simplePriceResult = await calculateSimplePrice(countryId, days);
-
-        const responseData = {
+        res.status(200).json({
           finalPrice: simplePriceResult.finalPrice,
           totalPrice: simplePriceResult.finalPrice,
           hasDiscount: simplePriceResult.calculation.totalDiscount > 0,
           discountAmount: simplePriceResult.calculation.totalDiscount,
           days: simplePriceResult.requestedDays,
-          currency: 'USD',
-        };
-        res.status(200).json(responseData);
+          currency: "USD",
+        });
       } catch (error) {
-        console.error('Simple pricing engine failed:', error);
-        res.status(500).json({ error: 'Failed to calculate price' });
+        console.error("Simple pricing engine failed:", error);
+        res.status(500).json({ error: "Failed to calculate price" });
       }
     });
 
-    app.use("/graphql", expressMiddleware(server, {
+    // 🟣 GraphQL Endpoint
+    app.use(
+      "/graphql",
+      expressMiddleware(server, {
         context: async ({ req }) => {
           const token = getSupabaseToken(req);
           const auth = await createSupabaseAuthContext(token);
-          // 👈 FIX #4: Added checkoutWorkflow to context
-          const baseContext = { auth, services: { redis, pubsub, syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY), esimGoClient, airHaloClient, easycardPayment: paymentService, db: supabaseAdmin, checkoutSessionService: checkoutSessionServiceV2, checkoutWorkflow: checkoutWorkflowService, deliveryService, }, repositories: { checkoutSessions: checkoutSessionRepository, orders: orderRepository, esims: esimRepository, users: userRepository, trips: tripRepository, highDemandCountries: highDemandCountryRepository, syncJob: syncJobRepository, bundles: bundleRepository, tenants: tenantRepository, strategies: strategiesRepository, }, dataSources: { catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY), orders: new OrdersDataSource({ cache: redis }), esims: new ESIMsDataSource({ cache: redis }), regions: RegionsDataSource, inventory: new InventoryDataSource({ cache: redis }), pricing: new PricingDataSource({ cache: redis }), }, req, token, };
-          return { ...baseContext, dataLoaders: { pricing: createPricingDataLoader(baseContext), }, };
+
+          const baseContext = {
+            auth,
+            services: {
+              redis,
+              pubsub,
+              syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY),
+              esimGoClient,
+              airHaloClient,
+              easycardPayment: paymentService,
+              db: supabaseAdmin,
+              checkoutSessionServiceV2,
+              checkoutWorkflow: checkoutWorkflowService,
+              deliveryService,
+            },
+            repositories: {
+              checkoutSessions: checkoutSessionRepository,
+              orders: orderRepository,
+              esims: esimRepository,
+              users: userRepository,
+              trips: tripRepository,
+              highDemandCountries: highDemandCountryRepository,
+              syncJob: syncJobRepository,
+              bundles: bundleRepository,
+              tenants: tenantRepository,
+              strategies: strategiesRepository,
+            },
+            dataSources: {
+              catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
+              orders: new OrdersDataSource({ cache: redis }),
+              esims: new ESIMsDataSource({ cache: redis }),
+              regions: RegionsDataSource,
+              inventory: new InventoryDataSource({ cache: redis }),
+              pricing: new PricingDataSource({ cache: redis }),
+            },
+            req,
+            token,
+          };
+
+          return {
+            ...baseContext,
+            dataLoaders: { pricing: createPricingDataLoader(baseContext) },
+          };
         },
       })
     );
-    
+
     const PORT = env.PORT;
     httpServer.listen(PORT, () => {
-      logger.info(`Server is ready at http://localhost:${PORT}`);
+      logger.info(`🚀 Server ready at http://localhost:${PORT}`);
     });
-
   } catch (error) {
-    logger.error("Failed to start server", error as Error);
+    logger.error("❌ Failed to start server", error as Error);
     process.exit(1);
   }
 }

@@ -1,3 +1,5 @@
+// backend/server/src/context/types.ts
+
 import type { AirHaloClient } from "@hiilo/airalo";
 import type { ESimGoClient } from "@hiilo/esim-go";
 import type { Database } from "@hiilo/supabase";
@@ -23,7 +25,7 @@ import {
   HighDemandCountryRepository,
   OrderRepository,
   TenantRepository,
-  UserRepository
+  UserRepository,
 } from "../repositories";
 import { SyncJobRepository } from "../repositories/catalog/sync-job.repository";
 import { StrategiesRepository } from "../repositories/strategies.repository";
@@ -40,14 +42,14 @@ import type { SupabaseAuthContext } from "./supabase-auth";
 export type Context = {
   auth: SupabaseAuthContext;
   services: {
-    db: SupabaseClient<Database>;
+    db: SupabaseClient<any>;
     redis: RedisInstance;
+    pubsub: RedisPubSub;
     syncs: CatalogSyncServiceV2;
     esimGoClient: ESimGoClient;
     airHaloClient?: AirHaloClient;
     easycardPayment: typeof paymentService;
     checkoutSessionService?: CheckoutSessionService;
-    pubsub: RedisPubSub;
     checkoutSessionServiceV2: CheckoutSessionServiceV2;
     checkoutWorkflow: CheckoutWorkflowInstance;
     deliveryService: DeliveryService;
@@ -64,15 +66,6 @@ export type Context = {
     tenants: TenantRepository;
     strategies: StrategiesRepository;
   };
-  checkoutWorkflow: {
-  init: any;
-  selectBundle: Function;
-  validateBundle: Function;
-  authenticate: Function;
-  setDelivery: Function;
-  applyCoupon: Function;
-  completeCheckout: Function;
-};
   dataSources: {
     catalogue: CatalogueDataSourceV2;
     orders: OrdersDataSource;
@@ -84,7 +77,6 @@ export type Context = {
   dataLoaders?: {
     pricing: DataLoader<PricingKey, PricingResult>;
   };
-  // Legacy for backward compatibility during migration
   token?: string;
   req?: any;
 };
