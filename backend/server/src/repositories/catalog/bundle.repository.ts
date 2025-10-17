@@ -302,7 +302,7 @@ export class BundleRepository extends BaseSupabaseRepository<
   async getCountryByIso(iso: string) {
   const { data, error } = await this.supabase
     .from("catalog_countries")
-    .select("iso2, name")
+    .select("iso2, name: name_hebrew")
     .eq("iso2", iso)
     .single();
 

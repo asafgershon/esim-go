@@ -81,13 +81,13 @@ export function OrderCard({
 
       <div className="space-y-4">
         {/* Destination Info */}
-<div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-        {country?.iso ? (
+        <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+          {country?.iso ? (
           <img
             src={getFlagUrl(country.iso)}
             alt={country?.name || "flag"}
-            className="w-8 h-8 rounded-md object-cover"
-          />
+            className="w-6 h-6 rounded-md object-cover ring-1 ring-gray-200"         
+            />
         ) : (
           <span className="text-2xl">🌍</span>
         )}

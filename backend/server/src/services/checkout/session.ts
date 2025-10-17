@@ -38,7 +38,11 @@ const createSession = async ({
   } else {
       try {
         const found = await bundleRepository.getCountryByIso(countryId);
-        if (found) countryData = found;
+        console.log("[DEBUG] Data returned from getCountryByIso:", found);
+        if (found && found.name) countryData = { iso2 :found.iso2, name: found.name };
+        else if(found) {
+          logger.warn(`Country found but missing name for ISO: ${countryId}`);
+        }
       } catch (err: any) {
         logger.warn(`[WARN] Could not fetch country ${countryId} on session creation:`, err.message);
       }
