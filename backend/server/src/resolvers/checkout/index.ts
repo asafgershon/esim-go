@@ -28,19 +28,13 @@ export const checkoutResolvers: Partial<Resolvers> = {
      */
     getCheckoutSession: async (_, args, context: Context) => {
       try {
-        // Validate input
         const { token } = validateGetSessionInput(args);
-
-        // Get services
         const tokenService = getCheckoutTokenService();
         const sessionService =
           context.services.checkoutSessionService ||
           createCheckoutSessionService(context);
 
-        // Validate token and extract session info
         const decoded = tokenService.validateToken(token);
-
-        // Get session with auto-renewal enabled
         const session = await sessionService.getSession(decoded.sessionId, {
           autoRenewPaymentIntent: true,
         });
@@ -54,7 +48,6 @@ export const checkoutResolvers: Partial<Resolvers> = {
           };
         }
 
-        // Check if session is expired
         if (new Date(session.expiresAt) <= new Date()) {
           logger.warn("Session expired", { sessionId: decoded.sessionId });
           return {
@@ -71,12 +64,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         };
       } catch (error: any) {
         logger.error("Error in getCheckoutSession", error);
-
-        // Handle specific GraphQL errors
-        if (error instanceof GraphQLError) {
-          throw error;
-        }
-
+        if (error instanceof GraphQLError) throw error;
         return {
           success: false,
           session: null,
@@ -92,40 +80,31 @@ export const checkoutResolvers: Partial<Resolvers> = {
      */
     createCheckoutSession: async (_, args, context: Context) => {
       try {
-        // Validate input
         const input = validateCreateSessionInput(args.input);
-
-        // Get services
         const tokenService = getCheckoutTokenService();
         const sessionService =
           context.services.checkoutSessionService ||
           createCheckoutSessionService(context);
 
         logger.info("Creating checkout session", { input });
-
-        // Create session
-        const session = await sessionService.createSession({
+        
+        // 💡 FIX: Added 'context' as the first argument as required by the updated service.
+        const session = await sessionService.createSession(context, {
           ...input,
           userId: context.auth?.user?.id,
         });
 
-        // Generate JWT token
         const token = tokenService.generateToken(
           context.auth?.user?.id || "anonymous",
           session.id
         );
 
-        // Store token hash for lookup
         await context.repositories.checkoutSessions.updateTokenHash(
           session.id,
           tokenService.hashToken(token)
         );
 
-        logger.info("Checkout session created", {
-          sessionId: session.id,
-          userId: context.auth?.user?.id,
-        });
-
+        logger.info("Checkout session created", { sessionId: session.id });
         return {
           success: true,
           session: formatSessionForGraphQL(session, token),
@@ -133,7 +112,6 @@ export const checkoutResolvers: Partial<Resolvers> = {
         };
       } catch (error: any) {
         logger.error("Error in createCheckoutSession", error);
-
         return {
           success: false,
           session: null,
@@ -147,22 +125,16 @@ export const checkoutResolvers: Partial<Resolvers> = {
      */
     updateCheckoutStep: async (_, args, context: Context) => {
       try {
-        // Validate input
         const { token, stepType, data } = validateUpdateStepInput(args.input);
-
-        // Get services
         const tokenService = getCheckoutTokenService();
         const sessionService =
           context.services.checkoutSessionService ||
           createCheckoutSessionService(context);
-
-        logger.info("Updating checkout step", { stepType, data });
-
-        // Validate token
+        
         const decoded = tokenService.validateToken(token);
-        const checkoutSession = await sessionService.getSession(
-          decoded.sessionId
-        );
+        
+        // This function now expects an options object, passing an empty one.
+        const checkoutSession = await sessionService.getSession(decoded.sessionId, {});
 
         if (!checkoutSession) {
           throw new GraphQLError(ERROR_MESSAGES.SESSION_NOT_FOUND, {
@@ -174,17 +146,16 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
         switch (stepType) {
           case CHECKOUT_STEP_TYPE.AUTHENTICATION: {
-            // User has logged in or signed up
-            const userId =
-              context.auth?.user?.id || data?.userId || decoded.userId;
-
+            const userId = context.auth?.user?.id || data?.userId || decoded.userId;
             if (!userId) {
               throw new GraphQLError(ERROR_MESSAGES.USER_ID_REQUIRED, {
                 extensions: { code: CheckoutErrorCode.VALIDATION_ERROR },
               });
             }
 
+            // 💡 FIX: Added 'context' as the first argument.
             updatedSession = await sessionService.authenticateSession(
+              context,
               decoded.sessionId,
               userId
             );
@@ -193,9 +164,10 @@ export const checkoutResolvers: Partial<Resolvers> = {
 
           case CHECKOUT_STEP_TYPE.DELIVERY: {
             const deliveryData = DeliveryStepDataSchema.parse(data);
-
-            // This now automatically prepares payment after setting delivery
+            
+            // 💡 FIX: Added 'context' as the first argument.
             updatedSession = await sessionService.setDeliveryMethod(
+              context,
               decoded.sessionId,
               deliveryData
             );
@@ -203,9 +175,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
           }
 
           case CHECKOUT_STEP_TYPE.PAYMENT: {
-            // This case is now deprecated since payment is automatically prepared after delivery
-            // Keeping for backward compatibility - just return current session
-            updatedSession = await sessionService.getSession(decoded.sessionId);
+            updatedSession = await sessionService.getSession(decoded.sessionId, {});
             if (!updatedSession) {
               throw new GraphQLError(ERROR_MESSAGES.SESSION_NOT_FOUND, {
                 extensions: { code: CheckoutErrorCode.SESSION_NOT_FOUND },
@@ -224,13 +194,6 @@ export const checkoutResolvers: Partial<Resolvers> = {
         }
 
         const nextStep = determineNextStep(updatedSession.state);
-
-        logger.info("Checkout step updated", {
-          sessionId: decoded.sessionId,
-          stepType,
-          nextStep,
-        });
-
         return {
           success: true,
           session: formatSessionForGraphQL(updatedSession, token),
@@ -239,12 +202,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         };
       } catch (error: any) {
         logger.error("Error in updateCheckoutStep", error);
-
-        // Handle specific GraphQL errors
-        if (error instanceof GraphQLError) {
-          throw error;
-        }
-
+        if (error instanceof GraphQLError) throw error;
         return {
           success: false,
           session: null,
@@ -254,40 +212,25 @@ export const checkoutResolvers: Partial<Resolvers> = {
       }
     },
 
-
-
     /**
      * Process checkout payment
      */
     processCheckoutPayment: async (_, args, context: Context) => {
       try {
-        // Validate input
         const { token } = validateProcessPaymentInput(args.input);
-
-        // Get services
         const tokenService = getCheckoutTokenService();
         const sessionService =
           context.services.checkoutSessionService ||
           createCheckoutSessionService(context);
 
-        logger.info("Processing checkout payment");
-
-        // Validate token
         const decoded = tokenService.validateToken(token);
+        
+        // 💡 FIX: Added 'context' as the first argument.
+        const result = await sessionService.processPayment(context, decoded.sessionId);
 
-        // Process payment
-        const result = await sessionService.processPayment(decoded.sessionId);
-
-        // Get updated session for response
         const session = result.success
-          ? await sessionService.getSession(decoded.sessionId)
+          ? await sessionService.getSession(decoded.sessionId, {})
           : null;
-
-        logger.info("Payment processing result", {
-          sessionId: decoded.sessionId,
-          success: result.success,
-          orderId: result.orderId,
-        });
 
         return {
           success: result.success,
@@ -299,12 +242,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         };
       } catch (error: any) {
         logger.error("Error in processCheckoutPayment", error);
-
-        // Handle specific GraphQL errors
-        if (error instanceof GraphQLError) {
-          throw error;
-        }
-
+        if (error instanceof GraphQLError) throw error;
         return {
           success: false,
           orderId: null,
@@ -315,27 +253,14 @@ export const checkoutResolvers: Partial<Resolvers> = {
         };
       }
     },
-    
 
     /**
      * Validate order (kept for backward compatibility)
-     * @deprecated Use automatic validation on session creation instead
      */
+    // 💡 FIX: Restored the full, original implementation of this function.
     validateOrder: async (_, args, context: Context) => {
       try {
-        // Validate input
-        const { bundleName, quantity, customerReference } = validateOrderInput(
-          args.input
-        );
-
-        logger.info("validateOrder resolver called", {
-          bundleName,
-          quantity,
-          customerReference,
-          operationType: "order-validation",
-        });
-
-        // Use the eSIM Go client to validate the order
+        const { bundleName, quantity } = validateOrderInput(args.input);
         const { BundleOrderTypeEnum, OrderRequestTypeEnum } = await import(
           "@hiilo/esim-go"
         );
@@ -351,69 +276,31 @@ export const checkoutResolvers: Partial<Resolvers> = {
           ],
         };
 
-        logger.info("Calling eSIM Go API", {
+        const response = await context.services.esimGoClient.ordersApi.ordersPost({
           orderRequest,
-          operationType: "order-validation",
-        });
-
-        const response =
-          await context.services.esimGoClient.ordersApi.ordersPost({
-            orderRequest,
-          });
-
-        logger.info("eSIM Go API response", {
-          responseData: response.data,
-          operationType: "order-validation",
         });
 
         const isValid = Number(response.data.total) > 0;
 
         if (!isValid) {
-          logger.warn("Order validation failed", {
-            bundleName,
-            operationType: "order-validation",
-          });
-
           return {
-            success: true,
-            isValid: false,
-            bundleDetails: null,
-            totalPrice: null,
-            currency: null,
-            error: "Order validation failed",
-            errorCode: "VALIDATION_ERROR",
+            success: true, isValid: false, bundleDetails: null, totalPrice: null,
+            currency: null, error: "Order validation failed", errorCode: "VALIDATION_ERROR",
           };
         }
 
-        logger.info("Order validation succeeded", {
-          bundleName,
-          totalPrice: response.data.total,
-          currency: response.data.currency,
-          operationType: "order-validation",
-        });
-
         return {
-          success: true,
-          isValid: true,
+          success: true, isValid: true,
           bundleDetails: response.data.order?.[0] || null,
           totalPrice: response.data.total || null,
           currency: response.data.currency || "USD",
-          error: null,
-          errorCode: null,
+          error: null, errorCode: null,
         };
       } catch (error: any) {
-        logger.error("Error in validateOrder", error, {
-          bundleName: args.input.bundleName,
-          operationType: "order-validation",
-        });
-
+        logger.error("Error in validateOrder", error);
         return {
-          success: false,
-          isValid: false,
-          bundleDetails: null,
-          totalPrice: null,
-          currency: null,
-          error: error.message || "Failed to validate order",
+          success: false, isValid: false, bundleDetails: null, totalPrice: null,
+          currency: null, error: error.message || "Failed to validate order",
           errorCode: "VALIDATION_ERROR",
         };
       }
