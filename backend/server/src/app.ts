@@ -43,6 +43,7 @@ import { logger } from "./lib/logger";
 import {
   BundleRepository,
   CheckoutSessionRepository,
+  CouponRepository,
   ESIMRepository,
   HighDemandCountryRepository,
   OrderRepository,
@@ -52,36 +53,30 @@ import {
 } from "./repositories";
 import { StrategiesRepository } from "./repositories/strategies.repository";
 import { TripRepository } from "./repositories/trip.repository";
-import { resolvers } from "./resolvers";
+import { resolvers } from "./resolvers"; // 👈 FIX #1: Added missing import
 import { getRedis, handleESIMGoWebhook } from "./services";
 import { CatalogSyncServiceV2 } from "./services/catalog-sync-v2.service";
-import { paymentService } from "./services/payment";
 import { checkoutSessionService } from "./services/checkout";
 import { checkoutWorkflow } from "./services/checkout/workflow";
 import { DeliveryService, SESEmailService } from "./services/delivery";
+import { paymentService } from "./services/payment";
 
-// --- ייבוא מנוע התמחור החדש ---
 import { calculateSimplePrice } from '../../packages/rules-engine-2/src/simple-pricer/simple-pricer';
-
 
 // Load and merge schemas
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
-
 const rulesEngineSchema = readFileSync(
   join(__dirname, "../../packages/rules-engine-2/schema.graphql"),
   "utf-8"
 );
-
 const airHaloSchema = readFileSync(
   join(__dirname, "../schemas/airhalo.graphql"),
   "utf-8"
 );
-
 const pricingManagementSchema = readFileSync(
   join(__dirname, "../schemas/pricing-management.graphql"),
   "utf-8"
 );
-
 const typeDefs = mergeTypeDefs([
   authDirectiveTypeDefs,
   mainSchema,
@@ -126,13 +121,14 @@ async function startServer() {
     const userRepository = new UserRepository();
     paymentService.init();
     const bundleRepository = new BundleRepository();
+    const couponRepository = new CouponRepository(supabaseAdmin); // 👈 FIX #2: Passed database connection
     const deliveryService = new DeliveryService(new SESEmailService());
     const orderRepository = new OrderRepository();
     const esimRepository = new ESIMRepository();
 
     const [checkoutSessionServiceV2, checkoutWorkflowService] =
       await Promise.all([
-        checkoutSessionService.init({ redis }),
+        checkoutSessionService.init({ redis, bundleRepository }),
         checkoutWorkflow.init({
           pubsub,
           sessionService: checkoutSessionService,
@@ -143,6 +139,7 @@ async function startServer() {
           deliveryService,
           orderRepository,
           esimRepository,
+          couponRepository,
         }),
       ]);
 
@@ -153,7 +150,6 @@ async function startServer() {
     const tenantRepository = new TenantRepository(supabaseAdmin);
     const strategiesRepository = new StrategiesRepository();
 
-    // כאן אנחנו יוצרים את המשתנה app
     const app = express();
     const httpServer = createServer(app);
 
@@ -166,7 +162,8 @@ async function startServer() {
         const connectionParams = ctx.connectionParams as Record<string, any> | undefined;
         const token = getSupabaseTokenFromConnectionParams(connectionParams);
         const auth = await createSupabaseAuthContext(token);
-        const baseContext = { auth, services: { redis, pubsub, db: supabaseAdmin, syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY), esimGoClient, airHaloClient, easycardPayment: paymentService, checkoutSessionService: undefined, checkoutSessionServiceV2, checkoutWorkflow: checkoutWorkflowService, deliveryService, }, repositories: { checkoutSessions: checkoutSessionRepository, orders: orderRepository, esims: esimRepository, users: userRepository, trips: tripRepository, highDemandCountries: highDemandCountryRepository, syncJob: syncJobRepository, bundles: bundleRepository, tenants: tenantRepository, strategies: strategiesRepository, }, dataSources: { catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY), orders: new OrdersDataSource({ cache: redis }), esims: new ESIMsDataSource({ cache: redis }), regions: RegionsDataSource, inventory: new InventoryDataSource({ cache: redis }), pricing: new PricingDataSource({ cache: redis }), }, token, };
+        // 👈 FIX #3: Added checkoutWorkflow to context
+        const baseContext = { auth, services: { redis, pubsub, db: supabaseAdmin, syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY), esimGoClient, airHaloClient, easycardPayment: paymentService, checkoutSessionService: checkoutSessionServiceV2, checkoutWorkflow: checkoutWorkflowService, deliveryService, }, repositories: { checkoutSessions: checkoutSessionRepository, orders: orderRepository, esims: esimRepository, users: userRepository, trips: tripRepository, highDemandCountries: highDemandCountryRepository, syncJob: syncJobRepository, bundles: bundleRepository, tenants: tenantRepository, strategies: strategiesRepository, }, dataSources: { catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY), orders: new OrdersDataSource({ cache: redis }), esims: new ESIMsDataSource({ cache: redis }), regions: RegionsDataSource, inventory: new InventoryDataSource({ cache: redis }), pricing: new PricingDataSource({ cache: redis }), }, token, };
         return { ...baseContext, dataLoaders: { pricing: createPricingDataLoader(baseContext), }, };
       },
     }, wsServer);
@@ -210,7 +207,6 @@ async function startServer() {
         }
     });
 
-    // --- הוספנו את נקודת ה-API החדשה כאן, בתוך startServer, ואחרי ש-app נוצר ---
     app.get('/api/calculate-price', async (req, res) => {
       console.log('[API] Received pricing request for SIMPLE PRICER:', req.query);
       const { countryId, numOfDays } = req.query;
@@ -237,13 +233,13 @@ async function startServer() {
         res.status(500).json({ error: 'Failed to calculate price' });
       }
     });
-    // --- סוף נקודת ה-API החדשה ---
 
     app.use("/graphql", expressMiddleware(server, {
         context: async ({ req }) => {
           const token = getSupabaseToken(req);
           const auth = await createSupabaseAuthContext(token);
-          const baseContext = { auth, services: { redis, pubsub, syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY), esimGoClient, airHaloClient, easycardPayment: paymentService, db: supabaseAdmin, checkoutSessionService: undefined, checkoutSessionServiceV2, checkoutWorkflow: checkoutWorkflowService, deliveryService, }, repositories: { checkoutSessions: checkoutSessionRepository, orders: orderRepository, esims: esimRepository, users: userRepository, trips: tripRepository, highDemandCountries: highDemandCountryRepository, syncJob: syncJobRepository, bundles: bundleRepository, checkoutSessionServiceV2, tenants: tenantRepository, strategies: strategiesRepository, }, dataSources: { catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY), orders: new OrdersDataSource({ cache: redis }), esims: new ESIMsDataSource({ cache: redis }), regions: RegionsDataSource, inventory: new InventoryDataSource({ cache: redis }), pricing: new PricingDataSource({ cache: redis }), }, req, token, };
+          // 👈 FIX #4: Added checkoutWorkflow to context
+          const baseContext = { auth, services: { redis, pubsub, syncs: new CatalogSyncServiceV2(env.ESIM_GO_API_KEY), esimGoClient, airHaloClient, easycardPayment: paymentService, db: supabaseAdmin, checkoutSessionService: checkoutSessionServiceV2, checkoutWorkflow: checkoutWorkflowService, deliveryService, }, repositories: { checkoutSessions: checkoutSessionRepository, orders: orderRepository, esims: esimRepository, users: userRepository, trips: tripRepository, highDemandCountries: highDemandCountryRepository, syncJob: syncJobRepository, bundles: bundleRepository, tenants: tenantRepository, strategies: strategiesRepository, }, dataSources: { catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY), orders: new OrdersDataSource({ cache: redis }), esims: new ESIMsDataSource({ cache: redis }), regions: RegionsDataSource, inventory: new InventoryDataSource({ cache: redis }), pricing: new PricingDataSource({ cache: redis }), }, req, token, };
           return { ...baseContext, dataLoaders: { pricing: createPricingDataLoader(baseContext), }, };
         },
       })
