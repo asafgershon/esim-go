@@ -23,6 +23,8 @@ module.exports = defineConfig(({ mode }) => ({
     rollupOptions: {
       external: [
         "react",
+        "next",
+        "next/link",
         "react-dom",
         "react/jsx-runtime",
         /^@radix-ui/,
