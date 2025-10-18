@@ -144,17 +144,14 @@ export function Pricing({
     <div className="bg-brand-white border border-brand-dark/10 rounded-lg md:rounded-[15px] p-3 md:p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span
-            className="text-xl md:text-2xl"
-            role="img"
-            aria-label={destination.name || undefined}
-          >
-            {destination.icon}
-          </span>
+          <img
+            src={destination.icon}
+            alt={destination.name}
+            className="w-6 h-4 md:w-8 md:h-5 rounded-sm object-cover"
+          />
           <div className="flex items-center gap-2">
             <h3 className="text-[14px] md:text-[18px] font-medium text-brand-dark flex items-center gap-2">
               {destination.name}
-              {/* Show streaming indicator next to country name */}
               {isStreamingData && (
                 <Loader2 className="h-3 w-3 animate-spin text-brand-purple opacity-60" />
               )}
