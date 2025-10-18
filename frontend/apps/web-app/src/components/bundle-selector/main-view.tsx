@@ -18,6 +18,7 @@ import { DestinationSelector } from "./destination-selector";
 import { Pricing } from "./pricing";
 import { SliderWithValue } from "@workspace/ui";
 import { useEffect } from "react";
+import { getFlagUrl } from "@/utils/flags";
 
 interface MainViewProps {
   pricing: {
@@ -93,7 +94,7 @@ useEffect(() => {
         return {
           id: country.iso.toLowerCase(),
           name: country.nameHebrew || country.name || "",
-          icon: country.flag || "",
+          icon: getFlagUrl(country.iso),
         };
       }
     } else if (tripId) {
@@ -125,7 +126,7 @@ useEffect(() => {
         <DestinationSelector />
 
         {/* Days Selection */}
-        <SelectorSection>
+        <SelectorSection className="mt-4">
           <div className="flex items-center gap-[4px] md:gap-2 justify-start">
             <CalendarIcon className="w-3 h-3 md:w-[19px] md:h-[19px]" />
             <p className="text-base md:text-xl leading-[26px] md:leading-normal text-brand-dark">
