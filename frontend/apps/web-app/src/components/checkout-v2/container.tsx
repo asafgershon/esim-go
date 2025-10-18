@@ -17,6 +17,8 @@ export const CheckoutContainerV2 = () => {
     countryId,
   });
 
+  console.log("[DEBUG] checkout:", checkout);
+
   const handleAuthUpdate = () => {
     refreshAuth();
   };

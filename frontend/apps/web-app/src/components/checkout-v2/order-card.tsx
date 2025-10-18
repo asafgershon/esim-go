@@ -84,10 +84,10 @@ export function OrderCard({
         <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
           {country?.iso ? (
           <img
-            src={getFlagUrl(country.iso)}
-            alt={country?.name || "flag"}
-            className="w-6 h-6 rounded-md object-cover ring-1 ring-gray-200"         
-            />
+            src={getFlagUrl(country.iso, 80)}
+            alt={country?.nameHebrew || country?.name || "flag"}
+            className="w-8 h-6 rounded-md object-cover ring-1 ring-gray-200"
+          />
         ) : (
           <span className="text-2xl">🌍</span>
         )}
