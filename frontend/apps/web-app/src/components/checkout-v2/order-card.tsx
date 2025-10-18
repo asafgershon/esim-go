@@ -93,7 +93,7 @@ export function OrderCard({
         )}
         <div>
           <h3 className="font-medium">
-            {country?.name || "מדינה לא ידועה"}
+            {country?.nameHebrew ||country?.name || "מדינה לא ידועה"}
           </h3>
         </div>
 </div>
