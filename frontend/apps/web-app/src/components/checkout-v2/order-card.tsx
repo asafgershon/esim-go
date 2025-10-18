@@ -93,8 +93,8 @@ export function OrderCard({
         )}
         <div>
           <h3 className="font-medium">
-            {'${country?.nameHebrew ||country?.name || "מדינה לא ידועה"} -ללא הגבלה'}
-          </h3>
+            {`${country?.nameHebrew || country?.name || "מדינה לא ידועה"} - ללא הגבלה`} 
+         </h3>
         </div>
 </div>
 
