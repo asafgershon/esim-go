@@ -52,7 +52,7 @@ export function HeroSection({
               <span className="text-brand-dark"> לכל העולם,</span>
             </span>
             <span className="text-5xl md:text-6xl lg:text-7xl text-brand-dark block">
-              חבילות גלישה ללא הגבלה.
+              חבילות גלישה <span className="text-brand-purple">ללא הגבלה.</span>
             </span>
           </h1>
           <p className="text-md md:text-2xl text-brand-dark mb-8 max-w-4xl mx-auto leading-relaxed">
