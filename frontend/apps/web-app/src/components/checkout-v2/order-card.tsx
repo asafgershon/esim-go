@@ -38,7 +38,7 @@ export function OrderCard({
     numOfDays,
     country,
     // pricePerDay,
-    // speed,
+    // speed, 
     // discounts,
   } = bundle;
 
@@ -58,6 +58,9 @@ export function OrderCard({
       </div>
     );
   };
+
+  console.log("--- DATA INSIDE OrderCard ---", data);
+console.log("--- COUNTRY OBJECT ---", data?.bundle?.country);
 
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
