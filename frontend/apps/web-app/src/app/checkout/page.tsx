@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { AutoAuthPrompt } from "@/components/auto-auth-prompt";
 import { CheckoutSkeleton } from "@/components/checkout/checkout-skeleton";
 import CheckoutHandler from "./checkout-handler";
@@ -23,6 +24,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-start">
+          <Link href="/" aria-label="חזרה לעמוד הראשי">
           <div className="flex items-center">
             <Image
               src="/images/logos/logo-header.svg"
@@ -33,6 +35,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
               priority
             />
           </div>
+          </Link>
         </div>
       </header>
 
