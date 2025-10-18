@@ -116,8 +116,13 @@ export function DestinationSelector() {
   }, [shouldFocusDestinationSelector, isMobile, setShouldFocusDestinationSelector]);
 
   return (
-    <SelectorSection role="tabpanel" id={`${activeTab}-panel`} aria-labelledby={`${activeTab}-tab`}>
-      <SelectorLabel>{DESTINATION_PLACEHOLDER}</SelectorLabel>
+        <SelectorSection
+          role="tabpanel"
+          id={`${activeTab}-panel`}
+          aria-labelledby={`${activeTab}-tab`}
+          className="!mb-0 !pb-0"
+        >
+        <SelectorLabel>{DESTINATION_PLACEHOLDER}</SelectorLabel>
       {isMobile ? (
         <div className="relative min-h-[34px] md:min-h-[60px]">
           <button
