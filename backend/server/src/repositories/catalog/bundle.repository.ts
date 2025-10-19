@@ -299,16 +299,24 @@ export class BundleRepository extends BaseSupabaseRepository<
     return data;
   }
 
-  async getCountryByIso(iso: string) {
+async getCountryByIso(iso: string) {
+  console.log("[DEBUG] getCountryByIso called with:", iso);
+
   const { data, error } = await this.supabase
     .from("catalog_countries")
-    .select("iso2, name: name_hebrew")
-    .eq("iso2", iso)
+    .select("iso2, name, name_hebrew")
+    .eq("iso2", iso.toUpperCase())
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("[ERROR] getCountryByIso failed:", error);
+  } else {
+    console.log("[DEBUG] getCountryByIso result:", data);
+  }
+
   return data;
 }
+
 
 
   async byGroups() {

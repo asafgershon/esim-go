@@ -7,7 +7,7 @@ import type { BundleRepository } from "../../repositories"; // Make sure this pa
 
 const logger = createLogger({ component: "checkout-session-service-v2" });
 let redis: RedisInstance | null = null;
-let bundleRepository: BundleRepository | null = null; // 👈 ADDED: Global variable for the repo
+let bundleRepository: BundleRepository | null = null;
 
 // 1 day on dev, 30 min on prod
 const ttl = env.isDev ? 24 * 60 * 60 : 30 * 60;
@@ -15,7 +15,7 @@ const ttl = env.isDev ? 24 * 60 * 60 : 30 * 60;
 // 👇 MODIFIED: init now accepts bundleRepository
 const init = async (context: { redis: RedisInstance; bundleRepository: BundleRepository }) => {
   redis = context.redis;
-  bundleRepository = context.bundleRepository; // 👈 ADDED: Set the repo
+  bundleRepository = context.bundleRepository;
   return checkoutSessionService;
 };
 
