@@ -130,8 +130,8 @@ export function Pricing({
     return (
       <div className="relative">
         <PricingThinkingDisplay
-          isCalculating={true}
-          progress={thinkingProgress}
+          // isCalculating={true}
+          // progress={thinkingProgress}
           countryName={destination.name}
           numOfDays={numOfDays}
           onAnimationDone={() => setShowThinkingAnimation(false)}
