@@ -54,9 +54,9 @@ export function Pricing({
   const [showThinkingAnimation, setShowThinkingAnimation] = useState(false);
   const { startDate, endDate } = useBundleSelector();
 
-  // Detect destination change → trigger animation
   const currentDestination = tripId || countryId;
 
+  // מפעיל את האנימציה בכל פעם שהיעד משתנה
   useEffect(() => {
     const destinationChanged =
       currentDestination &&
@@ -68,20 +68,41 @@ export function Pricing({
     }
   }, [currentDestination]);
 
-  // Add slight delay before hiding animation (so user always sees it)
+  // מוסיף עיכוב מלאכותי לפני כיבוי האנימציה
   useEffect(() => {
     if (pricing?.finalPrice) {
       const timeout = setTimeout(() => {
         setShowThinkingAnimation(false);
-      }, 2000);
+      }, 2500);
       return () => clearTimeout(timeout);
     }
   }, [pricing?.finalPrice]);
 
-  // Only depend on the animation state (not pricing)
+  // תמיד נשען רק על showThinkingAnimation
   const shouldShowThinking = showThinkingAnimation;
 
-  // Track price changes for smooth transitions
+  // סימולציית progress פשוטה (בשביל ה-bar)
+  const [thinkingProgress, setThinkingProgress] = useState(0);
+
+  useEffect(() => {
+    if (shouldShowThinking) {
+      setThinkingProgress(0);
+      const interval = setInterval(() => {
+        setThinkingProgress((prev) => {
+          if (prev >= 95) {
+            clearInterval(interval);
+            return 95;
+          }
+          return prev + 10;
+        });
+      }, 300);
+
+      return () => clearInterval(interval);
+    } else {
+      setThinkingProgress(100);
+    }
+  }, [shouldShowThinking]);
+
   const currentPrice = pricing?.totalPrice || pricing?.finalPrice || 0;
   if (currentPrice > 0) {
     previousPriceRef.current = currentPrice;
@@ -95,7 +116,6 @@ export function Pricing({
     discountAmount: pricing?.discountAmount || 0,
   };
 
-  // Show skeleton only if no pricing data at all
   if (!pricing) {
     if (shouldShowStreamingUI) {
       return <PricingSkeleton />;
@@ -103,11 +123,13 @@ export function Pricing({
     return null;
   }
 
-  // Show animated "thinking" UI before showing price
+  // אנימציית חישוב המחיר
   if (shouldShowThinking) {
     return (
       <div className="relative">
         <PricingThinkingDisplay
+          isCalculating={true}
+          progress={thinkingProgress}
           countryName={destination.name}
           numOfDays={numOfDays}
           onAnimationDone={() => setShowThinkingAnimation(false)}
@@ -116,7 +138,7 @@ export function Pricing({
     );
   }
 
-  // --- Regular pricing display ---
+  // תצוגת המחיר הרגילה
   return (
     <div className="bg-brand-white border border-brand-dark/10 rounded-lg md:rounded-[15px] p-3 md:p-4">
       <div className="flex items-center justify-between mb-3">
@@ -171,7 +193,6 @@ export function Pricing({
           </span>
         </div>
 
-        {/* Discount Display */}
         {displayPricing.hasDiscount && (
           <div className="space-y-1">
             <div
