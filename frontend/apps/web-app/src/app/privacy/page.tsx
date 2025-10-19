@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import DocumentPage from "@/components/DocumentPage";
 
 export default function PrivacyPage() {
