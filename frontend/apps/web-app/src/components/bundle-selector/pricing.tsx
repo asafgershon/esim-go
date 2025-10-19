@@ -54,67 +54,39 @@ export function Pricing({
   const [showThinkingAnimation, setShowThinkingAnimation] = useState(false);
   const { startDate, endDate } = useBundleSelector();
 
-  // Track destination changes for thinking animation
+  // Detect destination change → trigger animation
   const currentDestination = tripId || countryId;
 
   useEffect(() => {
-    // Show thinking animation only when destination changes
     const destinationChanged =
       currentDestination &&
       currentDestination !== previousDestinationRef.current;
 
     if (destinationChanged) {
       previousDestinationRef.current = currentDestination;
-      // Show thinking animation for new destination
       setShowThinkingAnimation(true);
     }
   }, [currentDestination]);
 
- useEffect(() => {
-  if (pricing?.finalPrice) {
-    const timeout = setTimeout(() => {
-      setShowThinkingAnimation(false);
-    }, 2000); 
+  // Add slight delay before hiding animation (so user always sees it)
+  useEffect(() => {
+    if (pricing?.finalPrice) {
+      const timeout = setTimeout(() => {
+        setShowThinkingAnimation(false);
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [pricing?.finalPrice]);
 
-    return () => clearTimeout(timeout);
-  }
-}, [pricing?.finalPrice]);
-
-  // Determine if we should show the thinking UI
-  // const shouldShowThinking =
-  //   showThinkingAnimation && !pricing?.finalPrice && (countryId || tripId);
-
+  // Only depend on the animation state (not pricing)
   const shouldShowThinking = showThinkingAnimation;
 
-  // Simple progress simulation for thinking animation
-  const [thinkingProgress, setThinkingProgress] = useState(0);
-
-  useEffect(() => {
-    if (shouldShowThinking) {
-      setThinkingProgress(0);
-      const interval = setInterval(() => {
-        setThinkingProgress((prev) => {
-          if (prev >= 95) {
-            clearInterval(interval);
-            return 95; // Cap at 95% until we get real data
-          }
-          return prev + 10;
-        });
-      }, 300);
-
-      return () => clearInterval(interval);
-    } else {
-      setThinkingProgress(100);
-    }
-  }, [shouldShowThinking]);
-
-  // Track price changes for smooth CountUp transitions
+  // Track price changes for smooth transitions
   const currentPrice = pricing?.totalPrice || pricing?.finalPrice || 0;
   if (currentPrice > 0) {
     previousPriceRef.current = currentPrice;
   }
 
-  // Display values with fallback to original pricing
   const displayPricing = {
     finalPrice: pricing?.finalPrice || pricing?.totalPrice || 0,
     totalPrice: pricing?.totalPrice || pricing?.finalPrice || 0,
@@ -122,7 +94,8 @@ export function Pricing({
     hasDiscount: pricing?.hasDiscount ?? false,
     discountAmount: pricing?.discountAmount || 0,
   };
-  // Only show skeleton when we have absolutely no data
+
+  // Show skeleton only if no pricing data at all
   if (!pricing) {
     if (shouldShowStreamingUI) {
       return <PricingSkeleton />;
@@ -130,13 +103,11 @@ export function Pricing({
     return null;
   }
 
-  // Show thinking animation when destination changes and we're loading data
+  // Show animated "thinking" UI before showing price
   if (shouldShowThinking) {
     return (
       <div className="relative">
         <PricingThinkingDisplay
-          isCalculating={true}
-          progress={thinkingProgress}
           countryName={destination.name}
           numOfDays={numOfDays}
           onAnimationDone={() => setShowThinkingAnimation(false)}
@@ -145,6 +116,7 @@ export function Pricing({
     );
   }
 
+  // --- Regular pricing display ---
   return (
     <div className="bg-brand-white border border-brand-dark/10 rounded-lg md:rounded-[15px] p-3 md:p-4">
       <div className="flex items-center justify-between mb-3">
@@ -174,7 +146,6 @@ export function Pricing({
 
       {/* Pricing Summary */}
       <div className="pt-3 border-t border-brand-dark/10">
-        {/* Show dates if available */}
         {startDate && endDate && (
           <div className="text-[10px] md:text-[12px] text-brand-dark opacity-60 mb-2">
             {format(startDate, "dd/MM", { locale: he })} -{" "}
@@ -200,10 +171,9 @@ export function Pricing({
           </span>
         </div>
 
-        {/* Enhanced discount display with real-time updates */}
+        {/* Discount Display */}
         {displayPricing.hasDiscount && (
           <div className="space-y-1">
-            {/* Total savings */}
             <div
               className="text-center py-1 text-[8px] md:text-[10px] rounded bg-green-50 text-green-600"
               role="status"
