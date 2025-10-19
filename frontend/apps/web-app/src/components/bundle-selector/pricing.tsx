@@ -81,8 +81,10 @@ export function Pricing({
 }, [pricing?.finalPrice]);
 
   // Determine if we should show the thinking UI
-  const shouldShowThinking =
-    showThinkingAnimation && !pricing?.finalPrice && (countryId || tripId);
+  // const shouldShowThinking =
+  //   showThinkingAnimation && !pricing?.finalPrice && (countryId || tripId);
+
+  const shouldShowThinking = showThinkingAnimation;
 
   // Simple progress simulation for thinking animation
   const [thinkingProgress, setThinkingProgress] = useState(0);
