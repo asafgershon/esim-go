@@ -70,12 +70,15 @@ export function Pricing({
     }
   }, [currentDestination]);
 
-  // Hide thinking animation when we get pricing data
-  useEffect(() => {
-    if (pricing?.finalPrice) {
+ useEffect(() => {
+  if (pricing?.finalPrice) {
+    const timeout = setTimeout(() => {
       setShowThinkingAnimation(false);
-    }
-  }, [pricing?.finalPrice]);
+    }, 2000); 
+
+    return () => clearTimeout(timeout);
+  }
+}, [pricing?.finalPrice]);
 
   // Determine if we should show the thinking UI
   const shouldShowThinking =
@@ -130,8 +133,8 @@ export function Pricing({
     return (
       <div className="relative">
         <PricingThinkingDisplay
-          // isCalculating={true}
-          // progress={thinkingProgress}
+          isCalculating={true}
+          progress={thinkingProgress}
           countryName={destination.name}
           numOfDays={numOfDays}
           onAnimationDone={() => setShowThinkingAnimation(false)}
