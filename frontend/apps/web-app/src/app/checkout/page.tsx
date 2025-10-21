@@ -16,6 +16,7 @@ interface CheckoutPageProps {
 
 export default async function CheckoutPage({ searchParams }: CheckoutPageProps) {
   const params = await searchParams;
+  console.log("🧭 CheckoutPage params:", params);
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
       {/* Auto Authentication Prompt - triggers automatically based on device */}
