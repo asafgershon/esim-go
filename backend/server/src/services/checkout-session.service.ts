@@ -1,9 +1,5 @@
 import { env } from "@hiilo/easycard";
-import {
-  calculatePricing,
-  type PricingEngineV2Result,
-  type RequestFacts,
-} from "@hiilo/rules-engine-2";
+import { type SimplePricingResult, calculateSimplePrice } from "../../../packages/rules-engine-2/src/simple-pricer/simple-pricer.ts";
 import { GraphQLError } from "graphql";
 import { getPubSub, PubSubEvents } from "../context/pubsub";
 import type { Context } from "../context/types";
@@ -35,7 +31,7 @@ export interface CheckoutSession {
   state: CheckoutState;
   userId?: string;
   bundleId: string;
-  pricing: PricingEngineV2Result;
+  pricing: SimplePricingResult;
   paymentIntentId?: string;
   orderId?: string;
   expiresAt: string;
@@ -349,42 +345,32 @@ export const createSession = async (
     });
   }
 
-  // Calculate pricing
-  const requestFacts: RequestFacts = {
-    group: input.group || WEB_APP_BUNDLE_GROUP,
-    days: validInput.numOfDays,
-    paymentMethod: PaymentMethod.IsraeliCard,
-    ...(validInput.countryId
-      ? { country: validInput.countryId }
-      : { region: validInput.regionId || "" }),
-  };
+  const pricingResult = await calculateSimplePrice(validInput.countryId || "", validInput.numOfDays);
 
-  const pricingResult = await calculatePricing(requestFacts);
-
-  if (!pricingResult?.selectedBundle) {
+  if (!pricingResult?.finalPrice) {
     throw new GraphQLError("No suitable bundle found for pricing", {
       extensions: { code: "PRICING_ERROR" },
     });
   }
 
-  // Create plan snapshot for backward compatibility
+  // Create plan snapshot
   const planSnapshot = {
-    id: pricingResult.selectedBundle.esim_go_name,
-    name: pricingResult.selectedBundle.esim_go_name,
-    duration: pricingResult.selectedBundle.validity_in_days,
-    price: pricingResult.pricing.finalPrice,
+    id: pricingResult.bundleName,
+    name: pricingResult.bundleName,
+    duration: pricingResult.requestedDays,
+    price: pricingResult.finalPrice,
     currency: "USD",
-    countries: pricingResult.selectedBundle.countries,
+    countries: [validInput.countryId || ""],
   };
 
   // Create session in database
   const sessionData = {
     user_id: input.userId,
-    plan_id: pricingResult.selectedBundle.esim_go_name,
+    plan_id: pricingResult.bundleName,
     plan_snapshot: JSON.stringify(planSnapshot),
     pricing: pricingResult as any,
     expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-    state: CheckoutState.INITIALIZED, // Store state in database column
+    state: CheckoutState.INITIALIZED,
     steps: mapStateToSteps({
       state: CheckoutState.INITIALIZED,
       userId: input.userId,
@@ -392,11 +378,11 @@ export const createSession = async (
     }),
     metadata: {
       requestedDays: validInput.numOfDays,
-      actualDays: pricingResult.selectedBundle.validity_in_days,
-      countries: pricingResult.selectedBundle.countries,
+      actualDays: pricingResult.requestedDays,
+      countries: [validInput.countryId || ""],
       group: input.group || WEB_APP_BUNDLE_GROUP,
-      planSnapshot, // Store for easy access
-      isValidated: false, // Initialize as not validated
+      planSnapshot,
+      isValidated: false,
     } as any,
   };
 
@@ -404,7 +390,7 @@ export const createSession = async (
     sessionData
   );
 
-  logger.info("Session created successfully", { sessionId: session.id });
+  logger.info("Session created successfully (v_simple_pricer)", { sessionId: session.id });
 
   const mappedSession = mapDatabaseSessionToModel(session);
 

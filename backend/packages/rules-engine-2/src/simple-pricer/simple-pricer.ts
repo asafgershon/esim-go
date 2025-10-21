@@ -3,6 +3,23 @@
 import { getSupabaseClient } from '../supabase';
 const supabase = getSupabaseClient();
 
+// (הגדרת הטיפוס עבור האובייקט הפנימי 'calculation')
+export interface SimplePricingCalculation {
+  upperPackagePrice: number;
+  totalDiscount: number;
+  unusedDays: number;
+  finalPriceBeforeRounding: number;
+}
+
+// (הגדרת הטיפוס עבור התוצאה הראשית של הפונקציה)
+export interface SimplePricingResult {
+  finalPrice: number;
+  provider: string;
+  bundleName: string;
+  requestedDays: number;
+  calculation: SimplePricingCalculation;
+}
+
 type Bundle = {
     id: number;
     name: string;
