@@ -3,7 +3,7 @@ import { CheckoutContainer } from "@/components/checkout/container";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { WEB_APP_BUNDLE_GROUP } from "@/lib/constants/bundle-groups";
-import { CheckoutContainerV2 } from "@/components/checkout-v2/container";
+//import { CheckoutContainerV2 } from "@/components/checkout-v2/container";
 
 interface CheckoutHandlerProps {
   searchParams: {
@@ -52,7 +52,7 @@ async function createCheckoutSession(
     if (countryId) {
       input.countryId = countryId;
     }
-
+    console.log("🚀 Creating checkout session", { numOfDays, regionId, countryId, input });
     const response = await fetch(GRAPHQL_ENDPOINT, {
       method: "POST",
       headers: {
@@ -83,7 +83,8 @@ export default async function CheckoutHandler({
 }: CheckoutHandlerProps) {
   const { token, numOfDays, countryId, regionId } = searchParams;
 
-  return <CheckoutContainerV2 />;
+  //return <CheckoutContainerV2 />;
+
   // If we already have a token, render the checkout page
   if (token) {
     return <CheckoutContainer />;
@@ -93,7 +94,7 @@ export default async function CheckoutHandler({
   if ((countryId || regionId) && numOfDays) {
     try {
       const result = await createCheckoutSession(
-        parseInt(numOfDays) || 7,
+        parseInt(numOfDays ?? "7") || 7,
         regionId,
         countryId
       );

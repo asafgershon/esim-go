@@ -3,7 +3,6 @@
 import { useCheckout } from "@/hooks/checkout/useCheckoutV2";
 import { useAuth } from "@/hooks/useAuth";
 import { useSelectorQueryState } from "@/hooks/useSelectorQueryState";
-// --- שינוי 1: מייבאים את הרכיב החדש ---
 import { CouponCard } from "./coupon-card"; 
 import { DeliveryCard } from "./delivery-card";
 import { OrderCard } from "./order-card";
