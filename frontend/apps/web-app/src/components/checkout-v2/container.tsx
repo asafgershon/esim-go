@@ -29,7 +29,6 @@ export const CheckoutContainerV2 = () => {
         sectionNumber={1}
       />
 
-      {/* --- שינוי 2: משתמשים ברכיב החדש ומסירים props מיותרים --- */}
       <CouponCard
         loading={loading}
         completed={false} // אין לנו עדיין לוגיקה לקופון שהושלם

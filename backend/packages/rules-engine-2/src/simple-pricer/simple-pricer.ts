@@ -11,6 +11,12 @@ export interface SimplePricingCalculation {
   finalPriceBeforeRounding: number;
 }
 
+export interface SimplePricingDiscount {
+  code: string;
+  amount: number;
+  originalPrice: number;
+}
+
 // (הגדרת הטיפוס עבור התוצאה הראשית של הפונקציה)
 export interface SimplePricingResult {
   finalPrice: number;
@@ -18,6 +24,7 @@ export interface SimplePricingResult {
   bundleName: string;
   requestedDays: number;
   calculation: SimplePricingCalculation;
+  discount? : SimplePricingDiscount;
 }
 
 type Bundle = {
