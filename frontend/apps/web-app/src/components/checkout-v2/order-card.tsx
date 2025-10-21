@@ -1,18 +1,20 @@
 "use client";
 
-import { Checkout } from "@/__generated__/types";
+// 1. ייבוא הטיפוס החדש מההוּק
+import { type CheckoutData } from "@/hooks/checkout/useCheckoutV2";
 import { Card } from "@workspace/ui";
-// import { Loader2Icon } from "lucide-react"; 
 import { ShoppingCart } from "lucide-react";
 import { lazy, useEffect } from "react";
 import { useDebounceValue } from "usehooks-ts";
 import { SectionHeader } from "./section-header";
 import { getFlagUrl } from "@/utils/flags";
+import Image from "next/image"; // 2. ייבוא של Next/Image
 
 const CountUp = lazy(() => import("react-countup"));
 
+// 3. שימוש בטיפוס הנכון במקום any
 interface OrderDetailsSectionProps {
-  data: Pick<Checkout, "bundle"> | undefined;
+  data: CheckoutData | undefined;
   sectionNumber?: number;
   completed?: boolean;
 }
@@ -28,24 +30,19 @@ export function OrderCard({
     setIsCompleted(completed);
   }, [completed, setIsCompleted]);
 
-  console.log("[DEBUG] bundle.country:", data?.bundle?.country);
-
+  // הקוד הזה בטוח עכשיו כי אנחנו משתמשים בטיפוס הנכון
   if (!data || !data.bundle) return <OrderDetailsSkeleton />;
   const { bundle } = data;
   const {
-    // dataAmount,
     price,
     numOfDays,
     country,
-    // pricePerDay,
-    // speed, 
-    // discounts,
   } = bundle;
 
   const currencySymbol =
     Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "USD", // אפשר גם bundle.currency
     })
       .formatToParts(price || 0)
       .find((part) => part.type === "currency")?.value || "";
@@ -59,9 +56,6 @@ export function OrderCard({
     );
   };
 
-  console.log("--- DATA INSIDE OrderCard ---", data);
-console.log("--- COUNTRY OBJECT ---", data?.bundle?.country);
-
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
       <div className="flex items-center gap-2">
@@ -71,78 +65,38 @@ console.log("--- COUNTRY OBJECT ---", data?.bundle?.country);
           icon={<ShoppingCart className="h-5 w-5 text-primary" />}
           isCompleted={isCompleted}
         />
-        {/* {!isCompleted && (
-          <span
-            dir={"ltr"}
-            className=" h-full text-sm text-muted-foreground flex items-center gap-1"
-          >
-            ...מוודא זמינות מול הספק
-            <Loader2Icon className="h-4 w-4 text-muted-foreground animate-spin" />
-          </span>
-        )} */}
       </div>
 
       <div className="space-y-4">
         {/* Destination Info */}
         <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+          {/* 4. החלפה של <img> ב-Image */}
           {country?.iso ? (
-          <img
-            src={getFlagUrl(country.iso, 80)}
-            alt={country?.nameHebrew || country?.name || "flag"}
-            className="w-8 h-6 rounded-md object-cover ring-1 ring-gray-200"
-          />
-        ) : (
-          <span className="text-2xl">🌍</span>
-        )}
-        <div>
-          <h3 className="font-medium">
-            {`${country?.nameHebrew || country?.name || "מדינה לא ידועה"} - ללא הגבלה`} 
-         </h3>
+            <Image
+              src={getFlagUrl(country.iso, 80)}
+              alt={country?.nameHebrew || country?.name || "flag"}
+              width={32} // (w-8)
+              height={24} // (h-6)
+              className="rounded-md object-cover ring-1 ring-gray-200"
+            />
+          ) : (
+            <span className="text-2xl">🌍</span>
+          )}
+          <div>
+            <h3 className="font-medium">
+              {`${country?.nameHebrew || country?.name || "מדינה לא ידועה"} - ללא הגבלה`}
+            </h3>
+          </div>
         </div>
-</div>
 
         {/* Package Details */}
         <div className="space-y-3">
           <Row label="משך זמן" value={`${numOfDays} ימים`} />
         </div>
-
-        {/* <Row label="נתונים" value={dataAmount} /> */}
-
-        {/* <Row label="מהירות" value={speed.join(", ")} /> */}
-
-        {/* <Row
-          label="מחיר יומי"
-          value={
-            <CountUp
-              end={pricePerDay}
-              decimals={2}
-              prefix={currencySymbol}
-              duration={0.5}
-              preserveValue
-            />
-          }
-        /> */}
       </div>
 
       {/* Pricing Section */}
       <div className="border-t pt-4 space-y-3">
-        {/* {hasDiscount && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">מחיר מקורי</span>
-              <span className="line-through text-muted-foreground">
-                ${originalPrice.toFixed(2)}
-              </span>
-            </div>
-          )} */}
-        {/* Show discount amount if exists */}
-        {/* {hasDiscount && (
-            <div className="flex justify-between">
-              <span className="text-green-600">הנחה</span>
-              <span className="text-green-600 font-medium">
-                -${discountAmount.toFixed(2)}
-              </span>
-            </div>
-          )} */}
         {/* Final Price */}
         <div className="flex justify-between items-center">
           <span className="text-lg font-semibold">סה״כ מחיר</span>
@@ -156,19 +110,12 @@ console.log("--- COUNTRY OBJECT ---", data?.bundle?.country);
             />
           </span>
         </div>
-        {/* You Save message */}
-        {/* {hasDiscount && (
-            <div className="text-center py-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <span className="text-green-700 dark:text-green-300 font-medium">
-                חסכת ${discountAmount.toFixed(2)}!
-              </span>
-            </div>
-          )} */}
       </div>
     </Card>
   );
 }
 
+// ... (קוד הסקלטון נשאר זהה)
 const OrderDetailsSkeleton = () => {
   return (
     <Card className="p-6">

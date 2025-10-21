@@ -2,21 +2,20 @@
 
 import { useCheckout } from "@/hooks/checkout/useCheckoutV2";
 import { useAuth } from "@/hooks/useAuth";
-import { useSelectorQueryState } from "@/hooks/useSelectorQueryState";
+// import { useSelectorQueryState } from "@/hooks/useSelectorQueryState";
 import { CouponCard } from "./coupon-card"; 
 import { DeliveryCard } from "./delivery-card";
 import { OrderCard } from "./order-card";
 import { PaymentCard } from "./payment-card";
 
 export const CheckoutContainerV2 = () => {
-  const { numOfDays, countryId } = useSelectorQueryState();
+  // const { numOfDays, countryId } = useSelectorQueryState();
   const { refreshAuth } = useAuth();
-  const { checkout, loading} = useCheckout({
-    numOfDays,
-    countryId,
-  });
-
-  console.log("[DEBUG] checkout:", checkout);
+  const { checkout, loading } = useCheckout(); // ⬅️ פישטנו
+  // const { checkout, loading} = useCheckout({
+    // numOfDays,
+    // countryId,
+  // });
 
   const handleAuthUpdate = () => {
     refreshAuth();
