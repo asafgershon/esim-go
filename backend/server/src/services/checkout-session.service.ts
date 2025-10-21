@@ -1470,20 +1470,20 @@ export const createCheckoutSessionService = (
 ): CheckoutSessionService => {
   if (!serviceInstance) {
     serviceInstance = {
-      createSession: (input) => createSession(context, input),
-      authenticateSession: (sessionId, userId) =>
-        authenticateSession(context, sessionId, userId),
-      setDeliveryMethod: (sessionId, data) =>
-        setDeliveryMethod(context, sessionId, data),
-      preparePayment: (sessionId) => preparePayment(context, sessionId),
-      processPayment: (sessionId) => processPayment(context, sessionId),
-      handlePaymentWebhook: (intentId, status, data) =>
-        handlePaymentWebhook(context, intentId, status, data),
+      createSession: (ctx, input) => createSession(ctx, input),
+      authenticateSession: (ctx,  sessionId, userId) =>
+        authenticateSession(ctx, sessionId, userId),
+      setDeliveryMethod: (ctx, sessionId, data) =>
+        setDeliveryMethod(ctx, sessionId, data),
+      preparePayment: (ctx, sessionId) => preparePayment(ctx, sessionId),
+      processPayment: (ctx, sessionId) => processPayment(ctx, sessionId),
+      handlePaymentWebhook: (ctx, intentId, status, data) =>
+        handlePaymentWebhook(ctx, intentId, status, data),
       getSession: (sessionId, options) =>
         getSession(context, sessionId, options),
-      validateSessionState: (sessionId, expectedState) =>
-        validateSessionState(context, sessionId, expectedState),
-      cleanupExpiredSessions: () => cleanupExpiredSessions(context),
+      validateSessionState: (ctx, sessionId, expectedState) =>
+        validateSessionState(ctx, sessionId, expectedState),
+      cleanupExpiredSessions: (ctx) => cleanupExpiredSessions(ctx),
     };
   }
 

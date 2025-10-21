@@ -89,7 +89,7 @@ export const checkoutResolvers: Partial<Resolvers> = {
         logger.info("Creating checkout session", { input });
         
         // 💡 FIX: Added 'context' as the first argument as required by the updated service.
-        const session = await sessionService.createSession(context, {
+        const session = await sessionService.createSession({
           ...input,
           userId: context.auth?.user?.id,
         });
