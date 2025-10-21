@@ -1,9 +1,9 @@
 import { CreateCheckoutSessionInput } from "@/__generated__/graphql";
-import { CheckoutContainer } from "@/components/checkout/container";
+// import { CheckoutContainer } from "@/components/checkout/container";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { WEB_APP_BUNDLE_GROUP } from "@/lib/constants/bundle-groups";
-//import { CheckoutContainerV2 } from "@/components/checkout-v2/container";
+import { CheckoutContainerV2 } from "@/components/checkout-v2/container";
 
 interface CheckoutHandlerProps {
   searchParams: {
@@ -20,11 +20,11 @@ function performRedirect(url: string): never {
   redirect(url);
 }
 
-async function createCheckoutSession(
-  numOfDays: number,
-  regionId?: string,
-  countryId?: string
-) {
+/**
+ * פונקציית עזר ששולחת את ה-mutation ליצירת סשן
+ * (שונתה לקבל אובייקט input יחיד)
+ */
+async function createCheckoutSession(input: CreateCheckoutSessionInput) {
   const GRAPHQL_ENDPOINT =
     process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:5001/graphql";
 
@@ -41,18 +41,9 @@ async function createCheckoutSession(
   `;
 
   try {
-    // Build input object with only defined values
-    const input: CreateCheckoutSessionInput = {
-      numOfDays,
-      group: WEB_APP_BUNDLE_GROUP,
-    };
-    if (regionId) {
-      input.regionId = regionId;
-    }
-    if (countryId) {
-      input.countryId = countryId;
-    }
-    console.log("🚀 Creating checkout session", { numOfDays, regionId, countryId, input });
+    // הדפסה חדשה: מוודאת שה-input שהגיע לפונקציה תקין
+    console.log("🚀 Creating checkout session with input:", input);
+
     const response = await fetch(GRAPHQL_ENDPOINT, {
       method: "POST",
       headers: {
@@ -60,7 +51,7 @@ async function createCheckoutSession(
       },
       body: JSON.stringify({
         query: mutation,
-        variables: { input },
+        variables: { input }, // האובייקט מועבר ישירות
       }),
     });
 
@@ -74,61 +65,80 @@ async function createCheckoutSession(
     return data.data.createCheckoutSession;
   } catch (error) {
     console.error("Failed to create checkout session:", error);
+    // זורק את השגיאה הלאה כדי שה-try/catch ברכיב הראשי יתפוס אותה
     throw error;
   }
 }
 
+/**
+ * רכיב "הרמזור" הראשי של הצ'קאאוט
+ */
 export default async function CheckoutHandler({
   searchParams,
 }: CheckoutHandlerProps) {
   const { token, numOfDays, countryId, regionId } = searchParams;
 
-  //return <CheckoutContainerV2 />;
+  // --- שלב 1: נטרול העצירה המוקדמת ---
+  // return <CheckoutContainerV2 />;
 
-  // If we already have a token, render the checkout page
+  // --- זרימה תקינה ---
+
+  // 1. אם כבר יש טוקן, הצג את הצ'קאאוט
   if (token) {
-    return <CheckoutContainer />;
+    console.log("Handler: Found existing token, rendering CheckoutContainer.");
+    // כאן צריך לשים את הרכיב שמטפל בסשן קיים
+    // אם CheckoutContainerV2 הוא הנכון, החזר אותו. אם לא, החזר את V1.
+    return <CheckoutContainerV2 />; 
+    // או: return <CheckoutContainer />;
   }
 
-  // If we have checkout parameters but no token, create a session on the server
+  // 2. אם אין טוקן אבל יש פרמטרים, נסה ליצור סשן חדש
   if ((countryId || regionId) && numOfDays) {
     try {
-      const result = await createCheckoutSession(
-        parseInt(numOfDays ?? "7") || 7,
-        regionId,
-        countryId
-      );
+      // --- שלב 3: בונים את האובייקט input כאן, פעם אחת ---
+      const parsedNumOfDays = parseInt(numOfDays ?? "7") || 7;
+      const input: CreateCheckoutSessionInput = {
+        numOfDays: parsedNumOfDays,
+        group: WEB_APP_BUNDLE_GROUP,
+        // הוסף פרמטרים רק אם הם קיימים
+        ...(countryId && { countryId }),
+        ...(regionId && { regionId }),
+      };
+
+      // קוראים לפונקציית העזר עם האובייקט המוכן
+      const result = await createCheckoutSession(input);
 
       if (result.success && result.session?.token) {
-        // Log successful session creation
-        console.log("Checkout session created successfully:", {
-          token: result.session.token.substring(0, 20) + "...",
-          numOfDays,
-          countryId,
-          regionId,
+        // הצלחה! נוצר סשן
+        console.log("✅ Checkout session created successfully. Redirecting...", {
+          token: result.session.token.substring(0, 10) + "...",
         });
 
-        // Use server-side redirect instead of client component
+        // בנה את ה-URL מחדש עם הטוקן שקיבלנו
         const params = new URLSearchParams({
           token: result.session.token,
-          numOfDays: numOfDays || "7",
+          numOfDays: parsedNumOfDays.toString(),
           ...(countryId && { countryId }),
           ...(regionId && { regionId }),
         });
 
-        // This will throw a NEXT_REDIRECT error internally, which is expected
+        // בצע הפנייה מחדש (Redirect) של השרת לעצמו, הפעם עם הטוקן
+        // זה יגרום לקוד הזה לרוץ שוב, והפעם להיכנס ל- if (token)
         performRedirect(`/checkout?${params.toString()}`);
+
       } else {
-        throw new Error(result.error || "Failed to create checkout session");
+        // ה-mutation החזיר success: false
+        throw new Error(result.error || "Failed to create checkout session (API Error)");
       }
     } catch (error) {
-      // Check if this is a Next.js redirect (which is expected and successful)
+      // תפיסת שגיאות: או מה-fetch או מה-redirect
+
+      // אם זו שגיאת Redirect של Next.js, זה תקין, זרוק אותה הלאה
       if (isRedirectError(error)) {
-        // This is a successful redirect, re-throw it to let Next.js handle it
         throw error;
       }
 
-      // This is a real error, handle it
+      // זו שגיאה אמיתית
       console.error("Server-side session creation failed:", error);
       return (
         <div className="p-8 text-center">
@@ -147,7 +157,8 @@ export default async function CheckoutHandler({
     }
   }
 
-  // If no valid parameters, show error or redirect
+  // 3. אם אין טוקן ואין פרמטרים - הצג שגיאה
+  console.warn("Handler: No token and no valid params. Showing invalid params error.");
   return (
     <div className="p-8 text-center">
       <h2 className="text-2xl font-bold mb-4">Invalid Checkout Parameters</h2>
