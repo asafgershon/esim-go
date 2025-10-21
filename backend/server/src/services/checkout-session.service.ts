@@ -336,7 +336,7 @@ export const createSession = async (
   const searchParams = {
     minValidityInDays: 1,
     groups: [input.group || WEB_APP_BUNDLE_GROUP],
-    ...(validInput.countryId && { countries: [validInput.countryId] }),
+    ...(validInput.countryId && { country_iso2: [validInput.countryId] }),
     ...(validInput.regionId && { regions: [validInput.regionId] }),
   };
 
@@ -1468,7 +1468,6 @@ let serviceInstance: CheckoutSessionService | null = null;
 export const createCheckoutSessionService = (
   context: Context
 ): CheckoutSessionService => {
-  console.log("--- RUNNING LATEST FACTORY CODE (V3) ---");
   if (!serviceInstance) {
     serviceInstance = {
       createSession: (ctx, input) => createSession(ctx, input),
