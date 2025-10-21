@@ -39,7 +39,7 @@ export function determineNextStep(state: CheckoutState): string | null {
  * Formats a checkout session for GraphQL response
  */
 export function formatSessionForGraphQL(
-  session: CheckoutSessionData,
+  session: any,
   token?: string
 ): CheckoutSessionDTO {
   // Parse plan snapshot if it's a string
@@ -50,10 +50,12 @@ export function formatSessionForGraphQL(
   
   // Import the mapStateToSteps function from the service
   const { mapStateToSteps } = require('../../services/checkout-session.service');
+
+  const currentState = (session.state || session.metadata?.state || CheckoutState.INITIALIZED) as CheckoutState;
   
   // Generate steps from the current state
   const steps = mapStateToSteps({
-    state: session.state || session.metadata?.state || CheckoutState.INITIALIZED,
+    state: currentState,
     userId: session.user_id || session.userId,
     paymentIntentId: session.payment_intent_id || session.paymentIntentId,
     metadata: session.metadata || {}

@@ -8,6 +8,7 @@ import type {
 } from "../../types";
 import { publish } from "./subscriptions";
 import { validateApplyCouponInput } from "./validators";
+import { formatSessionForGraphQL } from "./helpers";
 
 // ==================================================================
 // Helper function to prevent code duplication when publishing events
@@ -168,22 +169,23 @@ export const checkoutMutationsV2: MutationResolvers = {
     resolve: async (
       _,
       { input }: MutationApplyCouponToCheckoutArgs,
-      { services }: Context
+       context : Context
     ) => {
       try {
         const { sessionId, couponCode } = validateApplyCouponInput(input);
         logger.info("Applying coupon", { sessionId, couponCode });
 
-        const session = await services.checkoutWorkflow.applyCoupon({
+        const session = await context.repositories.coupons.applyCoupon({
           sessionId,
           couponCode,
+          userId: context.auth?.user?.id,
         });
 
-        publish(services.pubsub)(sessionId, formatSessionForPublishing(session));
+        publish(context.services.pubsub)(sessionId, session);
 
         return {
           success: true,
-          checkout: formatSessionForPublishing(session),
+          checkout: formatSessionForGraphQL(session),
           error: null,
         };
       } catch (error: any) {

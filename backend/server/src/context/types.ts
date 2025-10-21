@@ -38,13 +38,15 @@ import type { DeliveryService } from "../services/delivery";
 import { paymentService } from "../services/payment";
 import type { RedisInstance } from "../services/redis";
 import type { SupabaseAuthContext } from "./supabase-auth";
+import { CouponRepository } from '../repositories/coupon.repository';
+
 
 export type Context = {
   auth: SupabaseAuthContext;
   services: {
     db: SupabaseClient<any>;
     redis: RedisInstance;
-    pubsub: RedisPubSub;
+    pubsub: RedisPubSub; // 👈 הוא כבר כאן
     syncs: CatalogSyncServiceV2;
     esimGoClient: ESimGoClient;
     airHaloClient?: AirHaloClient;
@@ -65,6 +67,7 @@ export type Context = {
     bundles: BundleRepository;
     tenants: TenantRepository;
     strategies: StrategiesRepository;
+    coupons: CouponRepository; // 👈 הוספתי את זה
   };
   dataSources: {
     catalogue: CatalogueDataSourceV2;
