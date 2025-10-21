@@ -181,6 +181,7 @@ useEffect(() => {
         <SelectorButton
           onClick={() => {
             if(isPricingValid) {
+              console.log("✅ handlePurchase called", { countryId, numOfDays });
               handlePurchase();
             }
             else{
