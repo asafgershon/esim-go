@@ -74,7 +74,7 @@ export const CouponCard = ({
         variables: {
           input: {
             sessionId: data?.id || "",
-            couponCode: coupon.trim(),
+            couponCode: coupon.trim().toUpperCase(),
           },
         },
       });
@@ -86,7 +86,7 @@ export const CouponCard = ({
       }
 
       if (result.success) {
-        setMessage("✅ הקופון הוחל בהצלחה!");
+        setMessage("✅ הקופון הוחל בהצלחה - המחיר יעודכן במעמד התשלום");
         onCouponApplied?.();
       } else {
         setMessage(`❌ ${result.error?.message || "קוד לא תקף"}`);
