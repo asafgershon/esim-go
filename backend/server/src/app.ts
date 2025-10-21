@@ -196,6 +196,7 @@ async function startServer() {
               bundles: bundleRepository,
               tenants: tenantRepository,
               strategies: strategiesRepository,
+              coupons: couponRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
@@ -330,6 +331,7 @@ async function startServer() {
               bundles: bundleRepository,
               tenants: tenantRepository,
               strategies: strategiesRepository,
+              coupons: couponRepository,
             },
             dataSources: {
               catalogue: new CatalogueDataSourceV2(env.ESIM_GO_API_KEY),
