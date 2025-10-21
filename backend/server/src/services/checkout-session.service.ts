@@ -1468,6 +1468,7 @@ let serviceInstance: CheckoutSessionService | null = null;
 export const createCheckoutSessionService = (
   context: Context
 ): CheckoutSessionService => {
+  console.log("--- RUNNING LATEST FACTORY CODE (V3) ---");
   if (!serviceInstance) {
     serviceInstance = {
       createSession: (ctx, input) => createSession(ctx, input),
