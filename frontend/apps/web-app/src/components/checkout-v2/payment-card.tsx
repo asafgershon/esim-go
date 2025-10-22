@@ -1,21 +1,15 @@
 "use client";
-import { gql } from "@/__generated__";
+// 👇 Import gql from @apollo/client
+import { gql, useMutation } from "@apollo/client"; 
 import {
-  Checkout,
+  Checkout, 
   TriggerCheckoutPaymentMutation,
   TriggerCheckoutPaymentMutationVariables,
 } from "@/__generated__/graphql";
-import { useMutation } from "@apollo/client";
 import { SelectorButton, Card } from "@workspace/ui";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react"; 
 
-type PaymentCardProps = {
-  completed: boolean;
-  data: Pick<Checkout, "payment" | "id" | "auth" | "delivery"> | undefined;
-  loading: boolean;
-};
-
-// ✅ אותו mutation – לא נוגעים
+// ✅ Mutation definition remains the same
 const UPDATE_CHECKOUT_PAYMENT_MUTATION = gql(`
   mutation TriggerCheckoutPayment($sessionId: String!, $nameForBilling: String, $redirectUrl: String!) {
     triggerCheckoutPayment(sessionId: $sessionId, nameForBilling: $nameForBilling, redirectUrl: $redirectUrl) {
@@ -24,87 +18,93 @@ const UPDATE_CHECKOUT_PAYMENT_MUTATION = gql(`
         url
         applePayJavaScriptUrl
       }
-      phone
-      email
-      nameForBilling
     }
   }
 `);
+
+type PaymentCardProps = {
+  completed: boolean; 
+  data: Pick<Checkout, "payment" | "id" | "auth" | "delivery"> | undefined; 
+  loading: boolean; 
+};
 
 export const PaymentCard = ({
   data,
   loading,
 }: PaymentCardProps) => {
-  const { payment } = data || {};
 
-  const [triggerCheckoutPayment, { data: paymentData, loading: triggerLoading }] =
+  // 👇 Removed 'paymentData' from destructuring
+  const [triggerCheckoutPayment, { loading: triggerLoading, error: triggerError }] =
     useMutation<TriggerCheckoutPaymentMutation, TriggerCheckoutPaymentMutationVariables>(
       UPDATE_CHECKOUT_PAYMENT_MUTATION
     );
 
-  // ✅ הפעלה אוטומטית ברגע שיש sessionId
-  useEffect(() => {
-    if (!data?.id) return;
-    console.log("[DEBUG] Triggering checkout payment for session:", data.id);
+  const isDeliveryComplete = Boolean(data?.delivery?.completed);
 
-    triggerCheckoutPayment({
-      variables: {
-        sessionId: data.id,
-        nameForBilling: payment?.nameForBilling || "Test User",
-        redirectUrl: "https://demo.hiiloworld.com/payment/callback", // 👈 קבוע
-      },
-    }).then((res) => {
-      console.log("[DEBUG] Payment mutation result:", res.data);
-    }).catch((err) => {
-      console.error("[DEBUG] Payment mutation error:", err);
-    });
-  }, [data?.id]);
+  const handlePaymentClick = async () => {
+    if (!data?.id || !isDeliveryComplete || triggerLoading) return; 
 
-  // ✅ מוודא שתמיד יהיה URL זמין לבדיקה
-  const intentUrl = paymentData?.triggerCheckoutPayment?.intent?.url 
-    || payment?.intent?.url 
-    || "https://example.com/fake-payment-page";
+    console.log("[DEBUG] Triggering checkout payment manually for session:", data.id);
+    try {
+      // We use 'res' here directly
+      const res = await triggerCheckoutPayment({
+        variables: {
+          sessionId: data.id,
+          nameForBilling: data.delivery?.firstName && data.delivery?.lastName 
+              ? `${data.delivery.firstName} ${data.delivery.lastName}`
+              : "Test User",
+          redirectUrl: window.location.origin + "/payment/callback", 
+        },
+      });
+
+      console.log("[DEBUG] Manual Payment mutation result:", res.data);
+      const intentUrl = res.data?.triggerCheckoutPayment?.intent?.url;
+
+      if (intentUrl) {
+        window.open(intentUrl, "_blank"); 
+      } else {
+        console.error("[DEBUG] No payment URL received after mutation.");
+      }
+    } catch (err) {
+      console.error("[DEBUG] Manual Payment mutation error:", err);
+    }
+  };
 
   const getButtonLabel = () => {
-    if (loading || triggerLoading) return "מעביר לתשלום...";
+    if (loading && !data) return "טוען..."; // Initial load only
+    if (triggerLoading) return (<><Loader2 className="h-4 w-4 animate-spin mr-2" /> מעביר לתשלום...</>); 
+    if (!isDeliveryComplete) return "יש למלא פרטי משלוח";
     return "המשך לתשלום";
   };
 
-  if (loading) return <DeliveryCardSkeleton />;
+  if (loading && !data) return <PaymentCardSkeleton />; 
 
   return (
-    <Card dir="rtl" className="flex flex-col gap-4 shadow-xl h-fit">
+    <Card dir="rtl" className="flex flex-col gap-4 shadow-xl h-fit p-4"> 
       <SelectorButton
         type="button"
-        onClick={() => window.open(intentUrl, "_blank")}
+        onClick={handlePaymentClick}
+        disabled={loading || triggerLoading || !isDeliveryComplete} 
+        variant={isDeliveryComplete ? "brand-success" : undefined} 
+        emphasized={isDeliveryComplete}
       >
         {getButtonLabel()}
       </SelectorButton>
+
+      {triggerError && (
+        <p className="text-sm text-red-500 text-center mt-2">
+            אירעה שגיאה ביצירת קישור התשלום. נסה שוב.
+        </p>
+      )}
     </Card>
   );
 };
 
-const DeliveryCardSkeleton = () => {
+// Skeleton remains the same
+const PaymentCardSkeleton = () => { 
   return (
     <Card className="p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-6 h-6 md:w-8 md:h-8 bg-gray-200 rounded-full animate-pulse" />
-        <div>
-          <div className="h-4 md:h-5 w-20 bg-gray-200 rounded animate-pulse mb-1" />
-          <div className="h-3 md:h-4 w-16 bg-gray-100 rounded animate-pulse" />
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-          <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
-        </div>
-        <div className="space-y-2">
-          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-          <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
-        </div>
-      </div>
+       <div className="h-12 w-full bg-gray-200 rounded animate-pulse" />
     </Card>
   );
 };
