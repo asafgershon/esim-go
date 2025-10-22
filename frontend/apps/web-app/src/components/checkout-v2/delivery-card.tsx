@@ -153,6 +153,8 @@ export const DeliveryCard = ({
 
   if (loading) return <DeliveryCardSkeleton />;
 
+  console.log("DeliveryCard State:", { loading, isDirty, isSubmitSuccessful, hasDataId: !!data?.id });
+
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
       <Collapsible defaultOpen>
