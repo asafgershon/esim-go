@@ -1742,15 +1742,20 @@ extend type Mutation {
     firstName: String
     lastName: String
   ): CheckoutAuth!
+
   updateCheckoutDelivery(
     sessionId: String!
     email: String
     phone: String
+    firstName: String
+    lastName: String
+
   ): CheckoutDelivery!
   triggerCheckoutPayment(
     sessionId: String!
     nameForBilling: String
     redirectUrl: String!
+
   ): CheckoutPayment!
   processPaymentCallback(
     transactionId: String!
@@ -1800,12 +1805,13 @@ type PaymentIntent {
 type CheckoutDelivery {
   completed: Boolean!
   email: String
+  firstName: String
+  lastName: String
   phone: String
 }
 
 interface CheckoutAuthInterface {
   completed: Boolean!
-
   userId: String
   email: String
   phone: String

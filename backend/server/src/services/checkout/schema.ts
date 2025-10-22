@@ -1,5 +1,12 @@
 import { z } from "zod";
 import { Provider } from "../../types";
+import { type SimplePricingDiscount } from '../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer';
+
+const SimplePricingDiscountSchema = z.object({
+  code: z.string(),
+  amount: z.number(),
+  originalPrice: z.number(),
+});
 
 const BundleSelectionSchema = z.object({
   completed: z.boolean().default(false),
@@ -15,7 +22,7 @@ const BundleSelectionSchema = z.object({
   pricePerDay: z.number().optional(),
   speed: z.array(z.string()).default([]),
   validated: z.boolean().default(false),
-  discounts: z.array(z.string()).default([]),
+  discounts: z.array(SimplePricingDiscountSchema).default([]),
   provider: z.nativeEnum(Provider).optional(), // Use nativeEnum for TS enums
 });
 
@@ -35,6 +42,8 @@ const DeliverySchema = z.object({
   completed: z.boolean().default(false),
   email: z.string().email().nullable().optional(),
   phone: z.string().nullable().optional(),
+  firstName: z.string().nullable().optional(),
+  lastName: z.string().nullable().optional(),
 });
 
 const PaymentIntentSchema = z.object({

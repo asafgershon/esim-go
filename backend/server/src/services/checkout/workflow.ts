@@ -3,7 +3,7 @@ import { createLogger } from "@hiilo/utils";
 import { env } from "../../config/env";
 import type { PubSubInstance } from "../../context/pubsub";
 import type { CheckoutSessionServiceV2 } from "./session";
-import { calculateSimplePrice } from "../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
+import { calculateSimplePrice, type SimplePricingResult, type SimplePricingDiscount } from "../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
 import type {
   BundleRepository,
   CouponRepository,
@@ -19,7 +19,7 @@ import type { PaymentServiceInstance } from "../payment";
 const logger = createLogger({ component: "checkout-workflow" });
 
 // ==========================
-// ✅ Internal Global Context
+// Internal Global Context
 // ==========================
 let pubsub: PubSubInstance | null = null;
 let sessionService: CheckoutSessionServiceV2 | null = null;
@@ -34,7 +34,7 @@ let orderRepository: OrderRepository | null = null;
 let esimRepository: ESIMRepository | null = null;
 
 // ======================
-// ✅ Init
+// Init
 // ======================
 const init = async (context: {
   pubsub: PubSubInstance;
@@ -68,7 +68,7 @@ const init = async (context: {
 };
 
 // ==================================
-// ✅ selectBundle – now adds country
+// selectBundle – now adds country
 // ==================================
 const selectBundle = async ({
   sessionId,
@@ -85,7 +85,6 @@ const selectBundle = async ({
   const session = await sessionService.getSession(sessionId);
   if (!session) throw new SessionNotFound();
 
-  // ✅ Get country info
   let country: { iso2: string; name: string } | null = null;
   try {
     const found = await bundleRepository.getCountryByIso(countryId);
@@ -94,11 +93,9 @@ const selectBundle = async ({
     logger.warn(`[WARN] Could not fetch country ${countryId}:`, err.message);
   }
 
-  // ✅ Calculate price
   const result = await calculateSimplePrice(countryId, numOfDays);
   const price = result.finalPrice;
 
-  // ✅ Save bundle data
   const next = await sessionService.updateSessionStep(
     sessionId,
     "bundle",
@@ -119,7 +116,7 @@ const selectBundle = async ({
 };
 
 // ==================================
-// ✅ Other workflow methods
+// Other workflow methods
 // ==================================
 const validateBundle = async ({ sessionId }: { sessionId: string }) => {
   if (!sessionService) throw new NotInitializedError();
@@ -136,10 +133,14 @@ const setDelivery = async ({
   sessionId,
   email,
   phone,
+  firstName,
+  lastName,
 }: {
   sessionId: string;
   email?: string | null;
   phone?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
 }) => {
   if (!sessionService) throw new NotInitializedError();
   const session = await sessionService.getSession(sessionId);
@@ -148,6 +149,8 @@ const setDelivery = async ({
   return sessionService.updateSessionStep(sessionId, "delivery", {
     email,
     phone,
+    firstName,
+    lastName,
     completed: true,
   });
 };
@@ -166,16 +169,18 @@ const applyCoupon = async ({
   if (!session) throw new SessionNotFound();
 
   try {
-    const updated = await couponRepository.applyCoupon({
+    const updatedSession = await couponRepository.applyCoupon({
       sessionId,
       couponCode,
       userId: session.auth.userId,
     });
 
+    const updatedPricing = updatedSession.pricing as unknown as SimplePricingResult;
+
     return sessionService.updateSessionStep(sessionId, "bundle", {
       ...session.bundle,
-      discounts: updated.discounts,
-      price: updated.finalPrice ?? session.bundle.price,
+      discounts: updatedPricing.discount ? [updatedPricing.discount] : [],
+      price: updatedPricing.finalPrice ?? session.bundle.price,
     });
   } catch (err: any) {
     logger.error("Coupon failed", err);
@@ -186,7 +191,7 @@ const applyCoupon = async ({
 };
 
 // ===========================
-// ✅ Export workflow
+// Export workflow
 // ===========================
 export const checkoutWorkflow = {
   init,
@@ -199,7 +204,7 @@ export const checkoutWorkflow = {
 export type CheckoutWorkflowInstance = typeof checkoutWorkflow;
 
 // ===========================
-// ✅ Errors
+// Errors
 // ===========================
 class NotInitializedError extends Error {
   constructor() {

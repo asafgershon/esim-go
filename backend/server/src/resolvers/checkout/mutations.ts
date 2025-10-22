@@ -149,11 +149,13 @@ export const checkoutMutationsV2: MutationResolvers = {
   // ✅ Update Checkout Delivery
   // ============================
   updateCheckoutDelivery: {
-    resolve: async (_, { sessionId, email, phone }, { services }) => {
+    resolve: async (_, { sessionId, email, phone, firstName, lastName }, { services }) => {
       const session = await services.checkoutWorkflow.setDelivery({
         sessionId,
         email,
         phone,
+        firstName,
+        lastName,
       });
 
       publish(services.pubsub)(sessionId, formatSessionForPublishing(session));

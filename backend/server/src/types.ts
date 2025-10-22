@@ -481,6 +481,8 @@ export type CheckoutDelivery = {
   __typename?: 'CheckoutDelivery';
   completed: Scalars['Boolean']['output'];
   email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  lastName?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
 };
 
@@ -1086,6 +1088,8 @@ export type MutationUpdateCheckoutAuthNameArgs = {
 
 export type MutationUpdateCheckoutDeliveryArgs = {
   email?: InputMaybe<Scalars['String']['input']>;
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
   sessionId: Scalars['String']['input'];
 };
@@ -2808,6 +2812,8 @@ export type CheckoutBundleResolvers<ContextType = Context, ParentType extends Re
 export type CheckoutDeliveryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['CheckoutDelivery'] = ResolversParentTypes['CheckoutDelivery']> = {
   completed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  firstName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  lastName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   phone?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

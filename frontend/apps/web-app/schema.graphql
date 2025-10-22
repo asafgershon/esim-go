@@ -215,6 +215,17 @@ type AppliedRule {
   name: String!
 }
 
+input ApplyCouponToCheckoutInput {
+  couponCode: String!
+  sessionId: ID!
+}
+
+type ApplyCouponToCheckoutPayload {
+  checkout: Checkout
+  error: CouponError
+  success: Boolean!
+}
+
 type AssignPackageResponse {
   assignment: PackageAssignment
   error: String
@@ -289,6 +300,7 @@ enum BundleState {
 }
 
 type BundleStats {
+  discounts: [Discount!]
   """Total number of active bundles in the system"""
   totalBundles: Int!
   """Number of countries covered"""
@@ -303,12 +315,14 @@ type BundlesByCountry {
   bundleCount: Int!
   bundles(limit: Int = 3, offset: Int): [Bundle!]!
   country: Country!
+  discounts: [Discount!]
   pricingRange: PricingRange
 }
 
 type BundlesByGroup {
   bundleCount: Int!
   bundles(limit: Int = 3, offset: Int): [Bundle!]!
+  discounts: [Discount!]
   group: String!
   pricingRange: PricingRange
 }
@@ -316,6 +330,7 @@ type BundlesByGroup {
 type BundlesByRegion {
   bundleCount: Int!
   bundles(limit: Int = 3, offset: Int): [Bundle!]!
+  discounts: [Discount!]
   pricingRange: PricingRange
   region: String!
 }
@@ -327,6 +342,7 @@ type BundlesForCountry {
   bundles: [Bundle!]!
   """Country information"""
   country: Country!
+  discounts: [Discount!]
   """Groups available in this country"""
   groups: [String!]!
   """Whether unlimited bundles are available"""
@@ -344,6 +360,7 @@ type BundlesForGroup {
   bundles: [Bundle!]!
   """Countries covered by this group"""
   countries: [String!]!
+  discounts: [Discount!]
   """Group name"""
   group: String!
   """Whether unlimited bundles are available"""
@@ -361,6 +378,7 @@ type BundlesForRegion {
   bundles: [Bundle!]!
   """Countries in this region"""
   countries: [String!]!
+  discounts: [Discount!]
   """Groups available in this region"""
   groups: [String!]!
   """Whether unlimited bundles are available"""
@@ -515,6 +533,7 @@ type CheckoutAuthWithOTP implements CheckoutAuthInterface {
 type CheckoutBundle {
   completed: Boolean!
   country: Country
+  countryId: String
   currency: String!
   dataAmount: String!
   discounts: [String!]!
@@ -529,6 +548,8 @@ type CheckoutBundle {
 type CheckoutDelivery {
   completed: Boolean!
   email: String
+  firstName: String
+  lastName: String
   phone: String
 }
 
@@ -625,6 +646,11 @@ type CountryBundle {
   provider: Provider!
 }
 
+type CouponError {
+  code: String
+  message: String!
+}
+
 input CreateCheckoutSessionInput {
   countryId: String
   group: String
@@ -719,6 +745,12 @@ type DeleteTripResponse {
 type DeleteUserResponse {
   error: String
   success: Boolean!
+}
+
+type Discount {
+  amount: Float!
+  code: String!
+  description: String
 }
 
 type DiscountApplication {
@@ -870,6 +902,7 @@ type ManualInstallation {
 
 type Mutation {
   activateESIM(esimId: ID!): ActivateESIMResponse
+  applyCouponToCheckout(input: ApplyCouponToCheckoutInput!): ApplyCouponToCheckoutPayload!
   assignPackageToUser(planId: ID!, userId: ID!): AssignPackageResponse
   assignUserToTenant(role: String, tenantSlug: ID!, userId: ID!): TenantOperationResponse!
   cancelESIM(esimId: ID!): ESIMActionResponse
@@ -911,7 +944,7 @@ type Mutation {
   triggerCheckoutPayment(nameForBilling: String, redirectUrl: String!, sessionId: String!): CheckoutPayment!
   updateCheckoutAuth(email: String, firstName: String, lastName: String, phone: String, sessionId: String!): CheckoutAuth!
   updateCheckoutAuthName(firstName: String, lastName: String, sessionId: String!): CheckoutAuth!
-  updateCheckoutDelivery(email: String, phone: String, sessionId: String!): CheckoutDelivery!
+  updateCheckoutDelivery(email: String, firstName: String, lastName: String, phone: String, sessionId: String!): CheckoutDelivery!
   updateCheckoutStep(input: UpdateCheckoutStepInput!): UpdateCheckoutStepResponse!
   updateESIMReference(esimId: ID!, reference: String!): ESIMActionResponse
   updatePricingConfiguration(input: UpdatePricingConfigurationInput!): UpdatePricingConfigurationResponse
@@ -1367,37 +1400,6 @@ type RuleAction {
   metadata: JSON
   type: ActionType!
   value: Float!
-}
-
-type ApplyCheckoutCouponResponse {
-  success: Boolean!
-  message: String
-  discountAmount: Float
-  finalPrice: Float
-}
-
-extend type Mutation {
-  applyCheckoutCoupon(sessionId: String!, couponCode: String!): ApplyCheckoutCouponResponse!
-}
-
-mutation ApplyCouponToCheckout($input: ApplyCouponToCheckoutInput!) {
-  applyCouponToCheckout(input: $input) {
-    success
-    checkout {
-      id
-      bundle {
-        price
-        discounts {
-          code
-          amount
-        }
-      }
-    }
-    error {
-      message
-      code
-    }
-  }
 }
 
 input RuleActionInput {

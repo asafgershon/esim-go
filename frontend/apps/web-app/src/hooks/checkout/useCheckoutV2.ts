@@ -49,7 +49,7 @@ export interface CheckoutData {
 
 // 1. זו השאילתה החדשה ששולפת את הסשן מהשרת
 const GET_SESSION_QUERY = gql(`
-  query GetCheckoutSession($token: String!) {
+  query GetCheckoutSessionByToken($token: String!) {
     getCheckoutSession(token: $token) {
       success
       error

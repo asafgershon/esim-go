@@ -248,6 +248,18 @@ export type AppliedRule = {
   name: Scalars['String']['output'];
 };
 
+export type ApplyCouponToCheckoutInput = {
+  couponCode: Scalars['String']['input'];
+  sessionId: Scalars['ID']['input'];
+};
+
+export type ApplyCouponToCheckoutPayload = {
+  __typename?: 'ApplyCouponToCheckoutPayload';
+  checkout?: Maybe<Checkout>;
+  error?: Maybe<CouponError>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type AssignPackageResponse = {
   __typename?: 'AssignPackageResponse';
   assignment?: Maybe<PackageAssignment>;
@@ -332,6 +344,7 @@ export enum BundleState {
 
 export type BundleStats = {
   __typename?: 'BundleStats';
+  discounts?: Maybe<Array<Discount>>;
   /** Total number of active bundles in the system */
   totalBundles: Scalars['Int']['output'];
   /** Number of countries covered */
@@ -347,6 +360,7 @@ export type BundlesByCountry = {
   bundleCount: Scalars['Int']['output'];
   bundles: Array<Bundle>;
   country: Country;
+  discounts?: Maybe<Array<Discount>>;
   pricingRange?: Maybe<PricingRange>;
 };
 
@@ -360,6 +374,7 @@ export type BundlesByGroup = {
   __typename?: 'BundlesByGroup';
   bundleCount: Scalars['Int']['output'];
   bundles: Array<Bundle>;
+  discounts?: Maybe<Array<Discount>>;
   group: Scalars['String']['output'];
   pricingRange?: Maybe<PricingRange>;
 };
@@ -374,6 +389,7 @@ export type BundlesByRegion = {
   __typename?: 'BundlesByRegion';
   bundleCount: Scalars['Int']['output'];
   bundles: Array<Bundle>;
+  discounts?: Maybe<Array<Discount>>;
   pricingRange?: Maybe<PricingRange>;
   region: Scalars['String']['output'];
 };
@@ -392,6 +408,7 @@ export type BundlesForCountry = {
   bundles: Array<Bundle>;
   /** Country information */
   country: Country;
+  discounts?: Maybe<Array<Discount>>;
   /** Groups available in this country */
   groups: Array<Scalars['String']['output']>;
   /** Whether unlimited bundles are available */
@@ -410,6 +427,7 @@ export type BundlesForGroup = {
   bundles: Array<Bundle>;
   /** Countries covered by this group */
   countries: Array<Scalars['String']['output']>;
+  discounts?: Maybe<Array<Discount>>;
   /** Group name */
   group: Scalars['String']['output'];
   /** Whether unlimited bundles are available */
@@ -428,6 +446,7 @@ export type BundlesForRegion = {
   bundles: Array<Bundle>;
   /** Countries in this region */
   countries: Array<Scalars['String']['output']>;
+  discounts?: Maybe<Array<Discount>>;
   /** Groups available in this region */
   groups: Array<Scalars['String']['output']>;
   /** Whether unlimited bundles are available */
@@ -598,6 +617,7 @@ export type CheckoutBundle = {
   __typename?: 'CheckoutBundle';
   completed: Scalars['Boolean']['output'];
   country?: Maybe<Country>;
+  countryId?: Maybe<Scalars['String']['output']>;
   currency: Scalars['String']['output'];
   dataAmount: Scalars['String']['output'];
   discounts: Array<Scalars['String']['output']>;
@@ -613,6 +633,8 @@ export type CheckoutDelivery = {
   __typename?: 'CheckoutDelivery';
   completed: Scalars['Boolean']['output'];
   email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  lastName?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
 };
 
@@ -713,6 +735,12 @@ export type CountryBundle = {
   price?: Maybe<Scalars['Float']['output']>;
   pricingBreakdown?: Maybe<PricingBreakdown>;
   provider: Provider;
+};
+
+export type CouponError = {
+  __typename?: 'CouponError';
+  code?: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
 };
 
 export type CreateCheckoutSessionInput = {
@@ -820,6 +848,13 @@ export type DeleteUserResponse = {
   __typename?: 'DeleteUserResponse';
   error?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type Discount = {
+  __typename?: 'Discount';
+  amount: Scalars['Float']['output'];
+  code: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
 };
 
 export type DiscountApplication = {
@@ -982,6 +1017,7 @@ export type ManualInstallation = {
 export type Mutation = {
   __typename?: 'Mutation';
   activateESIM?: Maybe<ActivateEsimResponse>;
+  applyCouponToCheckout: ApplyCouponToCheckoutPayload;
   assignPackageToUser?: Maybe<AssignPackageResponse>;
   assignUserToTenant: TenantOperationResponse;
   cancelESIM?: Maybe<EsimActionResponse>;
@@ -1041,6 +1077,11 @@ export type Mutation = {
 
 export type MutationActivateEsimArgs = {
   esimId: Scalars['ID']['input'];
+};
+
+
+export type MutationApplyCouponToCheckoutArgs = {
+  input: ApplyCouponToCheckoutInput;
 };
 
 
@@ -1226,6 +1267,8 @@ export type MutationUpdateCheckoutAuthNameArgs = {
 
 export type MutationUpdateCheckoutDeliveryArgs = {
   email?: InputMaybe<Scalars['String']['input']>;
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
   sessionId: Scalars['String']['input'];
 };
@@ -2329,14 +2372,23 @@ export type UpdateCheckoutAuthNameMutationVariables = Exact<{
 
 export type UpdateCheckoutAuthNameMutation = { __typename?: 'Mutation', updateCheckoutAuthName: { __typename?: 'CheckoutAuth', firstName?: string | null, lastName?: string | null } };
 
+export type ApplyCouponToCheckoutMutationVariables = Exact<{
+  input: ApplyCouponToCheckoutInput;
+}>;
+
+
+export type ApplyCouponToCheckoutMutation = { __typename?: 'Mutation', applyCouponToCheckout: { __typename?: 'ApplyCouponToCheckoutPayload', success: boolean, error?: { __typename?: 'CouponError', message: string, code?: string | null } | null, checkout?: { __typename?: 'Checkout', id: string, bundle?: { __typename?: 'CheckoutBundle', id: string, currency: string, price: number, pricePerDay: number, discounts: Array<string> } | null } | null } };
+
 export type UpdateCheckoutDeliveryMutationVariables = Exact<{
   sessionId: Scalars['String']['input'];
   email?: InputMaybe<Scalars['String']['input']>;
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type UpdateCheckoutDeliveryMutation = { __typename?: 'Mutation', updateCheckoutDelivery: { __typename?: 'CheckoutDelivery', phone?: string | null, completed: boolean, email?: string | null } };
+export type UpdateCheckoutDeliveryMutation = { __typename?: 'Mutation', updateCheckoutDelivery: { __typename?: 'CheckoutDelivery', email?: string | null, firstName?: string | null, lastName?: string | null, phone?: string | null, completed: boolean } };
 
 export type TriggerCheckoutPaymentMutationVariables = Exact<{
   sessionId: Scalars['String']['input'];
@@ -2347,20 +2399,12 @@ export type TriggerCheckoutPaymentMutationVariables = Exact<{
 
 export type TriggerCheckoutPaymentMutation = { __typename?: 'Mutation', triggerCheckoutPayment: { __typename?: 'CheckoutPayment', phone?: string | null, email?: string | null, nameForBilling?: string | null, intent?: { __typename?: 'PaymentIntent', id: string, url: string, applePayJavaScriptUrl?: string | null } | null } };
 
-export type CheckoutSubscriptionVariables = Exact<{
-  id: Scalars['ID']['input'];
+export type GetCheckoutSessionByTokenQueryVariables = Exact<{
+  token: Scalars['String']['input'];
 }>;
 
 
-export type CheckoutSubscription = { __typename?: 'Subscription', checkout: { __typename?: 'Checkout', id: string, bundle?: { __typename?: 'CheckoutBundle', completed: boolean, id: string, numOfDays: number, dataAmount: string, price: number, pricePerDay: number, currency: string, speed: Array<string>, discounts: Array<string>, validated?: boolean | null, country?: { __typename?: 'Country', iso: any, name: string } | null } | null, auth?: { __typename?: 'CheckoutAuth', completed: boolean, userId?: string | null, email?: string | null, phone?: string | null, firstName?: string | null, lastName?: string | null, method?: string | null, otpSent?: boolean | null, otpVerified?: boolean | null } | null, delivery?: { __typename?: 'CheckoutDelivery', completed: boolean, email?: string | null, phone?: string | null } | null, payment?: { __typename?: 'CheckoutPayment', completed: boolean, email?: string | null, phone?: string | null, nameForBilling?: string | null, redirectUrl?: string | null, intent?: { __typename?: 'PaymentIntent', id: string, url: string, applePayJavaScriptUrl?: string | null } | null } | null } };
-
-export type CreateCheckoutMutationVariables = Exact<{
-  numOfDays: Scalars['Int']['input'];
-  countryId: Scalars['String']['input'];
-}>;
-
-
-export type CreateCheckoutMutation = { __typename?: 'Mutation', createCheckout?: string | null };
+export type GetCheckoutSessionByTokenQuery = { __typename?: 'Query', getCheckoutSession: { __typename?: 'GetCheckoutSessionResponse', success: boolean, error?: string | null, session?: { __typename?: 'CheckoutSession', id: string, token: string, pricing?: any | null, metadata?: any | null } | null } };
 
 export type PricingCalculationStepsSubscriptionVariables = Exact<{
   input: CalculatePriceInput;
