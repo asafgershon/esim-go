@@ -129,9 +129,16 @@ async function startServer() {
     const orderRepository = new OrderRepository();
     const esimRepository = new ESIMRepository();
 
+    const checkoutSessionRepository = new CheckoutSessionRepository();
+    const tripRepository = new TripRepository();
+    const highDemandCountryRepository = new HighDemandCountryRepository();
+    const syncJobRepository = new SyncJobRepository();
+    const tenantRepository = new TenantRepository(supabaseAdmin);
+    const strategiesRepository = new StrategiesRepository();
+
     const [checkoutSessionServiceV2, checkoutWorkflowService] =
       await Promise.all([
-        checkoutSessionService.init({ redis, bundleRepository }),
+        checkoutSessionService.init({ redis, bundleRepository, checkoutSessionRepository }),
         checkoutWorkflow.init({
           pubsub,
           sessionService: checkoutSessionService,
@@ -145,13 +152,6 @@ async function startServer() {
           couponRepository,
         }),
       ]);
-
-    const checkoutSessionRepository = new CheckoutSessionRepository();
-    const tripRepository = new TripRepository();
-    const highDemandCountryRepository = new HighDemandCountryRepository();
-    const syncJobRepository = new SyncJobRepository();
-    const tenantRepository = new TenantRepository(supabaseAdmin);
-    const strategiesRepository = new StrategiesRepository();
 
     const app = express();
     const httpServer = createServer(app);
