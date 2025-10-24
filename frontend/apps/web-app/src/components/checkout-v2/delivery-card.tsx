@@ -133,6 +133,7 @@ export const DeliveryCard = ({
       const cleanedPhone = formData.phone.trim();
 
       try {
+        console.log("[DEBUG] Sending Session ID to updateDelivery:", data.id);
         console.log("[DEBUG] Saving delivery details...");
         const { data: result } = await updateCheckoutDelivery({
           variables: {
