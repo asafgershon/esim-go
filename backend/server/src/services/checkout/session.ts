@@ -198,6 +198,7 @@ const getSession = async (
             intent: sessionDataFromDb.payment_intent_id ? { id: sessionDataFromDb.payment_intent_id, url: '' } : undefined,
             // למפות שדות נוספים מ-steps.payment אם קיימים
         },
+        pricing: sessionDataFromDb.pricing as any,
         status: mapStateToStatus(sessionDataFromDb.state),
         createdAt: new Date(sessionDataFromDb.created_at || Date.now()),
         updatedAt: new Date(sessionDataFromDb.updated_at || Date.now()),

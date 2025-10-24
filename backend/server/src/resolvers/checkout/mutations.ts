@@ -5,20 +5,25 @@ import type {
   Country,
   MutationApplyCouponToCheckoutArgs,
   MutationResolvers,
+  PaymentIntent,
+  CheckoutPayment,
+  MutationTriggerCheckoutPaymentArgs,
 } from "../../types";
 import { publish } from "./subscriptions";
-import { validateApplyCouponInput } from "./validators";
+import { validateApplyCouponInput, /* הוסף ייבוא לפונקציית ולידציה אם יש */ } from "./validators";
 import { formatSessionForGraphQL } from "./helpers";
+import { CurrencyEnum, type PaymentRequestCreate } from '../../../../apis/easycard/src';
+import { getEasyCardClient } from '../../../../apis/easycard/src/client';
+import { type SimplePricingResult } from '../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer'; // ודא שהייבוא נכון
+import { fa } from "zod/v4/locales";
 
 // ==================================================================
 // Helper function to prevent code duplication when publishing events
 // ==================================================================
 const formatSessionForPublishing = (session: any) => {
-  // Ensure session and session.bundle exist to prevent errors
   if (!session?.bundle) {
     return session;
   }
-
   return {
     ...session,
     bundle: {
@@ -35,10 +40,9 @@ const formatSessionForPublishing = (session: any) => {
   };
 };
 
-
 export const checkoutMutationsV2: MutationResolvers = {
   // ======================
-  // ✅ Create Checkout Flow
+  // Create Checkout Flow
   // ======================
   createCheckout: {
     resolve: async (
@@ -47,25 +51,11 @@ export const checkoutMutationsV2: MutationResolvers = {
       { auth, repositories, services }
     ) => {
       const loggedInUser = await repositories.users.getUserById(auth.user?.id || "");
-
       const cleanEmail = loggedInUser?.email || undefined;
       const cleanPhone = loggedInUser?.user_metadata?.phone_number || undefined;
       const cleanFirstName = loggedInUser?.user_metadata?.first_name || undefined;
       const cleanLastName = loggedInUser?.user_metadata?.last_name || undefined;
-
-      // The auth check is temporarily disabled.
-      // To re-enable, uncomment the following lines and remove the line below them.
-      /*
-      const isAuthCompleted = services.checkoutWorkflow.isAuthComplete(
-        auth.user?.id,
-        cleanEmail,
-        cleanPhone,
-        cleanFirstName,
-        cleanLastName
-      );
-      */
       const isAuthCompleted = true; // Assuming auth is complete for now.
-
       const initialState = loggedInUser
         ? {
             auth: {
@@ -80,14 +70,11 @@ export const checkoutMutationsV2: MutationResolvers = {
             },
           }
         : undefined;
-
       const checkout = await services.checkoutSessionServiceV2.createSession({
         numOfDays,
         countryId,
         initialState,
       });
-
-      // 🔄 Run async bundle selection + validation
       setImmediate(async () => {
         try {
           const session = await services.checkoutWorkflow.selectBundle({
@@ -95,26 +82,21 @@ export const checkoutMutationsV2: MutationResolvers = {
             countryId,
             sessionId: checkout.id,
           });
-
           publish(services.pubsub)(checkout.id, formatSessionForPublishing(session));
-
           const validatedSession = await services.checkoutWorkflow.validateBundle({
             sessionId: checkout.id,
           });
-          
           publish(services.pubsub)(checkout.id, formatSessionForPublishing(validatedSession));
-
         } catch (err) {
           logger.warn("Async createCheckout background task failed", err as Error);
         }
       });
-
       return checkout.id;
     },
   },
 
   // ===========================
-  // ✅ Update Checkout Auth Info
+  // Update Checkout Auth Info
   // ===========================
   updateCheckoutAuth: {
     resolve: async (
@@ -122,10 +104,6 @@ export const checkoutMutationsV2: MutationResolvers = {
       { sessionId, firstName, lastName, email, phone },
       { auth, services }
     ) => {
-      // 💡 FIX: Calling 'updateSessionStep' with three separate arguments:
-      // 1. sessionId
-      // 2. The step name ("auth")
-      // 3. An object with the new details
       const session = await services.checkoutSessionServiceV2.updateSessionStep(
         sessionId,
         "auth",
@@ -138,15 +116,13 @@ export const checkoutMutationsV2: MutationResolvers = {
           phone,
         }
       );
-
       publish(services.pubsub)(sessionId, formatSessionForPublishing(session));
-
       return session.auth;
     },
   },
 
   // ============================
-  // ✅ Update Checkout Delivery
+  // Update Checkout Delivery
   // ============================
   updateCheckoutDelivery: {
     resolve: async (_, { sessionId, email, phone, firstName, lastName }, { services }) => {
@@ -157,15 +133,13 @@ export const checkoutMutationsV2: MutationResolvers = {
         firstName,
         lastName,
       });
-
       publish(services.pubsub)(sessionId, formatSessionForPublishing(session));
-
       return session.delivery;
     },
   },
 
   // ==========================
-  // ✅ Apply Coupon to Checkout
+  // Apply Coupon to Checkout
   // ==========================
   applyCouponToCheckout: {
     resolve: async (
@@ -176,15 +150,12 @@ export const checkoutMutationsV2: MutationResolvers = {
       try {
         const { sessionId, couponCode } = validateApplyCouponInput(input);
         logger.info("Applying coupon", { sessionId, couponCode });
-
         const session = await context.repositories.coupons.applyCoupon({
           sessionId,
           couponCode,
           userId: context.auth?.user?.id,
         });
-
         publish(context.services.pubsub)(sessionId, session);
-
         return {
           success: true,
           checkout: formatSessionForGraphQL(session),
@@ -192,7 +163,6 @@ export const checkoutMutationsV2: MutationResolvers = {
         };
       } catch (error: any) {
         logger.error("Failed to apply coupon", error);
-
         return {
           success: false,
           checkout: null,
@@ -202,6 +172,101 @@ export const checkoutMutationsV2: MutationResolvers = {
             code: error.extensions?.code || "COUPON_ERROR",
           },
         };
+      }
+    },
+  },
+
+  // ============================
+  // Trigger Checkout Payment
+  // ============================
+triggerCheckoutPayment: {
+    resolve: async (
+      _,
+      { sessionId, nameForBilling, redirectUrl }: MutationTriggerCheckoutPaymentArgs,
+      context: Context
+    ): Promise<CheckoutPayment> => {
+      logger.info("Triggering checkout payment", { sessionId, nameForBilling, redirectUrl });
+
+      try {
+        const session = await context.services.checkoutSessionServiceV2.getSession(sessionId);
+        if (!session) {
+          throw new GraphQLError("Session not found", { extensions: { code: "SESSION_NOT_FOUND" } });
+        }
+
+        if (!session.delivery.completed) {
+             throw new GraphQLError("Delivery details must be completed before payment", { extensions: { code: "STEP_NOT_COMPLETED" } });
+        }
+
+        const pricing = session.pricing as SimplePricingResult | undefined;
+        if (!pricing || typeof pricing.finalPrice !== 'number') {
+             throw new GraphQLError("Invalid pricing data in session", { extensions: { code: "INTERNAL_ERROR" } });
+        }
+        const amountToCharge = pricing.finalPrice;
+        // ✅ תיקון 1: שימוש ב-Enum
+        const currency = CurrencyEnum.USD;
+
+        const easyCardClient = await getEasyCardClient();
+
+        // הגדרת הטיפוס במפורש עוזרת ל-TypeScript
+        const easyCardRequest = {
+          amount: amountToCharge,
+          currency: currency,
+          description: `Hiilo eSIM Order - Session ${sessionId}`,
+          customerReference: sessionId,
+          metadata: {
+            firstName: session.delivery.firstName || '',
+            lastName: session.delivery.lastName || '',
+            email: session.delivery.email || '',
+          },
+        } as any;
+
+        logger.info("Calling EasyCard createPaymentIntent API", { easyCardRequest });
+        const easyCardResponse = await easyCardClient.executeWithTokenRefresh(() =>
+          easyCardClient.paymentIntent.apiPaymentIntentPost({
+            paymentRequestCreate: easyCardRequest
+          })
+        ) as any; // עדיין משתמשים ב-any זמנית
+
+        logger.info("EasyCard createPaymentIntent response", { easyCardResponse });
+
+        const paymentIntentId = easyCardResponse?.paymentIntentID || easyCardResponse?.data?.paymentIntentID;
+        const paymentUrl = easyCardResponse?.url || easyCardResponse?.redirectUrl || easyCardResponse?.data?.url || easyCardResponse?.data?.redirectUrl || null;
+
+        if (!paymentIntentId) {
+            // ✅ תיקון 2: תיקון הלוג של השגיאה
+            logger.error("Failed to create EasyCard payment intent or missing ID in response: " + JSON.stringify(easyCardResponse)); // שינוי השם
+            throw new GraphQLError("Failed to create EasyCard payment intent", { extensions: { code: "PAYMENT_GATEWAY_ERROR" } });
+        }
+
+        logger.info(`Payment Intent created: ${paymentIntentId}, URL: ${paymentUrl}`);
+
+        await context.services.checkoutSessionServiceV2.updateSessionStep(sessionId, 'payment', {
+            intent: { id: paymentIntentId, url: paymentUrl || '' },
+            readyForPayment: !!paymentUrl,
+        });
+
+        const intentResult: PaymentIntent | null = paymentUrl ? {
+            __typename: "PaymentIntent",
+            id: paymentIntentId,
+            url: paymentUrl,
+            applePayJavaScriptUrl: null,
+          } : null;
+
+        const result: CheckoutPayment = {
+          __typename: "CheckoutPayment",
+          completed: false,
+          intent: intentResult,
+          email: session.delivery.email,
+          phone: session.delivery.phone,
+          nameForBilling: nameForBilling || `${session.delivery.firstName || ''} ${session.delivery.lastName || ''}`.trim(),
+        };
+        return result;
+
+      } catch (error: any) {
+        logger.error("Error in triggerCheckoutPayment", error);
+        throw new GraphQLError(error.message || "Failed to trigger payment", {
+          extensions: { code: error.extensions?.code || "INTERNAL_ERROR" },
+        });
       }
     },
   },
