@@ -3,16 +3,15 @@ import { nanoid } from "nanoid";
 import { type RedisInstance } from "../redis";
 import { CheckoutSessionSchema, type CheckoutSession } from "./schema";
 import { env } from "../../config/env";
-import type { Database } from "../../types/database.types";
-import { mapStateToPaymentStatus } from "../../resolvers/checkout/helpers";
 import type { BundleRepository, CheckoutSessionRepository } from "../../repositories";
+import type { Database } from "../../types/database.types"; // Ensure this path is correct
+import { mapStateToPaymentStatus } from "../../resolvers/checkout/helpers"; // Ensure this path is correct
 
 const logger = createLogger({ component: "checkout-session-service-v2" });
 let redis: RedisInstance | null = null;
 let bundleRepository: BundleRepository | null = null;
 let checkoutSessionRepository: CheckoutSessionRepository | null = null;
 
-// 1 day on dev, 30 min on prod
 const ttl = env.isDev ? 24 * 60 * 60 : 30 * 60;
 
 const init = async (context: {
@@ -26,7 +25,6 @@ const init = async (context: {
   return checkoutSessionService;
 };
 
-// פונקציית עזר למיפוי state ל-status
 const mapStateToStatus = (state: string | null): CheckoutSession['status'] => {
     switch (state) {
         case 'INITIALIZED': return 'select-bundle';
@@ -35,9 +33,29 @@ const mapStateToStatus = (state: string | null): CheckoutSession['status'] => {
         case 'PAYMENT_READY':
         case 'PAYMENT_PROCESSING': return 'payment';
         case 'PAYMENT_COMPLETED': return 'confirmation';
-        default: return 'select-bundle'; // ברירת מחדל
+        default: return 'select-bundle';
     }
 };
+
+const mapStatusToState = (status: CheckoutSession['status']): string | null => {
+    switch (status) {
+        case 'select-bundle': return 'INITIALIZED';
+        case 'auth': return 'AUTHENTICATED';
+        case 'delivery': return 'DELIVERY_SET';
+        case 'payment': return 'PAYMENT_READY';
+        case 'confirmation': return 'PAYMENT_COMPLETED';
+        default: return null;
+    }
+};
+
+const mapZodStatusToPaymentStatus = (status: CheckoutSession['status']): string | null => {
+    switch (status) {
+        case 'payment': return 'PROCESSING';
+        case 'confirmation': return 'SUCCEEDED';
+        default: return 'PENDING';
+    }
+};
+
 
 const createSession = async ({
   countryId,
@@ -56,7 +74,6 @@ const createSession = async ({
   } else {
       try {
         const found = await bundleRepository.getCountryByIso(countryId);
-        console.log("[DEBUG] Data returned from getCountryByIso:", found);
         if (found && found.name) countryData = { iso2 :found.iso2, name: found.name };
         else if(found) {
           logger.warn(`Country found but missing name for ISO: ${countryId}`);
@@ -108,9 +125,7 @@ const createSession = async ({
       logger.warn("Could not save session to Redis during creation, continuing...", { sessionId: session.id, error: (redisError as Error).message });
   }
 
-  // ✍️ **חשוב:** עדיין חסרה כאן השמירה הראשונית ל-Database!
-  // הפונקציה createSession המקורית (זו שקשורה ל-GraphQL) היא זו ששומרת ל-DB.
-  // הפונקציה הזו כאן היא כנראה לא בשימוש ישיר ביצירה הראשונית.
+  // Note: Initial DB save happens in the GraphQL createCheckoutSession resolver
 
   return session;
 };
@@ -158,27 +173,25 @@ const getSession = async (
 
     console.log("[DEBUG] Raw data from DB:", JSON.stringify(sessionDataFromDb, null, 2));
 
-    // 👇 הוספת type assertion כדי שנוכל לגשת לשדות הפנימיים
     const metadata = sessionDataFromDb.metadata as any || {};
     const pricing = sessionDataFromDb.pricing as any || {};
     const steps = sessionDataFromDb.steps as any || {};
 
     const mappedSessionData = {
         id: sessionDataFromDb.id,
-        version: 1, // ברירת מחדל
+        version: 1,
         bundle: {
-            completed: steps.bundle?.completed || false, // גישה בטוחה יותר
+            completed: steps.bundle?.completed || false,
             numOfDays: metadata.requestedDays || 0,
             countryId: metadata.countries?.[0] || '',
             country: metadata.country || null,
             price: pricing.finalPrice,
             discounts: pricing.discount ? [pricing.discount] : [],
-            // שדות נוספים מ-bundle
-            currency: pricing.currency || "USD", // דוגמה
-            dataAmount: metadata.dataAmount || "Unlimited", // דוגמה
-            speed: metadata.speed || [], // דוגמה
-            validated: metadata.isValidated || false, // דוגמה
-            pricePerDay: pricing.finalPrice && metadata.requestedDays ? pricing.finalPrice / metadata.requestedDays : 0, // דוגמה
+            currency: pricing.currency || "USD",
+            dataAmount: metadata.dataAmount || "Unlimited",
+            speed: metadata.speed || [],
+            validated: metadata.isValidated || false,
+            pricePerDay: pricing.finalPrice && metadata.requestedDays ? pricing.finalPrice / metadata.requestedDays : 0,
         },
         auth: {
             completed: !!sessionDataFromDb.user_id || steps.authentication?.completed || false,
@@ -192,15 +205,14 @@ const getSession = async (
             completed: steps.delivery?.completed || false,
             email: steps.delivery?.email || metadata.deliveryEmail || undefined,
             phone: steps.delivery?.phone || metadata.deliveryPhone || undefined,
-            firstName: steps.delivery?.firstName || metadata.firstName || undefined, // נשתמש גם בשם מה-auth אם יש
+            firstName: steps.delivery?.firstName || metadata.firstName || undefined,
             lastName: steps.delivery?.lastName || metadata.lastName || undefined,
         },
         payment: {
             completed: sessionDataFromDb.payment_status === 'SUCCEEDED' || steps.payment?.completed || false,
             intent: sessionDataFromDb.payment_intent_id ? { id: sessionDataFromDb.payment_intent_id, url: '' } : undefined,
-            // למפות שדות נוספים מ-steps.payment אם קיימים
         },
-        pricing: sessionDataFromDb.pricing as any,
+        pricing: sessionDataFromDb.pricing as any, // Include the raw pricing object for Zod validation
         status: mapStateToStatus(sessionDataFromDb.state),
         createdAt: new Date(sessionDataFromDb.created_at || Date.now()),
         updatedAt: new Date(sessionDataFromDb.updated_at || Date.now()),
@@ -213,7 +225,6 @@ const getSession = async (
     const validationResult = CheckoutSessionSchema.safeParse(mappedSessionData);
     if (!validationResult.success) {
         logger.error("Failed to parse MAPPED session data from DB against Zod schema", validationResult.error, { sessionId });
-        // 👇 תיקון: שימוש ב-issues במקום errors
         console.log("Validation Issues:", validationResult.error.issues);
         return null;
     }
@@ -252,15 +263,6 @@ const getSessionByPaymentIntentId = async (
   return getSession(sessionId);
 };
 
-const mapZodStatusToPaymentStatus = (status: CheckoutSession['status']): string | null => {
-    switch (status) {
-        case 'payment': return 'PROCESSING'; // או PENDING?
-        case 'confirmation': return 'SUCCEEDED';
-        // case 'failed': return 'FAILED'; // אם יש לך סטטוס כזה
-        default: return 'PENDING'; // לכל שאר המצבים
-    }
-};
-
 const updateSessionStep = async <K extends keyof CheckoutSession>(
   sessionId: string,
   step: K,
@@ -284,12 +286,12 @@ const updateSessionStep = async <K extends keyof CheckoutSession>(
 
   const validatedSession = CheckoutSessionSchema.parse(session);
 
-  await saveSession(validatedSession);
+  await saveSession(validatedSession); // Save to Redis
 
-if (checkoutSessionRepository) {
+  // Save to Database
+  if (checkoutSessionRepository) {
       try {
           const mapStatusToState = (status: CheckoutSession['status']): string | null => {
-              // ... (פונקציית המיפוי נשארת כאן) ...
                switch (status) {
                   case 'select-bundle': return 'INITIALIZED';
                   case 'auth': return 'AUTHENTICATED';
@@ -300,10 +302,8 @@ if (checkoutSessionRepository) {
               }
           };
 
-          // 👇 תיקון 2: בונים את האובייקט בצורה בטוחה יותר
           const dataToUpdate: Partial<Database['public']['Tables']['checkout_sessions']['Update']> = {};
 
-          // הוסף רק שדות שבאמת רוצים לעדכן
           if (validatedSession.pricing) {
               dataToUpdate.pricing = validatedSession.pricing as any;
           }
@@ -312,22 +312,25 @@ if (checkoutSessionRepository) {
               dataToUpdate.state = newState;
           }
           dataToUpdate.updated_at = validatedSession.updatedAt.toISOString();
-          // עדכן מזהה תשלום רק אם הוא קיים
           if (validatedSession.payment?.intent?.id) {
               dataToUpdate.payment_intent_id = validatedSession.payment.intent.id;
           }
-          // 👇 תיקון 1: שימוש בפונקציה החדשה
           const newPaymentStatus = mapZodStatusToPaymentStatus(validatedSession.status);
           if (newPaymentStatus) {
               dataToUpdate.payment_status = newPaymentStatus;
           }
-          // **חשוב:** איך מעדכנים את steps או metadata ב-DB?
-          // אם הם עמודות JSONb, אולי צריך לעדכן אותן כאן?
-          // dataToUpdate.steps = validatedSession.steps as any;
-          // dataToUpdate.metadata = validatedSession.metadata as any; // האם metadata מגיע מ-getSession?
+
+          // 👇 הרכבה מחדש של אובייקט ה-steps לשמירה ב-DB
+          const stepsToSave = {
+              bundle: validatedSession.bundle,
+              auth: validatedSession.auth,
+              delivery: validatedSession.delivery,
+              payment: validatedSession.payment,
+              // הוסף כאן שדות נוספים אם קיימים ב-steps ב-DB
+          };
+          dataToUpdate.steps = stepsToSave as any; // שמור את האובייקט המשוחזר
 
           logger.info(`[DEBUG] Updating session ${sessionId} in DB...`, { dataToUpdate });
-          // אין צורך יותר למחוק שדות undefined כי בנינו את האובייקט רק עם מה שקיים
           await checkoutSessionRepository.update(sessionId, dataToUpdate);
           logger.info(`[DEBUG] Session ${sessionId} updated in DB successfully.`);
 
@@ -338,6 +341,7 @@ if (checkoutSessionRepository) {
       logger.warn("CheckoutSessionRepository not available in updateSessionStep, DB not updated.", {sessionId});
   }
 
+  // Manage Redis index
   if (step === 'payment' && redis) {
     const newPaymentIntentId = validatedSession.payment?.intent?.id;
     const ttl = Math.max(1, Math.floor((validatedSession.expiresAt.getTime() - Date.now()) / 1000));
@@ -366,13 +370,23 @@ const getSessionNextStep = (session: CheckoutSession): string => {
 };
 
 const deleteSession = async (sessionId: string): Promise<void> => {
-  // ✍️ **חשוב:** כאן חסרה המחיקה מה-Database!
-  // צריך להוסיף קריאה ל-checkoutSessionRepository.delete(sessionId)
+  // Delete from DB
+  if (checkoutSessionRepository) {
+      try {
+          await checkoutSessionRepository.delete(sessionId);
+          logger.info(`[DEBUG] Session ${sessionId} deleted from DB.`);
+      } catch (dbError) {
+          logger.error("Failed to delete session from DB", dbError as Error, { sessionId });
+      }
+  } else {
+       logger.warn("CheckoutSessionRepository not available in deleteSession, DB not deleted.", {sessionId});
+  }
 
+  // Delete from Redis
   if (!redis) {
       logger.warn("Redis not initialized in deleteSession, skipping Redis delete.", {sessionId});
   } else {
-      const session = await getSession(sessionId);
+      const session = await getSession(sessionId); // Tries DB first now
       if (session) {
         const sessionKey = `checkout:session:${sessionId}`;
         await redis.delete(sessionKey);
@@ -388,13 +402,13 @@ const deleteSession = async (sessionId: string): Promise<void> => {
 
 export const checkoutSessionService = {
   init,
-  createSession, // הפונקציה הזו כנראה לא בשימוש ליצירה ראשונית
-  saveSession, // זו שמירה רק ל-Redis
-  getSession, // קורא מה-DB וממפה
-  getSessionByPaymentIntentId, // קורא מאינדקס Redis
+  createSession,
+  saveSession,
+  getSession,
+  getSessionByPaymentIntentId,
   getSessionNextStep,
-  updateSessionStep, // קורא מה-DB, מעדכן בזיכרון, שומר ב-Redis (חסר שמירה ל-DB)
-  deleteSession, // מוחק מ-Redis (חסר מחיקה מה-DB)
+  updateSessionStep,
+  deleteSession,
 };
 
 export type CheckoutSessionServiceV2 = typeof checkoutSessionService;
