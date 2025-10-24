@@ -125,7 +125,11 @@ export const DeliveryCard = ({
 
   const onSubmit = useCallback(
     async (formData: DeliveryFormData) => {
-      if (!data?.id) return;
+      console.log(`[DEBUG] onSubmit CALLED with data.id: ${data?.id}`);
+      if (!data?.id){
+        console.error("[DEBUG] onSubmit: No session ID available, cannot proceed.");
+        return;
+      }
 
       const cleanedEmail = formData.email.trim();
       const cleanedFirstName = formData.firstName.trim();

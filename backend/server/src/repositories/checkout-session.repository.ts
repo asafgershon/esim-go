@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { z } from 'zod';
-import type { Database, Json } from '../database.types';
+import type { Database, Json } from '../types/database.types';
 import { BaseSupabaseRepository } from './base-supabase.repository';
 
 type CheckoutSessionRow =
