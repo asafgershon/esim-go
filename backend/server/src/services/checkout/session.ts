@@ -24,6 +24,19 @@ const init = async (context: {
   return checkoutSessionService;
 };
 
+// פונקציית עזר למיפוי state ל-status
+const mapStateToStatus = (state: string | null): CheckoutSession['status'] => {
+    switch (state) {
+        case 'INITIALIZED': return 'select-bundle';
+        case 'AUTHENTICATED': return 'auth';
+        case 'DELIVERY_SET': return 'delivery';
+        case 'PAYMENT_READY':
+        case 'PAYMENT_PROCESSING': return 'payment';
+        case 'PAYMENT_COMPLETED': return 'confirmation';
+        default: return 'select-bundle'; // ברירת מחדל
+    }
+};
+
 const createSession = async ({
   countryId,
   numOfDays,
@@ -75,7 +88,6 @@ const createSession = async ({
       completed: false,
       email: undefined,
       phone: undefined,
-      // הוספתי ערכים התחלתיים ריקים לשדות החדשים
       firstName: undefined,
       lastName: undefined,
     },
@@ -84,30 +96,26 @@ const createSession = async ({
     },
     createdAt: new Date(),
     updatedAt: new Date(),
-    expiresAt: new Date(Date.now() + ttl * 1000), // שימוש ב-ttl שהוגדר למעלה
+    expiresAt: new Date(Date.now() + ttl * 1000),
   });
 
-  // עדיין ננסה לשמור ב-Redis אם הוא זמין, לטובת פיצ'רים אחרים אולי
   try {
       await saveSession(session);
       logger.info("Created checkout session (and saved to Redis if available)", { sessionId: session.id });
   } catch (redisError) {
       logger.warn("Could not save session to Redis during creation, continuing...", { sessionId: session.id, error: (redisError as Error).message });
-      // לא זורקים שגיאה, ממשיכים כי העיקר שזה יישמר ב-DB
   }
 
-  // ✍️ **חשוב:** כאן חסרה השמירה הראשונית ל-Database!
-  // צריך להוסיף קריאה ל-checkoutSessionRepository.create(session)
-  // או שהפונקציה createSession המקורית (זו שקראנו לה מ-GraphQL) עושה את זה.
-  // כרגע, הקוד הזה רק שומר ב-Redis.
+  // ✍️ **חשוב:** עדיין חסרה כאן השמירה הראשונית ל-Database!
+  // הפונקציה createSession המקורית (זו שקשורה ל-GraphQL) היא זו ששומרת ל-DB.
+  // הפונקציה הזו כאן היא כנראה לא בשימוש ישיר ביצירה הראשונית.
 
   return session;
 };
 
 const saveSession = async (session: CheckoutSession) => {
   if (!redis) {
-    // זורקים שגיאה רק אם Redis *אמור* להיות זמין ולא אותחל
-    if (checkoutSessionRepository) { // אם יש DB, אפשר לדלג על שמירת Redis
+    if (checkoutSessionRepository) {
         logger.warn("Redis not initialized in saveSession, skipping Redis save.", {sessionId: session.id});
         return;
     }
@@ -116,7 +124,7 @@ const saveSession = async (session: CheckoutSession) => {
 
   try {
       const verifiedSession = CheckoutSessionSchema.parse(session);
-      const remainingTtl = Math.max(1, Math.floor((session.expiresAt.getTime() - Date.now()) / 1000)); // ודא TTL חיובי
+      const remainingTtl = Math.max(1, Math.floor((session.expiresAt.getTime() - Date.now()) / 1000));
       const key = `checkout:session:${session.id}`;
 
       await redis.set(key, JSON.stringify(verifiedSession), { ttl: remainingTtl });
@@ -128,7 +136,6 @@ const saveSession = async (session: CheckoutSession) => {
       }
   } catch (error) {
       logger.error("Failed to save session to Redis", error as Error, { sessionId: session.id });
-      // לא זורקים שגיאה כדי לא לשבור תהליכים אחרים
   }
 };
 
@@ -147,33 +154,71 @@ const getSession = async (
       return null;
     }
 
-    // המרת הנתונים מה-DB לפורמט שהסכמה מצפה לו
-    const parsedSession = {
-        ...sessionDataFromDb,
-        // המרה מפורשת אם השדות הם Json ב-DB (Supabase מחזיר אותם כאובייקטים בדרך כלל)
-        pricing: sessionDataFromDb.pricing as any, // נניח שזה כבר אובייקט
-        metadata: sessionDataFromDb.metadata as any, // נניח שזה כבר אובייקט
-        // המרת תאריכים אם הם מגיעים כמחרוזות (Supabase מחזיר אותם כמחרוזות ISO)
+    console.log("[DEBUG] Raw data from DB:", JSON.stringify(sessionDataFromDb, null, 2));
+
+    // 👇 הוספת type assertion כדי שנוכל לגשת לשדות הפנימיים
+    const metadata = sessionDataFromDb.metadata as any || {};
+    const pricing = sessionDataFromDb.pricing as any || {};
+    const steps = sessionDataFromDb.steps as any || {};
+
+    const mappedSessionData = {
+        id: sessionDataFromDb.id,
+        version: 1, // ברירת מחדל
+        bundle: {
+            completed: steps.bundle?.completed || false, // גישה בטוחה יותר
+            numOfDays: metadata.requestedDays || 0,
+            countryId: metadata.countries?.[0] || '',
+            country: metadata.country || null,
+            price: pricing.finalPrice,
+            discounts: pricing.discount ? [pricing.discount] : [],
+            // שדות נוספים מ-bundle
+            currency: pricing.currency || "USD", // דוגמה
+            dataAmount: metadata.dataAmount || "Unlimited", // דוגמה
+            speed: metadata.speed || [], // דוגמה
+            validated: metadata.isValidated || false, // דוגמה
+            pricePerDay: pricing.finalPrice && metadata.requestedDays ? pricing.finalPrice / metadata.requestedDays : 0, // דוגמה
+        },
+        auth: {
+            completed: !!sessionDataFromDb.user_id || steps.authentication?.completed || false,
+            userId: sessionDataFromDb.user_id || undefined,
+            email: metadata.authEmail || steps.authentication?.email || undefined,
+            phone: metadata.authPhone || steps.authentication?.phone || undefined,
+            firstName: metadata.firstName || steps.authentication?.firstName || undefined,
+            lastName: metadata.lastName || steps.authentication?.lastName || undefined,
+        },
+        delivery: {
+            completed: steps.delivery?.completed || false,
+            email: steps.delivery?.email || metadata.deliveryEmail || undefined,
+            phone: steps.delivery?.phone || metadata.deliveryPhone || undefined,
+            firstName: steps.delivery?.firstName || metadata.firstName || undefined, // נשתמש גם בשם מה-auth אם יש
+            lastName: steps.delivery?.lastName || metadata.lastName || undefined,
+        },
+        payment: {
+            completed: sessionDataFromDb.payment_status === 'SUCCEEDED' || steps.payment?.completed || false,
+            intent: sessionDataFromDb.payment_intent_id ? { id: sessionDataFromDb.payment_intent_id, url: '' } : undefined,
+            // למפות שדות נוספים מ-steps.payment אם קיימים
+        },
+        status: mapStateToStatus(sessionDataFromDb.state),
         createdAt: new Date(sessionDataFromDb.created_at || Date.now()),
         updatedAt: new Date(sessionDataFromDb.updated_at || Date.now()),
         expiresAt: new Date(sessionDataFromDb.expires_at || Date.now()),
-        // צריך למפות גם את שאר השדות אם יש הבדלי שמות (למשל plan_id -> bundle.id?)
-        // כאן אני מניח שהמבנה ב-DB דומה למבנה בסכמת Zod
-        // **זהירות:** אם יש הבדלים, ה-parse ייכשל
+        completedAt: sessionDataFromDb.payment_status === 'SUCCEEDED' ? new Date(sessionDataFromDb.updated_at || Date.now()) : undefined,
     };
 
-    console.log("[DEBUG] Data from DB before Zod parse:", JSON.stringify(parsedSession, null, 2));
-    // מנסים לעשות Parse לפי הסכמה
-    const validationResult = CheckoutSessionSchema.safeParse(parsedSession);
+    console.log("[DEBUG] Data mapped for Zod parse:", JSON.stringify(mappedSessionData, null, 2));
+
+    const validationResult = CheckoutSessionSchema.safeParse(mappedSessionData);
     if (!validationResult.success) {
-        logger.error("Failed to parse session data from DB against Zod schema", validationResult.error, { sessionId });
-        return null; // אם הנתונים מה-DB לא תואמים לסכמה
+        logger.error("Failed to parse MAPPED session data from DB against Zod schema", validationResult.error, { sessionId });
+        // 👇 תיקון: שימוש ב-issues במקום errors
+        console.log("Validation Issues:", validationResult.error.issues);
+        return null;
     }
 
-    return validationResult.data; // מחזירים את הנתונים שעברו ולידציה
+    return validationResult.data;
 
   } catch (error) {
-      logger.error("Error fetching or parsing session from DB in getSession", error as Error, { sessionId });
+      logger.error("Error fetching or mapping/parsing session from DB in getSession", error as Error, { sessionId });
       return null;
   }
 };
@@ -182,14 +227,11 @@ const getSession = async (
 const getSessionByPaymentIntentId = async (
   paymentIntentId: string
 ): Promise<CheckoutSession | null> => {
-    // לוגיקה זו עדיין תלויה ב-Redis Index.
-    // אם רוצים לעבור לגמרי ל-DB, צריך להוסיף שאילתה לחיפוש ב-DB לפי payment_intent_id
     if (!redis) {
         logger.warn("getSessionByPaymentIntentId requires Redis index which is not available.");
-        // אפשר לנסות לחפש ב-DB אם רוצים
         if (checkoutSessionRepository) {
-             const session = await checkoutSessionRepository.findByPaymentIntent(paymentIntentId); // נניח שיש פונקציה כזו
-             if (session) return getSession(session.id); // אם נמצא, קרא ל-getSession הרגיל
+             const session = await checkoutSessionRepository.findByPaymentIntent(paymentIntentId);
+             if (session) return getSession(session.id);
         }
         return null;
     }
@@ -204,7 +246,7 @@ const getSessionByPaymentIntentId = async (
 
   logger.debug("Found session ID for payment intent via Redis", { paymentIntentId, sessionId });
 
-  return getSession(sessionId); // קורא ל-getSession החדש שקורא מה-DB
+  return getSession(sessionId);
 };
 
 const updateSessionStep = async <K extends keyof CheckoutSession>(
@@ -212,7 +254,7 @@ const updateSessionStep = async <K extends keyof CheckoutSession>(
   step: K,
   updates: Partial<CheckoutSession[K]>
 ): Promise<CheckoutSession> => {
-  const session = await getSession(sessionId); // קורא ל-getSession החדש
+  const session = await getSession(sessionId);
 
   if (!session) {
     throw new SessionNotFound();
@@ -220,7 +262,6 @@ const updateSessionStep = async <K extends keyof CheckoutSession>(
 
   const oldPaymentIntentId = session.payment?.intent?.id;
 
-  // עדכון האובייקט בזיכרון
   session[step] = {
     ...(session[step] as object),
     ...updates,
@@ -229,15 +270,13 @@ const updateSessionStep = async <K extends keyof CheckoutSession>(
   session.updatedAt = new Date();
   session.version += 1;
 
-  // ולידציה לפני שמירה
   const validatedSession = CheckoutSessionSchema.parse(session);
 
   // ✍️ **חשוב:** כאן חסרה השמירה ל-Database!
-  // צריך להוסיף קריאה ל-checkoutSessionRepository.update(sessionId, validatedSession)
-  // כרגע, הקוד הזה רק שומר ב-Redis.
-  await saveSession(validatedSession); // ננסה לשמור גם ב-Redis
+  // צריך להוסיף קריאה ל-checkoutSessionRepository.update(sessionId, ...)
+  // צריך למפות את validatedSession חזרה לפורמט שה-DB מצפה לו.
+  await saveSession(validatedSession);
 
-  // ניהול האינדקס של Redis (אם Redis פעיל)
   if (step === 'payment' && redis) {
     const newPaymentIntentId = validatedSession.payment?.intent?.id;
     const ttl = Math.max(1, Math.floor((validatedSession.expiresAt.getTime() - Date.now()) / 1000));
@@ -269,11 +308,10 @@ const deleteSession = async (sessionId: string): Promise<void> => {
   // ✍️ **חשוב:** כאן חסרה המחיקה מה-Database!
   // צריך להוסיף קריאה ל-checkoutSessionRepository.delete(sessionId)
 
-  // ננסה למחוק גם מ-Redis אם הוא זמין
   if (!redis) {
       logger.warn("Redis not initialized in deleteSession, skipping Redis delete.", {sessionId});
   } else {
-      const session = await getSession(sessionId); // קורא ל-getSession החדש
+      const session = await getSession(sessionId);
       if (session) {
         const sessionKey = `checkout:session:${sessionId}`;
         await redis.delete(sessionKey);
@@ -289,13 +327,13 @@ const deleteSession = async (sessionId: string): Promise<void> => {
 
 export const checkoutSessionService = {
   init,
-  createSession,
-  saveSession, // עדיין חשוף, למרות שהוא פנימי בעיקר
-  getSession,
-  getSessionByPaymentIntentId,
+  createSession, // הפונקציה הזו כנראה לא בשימוש ליצירה ראשונית
+  saveSession, // זו שמירה רק ל-Redis
+  getSession, // קורא מה-DB וממפה
+  getSessionByPaymentIntentId, // קורא מאינדקס Redis
   getSessionNextStep,
-  updateSessionStep,
-  deleteSession,
+  updateSessionStep, // קורא מה-DB, מעדכן בזיכרון, שומר ב-Redis (חסר שמירה ל-DB)
+  deleteSession, // מוחק מ-Redis (חסר מחיקה מה-DB)
 };
 
 export type CheckoutSessionServiceV2 = typeof checkoutSessionService;
