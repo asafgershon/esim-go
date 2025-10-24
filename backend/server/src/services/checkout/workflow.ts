@@ -143,8 +143,10 @@ const setDelivery = async ({
   lastName?: string | null;
 }) => {
   if (!sessionService) throw new NotInitializedError();
+  console.log(`[DEBUG] setDelivery: Attempting to getSession with ID: ${sessionId}`);
   const session = await sessionService.getSession(sessionId);
-  if (!session) throw new SessionNotFound();
+  console.log(`[DEBUG] setDelivery: Got session successfully:`, session ? session.id : 'null');
+  if (!session) throw new Error(`SessionNotFound in setDelivery: ID ${sessionId} not found`);
 
   return sessionService.updateSessionStep(sessionId, "delivery", {
     email,
