@@ -3,6 +3,8 @@ import { nanoid } from "nanoid";
 import { type RedisInstance } from "../redis";
 import { CheckoutSessionSchema, type CheckoutSession } from "./schema";
 import { env } from "../../config/env";
+import type { Database } from "../../types/database.types";
+import { mapStateToPaymentStatus } from "../../resolvers/checkout/helpers";
 import type { BundleRepository, CheckoutSessionRepository } from "../../repositories";
 
 const logger = createLogger({ component: "checkout-session-service-v2" });
@@ -250,6 +252,15 @@ const getSessionByPaymentIntentId = async (
   return getSession(sessionId);
 };
 
+const mapZodStatusToPaymentStatus = (status: CheckoutSession['status']): string | null => {
+    switch (status) {
+        case 'payment': return 'PROCESSING'; // או PENDING?
+        case 'confirmation': return 'SUCCEEDED';
+        // case 'failed': return 'FAILED'; // אם יש לך סטטוס כזה
+        default: return 'PENDING'; // לכל שאר המצבים
+    }
+};
+
 const updateSessionStep = async <K extends keyof CheckoutSession>(
   sessionId: string,
   step: K,
@@ -273,10 +284,59 @@ const updateSessionStep = async <K extends keyof CheckoutSession>(
 
   const validatedSession = CheckoutSessionSchema.parse(session);
 
-  // ✍️ **חשוב:** כאן חסרה השמירה ל-Database!
-  // צריך להוסיף קריאה ל-checkoutSessionRepository.update(sessionId, ...)
-  // צריך למפות את validatedSession חזרה לפורמט שה-DB מצפה לו.
   await saveSession(validatedSession);
+
+if (checkoutSessionRepository) {
+      try {
+          const mapStatusToState = (status: CheckoutSession['status']): string | null => {
+              // ... (פונקציית המיפוי נשארת כאן) ...
+               switch (status) {
+                  case 'select-bundle': return 'INITIALIZED';
+                  case 'auth': return 'AUTHENTICATED';
+                  case 'delivery': return 'DELIVERY_SET';
+                  case 'payment': return 'PAYMENT_READY';
+                  case 'confirmation': return 'PAYMENT_COMPLETED';
+                  default: return null;
+              }
+          };
+
+          // 👇 תיקון 2: בונים את האובייקט בצורה בטוחה יותר
+          const dataToUpdate: Partial<Database['public']['Tables']['checkout_sessions']['Update']> = {};
+
+          // הוסף רק שדות שבאמת רוצים לעדכן
+          if (validatedSession.pricing) {
+              dataToUpdate.pricing = validatedSession.pricing as any;
+          }
+          const newState = mapStatusToState(validatedSession.status);
+          if (newState) {
+              dataToUpdate.state = newState;
+          }
+          dataToUpdate.updated_at = validatedSession.updatedAt.toISOString();
+          // עדכן מזהה תשלום רק אם הוא קיים
+          if (validatedSession.payment?.intent?.id) {
+              dataToUpdate.payment_intent_id = validatedSession.payment.intent.id;
+          }
+          // 👇 תיקון 1: שימוש בפונקציה החדשה
+          const newPaymentStatus = mapZodStatusToPaymentStatus(validatedSession.status);
+          if (newPaymentStatus) {
+              dataToUpdate.payment_status = newPaymentStatus;
+          }
+          // **חשוב:** איך מעדכנים את steps או metadata ב-DB?
+          // אם הם עמודות JSONb, אולי צריך לעדכן אותן כאן?
+          // dataToUpdate.steps = validatedSession.steps as any;
+          // dataToUpdate.metadata = validatedSession.metadata as any; // האם metadata מגיע מ-getSession?
+
+          logger.info(`[DEBUG] Updating session ${sessionId} in DB...`, { dataToUpdate });
+          // אין צורך יותר למחוק שדות undefined כי בנינו את האובייקט רק עם מה שקיים
+          await checkoutSessionRepository.update(sessionId, dataToUpdate);
+          logger.info(`[DEBUG] Session ${sessionId} updated in DB successfully.`);
+
+      } catch (dbError) {
+          logger.error("Failed to update session in DB", dbError as Error, { sessionId });
+      }
+  } else {
+      logger.warn("CheckoutSessionRepository not available in updateSessionStep, DB not updated.", {sessionId});
+  }
 
   if (step === 'payment' && redis) {
     const newPaymentIntentId = validatedSession.payment?.intent?.id;
