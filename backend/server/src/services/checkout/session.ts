@@ -162,6 +162,7 @@ const getSession = async (
         // **זהירות:** אם יש הבדלים, ה-parse ייכשל
     };
 
+    console.log("[DEBUG] Data from DB before Zod parse:", JSON.stringify(parsedSession, null, 2));
     // מנסים לעשות Parse לפי הסכמה
     const validationResult = CheckoutSessionSchema.safeParse(parsedSession);
     if (!validationResult.success) {
