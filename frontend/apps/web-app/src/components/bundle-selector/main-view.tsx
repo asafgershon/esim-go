@@ -67,20 +67,22 @@ export function MainView({
     triggerDestinationSelectorFocus,
   } = useBundleSelector();
 
-useEffect(() => {
-  const navEntry = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
-  const isReload = navEntry?.type === "reload";
+  useEffect(() => {
+    const navEntry = performance.getEntriesByType(
+      "navigation"
+    )[0] as PerformanceNavigationTiming;
+    const isReload = navEntry?.type === "reload";
 
-  if (isReload) {
-    const urlParams = new URLSearchParams(window.location.search);
+    if (isReload) {
+      const urlParams = new URLSearchParams(window.location.search);
 
-    // אם יש פרמטרים ב-URL...
-    if (urlParams.toString().length > 0) {
-      // ✅ ...טען מחדש את העמוד עם כתובת נקייה
-      window.location.href = window.location.pathname;
+      // אם יש פרמטרים ב-URL...
+      if (urlParams.toString().length > 0) {
+        // ✅ ...טען מחדש את העמוד עם כתובת נקייה
+        window.location.href = window.location.pathname;
+      }
     }
-  }
-}, []); // אין יותר צורך בתלויות כאן
+  }, []); // אין יותר צורך בתלויות כאן
 
   // Fetch data for destination display
   const { countries = [] } = useCountries();
@@ -123,10 +125,13 @@ useEffect(() => {
         {/* <DestinationTabs activeTab={activeTab} onTabChange={handleTabChange} /> */}
 
         {/* Destination Selection */}
-          <DestinationSelector />
+        <DestinationSelector />
 
-        {/* Days Selection */}
-        <SelectorSection className="mt-4">
+        {/* *
+         * ✅ התיקון כאן - הסרתי את className="mt-4"
+         *
+         */}
+        <SelectorSection>
           <div className="flex items-center gap-[4px] md:gap-2 justify-start">
             <CalendarIcon className="w-3 h-3 md:w-[19px] md:h-[19px]" />
             <p className="text-base md:text-xl leading-[26px] md:leading-normal text-brand-dark">
@@ -180,21 +185,24 @@ useEffect(() => {
       <SelectorAction className="mt-5">
         <SelectorButton
           onClick={() => {
-            if(isPricingValid) {
+            if (isPricingValid) {
               console.log("✅ handlePurchase called", { countryId, numOfDays });
               handlePurchase();
-            }
-            else{
+            } else {
               triggerDestinationSelectorFocus();
             }
           }}
           aria-label={
-            isPricingValid ? "המשך לרכישת חבילת eSIM" : "בחר יעד לצפייה בחבילות"
+            isPricingValid
+              ? "המשך לרכישת חבילת eSIM"
+              : "בחר יעד לצפייה בחבילות"
           }
           variant={isPricingValid ? "brand-success" : undefined}
           emphasized={isPricingValid}
         >
-          {isPricingValid ? "לרכישת החבילה" : "לצפייה בחבילה המשתלמת ביותר"}
+          {isPricingValid
+            ? "לרכישת החבילה"
+            : "לצפייה בחבילה המשתלמת ביותר"}
         </SelectorButton>
       </SelectorAction>
     </>
