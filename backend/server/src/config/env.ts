@@ -46,7 +46,7 @@ export const env = cleanEnv(process.env, {
   EASYCARD_MERCHANT_URL: str({ default: "https://ecng-merchant.azurewebsites.net" }),
   EASYCARD_TERMINAL_ID: str({ default: "" }),
   EASYCARD_WEBHOOK_SECRET: str({ default: "" }),
-  EASYCARD_MODE: str({ choices: ["test", "production"], default: "test" }),
+  EASYCARD_MODE: str({ choices: ["test", "production", "development"], default: "test" }),
   EASYCARD_ENVIRONMENT: str({ choices: ["test", "development", "production"], default: "development" }),
   
   // URLs
