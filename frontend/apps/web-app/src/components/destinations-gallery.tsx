@@ -152,12 +152,9 @@ export function DestinationsGallery({
       <div className="container mx-auto px-4 max-w-[1440px]">
         {/* Header */}
         <div className="text-right mb-12 max-w-4xl mx-auto">
-          <h2 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-2">
-            שירות זמין ב  <span className="text-[#535FC8]">+100</span>
+          <h2 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-6">
+            גלישה חופשית וזמינה במעל <span className="text-[#535FC8]">150</span> מדינות
           </h2>
-          <h3 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-6">
-            מדינות ברחבי העולם
-          </h3>
           <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-birzia">
             &nbsp;בחרו את היעד הבא שלכם, רכשו חבילה
             <br className="hidden md:block" />

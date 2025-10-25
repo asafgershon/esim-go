@@ -47,24 +47,19 @@ export function HeroSection({
       <div className="container mx-auto px-4 pt-12 md:pt-20 pb-[200px] relative z-10">
         <div className="text-center max-w-6xl mx-auto font-birzia">
           <h1 className="font-bold mb-6">
-            <span className="text-2xl md:text-5xl block mb-2">
-              <span className="text-brand-purple">טסים בראש שקט</span>
-              <span className="text-brand-dark"> לכל העולם,</span>
-            </span>
-            <span className="text-5xl md:text-6xl lg:text-7xl text-brand-dark block">
-              חבילות גלישה <span className="text-brand-purple">ללא הגבלה.</span>
+          <span className="text-5xl md:text-6xl lg:text-7xl text-brand-dark block">
+              חבילות גלישה <span className="text-brand-purple">לכל העולם וללא הגבלה.</span>
             </span>
           </h1>
-          <p className="text-md md:text-2xl text-brand-dark mb-8 max-w-4xl mx-auto leading-relaxed">
-            <span className="font-medium">
-              רוכשים חבילת אינטרנט לפי מספר הימים שאתם טסים
-            </span>
-            <span className="font-light">
-              {" "}
-              ולא מתעסקים יותר עם נפח גלישה, הטענות או חידושים. החבילה שלכם
-              פועלת אוטומטית מרגע הנחיתה - וללא הגבלה.
-            </span>
-          </p>
+            <p className="text-md md:text-2xl text-brand-dark mb-8 max-w-4xl mx-auto leading-relaxed">
+              <span className="font-medium">
+                רוכשים ESIM ללא הגבלת נפח גלישה, בדיוק לפי מספר הימים שאתם טסים.
+              </span>
+              <span className="font-light">
+                {" "}
+                ולא מתעסקים יותר עם נפח גלישה, הטענות או חידושים. החבילה שלכם פועלת אוטומטית מרגע הנחיתה וללא כל הגבלת נפח.
+              </span>
+            </p>
         </div>
       </div>
     </section>
