@@ -180,133 +180,158 @@ export const checkoutMutationsV2: MutationResolvers = {
   // Trigger Checkout Payment
   // ============================
 triggerCheckoutPayment: {
-    resolve: async (
-      _,
-      { sessionId, nameForBilling, redirectUrl }: MutationTriggerCheckoutPaymentArgs,
-      context: Context
-    ): Promise<CheckoutPayment> => {
-      logger.info("Triggering checkout payment", { sessionId, nameForBilling, redirectUrl });
+  resolve: async (
+    _,
+    { sessionId, nameForBilling, redirectUrl }: MutationTriggerCheckoutPaymentArgs,
+    context: Context
+  ): Promise<CheckoutPayment> => {
+    logger.info("Triggering checkout payment", { sessionId, nameForBilling, redirectUrl });
 
-      let session; // הגדרת המשתנה מחוץ ל-try כדי שיהיה זמין ב-catch
-      try {
-        session = await context.services.checkoutSessionServiceV2.getSession(sessionId);
-        if (!session) {
-          throw new GraphQLError("Session not found", { extensions: { code: "SESSION_NOT_FOUND" } });
-        }
+    let session;
+    try {
+      // שלב 1️⃣ - שלוף את הסשן הקיים
+      session = await context.services.checkoutSessionServiceV2.getSession(sessionId);
+      if (!session) {
+        throw new GraphQLError("Session not found", { extensions: { code: "SESSION_NOT_FOUND" } });
+      }
 
-        if (!session.delivery.completed) {
-             throw new GraphQLError("Delivery details must be completed before payment", { extensions: { code: "STEP_NOT_COMPLETED" } });
-        }
-
-        const pricing = session.pricing as SimplePricingResult | undefined;
-        if (!pricing || typeof pricing.finalPrice !== 'number') {
-             throw new GraphQLError("Invalid pricing data in session", { extensions: { code: "INTERNAL_ERROR" } });
-        }
-        const amountToCharge = pricing.finalPrice;
-        const currency = CurrencyEnum.USD;
-
-        const easyCardClient = await getEasyCardClient();
-
-        const easyCardRequest = {
-          amount: amountToCharge,
-          currency: currency,
-          description: `Hiilo eSIM Order - Session ${sessionId}`,
-          customerReference: sessionId,
-          metadata: {
-            firstName: session.delivery.firstName || '',
-            lastName: session.delivery.lastName || '',
-            email: session.delivery.email || '',
-          },
-          // 💡 הוספתי redirectUrl לבקשה, אולי EasyCard צריכים אותו? (בדוק בתיעוד שלהם)
-          // redirectUrl: redirectUrl, // הסר אם לא נדרש
-        } as any; // עדיין משתמשים ב-any זמנית
-
-        logger.info("Calling EasyCard createPaymentIntent API", { easyCardRequest });
-
-        let easyCardResponse: any;
-        try {
-            easyCardResponse = await easyCardClient.executeWithTokenRefresh(() =>
-              easyCardClient.paymentIntent.apiPaymentIntentPost({
-                paymentRequestCreate: easyCardRequest
-              })
-            );
-        } catch (easyCardError: any) {
-            // הדפסה מפורטת יותר של השגיאה מה-API
-            let errorBody = 'Could not read error body';
-            try {
-                if (easyCardError.response && typeof easyCardError.response.text === 'function') {
-                    errorBody = await easyCardError.response.text();
-                } else if (easyCardError.body) {
-                     errorBody = JSON.stringify(easyCardError.body);
-                }
-            } catch (e) { /* ignore read error */ }
-
-            logger.error("EasyCard API call failed!", {
-                message: easyCardError?.message,
-                status: easyCardError?.response?.status || easyCardError?.status,
-                responseBody: errorBody,
-                requestData: easyCardRequest
-            } as any);
-            // זרוק שגיאה עם הודעה ברורה יותר שכוללת את הסטטוס אם אפשר
-            const status = easyCardError.response?.status || easyCardError.status;
-            throw new GraphQLError(`Payment gateway request failed${status ? ` with status ${status}` : ''}. Check logs for details.`, { extensions: { code: "PAYMENT_GATEWAY_ERROR" } });
-        }
-
-        logger.info("EasyCard createPaymentIntent response received", { easyCardResponse });
-
-        // נסה לחלץ את הנתונים מהתשובה (התאם את הנתיבים לפי התשובה האמיתית)
-        const paymentIntentId = easyCardResponse?.paymentIntentID || easyCardResponse?.data?.paymentIntentID;
-        // נסה כמה אפשרויות נפוצות ל-URL
-        const paymentUrl = easyCardResponse?.url || easyCardResponse?.redirectUrl || easyCardResponse?.checkoutUrl || easyCardResponse?.data?.url || easyCardResponse?.data?.redirectUrl || easyCardResponse?.data?.checkoutUrl || null;
-
-        if (!paymentIntentId) {
-            const easyCardResponseString = (() => {
-                try {
-                    return JSON.stringify(easyCardResponse);
-                } catch {
-                    return String(easyCardResponse);
-                }
-            })();
-            logger.error("Failed to create EasyCard payment intent: Missing paymentIntentID in response", new Error(easyCardResponseString));
-            throw new GraphQLError("Payment gateway did not return a valid Payment Intent ID.", { extensions: { code: "PAYMENT_GATEWAY_ERROR" } });
-        }
-
-        logger.info(`Payment Intent created: ${paymentIntentId}, URL: ${paymentUrl}`);
-
-        await context.services.checkoutSessionServiceV2.updateSessionStep(sessionId, 'payment', {
-            intent: { id: paymentIntentId, url: paymentUrl || '' },
-            readyForPayment: !!paymentUrl,
-            // אולי לעדכן כאן גם payment_status ל-PENDING?
-        });
-
-        const intentResult: PaymentIntent | null = paymentUrl ? {
-            __typename: "PaymentIntent",
-            id: paymentIntentId,
-            url: paymentUrl,
-            applePayJavaScriptUrl: null, // או לקחת מהתשובה אם קיים
-          } : null;
-
-        const result: CheckoutPayment = {
-          __typename: "CheckoutPayment",
-          completed: false, // התשלום מתחיל עכשיו, הוא לא הושלם
-          intent: intentResult,
-          email: session.delivery.email,
-          phone: session.delivery.phone,
-          nameForBilling: nameForBilling || `${session.delivery.firstName || ''} ${session.delivery.lastName || ''}`.trim(),
-        };
-        return result;
-
-      } catch (error: any) {
-        // אם השגיאה כבר GraphQLError, זרוק אותה הלאה
-        if (error instanceof GraphQLError) {
-            throw error;
-        }
-        // אחרת, עטוף אותה כשגיאת GraphQL כללית
-        logger.error("Unexpected error in triggerCheckoutPayment", error);
-        throw new GraphQLError(error.message || "Failed to trigger payment", {
-          extensions: { code: error.extensions?.code || "INTERNAL_ERROR" },
+      if (!session.delivery.completed) {
+        throw new GraphQLError("Delivery details must be completed before payment", {
+          extensions: { code: "STEP_NOT_COMPLETED" },
         });
       }
-    },
+
+      // שלב 2️⃣ - בדוק מחיר
+      const pricing = session.pricing as SimplePricingResult | undefined;
+      if (!pricing || typeof pricing.finalPrice !== "number") {
+        throw new GraphQLError("Invalid pricing data in session", {
+          extensions: { code: "INTERNAL_ERROR" },
+        });
+      }
+
+      const amountToCharge = pricing.finalPrice;
+      const currency = CurrencyEnum.USD;
+
+      // שלב 3️⃣ - צור לקוח EasyCard
+      const easyCardClient = await getEasyCardClient();
+
+      // שלב 4️⃣ - הרכב את הבקשה
+      const easyCardRequest = {
+        amount: amountToCharge,
+        currency,
+        description: `Hiilo eSIM Order - Session ${sessionId}`,
+        customerReference: sessionId,
+        metadata: {
+          firstName: session.delivery.firstName || "",
+          lastName: session.delivery.lastName || "",
+          email: session.delivery.email || "",
+        },
+        // ניתן להוסיף redirectUrl אם המערכת של EasyCard דורשת זאת (לא חובה)
+        // redirectUrl,
+      } as any;
+
+      logger.info("Calling EasyCard createPaymentRequest API", { easyCardRequest });
+
+      // שלב 5️⃣ - קריאה אמיתית ל-API
+      let easyCardResponse: any;
+      try {
+        easyCardResponse = await easyCardClient.executeWithTokenRefresh(() =>
+          easyCardClient.paymentRequests.apiPaymentRequestsPost({
+            paymentRequestCreate: easyCardRequest,
+          })
+        );
+      } catch (easyCardError: any) {
+        let errorBody = "Could not read error body";
+        try {
+          if (easyCardError.response && typeof easyCardError.response.text === "function") {
+            errorBody = await easyCardError.response.text();
+          } else if (easyCardError.body) {
+            errorBody = JSON.stringify(easyCardError.body);
+          }
+        } catch (_) {
+          /* ignore */
+        }
+
+          logger.error("EasyCard API call failed!", {
+            message: easyCardError?.message,
+            status: easyCardError?.response?.status || easyCardError?.status,
+            responseBody: errorBody,
+            requestData: easyCardRequest,
+          } as any);
+
+        const status = easyCardError.response?.status || easyCardError.status;
+        throw new GraphQLError(
+          `Payment gateway request failed${status ? ` with status ${status}` : ""}. Check logs for details.`,
+          { extensions: { code: "PAYMENT_GATEWAY_ERROR" } }
+        );
+      }
+
+      logger.info("EasyCard createPaymentRequest response received", { easyCardResponse });
+
+      // שלב 6️⃣ - חילוץ מזהים וכתובת תשלום
+      const paymentRequestId =
+        easyCardResponse?.paymentRequestID || easyCardResponse?.data?.paymentRequestID;
+
+      const paymentUrl =
+        easyCardResponse?.redirectUrl ||
+        easyCardResponse?.data?.redirectUrl ||
+        null;
+
+      if (!paymentRequestId || !paymentUrl) {
+        const easyCardResponseString = (() => {
+          try {
+            return JSON.stringify(easyCardResponse);
+          } catch {
+            return String(easyCardResponse);
+          }
+        })();
+
+        logger.error(
+          "Failed to create EasyCard payment request: Missing redirectUrl or ID in response",
+          new Error(easyCardResponseString)
+        );
+        throw new GraphQLError(
+          "Payment gateway did not return a valid Payment Request response.",
+          { extensions: { code: "PAYMENT_GATEWAY_ERROR" } }
+        );
+      }
+
+      logger.info(`Payment Request created: ${paymentRequestId}, URL: ${paymentUrl}`);
+
+      // שלב 7️⃣ - עדכן את ה-Session
+      await context.services.checkoutSessionServiceV2.updateSessionStep(sessionId, "payment", {
+        intent: { id: paymentRequestId, url: paymentUrl },
+        readyForPayment: true,
+      });
+
+      // שלב 8️⃣ - הרכב תשובה ל-GraphQL
+      const intentResult: PaymentIntent = {
+        __typename: "PaymentIntent",
+        id: paymentRequestId,
+        url: paymentUrl,
+        applePayJavaScriptUrl: null,
+      };
+
+      const result: CheckoutPayment = {
+        __typename: "CheckoutPayment",
+        completed: false,
+        intent: intentResult,
+        email: session.delivery.email,
+        phone: session.delivery.phone,
+        nameForBilling:
+          nameForBilling ||
+          `${session.delivery.firstName || ""} ${session.delivery.lastName || ""}`.trim(),
+      };
+
+      return result;
+    } catch (error: any) {
+      if (error instanceof GraphQLError) throw error;
+
+      logger.error("Unexpected error in triggerCheckoutPayment", error);
+      throw new GraphQLError(error.message || "Failed to trigger payment", {
+        extensions: { code: error.extensions?.code || "INTERNAL_ERROR" },
+      });
+    }
   },
+},
 };
