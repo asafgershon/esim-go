@@ -54,7 +54,8 @@ export function CompatibilitySection({
       };
     }
 
-    const deviceName = hasStarted && deviceInfo ? deviceInfo.deviceName : null;
+    const rawDeviceName = hasStarted && deviceInfo ? deviceInfo.deviceName : null;
+    const deviceName = rawDeviceName === "NONE NONE" ? null : rawDeviceName;
 
     if (isSupported) {
       return {

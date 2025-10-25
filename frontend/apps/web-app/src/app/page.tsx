@@ -27,7 +27,7 @@ const maxContentWidth = "max-w-7xl";
 export default function Home() {
   const scrollContainerRef = useRef<SmoothScrollHandle>(null);
   const { scrollTo } = useScrollTo({ scrollContainerRef });
-  
+
   // Test change to trigger E2E CI workflow
 
   // Handle footer navigation
@@ -58,7 +58,7 @@ export default function Home() {
       {/* Main Content */}
       <main
         id="main-content"
-        className="flex flex-col gap-40 mb-[96px]"
+        className="flex flex-col gap-16 mb-16" // ✅ שונה מ-gap-40 ל-gap-24
         tabIndex={-1}
       >
         {/* Hero Section */}
@@ -91,7 +91,7 @@ export default function Home() {
         <FeaturesSection id="features" ariaLabel="תכונות ויתרונות" />
 
         {/* Background Section with eSIM Compatibility Check */}
-        <BackgroundSection className="flex flex-col gap-40 py-40">
+        <BackgroundSection className="flex flex-col gap-16 py-20"> {/* ✅ שונה מ-gap-40 ל-gap-24 */}
           <LogoRounded className="absolute top-10 left-0" />
 
           <CompatibilitySection
