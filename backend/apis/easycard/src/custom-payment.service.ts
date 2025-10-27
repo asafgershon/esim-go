@@ -176,10 +176,9 @@ export async function createPaymentIntent(params: ICreatePaymentParams): Promise
             invoiceNumber: null,
             invoiceSubject: "Invoice from HiiloWorld"
         },
-        redirectUrls: [], // לא רלוונטי כשאנו משתמשים ב-redirectUrl הראשי
-        redirectUrl: params.redirectUrl, // לאן הלקוח חוזר אחרי תשלום        
-        transactionSucceedUrl: null, // לא נשתמש בזה, סומכים על redirectUrl
-        transactionFailedUrl: null,  // לא נשתמש בזה, סומכים על redirectUrl
+        redirectUrls: [params.redirectUrl], // לא רלוונטי כשאנו משתמשים ב-redirectUrl הראשי
+        transactionSucceedUrl: params.redirectUrl, // לא נשתמש בזה, סומכים על redirectUrl
+        transactionFailedUrl: params.redirectUrl,  // לא נשתמש בזה, סומכים על redirectUrl
         netTotal: params.amount,
         vatTotal: 0,
         vatRate: 0,
