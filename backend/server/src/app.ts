@@ -61,7 +61,7 @@ import { checkoutWorkflow } from "./services/checkout/workflow";
 import { DeliveryService, SESEmailService } from "./services/delivery";
 import { paymentService } from "./services/payment";
 import { calculateSimplePrice } from "../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
-
+import { createPaymentIntent, type ICreatePaymentParams, getTransactionStatus,type ITransactionStatusResponse } from "../../apis/easycard/src";
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
 const rulesEngineSchema = readFileSync(
   join(__dirname, "../../packages/rules-engine-2/schema.graphql"),
@@ -94,6 +94,9 @@ const env = cleanEnv(process.env, {
   AIRHALO_CLIENT_ID: str({ default: "" }),
   AIRHALO_CLIENT_SECRET: str({ default: "" }),
   AIRHALO_BASE_URL: str({ default: "https://api.airalo.com" }),
+  EASY_CARD_PRIVATE_API_KEY: str(),
+  EASYCARD_TERMINAL_ID: str(),
+  EASY_CARD_REDIRECT_URL: str(),
 });
 
 async function startServer() {
@@ -297,6 +300,111 @@ async function startServer() {
         res.status(500).json({ error: "Failed to calculate price" });
       }
     });
+
+    app.post("/api/payment/create-intent", async (req, res) => {
+    try {
+      // 1. ולידציה בסיסית לקלט מהפרונטאנד
+      const { amount, items } = req.body;
+      if (!amount || typeof amount !== 'number' || !items || !Array.isArray(items) || items.length === 0) {
+        logger.warn('Invalid create-intent request', { body: req.body });
+        return res.status(400).json({ error: "Missing or invalid 'amount' or 'items' in request body" });
+      }
+
+      logger.info(`[Easycard] Creating payment intent for ${amount} ILS...`);
+
+      // 2. הכנת הפרמטרים לשליחה לשירות
+      // זו הכתובת שאליה הלקוח יחזור אחרי התשלום
+      const redirectUrl = `${env.EASY_CARD_REDIRECT_URL}/payment-return`; 
+      
+      const paymentParams: ICreatePaymentParams = {
+          amount: amount,
+          items: items, // מעבירים את רשימת הפריטים כפי שהגיעה מהפרונטאנד
+          terminalID: env.EASYCARD_TERMINAL_ID, // קורא מה-env
+          redirectUrl: redirectUrl 
+      };
+      
+      // 3. קריאה ל"ארגז הכלים" (השירות שיצרנו)
+      const paymentResponse = await createPaymentIntent(paymentParams);
+
+      // 4. שליחת ה-URL לתשלום בחזרה לפרונטאנד
+      logger.info(`[Easycard] Payment URL created successfully.`);
+      res.json({
+          paymentUrl: paymentResponse.additionalData.url
+      });
+
+    } catch (error: any) {
+      logger.error('[Easycard] Failed to create payment intent', error);
+      res.status(500).json({ 
+        message: "Failed to create payment intent.", 
+        error: error.message 
+      });
+    }
+  });
+
+  app.post("/api/payment/verify", async (req, res) => {
+    try {
+      // 1. קבלת ה-transactionID מגוף הבקשה
+      const { transactionID } = req.body;
+      if (!transactionID || typeof transactionID !== 'string') {
+        logger.warn('[Easycard] Invalid verify request', { body: req.body });
+        return res.status(400).json({ 
+          success: false,
+          error: "Missing or invalid 'transactionID' in request body" 
+        });
+      }
+
+      logger.info(`[Easycard] Verifying payment for transactionID: ${transactionID}...`);
+
+      // 2. קריאה ל"ארגז הכלים" (השירות שיצרנו)
+      const statusResponse = await getTransactionStatus(transactionID);
+
+      // 3. בדיקת הסטטוס שהתקבל מ-Easycard
+      //    (ודא שהסטטוס "Approved" הוא הסטטוס הנכון להצלחה)
+      if (statusResponse.status === "Approved") {
+        
+        // ✅ הצלחה! התשלום אומת
+        logger.info(`[Easycard] SUCCESS: Transaction ${transactionID} is Approved.`);
+
+        // ----------------------------------------------------
+        // ⚠️ כאן המקום להפעיל את הלוגיקה העסקית שלך! ⚠️
+        //
+        // זה הרגע לקרוא ל-API של מאיה לשליחת ה-eSIM
+        // ולעדכן את ההזמנה אצלך בדאטהבייס.
+        // 
+        // לדוגמה (קוד רעיוני):
+        // await mayaApiService.sendESIM(statusResponse.orderReference); 
+        // await database.orders.update(statusResponse.orderId, { status: "PAID" });
+        //
+        // ----------------------------------------------------
+
+        // 4. החזרת תשובת הצלחה לפרונטאנד
+        res.json({
+          success: true,
+          message: "Payment verified successfully.",
+          status: statusResponse.status
+        });
+
+      } else {
+        // ❌ כישלון! התשלום לא אומת (נדחה, נכשל, עדיין בהמתנה וכו')
+        logger.warn(`[Easycard] FAILED: Transaction ${transactionID} status is: ${statusResponse.status}`, { response: statusResponse });
+
+        // 4. החזרת תשובת כישלון לפרונטאנד
+        res.status(400).json({ 
+          success: false,
+          message: `Payment not approved. Status: ${statusResponse.status}`,
+          status: statusResponse.status
+        });
+      }
+
+    } catch (error: any) {
+      logger.error('[Easycard] Failed to verify payment', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to verify payment.", 
+        error: error.message 
+      });
+    }
+  });
 
     // 🟣 GraphQL Endpoint
     app.use(

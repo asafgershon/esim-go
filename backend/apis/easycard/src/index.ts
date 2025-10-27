@@ -15,3 +15,5 @@ export * from './generated/src/models';
 
 // Export runtime utilities if needed
 export * as runtime from './generated/src/runtime';
+
+export * from './custom-payment.service';
