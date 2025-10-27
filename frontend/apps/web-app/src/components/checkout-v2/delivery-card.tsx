@@ -164,7 +164,7 @@ export const DeliveryCard = ({
             variables: {
               sessionId: data.id,
               nameForBilling: `${cleanedFirstName} ${cleanedLastName}`,
-              redirectUrl: window.location.origin + "/payment/callback",
+              redirectUrl: "https://hiiloworld.com/",
             },
           });
 
