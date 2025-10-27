@@ -127,7 +127,7 @@ export function MainView({
         {/* Destination Selection */}
         <DestinationSelector />
         
-        <SelectorSection className="!mt-0">
+        <SelectorSection>
           <div className="flex items-center gap-[4px] md:gap-2 justify-start">
             <CalendarIcon className="w-3 h-3 md:w-[19px] md:h-[19px]" />
             <p className="text-base md:text-xl leading-[26px] md:leading-normal text-brand-dark">

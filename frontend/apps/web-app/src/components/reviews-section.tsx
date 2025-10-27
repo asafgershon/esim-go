@@ -3,11 +3,16 @@
 import { Star } from "lucide-react";
 import { useHorizontalScroll } from "@workspace/ui";
 
+// 1. ייבוא getFlagUrl (בהנחה שזה המיקום שלו)
+// יש לוודא שהפונקציה getFlagUrl אכן מיוצאת מקובץ זה או מקובץ אחר בפרויקט.
+import { getFlagUrl } from "@/utils/flags"; // שימו לב לנתיב הייבוא!
+
+
 interface Review {
   id: string;
   countryCode: string;
   countryName: string;
-  flag: string;
+  // נסיר את המאפיין flag מכיוון שאנו מייצרים אותו מה-countryCode
   rating: number;
   text: string;
   author: string;
@@ -19,6 +24,9 @@ interface ReviewCardProps {
 }
 
 const ReviewCard = ({ review }: ReviewCardProps) => {
+  // נשתמש ב-getFlagUrl כדי לייצר את כתובת הדגל
+  const destinationFlagUrl = getFlagUrl(review.countryCode, 60);
+
   return (
     <div
       className="w-full h-[180px] rounded-[30px] border border-solid border-[#fefefe] hover:bg-white/10 transition-all duration-300 flex justify-between p-5 gap-20"
@@ -44,7 +52,12 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
 
         {/* Bottom: Author name and avatar */}
         <div className="flex items-center justify-start gap-2">
-          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-brand-green to-brand-purple"></div>
+          {/* דגל ישראל ליד שם המשתמש - גודל 20 */}
+          <img
+            src={getFlagUrl('il', 20)} // קוד ISO של ישראל הוא 'il'
+            alt="דגל ישראל"
+            className="w-5 h-5 rounded-full object-cover" // 20px
+          />
           <span className="text-[#fefefe] text-sm font-medium">
             {review.author}
           </span>
@@ -53,8 +66,15 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
 
       {/* Left section with flag and stars */}
       <div className="flex flex-col justify-between flex-shrink-0">
-        {/* Country flag */}
-        <span className="text-[32px] self-end">{review.flag}</span>
+        {/* Country flag - גודל 60 */}
+        {destinationFlagUrl && (
+          <img
+            src={destinationFlagUrl}
+            alt={`דגל ${review.countryName}`}
+            className="w-[60px] h-auto object-cover self-end" // 60px
+            style={{ aspectRatio: "3 / 2" }} // שומר על יחס רוחב/גובה של דגל
+          />
+        )}
 
         {/* Star rating */}
         <div className="flex gap-1">
@@ -74,12 +94,13 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
   );
 };
 
+// עדכון ה-interface: הסרנו את flag
+// עדכון הנתונים: הסרנו את flag (הוסר למרות שלא נדרש, כי הוא מיותר)
 const reviews: Review[] = [
   {
     id: "1",
-    countryCode: "BR",
+    countryCode: "br", // שיניתי לאותיות קטנות כדי להתאים לשימוש בפונקציה
     countryName: "ברזיל",
-    flag: "🇧🇷",
     rating: 5,
     text: "נחתתי באמסטרדם וכבר הייתי מחוברת! אף פעם לא הרגשתי כל כך חופשיה בטיול. התמיכה בעברית באמצע הלילה? פשוט מושלם!",
     author: "שרה כ.",
@@ -87,9 +108,8 @@ const reviews: Review[] = [
   },
   {
     id: "2",
-    countryCode: "US",
+    countryCode: "us",
     countryName: "ארצות הברית",
-    flag: "🇺🇸",
     rating: 5,
     text: "חסכתי המון כסף בטיול המשפחתי לארה״ב. הילדים היו מחוברים כל הזמן והכל עבד חלק",
     author: "דוד לוי",
@@ -97,9 +117,8 @@ const reviews: Review[] = [
   },
   {
     id: "3",
-    countryCode: "TH",
+    countryCode: "th",
     countryName: "תאילנד",
-    flag: "🇹🇭",
     rating: 5,
     text: "החבילה לתאילנד הייתה מושלמת! גלישה מהירה בכל האיים, ווייז עבד מצוין וחסכתי המון על מוניות",
     author: "מיכל ברק",
@@ -107,9 +126,8 @@ const reviews: Review[] = [
   },
   {
     id: "4",
-    countryCode: "FR",
+    countryCode: "fr",
     countryName: "צרפת",
-    flag: "🇫🇷",
     rating: 5,
     text: "טיול רומנטי בפריז עם אינטרנט מהיר בכל מקום. התמיכה בעברית עזרה מאוד!",
     author: "יעל אברהם",
@@ -117,9 +135,8 @@ const reviews: Review[] = [
   },
   {
     id: "5",
-    countryCode: "JP",
+    countryCode: "jp",
     countryName: "יפן",
-    flag: "🇯🇵",
     rating: 5,
     text: "טכנולוגיה ברמה הכי גבוהה! עבד מצוין בטוקיו ובכל הכפרים המרוחקים",
     author: "רון שפירא",
@@ -127,9 +144,8 @@ const reviews: Review[] = [
   },
   {
     id: "6",
-    countryCode: "AU",
+    countryCode: "au",
     countryName: "אוסטרליה",
-    flag: "🇦🇺",
     rating: 5,
     text: "3 שבועות באוסטרליה עם גלישה ללא הגבלה. מושלם לשיתוף תמונות מהחופים המדהימים!",
     author: "נועה כהן",

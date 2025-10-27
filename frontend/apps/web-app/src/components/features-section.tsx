@@ -40,28 +40,28 @@ interface FeatureData {
 }
 
 const features: FeatureData[] = [
-  {
+{
     id: "data-transfer",
-    text: "התקנה מהירה דרך ה-QR, בלי תלות בסים פיזי",
-    highlight: "סרקו את קוד ה-QR והתחילו לגלוש תוך דקות",
+    text: "התקנה מהירה באמצעות QR, ללא צורך בסים פיזי",
+    highlight: "סרקו את קוד ה-QR והתחילו לגלוש תוך דקות ספורות",
     icon: "/images/illustrations/layers-stack.png",
   },
   {
     id: "instant-support",
-    text: "תמיכה בקליק ובלחיצה כפתור",
-    highlight: "צוות התמיכה שלנו זמין 24/7 לכל שאלה",
+    text: "תמיכה זמינה 24/7", // שינוי קל לטבעי יותר
+    highlight: "צוות התמיכה שלנו זמין לכל שאלה ובקשה", // קצת יותר שיווקי
     icon: "/images/illustrations/paper-plane.png",
   },
   {
     id: "zero-commitment",
-    text: " הקו הקיים, בלי להפריע לו.",
-    highlight: "נשאר במכשיר לצד",
+    text: "שומרים על הקו הקיים", // משפט שלם וברור
+    highlight: "ה-eSIM נשאר פעיל במכשיר לצד הקו הראשי שלך", // הבהרה מלאה
     icon: "/images/illustrations/hand-share.png",
   },
   {
     id: "works-everywhere",
-    text: "הפעלה עצמאית",
-    highlight: "מהבית לפני הטיסה",
+    text: "הפעלה עצמאית ונוחה", // משפט שלם
+    highlight: "הפעלת ה-eSIM כבר מהבית, עוד לפני הטיסה", // ניסוח טבעי יותר
     icon: "/images/illustrations/person-reading.png",
   },
 ];

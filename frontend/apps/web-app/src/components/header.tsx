@@ -1,18 +1,18 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+// import { useAuth } from "@/hooks/useAuth";
 import {
   Button,
-  IconButton,
+  // IconButton,
   Navbar,
-  UserIcon,
+  // UserIcon,
   useScrollTo,
 } from "@workspace/ui";
 import type { SmoothScrollHandle } from "@workspace/ui";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { parseAsBoolean, useQueryState } from "nuqs";
+// import { parseAsBoolean, useQueryState } from "nuqs";
 import type { RefObject } from "react";
 
 const navigation = [
@@ -28,12 +28,12 @@ interface HeaderProps {
 }
 
 export function Header({ scrollContainerRef }: HeaderProps = {}) {
-  const { isAuthenticated } = useAuth();
+  // const { isAuthenticated } = useAuth();
   const router = useRouter();
-  const [, setShowLogin] = useQueryState(
-    "showLogin",
-    parseAsBoolean.withDefault(false)
-  );
+  // const [, setShowLogin] = useQueryState(
+    // "showLogin",
+    // parseAsBoolean.withDefault(false)
+  // );
   const { scrollTo } = useScrollTo({ scrollContainerRef });
 
   // Handle navigation
@@ -61,6 +61,7 @@ export function Header({ scrollContainerRef }: HeaderProps = {}) {
     </Link>
   );
 
+  /*
   const handleUserClick = () => {
     if (isAuthenticated) {
       router.push("/profile");
@@ -69,10 +70,12 @@ export function Header({ scrollContainerRef }: HeaderProps = {}) {
       setShowLogin(true);
     }
   };
+  */
 
   // Desktop actions (right side) - No logout button on desktop
   const desktopActions = (
     <div className="flex items-center gap-2">
+      {/*
       <IconButton
         variant="brand-primary"
         size="default"
@@ -80,6 +83,7 @@ export function Header({ scrollContainerRef }: HeaderProps = {}) {
       >
         <UserIcon />
       </IconButton>
+      */}
       <Button
         variant="brand-secondary"
         size="default"
@@ -95,9 +99,11 @@ export function Header({ scrollContainerRef }: HeaderProps = {}) {
   const mobileAction = (
     <div className="w-full">
       <div className="flex items-center gap-2 justify-center">
+        {/* 
         <IconButton variant="brand-primary" size="default" onClick={handleUserClick}>
           <UserIcon />
         </IconButton>
+        */}
         <Button
           variant="brand-secondary"
           emphasized
