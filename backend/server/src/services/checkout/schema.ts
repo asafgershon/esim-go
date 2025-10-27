@@ -56,6 +56,7 @@ const PaymentIntentSchema = z.object({
 const PaymentSchema = z.object({
   completed: z.boolean().default(false),
   intent: PaymentIntentSchema.optional(),
+  readyForPayment: z.boolean().optional(),
   phone: z.string().optional(), // Assuming e164 is a custom extension, simplified for now
   email: z.string().email().optional(),
   nameForBilling: z.string().optional(),
@@ -76,6 +77,7 @@ export const CheckoutSessionSchema = z.object({
   auth: AuthSchema,
   delivery: DeliverySchema,
   payment: PaymentSchema,
+  pricing: z.any(),
 
   // Overall tracking
   status: z.enum([
