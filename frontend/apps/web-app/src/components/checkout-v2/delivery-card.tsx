@@ -172,7 +172,7 @@ export const DeliveryCard = ({
           const intentUrl = paymentRes.data?.triggerCheckoutPayment?.intent?.url;
 
           if (intentUrl) {
-            window.open(intentUrl, "_blank");
+            window.location.href = intentUrl;
           } else {
             console.error("[DEBUG] No payment URL received after triggering payment.");
           }
