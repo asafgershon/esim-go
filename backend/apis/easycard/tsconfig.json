@@ -5,8 +5,12 @@
     "lib": ["ES2020", "DOM"],
     "declaration": true,
     "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
+    "rootDir": "../../",
+    "strict": true, 
+    "baseUrl": "../../",
+    "paths": {
+      "@server/*": ["server/src/*"]
+    },
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,

@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { z } from 'zod';
-import type { Database } from '../database.types';
+import type { Database } from '../../src/types/database.types';
 import { BaseSupabaseRepository } from './base-supabase.repository';
 
 // Zod enum for eSIM status

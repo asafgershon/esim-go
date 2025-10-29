@@ -111,6 +111,7 @@ export interface ICreatePaymentParams {
     items: IPaymentItem[];  // רשימת פריטים
     redirectUrl: string;    // הכתובת לחזרה לאתר שלנו (כדי לקבל transactionID)
     terminalID: string;     // מזהה הטרמינל שלך
+    entityExternalReference?: string;
 }
 
 // מתאר את התשובה שאנו מצפים לקבל מ-Easycard
@@ -138,7 +139,7 @@ export async function createPaymentIntent(params: ICreatePaymentParams): Promise
     // שלב 2: הכן את גוף הבקשה (request body)
     const requestBody = {
         terminalID: params.terminalID,
-        currency: "USD", // ניתן לשנות אם צריך
+        currency: "ILS", // ניתן לשנות אם צריך
         invoiceType: "invoiceWithPaymentInfo",
         paymentRequestAmount: params.amount,
         issueInvoice: true,

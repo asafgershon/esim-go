@@ -400,6 +400,43 @@ const deleteSession = async (sessionId: string): Promise<void> => {
   }
 };
 
+const updateSessionFields = async (
+    sessionId: string,
+    updates: Partial<{ orderId: string, state: string, paymentIntentId: string }>
+): Promise<void> => {
+    if (!checkoutSessionRepository) {
+        throw new NotInitializedError("CheckoutSessionRepository not initialized");
+    }
+
+    try {
+        const dataToUpdate: Partial<Database['public']['Tables']['checkout_sessions']['Update']> = {
+            updated_at: new Date().toISOString(),
+        };
+
+        if (updates.orderId) {
+            dataToUpdate.order_id = updates.orderId;
+        }
+        if (updates.state) {
+            dataToUpdate.state = updates.state;
+        }
+        if (updates.paymentIntentId) {
+            dataToUpdate.payment_intent_id = updates.paymentIntentId;
+        }
+
+        logger.info(`[DEBUG] Updating root fields for session ${sessionId}...`, { dataToUpdate });
+        await checkoutSessionRepository.update(sessionId, dataToUpdate);
+        logger.info(`[DEBUG] Root fields for session ${sessionId} updated in DB.`);
+        
+        // נדרוש רענון של ה-Cache
+        // נשתמש ב-deleteSession כדי למחוק מה-Redis ולכפות טעינה מחדש מה-DB
+        await deleteSession(sessionId);
+
+    } catch (dbError) {
+        logger.error("Failed to update root session fields in DB", dbError as Error, { sessionId });
+        throw dbError;
+    }
+};
+
 export const checkoutSessionService = {
   init,
   createSession,
@@ -409,6 +446,7 @@ export const checkoutSessionService = {
   getSessionNextStep,
   updateSessionStep,
   deleteSession,
+  updateSessionFields,
 };
 
 export type CheckoutSessionServiceV2 = typeof checkoutSessionService;
