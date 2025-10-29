@@ -66,7 +66,9 @@ export async function getAccessToken(): Promise<string> {
             TOKEN_URL, 
             qs.stringify(data), 
             {
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                timeout: 15000,
+                family: 4 
             }
         );
 
