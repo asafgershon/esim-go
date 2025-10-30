@@ -254,7 +254,7 @@ export async function getTransactionStatus(transactionID: string): Promise<ITran
     // ⚠️ אזהרה חשובה: הנתיב המדויק לבדיקת סטטוס לא היה בתיעוד ששלחת.
     // אני מניח נתיב סטנדרטי. אנא ודא בתיעוד של Easycard
     // מהו ה-Endpoint הנכון לבדיקת סטטוס של עסקה (למשל GET /api/Transaction/...)
-    const url = `${API_BASE_URL}/transaction/${transactionID}`; 
+    const url = `${API_BASE_URL}/transactions/${transactionID}`; 
     // ⬆️ ⬆️ ⬆️
 
     console.log(`[Easycard] Verifying transaction status for: ${transactionID}`);
