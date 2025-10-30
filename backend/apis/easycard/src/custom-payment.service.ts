@@ -113,8 +113,7 @@ export interface ICreatePaymentParams {
     items: IPaymentItem[];  // רשימת פריטים
     redirectUrl: string;    // הכתובת לחזרה לאתר שלנו (כדי לקבל transactionID)
     terminalID: string;     // מזהה הטרמינל שלך
-    entityExternalReference?: string;
-}
+    }
 
 // מתאר את התשובה שאנו מצפים לקבל מ-Easycard
 export interface IPaymentIntentResponse {

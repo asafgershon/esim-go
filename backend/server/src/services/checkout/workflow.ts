@@ -314,14 +314,20 @@ export const handleRedirectCallback = async ({
         throw new GraphQLError("Failed to verify payment status.");
     }
 
-    // 2. חלץ את ה-sessionId שלנו
-    const sessionId = transactionInfo.entityExternalReference; 
-    if (!sessionId) {
-         logger.error(`[REDIRECT_CB] Missing entityExternalReference in transaction info: ${easycardTransactionId}`);
-         throw new GraphQLError("Missing session ID in payment data.");
+    // 2. 🎯 תיקון קריטי: מציאת הסשן לפי מזהה הטרנזקציה של איזיקארד (Payment Intent ID)
+    // אנו משתמשים בפונקציה הקיימת שלך, ומניחים שהיא עובדת לפי entityReference
+    const session = await sessionService.getSessionByPaymentIntentId(easycardTransactionId); 
+
+    if (!session) {
+         logger.error(`[REDIRECT_CB] Session not found by Payment Intent ID: ${easycardTransactionId}`);
+         throw new GraphQLError("Session ID not found for payment data.");
     }
+
+    // 3. חלץ את ה-sessionId
+    const sessionId = session.id;
     
-    // 3. בצע את הלוגיקה המלאה של אישור/משלוח
+    // 4. בצע את הלוגיקה המלאה של אישור/משלוח
+    // הפונקציה completeOrder תטפל כעת בסשן שנשלף
     const result = await completeOrder({ sessionId, easycardTransactionId });
 
     if (result.status === 'COMPLETED') {
@@ -336,7 +342,6 @@ export const handleRedirectCallback = async ({
 
     return { success: false, sessionId, message: "Payment failed or order could not be completed." };
 };
-
 
 // ===========================
 // Export workflow

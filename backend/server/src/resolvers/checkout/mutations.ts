@@ -239,7 +239,6 @@ triggerCheckoutPayment: {
           terminalID:
             process.env.EASY_CARD_TERMINAL_ID ||
             "bcbb963a-7eb1-497d-9611-b2ce00b2bdc5",
-          entityExternalReference: sessionId, // 👈 הוספת מזהה הסשן שלנו!
         };
 
         // שלב 5️⃣ - קריאה לשירות *שלנו* (זה שקורא ל-/connect/token)
