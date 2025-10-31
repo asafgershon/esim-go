@@ -447,9 +447,6 @@ const updateSessionFields = async (
         await checkoutSessionRepository.update(sessionId, dataToUpdate);
         logger.info(`[DEBUG] Root fields for session ${sessionId} updated in DB.`);
         
-        // נדרוש רענון של ה-Cache
-        // נשתמש ב-deleteSession כדי למחוק מה-Redis ולכפות טעינה מחדש מה-DB
-        await deleteSession(sessionId);
 
     } catch (dbError) {
         logger.error("Failed to update root session fields in DB", dbError as Error, { sessionId });
