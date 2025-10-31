@@ -241,27 +241,47 @@ const getSession = async (
 const getSessionByPaymentIntentId = async (
   paymentIntentId: string
 ): Promise<CheckoutSession | null> => {
-    if (!redis) {
-        logger.warn("getSessionByPaymentIntentId requires Redis index which is not available.");
-        if (checkoutSessionRepository) {
-             const session = await checkoutSessionRepository.findByPaymentIntent(paymentIntentId);
-             if (session) return getSession(session.id);
-        }
-        return null;
+  // 1️⃣ אם יש Redis, ננסה קודם שם
+  if (redis) {
+    const indexKey = `checkout:intent:${paymentIntentId}`;
+    const sessionId = await redis.get(indexKey);
+
+    if (sessionId) {
+      logger.debug("Found session ID for payment intent via Redis", { paymentIntentId, sessionId });
+      return getSession(sessionId);
     }
 
-  const indexKey = `checkout:intent:${paymentIntentId}`;
-  const sessionId = await redis.get(indexKey);
-
-  if (!sessionId) {
     logger.warn("No session found for payment intent ID via Redis index", { paymentIntentId, indexKey });
-    return null;
+  } else {
+    logger.warn("Redis not initialized — falling back to DB lookup only.");
   }
 
-  logger.debug("Found session ID for payment intent via Redis", { paymentIntentId, sessionId });
+  // 2️⃣ נ fallback לבסיס הנתונים
+  if (!checkoutSessionRepository) {
+    throw new NotInitializedError("CheckoutSessionRepository not initialized");
+  }
 
-  return getSession(sessionId);
+  try {
+    const record = await checkoutSessionRepository.findByPaymentIntent(paymentIntentId);
+
+    if (record) {
+      logger.info("[DB LOOKUP] Found session by paymentIntentId in DB", {
+        paymentIntentId,
+        sessionId: record.id,
+      });
+      return getSession(record.id);
+    } else {
+      logger.error(`[DB LOOKUP] No session found for paymentIntentId in DB: ${paymentIntentId}`);
+      return null;
+    }
+  } catch (dbError) {
+    logger.error("Failed to query DB for session by paymentIntentId", dbError as Error, {
+      paymentIntentId,
+    });
+    return null;
+  }
 };
+
 
 const updateSessionStep = async <K extends keyof CheckoutSession>(
   sessionId: string,
