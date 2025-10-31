@@ -406,44 +406,29 @@ async function startServer() {
     }
   });
 
-app.get("/payment/callback", async (req, res) => {
-    
-    // 1. חילוץ ה-transactionID מה-Query String
-    // Easycard שולחת את המזהה שלה בפרמטר transactionID
-    const transactionId = req.query.transactionID as string;
-    
-    if (!transactionId) {
-        return res.redirect('/checkout/failure?reason=missing_transaction_id');
-    }
+app.get("/payment/callback", (req, res) => {
+  const transactionId = req.query.transactionID as string;
 
-    try {
-        // 2. הפעלת הפונקציה הייעודית מה-Workflow Service
-        // הפונקציה הזו עושה: getTransactionStatus -> מציאת Session -> completeOrder -> עדכון DB
-        const result = await checkoutWorkflowService.handleRedirectCallback({
-            easycardTransactionId: transactionId,
-        });
+  if (!transactionId) {
+    return res.redirect("/checkout/failure?reason=missing_transaction_id");
+  }
 
-        // 3. הפניית הלקוח לדף הסופי
-        if (result.success && result.orderId) {
-            // הצלחה
-            return res.redirect(`/checkout/success?orderId=${result.orderId}`);
-        } else {
-            // כישלון לפי לוגיקת ה-Workflow
-            return res.redirect(`/checkout/failure?reason=${result.message || 'payment_failed'}`);
-        }
-        
-    } catch (error) {
-        // ❌ תיקון שגיאה 2345: שימוש ב-as Error
-        logger.error('[Easycard] Critical error in redirect callback (GET /payment/callback)', error as Error);
-        
-        // טיפול במקרה של PAYMEN_PENDING או שגיאות אחרות שנזרקו מתוך ה-Workflow
-        const errorCode = (error as any).extensions?.code;
-        if (errorCode === "PAYMENT_PENDING") {
-            return res.redirect('/checkout/pending'); // דף שמודיע: "נשלח אימייל כשנדע"
-        }
-        
-        return res.redirect('/checkout/failure?error=internal_server_error');
-    }
+  // שולחים ללקוח מיד redirect לדף "בהמתנה"
+  res.redirect(`/checkout?transactionId=${transactionId}&status=pending`);
+
+  // ממשיכים את כל התהליך ברקע (בלי לחכות)
+  checkoutWorkflowService
+    .handleRedirectCallback({ easycardTransactionId: transactionId })
+    .then((result) => {
+      if (result.success) {
+        console.log(`[ASYNC CALLBACK] ✅ Order completed for ${transactionId}`);
+      } else {
+        console.warn(`[ASYNC CALLBACK] ❌ Failed to complete order for ${transactionId}`);
+      }
+    })
+    .catch((error) => {
+      console.error(`[ASYNC CALLBACK] 💥 Error processing ${transactionId}:`, error);
+    });
 });
 
     // 🟣 GraphQL Endpoint
