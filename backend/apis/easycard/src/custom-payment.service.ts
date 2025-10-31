@@ -240,8 +240,16 @@ export async function getIntentIdFromTransaction(transactionId: string): Promise
 
     console.log(`[Easycard] Transaction info:`, data);
 
-    // במבנה התשובה של EasyCard, יש אחד מהשדות האלה:
-    return data.PaymentIntentUID || data.paymentIntentId || data.entityExternalReference || null;
+    // ✅ Easycard מחזירה בדיוק את זה, ראה בלוגים שלך:
+    // "paymentIntentID": "15c46ee9-2f4b-42c7-935c-b38701242ace"
+    const intentId =
+      data.paymentIntentID ||
+      data.PaymentIntentID || // fallback אם יש שוני באותיות
+      data.payment_intent_id || // fallback נוסף (למקרה של שינוי עתידי)
+      null;
+
+    console.log(`[Easycard] Extracted paymentIntentID: ${intentId}`);
+    return intentId;
   } catch (error: any) {
     console.error(`[Easycard] Failed to fetch transaction ${transactionId}:`, error.message);
     return null;
