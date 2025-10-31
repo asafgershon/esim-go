@@ -318,26 +318,20 @@ export const handleRedirectCallback = async ({
   console.log(`[REDIRECT_CB] Start polling transaction ${easycardTransactionId}`);
 
   // 🔁 לולאה שמחכה עד לאישור העסקה
-  while (Date.now() - startTime < MAX_WAIT_MS) {
-    try {
-      transactionInfo = await getTransactionStatus(easycardTransactionId);
-      const status = transactionInfo?.TransactionStatus || transactionInfo?.status || "unknown";
+  const MAX_ITERATIONS = 5;
+  const INTERVAL_MS_1 = 4000;
 
-      console.log(`[REDIRECT_CB] Status: ${status}`);
+console.log("[DEBUG] 🧪 Starting test loop...");
 
-      // אם העסקה אושרה, שובר את הלולאה
-      if (status.toLowerCase().includes("approve") || status.toLowerCase().includes("success")) {
-        console.log(`[REDIRECT_CB] Transaction approved ✅`);
-        break;
-      }
+for (let i = 1; i <= MAX_ITERATIONS; i++) {
+  console.log(`[DEBUG] Loop iteration #${i}`);
 
-    } catch (err: any) {
-      logger.error(`[REDIRECT_CB] Failed to get transaction info for: ${easycardTransactionId}`, err.message);
-    }
+  await new Promise((r) => setTimeout(r, INTERVAL_MS_1));
 
-    // המתנה לפני ניסיון נוסף
-    await new Promise((r) => setTimeout(r, INTERVAL_MS));
-  }
+  console.log(`[DEBUG] After wait - iteration #${i}`);
+}
+
+console.log("[DEBUG] 🧪 Finished test loop ✅");
 
   if (!transactionInfo) {
     throw new GraphQLError("Failed to verify payment status (no response).");
