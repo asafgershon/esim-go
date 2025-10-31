@@ -312,21 +312,13 @@ export const handleRedirectCallback = async ({
   console.log(`[REDIRECT_CB] Processing transaction ${easycardTransactionId}`);
 
   // ----------------------------------------------------
-  // 1️⃣ שליפת פרטי העסקה מ-EasyCard (הכי חשוב להתחיל מפה)
+  // 1️⃣ שולפים את פרטי העסקה מ-EasyCard
   // ----------------------------------------------------
-  let transactionInfo: ITransactionStatusResponse | null = null;
-  try {
-    transactionInfo = await getTransactionStatus(easycardTransactionId);
-    console.log(`[REDIRECT_CB] Transaction info fetched successfully.`);
-  } catch (e: any) {
-    console.error(`[REDIRECT_CB] Failed to fetch transaction ${easycardTransactionId}:`, e.message);
-    throw new GraphQLError("Failed to verify transaction status.", {
-      extensions: { code: "PAYMENT_API_ERROR" },
-    });
-  }
+  const transactionInfo = await getTransactionStatus(easycardTransactionId);
+  console.log(`[REDIRECT_CB] Transaction info received.`);
 
   // ----------------------------------------------------
-  // 2️⃣ חילוץ ה-Payment Intent ID מהתגובה
+  // 2️⃣ מוציאים את ה-paymentIntentID מתוך הנתונים
   // ----------------------------------------------------
   const intentId =
     transactionInfo?.paymentIntentID ||
@@ -337,18 +329,18 @@ export const handleRedirectCallback = async ({
   console.log(`[REDIRECT_CB] Extracted paymentIntentID: ${intentId}`);
 
   if (!intentId) {
-    throw new GraphQLError("Missing paymentIntentID from Easycard transaction response", {
+    throw new GraphQLError("Missing paymentIntentID in Easycard transaction response", {
       extensions: { code: "MISSING_INTENT_ID" },
     });
   }
 
   // ----------------------------------------------------
-  // 3️⃣ חיפוש ה-Session במסד לפי Intent ID
+  // 3️⃣ מחפשים במסד לפי ה-paymentIntentID
   // ----------------------------------------------------
   const session = await sessionService.getSessionByPaymentIntentId(intentId);
   if (!session) {
-    logger.error(`[REDIRECT_CB] Session not found for paymentIntentID: ${intentId}`);
-    throw new GraphQLError("Session ID not found for payment data.", {
+    logger.error(`[REDIRECT_CB] No session found for paymentIntentID: ${intentId}`);
+    throw new GraphQLError("Session not found for this payment.", {
       extensions: { code: "SESSION_NOT_FOUND" },
     });
   }
@@ -356,17 +348,17 @@ export const handleRedirectCallback = async ({
   console.log(`[REDIRECT_CB] Matched Transaction ${easycardTransactionId} → Intent ${intentId}`);
 
   // ----------------------------------------------------
-  // 4️⃣ בדיקת סטטוס העסקה
+  // 4️⃣ בודקים אם העסקה אושרה
   // ----------------------------------------------------
-  const status = transactionInfo.status?.toLowerCase() || "";
   const resultCode = transactionInfo.processorResultCode;
+  const status = transactionInfo.status?.toLowerCase() || "";
   const isApproved =
     resultCode === 0 ||
     status.includes("approve") ||
     status.includes("success") ||
     status.includes("succeeded");
 
-  console.log(`[REDIRECT_CB] Transaction status: ${status}, resultCode: ${resultCode}`);
+  console.log(`[REDIRECT_CB] Transaction status: ${status} (resultCode=${resultCode})`);
 
   if (!isApproved) {
     throw new GraphQLError("Payment is pending or failed.", {
@@ -375,13 +367,13 @@ export const handleRedirectCallback = async ({
   }
 
   // ----------------------------------------------------
-  // 5️⃣ העסקה אושרה — סוגרים את ההזמנה
+  // 5️⃣ סוגרים את ההזמנה
   // ----------------------------------------------------
   const sessionId = session.id;
   const result = await completeOrder({ sessionId, easycardTransactionId });
 
   // ----------------------------------------------------
-  // 6️⃣ שליחת מייל ללקוח
+  // 6️⃣ שולחים מייל ללקוח
   // ----------------------------------------------------
   if (result.status === "COMPLETED") {
     try {
@@ -409,15 +401,16 @@ export const handleRedirectCallback = async ({
 
       console.log(`📧 Email sent successfully to ${customerEmail}`);
     } catch (emailErr: any) {
-      logger.error("[REDIRECT_CB] Failed to send Postmark email:", emailErr.message);
+      logger.error("[REDIRECT_CB] Failed to send email:", emailErr.message);
     }
   }
 
   // ----------------------------------------------------
-  // 7️⃣ החזרה סופית
+  // 7️⃣ מחזירים תשובה סופית
   // ----------------------------------------------------
   return { success: true, sessionId, orderId: result.orderId };
 };
+
 
 
 // ===========================
