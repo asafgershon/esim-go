@@ -4,6 +4,7 @@ import { env } from "../../config/env";
 import type { PubSubInstance } from "../../context/pubsub";
 // ⚠️ פתרון עקיף: שימוש ב-any במקום לייבא CheckoutSession שחסר
 import type { CheckoutSessionServiceV2 } from "./session";
+import postmark from "postmark";
 type CheckoutSession = any; 
 
 import { calculateSimplePrice, type SimplePricingResult, type SimplePricingDiscount } from "../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
@@ -298,50 +299,122 @@ export const completeOrder = async ({
 /**
  * 🛠️ מטפל בהפניה חזרה של הלקוח מדף התשלום.
  */
+// יצירת לקוח Postmark עם הטוקן שלך
+const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_TOKEN || "");
+
 export const handleRedirectCallback = async ({
-    easycardTransactionId,
+  easycardTransactionId,
 }: {
-    easycardTransactionId: string;
+  easycardTransactionId: string;
 }) => {
-    if (!sessionService) throw new NotInitializedError();
+  if (!sessionService) throw new NotInitializedError();
 
-    // 1. קבל את נתוני הטרנזקציה (Server-to-Server)
-    let transactionInfo: ITransactionStatusResponse;
-    try {
-        transactionInfo = await getTransactionStatus(easycardTransactionId); 
-    } catch (err: any) {
-        logger.error(`[REDIRECT_CB] Failed to get transaction info for: ${easycardTransactionId}`, err.message);
-        throw new GraphQLError("Failed to verify payment status.");
-    }
+  const MAX_WAIT_MS = 60000; // נמתין עד דקה
+  const INTERVAL_MS = 3000;  // נבדוק כל 3 שניות
+  const startTime = Date.now();
 
-    // 2. 🎯 תיקון קריטי: מציאת הסשן לפי מזהה הטרנזקציה של איזיקארד (Payment Intent ID)
-    // אנו משתמשים בפונקציה הקיימת שלך, ומניחים שהיא עובדת לפי entityReference
-    const session = await sessionService.getSessionByPaymentIntentId(easycardTransactionId); 
+  let transactionInfo: any = null;
 
-    if (!session) {
-         logger.error(`[REDIRECT_CB] Session not found by Payment Intent ID: ${easycardTransactionId}`);
-         throw new GraphQLError("Session ID not found for payment data.");
-    }
+  console.log(`[REDIRECT_CB] Start polling transaction ${easycardTransactionId}`);
 
-    // 3. חלץ את ה-sessionId
-    const sessionId = session.id;
-    
-    // 4. בצע את הלוגיקה המלאה של אישור/משלוח
-    // הפונקציה completeOrder תטפל כעת בסשן שנשלף
-    const result = await completeOrder({ sessionId, easycardTransactionId });
+  // 🔁 לולאה שמחכה עד לאישור העסקה
+  while (Date.now() - startTime < MAX_WAIT_MS) {
+    try {
+      transactionInfo = await getTransactionStatus(easycardTransactionId);
+      const status = transactionInfo?.TransactionStatus || transactionInfo?.status || "unknown";
 
-    if (result.status === 'COMPLETED') {
-        return { success: true, sessionId, orderId: result.orderId };
-    }
-    
-    if (result.status === 'PENDING') {
-         throw new GraphQLError("Payment status is still pending. We will process your order shortly and notify you by email.", {
-             extensions: { code: "PAYMENT_PENDING" }
-         });
-    }
+      console.log(`[REDIRECT_CB] Status: ${status}`);
 
-    return { success: false, sessionId, message: "Payment failed or order could not be completed." };
+      // אם העסקה אושרה, שובר את הלולאה
+      if (status.toLowerCase().includes("approve") || status.toLowerCase().includes("success")) {
+        console.log(`[REDIRECT_CB] Transaction approved ✅`);
+        break;
+      }
+
+    } catch (err: any) {
+      logger.error(`[REDIRECT_CB] Failed to get transaction info for: ${easycardTransactionId}`, err.message);
+    }
+
+    // המתנה לפני ניסיון נוסף
+    await new Promise((r) => setTimeout(r, INTERVAL_MS));
+  }
+
+  if (!transactionInfo) {
+    throw new GraphQLError("Failed to verify payment status (no response).");
+  }
+
+  // 🔹 חיפוש session לפי transaction ID
+  const session = await sessionService.getSessionByPaymentIntentId(easycardTransactionId);
+  if (!session) {
+    logger.error(`[REDIRECT_CB] Session not found by Payment Intent ID: ${easycardTransactionId}`);
+    throw new GraphQLError("Session ID not found for payment data.");
+  }
+
+  const sessionId = session.id;
+
+  // 🔹 ניסיון להשלים את ההזמנה
+  const result = await completeOrder({ sessionId, easycardTransactionId });
+
+  // ✅ הצלחה מלאה → שולחים מייל ללקוח
+if (result.status === 'COMPLETED') {
+  try {
+    // חילוץ מידע נכון מה-session
+    const customerEmail =
+      session.delivery.email ||
+      session.auth.email ||
+      "office@hiiloworld.com";
+
+    const customerName = [
+      session.auth.firstName,
+      session.auth.lastName
+    ]
+      .filter(Boolean)
+      .join(" ") || "לקוח יקר";
+
+    // סכום העסקה: נעדיף מה-EasyCard
+    const amount =
+      transactionInfo?.TotalAmount ||
+      session.bundle?.price ||
+      0;
+
+    // שליחת מייל עם Postmark
+    await postmarkClient.sendEmail({
+      From: "office@hiiloworld.com",
+      To: customerEmail,
+      Subject: "התשלום שלך אושר 🎉",
+      HtmlBody: `
+        <h2>שלום ${customerName},</h2>
+        <p>תודה על הרכישה שלך!</p>
+        <p>התשלום על סך <strong>${amount} ₪</strong> אושר בהצלחה.</p>
+        <p>מספר הזמנה: <strong>${result.orderId}</strong></p>
+        <p>המוצר שלך יישלח בהמשך למייל זה.</p>
+        <br/>
+        <p>צוות Hiilo 💜</p>
+      `,
+      TextBody: `שלום ${customerName}, התשלום שלך על סך ${amount} ש"ח אושר בהצלחה. מספר הזמנה: ${result.orderId}`,
+      MessageStream: "transactional",
+    });
+
+    console.log(`📧 Email sent successfully to ${customerEmail}`);
+  } catch (emailErr: any) {
+    logger.error("[REDIRECT_CB] Failed to send Postmark email:", emailErr.message);
+  }
+
+  return { success: true, sessionId, orderId: result.orderId };
+}
+
+  // ⏳ אם עדיין Pending
+  if (result.status === 'PENDING') {
+    throw new GraphQLError(
+      "Payment status is still pending. We will process your order shortly and notify you by email.",
+      { extensions: { code: "PAYMENT_PENDING" } }
+    );
+  }
+
+  // ❌ כל מצב אחר
+  return { success: false, sessionId, message: "Payment failed or order could not be completed." };
 };
+
 
 // ===========================
 // Export workflow

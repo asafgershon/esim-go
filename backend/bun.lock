@@ -127,6 +127,7 @@
         "nanoid": "^5.1.5",
         "pino": "^9.7.0",
         "pino-pretty": "^13.0.0",
+        "postmark": "^4.0.5",
         "pug": "^3.0.3",
         "qrcode": "^1.5.4",
         "redis": "^5.6.0",
@@ -2164,6 +2165,8 @@
     "postman-collection": ["postman-collection@4.5.0", "", { "dependencies": { "@faker-js/faker": "5.5.3", "file-type": "3.9.0", "http-reasons": "0.1.0", "iconv-lite": "0.6.3", "liquid-json": "0.3.1", "lodash": "4.17.21", "mime-format": "2.0.1", "mime-types": "2.1.35", "postman-url-encoder": "3.0.5", "semver": "7.6.3", "uuid": "8.3.2" } }, "sha512-152JSW9pdbaoJihwjc7Q8lc3nPg/PC9lPTHdMk7SHnHhu/GBJB7b2yb9zG7Qua578+3PxkQ/HYBuXpDSvsf7GQ=="],
 
     "postman-url-encoder": ["postman-url-encoder@3.0.5", "", { "dependencies": { "punycode": "^2.1.1" } }, "sha512-jOrdVvzUXBC7C+9gkIkpDJ3HIxOHTIqjpQ4C1EMt1ZGeMvSEpbFCKq23DEfgsj46vMnDgyQf+1ZLp2Wm+bKSsA=="],
+
+    "postmark": ["postmark@4.0.5", "", { "dependencies": { "axios": "^1.7.4" } }, "sha512-nerZdd3TwOH4CgGboZnlUM/q7oZk0EqpZgJL+Y3Nup8kHeaukxouQ6JcFF3EJEijc4QbuNv1TefGhboAKtf/SQ=="],
 
     "pretty-data": ["pretty-data@0.40.0", "", {}, "sha512-YFLnEdDEDnkt/GEhet5CYZHCvALw6+Elyb/tp8kQG03ZSIuzeaDWpZYndCXwgqu4NAjh1PI534dhDS1mHarRnQ=="],
 
