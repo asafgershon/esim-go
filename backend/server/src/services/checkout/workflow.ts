@@ -303,110 +303,134 @@ export const completeOrder = async ({
 const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_TOKEN || "");
 
 export const handleRedirectCallback = async ({
-  easycardTransactionId,
+  easycardTransactionId,
 }: {
-  easycardTransactionId: string;
+  easycardTransactionId: string;
 }) => {
-  if (!sessionService) throw new NotInitializedError();
+  if (!sessionService) throw new NotInitializedError();
 
-  const MAX_WAIT_MS = 60000; // נמתין עד דקה
-  const INTERVAL_MS = 3000;  // נבדוק כל 3 שניות
-  const startTime = Date.now();
+  const MAX_ITERATIONS = 5;     // ניסיון מקסימלי: 5 פעמים
+  const INTERVAL_MS = 4000;    // המתנה של 4 שניות בין ניסיון לניסיון
 
-  let transactionInfo: any = null;
+  let transactionInfo: ITransactionStatusResponse | null = null;
+  let isApproved = false;
 
-  console.log(`[REDIRECT_CB] Start polling transaction ${easycardTransactionId}`);
+  console.log(`[REDIRECT_CB] Start polling transaction ${easycardTransactionId}`);
 
-  // 🔁 לולאה שמחכה עד לאישור העסקה
-  const MAX_ITERATIONS = 5;
-  const INTERVAL_MS_1 = 4000;
+  // 🔁 **לולאת Polling** - מחכה עד לאישור העסקה הסופי מול Easycard
+  for (let i = 1; i <= MAX_ITERATIONS; i++) {
+    console.log(`[POLLING] Attempt #${i} to get status for ${easycardTransactionId}`);
+    
+    // 1. בדיקת הסטטוס הנוכחי מול Easycard
+    try {
+      // 🛑 שימוש ב-getTransactionStatus לבדיקה חוזרת
+      transactionInfo = await getTransactionStatus(easycardTransactionId); 
 
-console.log("[DEBUG] 🧪 Starting test loop...");
+      // 2. אימות: האם הסטטוס הוא סופי ומאושר?
+      if (transactionInfo.status === 'Approved' || transactionInfo.status === 'Succeeded') {
+        isApproved = true;
+        console.log(`[POLLING] Success on attempt #${i}. Status: ${transactionInfo.status}`);
+        break; // יציאה מהלולאה - העסקה אושרה
+      } 
+      
+      console.log(`[POLLING] Status is ${transactionInfo.status}. Waiting...`);
 
-for (let i = 1; i <= MAX_ITERATIONS; i++) {
-  console.log(`[DEBUG] Loop iteration #${i}`);
+    } catch (e) {
+      console.error(`[POLLING] Error during status check on attempt #${i}:`, (e as any).message);
+    }
 
-  await new Promise((r) => setTimeout(r, INTERVAL_MS_1));
+    // 3. המתנה לפני האיטרציה הבאה
+    if (i < MAX_ITERATIONS) {
+      await new Promise((r) => setTimeout(r, INTERVAL_MS));
+    }
+  }
 
-  console.log(`[DEBUG] After wait - iteration #${i}`);
-}
+  console.log("[POLLING] Finished polling loop.");
 
-console.log("[DEBUG] 🧪 Finished test loop ✅");
+  // ----------------------------------------------------
+  // 🛑 בדיקת הסטטוס הסופי לאחר סיום ה-Polling
+  // ----------------------------------------------------
 
-  if (!transactionInfo) {
-    throw new GraphQLError("Failed to verify payment status (no response).");
-  }
+  if (!transactionInfo) {
+    // אם לא קיבלנו אף תשובה (שגיאת תקשורת קריטית)
+    throw new GraphQLError("Failed to get any payment status response from Easycard.",
+      { extensions: { code: "PAYMENT_API_ERROR" } });
+  }
 
-  // 🔹 חיפוש session לפי transaction ID
-  const session = await sessionService.getSessionByPaymentIntentId(easycardTransactionId);
-  if (!session) {
-    logger.error(`[REDIRECT_CB] Session not found by Payment Intent ID: ${easycardTransactionId}`);
-    throw new GraphQLError("Session ID not found for payment data.");
-  }
+  if (!isApproved) {
+    // אם יצאנו מהלולאה והעסקה עדיין לא אושרה (Pending או Failed סופי)
+    throw new GraphQLError(
+      "Payment status is still pending or failed after retries. We will notify you by email.",
+      { extensions: { code: "PAYMENT_PENDING" } }
+    );
+  }
+  
+  // ----------------------------------------------------
+  // ✅ אם הגענו לכאן - התשלום אושר סופית.
+  // ----------------------------------------------------
 
-  const sessionId = session.id;
+  // 🔹 חיפוש session לפי transaction ID
+  const session = await sessionService.getSessionByPaymentIntentId(easycardTransactionId);
+  if (!session) {
+    logger.error(`[REDIRECT_CB] Session not found by Payment Intent ID: ${easycardTransactionId}`);
+    throw new GraphQLError("Session ID not found for payment data.");
+  }
 
-  // 🔹 ניסיון להשלים את ההזמנה
-  const result = await completeOrder({ sessionId, easycardTransactionId });
+  const sessionId = session.id;
 
-  // ✅ הצלחה מלאה → שולחים מייל ללקוח
-if (result.status === 'COMPLETED') {
-  try {
-    // חילוץ מידע נכון מה-session
-    const customerEmail =
-      session.delivery.email ||
-      session.auth.email ||
-      "office@hiiloworld.com";
+  // 🔹 ניסיון להשלים את ההזמנה
+  const result = await completeOrder({ sessionId, easycardTransactionId });
 
-    const customerName = [
-      session.auth.firstName,
-      session.auth.lastName
-    ]
-      .filter(Boolean)
-      .join(" ") || "לקוח יקר";
+  // 💌 שליחת אימייל ללקוח - הלוגיקה המלאה
+  if (result.status === 'COMPLETED') {
+    try {
+      // חילוץ מידע נכון מה-session
+      const customerEmail =
+        session.delivery.email ||
+        session.auth.email ||
+        "office@hiiloworld.com";
 
-    // סכום העסקה: נעדיף מה-EasyCard
-    const amount =
-      transactionInfo?.TotalAmount ||
-      session.bundle?.price ||
-      0;
+      const customerName = [
+        session.auth.firstName,
+        session.auth.lastName
+      ]
+        .filter(Boolean)
+        .join(" ") || "לקוח יקר";
 
-    // שליחת מייל עם Postmark
-    await postmarkClient.sendEmail({
-      From: "office@hiiloworld.com",
-      To: customerEmail,
-      Subject: "התשלום שלך אושר 🎉",
-      HtmlBody: `
-        <h2>שלום ${customerName},</h2>
-        <p>תודה על הרכישה שלך!</p>
-        <p>התשלום על סך <strong>${amount} ₪</strong> אושר בהצלחה.</p>
-        <p>מספר הזמנה: <strong>${result.orderId}</strong></p>
-        <p>המוצר שלך יישלח בהמשך למייל זה.</p>
-        <br/>
-        <p>צוות Hiilo 💜</p>
-      `,
-      TextBody: `שלום ${customerName}, התשלום שלך על סך ${amount} ש"ח אושר בהצלחה. מספר הזמנה: ${result.orderId}`,
-      MessageStream: "transactional",
-    });
+      // סכום העסקה: נעדיף מה-EasyCard (שקיבלנו ב-transactionInfo)
+      const amount =
+        transactionInfo?.TotalAmount || // נניח ש-TotalAmount קיים בתשובת EasyCard
+        session.bundle?.price ||
+        0;
 
-    console.log(`📧 Email sent successfully to ${customerEmail}`);
-  } catch (emailErr: any) {
-    logger.error("[REDIRECT_CB] Failed to send Postmark email:", emailErr.message);
-  }
+      // שליחת מייל עם Postmark
+      await postmarkClient.sendEmail({
+        From: "office@hiiloworld.com",
+        To: customerEmail,
+        Subject: "התשלום שלך אושר 🎉",
+        HtmlBody: `
+          <h2>שלום ${customerName},</h2>
+          <p>תודה על הרכישה שלך!</p>
+          <p>התשלום על סך <strong>${amount} ₪</strong> אושר בהצלחה.</p>
+          <p>מספר הזמנה: <strong>${result.orderId}</strong></p>
+          <p>המוצר שלך יישלח בהמשך למייל זה.</p>
+          <br/>
+          <p>צוות Hiilo 💜</p>
+        `,
+        TextBody: `שלום ${customerName}, התשלום שלך על סך ${amount} ש"ח אושר בהצלחה. מספר הזמנה: ${result.orderId}`,
+        MessageStream: "transactional",
+      });
 
-  return { success: true, sessionId, orderId: result.orderId };
-}
+      console.log(`📧 Email sent successfully to ${customerEmail}`);
+    } catch (emailErr: any) {
+      logger.error("[REDIRECT_CB] Failed to send Postmark email:", emailErr.message);
+    }
 
-  // ⏳ אם עדיין Pending
-  if (result.status === 'PENDING') {
-    throw new GraphQLError(
-      "Payment status is still pending. We will process your order shortly and notify you by email.",
-      { extensions: { code: "PAYMENT_PENDING" } }
-    );
-  }
+    return { success: true, sessionId, orderId: result.orderId };
+  }
 
-  // ❌ כל מצב אחר
-  return { success: false, sessionId, message: "Payment failed or order could not be completed." };
+  // ❌ כל מצב אחר (לדוגמה: התשלום אושר אך יצירת ה-eSIM נכשלה בתוך completeOrder)
+  return { success: false, sessionId, message: "Payment was approved, but order completion failed." };
 };
 
 
