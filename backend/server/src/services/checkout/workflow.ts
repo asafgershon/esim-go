@@ -20,7 +20,7 @@ import type { ESimGoClient } from "@hiilo/esim-go";
 import { MayaApi } from "@hiilo/esim-go/maya";
 import type { PaymentServiceInstance } from "../payment";
 // 👇 ייבוא קריטי: פונקציות האימות מול איזיקארד
-import { getTransactionStatus, type ITransactionStatusResponse } from "../../../../apis/easycard/src/custom-payment.service"; 
+import { getTransactionStatus,getIntentIdFromTransaction, type ITransactionStatusResponse } from "../../../../apis/easycard/src/custom-payment.service"; 
 
 const logger = createLogger({ component: "checkout-workflow" });
 
@@ -311,14 +311,30 @@ export const handleRedirectCallback = async ({
 
   console.log(`[REDIRECT_CB] Processing transaction ${easycardTransactionId}`);
 
-  // נוודא שיש בכלל סשן
-  const session = await sessionService.getSessionByPaymentIntentId(easycardTransactionId);
+  // 1️⃣ ננסה קודם למצוא לפי מזהה העסקה
+  let session = await sessionService.getSessionByPaymentIntentId(easycardTransactionId);
+
+  // 2️⃣ אם לא מצאנו, נשתמש ב-API של EasyCard כדי לזהות את ה-intent ID
   if (!session) {
-    logger.error(`[REDIRECT_CB] Session not found by Payment Intent ID: ${easycardTransactionId}`);
-    throw new GraphQLError("Session ID not found for payment data.");
+    console.log(`[REDIRECT_CB] Session not found, trying to resolve Intent ID from transaction...`);
+    const intentId = await getIntentIdFromTransaction(easycardTransactionId);
+
+    if (intentId) {
+      session = await sessionService.getSessionByPaymentIntentId(intentId);
+      console.log(`[REDIRECT_CB] Matched Transaction ${easycardTransactionId} → Intent ${intentId}`);
+    }
   }
 
-  // נבדוק קודם אם יש מידע מה-redirect (שמור ב-session או מועבר בפרמטרים)
+  if (!session) {
+    logger.error(`[REDIRECT_CB] Session not found by Transaction or Intent ID: ${easycardTransactionId}`);
+    throw new GraphQLError("Session ID not found for payment data.", {
+      extensions: { code: "SESSION_NOT_FOUND" },
+    });
+  }
+
+  // ----------------------------------------------------
+  // 3️⃣ שליפת פרטי העסקה מ-EasyCard
+  // ----------------------------------------------------
   let transactionInfo: ITransactionStatusResponse | null = null;
   let isApproved = false;
 
@@ -327,11 +343,11 @@ export const handleRedirectCallback = async ({
     const status = transactionInfo?.TransactionStatus || transactionInfo?.status || "unknown";
     console.log(`[REDIRECT_CB] Transaction status: ${status}`);
 
-    // סטטוסים תקפים לאישור
     if (
       status.toLowerCase().includes("approve") ||
       status.toLowerCase().includes("success") ||
-      status.toLowerCase().includes("succeeded")
+      status.toLowerCase().includes("succeeded") ||
+      status.toLowerCase() === "0" // במקרים שהקוד הוא מספרי
     ) {
       isApproved = true;
     }
@@ -342,7 +358,9 @@ export const handleRedirectCallback = async ({
     });
   }
 
-  // אם לא אושר – עוצרים
+  // ----------------------------------------------------
+  // 4️⃣ אם לא אושר – נסיים כאן
+  // ----------------------------------------------------
   if (!isApproved) {
     throw new GraphQLError(
       "Payment is pending or failed. We’ll notify you by email once confirmed.",
@@ -351,11 +369,14 @@ export const handleRedirectCallback = async ({
   }
 
   // ----------------------------------------------------
-  // ✅ העסקה אושרה — סוגרים את ההזמנה ושולחים מייל
+  // 5️⃣ העסקה אושרה — סוגרים את ההזמנה
   // ----------------------------------------------------
   const sessionId = session.id;
   const result = await completeOrder({ sessionId, easycardTransactionId });
 
+  // ----------------------------------------------------
+  // 6️⃣ שליחת מייל ללקוח
+  // ----------------------------------------------------
   if (result.status === "COMPLETED") {
     try {
       const customerEmail =
@@ -388,14 +409,15 @@ export const handleRedirectCallback = async ({
       return { success: true, sessionId, orderId: result.orderId };
     } catch (emailErr: any) {
       logger.error("[REDIRECT_CB] Failed to send Postmark email:", emailErr.message);
-      return { success: true, sessionId, orderId: result.orderId }; // נחשב הצלחה למרות המייל
+      return { success: true, sessionId, orderId: result.orderId };
     }
   }
 
+  // ----------------------------------------------------
+  // 7️⃣ fallback - אם ההזמנה לא נסגרה תקין
+  // ----------------------------------------------------
   return { success: false, sessionId, message: "Payment was approved but order completion failed." };
 };
-
-
 
 // ===========================
 // Export workflow

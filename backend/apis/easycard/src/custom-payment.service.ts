@@ -225,6 +225,30 @@ export async function createPaymentIntent(params: ICreatePaymentParams): Promise
     }
 }
 
+/**
+ * מקבל transactionId ומחזיר את ה-Payment Intent ID מתוך EasyCard
+ */
+export async function getIntentIdFromTransaction(transactionId: string): Promise<string | null> {
+  const token = await getAccessToken();
+  const url = `${API_BASE_URL}/transactions/${transactionId}`;
+  console.log(`[Easycard] Fetching transaction details for ${transactionId}`);
+
+  try {
+    const { data } = await axios.get(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    console.log(`[Easycard] Transaction info:`, data);
+
+    // במבנה התשובה של EasyCard, יש אחד מהשדות האלה:
+    return data.PaymentIntentUID || data.paymentIntentId || data.entityExternalReference || null;
+  } catch (error: any) {
+    console.error(`[Easycard] Failed to fetch transaction ${transactionId}:`, error.message);
+    return null;
+  }
+}
+
+
 // #############################################################
 // #           שלב 3: אימות מאובטח של סטטוס עסקה               #
 // #############################################################
