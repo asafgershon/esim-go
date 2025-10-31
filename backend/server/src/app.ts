@@ -408,15 +408,22 @@ async function startServer() {
 
 app.get("/payment/callback", (req, res) => {
   const transactionId = req.query.transactionID as string;
+  const code = req.query.code as string;
 
   if (!transactionId) {
     return res.redirect("/checkout/failure?reason=missing_transaction_id");
   }
 
-  // שולחים ללקוח מיד redirect לדף "בהמתנה"
-  res.redirect(`/checkout?transactionId=${transactionId}&status=pending`);
+  // שולחים ללקוח redirect מהיר
+  if (code === "0") {
+    console.log(`[CALLBACK] code=0, immediate success redirect for ${transactionId}`);
+    res.redirect(`/checkout/success?transactionId=${transactionId}`);
+  } else {
+    console.log(`[CALLBACK] code=${code || "none"}, redirecting to pending page`);
+    res.redirect(`/checkout?transactionId=${transactionId}&status=pending`);
+  }
 
-  // ממשיכים את כל התהליך ברקע (בלי לחכות)
+  // מריצים את האימות ברקע
   checkoutWorkflowService
     .handleRedirectCallback({ easycardTransactionId: transactionId })
     .then((result) => {

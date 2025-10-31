@@ -303,135 +303,98 @@ export const completeOrder = async ({
 const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_TOKEN || "");
 
 export const handleRedirectCallback = async ({
-  easycardTransactionId,
+  easycardTransactionId,
 }: {
-  easycardTransactionId: string;
+  easycardTransactionId: string;
 }) => {
-  if (!sessionService) throw new NotInitializedError();
+  if (!sessionService) throw new NotInitializedError();
 
-  const MAX_ITERATIONS = 5;     // ניסיון מקסימלי: 5 פעמים
-  const INTERVAL_MS = 4000;    // המתנה של 4 שניות בין ניסיון לניסיון
+  console.log(`[REDIRECT_CB] Processing transaction ${easycardTransactionId}`);
 
-  let transactionInfo: ITransactionStatusResponse | null = null;
-  let isApproved = false;
+  // נוודא שיש בכלל סשן
+  const session = await sessionService.getSessionByPaymentIntentId(easycardTransactionId);
+  if (!session) {
+    logger.error(`[REDIRECT_CB] Session not found by Payment Intent ID: ${easycardTransactionId}`);
+    throw new GraphQLError("Session ID not found for payment data.");
+  }
 
-  console.log(`[REDIRECT_CB] Start polling transaction ${easycardTransactionId}`);
+  // נבדוק קודם אם יש מידע מה-redirect (שמור ב-session או מועבר בפרמטרים)
+  let transactionInfo: ITransactionStatusResponse | null = null;
+  let isApproved = false;
 
-  // 🔁 **לולאת Polling** - מחכה עד לאישור העסקה הסופי מול Easycard
-  for (let i = 1; i <= MAX_ITERATIONS; i++) {
-    console.log(`[POLLING] Attempt #${i} to get status for ${easycardTransactionId}`);
-    
-    // 1. בדיקת הסטטוס הנוכחי מול Easycard
-    try {
-      // 🛑 שימוש ב-getTransactionStatus לבדיקה חוזרת
-      transactionInfo = await getTransactionStatus(easycardTransactionId); 
+  try {
+    transactionInfo = await getTransactionStatus(easycardTransactionId);
+    const status = transactionInfo?.TransactionStatus || transactionInfo?.status || "unknown";
+    console.log(`[REDIRECT_CB] Transaction status: ${status}`);
 
-      // 2. אימות: האם הסטטוס הוא סופי ומאושר?
-      if (transactionInfo.status === 'Approved' || transactionInfo.status === 'Succeeded') {
-        isApproved = true;
-        console.log(`[POLLING] Success on attempt #${i}. Status: ${transactionInfo.status}`);
-        break; // יציאה מהלולאה - העסקה אושרה
-      } 
-      
-      console.log(`[POLLING] Status is ${transactionInfo.status}. Waiting...`);
+    // סטטוסים תקפים לאישור
+    if (
+      status.toLowerCase().includes("approve") ||
+      status.toLowerCase().includes("success") ||
+      status.toLowerCase().includes("succeeded")
+    ) {
+      isApproved = true;
+    }
+  } catch (e) {
+    console.error(`[REDIRECT_CB] Failed to fetch transaction ${easycardTransactionId}:`, (e as any).message);
+    throw new GraphQLError("Failed to verify transaction status.", {
+      extensions: { code: "PAYMENT_API_ERROR" },
+    });
+  }
 
-    } catch (e) {
-      console.error(`[POLLING] Error during status check on attempt #${i}:`, (e as any).message);
-    }
+  // אם לא אושר – עוצרים
+  if (!isApproved) {
+    throw new GraphQLError(
+      "Payment is pending or failed. We’ll notify you by email once confirmed.",
+      { extensions: { code: "PAYMENT_PENDING" } }
+    );
+  }
 
-    // 3. המתנה לפני האיטרציה הבאה
-    if (i < MAX_ITERATIONS) {
-      await new Promise((r) => setTimeout(r, INTERVAL_MS));
-    }
-  }
+  // ----------------------------------------------------
+  // ✅ העסקה אושרה — סוגרים את ההזמנה ושולחים מייל
+  // ----------------------------------------------------
+  const sessionId = session.id;
+  const result = await completeOrder({ sessionId, easycardTransactionId });
 
-  console.log("[POLLING] Finished polling loop.");
+  if (result.status === "COMPLETED") {
+    try {
+      const customerEmail =
+        session.delivery.email || session.auth.email || "office@hiiloworld.com";
 
-  // ----------------------------------------------------
-  // 🛑 בדיקת הסטטוס הסופי לאחר סיום ה-Polling
-  // ----------------------------------------------------
+      const customerName =
+        [session.auth.firstName, session.auth.lastName].filter(Boolean).join(" ") || "לקוח יקר";
 
-  if (!transactionInfo) {
-    // אם לא קיבלנו אף תשובה (שגיאת תקשורת קריטית)
-    throw new GraphQLError("Failed to get any payment status response from Easycard.",
-      { extensions: { code: "PAYMENT_API_ERROR" } });
-  }
+      const amount =
+        transactionInfo?.TotalAmount || session.bundle?.price || 0;
 
-  if (!isApproved) {
-    // אם יצאנו מהלולאה והעסקה עדיין לא אושרה (Pending או Failed סופי)
-    throw new GraphQLError(
-      "Payment status is still pending or failed after retries. We will notify you by email.",
-      { extensions: { code: "PAYMENT_PENDING" } }
-    );
-  }
-  
-  // ----------------------------------------------------
-  // ✅ אם הגענו לכאן - התשלום אושר סופית.
-  // ----------------------------------------------------
+      await postmarkClient.sendEmail({
+        From: "office@hiiloworld.com",
+        To: customerEmail,
+        Subject: "התשלום שלך אושר 🎉",
+        HtmlBody: `
+          <h2>שלום ${customerName},</h2>
+          <p>תודה על הרכישה שלך!</p>
+          <p>התשלום על סך <strong>${amount} ₪</strong> אושר בהצלחה.</p>
+          <p>מספר הזמנה: <strong>${result.orderId}</strong></p>
+          <p>המוצר שלך יישלח בהמשך למייל זה.</p>
+          <br/>
+          <p>צוות Hiilo 💜</p>
+        `,
+        TextBody: `שלום ${customerName}, התשלום שלך על סך ${amount} ש"ח אושר בהצלחה. מספר הזמנה: ${result.orderId}`,
+        MessageStream: "transactional",
+      });
 
-  // 🔹 חיפוש session לפי transaction ID
-  const session = await sessionService.getSessionByPaymentIntentId(easycardTransactionId);
-  if (!session) {
-    logger.error(`[REDIRECT_CB] Session not found by Payment Intent ID: ${easycardTransactionId}`);
-    throw new GraphQLError("Session ID not found for payment data.");
-  }
+      console.log(`📧 Email sent successfully to ${customerEmail}`);
+      return { success: true, sessionId, orderId: result.orderId };
+    } catch (emailErr: any) {
+      logger.error("[REDIRECT_CB] Failed to send Postmark email:", emailErr.message);
+      return { success: true, sessionId, orderId: result.orderId }; // נחשב הצלחה למרות המייל
+    }
+  }
 
-  const sessionId = session.id;
-
-  // 🔹 ניסיון להשלים את ההזמנה
-  const result = await completeOrder({ sessionId, easycardTransactionId });
-
-  // 💌 שליחת אימייל ללקוח - הלוגיקה המלאה
-  if (result.status === 'COMPLETED') {
-    try {
-      // חילוץ מידע נכון מה-session
-      const customerEmail =
-        session.delivery.email ||
-        session.auth.email ||
-        "office@hiiloworld.com";
-
-      const customerName = [
-        session.auth.firstName,
-        session.auth.lastName
-      ]
-        .filter(Boolean)
-        .join(" ") || "לקוח יקר";
-
-      // סכום העסקה: נעדיף מה-EasyCard (שקיבלנו ב-transactionInfo)
-      const amount =
-        transactionInfo?.TotalAmount || // נניח ש-TotalAmount קיים בתשובת EasyCard
-        session.bundle?.price ||
-        0;
-
-      // שליחת מייל עם Postmark
-      await postmarkClient.sendEmail({
-        From: "office@hiiloworld.com",
-        To: customerEmail,
-        Subject: "התשלום שלך אושר 🎉",
-        HtmlBody: `
-          <h2>שלום ${customerName},</h2>
-          <p>תודה על הרכישה שלך!</p>
-          <p>התשלום על סך <strong>${amount} ₪</strong> אושר בהצלחה.</p>
-          <p>מספר הזמנה: <strong>${result.orderId}</strong></p>
-          <p>המוצר שלך יישלח בהמשך למייל זה.</p>
-          <br/>
-          <p>צוות Hiilo 💜</p>
-        `,
-        TextBody: `שלום ${customerName}, התשלום שלך על סך ${amount} ש"ח אושר בהצלחה. מספר הזמנה: ${result.orderId}`,
-        MessageStream: "transactional",
-      });
-
-      console.log(`📧 Email sent successfully to ${customerEmail}`);
-    } catch (emailErr: any) {
-      logger.error("[REDIRECT_CB] Failed to send Postmark email:", emailErr.message);
-    }
-
-    return { success: true, sessionId, orderId: result.orderId };
-  }
-
-  // ❌ כל מצב אחר (לדוגמה: התשלום אושר אך יצירת ה-eSIM נכשלה בתוך completeOrder)
-  return { success: false, sessionId, message: "Payment was approved, but order completion failed." };
+  return { success: false, sessionId, message: "Payment was approved but order completion failed." };
 };
+
 
 
 // ===========================
