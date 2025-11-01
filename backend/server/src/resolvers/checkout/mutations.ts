@@ -305,51 +305,55 @@ triggerCheckoutPayment: {
   // Process Payment Callback (Final Step)
   // ============================
 processPaymentCallback: {
-    resolve: async (
-      _, 
-      args: { transactionId: string }, 
-      context: Context
-    ): Promise<string> => { // 👈 שינוי קריטי: מחזיר Promise<string>
-      try {
-          const { transactionId } = args;
-          
-          // 1. קריאה לפונקציית ה-Workflow שלנו
-          const result = await handleRedirectCallback({
-            easycardTransactionId: transactionId,
-          });
+  resolve: async (
+    _,
+    args: { transactionId: string },
+    context: Context
+  ): Promise<string> => {
+    const { transactionId } = args;
 
-          logger.info("Payment callback processed via workflow", { transactionId, sessionId: result.sessionId, success: result.success });
+    try {
+      if (!transactionId) {
+        throw new GraphQLError("Missing transactionId in callback", {
+          extensions: { code: "MISSING_TRANSACTION_ID" },
+        });
+      }
 
-          // 2. התאמה ל-Schema: אם הצליח, החזר את מזהה ההזמנה (orderId)
-          if (result.success && result.orderId) {
-            return result.orderId;
-          }
+      logger.info(`[CALLBACK] Processing EasyCard transaction ${transactionId}`);
 
-          // 3. אם הצליח אבל אין orderId (מקרה שלא אמור לקרות), זרוק שגיאה
-          if (result.success && !result.orderId) {
-            throw new GraphQLError("Payment successful but Order ID missing. Manual review needed.", {
-              extensions: { code: "ORDER_ID_MISSING" }
-            });
-          }
-            
-          // 4. אם נכשל (success: false), זרוק שגיאה מתאימה
-          throw new GraphQLError(result.message || "Payment processing failed.", {
-            extensions: { code: "PAYMENT_FAILED" }
-          });
+      // 🟢 1. נריץ את ה־workflow (במקום ה־handleRedirectCallback של app)
+      const result = await context.services.checkoutWorkflow.handleRedirectCallback({
+        easycardTransactionId: transactionId,
+      });
 
-      } catch (error: any) {
-          logger.error("Error in processPaymentCallback resolver", error);
+      // 🟢 2. אם הצליח — נחזיר ל־frontend את ה־orderId
+      if (result.success && result.orderId) {
+        logger.info(`[ASYNC CALLBACK] ✅ Order completed for ${transactionId}`);
+        return result.orderId;
+      }
 
-          // אם זו שגיאת GraphQL קיימת (כמו PENDING), זרוק אותה
-          if (error instanceof GraphQLError) {
-              throw error;
-          }
+      // 🟡 3. אם ההזמנה עוד בתהליך / לא אושרה
+      if (!result.success) {
+        logger.warn(`[ASYNC CALLBACK] ❌ Payment still pending or failed for ${transactionId}`);
+        throw new GraphQLError("Payment pending or failed", {
+          extensions: { code: "PAYMENT_PENDING" },
+        });
+      }
 
-          // שגיאת ברירת מחדל
-          throw new GraphQLError(error.message || "Internal server error during payment callback", {
-              extensions: { code: "INTERNAL_SERVER_ERROR" },
-          });
-      }
-    },
-  },
+      // 🔴 4. אם יש בעיה שאין orderId
+      throw new GraphQLError("Payment successful but order ID missing", {
+        extensions: { code: "ORDER_ID_MISSING" },
+      });
+
+    } catch (error: any) {
+      logger.error(`[CALLBACK] 💥 Error processing ${transactionId}:`, error);
+
+      if (error instanceof GraphQLError) throw error;
+
+      throw new GraphQLError(error.message || "Internal server error during payment callback", {
+        extensions: { code: "INTERNAL_SERVER_ERROR" },
+      });
+    }
+  },
+},
 };

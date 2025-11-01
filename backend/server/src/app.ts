@@ -406,6 +406,7 @@ async function startServer() {
     }
   });
 
+  /*
 app.get("/payment/callback", (req, res) => {
   const transactionId = req.query.transactionID as string;
   const code = req.query.code as string;
@@ -437,6 +438,7 @@ app.get("/payment/callback", (req, res) => {
       console.error(`[ASYNC CALLBACK] 💥 Error processing ${transactionId}:`, error);
     });
 });
+*/
 
     // 🟣 GraphQL Endpoint
     app.use(
