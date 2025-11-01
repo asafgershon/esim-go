@@ -63,21 +63,41 @@ export class BaseSupabaseRepository<
     return data as unknown as Row;
   }
 
-  async update(id: string, updates: Update): Promise<Row> {
-    await this.validateUpdate(updates);
-    const { data, error } = await this.supabase
-      .from(this.tableName)
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+async update(id: string, updates: Update): Promise<Row> {
+  await this.validateUpdate(updates);
 
-    if (error) {
-      this.handleError(error, `updating a record in ${this.tableName}`);
-    }
+  // שלוף קודם את הערך הקיים
+  const { data: existingData, error: fetchError } = await this.supabase
+    .from(this.tableName)
+    .select('steps')
+    .eq('id', id)
+    .single();
 
-    return data as unknown as Row;
+  if (fetchError) {
+    this.handleError(fetchError, `fetching existing record for merge`);
   }
+
+  // בצע merge אם יש steps קיימים
+if ((updates as any).steps && (existingData as any)?.steps) {
+  (updates as any).steps = {
+    ...(existingData as any).steps,
+    ...(updates as any).steps,
+  };
+}
+
+  const { data, error } = await this.supabase
+    .from(this.tableName)
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    this.handleError(error, `updating a record in ${this.tableName}`);
+  }
+
+  return data as unknown as Row;
+}
 
   async delete(id: string): Promise<{ success: boolean; count: number | null }> {
     const { count, error } = await this.supabase
