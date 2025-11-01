@@ -306,6 +306,13 @@ const updateSessionStep = async <K extends keyof CheckoutSession>(
 
   const validatedSession = CheckoutSessionSchema.parse(session);
 
+    if (
+    session.bundle?.externalId &&
+    !validatedSession.bundle?.externalId
+  ) {
+    validatedSession.bundle.externalId = session.bundle.externalId;
+  }
+
   await saveSession(validatedSession); // Save to Redis
 
   // Save to Database
