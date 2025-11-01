@@ -206,97 +206,163 @@ const applyCoupon = async ({
  * 🛠️ מבצע את הלוגיקה הקריטית: אימות תשלום, יצירת הזמנת eSIM, ועדכון DB.
  */
 export const completeOrder = async ({
-  sessionId,
-  easycardTransactionId,
+  sessionId,
+  easycardTransactionId,
 }: {
-  sessionId: string;
-  easycardTransactionId: string;
+  sessionId: string;
+  easycardTransactionId: string;
 }): Promise<{ status: 'COMPLETED' | 'FAILED'; orderId?: string }> => {
-  if (!sessionService || !orderRepository || !pubsub) throw new NotInitializedError();
+  // 1. אימות שירותים חיוניים
+  if (!sessionService || !orderRepository || !pubsub || !mayaAPI || !esimRepository) throw new NotInitializedError();
 
-  const session = await sessionService.getSession(sessionId);
-  if (!session) {
-    logger.error(`[COMPLETE_ORDER] ❌ Session not found: ${sessionId}`);
-    return { status: 'FAILED' };
-  }
+  const session = await sessionService.getSession(sessionId);
+  if (!session) {
+    logger.error(`[COMPLETE_ORDER] ❌ Session not found: ${sessionId}`);
+    return { status: 'FAILED' };
+  }
 
-  logger.info(`[COMPLETE_ORDER] 🟢 Processing transaction ${easycardTransactionId}`);
+  logger.info(`[COMPLETE_ORDER] 🟢 Processing transaction ${easycardTransactionId}`);
 
-  // 1️⃣ שלב ראשון – אימות העסקה מול EasyCard
-  let transactionInfo;
-  try {
-    transactionInfo = await getTransactionStatus(easycardTransactionId);
-  } catch (err: any) {
-    logger.error(`[COMPLETE_ORDER] Failed to fetch transaction info: ${err.message}`);
-    return { status: 'FAILED' };
-  }
+  // 2. אימות העסקה מול EasyCard
+  let transactionInfo;
+  try {
+    transactionInfo = await getTransactionStatus(easycardTransactionId);
+  } catch (err: any) {
+    logger.error(`[COMPLETE_ORDER] Failed to fetch transaction info: ${err.message}`);
+    return { status: 'FAILED' };
+  }
 
-  const rawStatus = transactionInfo?.status || "";
-  const normalizedStatus = rawStatus.toLowerCase();
-  logger.info(`[COMPLETE_ORDER] 💳 EasyCard status: ${normalizedStatus}`);
+  const rawStatus = transactionInfo?.status || "";
+  const normalizedStatus = rawStatus.toLowerCase();
+  logger.info(`[COMPLETE_ORDER] 💳 EasyCard status: ${normalizedStatus}`);
+ 
+  // 3. אם התשלום אושר או נמצא במצב המתנה לאספקה (Approved, Succeeded, AwaitingForTransmission)
+  if (["approved", "succeeded", "awaitingfortransmission"].includes(normalizedStatus)) {
+    try {
+      logger.info(`[COMPLETE_ORDER] ✅ Payment appears successful (${rawStatus}). Creating order and fulfilling...`);
 
-  // 2️⃣ אם AwaitingForTransmission או Approved – נחשב כהצלחה
-  if (["approved", "succeeded", "awaitingfortransmission"].includes(normalizedStatus)) {
-    try {
-      logger.info(`[COMPLETE_ORDER] ✅ Payment appears successful (${rawStatus}). Creating order...`);
+      // 3.1 בדיקת ה-UID של המוצר
+      const mayaProductUid = session.bundle?.externalId; 
+  
+      if (!mayaProductUid) {
+          logger.error(`[COMPLETE_ORDER] ❌ Missing Maya Product UID in session: ${sessionId}`);
+          throw new Error("Missing Maya Product UID for fulfillment"); 
+      }
+      
+      // 3.2 יצירת הזמנה חדשה ב-DB
+      const order = await orderRepository.createFromSession(session, easycardTransactionId);
 
-      // צור הזמנה חדשה
-      const order = await orderRepository.createFromSession(session, easycardTransactionId);
+      // 3.3 עדכון ה־Session
+      await sessionService.updateSessionFields(sessionId, {
+        orderId: order.id,
+        state: "PAYMENT_COMPLETED" as any,
+      });
+      await sessionService.updateSessionStep(sessionId, "payment", {
+        completed: true,
+      });
 
-      // עדכן את ה־Session כמשולם
-      await sessionService.updateSessionFields(sessionId, {
-        orderId: order.id,
-        state: "PAYMENT_COMPLETED" as any,
+      // 🌟 3.4 יצירת eSIM באמצעות Maya API (FULFILLMENT)
+      logger.info(`[COMPLETE_ORDER] 📞 Calling Maya to create eSIM for order ${order.id}`);
+
+      const mayaResponse = await mayaAPI.createEsim({
+        product_uid: mayaProductUid,
+        quantity: 1, 
+        metadata: {
+          order_id: order.id, 
+          session_id: sessionId,
+        },
+      });
+
+      const esimDetails = mayaResponse.esims[0];
+
+      if (!esimDetails) {
+        logger.error(`[COMPLETE_ORDER] ❌ Maya did not return eSIM details for ${order.id}`);
+        throw new Error("Maya API did not return eSIM details (Fulfillment failed)");
+      }
+      
+      // 3.5 שמירת פרטי ה-eSIM ב-DB (מיפוי מדויק!)
+      const userId = session.auth?.userId || null; // יקבל null אם אורח (דורש user_id nullable ב-esims!)
+      const expirationDate = esimDetails.expires_at ? new Date(esimDetails.expires_at).toISOString() : null;
+
+      const esimRecord = await esimRepository.create({
+          order_id: order.id,
+          user_id: userId, // 🚨 חייב להיות NULLABLE ב-DB עבור אורחים
+          iccid: esimDetails.iccid,
+          qr_code_url: esimDetails.activation.qr_code, // מיפוי מדויק
+          smdp_address: esimDetails.activation.lpa_string, // שימוש בשדה זה עבור LPA
+          activation_code: esimDetails.activation.manual_activation_code || null, // מיפוי מדויק
+          status: esimDetails.status, // סטטוס ראשוני
+          matching_id: esimDetails.esim_id, // מזהה ייחודי של Maya
+          // created_at, assigned_date, last_action יוגדרו אוטומטית או ע"י הריפוזיטורי
       });
+      
+      logger.info(`[COMPLETE_ORDER] ✅ eSIM ${esimRecord.iccid} created and saved for order ${order.id}`);
 
-      await sessionService.updateSessionStep(sessionId, "payment", {
-        completed: true,
-      });
+      // 3.6 שלח מייל ללקוח (עם פרטי eSIM)
+      try {
+        const email = session.delivery?.email || session.auth?.email || "office@hiiloworld.com";
+        const name =
+          [session.delivery?.firstName, session.delivery?.lastName]
+            .filter(Boolean)
+            .join(" ") || "לקוח יקר";
+        const amount = transactionInfo.totalAmount || session.pricing?.finalPrice || 0;
+        
+        // פרטי ההפעלה
+        const qrCodeDataUrl = esimDetails.activation.qr_code;
+        const lpaString = esimDetails.activation.lpa_string;
+        const manualCode = esimDetails.activation.manual_activation_code;
 
-      // שלח מייל ללקוח
-      try {
-        const email = session.delivery?.email || session.auth?.email || "office@hiiloworld.com";
-        const name =
-          [session.delivery?.firstName, session.delivery?.lastName]
-            .filter(Boolean)
-            .join(" ") || "לקוח יקר";
+        await postmarkClient.sendEmail({
+          From: "office@hiiloworld.com",
+          To: email,
+          Subject: "ה-eSIM שלך מוכן! 🎉", 
+          HtmlBody: `
+            <h2>שלום ${name},</h2>
+            <p>תודה על הרכישה!</p>
+            <p>מספר הזמנה: <strong>${order.id}</strong></p>
+            <hr/>
+            
+            <h3>✅ פרטי הפעלת eSIM:</h3>
+            <p>השתמשו במידע הבא כדי להתקין את ה-eSIM שלכם:</p>
+            
+            <div style="text-align: center; margin: 20px 0; border: 1px solid #eee; padding: 15px;">
+              <h4>קוד QR לסריקה:</h4>
+              <p style="font-size: 10px; word-break: break-all;">${qrCodeDataUrl}</p> 
+              <p style="font-size: 10px; margin-top: 15px;">(אם המערכת אינה מצליחה להציג את הקוד, ניתן להעתיק את המחרוזת)</p>
+            </div>
+            
+            <p><strong>אפשרות הפעלה ידנית:</strong></p>
+            <ul>
+              <li><strong>כתובת SM-DP (קוד LPA):</strong> <code>${lpaString}</code></li>
+              ${manualCode ? `<li><strong>קוד הפעלה ידני (Activation Code):</strong> <code>${manualCode}</code></li>` : ''}
+            </ul>
 
-        const amount = transactionInfo.totalAmount || session.pricing?.finalPrice || 0;
+            <p>צוות Hiilo 💜</p>
+          `,
+          TextBody: `שלום ${name}, ה-eSIM שלך מוכן. מספר הזמנה: ${order.id}. קוד QR: ${qrCodeDataUrl}`,
+          MessageStream: "transactional",
+        });
 
-        await postmarkClient.sendEmail({
-          From: "office@hiiloworld.com",
-          To: email,
-          Subject: "התשלום שלך אושר 🎉",
-          HtmlBody: `
-            <h2>שלום ${name},</h2>
-            <p>תודה על הרכישה שלך!</p>
-            <p>התשלום על סך <strong>${amount} ₪</strong> אושר בהצלחה.</p>
-            <p>מספר הזמנה: <strong>${order.id}</strong></p>
-            <br/>
-            <p>צוות Hiilo 💜</p>
-          `,
-          TextBody: `שלום ${name}, התשלום שלך על סך ${amount} ש"ח אושר בהצלחה. מספר הזמנה: ${order.id}`,
-          MessageStream: "transactional",
-        });
+        logger.info(`[COMPLETE_ORDER] 📧 Confirmation email with eSIM sent to ${email}`);
+      } catch (emailErr: any) {
+        logger.error(`[COMPLETE_ORDER] ⚠️ Failed to send confirmation email (Fulfillment was successful): ${emailErr.message}`);
+        // נמשיך הלאה כי ההזמנה וה-eSIM נוצרו
+      }
 
-        logger.info(`[COMPLETE_ORDER] 📧 Confirmation email sent to ${email}`);
-      } catch (emailErr: any) {
-        logger.error(`[COMPLETE_ORDER] ⚠️ Failed to send email: ${emailErr.message}`);
-      }
+      logger.info(`[COMPLETE_ORDER] ✅ Order ${order.id} created successfully and fulfilled for session ${sessionId}`);
+      return { status: "COMPLETED", orderId: order.id };
+    } catch (err: any) {
+      logger.error(`[COMPLETE_ORDER] 💥 Fulfillment or DB Error for ${sessionId}: ${err.message}`);
+      // במקרה של כשלון בשלבים 3.2-3.5:
+      await sessionService.updateSessionFields(sessionId, { state: "PAYMENT_FAILED" as any });
+      return { status: "FAILED" };
+    }
+  }
 
-      logger.info(`[COMPLETE_ORDER] ✅ Order ${order.id} created successfully for session ${sessionId}`);
-      return { status: "COMPLETED", orderId: order.id };
-    } catch (err: any) {
-      logger.error(`[COMPLETE_ORDER] 💥 Failed to create order: ${err.message}`);
-      await sessionService.updateSessionFields(sessionId, { state: "PAYMENT_FAILED" as any });
-      return { status: "FAILED" };
-    }
-  }
-
-  // 3️⃣ אם לא הצליח בכלל – נרשום ככישלון
-  logger.warn(`[COMPLETE_ORDER] ❌ Payment not approved (${rawStatus})`);
-  await sessionService.updateSessionFields(sessionId, { state: "PAYMENT_FAILED" as any });
-  return { status: "FAILED" };
+  // 4. אם לא הצליח בכלל – נרשום ככישלון
+  logger.warn(`[COMPLETE_ORDER] ❌ Payment not approved (${rawStatus})`);
+  await sessionService.updateSessionFields(sessionId, { state: "PAYMENT_FAILED" as any });
+  return { status: "FAILED" };
 };
 
 // ==========================================================

@@ -581,7 +581,7 @@ export type Database = {
           smdp_address?: string | null
           status?: string
           updated_at?: string | null
-          user_id: string
+          user_id: string | null
         }
         Update: {
           action_date?: string | null
