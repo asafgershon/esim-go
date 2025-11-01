@@ -232,17 +232,12 @@ export const completeOrder = async ({
     try {
         easycardStatus = await getTransactionStatus(easycardTransactionId);
         
-        if (easycardStatus.status !== 'Approved' && easycardStatus.status !== 'Succeeded') {
-            logger.warn(`[COMPLETE_ORDER] Payment status not approved: ${easycardStatus.status} for ${sessionId}`);
-            // 👇 תיקון שגיאת 2353: עדכון הסטטוס בשדה הראשי
-            await sessionService.updateSessionFields(sessionId, { state: 'PAYMENT_FAILED' as any });
-            
-            // עדכון ה-step רק כדי לסמן completed
-            await sessionService.updateSessionStep(sessionId, "payment", { 
-                completed: true,
-            });
-            return { status: 'FAILED' };
-        }
+    if (!['Approved', 'Succeeded', 'awaitingfortransmission'].includes(easycardStatus.status)) {
+      logger.warn(`[COMPLETE_ORDER] Payment not approved: ${easycardStatus.status}`);
+      await sessionService.updateSessionFields(sessionId, { state: 'PAYMENT_FAILED' as any });
+      await sessionService.updateSessionStep(sessionId, "payment", { completed: true });
+      return { status: 'FAILED' };
+    }
     } catch (err: any) {
         logger.error(`[COMPLETE_ORDER] Easycard verification failed for ${easycardTransactionId}: ${err.message}`);
         return { status: 'PENDING' }; 
@@ -251,19 +246,10 @@ export const completeOrder = async ({
     // 3. 💰 **התשלום אושר! שליחת ה-eSIM**
     try {
         // ⚠️ תיקון: שימוש ב-esimRepository.create
-        const order = await esimRepository.create({ 
-            user_id: session.auth.userId, // 👈 תיקון שגיאה 2339 (userId)
-            bundle_id: session.bundle.externalId, 
-            email: session.delivery.email, 
-            //... נדרש למלא את שאר השדות הקריטיים ל-EsimInsert
-        } as any); // ⚠️ יש להחליף את 'as any' בטיפוס EsimInsert תקין
-        
-        const newOrderId = order.id; // נניח שמזהה השורה שנוצרה הוא ה-orderId שלנו
-        
-        // 4. עדכון הסשן והשלמת התהליך
-        // 👇 תיקון שגיאת 2353: עדכון הסטטוס וה-orderId בשדה הראשי
+        const order = await orderRepository?.createFromSession(session, easycardTransactionId);
+       
         await sessionService.updateSessionFields(sessionId, {
-            orderId: newOrderId,
+            orderId: order?.id,
             state: 'PAYMENT_COMPLETED' as any 
         });
         
@@ -277,8 +263,8 @@ export const completeOrder = async ({
         // 6. נשגר עדכון ל-Frontend (דרך PubSub)
         // publish(pubsub)(sessionId, { ...completedSession, isComplete: true }); 
 
-        logger.info(`[COMPLETE_ORDER] Order ${newOrderId} created successfully for session ${sessionId}`);
-        return { status: 'COMPLETED', orderId: newOrderId };
+        logger.info(`[COMPLETE_ORDER] Order ${order?.id} created successfully for session ${sessionId}`);
+        return { status: 'COMPLETED', orderId: order?.id };
 
     } catch (err: any) {
         logger.error(`[COMPLETE_ORDER] Failed to create eSIM order for session ${sessionId}: ${err.message}`);
