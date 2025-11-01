@@ -257,6 +257,7 @@ export class OrderRepository extends BaseSupabaseRepository<
       .insert(orderData)
       .select()
       .single();
+    
 
     if (error) this.handleError(error, 'creating order from session');
     return data;

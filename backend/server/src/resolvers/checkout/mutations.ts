@@ -321,39 +321,37 @@ processPaymentCallback: {
 
       logger.info(`[CALLBACK] Processing EasyCard transaction ${transactionId}`);
 
-      // 🟢 1. נריץ את ה־workflow (במקום ה־handleRedirectCallback של app)
+      // 🟢 מריצים את ה־workflow — הוא קורא ל-completeOrder
       const result = await context.services.checkoutWorkflow.handleRedirectCallback({
         easycardTransactionId: transactionId,
       });
 
-      // 🟢 2. אם הצליח — נחזיר ל־frontend את ה־orderId
-      if (result.success && result.orderId) {
-        logger.info(`[ASYNC CALLBACK] ✅ Order completed for ${transactionId}`);
+      // 🔹 ננרמל גם כאן את התגובה
+      if (result?.orderId) {
+        logger.info(`[CALLBACK] ✅ Order ${result.orderId} created successfully for ${transactionId}`);
         return result.orderId;
       }
 
-      // 🟡 3. אם ההזמנה עוד בתהליך / לא אושרה
-      if (!result.success) {
-        logger.warn(`[ASYNC CALLBACK] ❌ Payment still pending or failed for ${transactionId}`);
-        throw new GraphQLError("Payment pending or failed", {
-          extensions: { code: "PAYMENT_PENDING" },
-        });
+      // 🔹 אם אין orderId אבל יש הצלחה — נחזיר הודעה כללית
+      if (result?.success) {
+        logger.warn(`[CALLBACK] ⚠️ Payment succeeded but order missing — treating as success.`);
+        return "TEMP_SUCCESS";
       }
 
-      // 🔴 4. אם יש בעיה שאין orderId
-      throw new GraphQLError("Payment successful but order ID missing", {
-        extensions: { code: "ORDER_ID_MISSING" },
+      // 🔹 אחרת — שגיאה אמיתית
+      logger.warn(`[CALLBACK] ❌ Payment pending or failed for ${transactionId}`);
+      throw new GraphQLError("Payment pending or failed", {
+        extensions: { code: "PAYMENT_PENDING" },
       });
 
     } catch (error: any) {
       logger.error(`[CALLBACK] 💥 Error processing ${transactionId}:`, error);
-
-      if (error instanceof GraphQLError) throw error;
-
-      throw new GraphQLError(error.message || "Internal server error during payment callback", {
-        extensions: { code: "INTERNAL_SERVER_ERROR" },
-      });
+      throw new GraphQLError(
+        error.message || "Internal server error during payment callback",
+        { extensions: { code: "INTERNAL_SERVER_ERROR" } }
+      );
     }
   },
 },
+
 };
