@@ -243,10 +243,13 @@ export const completeOrder = async ({
         return { status: 'PENDING' }; 
     }
 
-    // 3. 💰 **התשלום אושר! שליחת ה-eSIM**
     try {
-        // ⚠️ תיקון: שימוש ב-esimRepository.create
+        logger.info(`[COMPLETE_ORDER] 🟢 calling createFromSession for session ${sessionId}`);
+        if(orderRepository === null){
+          logger.error(`[COMPLETE_ORDER] orderRepository is null!`);
+        }
         const order = await orderRepository?.createFromSession(session, easycardTransactionId);
+        logger.info(`[COMPLETE_ORDER] 🟢 order response: ${JSON.stringify(order, null, 2)}`);
        
         await sessionService.updateSessionFields(sessionId, {
             orderId: order?.id,
