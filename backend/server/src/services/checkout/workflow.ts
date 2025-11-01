@@ -113,8 +113,8 @@ const selectBundle = async ({
       country,
       numOfDays,
       price,
+      externalId: result.externalId.toString(),
       pricePerDay: price / numOfDays,
-      externalId: `bundle-${countryId}-${numOfDays}`,
     }
   );
 

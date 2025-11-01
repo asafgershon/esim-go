@@ -34,6 +34,7 @@ type Bundle = {
     price_usd: number;
     provider_id: number;
     plan_type: string;
+    external_id: String; //i had this!!!!1
 };
 
 // ✅ פונקציה לעיגול למעלה לספרה אחת אחרי הנקודה
@@ -171,11 +172,12 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
         provider: providerName,
         bundleName: upperPackage.name,
         requestedDays,
+        externalId: upperPackage.external_id,
         calculation: {
             upperPackagePrice: rounded.upperPackagePrice,
             totalDiscount: rounded.totalDiscount,
             unusedDays,
             finalPriceBeforeRounding: finalPrice,
-        }
+        },
     };
 }
