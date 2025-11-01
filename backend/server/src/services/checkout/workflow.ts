@@ -206,79 +206,120 @@ const applyCoupon = async ({
  * 🛠️ מבצע את הלוגיקה הקריטית: אימות תשלום, יצירת הזמנת eSIM, ועדכון DB.
  */
 export const completeOrder = async ({
-    sessionId,
-    easycardTransactionId,
+  sessionId,
+  easycardTransactionId,
 }: {
-    sessionId: string;
-    easycardTransactionId: string;
-}): Promise<{ status: 'COMPLETED' | 'FAILED' | 'PENDING', orderId?: string }> => {
-    // ⚠️ נניח ש-updateSessionFields נוספה כראוי ל-sessionService
-    if (!sessionService || !esimRepository || !pubsub) throw new NotInitializedError();
+  sessionId: string;
+  easycardTransactionId: string;
+}): Promise<{ status: 'COMPLETED' | 'FAILED' | 'PENDING'; orderId?: string }> => {
+  // ✅ בדיקה שכל הרכיבים קיימים
+  if (!sessionService || !orderRepository || !pubsub)
+    throw new NotInitializedError();
 
-    const session = await sessionService.getSession(sessionId);
-    if (!session) {
-        logger.error(`[COMPLETE_ORDER] Session not found: ${sessionId}`);
-        return { status: 'FAILED' }; 
-    }
-    
-    // 1. מניעת כפילויות: אם orderId קיים בסשן, התהליך כבר בוצע.
-    if ((session as any).orderId) { 
-        logger.warn(`[COMPLETE_ORDER] Session ${sessionId} already has order ID: ${(session as any).orderId}. Ignoring.`);
-        return { status: 'COMPLETED', orderId: (session as any).orderId };
-    }
-    
-    // 2. 🛡️ אימות שרת-שרת מול איזיקארד
-    let easycardStatus: ITransactionStatusResponse;
-    try {
-        easycardStatus = await getTransactionStatus(easycardTransactionId);
-        
-    if (!['Approved', 'Succeeded', 'awaitingfortransmission'].includes(easycardStatus.status)) {
-      logger.warn(`[COMPLETE_ORDER] Payment not approved: ${easycardStatus.status}`);
-      await sessionService.updateSessionFields(sessionId, { state: 'PAYMENT_FAILED' as any });
-      await sessionService.updateSessionStep(sessionId, "payment", { completed: true });
+  // 🧩 שלב 1 — שליפת ה־Session
+  const session = await sessionService.getSession(sessionId);
+  if (!session) {
+    logger.error(`[COMPLETE_ORDER] ❌ Session not found: ${sessionId}`);
+    return { status: 'FAILED' };
+  }
+
+  // 🧩 שלב 2 — מניעת כפילויות
+  if ((session as any).orderId) {
+    logger.warn(
+      `[COMPLETE_ORDER] ⚠️ Session ${sessionId} already has order ID: ${(session as any).orderId}. Skipping.`
+    );
+    return { status: 'COMPLETED', orderId: (session as any).orderId };
+  }
+
+  // 🧩 שלב 3 — אימות מול EasyCard
+  let easycardStatus: ITransactionStatusResponse;
+  try {
+    easycardStatus = await getTransactionStatus(easycardTransactionId);
+    const rawStatus = easycardStatus.status || '';
+    const status = rawStatus.toLowerCase();
+
+    // רשימות סטטוסים
+    const approvedStatuses = ['approved', 'succeeded', 'success'];
+    const pendingStatuses = [
+      'awaitingfortransmission',
+      'pending',
+      'processing',
+      'inprogress',
+      'awaiting',
+    ];
+
+    logger.info(`[COMPLETE_ORDER] 🪄 EasyCard raw status: ${rawStatus}`);
+
+    if (approvedStatuses.some((s) => status.includes(s))) {
+      logger.info(`[COMPLETE_ORDER] ✅ Payment approved (${rawStatus})`);
+    } else if (pendingStatuses.some((s) => status.includes(s))) {
+      logger.info(`[COMPLETE_ORDER] ⏳ Payment pending (${rawStatus})`);
+      await sessionService.updateSessionFields(sessionId, {
+        state: 'PAYMENT_PENDING' as any,
+      });
+      return { status: 'PENDING' };
+    } else {
+      logger.warn(`[COMPLETE_ORDER] ❌ Payment not approved (${rawStatus})`);
+      await sessionService.updateSessionFields(sessionId, {
+        state: 'PAYMENT_FAILED' as any,
+      });
+      await sessionService.updateSessionStep(sessionId, 'payment', {
+        completed: true,
+      });
       return { status: 'FAILED' };
     }
-    } catch (err: any) {
-        logger.error(`[COMPLETE_ORDER] Easycard verification failed for ${easycardTransactionId}: ${err.message}`);
-        return { status: 'PENDING' }; 
-    }
+  } catch (err: any) {
+    logger.error(
+      `[COMPLETE_ORDER] ⚠️ EasyCard verification failed for ${easycardTransactionId}: ${err.message}`
+    );
+    return { status: 'PENDING' };
+  }
 
-    try {
-        logger.info(`[COMPLETE_ORDER] 🟢 calling createFromSession for session ${sessionId}`);
-        if(orderRepository === null){
-          logger.error(`[COMPLETE_ORDER] orderRepository is null!`);
-        }
-        const order = await orderRepository?.createFromSession(session, easycardTransactionId);
-        logger.info(`[COMPLETE_ORDER] 🟢 order response: ${JSON.stringify(order, null, 2)}`);
-       
-        await sessionService.updateSessionFields(sessionId, {
-            orderId: order?.id,
-            state: 'PAYMENT_COMPLETED' as any 
-        });
-        
-        // 5. עדכון שלב התשלום (רק completed)
-        const completedSession = await sessionService.updateSessionStep(sessionId, "payment", {
-            completed: true, 
-            // אין צורך ב-status, הוא עודכן למעלה
-        });
+  // 🧩 שלב 4 — יצירת הזמנה במסד
+  try {
+    logger.info(`[COMPLETE_ORDER] 🟢 Creating order for session ${sessionId}`);
+    if (!orderRepository) {
+      logger.error(`[COMPLETE_ORDER] orderRepository is undefined!`);
+      throw new Error('OrderRepository not initialized');
+    }
 
+    const order = await orderRepository.createFromSession(
+      session,
+      easycardTransactionId
+    );
+    logger.info(
+      `[COMPLETE_ORDER] ✅ Order created: ${JSON.stringify(order, null, 2)}`
+    );
 
-        // 6. נשגר עדכון ל-Frontend (דרך PubSub)
-        // publish(pubsub)(sessionId, { ...completedSession, isComplete: true }); 
+    // עדכון session עם orderId
+    await sessionService.updateSessionFields(sessionId, {
+      orderId: order.id,
+      state: 'PAYMENT_COMPLETED' as any,
+    });
 
-        logger.info(`[COMPLETE_ORDER] Order ${order?.id} created successfully for session ${sessionId}`);
-        return { status: 'COMPLETED', orderId: order?.id };
+    // סימון שלב התשלום כהושלם
+    await sessionService.updateSessionStep(sessionId, 'payment', {
+      completed: true,
+    });
 
-    } catch (err: any) {
-        logger.error(`[COMPLETE_ORDER] Failed to create eSIM order for session ${sessionId}: ${err.message}`);
-        // נסמן שהתשלום אושר אך המשלוח נכשל (דורש טיפול ידוני)
-        await sessionService.updateSessionFields(sessionId, { state: 'MANUAL_REVIEW_REQUIRED' as any });
-        await sessionService.updateSessionStep(sessionId, "payment", { 
-            completed: true, 
-        });
-        return { status: 'FAILED' };
-    }
+    logger.info(
+      `[COMPLETE_ORDER] ✅ Order ${order.id} linked to session ${sessionId}`
+    );
+    return { status: 'COMPLETED', orderId: order.id };
+  } catch (err: any) {
+    logger.error(
+      `[COMPLETE_ORDER] ❌ Failed to create order for session ${sessionId}: ${err.message}`
+    );
+    await sessionService.updateSessionFields(sessionId, {
+      state: 'MANUAL_REVIEW_REQUIRED' as any,
+    });
+    await sessionService.updateSessionStep(sessionId, 'payment', {
+      completed: true,
+    });
+    return { status: 'FAILED' };
+  }
 };
+
 
 
 // ==========================================================
