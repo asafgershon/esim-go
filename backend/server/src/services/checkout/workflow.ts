@@ -247,7 +247,7 @@ export const completeOrder = async ({
       logger.info(`[COMPLETE_ORDER] ✅ Payment appears successful (${rawStatus}). Creating order and fulfilling...`);
 
       // 3.1 בדיקת ה-UID של המוצר
-      const mayaProductUid = session.bundle?.externalId; 
+      const mayaProductUid = session.pricing.externalId; 
   
       if (!mayaProductUid) {
           logger.error(`[COMPLETE_ORDER] ❌ Missing Maya Product UID in session: ${sessionId}`);

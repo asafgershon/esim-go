@@ -365,6 +365,7 @@ const updateSessionStep = async <K extends keyof CheckoutSession>(
               auth: validatedSession.auth,
               delivery: validatedSession.delivery,
               payment: validatedSession.payment,
+              pricing: validatedSession.pricing,
               // הוסף כאן שדות נוספים אם קיימים ב-steps ב-DB
           };
           dataToUpdate.steps = stepsToSave as any; // שמור את האובייקט המשוחזר
@@ -372,6 +373,7 @@ const updateSessionStep = async <K extends keyof CheckoutSession>(
           logger.info(`[DEBUG] Updating session ${sessionId} in DB...`, { dataToUpdate });
           await checkoutSessionRepository.update(sessionId, dataToUpdate);
           logger.info(`[DEBUG] Session ${sessionId} updated in DB successfully.`);
+          logger.info("[DB] DONE checkout_sessions.update()", { sessionId });
 
       } catch (dbError) {
           logger.error("Failed to update session in DB", dbError as Error, { sessionId });
