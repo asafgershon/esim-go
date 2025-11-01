@@ -296,10 +296,22 @@ const updateSessionStep = async <K extends keyof CheckoutSession>(
 
   const oldPaymentIntentId = session.payment?.intent?.id;
 
+    logger.info("[SESSION] updateSessionStep() BEFORE MERGE", {
+    sessionId,
+    step,
+    incomingExternalId: (updates as any).externalId,
+    sessionBundleExternalId_before: (session as any).bundle?.externalId,
+  });
+
   session[step] = {
     ...(session[step] as object),
     ...updates,
   } as CheckoutSession[K];
+
+    logger.info("[SESSION] updateSessionStep() AFTER MERGE BEFORE ZOD", {
+    sessionId,
+    mergedBundleExternalId: (session as any).bundle?.externalId,
+  });
 
   session.updatedAt = new Date();
   session.version += 1;

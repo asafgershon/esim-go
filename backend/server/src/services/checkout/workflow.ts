@@ -118,6 +118,11 @@ const selectBundle = async ({
     }
   );
 
+  logger.info("[BUNDLE] after updateSessionStep()", {
+    sessionId,
+    savedExternalId: next.bundle?.externalId,
+  });
+
   return next;
 };
 
