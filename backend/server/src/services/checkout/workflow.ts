@@ -293,18 +293,17 @@ export const completeOrder = async ({
       const userId = session.auth?.userId || null; // יקבל null אם אורח (דורש user_id nullable ב-esims!)
       const expirationDate = esimDetails.expires_at ? new Date(esimDetails.expires_at).toISOString() : null;
 
-      const esimRecord = await esimRepository.create({
-          order_id: order.id,
-          user_id: userId, // 🚨 חייב להיות NULLABLE ב-DB עבור אורחים
-          iccid: esimDetails.iccid,
-          qr_code_url: esimDetails.activation.qr_code, // מיפוי מדויק
-          smdp_address: esimDetails.activation.lpa_string, // שימוש בשדה זה עבור LPA
-          activation_code: esimDetails.activation.manual_activation_code || null, // מיפוי מדויק
-          status: esimDetails.status, // סטטוס ראשוני
-          matching_id: esimDetails.esim_id, // מזהה ייחודי של Maya
-          // created_at, assigned_date, last_action יוגדרו אוטומטית או ע"י הריפוזיטורי
-      });
-      
+    const esimRecord = await esimRepository.create({
+      order_id: order.id,
+      user_id: userId, // עדיין יכול להיות NULL לאורחים
+      iccid: esimDetails.iccid,
+      qr_code_url: esimDetails.activation_code, // ✅ זה ה-LPA (לסריקה או שליחה למשתמש)
+      smdp_address: esimDetails.smdp_address,   // ✅ כתובת ה-SM-DP+
+      activation_code: esimDetails.manual_code || null, // ✅ קוד ידני אם נדרש
+      status: esimDetails.service_status,       // ✅ לפי Maya זה הסטטוס המשמעותי
+      matching_id: esimDetails.uid,             // ✅ מזהה ה-eSIM במערכת Maya
+    });
+
       logger.info(`[COMPLETE_ORDER] ✅ eSIM ${esimRecord.iccid} created and saved for order ${order.id}`);
 
       // 3.6 שלח מייל ללקוח (עם פרטי eSIM)
