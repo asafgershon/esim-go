@@ -1,6 +1,6 @@
 import z from "zod";
 
-// Maya Bundle Schema
+// ✅ 1. Maya Bundle Schema
 export const MayaBundleSchema = z.object({
   uid: z.string(),
   name: z.string(),
@@ -13,8 +13,8 @@ export const MayaBundleSchema = z.object({
   wholesale_price_usd: z.string(),
 });
 
-// Maya Products Response Schema
-const MayaProductsResponseSchema = z.object({
+// ✅ 2. Maya Products Response Schema
+export const MayaProductsResponseSchema = z.object({
   result: z.number(),
   status: z.number(),
   request_id: z.string(),
@@ -23,47 +23,50 @@ const MayaProductsResponseSchema = z.object({
   products: z.array(MayaBundleSchema),
 });
 
-// Maya Create eSIM Request Schema
+// ✅ 3. Maya Create eSIM Request Schema
 export const MayaCreateEsimRequestSchema = z.object({
   product_uid: z.string().describe("The UID of the Maya bundle/product"),
   quantity: z.number().int().positive().default(1).describe("Number of eSIMs to create"),
-  metadata: z.record(z.any(), z.any()).optional().describe("Optional metadata for the eSIM"),
+  metadata: z.record(z.string(), z.any()).optional().describe("Optional metadata for the eSIM"),
 });
 
-// Maya eSIM Activation Details Schema
+// ✅ 4. Maya eSIM Activation Details Schema (future use)
 export const MayaEsimActivationSchema = z.object({
   qr_code: z.string().describe("QR code data for eSIM activation"),
   lpa_string: z.string().describe("LPA activation string"),
   manual_activation_code: z.string().optional().describe("Manual activation code if supported"),
 });
 
-// Maya eSIM Details Schema
+// ✅ 5. Maya eSIM Details Schema
 export const MayaEsimSchema = z.object({
-  esim_id: z.string().describe("Unique identifier for the eSIM"),
+  uid: z.string().describe("Unique identifier for the eSIM"),
   iccid: z.string().describe("ICCID of the eSIM"),
-  status: z.enum(["active", "pending", "used", "expired", "failed"]).describe("Current status of the eSIM"),
-  created_at: z.string().describe("ISO timestamp of eSIM creation"),
-  expires_at: z.string().optional().describe("ISO timestamp of eSIM expiration"),
-  activation: MayaEsimActivationSchema.describe("Activation details for the eSIM"),
-  bundle_name: z.string().describe("Name of the associated bundle"),
-  bundle_uid: z.string().describe("UID of the associated bundle"),
-  data_quota_mb: z.number().describe("Data quota in MB"),
-  validity_days: z.number().describe("Validity period in days"),
+  activation_code: z.string().describe("LPA activation code for eSIM activation"),
+  manual_code: z.string().describe("Manual activation code (optional for manual setup)"),
+  smdp_address: z.string().describe("SM-DP+ address used for eSIM activation"),
+  auto_apn: z.number().optional().describe("Auto APN configuration flag (1 = enabled)"),
+  apn: z.string().optional().describe("Access Point Name (APN) for data connectivity"),
+  state: z.string().describe("Internal state of the eSIM (e.g. RELEASED, ACTIVE)"),
+  service_status: z.string().describe("Service status of the eSIM (e.g. active, inactive)"),
+  network_status: z.string().describe("Network status of the eSIM (e.g. ENABLED, DISABLED)"),
+  tag: z.union([z.string(), z.number()]).optional().describe("Optional tag used in Maya dashboard"),
+  date_assigned: z.string().describe("Timestamp of when the eSIM was assigned (YYYY-MM-DD HH:mm:ss)"),
 });
 
-// Maya Create eSIM Response Schema
+// ✅ 6. Maya Create eSIM Response Schema
 export const MayaCreateEsimResponseSchema = z.object({
-  result: z.number(),
-  status: z.number(),
-  request_id: z.string(),
-  message: z.string().optional(),
-  developer_message: z.string(),
-  esims: z.array(MayaEsimSchema).describe("Array of created eSIMs"),
+  result: z.number().describe("API result code (1 = success)"),
+  status: z.number().describe("HTTP-like status code (e.g. 201)"),
+  request_id: z.string().describe("Unique request ID for tracking"),
+  message: z.string().optional().describe("Response message"),
+  developer_message: z.string().optional().describe("Developer-facing message or notes"),
+  esim: MayaEsimSchema.optional().describe("Single created eSIM object"),
+  esims: z.array(MayaEsimSchema).optional().describe("Array of created eSIMs (optional for bulk requests)"),
   transaction_id: z.string().optional().describe("Transaction ID for tracking"),
   total_cost_usd: z.string().optional().describe("Total cost in USD"),
 });
 
-// Maya Error Response Schema
+// ✅ 7. Maya Error Response Schema
 export const MayaErrorResponseSchema = z.object({
   result: z.number(),
   status: z.number(),
@@ -74,7 +77,7 @@ export const MayaErrorResponseSchema = z.object({
   details: z.record(z.any(), z.any()).optional(),
 });
 
-// Type definitions
+// ✅ 8. Type definitions (exported for TS)
 export type MayaBundle = z.infer<typeof MayaBundleSchema>;
 export type MayaProductsResponse = z.infer<typeof MayaProductsResponseSchema>;
 export type MayaCreateEsimRequest = z.infer<typeof MayaCreateEsimRequestSchema>;
@@ -94,7 +97,7 @@ export class MayaApi {
 
   constructor(config: MayaApiConfig) {
     this.auth = config.auth;
-    this.baseUrl = config.baseUrl || "https://api.maya.net/connectivity/v1";
+    this.baseUrl = "https://api.maya.net/connectivity/v1";
   }
 
   /**
@@ -129,47 +132,52 @@ export class MayaApi {
   /**
    * Create eSIM(s) for a specific Maya product/bundle
    */
-  async createEsim(params: MayaCreateEsimRequest): Promise<MayaCreateEsimResponse> {
-    const url = `${this.baseUrl}/esims`;
-    
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: this.auth,
-      },
-      body: JSON.stringify({
-        product_uid: params.product_uid,
-        quantity: params.quantity || 1,
-        ...(params.metadata && { metadata: params.metadata }),
-      }),
-    });
+async createEsim(params: MayaCreateEsimRequest): Promise<MayaCreateEsimResponse> {
+  const url = `${this.baseUrl}/esim`;
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      
-      // Try to parse as Maya error response
-      try {
-        const mayaError = MayaErrorResponseSchema.parse(errorData);
-        throw new MayaApiError(
-          mayaError.message || `Maya API error: ${response.status}`,
-          response.status,
-          mayaError
-        );
-      } catch (parseError) {
-        // If not a valid Maya error response, throw generic error
-        throw new MayaApiError(
-          `Maya API error: ${response.status} ${response.statusText}`,
-          response.status,
-          errorData
-        );
-      }
+  const apiKey = "y5b7HUu2PkCK";
+  const apiSecret = "BcM1pD9MhpY5eZNunPJqRCEQGIyDbmmceIw69bszr7xQT6KLqvVvj4kFo8Xz1SuH";
+
+const authHeader = "Basic " + Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
+
+  console.log("🔐 Authorization Header:", authHeader);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: authHeader,
+    },
+    body: JSON.stringify({
+      plan_type_id: params.product_uid,
+      quantity: params.quantity || 1,
+      ...(params.metadata && { metadata: params.metadata }),
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    try {
+      const mayaError = MayaErrorResponseSchema.parse(errorData);
+      throw new MayaApiError(
+        mayaError.message || `Maya API error: ${response.status}`,
+        response.status,
+        mayaError
+      );
+    } catch {
+      throw new MayaApiError(
+        `Maya API error: ${response.status} ${response.statusText}`,
+        response.status,
+        errorData
+      );
     }
-
-    const data = await response.json();
-    const parsedData = MayaCreateEsimResponseSchema.parse(data);
-    return parsedData;
   }
+
+  const data = await response.json();
+  const parsedData = MayaCreateEsimResponseSchema.parse(data);
+  return parsedData;
+}
+
 
   /**
    * Get eSIM status and details

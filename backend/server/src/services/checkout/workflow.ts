@@ -282,8 +282,8 @@ export const completeOrder = async ({
         },
       });
 
-      const esimDetails = mayaResponse.esims[0];
-
+    const esimDetails =
+  (mayaResponse as any).esim ?? mayaResponse.esims?.[0];
       if (!esimDetails) {
         logger.error(`[COMPLETE_ORDER] ❌ Maya did not return eSIM details for ${order.id}`);
         throw new Error("Maya API did not return eSIM details (Fulfillment failed)");
