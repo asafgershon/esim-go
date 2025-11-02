@@ -31,7 +31,8 @@
     "prepublishOnly": "bun clean && bun generate && bun build"
   },
   "dependencies": {
-    "axios": "^1.6.0"
+    "axios": "^1.6.0",
+    "postmark": "^4.0.5"
   },
   "devDependencies": {
     "@openapitools/openapi-generator-cli": "^2.13.0",

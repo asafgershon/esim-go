@@ -5,7 +5,7 @@ import type { Destination } from "@/contexts/bundle-selector-context";
 import { useCountries } from "@/hooks/useCountries";
 import { useTrips } from "@/hooks/useTrips";
 // 1. הוספת useState לייבוא
-import { useMemo, useState } from "react"; 
+import { useMemo } from "react"; 
 import {
     SelectorAction,
     SelectorButton,
@@ -19,7 +19,7 @@ import { Pricing } from "./pricing";
 import { SliderWithValue } from "@workspace/ui";
 import { useEffect } from "react";
 import { getFlagUrl } from "@/utils/flags";
-import { Users2Icon } from "lucide-react";
+// import { Users2Icon } from "lucide-react";
 
 interface MainViewProps {
     // ... (שדות Pricing)
@@ -55,7 +55,7 @@ export function MainView({
     handlePurchase,
 }: MainViewProps) {
     // 2. הגדרת מצב מקומי לכמות ה-eSIMs
-    const [numOfEsims, setNumOfEsims] = useState(1);
+    // const [numOfEsims, setNumOfEsims] = useState(1);
     
     // Get UI state and handlers from context
     const {
@@ -159,13 +159,12 @@ export function MainView({
                     </div>
                 </SelectorSection>
 
-                {/* --- בורר כמות eSIMs --- */}
+                {/*
                 <SelectorSection>
                     <div className="flex items-center gap-[4px] md:gap-2 justify-start">
                         <Users2Icon className="w-4 h-4 md:w-[20px] md:h-[20px] text-brand-dark" />
                         <p className="text-base md:text-xl leading-[26px] md:leading-normal text-brand-dark">
                             כמה eSIMs צריך?
-                            {/* הצגת הודעת הנחה קטנה רק כשיש יעד שנבחר ונבחרה כמות גדולה מ-1 */}
                             {countryId && numOfEsims > 1 && (
                                 <span className="mr-2 text-brand-success text-sm font-semibold">
                                     (✅ הנחת כמות מופעלת!)
@@ -174,7 +173,6 @@ export function MainView({
                         </p>
                     </div>
 
-                    {/* Slider Container - Esim Quantity */}
                     <div className="relative h-[21px] md:h-[38px]">
                         <SliderWithValue
                             dir={"rtl"}
@@ -188,7 +186,7 @@ export function MainView({
                         לכל מטייל נפרד דרוש eSIM משלו.
                     </div>
                 </SelectorSection>
-                {/* ------------------------------- */}
+                */}
 
                 {/* Selected Destination and Pricing */}
                 {destination && (
@@ -214,7 +212,7 @@ export function MainView({
                 <SelectorButton
                     onClick={() => {
                         if (isPricingValid) {
-                            console.log("✅ handlePurchase called", { countryId, numOfDays, numOfEsims });
+                            console.log("✅ handlePurchase called", { countryId, numOfDays });
                             // חשוב: כשמפעילים את handlePurchase, יש לוודא שהכמות (numOfEsims) עוברת הלאה
                             handlePurchase();
                         } else {
@@ -230,7 +228,7 @@ export function MainView({
                     emphasized={isPricingValid}
                 >
                     {isPricingValid
-                        ? `לרכישת החבילה (${numOfEsims} יחידות)`
+                        ? "לרכישת החבילה"
                         : "לצפייה בחבילה המשתלמת ביותר"}
                 </SelectorButton>
             </SelectorAction>

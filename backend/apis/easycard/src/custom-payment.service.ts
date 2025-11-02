@@ -140,7 +140,7 @@ export async function createPaymentIntent(params: ICreatePaymentParams): Promise
     // שלב 2: הכן את גוף הבקשה (request body)
     const requestBody = {
         terminalID: params.terminalID,
-        currency: "ILS", // ניתן לשנות אם צריך
+        currency: "USD", // ניתן לשנות אם צריך
         invoiceType: "invoiceWithPaymentInfo",
         paymentRequestAmount: params.amount,
         issueInvoice: true,
