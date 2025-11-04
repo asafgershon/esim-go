@@ -437,7 +437,7 @@ ${qrCodeDataUrl}
     {
       Name: "logo-header.svg",
       Content: fs
-        .readFileSync("../../../../../frontend/apps/web-app/public/images/logos/logo-header.svg")
+        .readFileSync("../../../assets/logo-header.svg")
         .toString("base64"),
       ContentID: "logo-header.svg",
       ContentType: "image/svg+xml",
