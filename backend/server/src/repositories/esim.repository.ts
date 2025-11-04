@@ -4,13 +4,7 @@ import type { Database } from '../../src/types/database.types';
 import { BaseSupabaseRepository } from './base-supabase.repository';
 
 // Zod enum for eSIM status
-export const EsimStatusEnum = z.enum([
-  'ACTIVE',
-  'ASSIGNED',
-  'SUSPENDED',
-  'EXPIRED',
-  'CANCELLED',
-]);
+export const EsimStatusEnum = z.string().min(1);
 export type EsimStatus = z.infer<typeof EsimStatusEnum>;
 
 type EsimRow = Database['public']['Tables']['esims']['Row'];
