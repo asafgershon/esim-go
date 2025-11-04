@@ -2,6 +2,7 @@
 
 import dotenv from "dotenv";
 import { join } from "node:path";
+import { createClient } from "@supabase/supabase-js";
 
 dotenv.config({ path: join(__dirname, "../.env") });
 
@@ -63,6 +64,8 @@ import { paymentService } from "./services/payment";
 import { calculateSimplePrice } from "../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
 import { createPaymentIntent, type ICreatePaymentParams, getTransactionStatus,type ITransactionStatusResponse } from "../../apis/easycard/src";
 const mainSchema = readFileSync(join(__dirname, "../schema.graphql"), "utf-8");
+import path from "path";
+import fs from "fs";
 const rulesEngineSchema = readFileSync(
   join(__dirname, "../../packages/rules-engine-2/schema.graphql"),
   "utf-8"
@@ -300,6 +303,34 @@ async function startServer() {
         res.status(500).json({ error: "Failed to calculate price" });
       }
     });
+// 💳 Webhook: EasyCard → שמירה ב-Supabase Storage
+app.post("/webhooks/easycard", async (req, res) => {
+  try {
+    const eventID = req.body?.eventID || `unknown-${Date.now()}`;
+    const fileName = `easycard/${eventID}.json`;
+
+    const logData = {
+      received_at: new Date().toISOString(),
+      headers: req.headers,
+      body: req.body,
+    };
+
+    const { error } = await supabaseAdmin.storage
+      .from("logs")
+      .upload(fileName, JSON.stringify(logData, null, 2), {
+        contentType: "application/json",
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    console.log(`✅ [EasyCard] Webhook saved to Supabase: ${fileName}`);
+    res.status(200).send("ok");
+  } catch (err) {
+    console.error("❌ [EasyCard] Error saving webhook:", err);
+    res.status(500).send("error");
+  }
+});
 
     app.post("/api/payment/create-intent", async (req, res) => {
     try {
