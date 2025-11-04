@@ -316,10 +316,9 @@ export const completeOrder = async ({
             .join(" ") || "לקוח יקר";
         const amount = transactionInfo.totalAmount || session.pricing?.finalPrice || 0;
         
-        // פרטי ההפעלה
-        const qrCodeDataUrl = esimDetails.activation.qr_code;
-        const lpaString = esimDetails.activation.lpa_string;
-        const manualCode = esimDetails.activation.manual_activation_code;
+const qrCodeDataUrl = esimDetails.qr_code_url || esimDetails.activation_code;
+const lpaString = esimDetails.smdp_address;
+const manualCode = esimDetails.manual_code;
 
 await postmarkClient.sendEmail({
   From: "office@hiiloworld.com",
@@ -367,7 +366,7 @@ await postmarkClient.sendEmail({
 
                   <div style="text-align:center;">
                     <div style="border:3px solid #00A97A;border-radius:12px;padding:20px;display:inline-block;">
-                      <img src="${esimDetails.activation.qr_code}" alt="QR Code" style="width:200px;height:200px;" />
+                      <img src="${qrCodeDataUrl}" alt="QR Code" style="width:200px;height:200px;" />
                     </div>
                   </div>
 
@@ -376,7 +375,7 @@ await postmarkClient.sendEmail({
                     <p style="font-size:13px;color:#333;font-weight:600;margin-bottom:8px;">משתמש ב-iPhone?</p>
                     <p style="font-size:13px;color:#555;margin:0;">תוכל ללחוץ על הכפתור הבא להפעלה ישירה:</p>
                     <div style="margin-top:16px;">
-                      <a href="${esimDetails.activation.qr_code}" 
+                      <a href="${qrCodeDataUrl}" 
                          style="display:inline-block;background:#00A97A;color:#fff;padding:10px 22px;
                                 border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">
                         הפעל את ה-eSIM
@@ -392,8 +391,8 @@ await postmarkClient.sendEmail({
                       והעתק את הפרטים הבאים לשדות המתאימים:
                     </p>
                     <ul style="list-style:none;padding:0;margin:0;font-size:13px;color:#444;">
-                      <li><strong>כתובת SM-DP+:</strong> ${esimDetails.activation.lpa_string}</li>
-                      <li><strong>קוד הפעלה (Activation Code):</strong> ${esimDetails.activation.manual_activation_code}</li>
+                      <li><strong>כתובת SM-DP+:</strong> ${lpaString}</li>
+                      <li><strong>קוד הפעלה (Activation Code):</strong> ${manualCode}</li>
                     </ul>
                   </div>
                 </div>
@@ -425,12 +424,12 @@ await postmarkClient.sendEmail({
 ה-eSIM שלך מוכן.
 
 סרוק את הקוד או, אם אתה משתמש ב-iPhone, לחץ על הקישור להפעלה ישירה:
-${esimDetails.activation.qr_code}
+${qrCodeDataUrl}
 
 אם אתה משתמש ב-Android:
 1. כנס להגדרות > רשת ניידת > הוסף eSIM ידנית
-2. הזן את כתובת SM-DP+: ${esimDetails.activation.lpa_string}
-3. הזן קוד הפעלה: ${esimDetails.activation.manual_activation_code}
+2. הזן את כתובת SM-DP+: ${lpaString}
+3. הזן קוד הפעלה: ${manualCode}
 
 צוות Hiilo מאחל לך חופשה לא פחות ממושלמת.`,
   MessageStream: "transactional",
@@ -445,6 +444,7 @@ ${esimDetails.activation.qr_code}
     },
   ],
 });
+
 
 
         logger.info(`[COMPLETE_ORDER] 📧 Confirmation email with eSIM sent to ${email}`);
