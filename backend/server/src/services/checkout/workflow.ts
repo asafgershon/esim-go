@@ -5,7 +5,7 @@ import type { PubSubInstance } from "../../context/pubsub";
 // ⚠️ פתרון עקיף: שימוש ב-any במקום לייבא CheckoutSession שחסר
 import type { CheckoutSessionServiceV2 } from "./session";
 import postmark from "postmark";
-import fs from "fs";
+import fs, { stat } from "fs";
 type CheckoutSession = any; 
 
 import { calculateSimplePrice, type SimplePricingResult, type SimplePricingDiscount } from "../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
@@ -531,6 +531,7 @@ export const handleRedirectCallback = async ({
   const status = transactionInfo.status?.toLowerCase() || "";
   const isApproved =
     resultCode === 0 ||
+    status.includes("awaiting_for_transmission") ||
     status.includes("approve") ||
     status.includes("success") ||
     status.includes("succeeded");
