@@ -32,17 +32,18 @@ export function PaymentCallbackHandler({
   
   const [
     processPaymentCallback,
-    { error,loading },
+    { error, loading },
   ] = useMutation<
     ProcessPaymentCallbackMutation,
     ProcessPaymentCallbackMutationVariables
-  >(PROCESS_PAYMENT_CALLBACK_MUTATION,{
-    variables:{
+  >(PROCESS_PAYMENT_CALLBACK_MUTATION, {
+    variables: {
       transactionId: transactionID || "",
     },
     onCompleted: (data) => {
       if (data?.processPaymentCallback) {
-        router.push(`/order/${data.processPaymentCallback}`);
+        // router.push(`/order/${data.processPaymentCallback}`);
+        // ✅ השאר את המשתמש בעמוד ההצלחה (אין ניתוב)
       }
     },
   });
@@ -84,17 +85,21 @@ export function PaymentCallbackHandler({
   }
 
   if (loading) {
-    return     <Card className="p-8 max-w-md mx-auto text-center" dir="rtl">
-    <Loader2 className="h-12 w-12 mx-auto mb-4 text-green-500 animate-spin" />
-    <h2 className="text-2xl font-bold mb-2">מעביר אותך לדף ההזמנה...</h2>
-  </Card>
+    return (
+      <Card className="p-8 max-w-md mx-auto text-center" dir="rtl">
+        <Loader2 className="h-12 w-12 mx-auto mb-4 text-green-500 animate-spin" />
+        <h2 className="text-2xl font-bold mb-2">מעבד תשלום...</h2>
+      </Card>
+    );
   }
 
   return (
     <Card className="p-8 max-w-md mx-auto text-center" dir="rtl">
       <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-      <h2 className="text-2xl font-bold mb-2">התשלום אושר!</h2>
-      <p className="text-muted-foreground">מעביר אותך לדף ההזמנה...</p>
+      <h2 className="text-2xl font-bold mb-2">התשלום בוצע בהצלחה!</h2>
+      <p className="text-muted-foreground">
+        ההזמנה הושלמה ✅ ניתן לסגור את העמוד הזה.
+      </p>
     </Card>
   );
 }

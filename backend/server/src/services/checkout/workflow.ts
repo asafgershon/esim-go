@@ -298,11 +298,11 @@ export const completeOrder = async ({
       order_id: order.id,
       user_id: userId, // עדיין יכול להיות NULL לאורחים
       iccid: esimDetails.iccid,
-      qr_code_url: esimDetails.activation_code, // ✅ זה ה-LPA (לסריקה או שליחה למשתמש)
-      smdp_address: esimDetails.smdp_address,   // ✅ כתובת ה-SM-DP+
-      activation_code: esimDetails.manual_code || null, // ✅ קוד ידני אם נדרש
-      status: esimDetails.service_status,       // ✅ לפי Maya זה הסטטוס המשמעותי
-      matching_id: esimDetails.uid,             // ✅ מזהה ה-eSIM במערכת Maya
+      qr_code_url: esimDetails.qr_code_url || esimDetails.activation_code, // ✅ זה ה־LPA (לסריקה או שליחה למשתמש)
+      smdp_address: esimDetails.smdp_address,   // ✅ כתובת ה־SM-DP+
+      activation_code: esimDetails.activation_code || esimDetails.manual_code || null, // ✅ קוד הפעלה (לפי מאיה)
+      status: esimDetails.status || esimDetails.service_status || 'ASSIGNED', // ✅ תומך גם ב-"active"
+      matching_id: esimDetails.matching_id || esimDetails.uid, // ✅ מזהה ה-eSIM במערכת Maya
     });
 
       logger.info(`[COMPLETE_ORDER] ✅ eSIM ${esimRecord.iccid} created and saved for order ${order.id}`);
