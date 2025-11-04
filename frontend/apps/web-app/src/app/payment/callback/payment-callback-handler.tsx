@@ -42,7 +42,6 @@ export function PaymentCallbackHandler({
     },
     onCompleted: (data) => {
       if (data?.processPaymentCallback) {
-        // router.push(`/order/${data.processPaymentCallback}`);
         // ✅ השאר את המשתמש בעמוד ההצלחה (אין ניתוב)
       }
     },
@@ -96,10 +95,16 @@ export function PaymentCallbackHandler({
   return (
     <Card className="p-8 max-w-md mx-auto text-center" dir="rtl">
       <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-      <h2 className="text-2xl font-bold mb-2">התשלום בוצע בהצלחה!</h2>
-      <p className="text-muted-foreground">
-        ההזמנה הושלמה ✅ ניתן לסגור את העמוד הזה.
+      <h2 className="text-2xl font-bold mb-2">ההזמנה הושלמה בהצלחה ✅</h2>
+      <p className="text-muted-foreground mb-6">
+        ניתן לסגור את העמוד הזה או לחזור לעמוד הבית.
       </p>
+      <Button
+        onClick={() => router.push("/")}
+        className="w-full"
+      >
+        חזרה לעמוד הבית
+      </Button>
     </Card>
   );
 }

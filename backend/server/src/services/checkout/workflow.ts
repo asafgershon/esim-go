@@ -5,6 +5,7 @@ import type { PubSubInstance } from "../../context/pubsub";
 // ⚠️ פתרון עקיף: שימוש ב-any במקום לייבא CheckoutSession שחסר
 import type { CheckoutSessionServiceV2 } from "./session";
 import postmark from "postmark";
+import QRCode from "qrcode";
 import fs, { stat } from "fs";
 type CheckoutSession = any; 
 
@@ -316,7 +317,8 @@ export const completeOrder = async ({
             .join(" ") || "לקוח יקר";
         const amount = transactionInfo.totalAmount || session.pricing?.finalPrice || 0;
         
-const qrCodeDataUrl = esimDetails.qr_code_url || esimDetails.activation_code;
+const activationString = esimDetails.qr_code_url || esimDetails.activation_code;
+const qrCodeDataUrl = await QRCode.toDataURL(activationString);
 const lpaString = esimDetails.smdp_address;
 const manualCode = esimDetails.manual_code;
 
@@ -341,7 +343,7 @@ await postmarkClient.sendEmail({
             <!-- Header -->
             <tr>
               <td style="background:linear-gradient(135deg,#008060 0%,#00B37A 100%);padding:35px 30px;text-align:center;">
-                <img src="https://hiiloworld.com/images/logos/logo-header.svg" alt="Hiilo logo" style="width:120px;height:auto;margin-bottom:10px;" />
+                  <img src="https://hiiloworld.com/images/logos/logo-header.png" alt="Hiilo logo" style="width:120px;height:auto;margin-bottom:10px;" />
                 <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">ה-eSIM שלך מוכן</h1>
               </td>
             </tr>
@@ -366,7 +368,7 @@ await postmarkClient.sendEmail({
 
                   <div style="text-align:center;">
                     <div style="border:3px solid #00A97A;border-radius:12px;padding:20px;display:inline-block;">
-                      <img src="${qrCodeDataUrl}" alt="QR Code" style="width:200px;height:200px;" />
+                        <img src="${qrCodeDataUrl}" alt="QR Code" style="width:200px;height:200px;" />
                     </div>
                   </div>
 
