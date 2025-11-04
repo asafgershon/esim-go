@@ -341,7 +341,7 @@ await postmarkClient.sendEmail({
             <!-- Header -->
             <tr>
               <td style="background:linear-gradient(135deg,#008060 0%,#00B37A 100%);padding:35px 30px;text-align:center;">
-                <img src="cid:logo-header.svg" alt="Hiilo logo" style="width:120px;height:auto;margin-bottom:10px;" />
+                <img src="https://hiiloworld.com/images/logos/logo-header.svg" alt="Hiilo logo" style="width:120px;height:auto;margin-bottom:10px;" />
                 <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">ה-eSIM שלך מוכן</h1>
               </td>
             </tr>
@@ -433,17 +433,8 @@ ${qrCodeDataUrl}
 
 צוות Hiilo מאחל לך חופשה לא פחות ממושלמת.`,
   MessageStream: "transactional",
-  Attachments: [
-    {
-      Name: "logo-header.svg",
-      Content: fs
-        .readFileSync("../../../assets/logo-header.svg")
-        .toString("base64"),
-      ContentID: "logo-header.svg",
-      ContentType: "image/svg+xml",
-    },
-  ],
 });
+
 
 
 
