@@ -3,10 +3,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calculator, Layers, Settings, Globe, Workflow } from 'lucide-react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
-
-
-
-
 const PricingPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();

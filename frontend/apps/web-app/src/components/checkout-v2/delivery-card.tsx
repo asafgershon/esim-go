@@ -443,7 +443,7 @@ export const DeliveryCard = ({
             באתר.
           </p>
                     <button
-                      onClick={() => setShowTerms(false)}
+                      onClick={() => setShowTerms((prev) => !prev)}
                       className="mt-4 w-full py-2 text-center text-white bg-green-500 rounded-md hover:bg-green-600"
                     >
                       סגור

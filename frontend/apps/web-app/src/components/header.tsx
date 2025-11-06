@@ -90,7 +90,7 @@ export function Header({ scrollContainerRef }: HeaderProps = {}) {
         emphasized
         onClick={() => scrollTo("#esim-selector")}
       >
-        לרכישת ESIM
+        צריכים עזרה בהזמנה?
       </Button>
     </div>
   );
@@ -110,7 +110,7 @@ export function Header({ scrollContainerRef }: HeaderProps = {}) {
           size="default"
           onClick={() => scrollTo("#esim-selector")}
         >
-          לרכישת ESIM
+          צריכים עזרה בהזמנה?
         </Button>
       </div>
     </div>

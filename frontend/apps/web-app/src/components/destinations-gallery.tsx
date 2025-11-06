@@ -149,18 +149,18 @@ export function DestinationsGallery({
       aria-label={ariaLabel}
       className="overflow-hidden"
     >
-      <div className="container mx-auto px-4 max-w-[1440px]">
+      <div className="container mx-auto px-4 max-w-[1440px] md:pt-4">
         {/* Header */}
         <div className="text-right mb-12 max-w-4xl mx-auto">
-          <h2 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-6">
-            גלישה חופשית וזמינה במעל <span className="text-[#535FC8]">150</span> מדינות
-          </h2>
+<h2 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-4">
+  הטכנולוגיה שלנו מאפשרת גלישה ללא הגבלה, במחירים המשתלמים ביותר,
+  במעל <span className="text-[#535FC8]">150 </span>מדינות!
+</h2>
           <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-birzia">
-            &nbsp;בחרו את היעד הבא שלכם, רכשו חבילה
-            <br className="hidden md:block" />
-            &nbsp;לפי מספר הימים, וה-ESIM יופעל אוטומטית
-            <br className="hidden md:block" />
-            &nbsp;עם הנחיתה - בלי נפח, בלי הגבלות.
+
+המערכת של Hiilo סורקת בזמן אמת את כל המחירים אצל הספקים במדינות השונות, 
+ומביאה לכם את רק את חבילת ה-ESIM המשתלמת ביותר ללא הגבלת נפח גלישה! 
+
           </p>
         </div>
 

@@ -218,7 +218,7 @@ const BundleUsage: React.FC<BundleUsageProps> = ({
             מתוך {totalDays} ימים
           </div>
           <div className="text-xs text-gray-400 mt-1">
-            נתונים ללא הגבלה
+            unlimited
           </div>
         </div>
       </div>

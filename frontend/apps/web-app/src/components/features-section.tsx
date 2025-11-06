@@ -40,7 +40,7 @@ interface FeatureData {
 }
 
 const features: FeatureData[] = [
-{
+  {
     id: "data-transfer",
     text: "התקנה מהירה באמצעות QR, ללא צורך בסים פיזי",
     highlight: "סרקו את קוד ה-QR והתחילו לגלוש תוך דקות ספורות",
@@ -48,20 +48,20 @@ const features: FeatureData[] = [
   },
   {
     id: "instant-support",
-    text: "תמיכה זמינה 24/7", // שינוי קל לטבעי יותר
-    highlight: "צוות התמיכה שלנו זמין לכל שאלה ובקשה", // קצת יותר שיווקי
+    text: "תמיכה זמינה 24/7",
+    highlight: "צוות התמיכה שלנו זמין לכל שאלה ובקשה",
     icon: "/images/illustrations/paper-plane.png",
   },
   {
     id: "zero-commitment",
-    text: "שומרים על הקו הקיים", // משפט שלם וברור
-    highlight: "ה-eSIM נשאר פעיל במכשיר לצד הקו הראשי שלך", // הבהרה מלאה
+    text: "שומרים על הקו הקיים",
+    highlight: "ה-eSIM נשאר פעיל במכשיר לצד הקו הראשי שלך",
     icon: "/images/illustrations/hand-share.png",
   },
   {
     id: "works-everywhere",
-    text: "הפעלה עצמאית ונוחה", // משפט שלם
-    highlight: "הפעלת ה-eSIM כבר מהבית, עוד לפני הטיסה", // ניסוח טבעי יותר
+    text: "הפעלה עצמאית ונוחה",
+    highlight: "מתקינים את ה-ESIM בלחיצת כפתור כבר בארץ, והוא יעבוד אוטומטית בנחיתה",
     icon: "/images/illustrations/person-reading.png",
   },
 ];
@@ -70,51 +70,17 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
+    transition: { staggerChildren: 0.15 },
   },
 };
 
 const cardVariants = {
-  hidden: {
-    opacity: 0,
-    y: 30,
-    scale: 0.95,
-  },
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: {
-      duration: 0.5,
-    },
-  },
-};
-
-const titleVariants = {
-  hidden: {
-    opacity: 0,
-    y: 20,
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-  },
-};
-
-const ctaVariants = {
-  hidden: {
-    opacity: 0,
-    y: 20,
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      delay: 0.4,
-    },
+    transition: { duration: 0.5 },
   },
 };
 
@@ -131,29 +97,7 @@ export function FeaturesSection({
       aria-label={ariaLabel}
       className="w-full flex flex-col gap-12 px-4"
     >
-      <motion.div
-        className="text-center"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={titleVariants}
-      >
-        <h2
-          className="text-3xl md:text-4xl text-right font-bold mb-4"
-          dir="rtl"
-        >
-          טכנולוגיית אי-סים <span className="text-brand-purple">חדשה</span>
-        </h2>
-        <p
-          className="text-lg text-muted-foreground max-w-2xl mx-auto text-right"
-          dir="rtl"
-        >
-          פיתחנו טכנולוגיה חכמה שמאפשרת לכם להתחבר לאינטרנט מכל מקום בעולם, בלי
-          לחשוב על &ldquo;כמה ג&apos;יגה נשארו לי&rdquo; או &ldquo;מתי החבילה
-          נגמרת&rdquo;.
-        </p>
-      </motion.div>
-
+      {/* ✅ השארנו רק את הקוביות */}
       <motion.div
         className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-6xl mx-auto px-4"
         initial="hidden"
@@ -177,49 +121,6 @@ export function FeaturesSection({
             />
           </motion.div>
         ))}
-      </motion.div>
-
-      {/* CTA Section */}
-      <motion.div
-        className="flex flex-col md:flex-row items-center justify-center md:justify-between gap-6 max-w-6xl mx-auto"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={ctaVariants}
-      >
-        {/* Description - hidden on mobile, visible on desktop */}
-        <div className="hidden md:block text-right order-1">
-          <p className="text-[#0A232E] max-w-md" dir="rtl">
-            <span className="font-bold text-[22px]">
-              אתם טסים ל־8 ימים? תקבלו חבילה ל־8 ימים.
-            </span>
-            <span className="font-normal text-base md:text-lg">
-              {" "}
-              בלי לבחור נפח גלישה, בלי להטעין, בלי לחדש.
-            </span>
-            <span className="text-[#535FC8] font-bold text-base md:text-lg">
-              {" "}
-              שירות פשוט בגובה העיניים.
-            </span>
-          </p>
-        </div>
-
-        {/* Button Container */}
-        <div className="flex items-center order-2">
-          <Button
-            variant="brand-primary"
-            emphasized
-            className="w-[220px]"
-            onClick={() => {
-              const selector = document.getElementById("esim-selector");
-              if (selector) {
-                selector.scrollIntoView({ behavior: "smooth" });
-              }
-            }}
-          >
-            לרכישת Esim
-          </Button>
-        </div>
       </motion.div>
     </section>
   );

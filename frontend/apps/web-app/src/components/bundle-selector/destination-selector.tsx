@@ -120,7 +120,7 @@ export function DestinationSelector() {
           role="tabpanel"
           id={`${activeTab}-panel`}
           aria-labelledby={`${activeTab}-tab`}
-          className="!mb-0 !pb-0"
+          className="!mt-0 !pt-0 !mb-0 !pb-0"
         >
         <SelectorLabel>{DESTINATION_PLACEHOLDER}</SelectorLabel>
       {isMobile ? (

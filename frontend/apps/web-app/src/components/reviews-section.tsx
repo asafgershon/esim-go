@@ -170,7 +170,7 @@ export const ReviewsSection = () => {
         {/* Section header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-5xl font-bold text-brand-green mb-4">
-            הלקוחות שלנו מספרים
+            הלקוחות שלנו משתפים
           </h2>
         </div>
 

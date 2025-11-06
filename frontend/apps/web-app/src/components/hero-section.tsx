@@ -44,14 +44,20 @@ export function HeroSection({
         />
       </div>
 
-      <div className="container mx-auto px-4 pt-12 md:pt-20 pb-[200px] relative z-10">
-        <div className="text-center max-w-6xl mx-auto font-birzia">
-          <h1 className="font-bold mb-6">
-          <span className="text-5xl md:text-6xl lg:text-7xl text-brand-dark block">
-              חבילות גלישה <span className="text-brand-purple">לכל העולם וללא הגבלה.</span>
-            </span>
-          </h1>
-            <p className="text-md md:text-2xl text-brand-dark mb-8 max-w-4xl mx-auto leading-relaxed">
+<div className="container mx-auto px-4 pt-4 md:pt-20 pb-[200px] relative z-10">
+  <div className="text-center max-w-6xl mx-auto font-birzia">
+    <h1 className="font-bold mb-6">
+      <span className="text-5xl md:text-6xl lg:text-7xl text-brand-dark block leading-snug">
+        חבילות גלישה{" "}
+        <span className="text-brand-purple">
+          ללא הגבלה
+          {/* 👇 ירידת שורה רק במחשב */}
+          <br className="hidden md:block" />
+          <span className="block md:inline">לכל העולם.</span>
+        </span>
+      </span>
+    </h1>
+            <p className="text-md md:text-2xl pb-2 text-brand-dark mb-8 max-w-4xl mx-auto leading-relaxed">
               <span className="font-medium">
                 רוכשים ESIM ללא הגבלת נפח גלישה, בדיוק לפי מספר הימים שאתם טסים.
               </span>

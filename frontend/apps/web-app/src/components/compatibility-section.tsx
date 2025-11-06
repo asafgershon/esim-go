@@ -81,16 +81,19 @@ export function CompatibilitySection({
   const buttonState = getButtonState();
 
   return (
-    <section
-      id={id}
-      aria-label={ariaLabel}
-      className={cn("flex flex-col md:flex-row-reverse", className)}
-    >
+<section
+  id={id}
+  aria-label={ariaLabel}
+  className={cn(
+    "relative isolate z-10 flex flex-col md:flex-row-reverse", // isolate יוצר הקשר שכבות עצמאי
+    className
+  )}
+>
       {/* Text container - Desktop */}
       <div className="hidden md:flex flex-col items-center mt-8 gap-4">
         {/* Highlight */}
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-white" dir="rtl">
+          <h2 className="text-3xl   font-bold text-white" dir="rtl">
             כן, כנראה שהמכשיר שלך תומך..
           </h2>
         </div>
