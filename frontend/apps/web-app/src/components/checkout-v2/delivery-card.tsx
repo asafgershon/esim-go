@@ -284,12 +284,12 @@ export const DeliveryCard = ({
               </div>
 
               {/* 💬 כפתור תנאי שימוש */}
-              <div className="space-y-2 text-right mt-2">
-                <p className="text-sm text-gray-600">
+              <div className="mt-4 text-center">
+                <p className="text-xs text-gray-600 leading-relaxed">
                   בלחיצה על <strong>שמור והמשך לתשלום</strong> אתה מאשר את{" "}
                   <button
                     type="button"
-                    className="font-bold underline text-gray-800"
+                    className="font-bold underline text-gray-800 hover:text-gray-900"
                     onClick={() => setShowTerms(true)}
                   >
                     תנאי השימוש והרכישה באתר
