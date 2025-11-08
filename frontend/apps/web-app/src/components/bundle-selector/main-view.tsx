@@ -48,8 +48,6 @@ interface MainViewProps {
     handlePurchase: () => void;
 }
 
-const [isLoading, setIsLoading] = useState(false)
-
 export function MainView({
     pricing,
     shouldShowStreamingUI = false,
@@ -57,6 +55,8 @@ export function MainView({
     hasDataForDay,
     handlePurchase,
 }: MainViewProps) {
+
+    const [isLoading, setIsLoading] = useState(false)
     // 2. הגדרת מצב מקומי לכמות ה-eSIMs
     // const [numOfEsims, setNumOfEsims] = useState(1);
     
