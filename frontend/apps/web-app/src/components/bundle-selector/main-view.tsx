@@ -6,6 +6,7 @@ import { useCountries } from "@/hooks/useCountries";
 import { useTrips } from "@/hooks/useTrips";
 // 1. הוספת useState לייבוא
 import { useMemo } from "react"; 
+import { useState } from "react";
 import {
     SelectorAction,
     SelectorButton,
@@ -46,6 +47,8 @@ interface MainViewProps {
     hasDataForDay?: (day: number) => boolean;
     handlePurchase: () => void;
 }
+
+const [isLoading, setIsLoading] = useState(false)
 
 export function MainView({
     pricing,

@@ -196,7 +196,8 @@ export async function createPaymentIntent(params: ICreatePaymentParams): Promise
         paymentIntent: true,
         hidePhone: true,
         hideConsumerName:true,
-        hideEmail:false
+        hideEmail:false,
+        hideDealDescription:true
     };
 
     // שלב 3: בצע את קריאת ה-API

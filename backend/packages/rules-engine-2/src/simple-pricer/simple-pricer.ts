@@ -39,7 +39,7 @@ type Bundle = {
 
 // ✅ פונקציה לעיגול למעלה לספרה אחת אחרי הנקודה
 function roundUpToOneDecimal(value: number): number {
-    return Math.ceil(value * 10) / 10;
+    return Math.ceil(value * 4) / 4;
 }
 
 async function getMarkup(providerId: number, planType: string, duration: number): Promise<number> {
@@ -54,17 +54,13 @@ async function getMarkup(providerId: number, planType: string, duration: number)
         .single();
 
     if (error || !data) {
-        console.log(`[DEBUG] Markup not found for provider ${providerId}, plan ${planType}, duration <= ${duration}. Returning 0.`);
         return 0;
     }
 
-    console.log(`[DEBUG] Markup FOUND for nearest duration <= ${duration}: $${data.markup_amount}`);
     return data.markup_amount;
 }
 
 export async function calculateSimplePrice(countryIso: string, requestedDays: number) {
-    console.log(`\n\n--- 🚀 STARTING NEW CALCULATION 🚀 ---`);
-    console.log(`[INPUT] Country: ${countryIso}, Requested Days: ${requestedDays}`);
 
     async function getBundlesForProvider(providerName: string, country: string): Promise<Bundle[]> {
         const { data, error } = await supabase.rpc('get_bundles_for_country_and_provider', {
@@ -73,7 +69,6 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
         });
 
         if (error) {
-            console.error(`[DB ERROR] RPC failed for provider ${providerName}:`, error);
             return [];
         }
 
@@ -89,11 +84,6 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
     let providerName = 'maya';
 
     if (!bundles || bundles.length === 0) {
-        bundles = await getBundlesForProvider('esim-go', countryIso);
-        providerName = 'esim-go';
-    }
-
-    if (!bundles || bundles.length === 0) {
         throw new Error(`No bundles found for country ${countryIso}.`);
     }
 
@@ -106,7 +96,6 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
     // --- Filter STANDARD only and sort ---
     let standardBundles = bundles.filter(b => b.plan_type?.toUpperCase() === 'STANDARD');
     if (standardBundles.length === 0) {
-        console.warn(`[WARN] No STANDARD bundles found for ${countryIso}, using all bundles.`);
         standardBundles = bundles;
     }
 
@@ -129,31 +118,17 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
     const lowerPackageCleanDays = lowerPackage ? lowerPackage.validity_days : 0; // ✅ fallback = 0
     const unusedDays = upperPackageCleanDays - requestedDays;
 
-    console.log(`[LOGIC] Upper Package: ${upperPackage.name} (${upperPackageCleanDays} clean days) | Cost: $${upperPackage.price_usd}`);
-    if (lowerPackage) {
-        console.log(`[LOGIC] Lower Package: ${lowerPackage.name} (${lowerPackageCleanDays} clean days) | Cost: $${lowerPackage.price_usd}`);
-    } else {
-        console.log(`[LOGIC] No lower package found — assuming 0 days.`);
-    }
-    console.log(`[CALC] Unused Days (Corrected): ${unusedDays}`);
-
     // --- Calculate markups ---
     const upperMarkup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, upperPackageCleanDays);
     const lowerMarkup = await getMarkup(upperPackage.provider_id, upperPackage.plan_type, lowerPackageCleanDays);
-    console.log(`[CALC] Upper Markup (for ${upperPackageCleanDays} days): $${upperMarkup}`);
-    console.log(`[CALC] Lower Markup (for ${lowerPackageCleanDays} days): $${lowerMarkup}`);
 
     const upperPackagePrice = upperPackage.price_usd + upperMarkup;
-    console.log(`[CALC] Upper Package Selling Price: $${upperPackagePrice}`);
 
     const dayDifference = Math.max(upperPackageCleanDays - lowerPackageCleanDays, 1);
-    console.log(`[CALC] Day Difference (Clean): ${dayDifference}`);
 
     const markupValuePerDay = (upperMarkup - lowerMarkup) / dayDifference;
-    console.log(`[CALC] Markup Value Per Day (for discount): $${markupValuePerDay}`);
 
     const totalDiscount = Math.max(unusedDays, 0) * markupValuePerDay;
-    console.log(`[CALC] Total Discount for ${unusedDays} unused days: $${totalDiscount}`);
 
     const finalPrice = upperPackagePrice - totalDiscount;
 
@@ -163,9 +138,6 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
         upperPackagePrice: roundUpToOneDecimal(upperPackagePrice),
         totalDiscount: roundUpToOneDecimal(totalDiscount),
     };
-
-    console.log(`[RESULT] Final Price (rounded): $${rounded.finalPrice}`);
-    console.log(`--- ✅ CALCULATION COMPLETE ✅ ---\n`);
 
     return {
         finalPrice: rounded.finalPrice,

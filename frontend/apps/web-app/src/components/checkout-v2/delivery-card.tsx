@@ -215,6 +215,7 @@ export const DeliveryCard = ({
                     placeholder="ישראל"
                     {...register("firstName")}
                     disabled={loading || isSavingDelivery || isPaymentLoading}
+                    className="text-[16px]"
                   />
                   {errors.firstName && (
                     <p className="text-sm text-red-500">{errors.firstName.message}</p>
@@ -227,6 +228,7 @@ export const DeliveryCard = ({
                     placeholder="ישראלי"
                     {...register("lastName")}
                     disabled={loading || isSavingDelivery || isPaymentLoading}
+                    className="text-[16px]"
                   />
                   {errors.lastName && (
                     <p className="text-sm text-red-500">{errors.lastName.message}</p>
@@ -242,6 +244,7 @@ export const DeliveryCard = ({
                   placeholder="05X-XXXXXXX"
                   {...register("phone")}
                   disabled={loading || isSavingDelivery || isPaymentLoading}
+                  className="text-[16px]"
                   dir="ltr"
                 />
                 {errors.phone && (
@@ -257,6 +260,7 @@ export const DeliveryCard = ({
                   placeholder="israel@hiiloworld.com"
                   {...register("email")}
                   disabled={loading || isSavingDelivery || isPaymentLoading}
+                  className="text-[16px]"
                 />
                 {errors.email && (
                   <p className="text-sm text-red-500">{errors.email.message}</p>
@@ -275,6 +279,7 @@ export const DeliveryCard = ({
                   onCopy={(e) => e.preventDefault()}
                   onCut={(e) => e.preventDefault()}
                   disabled={loading || isSavingDelivery || isPaymentLoading}
+                  className="text-[16px]"
                 />
                 {errors.confirmEmail && (
                   <p className="text-sm text-red-500">
@@ -290,7 +295,7 @@ export const DeliveryCard = ({
                   <button
                     type="button"
                     className="font-bold underline text-gray-800 hover:text-gray-900"
-                    onClick={() => setShowTerms(true)}
+                    onClick={() => setShowTerms(prev => !prev)}
                   >
                     תנאי השימוש והרכישה באתר
                   </button>
