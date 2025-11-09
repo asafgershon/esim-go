@@ -59,7 +59,7 @@ export function HelpBanner({
               viewBox="0 0 24 24"
               className="w-5 h-5"
             >
-              <path d="M17.415..." /> {/* אייקון וואצאפ המלא שנמצא בקוד שלך */} 
+              <path d="M17.415..." /> {/* אייקון וואצאפ המלא שנמצא בקוד שלך */}
             </svg>
           </Button>
 
