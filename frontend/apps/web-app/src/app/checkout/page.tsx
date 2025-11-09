@@ -24,7 +24,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
       <AutoAuthPrompt />
 
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
+      <header className="container mx-auto px-2 py-6">
         <div className="flex items-center justify-start">
           <Link href="/" aria-label="חזרה לעמוד הראשי">
             <div className="flex items-center">
@@ -35,7 +35,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-2 py-8">
         <Suspense fallback={<CheckoutSkeleton />}>
           <CheckoutHandler searchParams={params} />
         </Suspense>
