@@ -33,7 +33,7 @@ export function AnimatedHeaderLogo() {
         <video
           ref={videoRef}
           src="/videos/loading.mp4"
-          className="h-10 w-auto"
+          className="h-20 w-auto"
           preload="auto"
           playsInline
           muted
