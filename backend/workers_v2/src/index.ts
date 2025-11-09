@@ -5,12 +5,12 @@ console.log("[Worker_v2] Starting worker process...");
 
 // פונקציית עטיפה בטוחה להרצת הסנכרון
 async function safeRunSync() {
-  try {
-    console.log("[Worker_v2] Executing weekly sync job...");
-    await runWeeklySync();
-  } catch (error) {
-    console.error("[Worker_v2] The sync job failed with a critical error:", error);
-  }
+ try {
+  console.log("[Worker_v2] Executing weekly sync job...");
+  await runWeeklySync();
+ } catch (error) {
+  console.error("[Worker_v2] The sync job failed with a critical error:", error);
+ }
 }
 
 // 1. הרצה ראשונית ומיידית לבדיקה - בוטלה
