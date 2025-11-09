@@ -75,16 +75,16 @@ export function HelpBanner({
     className="bg-brand-white text-brand-dark hover:bg-brand-white/90 font-semibold px-8 py-4 text-base rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all inline-flex items-center gap-2"
   >
     אינסטגרם
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className="w-5 h-5"
-    >
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6.5 1.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM12 20a8 8 0 110-16 8 8 0 010 16z" />
-    </svg>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="currentColor"
+  className="w-5 h-5"
+>
+  <path d="M7 2C4.24 2 2 4.24 2 7v10c0 2.76 2.24 5 5 5h10c2.76 0 5-2.24 5-5V7c0-2.76-2.24-5-5-5H7zm10 2c1.66 0 3 1.34 3 3v10c0 1.66-1.34 3-3 3H7c-1.66 0-3-1.34-3-3V7c0-1.66 1.34-3 3-3h10zm-5 3.5A4.5 4.5 0 1 0 16.5 12 4.505 4.505 0 0 0 12 7.5zm0 7A2.5 2.5 0 1 1 14.5 12 2.503 2.503 0 0 1 12 14.5zM18 7.25a1.25 1.25 0 1 1-1.25-1.25A1.25 1.25 0 0 1 18 7.25z" />
+</svg>
   </Button>
 </div>
       </div>
