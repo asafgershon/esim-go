@@ -6,9 +6,6 @@ import { ImageWithFallback } from "@/components/image-with-fallback";
 import { useSelectorQueryState, type ActiveTab } from "@/hooks/useSelectorQueryState";
 import { getFlagUrl } from "@/utils/flags";
 
-// ✅ שימוש בפונקציה מהשרת (simple-pricer)
-import { calculateSimplePrice } from "../../../../../backend/packages/rules-engine-2/src/simple-pricer/simple-pricer";
-
 type DealPrice = {
   finalPrice: number;
   currency: string;
@@ -23,7 +20,7 @@ interface Destination {
   image: string;
 }
 
-// ✅ רשימת יעדים
+// ✅ יעדים – ללא priceFrom, כי כבר לא צריך חזקות
 const destinations: Destination[] = [
   { id: "rome", name: "Rome", nameHebrew: "רומא", countryIso: "IT", image: "/images/destinations/italy.webp" },
   { id: "usa", name: "USA", nameHebrew: "ארצות הברית", countryIso: "US", image: "/images/destinations/america.webp" },
@@ -35,7 +32,7 @@ const destinations: Destination[] = [
   { id: "china", name: "China", nameHebrew: "סין", countryIso: "CN", image: "/images/destinations/china.webp" },
 ];
 
-// ✅ ימים "הגיוניים"
+// ✅ ימים "הגיוניים" לכל יעד
 const reasonableDaysByIso: Record<string, number> = {
   IT: 5,
   US: 10,
@@ -47,9 +44,10 @@ const reasonableDaysByIso: Record<string, number> = {
   CN: 10,
 };
 
+// ✅ הנחה (כמו שביקשת)
 const DISCOUNT_USD = 2;
 
-export function DestinationsDealsPage() {
+export function DestinationsGallery({ id, ariaLabel, speed }: { id: string; ariaLabel: string; speed?: string }) {
   const { containerRef, contentRef, progressRef } = useHorizontalScroll({
     progressColor: "#535FC8",
     progressTrackColor: "rgba(83, 95, 200, 0.2)",
@@ -70,15 +68,20 @@ export function DestinationsDealsPage() {
         const days = reasonableDaysByIso[iso] ?? 7;
 
         try {
-          // ✅ pricing engine
-          const pricing = await calculateSimplePrice(iso, days);
+          const res = await fetch(
+            `/api/calculate-price?countryId=${iso}&numOfDays=${days}`
+          );
+
+          if (!res.ok) throw new Error("API failed");
+
+          const pricing = await res.json();
 
           const discounted = Math.max(pricing.finalPrice - DISCOUNT_USD, 1);
 
           result[iso] = {
             finalPrice: discounted,
-            currency: "USD",
-            externalId: String(pricing.externalId),
+            currency: pricing.currency || "USD",
+            externalId: String(pricing.externalId || iso),
           };
         } catch (err) {
           console.error("Failed price for " + iso, err);
@@ -89,7 +92,6 @@ export function DestinationsDealsPage() {
     }
 
     fetchPrices();
-
     return () => {
       cancelled = true;
     };
@@ -99,14 +101,27 @@ export function DestinationsDealsPage() {
     cur === "USD" ? "$" : cur === "ILS" ? "₪" : cur;
 
   return (
-    <section className="overflow-hidden py-4">
-      <div className="container mx-auto px-4 max-w-[1440px]">
-        {/* ✅ בלי כותרת */}
+    <section
+      data-speed={speed}
+      id={id}
+      aria-label={ariaLabel}
+      className="overflow-hidden"
+    >
+      <div className="container mx-auto px-4 max-w-[1440px] md:pt-4">
+        <div className="text-right mb-12 max-w-4xl mx-auto">
+          <h2 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-4">
+            הטכנולוגיה שלנו מאפשרת גלישה ללא הגבלה, במחירים המשתלמים ביותר,
+            במעל <span className="text-[#535FC8]">150 </span>מדינות!
+          </h2>
+          <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-birzia">
+            המערכת של Hiilo סורקת בזמן אמת את כל המחירים אצל הספקים במדינות השונות,
+            ומביאה לכם את רק את חבילת ה-ESIM המשתלמת ביותר ללא הגבלת נפח גלישה!
+          </p>
+        </div>
 
-        {/* גלילה אופקית */}
         <div
           ref={containerRef}
-          className="relative overflow-y-visible mx-auto mt-4"
+          className="relative overflow-y-visible mx-auto mt-10"
           style={{ height: "304px", maxWidth: "100%" }}
         >
           <div
@@ -115,44 +130,53 @@ export function DestinationsDealsPage() {
             style={{
               cursor: "grab",
               userSelect: "none",
+              WebkitUserSelect: "none",
               willChange: "transform",
               touchAction: "pan-y",
+              overflowX: "visible",
             }}
           >
-            {destinations.map((dest) => (
-              <div key={dest.id} className="flex-shrink-0" style={{ width: "256px" }}>
-                <DestinationDealCard
-                  destination={dest}
-                  days={reasonableDaysByIso[dest.countryIso]}
-                  price={prices[dest.countryIso]}
+            {destinations.map((destination) => (
+              <div key={destination.id} className="flex-shrink-0" style={{ width: "256px" }}>
+                <DestinationCard
+                  destination={destination}
+                  days={reasonableDaysByIso[destination.countryIso]}
+                  price={prices[destination.countryIso]}
                   currencySymbol={currencySymbol}
-                  onApply={() => handleCardClick(dest.countryIso, reasonableDaysByIso[dest.countryIso], setQueryStates)}
+                  onApply={() => handleCardClick(destination.countryIso, reasonableDaysByIso[destination.countryIso], setQueryStates)}
                 />
               </div>
             ))}
           </div>
         </div>
 
-        {/* פס התקדמות למובייל */}
-        <div className="relative mx-auto mt-6" style={{
-          height: "4px",
-          width: "200px",
-          backgroundColor: "rgba(83, 95, 200, 0.2)",
-          borderRadius: "2px"
-        }}>
-          <div ref={progressRef} className="absolute top-0 left-0 h-full" style={{
-            width: "100%",
-            backgroundColor: "#535FC8",
+        {/* ✅ פס התקדמות מובייל */}
+        <div
+          className="relative mx-auto mt-6"
+          style={{
+            height: "4px",
+            width: "200px",
+            backgroundColor: "rgba(83, 95, 200, 0.2)",
             borderRadius: "2px",
-            transform: "scaleX(0)"
-          }} />
+          }}
+        >
+          <div
+            ref={progressRef}
+            className="absolute top-0 left-0 h-full"
+            style={{
+              width: "100%",
+              backgroundColor: "#535FC8",
+              borderRadius: "2px",
+              transform: "scaleX(0)",
+            }}
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function DestinationDealCard({
+function DestinationCard({
   destination,
   days,
   price,
@@ -167,10 +191,9 @@ function DestinationDealCard({
 }) {
   const handleClick = () => {
     onApply();
-    // רגע להתעדכן ב־url state
     setTimeout(() => {
       triggerPurchaseFlow();
-    }, 200);
+    }, 150);
   };
 
   return (
@@ -183,52 +206,44 @@ function DestinationDealCard({
         <ImageWithFallback
           src={destination.image}
           fallbackSrc="/images/destinations/default.png"
-          alt={destination.name}
+          alt={`${destination.name} destination`}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-110"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
-        <div className="absolute bottom-0 left-0 right-0 p-5 flex items-center gap-3">
-          <img
-            src={getFlagUrl(destination.countryIso)}
-            className="w-10 h-10 rounded-full border border-white shadow-md bg-white/80"
-          />
-          <div className="flex flex-col text-white">
-            <span className="text-[18px] font-bold font-birzia">
-              {destination.nameHebrew} • {days} ימים
-            </span>
-            {price ? (
-              <span className="text-[13px] font-semibold">
-                {Math.round(price.finalPrice)} {currencySymbol(price.currency)} (כולל הנחת ${DISCOUNT_USD})
-              </span>
-            ) : (
-              <span className="inline-block h-4 w-28 bg-white/60 rounded-full animate-pulse" />
-            )}
-          </div>
+        <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col text-white">
+          <h4 className="text-2xl font-bold mb-2 font-birzia">
+            {destination.nameHebrew}
+          </h4>
+          {price ? (
+            <div className="inline-flex items-center bg-white/90 backdrop-blur-sm text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold">
+              {days} ימים – {Math.round(price.finalPrice)} {currencySymbol(price.currency)} (כולל הנחת ${DISCOUNT_USD})
+            </div>
+          ) : (
+            <div className="inline-block h-7 w-28 bg-gray-200 rounded-full skeleton-shimmer" />
+          )}
         </div>
       </div>
     </Card>
   );
 }
 
-/**
- * ✅ מדמה לחיצה על כפתור הרכישה ב-MainView
- */
+// ✅ ממשיך את הזרימה כבקשה
 function triggerPurchaseFlow() {
   const btn = document.querySelector<HTMLButtonElement>(
     '[aria-label="המשך לרכישת חבילת eSIM"]'
   );
-  if (btn) {
-    btn.click();
-  }
+  if (btn) btn.click();
 }
 
-/**
- * ✅ עדכון state של selector כדי שהרכישה תעבוד
- */
-function handleCardClick(countryIso: string, days: number, setQueryStates: any) {
+// ✅ עדכון state של selector
+function handleCardClick(
+  countryIso: string,
+  days: number,
+  setQueryStates: any
+) {
   setQueryStates({
     countryId: countryIso.toLowerCase(),
     activeTab: "countries",

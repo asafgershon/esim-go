@@ -1,168 +1,149 @@
 "use client";
 
-import { Star } from "lucide-react";
-import { useHorizontalScroll } from "@workspace/ui";
-
-// 1. ייבוא getFlagUrl (בהנחה שזה המיקום שלו)
-// יש לוודא שהפונקציה getFlagUrl אכן מיוצאת מקובץ זה או מקובץ אחר בפרויקט.
-import { getFlagUrl } from "@/utils/flags"; // שימו לב לנתיב הייבוא!
-
+import { useRef, useEffect } from "react";
 
 interface Review {
   id: string;
   countryCode: string;
   countryName: string;
-  // נסיר את המאפיין flag מכיוון שאנו מייצרים אותו מה-countryCode
-  rating: number;
-  text: string;
-  author: string;
-  tripType: string;
+  imageUrl: string;
 }
 
 interface ReviewCardProps {
   review: Review;
 }
 
+const getFlagUrl = (countryCode: string, size: number = 40): string => {
+  return `https://flagcdn.com/w${size}/${countryCode.toLowerCase()}.png`;
+};
+
 const ReviewCard = ({ review }: ReviewCardProps) => {
-  // נשתמש ב-getFlagUrl כדי לייצר את כתובת הדגל
-  const destinationFlagUrl = getFlagUrl(review.countryCode, 60);
+  const destinationFlagUrl = getFlagUrl(review.countryCode, 40);
 
   return (
-    <div
-      className="w-full h-[180px] rounded-[30px] border border-solid border-[#fefefe] hover:bg-white/10 transition-all duration-300 flex justify-between p-5 gap-20"
-      style={{ backgroundColor: "rgba(254,254,254,0.08)" }}
-    >
-      {/* Right section with text */}
-      <div className="flex flex-col justify-between flex-1">
-        {/* Top: Title and review text */}
-        <div className="space-y-2">
-          <h3
-            className="text-right text-[#fefefe] text-lg font-medium"
-            style={{ fontFamily: "Birzia, sans-serif" }}
-          >
-            {review.tripType}
-          </h3>
-          <p
-            className="text-right text-[#fefefe] text-sm font-light leading-relaxed line-clamp-3"
-            style={{ fontFamily: "Birzia, sans-serif" }}
-          >
-            &ldquo;{review.text}&rdquo;
-          </p>
-        </div>
-
-        {/* Bottom: Author name and avatar */}
-        <div className="flex items-center justify-start gap-2">
-          {/* דגל ישראל ליד שם המשתמש - גודל 20 */}
-          <img
-            src={getFlagUrl('il', 20)} // קוד ISO של ישראל הוא 'il'
-            alt="דגל ישראל"
-            className="w-5 h-5 rounded-full object-cover" // 20px
-          />
-          <span className="text-[#fefefe] text-sm font-medium">
-            {review.author}
-          </span>
-        </div>
-      </div>
-
-      {/* Left section with flag and stars */}
-      <div className="flex flex-col justify-between flex-shrink-0">
-        {/* Country flag - גודל 60 */}
-        {destinationFlagUrl && (
+    <div className="relative w-full h-[400px] rounded-[30px] overflow-hidden hover:scale-105 transition-transform duration-300 shadow-lg">
+      {/* תמונת רקע */}
+      <img
+        src={review.imageUrl}
+        alt={`ביקורת מ${review.countryName}`}
+        className="w-full h-full object-cover"
+      />
+      
+      {/* דגל המדינה בפינה העליונה השמאלית */}
+      {destinationFlagUrl && (
+        <div className="absolute top-5 right-5">
           <img
             src={destinationFlagUrl}
             alt={`דגל ${review.countryName}`}
-            className="w-[60px] h-auto object-cover self-end" // 60px
-            style={{ aspectRatio: "3 / 2" }} // שומר על יחס רוחב/גובה של דגל
+            className="w-[60px] h-auto object-cover rounded-lg shadow-xl"
+            style={{ aspectRatio: "3 / 2" }}
           />
-        )}
-
-        {/* Star rating */}
-        <div className="flex gap-1">
-          {[...Array(5)].map((_, i) => (
-            <Star
-              key={i}
-              className={`h-4 w-4 ${
-                i < review.rating
-                  ? "fill-brand-white text-brand-white"
-                  : "text-gray-600"
-              }`}
-            />
-          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-// עדכון ה-interface: הסרנו את flag
-// עדכון הנתונים: הסרנו את flag (הוסר למרות שלא נדרש, כי הוא מיותר)
 const reviews: Review[] = [
   {
     id: "1",
-    countryCode: "br", // שיניתי לאותיות קטנות כדי להתאים לשימוש בפונקציה
-    countryName: "ברזיל",
-    rating: 5,
-    text: "נחתתי באמסטרדם וכבר הייתי מחוברת! אף פעם לא הרגשתי כל כך חופשיה בטיול. התמיכה בעברית באמצע הלילה? פשוט מושלם!",
-    author: "שרה כ.",
-    tripType: "שירות נהדר, ממליצה בחום!",
+    countryCode: "gr",
+    countryName: "יוון",
+    imageUrl: "/images/reviews/greece.png",
   },
   {
     id: "2",
     countryCode: "us",
     countryName: "ארצות הברית",
-    rating: 5,
-    text: "חסכתי המון כסף בטיול המשפחתי לארה״ב. הילדים היו מחוברים כל הזמן והכל עבד חלק",
-    author: "דוד לוי",
-    tripType: "טיול משפחתי",
+    imageUrl: "/images/reviews/usa.png",
   },
   {
     id: "3",
-    countryCode: "th",
-    countryName: "תאילנד",
-    rating: 5,
-    text: "החבילה לתאילנד הייתה מושלמת! גלישה מהירה בכל האיים, ווייז עבד מצוין וחסכתי המון על מוניות",
-    author: "מיכל ברק",
-    tripType: "טיול תרמילאים",
+    countryCode: "np",
+    countryName: "נאפל",
+    imageUrl: "/images/reviews/nepal.png",
   },
   {
     id: "4",
     countryCode: "fr",
     countryName: "צרפת",
-    rating: 5,
-    text: "טיול רומנטי בפריז עם אינטרנט מהיר בכל מקום. התמיכה בעברית עזרה מאוד!",
-    author: "יעל אברהם",
-    tripType: "ירח דבש",
+    imageUrl: "/images/reviews/france.png",
   },
   {
     id: "5",
-    countryCode: "jp",
-    countryName: "יפן",
-    rating: 5,
-    text: "טכנולוגיה ברמה הכי גבוהה! עבד מצוין בטוקיו ובכל הכפרים המרוחקים",
-    author: "רון שפירא",
-    tripType: "טיול עסקים",
+    countryCode: "be",
+    countryName: "בלגיה",
+    imageUrl: "/images/reviews/belgium.png",
   },
   {
     id: "6",
-    countryCode: "au",
-    countryName: "אוסטרליה",
-    rating: 5,
-    text: "3 שבועות באוסטרליה עם גלישה ללא הגבלה. מושלם לשיתוף תמונות מהחופים המדהימים!",
-    author: "נועה כהן",
-    tripType: "טיול אקסטרים",
+    countryCode: "vn",
+    countryName: "וייטנאם",
+    imageUrl: "/images/reviews/vietnam.png",
   },
 ];
 
 export const ReviewsSection = () => {
-  const { containerRef, contentRef, progressRef } = useHorizontalScroll({
-    progressColor: "#00E095",
-    progressTrackColor: "rgba(255, 255, 255, 0.1)",
-  });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    const progress = progressRef.current;
+
+    if (!container || !content || !progress) return;
+
+    let isDragging = false;
+    let startX = 0;
+    let scrollLeft = 0;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      startX = e.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+      if (content) content.style.cursor = "grabbing";
+    };
+
+    const handleMouseUp = () => {
+      isDragging = false;
+      if (content) content.style.cursor = "grab";
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const x = e.pageX - container.offsetLeft;
+      const walk = (x - startX) * 2;
+      container.scrollLeft = scrollLeft - walk;
+    };
+
+    const updateProgress = () => {
+      const scrollWidth = container.scrollWidth - container.clientWidth;
+      const scrolled = container.scrollLeft;
+      const progressPercent = scrollWidth > 0 ? scrolled / scrollWidth : 0;
+      progress.style.transform = `scaleX(${progressPercent})`;
+    };
+
+    container.addEventListener("mousedown", handleMouseDown);
+    container.addEventListener("mouseup", handleMouseUp);
+    container.addEventListener("mouseleave", handleMouseUp);
+    container.addEventListener("mousemove", handleMouseMove);
+    container.addEventListener("scroll", updateProgress);
+
+    return () => {
+      container.removeEventListener("mousedown", handleMouseDown);
+      container.removeEventListener("mouseup", handleMouseUp);
+      container.removeEventListener("mouseleave", handleMouseUp);
+      container.removeEventListener("mousemove", handleMouseMove);
+      container.removeEventListener("scroll", updateProgress);
+    };
+  }, []);
 
   return (
     <section
-      className="relative overflow-hidden w-full max-w-[100vw]"
+      className="relative overflow-hidden w-full max-w-[100vw] py-16"
       id="reviews"
       aria-label="ביקורות לקוחות"
     >
@@ -177,12 +158,12 @@ export const ReviewsSection = () => {
         {/* Horizontal Scroll Container */}
         <div
           ref={containerRef}
-          className="relative overflow-hidden max-w-full"
-          style={{ height: "200px" }}
+          className="relative overflow-x-auto overflow-y-hidden max-w-full scrollbar-hide"
+          style={{ height: "420px" }}
         >
           <div
             ref={contentRef}
-            className="flex gap-6 px-4 absolute top-0 left-0 max-w-none"
+            className="flex gap-6 px-4"
             style={{
               cursor: "grab",
               userSelect: "none",
@@ -193,7 +174,7 @@ export const ReviewsSection = () => {
               <div
                 key={review.id}
                 className="flex-shrink-0"
-                style={{ width: "480px" }}
+                style={{ width: "300px" }}
               >
                 <ReviewCard review={review} />
               </div>
@@ -219,6 +200,7 @@ export const ReviewsSection = () => {
               backgroundColor: "#00E095",
               borderRadius: "2px",
               transform: "scaleX(0)",
+              transformOrigin: "left",
             }}
           />
         </div>

@@ -132,7 +132,7 @@ export function CompatibilitySection({
       </div>
 
       {/* Text container - Mobile */}
-      <div className="flex md:hidden flex-col items-center mt-6 gap-3">
+      <div className="flex md:hidden flex-col items-center mt-6 gap-3 relative z-20">
         {/* Highlight */}
         <div className="text-center">
           <h2 className="text-2xl font-bold text-white" dir="rtl">
