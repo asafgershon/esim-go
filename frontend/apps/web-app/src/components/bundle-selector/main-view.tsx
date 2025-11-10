@@ -215,7 +215,6 @@ export function MainView({
                 <SelectorButton
                     onClick={() => {
                         if (isPricingValid) {
-                            console.log("✅ handlePurchase called", { countryId, numOfDays });
                             // חשוב: כשמפעילים את handlePurchase, יש לוודא שהכמות (numOfEsims) עוברת הלאה
                             handlePurchase();
                         } else {

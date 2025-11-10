@@ -58,18 +58,43 @@ export function DestinationsGallery({ id, ariaLabel, speed }: { id: string; aria
   const [prices, setPrices] = useState<Record<string, DealPrice>>({});
 
   useEffect(() => {
-    let cancelled = false;
+  let cancelled = false;
 
-    async function fetchPrices() {
-      const result: Record<string, DealPrice> = {};
+  // ✅ 1. לבדוק אם יש cache תקף
+  const cacheRaw = localStorage.getItem("hiilo-destination-prices");
+  if (cacheRaw) {
+    try {
+      const cache = JSON.parse(cacheRaw);
+      const week = 7 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
 
-      for (const dest of destinations) {
+      if (now - cache.timestamp < week && cache.prices) {
+        console.log("✅ Using cached destination prices");
+        setPrices(cache.prices);
+        return; // לא מושכים מהשרת
+      }
+    } catch (err) {
+      console.error("Failed to parse cache", err);
+    }
+  }
+
+  // ✅ 2. אם אין cache — למשוך פעם אחת בלבד לכל היעדים
+  async function fetchPrices() {
+    console.log("🌍 Fetching destination prices from server...");
+    const result: Record<string, DealPrice> = {};
+
+    const backendUrl =
+      process.env.NEXT_PUBLIC_API_ENDPOINT || "https://api.hiiloworld.com";
+
+    // ✅ קריאה במקביל לכל היעדים
+    await Promise.all(
+      destinations.map(async (dest) => {
         const iso = dest.countryIso;
-        const days = reasonableDaysByIso[iso] ?? 7;
+        const days = reasonableDaysByIso[iso];
 
         try {
           const res = await fetch(
-            `/api/calculate-price?countryId=${iso}&numOfDays=${days}`
+            `${backendUrl}/api/calculate-price?countryId=${iso}&numOfDays=${days}`
           );
 
           if (!res.ok) throw new Error("API failed");
@@ -84,18 +109,34 @@ export function DestinationsGallery({ id, ariaLabel, speed }: { id: string; aria
             externalId: String(pricing.externalId || iso),
           };
         } catch (err) {
-          console.error("Failed price for " + iso, err);
+          console.error("⚠️ Failed price for " + iso, err);
         }
-      }
+      })
+    );
 
-      if (!cancelled) setPrices(result);
+    if (!cancelled) {
+      setPrices(result);
+
+      // ✅ 3. לשמור לזיכרון עם timestamp
+      localStorage.setItem(
+        "hiilo-destination-prices",
+        JSON.stringify({
+          timestamp: Date.now(),
+          prices: result,
+        })
+      );
+
+      console.log("✅ Cached destination prices");
     }
+  }
 
-    fetchPrices();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  fetchPrices();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
+
 
   const currencySymbol = (cur: string) =>
     cur === "USD" ? "$" : cur === "ILS" ? "₪" : cur;

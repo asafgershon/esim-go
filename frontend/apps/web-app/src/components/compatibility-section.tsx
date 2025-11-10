@@ -81,19 +81,19 @@ export function CompatibilitySection({
   const buttonState = getButtonState();
 
   return (
-<section
-  id={id}
-  aria-label={ariaLabel}
-  className={cn(
-    "relative isolate z-10 flex flex-col md:flex-row-reverse", // isolate יוצר הקשר שכבות עצמאי
-    className
-  )}
->
+    <section
+      id={id}
+      aria-label={ariaLabel}
+      className={cn(
+        "relative isolate z-10 flex flex-col md:flex-row-reverse w-full",
+        className
+      )}
+    >
       {/* Text container - Desktop */}
-      <div className="hidden md:flex flex-col items-center mt-8 gap-4">
+      <div className="hidden md:flex flex-col items-center mt-8 gap-4 w-full">
         {/* Highlight */}
         <div className="text-center">
-          <h2 className="text-3xl   font-bold text-white" dir="rtl">
+          <h2 className="text-3xl font-bold text-white" dir="rtl">
             כן, כנראה שהמכשיר שלך תומך..
           </h2>
         </div>
@@ -132,16 +132,16 @@ export function CompatibilitySection({
       </div>
 
       {/* Text container - Mobile */}
-      <div className="flex md:hidden flex-col items-center mt-6 gap-3 relative z-20">
+      <div className="flex md:hidden flex-col items-center mt-6 gap-3 w-full px-6 relative z-30">
         {/* Highlight */}
-        <div className="text-center">
+        <div className="text-center relative z-30 bg-background/10 backdrop-blur-sm rounded-lg p-4 w-full">
           <h2 className="text-2xl font-bold text-white" dir="rtl">
             כן, כנראה שהמכשיר שלך תומך..
           </h2>
         </div>
 
         {/* Text */}
-        <div className="text-center max-w-sm px-4">
+        <div className="text-center max-w-sm px-4 relative z-30">
           <p className="text-base text-white/90" dir="rtl">
             רוב המכשירים בישראל תומכים ב־eSIM. לבדיקה ודאית לגבי המכשיר שברשותכם
             לחצו כאן ובדקו תוך שניות אם אתם מוכנים לגלישה.
@@ -149,7 +149,7 @@ export function CompatibilitySection({
         </div>
 
         {/* Check Button */}
-        <div className="mt-3">
+        <div className="mt-3 relative z-30">
           <Button
             variant={buttonState.variant}
             emphasized={buttonState.emphasized}
