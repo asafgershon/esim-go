@@ -243,30 +243,48 @@ function DestinationCard({
       className="relative overflow-hidden rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer group p-0"
       size={null}
     >
-      <div className="relative h-64 md:h-72 w-full">
-        <ImageWithFallback
-          src={destination.image}
-          fallbackSrc="/images/destinations/default.png"
-          alt={`${destination.name} destination`}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-110"
-        />
+<div className="relative h-64 md:h-72 w-full">
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+  {/* ---- תמונה ---- */}
+  <ImageWithFallback
+    src={destination.image}
+    fallbackSrc="/images/destinations/default.png"
+    alt={`${destination.name} destination`}
+    fill
+    className="object-cover transition-transform duration-300 group-hover:scale-110"
+  />
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col text-white">
-          <h4 className="text-2xl font-bold mb-2 font-birzia">
-            {destination.nameHebrew}
-          </h4>
-          {price ? (
-            <div className="inline-flex items-center bg-white/90 backdrop-blur-sm text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold">
-              {days} ימים – {Math.round(price.finalPrice)} {currencySymbol(price.currency)} (כולל הנחת ${DISCOUNT_USD})
-            </div>
-          ) : (
-            <div className="inline-block h-7 w-28 bg-gray-200 rounded-full skeleton-shimmer" />
-          )}
-        </div>
+  {/* ---- שכבת כהות ---- */}
+  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+
+  {/* ---- ימים למעלה ימין ---- */}
+  <div className="absolute top-0 right-0 p-3">
+    <span className="bg-white/90 text-[#0A232E] px-2 py-1 rounded-full text-xs font-semibold shadow-sm">
+      {days} ימים
+    </span>
+  </div>
+
+
+  {/* ---- התוכן התחתון ---- */}
+  <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col text-white">
+
+    {/* שם המדינה — לא משתנה */}
+    <h4 className="text-2xl font-bold mb-2 font-birzia">
+      {destination.nameHebrew}
+    </h4>
+
+    {/* המחיר — בלי "הנחת $2" */}
+    {price ? (
+      <div className="inline-flex items-center bg-white/90 backdrop-blur-sm text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold">
+        {Math.round(price.finalPrice)} {currencySymbol(price.currency)}
       </div>
+    ) : (
+      <div className="inline-block h-7 w-28 bg-gray-200 rounded-full skeleton-shimmer" />
+    )}
+  </div>
+
+</div>
     </Card>
   );
 }

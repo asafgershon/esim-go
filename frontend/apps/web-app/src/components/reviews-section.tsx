@@ -21,7 +21,7 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
   const destinationFlagUrl = getFlagUrl(review.countryCode, 40);
 
   return (
-    <div className="relative w-full h-[400px] rounded-[30px] overflow-hidden hover:scale-105 transition-transform duration-300 shadow-lg">
+    <div className="relative w-full h-[360px] rounded-[30px] overflow-hidden hover:scale-105 transition-transform duration-300 shadow-lg">
       {/* תמונת רקע */}
       <img
         src={review.imageUrl}
@@ -60,7 +60,7 @@ const reviews: Review[] = [
   {
     id: "3",
     countryCode: "np",
-    countryName: "נאפל",
+    countryName: "נפאל",
     imageUrl: "/images/reviews/nepal.png",
   },
   {
@@ -80,6 +80,42 @@ const reviews: Review[] = [
     countryCode: "vn",
     countryName: "וייטנאם",
     imageUrl: "/images/reviews/vietnam.png",
+  },
+  {
+    id: "7",
+    countryCode: "gr",
+    countryName: "יוון",
+    imageUrl: "/images/reviews/greece2.png",
+  },
+  {
+    id: "8",
+    countryCode: "ch",
+    countryName: "שוויץ",
+    imageUrl: "/images/reviews/switzerland.png",
+  },
+  {
+    id: "9",
+    countryCode: "es",
+    countryName: "ספרד",
+    imageUrl: "/images/reviews/spain.png",
+  },
+  {
+    id: "10",
+    countryCode: "gr",
+    countryName: "יוון",
+    imageUrl: "/images/reviews/greece3.png",
+  },
+  {
+    id: "11",
+    countryCode: "kr",
+    countryName: "קוריאה",
+    imageUrl: "/images/reviews/korea.png",
+  },
+  {
+    id: "12",
+    countryCode: "za",
+    countryName: "דרום אפריקה",
+    imageUrl: "/images/reviews/south_africa.png",
   },
 ];
 

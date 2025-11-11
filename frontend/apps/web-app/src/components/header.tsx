@@ -72,7 +72,7 @@ export function Header({
         variant="brand-secondary"
         size="default"
         emphasized
-        onClick={() => scrollTo("#esim-selector")}
+        onClick={() => scrollTo("#contact")}
       >
         צריכים עזרה בהזמנה?
       </Button>
@@ -86,7 +86,7 @@ export function Header({
           variant="brand-secondary"
           emphasized
           size="default"
-          onClick={() => scrollTo("#esim-selector")}
+          onClick={() => scrollTo("#contact")}
         >
           צריכים עזרה בהזמנה?
         </Button>
