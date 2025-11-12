@@ -111,12 +111,12 @@ const reviews: Review[] = [
     countryName: "קוריאה",
     imageUrl: "/images/reviews/korea.png",
   },
-  {
-    id: "12",
-    countryCode: "za",
-    countryName: "דרום אפריקה",
-    imageUrl: "/images/reviews/south_africa.png",
-  },
+  // {
+  //   id: "12",
+  //   countryCode: "za",
+  //   countryName: "דרום אפריקה",
+  //   imageUrl: "/images/reviews/south_africa.png",
+  // },
 ];
 
 export const ReviewsSection = () => {
@@ -192,11 +192,11 @@ export const ReviewsSection = () => {
         </div>
 
         {/* Horizontal Scroll Container */}
-        <div
-          ref={containerRef}
-          className="relative overflow-x-auto overflow-y-hidden max-w-full scrollbar-hide"
-          style={{ height: "420px" }}
-        >
+          <div
+            ref={containerRef}
+            className="relative overflow-hidden max-w-full"
+            style={{ height: "420px" }}
+          >
           <div
             ref={contentRef}
             className="flex gap-6 px-4"
