@@ -92,7 +92,7 @@ export function DestinationsGallery({
 
           {/* ✅ תוספת של טקסט ההנחה */}
           <p className="text-[#535FC8] font-birzia font-semibold text-lg mt-3">
-            🌍 10% הנחה ליעדים נבחרים השבוע!
+            10% הנחה לחבילות נבחרות השבוע!
           </p>
         </div>
 
