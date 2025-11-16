@@ -48,7 +48,6 @@ interface MainViewProps {
     handlePurchase: () => void;
 }
 
-const [isPricingThinking, setIsPricingThinking] = useState(false);
 
 export function MainView({
     pricing,
@@ -57,6 +56,8 @@ export function MainView({
     hasDataForDay,
     handlePurchase,
 }: MainViewProps) {
+
+    const [isPricingThinking, setIsPricingThinking] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false)
     // 2. הגדרת מצב מקומי לכמות ה-eSIMs
