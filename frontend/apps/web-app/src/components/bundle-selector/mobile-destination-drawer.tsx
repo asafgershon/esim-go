@@ -39,30 +39,32 @@ export default function MobileDestinationDrawer({
   });
 
   // ✅ בכל פתיחה — מאפס חיפוש, מגלול לערך הנבחר אם יש
-  useEffect(() => {
-    if (isOpen) {
-      setSearch("");
-      if (!shouldFocusInput && inputRef.current) inputRef.current.blur();
+useEffect(() => {
+  if (isOpen) {
+    // איפוס חיפוש
+    setSearch("");
 
-      setTimeout(() => {
-        const list = document.querySelector("#destination-list");
-        if (!list) return;
-        const selected = list.querySelector(`[data-value="${initialValue}"]`);
-        if (selected) {
-          selected.scrollIntoView({ block: "center", behavior: "smooth" });
-        } else {
-          list.scrollTo({ top: 0 });
-        }
-      }, 80);
-    }
-  }, [isOpen, shouldFocusInput, initialValue]);
+    // מניעת פוקוס במובייל (לא משנה מה קורה)
+    requestAnimationFrame(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    });
 
-  // ✅ רק בפעם הראשונה המקלדת נפתחת אוטומטית
-  useEffect(() => {
-    if (!isOpen && shouldFocusInput) {
-      setShouldFocusInput(false);
-    }
-  }, [isOpen, shouldFocusInput]);
+    // גלילה ליעד הנבחר
+    setTimeout(() => {
+      const list = document.querySelector("#destination-list");
+      if (!list) return;
+
+      const selected = list.querySelector(`[data-value="${initialValue}"]`);
+      if (selected) {
+        selected.scrollIntoView({ block: "center", behavior: "smooth" });
+      } else {
+        list.scrollTo({ top: 0 });
+      }
+    }, 80);
+  }
+}, [isOpen, initialValue]);
 
   const filtered = search.trim()
     ? options.filter(
@@ -109,15 +111,15 @@ export default function MobileDestinationDrawer({
             {/* שדה חיפוש */}
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                ref={inputRef}
-                dir="rtl"
-                className="w-full pl-10 pr-4 border-border bg-background text-foreground placeholder:text-muted-foreground text-right text-base"
-                placeholder={SEARCH_DESTINATION_PLACEHOLDER}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                autoFocus={shouldFocusInput && !initialValue}
-              />
+            <Input
+              ref={inputRef}
+              dir="rtl"
+              style={{ fontSize: 16 }}   // מונע זום
+              className="w-full pl-10 pr-4 border-border bg-background text-foreground placeholder:text-muted-foreground text-right text-base"
+              placeholder={SEARCH_DESTINATION_PLACEHOLDER}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             </div>
 
             {/* רשימת יעדים */}
