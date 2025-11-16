@@ -11,35 +11,80 @@ import { useMemo } from "react";
 import { ImageWithFallback } from "./image-with-fallback";
 import { PromoBanner } from "./promo-banner";
 
-// ✅ מספר ימים "הגיוניים" לכל יעד
-const reasonableDaysByIso: Record<string, number> = {
-  IT: 5,
-  US: 10,
-  GR: 7,
-  TH: 14,
-  AE: 5,
-  BR: 12,
-  CA: 10,
-  CN: 10,
-};
-
 interface Destination {
   id: string;
   name: string;
   nameHebrew: string;
   countryIso: string;
   image: string;
+  priceFrom: string;
 }
 
 const destinations: Destination[] = [
-  { id: "rome", name: "Rome", nameHebrew: "רומא", countryIso: "IT", image: "/images/destinations/italy.webp" },
-  { id: "usa", name: "USA", nameHebrew: "ארצות הברית", countryIso: "US", image: "/images/destinations/america.webp" },
-  { id: "greece", name: "Greece", nameHebrew: "יוון", countryIso: "GR", image: "/images/destinations/greec.webp" },
-  { id: "thailand", name: "Thailand", nameHebrew: "תאילנד", countryIso: "TH", image: "/images/destinations/thailand.webp" },
-  { id: "dubai", name: "Dubai", nameHebrew: "דובאי", countryIso: "AE", image: "/images/destinations/dubai.webp" },
-  { id: "brazil", name: "Brazil", nameHebrew: "ברזיל", countryIso: "BR", image: "/images/destinations/brazil.webp" },
-  { id: "canada", name: "Canada", nameHebrew: "קנדה", countryIso: "CA", image: "/images/destinations/canada.webp" },
-  { id: "china", name: "China", nameHebrew: "סין", countryIso: "CN", image: "/images/destinations/china.webp" },
+  {
+    id: "rome",
+    name: "Rome",
+    nameHebrew: "רומא",
+    countryIso: "IT",
+    image: "/images/destinations/italy.webp",
+    priceFrom: "החל מ- $5",
+  },
+  {
+    id: "usa",
+    name: "USA",
+    nameHebrew: "ארצות הברית",
+    countryIso: "US",
+    image: "/images/destinations/america.webp",
+    priceFrom: "החל מ- $7",
+  },
+  {
+    id: "greece",
+    name: "Greece",
+    nameHebrew: "יוון",
+    countryIso: "GR",
+    image: "/images/destinations/greec.webp",
+    priceFrom: "החל מ- $6",
+  },
+  {
+    id: "thailand",
+    name: "Thailand",
+    nameHebrew: "תאילנד",
+    countryIso: "TH",
+    image: "/images/destinations/thailand.webp",
+    priceFrom: "החל מ- $8",
+  },
+  {
+    id: "dubai",
+    name: "Dubai",
+    nameHebrew: "דובאי",
+    countryIso: "AE",
+    image: "/images/destinations/dubai.webp",
+    priceFrom: "החל מ- $6",
+  },
+  {
+    id: "brazil",
+    name: "Brazil",
+    nameHebrew: "ברזיל",
+    countryIso: "BR",
+    image: "/images/destinations/brazil.webp",
+    priceFrom: "החל מ- $5",
+  },
+  {
+    id: "canada",
+    name: "Canada",
+    nameHebrew: "קנדה",
+    countryIso: "CA",
+    image: "/images/destinations/canada.webp",
+    priceFrom: "החל מ- $6",
+  },
+  {
+    id: "china",
+    name: "China",
+    nameHebrew: "סין",
+    countryIso: "CN",
+    image: "/images/destinations/china.webp",
+    priceFrom: "החל מ- $5",
+  },
 ];
 
 export function DestinationsGallery({
@@ -51,14 +96,16 @@ export function DestinationsGallery({
   ariaLabel: string;
   speed?: string;
 }) {
+  // URL state management for bundle selector navigation
   const { setQueryStates } = useSelectorQueryState();
 
+  // GSAP horizontal scroll hook for mobile
   const { containerRef, contentRef, progressRef } = useHorizontalScroll({
     progressColor: "#535FC8",
     progressTrackColor: "rgba(83, 95, 200, 0.2)",
   });
 
-  // Execute dummy query (kept for structure compatibility)
+  // Prepare inputs for the pricing query - 1 day for each country
   const pricingInputs = useMemo(() => {
     return destinations.map((dest) => ({
       countryId: dest.countryIso,
@@ -66,10 +113,34 @@ export function DestinationsGallery({
     }));
   }, []);
 
-  useQuery(CALCULATE_DESTINATION_PRICES, {
+  // Execute the pricing query
+  const { data, loading } = useQuery(CALCULATE_DESTINATION_PRICES, {
     variables: { inputs: pricingInputs },
-    skip: true, // ❌ לא מבצעים קריאת מחיר
+    skip: pricingInputs.length === 0,
   });
+
+  // Map prices to destinations by country ISO
+  const pricesByCountry = useMemo(() => {
+    if (!data?.calculatePrices) return {};
+
+    const priceMap: Record<string, { finalPrice: number; currency: string }> =
+      {};
+    data.calculatePrices.forEach(
+      (price: {
+        country?: { iso?: string };
+        finalPrice: number;
+        currency: string;
+      }) => {
+        if (price.country?.iso) {
+          priceMap[price.country.iso] = {
+            finalPrice: price.finalPrice,
+            currency: price.currency,
+          };
+        }
+      }
+    );
+    return priceMap;
+  }, [data]);
 
   return (
     <section
@@ -78,29 +149,29 @@ export function DestinationsGallery({
       aria-label={ariaLabel}
       className="overflow-hidden"
     >
-      <div className="container mx-auto px-4 max-w-[1440px] md:pt-4">
-        {/* ✅ Header בעיצוב שביקשת */}
+      <div className="container mx-auto px-4 max-w-[1440px]">
+        {/* Header */}
         <div className="text-right mb-12 max-w-4xl mx-auto">
-          <h2 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-4">
-            הטכנולוגיה שלנו מאפשרת גלישה ללא הגבלה, במחירים המשתלמים ביותר,
-            במעל <span className="text-[#535FC8]">150 </span>מדינות!
+          <h2 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-6">
+            גלישה חופשית וזמינה במעל <span className="text-[#535FC8]">150</span> מדינות
           </h2>
-          <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-birzia mb-2">
-            המערכת של Hiilo סורקת בזמן אמת את כל המחירים אצל הספקים במדינות השונות,
-            ומביאה לכם רק את חבילת ה-ESIM המשתלמת ביותר – ללא הגבלת נפח גלישה!
-          </p>
-
-          {/* ✅ תוספת של טקסט ההנחה */}
-          <p className="text-[#535FC8] font-birzia font-semibold text-lg mt-3">
-            10% הנחה לחבילות נבחרות השבוע!
+          <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-birzia">
+            &nbsp;בחרו את היעד הבא שלכם, רכשו חבילה
+            <br className="hidden md:block" />
+            &nbsp;לפי מספר הימים, וה-ESIM יופעל אוטומטית
+            <br className="hidden md:block" />
+            &nbsp;עם הנחיתה - בלי נפח, בלי הגבלות.
           </p>
         </div>
 
-        {/* ✅ קרוסלת יעדים */}
         <div
           ref={containerRef}
           className="relative overflow-y-visible mx-auto mt-10"
-          style={{ height: "304px", maxWidth: "100%", position: "relative" }}
+          style={{ 
+            height: "304px",
+            maxWidth: "100%",
+            position: "relative"
+          }}
         >
           <div
             ref={contentRef}
@@ -111,7 +182,7 @@ export function DestinationsGallery({
               WebkitUserSelect: "none",
               willChange: "transform",
               touchAction: "pan-y",
-              overflowX: "visible",
+              overflowX: "visible"
             }}
           >
             {destinations.map((destination) => (
@@ -122,6 +193,8 @@ export function DestinationsGallery({
               >
                 <DestinationCard
                   destination={destination}
+                  loading={loading}
+                  price={pricesByCountry[destination.countryIso]}
                   onSelect={setQueryStates}
                 />
               </div>
@@ -129,7 +202,7 @@ export function DestinationsGallery({
           </div>
         </div>
 
-        {/* פס התקדמות מובייל */}
+        {/* Progress Track for Mobile */}
         <div
           className="relative mx-auto mt-6"
           style={{
@@ -151,7 +224,7 @@ export function DestinationsGallery({
           />
         </div>
       </div>
-
+      {/* Promo Banner */}
       <PromoBanner />
     </section>
   );
@@ -159,22 +232,65 @@ export function DestinationsGallery({
 
 interface DestinationCardProps {
   destination: Destination;
-  onSelect: (values: {
-    countryId: string;
-    activeTab: ActiveTab;
-    numOfDays: number;
-  }) => void;
+  loading?: boolean;
+  price?: { finalPrice: number; currency: string };
+  onSelect: (values: { countryId: string; activeTab: ActiveTab }) => void;
 }
 
-function DestinationCard({ destination, onSelect }: DestinationCardProps) {
+function DestinationCard({
+  destination,
+  loading,
+  price,
+  onSelect,
+}: DestinationCardProps) {
   const fallbackImage = "/images/destinations/default.png";
 
-  const days = reasonableDaysByIso[destination.countryIso] || 7;
-  const couponCode = `${destination.name.toLowerCase()}${days}`;
+  const days =  (() => {
+    // SAME logic as before – just calculating days based on ISO  
+    const reasonable: Record<string, number> = {
+      IT: 5,
+      US: 10,
+      GR: 7,
+      TH: 14,
+      AE: 5,
+      BR: 12,
+      CA: 10,
+      CN: 10,
+    };
+    return reasonable[destination.countryIso] ?? 7;
+  })();
+
+  const couponCode = `${destination.countryIso.toLowerCase()}${days}`;
 
   const handleClick = () => {
-    onApply();
-    queueMicrotask(() => triggerPurchaseFlow());
+    onSelect({
+      countryId: destination.countryIso.toLowerCase(),
+      activeTab: "countries",
+    });
+
+    const selectorElement = document.getElementById("esim-selector");
+    if (selectorElement) {
+      selectorElement.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  };
+
+  const getPriceText = () => {
+    if (price) {
+      const currencySymbol =
+        price.currency === "ILS"
+          ? "₪"
+          : price.currency === "USD"
+          ? "$"
+          : price.currency === "EUR"
+          ? "€"
+          : price.currency;
+
+      return `החל מ- ${Math.round(price.finalPrice)} ${currencySymbol}`;
+    }
+    return destination.priceFrom;
   };
 
   return (
@@ -184,43 +300,47 @@ function DestinationCard({ destination, onSelect }: DestinationCardProps) {
       size={null}
     >
       <div className="relative h-64 md:h-72 w-full">
-        {/* תמונה */}
+        
+        {/* Background Image */}
         <ImageWithFallback
           src={destination.image}
           fallbackSrc={fallbackImage}
           alt={`${destination.name} destination`}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-110"
+          placeholder="blur"
+          blurDataURL="data:image/jpeg;base64,/9j/4AAQSk..."
         />
 
-        {/* שכבת כהות */}
+        {/* Top-right DAYS badge */}
+        <div className="absolute top-3 right-3">
+          <span className="bg-white/95 text-[#0A232E] px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
+            {days} ימים
+          </span>
+        </div>
+
+        {/* Dark gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
+        {/* Bottom section */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 text-white flex flex-col gap-2">
+          
+          {/* Country Name */}
+          <h4 className="text-2xl font-bold font-birzia">
+            {destination.nameHebrew}
+          </h4>
 
-  {/* ---- ימים למעלה ימין ---- */}
-{/* ---- ימים + קופון ---- */}
-<div className="absolute top-0 right-0 p-3 flex flex-col items-end gap-2">
-  {/* ימים */}
-  <span className="bg-white/90 text-[#0A232E] px-2 py-1 rounded-full text-xs font-semibold shadow-sm">
-    {days} ימים
-  </span>
+          {/* PRICE badge (if showing priceFrom or dynamic price) */}
+          {loading ? (
+            <div className="inline-block h-7 w-28 bg-gray-200 rounded-full skeleton-shimmer" />
+          ) : (
+            <div className="inline-flex items-center bg-white/90 text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold backdrop-blur-sm">
+              {getPriceText()}
+            </div>
+          )}
 
-  {/* קוד קופון */}
-  <span className="bg-[#535FC8] text-white px-2 py-1 rounded-full text-xs font-bold shadow-sm">
-    10% הנחה - {destination.countryIso.toLowerCase()}{days}
-  </span>
-</div>
-
-
-  {/* ---- התוכן התחתון ---- */}
-  <div className="absolute bottom-0 left-0 p-6 flex flex-col items-start text-white">
-
-    {/* שם המדינה — לא משתנה */}
-    <h4 className="text-2xl font-bold mb-2 font-birzia">
-      {destination.nameHebrew}
-    </h4>
-
-          <div className="inline-flex items-center bg-white/90 backdrop-blur-sm text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold">
+          {/* Coupon badge BELOW price */}
+          <div className="inline-flex items-center bg-[#535FC8] text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
             קוד קופון: {couponCode}
           </div>
         </div>
