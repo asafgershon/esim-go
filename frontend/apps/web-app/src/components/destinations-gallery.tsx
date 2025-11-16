@@ -1,38 +1,17 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import {
+  useSelectorQueryState,
+  type ActiveTab,
+} from "@/hooks/useSelectorQueryState";
+import { CALCULATE_DESTINATION_PRICES } from "@/lib/graphql/pricing";
+import { useQuery } from "@apollo/client";
 import { Card, useHorizontalScroll } from "@workspace/ui";
-import { ImageWithFallback } from "@/components/image-with-fallback";
-import { useSelectorQueryState, type ActiveTab } from "@/hooks/useSelectorQueryState";
-import { getFlagUrl } from "@/utils/flags";
+import { useMemo } from "react";
+import { ImageWithFallback } from "./image-with-fallback";
+import { PromoBanner } from "./promo-banner";
 
-type DealPrice = {
-  finalPrice: number;
-  currency: string;
-  externalId?: string;
-};
-
-interface Destination {
-  id: string;
-  name: string;
-  nameHebrew: string;
-  countryIso: string;
-  image: string;
-}
-
-// ✅ יעדים – ללא priceFrom, כי כבר לא צריך חזקות
-const destinations: Destination[] = [
-  { id: "rome", name: "Rome", nameHebrew: "רומא", countryIso: "IT", image: "/images/destinations/italy.webp" },
-  { id: "usa", name: "USA", nameHebrew: "ארצות הברית", countryIso: "US", image: "/images/destinations/america.webp" },
-  { id: "greece", name: "Greece", nameHebrew: "יוון", countryIso: "GR", image: "/images/destinations/greec.webp" },
-  { id: "thailand", name: "Thailand", nameHebrew: "תאילנד", countryIso: "TH", image: "/images/destinations/thailand.webp" },
-  { id: "dubai", name: "Dubai", nameHebrew: "דובאי", countryIso: "AE", image: "/images/destinations/dubai.webp" },
-  { id: "brazil", name: "Brazil", nameHebrew: "ברזיל", countryIso: "BR", image: "/images/destinations/brazil.webp" },
-  { id: "canada", name: "Canada", nameHebrew: "קנדה", countryIso: "CA", image: "/images/destinations/canada.webp" },
-  { id: "china", name: "China", nameHebrew: "סין", countryIso: "CN", image: "/images/destinations/china.webp" },
-];
-
-// ✅ ימים "הגיוניים" לכל יעד
+// ✅ מספר ימים "הגיוניים" לכל יעד
 const reasonableDaysByIso: Record<string, number> = {
   IT: 5,
   US: 10,
@@ -44,102 +23,53 @@ const reasonableDaysByIso: Record<string, number> = {
   CN: 10,
 };
 
-// ✅ הנחה (כמו שביקשת)
-const DISCOUNT_USD = 2;
+interface Destination {
+  id: string;
+  name: string;
+  nameHebrew: string;
+  countryIso: string;
+  image: string;
+}
 
-export function DestinationsGallery({ id, ariaLabel, speed }: { id: string; ariaLabel: string; speed?: string }) {
+const destinations: Destination[] = [
+  { id: "rome", name: "Rome", nameHebrew: "רומא", countryIso: "IT", image: "/images/destinations/italy.webp" },
+  { id: "usa", name: "USA", nameHebrew: "ארצות הברית", countryIso: "US", image: "/images/destinations/america.webp" },
+  { id: "greece", name: "Greece", nameHebrew: "יוון", countryIso: "GR", image: "/images/destinations/greec.webp" },
+  { id: "thailand", name: "Thailand", nameHebrew: "תאילנד", countryIso: "TH", image: "/images/destinations/thailand.webp" },
+  { id: "dubai", name: "Dubai", nameHebrew: "דובאי", countryIso: "AE", image: "/images/destinations/dubai.webp" },
+  { id: "brazil", name: "Brazil", nameHebrew: "ברזיל", countryIso: "BR", image: "/images/destinations/brazil.webp" },
+  { id: "canada", name: "Canada", nameHebrew: "קנדה", countryIso: "CA", image: "/images/destinations/canada.webp" },
+  { id: "china", name: "China", nameHebrew: "סין", countryIso: "CN", image: "/images/destinations/china.webp" },
+];
+
+export function DestinationsGallery({
+  id,
+  ariaLabel,
+  speed,
+}: {
+  id: string;
+  ariaLabel: string;
+  speed?: string;
+}) {
+  const { setQueryStates } = useSelectorQueryState();
+
   const { containerRef, contentRef, progressRef } = useHorizontalScroll({
     progressColor: "#535FC8",
     progressTrackColor: "rgba(83, 95, 200, 0.2)",
   });
 
-  const { setQueryStates } = useSelectorQueryState();
+  // Execute dummy query (kept for structure compatibility)
+  const pricingInputs = useMemo(() => {
+    return destinations.map((dest) => ({
+      countryId: dest.countryIso,
+      numOfDays: 1,
+    }));
+  }, []);
 
-  const [prices, setPrices] = useState<Record<string, DealPrice>>({});
-
-  useEffect(() => {
-  let cancelled = false;
-
-  // ✅ 1. לבדוק אם יש cache תקף
-  const cacheRaw = localStorage.getItem("hiilo-destination-prices");
-  if (cacheRaw) {
-    try {
-      const cache = JSON.parse(cacheRaw);
-      const week = 7 * 24 * 60 * 60 * 1000;
-      const now = Date.now();
-
-      if (now - cache.timestamp < week && cache.prices) {
-        console.log("✅ Using cached destination prices");
-        setPrices(cache.prices);
-        return; // לא מושכים מהשרת
-      }
-    } catch (err) {
-      console.error("Failed to parse cache", err);
-    }
-  }
-
-  // ✅ 2. אם אין cache — למשוך פעם אחת בלבד לכל היעדים
-  async function fetchPrices() {
-    console.log("🌍 Fetching destination prices from server...");
-    const result: Record<string, DealPrice> = {};
-
-    const backendUrl =
-      process.env.NEXT_PUBLIC_API_ENDPOINT || "https://api.hiiloworld.com";
-
-    // ✅ קריאה במקביל לכל היעדים
-    await Promise.all(
-      destinations.map(async (dest) => {
-        const iso = dest.countryIso;
-        const days = reasonableDaysByIso[iso];
-
-        try {
-          const res = await fetch(
-            `${backendUrl}/api/calculate-price?countryId=${iso}&numOfDays=${days}`
-          );
-
-          if (!res.ok) throw new Error("API failed");
-
-          const pricing = await res.json();
-
-          const discounted = Math.max(pricing.finalPrice - DISCOUNT_USD, 1);
-
-          result[iso] = {
-            finalPrice: discounted,
-            currency: pricing.currency || "USD",
-            externalId: String(pricing.externalId || iso),
-          };
-        } catch (err) {
-          console.error("⚠️ Failed price for " + iso, err);
-        }
-      })
-    );
-
-    if (!cancelled) {
-      setPrices(result);
-
-      // ✅ 3. לשמור לזיכרון עם timestamp
-      localStorage.setItem(
-        "hiilo-destination-prices",
-        JSON.stringify({
-          timestamp: Date.now(),
-          prices: result,
-        })
-      );
-
-      console.log("✅ Cached destination prices");
-    }
-  }
-
-  fetchPrices();
-
-  return () => {
-    cancelled = true;
-  };
-}, []);
-
-
-  const currencySymbol = (cur: string) =>
-    cur === "USD" ? "$" : cur === "ILS" ? "₪" : cur;
+  useQuery(CALCULATE_DESTINATION_PRICES, {
+    variables: { inputs: pricingInputs },
+    skip: true, // ❌ לא מבצעים קריאת מחיר
+  });
 
   return (
     <section
@@ -149,21 +79,28 @@ export function DestinationsGallery({ id, ariaLabel, speed }: { id: string; aria
       className="overflow-hidden"
     >
       <div className="container mx-auto px-4 max-w-[1440px] md:pt-4">
+        {/* ✅ Header בעיצוב שביקשת */}
         <div className="text-right mb-12 max-w-4xl mx-auto">
           <h2 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-4">
             הטכנולוגיה שלנו מאפשרת גלישה ללא הגבלה, במחירים המשתלמים ביותר,
             במעל <span className="text-[#535FC8]">150 </span>מדינות!
           </h2>
-          <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-birzia">
+          <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-birzia mb-2">
             המערכת של Hiilo סורקת בזמן אמת את כל המחירים אצל הספקים במדינות השונות,
-            ומביאה לכם את רק את חבילת ה-ESIM המשתלמת ביותר ללא הגבלת נפח גלישה!
+            ומביאה לכם רק את חבילת ה-ESIM המשתלמת ביותר – ללא הגבלת נפח גלישה!
+          </p>
+
+          {/* ✅ תוספת של טקסט ההנחה */}
+          <p className="text-[#535FC8] font-birzia font-semibold text-lg mt-3">
+            10% הנחה לחבילות נבחרות השבוע!
           </p>
         </div>
 
+        {/* ✅ קרוסלת יעדים */}
         <div
           ref={containerRef}
           className="relative overflow-y-visible mx-auto mt-10"
-          style={{ height: "304px", maxWidth: "100%" }}
+          style={{ height: "304px", maxWidth: "100%", position: "relative" }}
         >
           <div
             ref={contentRef}
@@ -178,20 +115,21 @@ export function DestinationsGallery({ id, ariaLabel, speed }: { id: string; aria
             }}
           >
             {destinations.map((destination) => (
-              <div key={destination.id} className="flex-shrink-0" style={{ width: "256px" }}>
+              <div
+                key={destination.id}
+                className="flex-shrink-0"
+                style={{ width: "256px" }}
+              >
                 <DestinationCard
                   destination={destination}
-                  days={reasonableDaysByIso[destination.countryIso]}
-                  price={prices[destination.countryIso]}
-                  currencySymbol={currencySymbol}
-                  onApply={() => handleCardClick(destination.countryIso, reasonableDaysByIso[destination.countryIso], setQueryStates)}
+                  onSelect={setQueryStates}
                 />
               </div>
             ))}
           </div>
         </div>
 
-        {/* ✅ פס התקדמות מובייל */}
+        {/* פס התקדמות מובייל */}
         <div
           className="relative mx-auto mt-6"
           style={{
@@ -213,23 +151,27 @@ export function DestinationsGallery({ id, ariaLabel, speed }: { id: string; aria
           />
         </div>
       </div>
+
+      <PromoBanner />
     </section>
   );
 }
 
-function DestinationCard({
-  destination,
-  days,
-  price,
-  currencySymbol,
-  onApply,
-}: {
+interface DestinationCardProps {
   destination: Destination;
-  days: number;
-  price?: DealPrice;
-  currencySymbol: (c: string) => string;
-  onApply: () => void;
-}) {
+  onSelect: (values: {
+    countryId: string;
+    activeTab: ActiveTab;
+    numOfDays: number;
+  }) => void;
+}
+
+function DestinationCard({ destination, onSelect }: DestinationCardProps) {
+  const fallbackImage = "/images/destinations/default.png";
+
+  const days = reasonableDaysByIso[destination.countryIso] || 7;
+  const couponCode = `${destination.name.toLowerCase()}${days}`;
+
   const handleClick = () => {
     onApply();
     queueMicrotask(() => triggerPurchaseFlow());
@@ -241,19 +183,18 @@ function DestinationCard({
       className="relative overflow-hidden rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer group p-0"
       size={null}
     >
-<div className="relative h-64 md:h-72 w-full">
+      <div className="relative h-64 md:h-72 w-full">
+        {/* תמונה */}
+        <ImageWithFallback
+          src={destination.image}
+          fallbackSrc={fallbackImage}
+          alt={`${destination.name} destination`}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-110"
+        />
 
-  {/* ---- תמונה ---- */}
-  <ImageWithFallback
-    src={destination.image}
-    fallbackSrc="/images/destinations/default.png"
-    alt={`${destination.name} destination`}
-    fill
-    className="object-cover transition-transform duration-300 group-hover:scale-110"
-  />
-
-  {/* ---- שכבת כהות ---- */}
-  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        {/* שכבת כהות */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
 
   {/* ---- ימים למעלה ימין ---- */}
@@ -279,38 +220,11 @@ function DestinationCard({
       {destination.nameHebrew}
     </h4>
 
-    {/* המחיר — בלי "הנחת $2" */}
-    {price ? (
-      <div className="inline-flex items-center bg-white/90 backdrop-blur-sm text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold">
-        {Math.round(price.finalPrice)} {currencySymbol(price.currency)}
+          <div className="inline-flex items-center bg-white/90 backdrop-blur-sm text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold">
+            קוד קופון: {couponCode}
+          </div>
+        </div>
       </div>
-    ) : (
-      <div className="inline-block h-7 w-28 bg-gray-200 rounded-full skeleton-shimmer" />
-    )}
-  </div>
-
-</div>
     </Card>
   );
-}
-
-// ✅ ממשיך את הזרימה כבקשה
-function triggerPurchaseFlow() {
-  const btn = document.querySelector<HTMLButtonElement>(
-    '[aria-label="המשך לרכישת חבילת eSIM"]'
-  );
-  if (btn) btn.click();
-}
-
-// ✅ עדכון state של selector
-function handleCardClick(
-  countryIso: string,
-  days: number,
-  setQueryStates: any
-) {
-  setQueryStates({
-    countryId: countryIso.toLowerCase(),
-    activeTab: "countries",
-    numOfDays: days,
-  });
 }
