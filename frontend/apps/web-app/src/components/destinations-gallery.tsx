@@ -232,9 +232,7 @@ function DestinationCard({
 }) {
   const handleClick = () => {
     onApply();
-    setTimeout(() => {
-      triggerPurchaseFlow();
-    }, 150);
+    queueMicrotask(() => triggerPurchaseFlow());
   };
 
   return (
@@ -259,15 +257,22 @@ function DestinationCard({
 
 
   {/* ---- ימים למעלה ימין ---- */}
-  <div className="absolute top-0 right-0 p-3">
-    <span className="bg-white/90 text-[#0A232E] px-2 py-1 rounded-full text-xs font-semibold shadow-sm">
-      {days} ימים
-    </span>
-  </div>
+{/* ---- ימים + קופון ---- */}
+<div className="absolute top-0 right-0 p-3 flex flex-col items-end gap-2">
+  {/* ימים */}
+  <span className="bg-white/90 text-[#0A232E] px-2 py-1 rounded-full text-xs font-semibold shadow-sm">
+    {days} ימים
+  </span>
+
+  {/* קוד קופון */}
+  <span className="bg-[#535FC8] text-white px-2 py-1 rounded-full text-xs font-bold shadow-sm">
+    10% הנחה - {destination.countryIso.toLowerCase()}{days}
+  </span>
+</div>
 
 
   {/* ---- התוכן התחתון ---- */}
-  <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col text-white">
+  <div className="absolute bottom-0 left-0 p-6 flex flex-col items-start text-white">
 
     {/* שם המדינה — לא משתנה */}
     <h4 className="text-2xl font-bold mb-2 font-birzia">

@@ -323,6 +323,7 @@ const qrImageBase64 = (await QRCode.toDataURL(activationString, { width: 250 }))
 
 const lpaString = esimDetails.smdp_address;
 const manualCode = esimDetails.manual_code;
+const headerImageBase64 = fs.readFileSync("C:\\Users\\gersh\\esim-go\\frontend\\apps\\web-app\\public\\images\\email\\header_hiilo_esim.png", "base64");
 
 await postmarkClient.sendEmail({
   From: "office@hiiloworld.com",
@@ -346,19 +347,15 @@ await postmarkClient.sendEmail({
           <table role="presentation" style="max-width:600px;width:100%;
                  background:#ffffff;border-radius:16px;
                  box-shadow:0 4px 20px rgba(0,0,0,0.08);overflow:hidden;">
-            
+
             <!-- Header -->
             <tr>
-              <td style="background:linear-gradient(135deg,#008060 0%,#00B37A 100%);
-                         padding:35px 30px;text-align:center;">
-                <img src="https://hiiloworld.com/images/logos/logo-header.png"
-                     alt="Hiilo logo" style="width:120px;height:auto;margin-bottom:10px;" />
-                <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">
-                  ה-eSIM שלך מוכן
-                </h1>
+              <td style="padding:0; margin:0;">
+                <img src="cid:header.png"
+                     alt="Hiilo Header"
+                     style="display:block; width:100%; height:auto;" />
               </td>
             </tr>
-
             <!-- Content -->
             <tr>
               <td style="padding:40px 30px;">
@@ -480,6 +477,12 @@ await postmarkClient.sendEmail({
       ContentID: "qrcode.png",
       ContentType: "image/png",
     },
+    {
+  Name: "header.png",
+  Content: headerImageBase64,
+  ContentID: "header.png",
+  ContentType: "image/png",
+},
   ],
 });
 
