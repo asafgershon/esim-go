@@ -48,6 +48,8 @@ interface MainViewProps {
     handlePurchase: () => void;
 }
 
+const [isPricingThinking, setIsPricingThinking] = useState(false);
+
 export function MainView({
     pricing,
     shouldShowStreamingUI = false,
@@ -193,46 +195,42 @@ export function MainView({
 
                 {/* Selected Destination and Pricing */}
                 {destination && (
-                    <Pricing
-                        destination={destination}
-                        pricing={pricing}
-                        shouldShowStreamingUI={shouldShowStreamingUI}
-                        isStreamingData={isStreamingData}
-                        hasDataForDay={hasDataForDay}
-                        countryId={countryId}
-                        tripId={tripId}
-                        numOfDays={numOfDays}
-                        onRemoveDestination={() => {
-                            setCountryId(null);
-                            setTripId(null);
-                        }}
-                    />
+<Pricing
+    destination={destination}
+    pricing={pricing}
+    shouldShowStreamingUI={shouldShowStreamingUI}
+    isStreamingData={isStreamingData}
+    hasDataForDay={hasDataForDay}
+    countryId={countryId}
+    tripId={tripId}
+    numOfDays={numOfDays}
+    onRemoveDestination={() => {
+        setCountryId(null);
+        setTripId(null);
+    }}
+    onThinkingStateChange={(state) => setIsPricingThinking(state)} // 👈 חדש
+/>
                 )}
             </SelectorContent>
 
             {/* Purchase Button - Always visible */}
             <SelectorAction className="mt-5">
-                <SelectorButton
-                    onClick={() => {
-                        if (isPricingValid) {
-                            // חשוב: כשמפעילים את handlePurchase, יש לוודא שהכמות (numOfEsims) עוברת הלאה
-                            handlePurchase();
-                        } else {
-                            triggerDestinationSelectorFocus();
-                        }
-                    }}
-                    aria-label={
-                        isPricingValid
-                            ? "המשך לרכישת חבילת eSIM"
-                            : "בחר יעד לצפייה בחבילות"
-                    }
-                    variant={isPricingValid ? "brand-success" : undefined}
-                    emphasized={isPricingValid}
-                >
-                    {isPricingValid
-                        ? "לרכישת החבילה"
-                        : "לצפייה בחבילה המשתלמת ביותר"}
-                </SelectorButton>
+<SelectorButton
+    onClick={() => {
+        if (isPricingValid && !isPricingThinking) {
+            handlePurchase();
+        } else {
+            triggerDestinationSelectorFocus();
+        }
+    }}
+    disabled={!isPricingValid || isPricingThinking}
+    variant={isPricingValid && !isPricingThinking ? "brand-success" : undefined}
+    emphasized={isPricingValid && !isPricingThinking}
+>
+    {isPricingThinking ? "מחשב..." :
+        isPricingValid ? "לרכישת החבילה" : "לצפייה בחבילה המשתלמת ביותר"}
+</SelectorButton>
+
             </SelectorAction>
         </>
     );

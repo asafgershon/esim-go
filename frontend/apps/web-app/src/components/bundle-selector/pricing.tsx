@@ -37,6 +37,7 @@ interface PricingProps {
   tripId: string | null;
   numOfDays: number;
   onRemoveDestination: () => void;
+  onThinkingStateChange?: (state: boolean) => void;
 }
 
 export function Pricing({
@@ -48,6 +49,7 @@ export function Pricing({
   tripId,
   numOfDays,
   onRemoveDestination,
+  onThinkingStateChange,
 }: PricingProps) {
   const previousPriceRef = useRef<number>(0);
   const previousDestinationRef = useRef<string | null>(null);
@@ -65,6 +67,7 @@ export function Pricing({
     if (destinationChanged) {
       previousDestinationRef.current = currentDestination;
       setShowThinkingAnimation(true);
+      onThinkingStateChange?.(true);
     }
   }, [currentDestination]);
 
@@ -73,6 +76,7 @@ export function Pricing({
     if (pricing?.finalPrice) {
       const timeout = setTimeout(() => {
         setShowThinkingAnimation(false);
+        onThinkingStateChange?.(false);
       }, 2500);
       return () => clearTimeout(timeout);
     }
