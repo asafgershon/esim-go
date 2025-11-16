@@ -312,7 +312,7 @@ function DestinationCard({
           </h4>
 
           {/* Coupon badge INSTEAD OF price */}
-          <div className="inline-flex items-center bg-white/90 backdrop-blur-sm text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold">
+          <div className="inline-flex w-fit items-center bg-white/90 backdrop-blur-sm text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold shadow-sm">
             קוד קופון: {couponCode}
           </div>
 

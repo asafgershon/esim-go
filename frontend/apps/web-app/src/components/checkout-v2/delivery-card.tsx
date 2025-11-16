@@ -53,10 +53,13 @@ const DeliverySchema = z
     email: z.string().email({ message: "אימייל לא תקין" }),
     confirmEmail: z.string().email({ message: "אימייל לא תקין" }),
   })
-  .refine((data) => data.email === data.confirmEmail, {
+.refine(
+  (data) => data.email.toLowerCase() === data.confirmEmail.toLowerCase(),
+  {
     message: "האימיילים אינם תואמים",
     path: ["confirmEmail"],
-  });
+  }
+);  
 type DeliveryFormData = z.infer<typeof DeliverySchema>;
 
 const UPDATE_CHECKOUT_DELIVERY_MUTATION = gql(`
@@ -121,7 +124,7 @@ export const DeliveryCard = ({
   const onSubmit = useCallback(
     async (formData: DeliveryFormData) => {
       if (!data?.id) return;
-      const cleanedEmail = formData.email.trim();
+      const cleanedEmail = formData.email.trim().toLowerCase();
       const cleanedFirstName = formData.firstName.trim();
       const cleanedLastName = formData.lastName.trim();
       const cleanedPhone = formData.phone.trim();
