@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AnnouncementBanner } from "@/components/announcement-banner";
@@ -121,7 +122,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      {/* <Footer onNavigate={handleFooterNavigation} /> */}
+      <Footer onNavigate={handleFooterNavigation} />
     </div>
   );
 }

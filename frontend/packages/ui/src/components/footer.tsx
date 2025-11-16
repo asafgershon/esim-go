@@ -8,7 +8,11 @@ import DocumentViewer from "./DocumentViewer";
 
 type DocKey = "terms" | "privacy" | "about";
 
-export function Footer() {
+type FooterProps = {
+  onNavigate?: (href: string) => void;
+};
+
+export function Footer({ onNavigate }: FooterProps) {
   const isMobile = useIsMobile();
   const [openDoc, setOpenDoc] = useState<DocKey | null>(null);
 

@@ -10,6 +10,7 @@ import { Card, useHorizontalScroll } from "@workspace/ui";
 import { useMemo } from "react";
 import { ImageWithFallback } from "./image-with-fallback";
 import { PromoBanner } from "./promo-banner";
+import { num } from 'envalid';
 
 interface Destination {
   id: string;
@@ -234,7 +235,7 @@ interface DestinationCardProps {
   destination: Destination;
   loading?: boolean;
   price?: { finalPrice: number; currency: string };
-  onSelect: (values: { countryId: string; activeTab: ActiveTab }) => void;
+  onSelect: (values: { countryId: string; activeTab: ActiveTab; numOfDays?: number }) => void;
 }
 
 function DestinationCard({
@@ -264,6 +265,7 @@ function DestinationCard({
   const handleClick = () => {
     onSelect({
       countryId: destination.countryIso.toLowerCase(),
+      numOfDays: days,
       activeTab: "countries",
     });
 
