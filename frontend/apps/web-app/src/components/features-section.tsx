@@ -42,29 +42,30 @@ interface FeatureData {
 const features: FeatureData[] = [
   {
     id: "data-transfer",
-    text: "התקנה מהירה באמצעות QR, ללא צורך בסים פיזי",
-    highlight: "סרקו את קוד ה-QR והתחילו לגלוש תוך דקות ספורות",
+    text: "התקנה מהירה באמצעות QR — בלי סים פיזי",
+    highlight: "סרקו את ה-QR והתחילו לגלוש תוך דקות",
     icon: "/images/illustrations/layers-stack.png",
   },
   {
     id: "instant-support",
     text: "תמיכה זמינה 24/7",
-    highlight: "צוות התמיכה שלנו זמין לכל שאלה ובקשה",
+    highlight: "צוות התמיכה זמין לכל שאלה ובקשה",
     icon: "/images/illustrations/paper-plane.png",
   },
   {
     id: "zero-commitment",
     text: "שומרים על הקו הקיים",
-    highlight: "ה-eSIM נשאר פעיל במכשיר לצד הקו הראשי שלך",
+    highlight: "ה-eSIM עובד במקביל לקו הראשי שלכם",
     icon: "/images/illustrations/hand-share.png",
   },
   {
     id: "works-everywhere",
     text: "הפעלה עצמאית ונוחה",
-    highlight: "מתקינים את ה-ESIM בלחיצת כפתור כבר בארץ, והוא יעבוד אוטומטית בנחיתה",
+    highlight: "מתקינים את ה-eSIM בארץ והוא עובד אוטומטית בנחיתה",
     icon: "/images/illustrations/person-reading.png",
   },
 ];
+
 
 const containerVariants = {
   hidden: { opacity: 0 },

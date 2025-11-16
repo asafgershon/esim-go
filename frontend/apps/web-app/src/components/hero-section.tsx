@@ -47,7 +47,7 @@ export function HeroSection({
 <div className="container mx-auto px-4 pt-4 md:pt-20 pb-[200px] relative z-10">
   <div className="text-center max-w-6xl mx-auto font-birzia">
     <h1 className="font-bold mb-6">
-      <span className="text-5xl md:text-6xl lg:text-7xl text-brand-dark block leading-snug">
+      <span className="text-5xl md:text-6xl lg:text-7xl text-brand-dark block leading-tight md:leading-snug">
         חבילות גלישה{" "}
         <span className="text-brand-purple">
           ללא הגבלה
