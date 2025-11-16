@@ -194,8 +194,8 @@ export const ReviewsSection = () => {
         {/* Horizontal Scroll Container */}
           <div
             ref={containerRef}
-            className="relative overflow-hidden max-w-full"
-            style={{ height: "420px" }}
+            className="relative overflow-x-scroll overflow-y-hidden max-w-full no-scrollbar"
+            style={{ height: "420px", WebkitOverflowScrolling: "touch" }}
           >
           <div
             ref={contentRef}
