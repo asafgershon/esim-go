@@ -245,8 +245,7 @@ function DestinationCard({
 }: DestinationCardProps) {
   const fallbackImage = "/images/destinations/default.png";
 
-  const days =  (() => {
-    // SAME logic as before – just calculating days based on ISO  
+  const days = (() => {
     const reasonable: Record<string, number> = {
       IT: 5,
       US: 10,
@@ -277,22 +276,6 @@ function DestinationCard({
     }
   };
 
-  const getPriceText = () => {
-    if (price) {
-      const currencySymbol =
-        price.currency === "ILS"
-          ? "₪"
-          : price.currency === "USD"
-          ? "$"
-          : price.currency === "EUR"
-          ? "€"
-          : price.currency;
-
-      return `החל מ- ${Math.round(price.finalPrice)} ${currencySymbol}`;
-    }
-    return destination.priceFrom;
-  };
-
   return (
     <Card
       onClick={handleClick}
@@ -308,8 +291,6 @@ function DestinationCard({
           alt={`${destination.name} destination`}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-110"
-          placeholder="blur"
-          blurDataURL="data:image/jpeg;base64,/9j/4AAQSk..."
         />
 
         {/* Top-right DAYS badge */}
@@ -319,32 +300,25 @@ function DestinationCard({
           </span>
         </div>
 
-        {/* Dark gradient overlay */}
+        {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
-        {/* Bottom section */}
+        {/* Bottom content */}
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white flex flex-col gap-2">
-          
+
           {/* Country Name */}
           <h4 className="text-2xl font-bold font-birzia">
             {destination.nameHebrew}
           </h4>
 
-          {/* PRICE badge (if showing priceFrom or dynamic price) */}
-          {loading ? (
-            <div className="inline-block h-7 w-28 bg-gray-200 rounded-full skeleton-shimmer" />
-          ) : (
-            <div className="inline-flex items-center bg-white/90 text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold backdrop-blur-sm">
-              {getPriceText()}
-            </div>
-          )}
-
-          {/* Coupon badge BELOW price */}
-          <div className="inline-flex items-center bg-[#535FC8] text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+          {/* Coupon badge INSTEAD OF price */}
+          <div className="inline-flex items-center bg-white/90 backdrop-blur-sm text-[#0A232E] px-3 py-1 rounded-full text-sm font-semibold">
             קוד קופון: {couponCode}
           </div>
+
         </div>
       </div>
     </Card>
   );
 }
+
