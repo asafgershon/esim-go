@@ -115,7 +115,7 @@ export const CouponCard = ({
                 id="coupon"
                 name="coupon"
                 placeholder="הזן קוד קופון"
-                className="flex-1"
+                className="flex-1 text-[16px]"
                 value={coupon}
                 onChange={(e) => setCoupon(e.target.value)}
                 disabled={applying}
