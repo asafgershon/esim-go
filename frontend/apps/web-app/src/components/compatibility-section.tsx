@@ -55,7 +55,7 @@ export function CompatibilitySection({
     }
 
     const rawDeviceName = hasStarted && deviceInfo ? deviceInfo.deviceName : null;
-    const deviceName = rawDeviceName === "NONE NONE" ? null : rawDeviceName;
+    const deviceName = rawDeviceName === "" ? null : rawDeviceName;
 
     if (isSupported) {
       return {
@@ -134,7 +134,7 @@ export function CompatibilitySection({
       {/* Text container - Mobile */}
       <div className="flex md:hidden flex-col items-center mt-6 gap-3 w-full px-6 relative z-30">
         {/* Highlight */}
-        <div className="text-center relative z-30 bg-background/10 backdrop-blur-sm rounded-lg p-4 w-full">
+        <div className="text-center relative z-30 rounded-lg p-4 w-full">
           <h2 className="text-2xl font-bold text-white" dir="rtl">
             כן, כנראה שהמכשיר שלך תומך..
           </h2>

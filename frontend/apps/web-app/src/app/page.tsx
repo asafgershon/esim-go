@@ -93,7 +93,7 @@ export default function Home() {
 
         {/* Background Section with eSIM Compatibility Check */}
         <BackgroundSection className="flex flex-col gap-16 py-20"> {/* ✅ שונה מ-gap-40 ל-gap-24 */}
-          <LogoRounded className="absolute top-10 left-0" />
+          <LogoRounded className="absolute top-10 left-0 hidden md:block" />
 
           <CompatibilitySection
             id="what-is-esim"

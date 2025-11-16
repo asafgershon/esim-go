@@ -41,30 +41,29 @@ export default function MobileDestinationDrawer({
   // ✅ בכל פתיחה — מאפס חיפוש, מגלול לערך הנבחר אם יש
 useEffect(() => {
   if (isOpen) {
-    // איפוס חיפוש
+    // מנקה חיפוש (אם אתה רוצה)
     setSearch("");
 
-    // מניעת פוקוס במובייל (לא משנה מה קורה)
-    requestAnimationFrame(() => {
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
-    });
+    // תמיד מבטל פוקוס
+    if (inputRef.current) {
+      inputRef.current.blur();
+    }
 
-    // גלילה ליעד הנבחר
+    // מגלול לעמדה הנכונה
     setTimeout(() => {
       const list = document.querySelector("#destination-list");
       if (!list) return;
-
       const selected = list.querySelector(`[data-value="${initialValue}"]`);
+
       if (selected) {
         selected.scrollIntoView({ block: "center", behavior: "smooth" });
       } else {
         list.scrollTo({ top: 0 });
       }
-    }, 80);
+    }, 50);
   }
 }, [isOpen, initialValue]);
+
 
   const filtered = search.trim()
     ? options.filter(
