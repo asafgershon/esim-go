@@ -11,7 +11,7 @@ const MAYA_BASE_URL = "https://api.maya.net/connectivity/v1";
 const ICCID = "8910300000046957662";
 
 const POSTMARK_TOKEN = "eb7e4a97-3d71-4c8e-8bd0-f2c85fafaa28";
-const RECIPIENT_EMAIL = "kerenco91@gmail.com";
+const RECIPIENT_EMAIL = "asaf.gershon88@gmail.com";
 const RECIPIENT_NAME = "keren cohen";
 
 // 📁 תקייה שבה יושבים נכסי האימייל (אותם קבצים שאתה כבר משתמש בהם בשרת)
@@ -222,7 +222,7 @@ async function sendEsimEmail() {
                       <tr>
                         <td style="text-align:center;">
 
-                          <a href="${activationString}"
+                          <a href="https://hiiloworld.com/activate?lpa=${encodeURIComponent(activationString)}"
                              style="
                                display:inline-flex;
                                align-items:center;

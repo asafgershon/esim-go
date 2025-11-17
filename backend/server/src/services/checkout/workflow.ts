@@ -473,7 +473,7 @@ await postmarkClient.sendEmail({
                       <tr>
                         <td style="text-align:center;">
 
-                          <a href="${activationString}"
+                          <a href="https://hiiloworld.com/activate?lpa=${encodeURIComponent(activationString)}"
                              style="
                                display:inline-flex;
                                align-items:center;
