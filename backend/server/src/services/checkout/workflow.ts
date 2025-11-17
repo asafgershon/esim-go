@@ -178,12 +178,6 @@ const applyCoupon = async ({
   sessionId: string;
   couponCode: string;
 }) => {
-  console.log("CWD:", process.cwd());
-console.log(
-  "APPLE EXISTS:",
-  fs.existsSync(path.join(process.cwd(), "assets/email/apple.png"))
-);
-
   if (!sessionService || !couponRepository)
     throw new NotInitializedError();
 
