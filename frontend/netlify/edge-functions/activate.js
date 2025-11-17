@@ -1,33 +1,52 @@
 export default async (request, context) => {
   const url = new URL(request.url);
-  const lpa = url.searchParams.get("lpa");
+  const raw = url.searchParams.get("lpa");
 
-  if (!lpa) {
+  if (!raw) {
     return new Response("Missing 'lpa' parameter", { status: 400 });
   }
 
-  // 🔥 מפענחים כדי לקבל LPA אמיתי (לא מקודד)
-  const decoded = decodeURIComponent(lpa);
+  // מפענחים (חשוב!)
+  const lpa = decodeURIComponent(raw);
 
   const html = `
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-  <head>
-    <meta charset="UTF-8">
-    <title>מתקין eSIM…</title>
-  </head>
-  <body style="font-family: sans-serif; padding: 40px; text-align: center;">
-    <h2>מתקין את ה-eSIM…</h2>
-    <p>אם זה לא נפתח אוטומטית, לחץ כאן:</p>
+<head>
+  <meta charset="UTF-8">
+  <title>הפעלת eSIM</title>
+</head>
+<body style="
+  font-family: sans-serif;
+  padding: 40px;
+  text-align: center;
+  background: #f5f5f5;
+">
 
-    <!-- ✔ הקישור עצמו מכיל LPA אמיתי -->
-    <a href="${decoded}" style="font-size: 22px; font-weight: bold;">הפעל eSIM</a>
+  <h2>התקנת ה-eSIM</h2>
+  <p>לחצו על הכפתור כדי להתחיל את ההתקנה:</p>
 
-    <script>
-      // ✔ מנסה לפתוח את LPA הטהור
-      window.location.href = "${decoded}";
-    </script>
-  </body>
+  <a id="installButton"
+     href="${lpa}"
+     style="
+        display: inline-block;
+        padding: 18px 28px;
+        background: #4a5be3;
+        color: white;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 12px;
+        text-decoration: none;
+        margin-top: 20px;
+     ">
+    הפעל eSIM
+  </a>
+
+  <p style="margin-top:30px; font-size:13px; color:#444;">
+    אם לא נפתח מסך התקנה, יש לפתוח את העמוד בספארי (Safari).
+  </p>
+
+</body>
 </html>
 `;
 
