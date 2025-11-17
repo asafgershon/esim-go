@@ -331,7 +331,6 @@ const qrImageBase64 = (await QRCode.toDataURL(activationString, { width: 250 }))
 
 const lpaString = esimDetails.smdp_address;
 const manualCode = esimDetails.manual_code;
-const headerImageBase64 = fs.readFileSync("C:\\Users\\gersh\\esim-go\\frontend\\apps\\web-app\\public\\images\\email\\header_hiilo_esim.png", "base64");
 
 await postmarkClient.sendEmail({
   From: "office@hiiloworld.com",
