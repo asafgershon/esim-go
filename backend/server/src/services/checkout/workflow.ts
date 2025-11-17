@@ -756,7 +756,7 @@ await postmarkClient.sendEmail({
     {
       Name: "header.png",
       Content: readEmailAsset("header.png"),
-      ContentID: "header.png",
+      ContentID: "header_hiilo_esim.png",
       ContentType: "image/png",
     },
     {
