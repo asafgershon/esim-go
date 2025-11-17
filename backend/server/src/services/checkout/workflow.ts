@@ -7,6 +7,7 @@ import type { CheckoutSessionServiceV2 } from "./session";
 import postmark from "postmark";
 import QRCode from "qrcode";
 import fs, { stat } from "fs";
+import path from "path";
 type CheckoutSession = any; 
 
 import { calculateSimplePrice, type SimplePricingResult, type SimplePricingDiscount } from "../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
@@ -177,6 +178,12 @@ const applyCoupon = async ({
   sessionId: string;
   couponCode: string;
 }) => {
+  console.log("CWD:", process.cwd());
+console.log(
+  "APPLE EXISTS:",
+  fs.existsSync(path.join(process.cwd(), "assets/email/apple.png"))
+);
+
   if (!sessionService || !couponRepository)
     throw new NotInitializedError();
 
@@ -208,6 +215,13 @@ const applyCoupon = async ({
 // ==========================================================
 // 🌟 פונקציה חדשה: סיום ההזמנה ומשלוח eSIM (Webhook/Callback)
 // ==========================================================
+
+const readEmailAsset = (fileName: string) => {
+  return fs.readFileSync(
+    path.join(process.cwd(), "assets/email", fileName),
+    "base64"
+  );
+};
 
 /**
  * 🛠️ מבצע את הלוגיקה הקריטית: אימות תשלום, יצירת הזמנת eSIM, ועדכון DB.
@@ -329,133 +343,406 @@ await postmarkClient.sendEmail({
   From: "office@hiiloworld.com",
   To: email,
   Subject: "ה-eSIM שלך מוכן",
+
   HtmlBody: `
-  <!DOCTYPE html>
-  <html dir="rtl" lang="he">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ה-eSIM שלך מוכן</title>
-  </head>
-  <body style="margin:0;padding:0;background-color:#f5f5f7;
-               font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
-               direction:rtl;text-align:right;">
-    <table role="presentation" style="width:100%;border-collapse:collapse;
-           background-color:#f5f5f7;padding:40px 20px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" style="max-width:600px;width:100%;
-                 background:#ffffff;border-radius:16px;
-                 box-shadow:0 4px 20px rgba(0,0,0,0.08);overflow:hidden;">
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ה-eSIM שלך מוכן</title>
+</head>
 
-            <!-- Header -->
-            <tr>
-              <td style="padding:0; margin:0;">
-                <img src="cid:header.png"
-                     alt="Hiilo Header"
-                     style="display:block; width:100%; height:auto;" />
-              </td>
-            </tr>
-            <!-- Content -->
-            <tr>
-              <td style="padding:40px 30px;">
-                <p style="margin:0 0 20px;font-size:18px;color:#1a1a1a;font-weight:600;">
-                  שלום ${name},
-                </p>
-                <p style="margin:0 0 12px;font-size:16px;color:#4a4a4a;">
-                  צוות <strong style="color:#007A5E;">Hiilo</strong> מאחל לך חופשה מושלמת 🌴
-                </p>
-                <p style="margin:0 0 25px;font-size:14px;color:#777;">
-                  מספר הזמנה:
-                  <strong style="color:#007A5E;font-family:monospace;">
-                    ${order.id}
-                  </strong>
-                </p>
+<body style="margin:0; padding:0; background-color:#f5f5f7;
+             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+             direction:rtl; text-align:right;">
 
-                <div style="height:2px;background:linear-gradient(to left,transparent,#00A97A,transparent);
-                            margin:30px 0;"></div>
+  <table role="presentation" style="width:100%; border-collapse:collapse;
+         background-color:#f5f5f7; padding:40px 20px;">
+    <tr>
+      <td align="center">
 
-                <!-- QR Section -->
-                <div style="background:linear-gradient(135deg,#f5fff9 0%,#ffffff 100%);
-                            border-radius:12px;padding:30px;border:2px solid #c6f3e0;">
-                  <h3 style="color:#007A5E;text-align:center;margin-bottom:20px;">
-                    סרוק את הקוד כדי להפעיל את ה-eSIM
-                  </h3>
+        <table role="presentation" style="max-width:600px; width:100%;
+               background:#ffffff; border-radius:16px;
+               box-shadow:0 4px 20px rgba(0,0,0,0.08); overflow:hidden;">
 
-                  <div style="text-align:center;">
-                    <div style="border:3px solid #00A97A;border-radius:12px;
-                                padding:20px;display:inline-block;">
-                      <img src="cid:qrcode.png" alt="QR Code"
-                           style="width:200px;height:200px;" />
-                    </div>
-                  </div>
+          <!-- Header -->
+          <tr>
+            <td style="padding:0; margin:0;">
+              <img src="cid:header.png"
+                   alt="Hiilo Header"
+                   style="display:block; width:100%; height:auto;" />
+            </td>
+          </tr>
 
-                  <!-- iPhone -->
-                  <div style="margin-top:25px;padding:20px;background:#f8fff9;
-                              border-radius:8px;border-right:4px solid #00A97A;
-                              text-align:center;">
-                    <p style="font-size:13px;color:#333;font-weight:600;margin-bottom:8px;">
-                      משתמש ב-iPhone?
+          <!-- Greeting Section -->
+          <tr>
+            <td style="background:#ffffff; padding:25px 30px 10px; margin:0;">
+              <table role="presentation" style="width:100%; border-collapse:collapse;">
+                <tr>
+
+                  <!-- RIGHT — Text -->
+                  <td style="width:65%; vertical-align:middle; text-align:right;">
+
+                    <p style="margin:0; font-size:16px; color:#000; font-weight:600;">
+                      שלום ${name},
                     </p>
-                    <p style="font-size:13px;color:#555;margin:0;">
-                      תוכל ללחוץ על הכפתור הבא להפעלה ישירה:
-                    </p>
-                    <div style="margin-top:16px;">
-                      <a href="${activationString}"
-                         style="display:inline-block;background:#00A97A;color:#fff;
-                                padding:10px 22px;border-radius:6px;text-decoration:none;
-                                font-size:14px;font-weight:600;">
-                        הפעל את ה-eSIM
-                      </a>
-                    </div>
-                  </div>
 
-                  <!-- Android -->
-                  <div style="margin-top:25px;padding:20px;background:#f8f8f8;
-                              border-radius:8px;border-right:4px solid #007A5E;
-                              text-align:right;">
-                    <p style="font-size:13px;color:#333;font-weight:600;margin-bottom:8px;">
-                      משתמש ב-Android?
+                    <p style="margin:12px 0 0; font-size:13px; color:#000; line-height:1.6;">
+                      שתהיה לך חופשה מושלמת,
                     </p>
-                    <p style="font-size:13px;color:#555;margin-bottom:12px;">
-                      כנס להגדרות › רשת ניידת › הוסף eSIM ידנית<br/>
-                      והעתק את הפרטים לשדות המתאימים:
-                    </p>
-                    <ul style="list-style:none;padding:0;margin:0;font-size:13px;color:#444;">
-                      <li><strong>כתובת SM-DP+:</strong> ${lpaString}</li>
-                      <li><strong>קוד הפעלה:</strong> ${manualCode}</li>
-                    </ul>
-                  </div>
-                </div>
 
-                <!-- Support -->
-                <div style="background:#f9f9f9;border-radius:8px;padding:20px;
-                            text-align:center;margin-top:30px;">
-                  <p style="font-size:14px;color:#666;margin:0;">
-                    צריך עזרה?<br/>
-                    <a href="mailto:office@hiiloworld.com" style="color:#00A97A;">
+                    <p style="margin:2px 0 0; font-size:13px; color:#000; line-height:1.6;">
+                      וכמובן אם צריך אותי אני כאן!
+                    </p>
+
+                    <p style="margin:12px 0 0; font-size:12px; color:#3f51ff; font-weight:600;">
+                      - אסף, מנהל קשרי לקוחות
+                    </p>
+
+                  </td>
+
+                  <!-- LEFT — Beach Image -->
+                  <td style="width:35%; vertical-align:bottom; text-align:left;">
+                    <img src="cid:beach.svg"
+                         alt="Beach Illustration"
+                         style="width:90%; height:auto; display:block; margin-top:35px;" />
+                  </td>
+
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Order ID Box -->
+          <tr>
+            <td style="background:#ffffff; padding:5px 30px 20px;">
+              <table role="presentation"
+                     style="width:100%; background:#5565ef; border-radius:10px; padding:12px 18px;">
+                <tr>
+                  <td style="text-align:center;">
+                    <span style="color:#ffffff; font-size:14px; font-weight:600;
+                                 white-space:nowrap; display:inline-block;">
+                      מספר ההזמנה שלך: ${order.id}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- QR BOX -->
+          <tr>
+            <td style="padding:0 30px 30px; text-align:center;">
+              <table role="presentation"
+                     style="width:100%; max-width:300px; margin:0 auto;
+                            background:#e3e8fb; border:2px solid #b8c1e8;
+                            border-radius:16px; padding:30px;">
+                <tr>
+                  <td style="text-align:center;">
+                    <img src="cid:qrcode.png"
+                         alt="QR Code"
+                         style="width:200px; height:200px; display:block; margin:0 auto;" />
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- iPhone Installation -->
+          <tr>
+            <td style="padding:0 30px 20px;">
+
+              <table role="presentation" style="
+                width:100%;
+                background:#f1f4f9;
+                border-radius:16px;
+                padding:24px 18px;
+                text-align:center;
+                margin-bottom:20px;
+              ">
+                <tr>
+                  <td style="font-size:16px; font-weight:700; color:#4a5be3; padding-bottom:16px;">
+                    להתקנה בקליק ב-iPhone
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <table role="presentation" style="
+                      width:100%;
+                      max-width:480px;
+                      background:white;
+                      border-radius:14px;
+                      padding:20px;
+                      margin:0 auto;
+                    ">
+                      <tr>
+                        <td style="text-align:center;">
+
+                          <a href="${activationString}"
+                             style="
+                               display:inline-flex;
+                               align-items:center;
+                               gap:6px;
+                               padding:12px 28px;
+                               border-radius:10px;
+                               border:2px solid #4a5be3;
+                               text-decoration:none;
+                               font-size:16px;
+                               font-weight:700;
+                               color:#0a0a0a;
+                               white-space:nowrap;
+                             ">
+                            <img src="cid:apple.png"
+                                 alt="Apple"
+                                 style="width:18px; height:auto;" />
+                             הפעילו את ה-eSIM בלחיצה כאן
+                          </a>
+
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Android Installation -->
+          <tr>
+            <td style="padding:0 30px 20px;">
+
+              <table role="presentation" style="
+                width:100%;
+                background:#f1f4f9;
+                border-radius:16px;
+                padding:24px 18px;
+                text-align:center;
+              ">
+
+                <!-- Blue title -->
+                <tr>
+                  <td style="
+                    font-size:16px;
+                    font-weight:700;
+                    color:#4a5be3;
+                    padding-bottom:20px;
+                    text-align:center;
+                  ">
+                    להתקנה ידנית ב-Android עקבו אחר ההוראות:
+                  </td>
+                </tr>
+
+                <!-- Inner white card -->
+                <tr>
+                  <td>
+                    <table role="presentation" style="
+                      width:100%;
+                      max-width:520px;
+                      background:white;
+                      border-radius:14px;
+                      padding:26px 22px;
+                      margin:0 auto;
+                      text-align:right;
+                    ">
+
+                      <tr>
+                        <td style="
+                          font-size:16px;
+                          font-weight:700;
+                          color:#000;
+                          padding-bottom:6px;
+                        ">
+                          אם יש לכם Android
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style="
+                          font-size:14px;
+                          color:#000;
+                          line-height:1.6;
+                        ">
+                          כנסו להגדרות &gt; רשת ניידת &gt; הוסף eSIM ידנית
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style="
+                          font-size:14px;
+                          color:#4a5be3;
+                          font-weight:700;
+                          padding-top:8px;
+                        ">
+                          נכנסתם? מעולה!
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style="
+                          font-size:14px;
+                          color:#000;
+                          padding:6px 0 16px;
+                        ">
+                          העתיקו את הפרטים הבאים במדויק:
+                        </td>
+                      </tr>
+
+                      <!-- SM-DP+ + Activation Code Table -->
+                      <table role="presentation" style="width:100%; border-collapse:collapse; margin-top:4px;">
+
+                        <tr>
+                          <td style="
+                            font-size:14px;
+                            font-weight:700;
+                            color:#000;
+                            padding:8px 0;
+                            text-align:right;
+                            white-space:nowrap;
+                            width:1%;
+                          ">
+                            כתובת SM-DP+:
+                          </td>
+
+                          <td style="padding:8px 0; text-align:right; width:220px;">
+                            <div style="
+                              background:#f5f7fb;
+                              border:1px solid #e0e4ef;
+                              border-radius:10px;
+                              padding:8px 10px;
+                              font-size:12px;
+                              color:#000;
+                              white-space:nowrap;
+                              text-align:center;
+                              width:100%;
+                              display:block;
+                            ">
+                              ${lpaString}
+                            </div>
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td style="
+                            font-size:14px;
+                            font-weight:700;
+                            color:#000;
+                            padding:8px 0;
+                            text-align:right;
+                            white-space:nowrap;
+                            width:1%;
+                          ">
+                            קוד הפעלה:
+                          </td>
+
+                          <td style="padding:8px 0; text-align:right; width:220px;">
+                            <div style="
+                              background:#f5f7fb;
+                              border:1px solid #e0e4ef;
+                              border-radius:10px;
+                              padding:8px 10px;
+                              font-size:12px;
+                              color:#000;
+                              white-space:nowrap;
+                              text-align:center;
+                              width:100%;
+                              display:block;
+                            ">
+                              ${manualCode}
+                            </div>
+                          </td>
+                        </tr>
+
+                      </table>
+
+                    </table>
+                  </td>
+                </tr>
+
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:0; margin:0;">
+
+              <table role="presentation" style="
+                width:100%;
+                background:#06202B;
+                border-radius:20px 20px 0 0;
+                padding:32px 20px 40px;
+                text-align:center;
+              ">
+                <tr>
+                  <td style="font-size:20px; font-weight:700; color:#ffffff; padding-bottom:6px;">
+                    עדיין צריכים עזרה?
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="font-size:14px; color:#d5e0e5; padding-bottom:20px;">
+                    לשליחת הודעת וואטסאפ לשירות הלקוחות
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <a href="https://wa.me/972000000000"
+                       style="
+                         display:inline-flex;
+                         align-items:center;
+                         gap:8px;
+                         background:#ffffff;
+                         color:#000000;
+                         padding:10px 22px;
+                         border-radius:10px;
+                         text-decoration:none;
+                         font-size:15px;
+                         font-weight:600;
+                       ">
+                      <img src="cid:whatsapp.png"
+                           alt="WhatsApp"
+                           style="width:18px; height:auto;" />
+                      לשליחת הודעה
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" style="
+                width:100%;
+                background:#00EBA7;
+                padding:20px 10px;
+                text-align:center;
+              ">
+                <tr>
+                  <td style="font-size:15px; color:#000; font-weight:600;">
+                    נשמח שתשלחו לנו משוב: 
+                    <a href="mailto:office@hiiloworld.com"
+                       style="color:#000; text-decoration:underline;">
                       office@hiiloworld.com
                     </a>
-                  </p>
-                </div>
-              </td>
-            </tr>
+                  </td>
+                </tr>
+              </table>
 
-            <!-- Footer -->
-            <tr>
-              <td style="background:#fafafa;padding:30px;text-align:center;
-                         border-top:1px solid #eee;">
-                <p style="margin:0;font-size:16px;color:#1a1a1a;">
-                  צוות <span style="color:#007A5E;font-weight:700;">Hiilo</span>
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-  </html>`,
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+  `,
+
   TextBody: `שלום ${name},
 
 ה-eSIM שלך מוכן.
@@ -469,22 +756,49 @@ await postmarkClient.sendEmail({
 3. הזן קוד הפעלה: ${manualCode}
 
 צוות Hiilo מאחל לך חופשה מושלמת.`,
+
   MessageStream: "transactional",
+
   Attachments: [
+    {
+      Name: "header.png",
+      Content: readEmailAsset("header.png"),
+      ContentID: "header.png",
+      ContentType: "image/png",
+    },
+    {
+      Name: "beach.svg",
+      Content: readEmailAsset("beach.svg"),
+      ContentID: "beach.svg",
+      ContentType: "image/svg+xml",
+    },
+    {
+      Name: "palm.svg",
+      Content: readEmailAsset("palm.svg"),
+      ContentID: "palm.svg",
+      ContentType: "image/svg+xml",
+    },
+    {
+      Name: "apple.png",
+      Content: readEmailAsset("apple.png"),
+      ContentID: "apple.png",
+      ContentType: "image/png",
+    },
+    {
+      Name: "whatsapp.png",
+      Content: readEmailAsset("whatsapp.png"),
+      ContentID: "whatsapp.png",
+      ContentType: "image/png",
+    },
     {
       Name: "qrcode.png",
       Content: qrImageBase64,
       ContentID: "qrcode.png",
       ContentType: "image/png",
     },
-    {
-  Name: "header.png",
-  Content: headerImageBase64,
-  ContentID: "header.png",
-  ContentType: "image/png",
-},
   ],
 });
+
 
         logger.info(`[COMPLETE_ORDER] 📧 Confirmation email with eSIM sent to ${email}`);
       } catch (emailErr: any) {
