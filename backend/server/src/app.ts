@@ -79,6 +79,14 @@ const pricingManagementSchema = readFileSync(
   "utf-8"
 );
 
+console.log("=== ASSET TEST ===");
+console.log("CWD:", process.cwd());
+console.log(
+  "APPLE EXISTS:",
+  fs.existsSync(path.join(process.cwd(), "assets/email/apple.png"))
+);
+console.log("===================");
+
 const typeDefs = mergeTypeDefs([
   authDirectiveTypeDefs,
   mainSchema,
