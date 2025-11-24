@@ -335,7 +335,7 @@ const appleActivationUrl =
   `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${activationString}`;
 
 await postmarkClient.sendEmail({
-  From: "office@hiiloworld.com",
+  From: "HiiloWorld office@hiiloworld.com",
   To: email,
   Subject: "ה-eSIM שלך מוכן",
 
