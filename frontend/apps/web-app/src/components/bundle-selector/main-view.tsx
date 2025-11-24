@@ -207,6 +207,7 @@ export function MainView({
         setCountryId(null);
         setTripId(null);
     }}
+    numOfEsims={numOfEsims}
     onThinkingStateChange={(state) => setIsPricingThinking(state)} // 👈 חדש
 />
                 )}

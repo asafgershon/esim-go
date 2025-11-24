@@ -37,6 +37,7 @@ interface PricingProps {
   tripId: string | null;
   numOfDays: number;
   onRemoveDestination: () => void;
+  numOfEsims: number;
   onThinkingStateChange?: (state: boolean) => void;
 }
 
@@ -49,6 +50,7 @@ export function Pricing({
   tripId,
   numOfDays,
   onRemoveDestination,
+  numOfEsims, 
   onThinkingStateChange,
 }: PricingProps) {
   const previousPriceRef = useRef<number>(0);
@@ -107,18 +109,19 @@ export function Pricing({
     }
   }, [shouldShowThinking]);
 
-  const currentPrice = pricing?.totalPrice || pricing?.finalPrice || 0;
-  if (currentPrice > 0) {
-    previousPriceRef.current = currentPrice;
+const basePrice = pricing?.totalPrice || pricing?.finalPrice || 0;
+const multipliedPrice = basePrice * numOfEsims;
+  if (multipliedPrice > 0) {
+    previousPriceRef.current = multipliedPrice;
   }
 
-  const displayPricing = {
-    finalPrice: pricing?.finalPrice || pricing?.totalPrice || 0,
-    totalPrice: pricing?.totalPrice || pricing?.finalPrice || 0,
-    days: numOfDays,
-    hasDiscount: pricing?.hasDiscount ?? false,
-    discountAmount: pricing?.discountAmount || 0,
-  };
+const displayPricing = {
+  finalPrice: multipliedPrice,
+  totalPrice: multipliedPrice,
+  days: numOfDays,
+  hasDiscount: pricing?.hasDiscount ?? false,
+  discountAmount: (pricing?.discountAmount || 0) * numOfEsims, // הנחה גם להכפיל
+};
 
   if (!pricing) {
     if (shouldShowStreamingUI) {
