@@ -105,8 +105,9 @@ export const CouponCard = ({
         setMessage(`❌ ${result.error?.message || "קוד לא תקף"}`);
       }
     } catch (err) {
-      console.error("Apply coupon error:", err);
-      setMessage("אירעה שגיאה בעת ניסיון להחיל את הקופון");
+        console.error("FULL GRAPHQL ERROR:", JSON.stringify(err, null, 2));
+        console.error("RAW ERROR:", err);
+        setMessage("אירעה שגיאה בעת ניסיון להחיל את הקופון");
     }
   };
 

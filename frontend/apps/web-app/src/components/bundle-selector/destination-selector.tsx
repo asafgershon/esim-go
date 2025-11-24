@@ -54,6 +54,17 @@ export function DestinationSelector() {
   const { countries = [] } = useCountries();
   const { trips = [] } = useTrips();
 
+  const COUNTRY_SYNONYMS: Record<string, string[]> = {
+  GB: ["אנגליה", "בריטניה", "לונדון", "UK", "United Kingdom", "Great Britain", "England"],
+  US: ["ארה״ב", "ארצות הברית", "אמריקה", "USA", "United States"],
+  FR: ["צרפת", "פריז", "France", "Paris"],
+  ES: ["ספרד", "Barcelona", "Madrid", "ספרד"],
+  IT: ["איטליה", "רומא", "Rome", "Italy"],
+  TH: ["תאילנד", "Bangkok", "Thailand"],
+  // תוסיף מה שבא לך...
+};
+
+
   const destination: Destination | null = useMemo(() => {
     if (countryId) {
       const country = countries.find((c) => c.id === countryId);
@@ -84,7 +95,11 @@ export function DestinationSelector() {
             value: `country-${country.id}`,
             label: country.nameHebrew || country.name || "",
             icon: getFlagUrl(country.iso),
-            keywords: [country.nameHebrew, country.name].filter(Boolean) as string[],
+keywords: [
+  country.nameHebrew,
+  country.name,
+  ...(COUNTRY_SYNONYMS[country.iso] || []),
+].filter(Boolean) as string[],
           }))
         : trips.map((trip) => ({
             value: `trip-${trip.id}`,
