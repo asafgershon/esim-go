@@ -182,26 +182,35 @@ const displayPricing = {
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-3 mb-2">
-          <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
-            {displayPricing.days} ימים ללא הגבלה
-          </span>
-          <span className="text-[14px] md:text-[18px] font-bold text-brand-dark">
-            <CountUp
-              key={`total-${countryId || tripId}-${numOfDays}`}
-              start={previousPriceRef.current}
-              end={displayPricing.totalPrice || 0}
-              decimals={2}
-              prefix="$"
-              duration={0.8}
-              preserveValue
-              useEasing
-            />
-          </span>
-            <div className="text-right text-[10px] md:text-[12px] text-brand-dark opacity-50 mt-1">
-                ${basePrice.toFixed(2)} × {numOfEsims}
-            </div>
-        </div>
+        <div className="w-full mb-2">
+  {/* שורה עליונה: ימים ← ימין | ↔ | מחיר ← שמאל */}
+  <div className="flex items-center justify-between w-full">
+    {/* ימין */}
+    <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
+      {displayPricing.days} ימים ללא הגבלה
+    </span>
+
+    {/* שמאל – מחיר */}
+    <span className="text-[14px] md:text-[18px] font-bold text-brand-dark">
+      <CountUp
+        key={`total-${countryId || tripId}-${numOfDays}`}
+        start={previousPriceRef.current}
+        end={displayPricing.totalPrice || 0}
+        decimals={2}
+        prefix="$"
+        duration={0.8}
+        preserveValue
+        useEasing
+      />
+    </span>
+  </div>
+
+  {/* שורה שנייה – מיושרת לימין */}
+  <div className="text-right text-[10px] md:text-[12px] text-brand-dark opacity-50 mt-1">
+    ${basePrice.toFixed(2)} × {numOfEsims}
+  </div>
+</div>
+
 
         {displayPricing.hasDiscount && (
           <div className="space-y-1">

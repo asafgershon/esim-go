@@ -61,7 +61,7 @@ export function MainView({
 
     const [isLoading, setIsLoading] = useState(false)
     // 2. הגדרת מצב מקומי לכמות ה-eSIMs
-    const [numOfEsims, setNumOfEsims] = useState(1);
+    const { numOfEsims, setNumOfEsims } = useBundleSelector();
     
     // Get UI state and handlers from context
     const {
