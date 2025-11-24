@@ -1867,7 +1867,7 @@ type CheckoutBundle {
   price: Float!
   currency: String!
 
-  discounts: [String!]!
+  discounts: [Float!]!
 }
 
 enum RuleCategory {

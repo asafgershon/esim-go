@@ -42,29 +42,66 @@ export function formatSessionForGraphQL(
   session: any,
   token?: string
 ): CheckoutSessionDTO {
-  // Parse plan snapshot if it's a string
-  const planSnapshot = session.metadata?.planSnapshot || 
-    (typeof session.plan_snapshot === 'string' 
-      ? JSON.parse(session.plan_snapshot) 
-      : session.plan_snapshot);
-  
-  // Import the mapStateToSteps function from the service
-  const { mapStateToSteps } = require('../../services/checkout-session.service');
 
-  const currentState = (session.state || session.metadata?.state || CheckoutState.INITIALIZED) as CheckoutState;
-  
-  // Generate steps from the current state
+  const planSnapshot =
+    session.metadata?.planSnapshot ||
+    (typeof session.plan_snapshot === "string"
+      ? JSON.parse(session.plan_snapshot)
+      : session.plan_snapshot);
+
+  const { mapStateToSteps } = require("../../services/checkout-session.service");
+
+  const currentState =
+    (session.state ||
+      session.metadata?.state ||
+      CheckoutState.INITIALIZED) as CheckoutState;
+
   const steps = mapStateToSteps({
     state: currentState,
     userId: session.user_id || session.userId,
-    paymentIntentId: session.payment_intent_id || session.paymentIntentId,
-    metadata: session.metadata || {}
+    paymentIntentId:
+      session.payment_intent_id || session.paymentIntentId,
+    metadata: session.metadata || {},
   });
-  
-  // Extract payment information from metadata
-  const paymentUrl = session.metadata?.paymentIntent?.url || null;
-  const paymentIntentId = session.payment_intent_id || session.paymentIntentId || null;
-  
+
+  const paymentUrl =
+    session.metadata?.paymentIntent?.url || null;
+
+  const paymentIntentId =
+    session.payment_intent_id || session.paymentIntentId || null;
+
+  // 🟢 COUNTRY
+  const countryIso = session.metadata?.countries?.[0] || null;
+
+  // 🟢 PRICING
+  const pricing = session.pricing || null;
+
+  // 🟢 BUNDLE (חדש!)
+let bundle: CheckoutSessionDTO["bundle"] = undefined;
+
+if (pricing) {
+  bundle = {
+    id: pricing.bundleName,
+    price: pricing.finalPrice,
+    pricePerDay: 0,
+    currency: "USD",
+    numOfDays: pricing.requestedDays,
+    discounts: pricing.discount ? [pricing.discount.amount] : [],
+    country: countryIso
+      ? {
+          iso: countryIso,
+          name: countryIso,
+          nameHebrew: null,
+        }
+      : null,
+    completed: false,
+    dataAmount: "Unlimited",
+    speed: [],
+  };
+}
+
+
+  // 🟢 RETURN FIXED DTO
   return {
     id: session.id,
     token: token || "",
@@ -74,15 +111,23 @@ export function formatSessionForGraphQL(
     timeRemaining: Math.max(
       0,
       Math.floor(
-        (new Date(session.expiresAt || session.expires_at || "").getTime() - Date.now()) / 1000
+        (new Date(
+          session.expiresAt || session.expires_at || ""
+        ).getTime() -
+          Date.now()) /
+          1000
       )
     ),
     createdAt: session.createdAt || session.created_at || "",
     planSnapshot,
-    pricing: session.pricing,
-    steps: steps || session.metadata?.steps || session.steps,
+    pricing,
+    bundle, 
+    steps:
+      steps || session.metadata?.steps || session.steps,
     paymentStatus: mapStateToPaymentStatus(
-      session.state || session.metadata?.state || CheckoutState.INITIALIZED
+      session.state ||
+        session.metadata?.state ||
+        CheckoutState.INITIALIZED
     ),
     paymentUrl,
     paymentIntentId,

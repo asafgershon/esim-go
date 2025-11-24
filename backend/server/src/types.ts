@@ -468,7 +468,7 @@ export type CheckoutBundle = {
   countryId?: Maybe<Scalars['String']['output']>;
   currency: Scalars['String']['output'];
   dataAmount: Scalars['String']['output'];
-  discounts: Array<Scalars['String']['output']>;
+  discounts: Array<Scalars['Float']['output']>;
   id: Scalars['ID']['output'];
   numOfDays: Scalars['Int']['output'];
   price: Scalars['Float']['output'];
@@ -2799,7 +2799,7 @@ export type CheckoutBundleResolvers<ContextType = Context, ParentType extends Re
   countryId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   currency?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   dataAmount?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  discounts?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  discounts?: Resolver<Array<ResolversTypes['Float']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   numOfDays?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   price?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;

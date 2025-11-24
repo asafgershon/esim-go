@@ -113,6 +113,25 @@ export interface CheckoutSessionDTO {
   paymentIntentId: string | null;
   orderId: string | null;
   metadata: any;
+
+    bundle?: {
+    id: string;
+    price: number;
+    numOfDays: number;
+    currency: string;
+    completed: boolean;
+
+    country: {
+      iso: string;
+      name: string;
+      nameHebrew?: string | null;
+    } | null;
+
+    dataAmount: string;     // למשל "Unlimited"
+    discounts: number[];    // רשימת הנחות (מספרים)
+    pricePerDay: number;    // 0 אם לא בשימוש
+    speed: string[]; 
+  };
 }
 
 /**
