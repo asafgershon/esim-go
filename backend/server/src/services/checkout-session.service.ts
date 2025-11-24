@@ -325,6 +325,7 @@ export const createSession = async (
   }
 ): Promise<CheckoutSession> => {
   logger.info("Creating checkout session", { input });
+  console.log("[SERVER] createSession INPUT:", JSON.stringify(input, null, 2));
 
   // Validate input using pure function
   const validInput = validateSessionCreationInput(input);
@@ -387,7 +388,7 @@ export const createSession = async (
       numOfEsims: input.numOfEsims || 1,
     } as any,
   };
-
+  console.log("[SERVER] createSession sessionData being saved:", JSON.stringify(sessionData, null, 2));
   const session = await context.repositories.checkoutSessions.create(
     sessionData
   );
@@ -1414,6 +1415,7 @@ const mapDatabaseSessionToModel = (dbSession: any): CheckoutSession => {
     expiresAt: dbSession.expires_at,
     isValidated: metadata.isValidated || false,
     metadata: metadata,
+    
     createdAt: dbSession.created_at,
     updatedAt: dbSession.updated_at,
   };

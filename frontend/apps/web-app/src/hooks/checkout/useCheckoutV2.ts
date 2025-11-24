@@ -80,6 +80,10 @@ export const useCheckout = () => {
   // 5. בנה את אובייקט ה-checkout שהקומפוננטה צריכה
   const checkout = useMemo(() => {
     const session = data?.getCheckoutSession?.session;
+
+    console.log("[CLIENT] GraphQL raw session:", session);
+  console.log("[CLIENT] GraphQL raw metadata:", session?.metadata);
+  console.log("[CLIENT] GraphQL raw pricing:", session?.pricing);
     if (!session) {
       return undefined; // ⬅️⬅️ תיקון 2: החזר undefined במקום null
     }

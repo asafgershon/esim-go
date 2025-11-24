@@ -349,6 +349,7 @@ export function BundleSelectorProvider({
     if (tripId) params.set("tripId", tripId);
     if (effectivePricing?.totalPrice)
       params.set("totalPrice", effectivePricing.totalPrice.toString());
+    console.log("[CLIENT] pushing checkout params:", Object.fromEntries(params.entries()));
     router.push(`/checkout?${params.toString()}`);
   };
 

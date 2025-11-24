@@ -40,9 +40,11 @@ export const checkoutResolvers: Partial<Resolvers> = {
           createCheckoutSessionService(context);
 
         const decoded = tokenService.validateToken(token);
+        console.log("[SERVER] getCheckoutSession token decoded:", decoded);
         const session = await sessionService.getSession(decoded.sessionId, {
           autoRenewPaymentIntent: true,
         });
+        console.log("[SERVER] getCheckoutSession raw session:", session);
 
         if (!session) {
           logger.warn("Session not found", { sessionId: decoded.sessionId });
