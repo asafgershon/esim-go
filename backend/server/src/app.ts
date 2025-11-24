@@ -162,6 +162,17 @@ async function startServer() {
     const app = express();
     const httpServer = createServer(app);
 
+    app.options("/graphql", (req, res) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  return res.sendStatus(204);
+});
+
     // 🟣 GraphQL WebSocket Server
     const wsServer = new WebSocketServer({
       server: httpServer,
