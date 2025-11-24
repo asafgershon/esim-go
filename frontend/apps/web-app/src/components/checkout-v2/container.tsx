@@ -57,9 +57,7 @@ const [updatedPricing, setUpdatedPricing] = useState<{
 
       <CouponCard
         loading={loading}
-        onCouponApplied={(info) => {
-            setUpdatedPricing(info);
-        }}
+        onCouponApplied={(bundle) => setUpdatedPricing(bundle)}
         completed={false} // לוגיקה זמנית
         data={checkout}
         sectionNumber={2}

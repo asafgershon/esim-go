@@ -95,11 +95,7 @@ export const CouponCard = ({
         const discountAmount = discounts.reduce((sum: number, d: number) => sum + d, 0);
 
           // שולחים רק מה שאתה צריך להצגה
-          onCouponApplied?.({
-            priceAfter: newPrice,
-            priceBefore: newPrice + discountAmount,
-            hasDiscount: discountAmount > 0,
-          });
+        onCouponApplied?.(result.checkout.bundle);
         setMessage("✅ הקופון הוחל בהצלחה");
       } else {
         setMessage(`❌ ${result.error?.message || "קוד לא תקף"}`);

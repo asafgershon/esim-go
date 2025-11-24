@@ -80,7 +80,6 @@ export const useCheckout = () => {
   // 5. בנה את אובייקט ה-checkout שהקומפוננטה צריכה
   const checkout = useMemo(() => {
     const session = data?.getCheckoutSession?.session;
-    console.log("[DEBUG] useCheckout received session from query:", session);
     if (!session) {
       return undefined; // ⬅️⬅️ תיקון 2: החזר undefined במקום null
     }

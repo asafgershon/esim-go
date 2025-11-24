@@ -38,15 +38,13 @@ export function OrderCard({
 
   if (!data || !data.bundle) return <OrderDetailsSkeleton />;
 
+  const bundle = updatedPricing || data.bundle;
   // Determine final displayed prices
-const priceAfter =
-  updatedPricing?.priceAfter ?? data.bundle.price;
+  const priceAfter = updatedPricing?.priceAfter ?? data.bundle.price;
 
-const priceBefore =
-  updatedPricing?.priceBefore ?? data.bundle.price;
+  const priceBefore = updatedPricing?.priceBefore ?? data.bundle.price;
 
-const hasDiscount =
-  updatedPricing?.hasDiscount ?? false;
+  const hasDiscount = updatedPricing?.hasDiscount ?? false;
 
 // Extract bundle meta (unchanged)
 const { numOfDays, country } = data.bundle;
