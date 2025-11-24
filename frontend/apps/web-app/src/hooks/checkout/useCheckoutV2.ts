@@ -109,7 +109,8 @@ export const useCheckout = () => {
         dataAmount: "Unlimited",
         discounts: [],
         pricePerDay: 0,
-        speed: []
+        speed: [],
+        numOfEsims: session.metadata?.numOfEsims ?? 1,
       },
       auth: { completed: false },
       delivery: { completed: false },

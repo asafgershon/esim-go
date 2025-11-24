@@ -321,6 +321,7 @@ export const createSession = async (
     numOfDays: number;
     group?: string;
     userId?: string;
+    numOfEsims?: number;
   }
 ): Promise<CheckoutSession> => {
   logger.info("Creating checkout session", { input });
@@ -383,6 +384,7 @@ export const createSession = async (
       group: input.group || WEB_APP_BUNDLE_GROUP,
       planSnapshot,
       isValidated: false,
+      numOfEsims: input.numOfEsims || 1,
     } as any,
   };
 
