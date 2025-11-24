@@ -91,7 +91,7 @@ const env = cleanEnv(process.env, {
   PORT: port({ default: 4000 }),
   CORS_ORIGINS: str({
     default:
-      "http://localhost:3000,https://www.hiiloworld.com,https://hiiloworld.com",
+      "http://localhost:3000,https://www.hiiloworld.com,https://hiiloworld.com,https://demo.hiiloworld.com",
   }),
   ESIM_GO_API_KEY: str(),
   AIRHALO_CLIENT_ID: str({ default: "" }),
@@ -244,7 +244,7 @@ async function startServer() {
     await server.start();
 
     // 🟢 Express Middleware
-    const allowedOrigins = env.CORS_ORIGINS.split(",");
+    const allowedOrigins = env.CORS_ORIGINS.split(",").map((o) => o.trim());
     app.use((req, res, next) => {
       const origin = req.headers.origin;
       if (origin && allowedOrigins.includes(origin)) {

@@ -198,6 +198,9 @@ const displayPricing = {
               useEasing
             />
           </span>
+          <span className="text-[10px] md:text-[12px] text-brand-dark opacity-50">
+              ${basePrice.toFixed(2)} × {numOfEsims}
+          </span>
         </div>
 
         {displayPricing.hasDiscount && (
