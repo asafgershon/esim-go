@@ -325,12 +325,14 @@ export const completeOrder = async ({
             .join(" ") || "לקוח יקר";
         const amount = transactionInfo.totalAmount || session.pricing?.finalPrice || 0;
         
-const activationString = esimDetails.qr_code_url || esimDetails.activation_code;
+const activationString = esimDetails.activation_code || esimDetails.qr_code_url;
 const qrImageBase64 = (await QRCode.toDataURL(activationString, { width: 250 }))
   .replace(/^data:image\/png;base64,/, "");
 
 const lpaString = esimDetails.smdp_address;
 const manualCode = esimDetails.manual_code;
+const appleActivationUrl =
+  `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${activationString}`;
 
 await postmarkClient.sendEmail({
   From: "office@hiiloworld.com",
@@ -473,7 +475,7 @@ await postmarkClient.sendEmail({
                       <tr>
                         <td style="text-align:center;">
 
-                          <a href="https://hiiloworld.com/activate?lpa=${encodeURIComponent(activationString)}"
+                          <a href="${appleActivationUrl}"
                              style="
                                display:inline-flex;
                                align-items:center;

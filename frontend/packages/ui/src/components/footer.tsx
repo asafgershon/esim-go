@@ -155,7 +155,7 @@ export function Footer({ onNavigate }: FooterProps) {
     { label: "תנאי שימוש", onClick: () => handleOpen("terms") },
     { label: "מדיניות פרטיות", onClick: () => handleOpen("privacy") },
     { label: "אודות", onClick: () => handleOpen("about") },
-    { href: "https://wa.me/972XXXXXXXXX", label: "צרו קשר" },
+    { href: "https://wa.me/972559965794", label: "צרו קשר" },
   ];
 
   return (
