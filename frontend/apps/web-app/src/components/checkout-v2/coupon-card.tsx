@@ -41,7 +41,11 @@ type CouponCardProps = {
   sectionNumber?: number;
   data: Pick<Checkout, "auth" | "id"> | undefined;
   loading: boolean;
-  onCouponApplied?: () => void;
+  onCouponApplied?: (info: {
+    priceAfter: number;
+    priceBefore: number;
+    hasDiscount: boolean;
+  }) => void;
 };
 
 // ✅ CouponCard Component
@@ -86,8 +90,17 @@ export const CouponCard = ({
       }
 
       if (result.success) {
-        setMessage("✅ הקופון הוחל בהצלחה - המחיר יעודכן במעמד התשלום");
-        onCouponApplied?.();
+        const newPrice = result.checkout.bundle.price;
+        const discounts = result.checkout.bundle.discounts || [];
+        const discountAmount = discounts.reduce((sum: number, d: number) => sum + d, 0);
+
+          // שולחים רק מה שאתה צריך להצגה
+          onCouponApplied?.({
+            priceAfter: newPrice,
+            priceBefore: newPrice + discountAmount,
+            hasDiscount: discountAmount > 0,
+          });
+        setMessage("✅ הקופון הוחל בהצלחה");
       } else {
         setMessage(`❌ ${result.error?.message || "קוד לא תקף"}`);
       }

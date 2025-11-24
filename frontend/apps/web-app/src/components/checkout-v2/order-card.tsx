@@ -15,12 +15,18 @@ const CountUp = lazy(() => import("react-countup"));
 // 3. שימוש בטיפוס הנכון במקום any
 interface OrderDetailsSectionProps {
   data: CheckoutData | undefined;
+    updatedPricing?: {
+      priceAfter: number;
+      priceBefore: number;
+      hasDiscount: boolean;
+    } | null;
   sectionNumber?: number;
   completed?: boolean;
 }
 
 export function OrderCard({
   data,
+  updatedPricing,
   sectionNumber,
   completed = false,
 }: OrderDetailsSectionProps) {
@@ -30,31 +36,29 @@ export function OrderCard({
     setIsCompleted(completed);
   }, [completed, setIsCompleted]);
 
-  // הקוד הזה בטוח עכשיו כי אנחנו משתמשים בטיפוס הנכון
   if (!data || !data.bundle) return <OrderDetailsSkeleton />;
-  const { bundle } = data;
-  const {
-    price,
-    numOfDays,
-    country,
-  } = bundle;
+
+  // Determine final displayed prices
+const priceAfter =
+  updatedPricing?.priceAfter ?? data.bundle.price;
+
+const priceBefore =
+  updatedPricing?.priceBefore ?? data.bundle.price;
+
+const hasDiscount =
+  updatedPricing?.hasDiscount ?? false;
+
+// Extract bundle meta (unchanged)
+const { numOfDays, country } = data.bundle;
+
 
   const currencySymbol =
     Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD", // אפשר גם bundle.currency
+      currency: "USD",
     })
-      .formatToParts(price || 0)
+      .formatToParts(priceAfter || 0)
       .find((part) => part.type === "currency")?.value || "";
-
-  const Row = ({ label, value }: { label: string; value: React.ReactNode }) => {
-    return (
-      <div className="flex justify-between">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">{value}</span>
-      </div>
-    );
-  };
 
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
@@ -68,15 +72,13 @@ export function OrderCard({
       </div>
 
       <div className="space-y-4">
-        {/* Destination Info */}
         <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-          {/* 4. החלפה של <img> ב-Image */}
           {country?.iso ? (
             <Image
               src={getFlagUrl(country.iso, 80)}
               alt={country?.nameHebrew || country?.name || "flag"}
-              width={32} // (w-8)
-              height={24} // (h-6)
+              width={32}
+              height={24}
               className="rounded-md object-cover ring-1 ring-gray-200"
             />
           ) : (
@@ -91,24 +93,44 @@ export function OrderCard({
 
         {/* Package Details */}
         <div className="space-y-3">
-          <Row label="משך זמן" value={`${numOfDays} ימים`} />
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">משך זמן</span>
+            <span className="font-medium">{numOfDays} ימים</span>
+          </div>
         </div>
       </div>
 
-      {/* Pricing Section */}
       <div className="border-t pt-4 space-y-3">
-        {/* Final Price */}
         <div className="flex justify-between items-center">
           <span className="text-lg font-semibold">סה״כ מחיר</span>
-          <span className="text-xl font-bold text-primary">
-            <CountUp
-              end={price}
-              decimals={2}
-              prefix={currencySymbol}
-              duration={0.5}
-              preserveValue
-            />
-          </span>
+
+          {hasDiscount ? (
+            <div className="flex flex-col items-end">
+              <span className="text-gray-400 line-through text-sm">
+                {currencySymbol}
+                {priceBefore.toFixed(2)}
+              </span>
+              <span className="text-xl font-bold text-primary">
+                <CountUp
+                  end={priceAfter}
+                  decimals={2}
+                  prefix={currencySymbol}
+                  duration={0.5}
+                  preserveValue
+                />
+              </span>
+            </div>
+          ) : (
+            <span className="text-xl font-bold text-primary">
+              <CountUp
+                end={priceAfter}
+                decimals={2}
+                prefix={currencySymbol}
+                duration={0.5}
+                preserveValue
+              />
+            </span>
+          )}
         </div>
       </div>
     </Card>

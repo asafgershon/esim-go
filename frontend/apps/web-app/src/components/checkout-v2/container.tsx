@@ -10,6 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { CouponCard } from "./coupon-card"; 
 import { DeliveryCard } from "./delivery-card";
 import { OrderCard } from "./order-card";
+import { useState } from "react";
+import { Checkout } from "@/__generated__/graphql";
 // import { PaymentCard } from "./payment-card"; // עדיין מייבאים אותו
 
 // ✅ המוטציה שהועברה לכאן
@@ -28,8 +30,12 @@ const UPDATE_CHECKOUT_PAYMENT_MUTATION = gql(`
 
 export const CheckoutContainerV2 = () => {
   const { refreshAuth } = useAuth();
-  const { checkout, loading } = useCheckout(); 
-  
+  const { checkout, loading } = useCheckout();
+const [updatedPricing, setUpdatedPricing] = useState<{
+  priceAfter: number;
+  priceBefore: number;
+  hasDiscount: boolean;
+} | null>(null);
   // ✅ ההוק של התשלום הועבר לכאן
   const [triggerCheckoutPayment, { loading: triggerLoading, error: triggerError }] = 
     useMutation<TriggerCheckoutPaymentMutation, TriggerCheckoutPaymentMutationVariables>(
@@ -44,12 +50,16 @@ export const CheckoutContainerV2 = () => {
     <main className="flex flex-col gap-8 max-w-7xl mx-auto">
       <OrderCard
         completed={Boolean(checkout?.bundle?.completed)}
+        updatedPricing={updatedPricing}
         data={checkout}
         sectionNumber={1}
       />
 
       <CouponCard
         loading={loading}
+        onCouponApplied={(info) => {
+            setUpdatedPricing(info);
+        }}
         completed={false} // לוגיקה זמנית
         data={checkout}
         sectionNumber={2}
