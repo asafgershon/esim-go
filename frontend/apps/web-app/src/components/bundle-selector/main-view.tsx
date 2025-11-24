@@ -20,7 +20,7 @@ import { Pricing } from "./pricing";
 import { SliderWithValue } from "@workspace/ui";
 import { useEffect } from "react";
 import { getFlagUrl } from "@/utils/flags";
-// import { Users2Icon } from "lucide-react";
+import { Users2Icon } from "lucide-react";
 
 interface MainViewProps {
     // ... (שדות Pricing)
@@ -61,7 +61,7 @@ export function MainView({
 
     const [isLoading, setIsLoading] = useState(false)
     // 2. הגדרת מצב מקומי לכמות ה-eSIMs
-    // const [numOfEsims, setNumOfEsims] = useState(1);
+    const [numOfEsims, setNumOfEsims] = useState(1);
     
     // Get UI state and handlers from context
     const {
@@ -165,7 +165,6 @@ export function MainView({
                     </div>
                 </SelectorSection>
 
-                {/*
                 <SelectorSection>
                     <div className="flex items-center gap-[4px] md:gap-2 justify-start">
                         <Users2Icon className="w-4 h-4 md:w-[20px] md:h-[20px] text-brand-dark" />
@@ -192,7 +191,6 @@ export function MainView({
                         לכל מטייל נפרד דרוש eSIM משלו.
                     </div>
                 </SelectorSection>
-                */}
 
                 {/* Selected Destination and Pricing */}
                 {destination && (
