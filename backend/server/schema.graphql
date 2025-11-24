@@ -1728,7 +1728,7 @@ input StrategyFilter {
 }
 
 extend type Mutation {
-  createCheckout(numOfDays: Int!, countryId: String!): String
+  createCheckout(numOfDays: Int!, countryId: String!, numOfEsims: Int!): String
   updateCheckoutAuth(
     sessionId: String!
     firstName: String

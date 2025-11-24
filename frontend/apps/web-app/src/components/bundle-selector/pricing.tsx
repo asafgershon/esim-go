@@ -182,7 +182,7 @@ const displayPricing = {
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-end gap-3 mb-2">
           <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
             {displayPricing.days} ימים ללא הגבלה
           </span>
@@ -198,9 +198,9 @@ const displayPricing = {
               useEasing
             />
           </span>
-          <span className="text-[10px] md:text-[12px] text-brand-dark opacity-50">
-              ${basePrice.toFixed(2)} × {numOfEsims}
-          </span>
+            <div className="text-right text-[10px] md:text-[12px] text-brand-dark opacity-50 mt-1">
+                ${basePrice.toFixed(2)} × {numOfEsims}
+            </div>
         </div>
 
         {displayPricing.hasDiscount && (

@@ -948,6 +948,7 @@ export type MutationClonePricingRuleArgs = {
 export type MutationCreateCheckoutArgs = {
   countryId: Scalars['String']['input'];
   numOfDays: Scalars['Int']['input'];
+  numOfEsims: Scalars['Int']['input'];
 };
 
 
@@ -3115,7 +3116,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   assignUserToTenant?: Resolver<ResolversTypes['TenantOperationResponse'], ParentType, ContextType, RequireFields<MutationAssignUserToTenantArgs, 'tenantSlug' | 'userId'>>;
   cancelESIM?: Resolver<Maybe<ResolversTypes['ESIMActionResponse']>, ParentType, ContextType, RequireFields<MutationCancelEsimArgs, 'esimId'>>;
   clonePricingRule?: Resolver<ResolversTypes['PricingRule'], ParentType, ContextType, RequireFields<MutationClonePricingRuleArgs, 'id' | 'newName'>>;
-  createCheckout?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, RequireFields<MutationCreateCheckoutArgs, 'countryId' | 'numOfDays'>>;
+  createCheckout?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, RequireFields<MutationCreateCheckoutArgs, 'countryId' | 'numOfDays' | 'numOfEsims'>>;
   createCheckoutSession?: Resolver<ResolversTypes['CreateCheckoutSessionResponse'], ParentType, ContextType, RequireFields<MutationCreateCheckoutSessionArgs, 'input'>>;
   createPricingRule?: Resolver<ResolversTypes['PricingRule'], ParentType, ContextType, RequireFields<MutationCreatePricingRuleArgs, 'input'>>;
   createTenant?: Resolver<ResolversTypes['Tenant'], ParentType, ContextType, RequireFields<MutationCreateTenantArgs, 'input'>>;

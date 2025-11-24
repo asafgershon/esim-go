@@ -170,11 +170,7 @@ export function MainView({
                         <Users2Icon className="w-4 h-4 md:w-[20px] md:h-[20px] text-brand-dark" />
                         <p className="text-base md:text-xl leading-[26px] md:leading-normal text-brand-dark">
                             כמה eSIMs צריך?
-                            {countryId && numOfEsims > 1 && (
-                                <span className="mr-2 text-brand-success text-sm font-semibold">
-                                    (✅ הנחת כמות מופעלת!)
-                                </span>
-                            )}
+                            {countryId && numOfEsims > 1}
                         </p>
                     </div>
 
@@ -184,7 +180,7 @@ export function MainView({
                             value={[numOfEsims]}
                             onValueChange={(value) => setNumOfEsims(value[0])}
                             min={1}
-                            max={5} // טווח בין 1 ל-5
+                            max={10} // טווח בין 1 ל-10
                         />
                     </div>
                     <div className="text-right text-xs text-gray-500 mt-1">

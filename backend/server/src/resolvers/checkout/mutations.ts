@@ -53,7 +53,7 @@ export const checkoutMutationsV2: MutationResolvers = {
   createCheckout: {
     resolve: async (
       _,
-      { numOfDays, countryId },
+      { numOfDays, countryId, numOfEsims },
       { auth, repositories, services }
     ) => {
       const loggedInUser = await repositories.users.getUserById(auth.user?.id || "");
@@ -74,6 +74,9 @@ export const checkoutMutationsV2: MutationResolvers = {
               otpVerified: false,
               otpSent: false,
             },
+              metadata: {
+                numOfEsims: numOfEsims,
+              }
           }
         : undefined;
       const checkout = await services.checkoutSessionServiceV2.createSession({

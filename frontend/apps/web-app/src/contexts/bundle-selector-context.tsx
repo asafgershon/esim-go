@@ -62,6 +62,9 @@ interface BundleSelectorContextValue {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
 
+  numOfEsims: number;
+  setNumOfEsims: (n: number) => void;
+
   // Date State
   startDate: Date | null;
   setStartDate: (date: Date | null) => void;
@@ -263,6 +266,7 @@ export function BundleSelectorProvider({
   const [pricing, setPricing] = useState<{ totalPrice?: number } | null>(null);
   const [shouldFocusDestinationSelector, setShouldFocusDestinationSelector] =
     useState(false);
+  const [numOfEsims, setNumOfEsims] = useState(1);
   const router = useRouter();
 
   // Date State
@@ -341,6 +345,7 @@ export function BundleSelectorProvider({
     const params = new URLSearchParams();
     params.set("numOfDays", numOfDays.toString());
     if (countryId) params.set("countryId", countryId.toUpperCase());
+    if (numOfEsims) params.set("numOfEsims", numOfEsims.toString());
     if (tripId) params.set("tripId", tripId);
     if (effectivePricing?.totalPrice)
       params.set("totalPrice", effectivePricing.totalPrice.toString());
@@ -380,6 +385,9 @@ export function BundleSelectorProvider({
     setTripId,
     activeTab,
     setActiveTab,
+
+    numOfEsims,
+    setNumOfEsims,
 
     // Date State
     startDate,
