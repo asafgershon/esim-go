@@ -83,28 +83,76 @@ export const CouponCard = ({
         },
       });
 
-      const result = res?.applyCouponToCheckout;
-      if (!result) {
-        setMessage("שגיאה בלתי צפויה");
-        return;
-      }
+  console.log("========== COUPON RESPONSE START ==========");
 
-      if (result.success) {
-        const newPrice = result.checkout.bundle.price;
-        const discounts = result.checkout.bundle.discounts || [];
-        const discountAmount = discounts.reduce((sum: number, d: number) => sum + d, 0);
+  console.log("RAW RES:", res);
+  console.log("applyCouponToCheckout:", res?.applyCouponToCheckout);
 
-          // שולחים רק מה שאתה צריך להצגה
-        onCouponApplied?.(result.checkout.bundle);
-        setMessage("✅ הקופון הוחל בהצלחה");
-      } else {
-        setMessage(`❌ ${result.error?.message || "קוד לא תקף"}`);
-      }
-    } catch (err) {
-        console.error("FULL GRAPHQL ERROR:", JSON.stringify(err, null, 2));
-        console.error("RAW ERROR:", err);
-        setMessage("אירעה שגיאה בעת ניסיון להחיל את הקופון");
-    }
+  const result = res?.applyCouponToCheckout;
+
+  console.log("✔️ success:", result?.success);
+  console.log("❌ error:", result?.error);
+  console.log("📦 checkout:", result?.checkout);
+
+  if (result?.checkout) {
+    console.log("checkout keys:", Object.keys(result.checkout));
+  }
+
+  console.log("📦 checkout.bundle:", result?.checkout?.bundle);
+
+  if (result?.checkout?.bundle) {
+    console.log("bundle keys:", Object.keys(result.checkout.bundle));
+    console.log("bundle JSON:", JSON.stringify(result.checkout.bundle, null, 2));
+  }
+
+  console.log("📌 bundle.price:", result?.checkout?.bundle?.price);
+  console.log("📌 bundle.discounts:", result?.checkout?.bundle?.discounts);
+
+  if (Array.isArray(result?.checkout?.bundle?.discounts)) {
+    console.log(
+      "discounts array detail:",
+      result.checkout.bundle.discounts.map((d:number, i:number) => ({
+        index: i,
+        type: typeof d,
+        value: d,
+      }))
+    );
+  }
+
+  console.log("========== COUPON RESPONSE END ==========");
+
+  // ==== existing logic ====
+
+  if (!result) {
+    setMessage("שגיאה בלתי צפויה");
+    return;
+  }
+
+  if (result.success) {
+    onCouponApplied?.(result.checkout.bundle);
+    setMessage("✅ הקופון הוחל בהצלחה");
+  } else {
+    setMessage(`❌ ${result.error?.message || "קוד לא תקף"}`);
+  }
+} catch (err:any) {
+  console.log("========== COUPON ERROR ==========");
+
+  console.error("FULL ERROR OBJECT:", err);
+  console.error("GRAPHQL ERRORS:", err?.graphQLErrors);
+  console.error("NETWORK ERROR:", err?.networkError);
+
+  // ניסוי לתפוס עוד מידע
+  try {
+    console.error(
+      "STRINGIFIED ERROR:",
+      JSON.stringify(err, Object.getOwnPropertyNames(err), 2)
+    );
+  } catch {}
+
+  console.log("========== END ERROR ==========");
+
+  setMessage("אירעה שגיאה בעת ניסיון להחיל את הקופון");
+}
   };
 
   return (

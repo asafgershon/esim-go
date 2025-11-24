@@ -54,15 +54,50 @@ export function DestinationSelector() {
   const { countries = [] } = useCountries();
   const { trips = [] } = useTrips();
 
-  const COUNTRY_SYNONYMS: Record<string, string[]> = {
-  GB: ["אנגליה", "בריטניה", "לונדון", "UK", "United Kingdom", "Great Britain", "England"],
-  US: ["ארה״ב", "ארצות הברית", "אמריקה", "USA", "United States"],
-  FR: ["צרפת", "פריז", "France", "Paris"],
-  ES: ["ספרד", "Barcelona", "Madrid", "ספרד"],
-  IT: ["איטליה", "רומא", "Rome", "Italy"],
-  TH: ["תאילנד", "Bangkok", "Thailand"],
-  // תוסיף מה שבא לך...
+const COUNTRY_SYNONYMS: Record<string, string[]> = {
+  GB: ["אנגליה", "בריטניה", "לונדון", "UK", "United Kingdom", "Great Britain", "England", "Britain"],
+  US: ["ארה״ב", "ארצות הברית", "אמריקה", "USA", "United States", "America", "NYC", "New York", "LA", "Los Angeles"],
+  FR: ["צרפת", "פריז", "France", "Paris", "Marseille", "Bordeaux"],
+  ES: ["ספרד", "מדריד", "ברצלונה", "Spain", "Madrid", "Barcelona", "Valencia"],
+  IT: ["איטליה", "רומא", "מילאנו", "ונציה", "Italy", "Rome", "Milan", "Venice", "Naples"],
+  DE: ["גרמניה", "ברלין", "Germany", "Berlin", "Munich", "Hamburg", "Frankfurt"],
+  NL: ["הולנד", "אמסטרדם", "Netherlands", "Holland", "Amsterdam", "Rotterdam"],
+  BE: ["בלגיה", "בריסל", "Belgium", "Brussels", "Antwerp"],
+  AT: ["אוסטריה", "וינה", "אינסברוק", "זלצבורג", "Austria", "Vienna", "Innsbruck", "Salzburg"],
+  CH: ["שוויץ", "ציריך", "Geneva", "Zurich", "Switzerland", "Basel"],
+  PT: ["פורטוגל", "ליסבון", "פורטו", "Portugal", "Lisbon", "Porto"],
+  GR: ["יוון", "אתונה", "סלוניקי", "Greece", "Athens", "Thessaloniki", "Crete", "Santorini"],
+  NO: ["נורווגיה", "אוסלו", "Norway", "Oslo", "Bergen"],
+  SE: ["שוודיה", "סטוקהולם", "Sweden", "Stockholm", "Gothenburg"],
+  FI: ["פינלנד", "הלסינקי", "Finland", "Helsinki"],
+  DK: ["דנמרק", "קופנהגן", "Denmark", "Copenhagen"],
+  CZ: ["צ'כיה", "פראג", "Czechia", "Czech Republic", "Prague"],
+  PL: ["פולין", "ורשה", "וורשה", "קרקוב", "Poland", "Warsaw", "Krakow"],
+  HU: ["הונגריה", "בודפשט", "Hungary", "Budapest"],
+  RO: ["רומניה", "בוקרשט", "Romania", "Bucharest", "Cluj"],
+  BG: ["בולגריה", "סופיה", "Bulgaria", "Sofia", "Varna"],
+  HR: ["קרואטיה", "זאגרב", "דוברובניק", "Croatia", "Zagreb", "Dubrovnik", "Split"],
+  RS: ["סרביה", "בלגרד", "Serbia", "Belgrade"],
+  UA: ["אוקראינה", "קייב", "Ukraine", "Kyiv", "Lviv"],
+  IE: ["אירלנד", "דבלין", "Ireland", "Dublin"],
+  IS: ["איסלנד", "רייקיאוויק", "Iceland", "Reykjavik"],
+  LT: ["ליטא", "וילנה", "Lithuania", "Vilnius"],
+  LV: ["לטביה", "ריגה", "Latvia", "Riga"],
+  EE: ["אסטוניה", "טאלין", "Estonia", "Tallinn"],
+  SK: ["סלובקיה", "ברטיסלבה", "Slovakia", "Bratislava"],
+  SI: ["סלובניה", "ליובליאנה", "Slovenia", "Ljubljana"],
+  MT: ["מלטה", "Valletta", "Malta"],
+  CY: ["קפריסין", "ניקוסיה", "Cyprus", "Nicosia", "Ayia Napa", "Larnaca"],
+
+  // 🌎 פופולריים נוספים
+  TH: ["תאילנד", "Bangkok", "Thailand", "Phuket", "Chiang Mai"],
+  JP: ["יפן", "Tokyo", "Osaka", "Japan", "Kyoto"],
+  CN: ["סין", "Beijing", "Shanghai", "China"],
+  TR: ["טורקיה", "איסטנבול", "Turkey", "Istanbul", "Antalya"],
+  AE: ["איחוד האמירויות", "דובאי", "אבו דאבי", "UAE", "Dubai", "Abu Dhabi"],
+  EG: ["מצרים", "קהיר", "Egypt", "Cairo", "Sharm"],
 };
+
 
 
   const destination: Destination | null = useMemo(() => {
