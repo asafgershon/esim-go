@@ -129,7 +129,15 @@ export const CouponCard = ({
   }
 
   if (result.success) {
-    onCouponApplied?.(result.checkout.bundle);
+if (result.success && result.checkout?.bundle) {
+  const b = result.checkout.bundle;
+
+  onCouponApplied?.({
+    priceAfter: b.price,
+    priceBefore: b.discounts?.length ? b.price + b.discounts[0] : b.price,
+    hasDiscount: !!(b.discounts?.length && b.discounts[0] > 0),
+  });
+}
     setMessage("✅ הקופון הוחל בהצלחה");
   } else {
     setMessage(`❌ ${result.error?.message || "קוד לא תקף"}`);

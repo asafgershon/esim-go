@@ -536,7 +536,7 @@ type CheckoutBundle {
   countryId: String
   currency: String!
   dataAmount: String!
-  discounts: [String!]!
+  discounts: [Float!]!
   id: ID!
   numOfDays: Int!
   price: Float!
