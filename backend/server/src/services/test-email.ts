@@ -93,6 +93,21 @@ async function sendEsimEmail() {
   <style>
   /* מנטרל החלפת צבעים ב־dark mode */
   @media (prefers-color-scheme: dark) {
+  
+  /* Footer dark */
+ .footer-main {
+    background:#0B1E25 !important; /* כחול-כהה שמתאים לכהה */
+    color:#E9EEF2 !important;       /* טקסט בהיר */
+  }
+
+  .footer-sub {
+    background:#00C98D !important; /* ירוק רגוע יותר לכהה */
+    color:#000000 !important;      /* טקסט שחור */
+  }
+
+  .footer-link {
+    color:#000000 !important;      /* לינק יישאר קריא */
+  }
     body, table, td, div, p, span {
       background-color: #ffffff !important;
       color: #000000 !important;
@@ -250,9 +265,6 @@ async function sendEsimEmail() {
                                color:#0a0a0a;
                                white-space:nowrap;
                              ">
-                            <img src="cid:apple.png"
-                                 alt="Apple"
-                                 style="width:18px; height:auto; filter:invert(0) !important;" data-ogsc="false" />
                              הפעילו את ה-eSIM בלחיצה כאן
                           </a>
 
@@ -425,14 +437,9 @@ async function sendEsimEmail() {
           <!-- Footer -->
           <tr>
             <td style="padding:0; margin:0;">
-
-              <table role="presentation" style="
-                width:100%;
-                background:#06202B;
-                border-radius:20px 20px 0 0;
-                padding:32px 20px 40px;
-                text-align:center;
-              ">
+<table role="presentation" class="footer-main"
+  style="width:100%; background:#06202B; padding:32px 20px 40px;
+  border-radius:20px 20px 0 0; text-align:center; color:#ffffff;">
                 <tr>
                   <td style="font-size:20px; font-weight:700; color:#ffffff; padding-bottom:6px;">
                     עדיין צריכים עזרה?
@@ -460,25 +467,20 @@ async function sendEsimEmail() {
                          font-size:15px;
                          font-weight:600;
                        ">
-                      <img src="cid:whatsapp.png"
-                           alt="WhatsApp"
-                           style="width:18px; height:auto; filter:invert(0) !important;" data-ogsc="false" />
                       לשליחת הודעה
                     </a>
                   </td>
                 </tr>
               </table>
 
-              <table role="presentation" style="
-                width:100%;
-                background:#00EBA7;
-                padding:20px 10px;
-                text-align:center;" data-ogsc="false">
+<table role="presentation" class="footer-sub"
+  style="width:100%; background:#00EBA7; padding:20px 10px; text-align:center;">
                 <tr>
-                  <td style="font-size:15px; color:#000; font-weight:600;">
-                    נשמח שתשלחו לנו משוב: 
-                    <a href="mailto:office@hiiloworld.com"
-                       style="color:#000; text-decoration:underline;" data-ogsc="false">
+                  <td style="font-size:15px; font-weight:600;">
+                    נשמח שתשלחו לנו משוב:
+<a class="footer-link"
+  href="mailto:office@hiiloworld.com"
+  style="color:#000; text-decoration:underline;">
                       office@hiiloworld.com
                     </a>
                   </td>
@@ -530,18 +532,6 @@ async function sendEsimEmail() {
         Content: loadFileAsBase64("C:\\Users\\gersh\\esim-go\\backend\\server\\assets\\email\\palm.svg"),
         ContentID: "palm.svg",
         ContentType: "image/svg+xml",
-      },
-      {
-        Name: "apple.png",
-        Content: loadFileAsBase64("C:\\Users\\gersh\\esim-go\\backend\\server\\assets\\email\\apple.png"),
-        ContentID: "apple.png",
-        ContentType: "image/png",
-      },
-      {
-        Name: "whatsapp.png",
-        Content: loadFileAsBase64("C:\\Users\\gersh\\esim-go\\backend\\server\\assets\\email\\logo.png"),
-        ContentID: "whatsapp.png",
-        ContentType: "image/png",
       },
       {
         Name: "qrcode.png",
