@@ -11,8 +11,8 @@ const MAYA_BASE_URL = "https://api.maya.net/connectivity/v1";
 const ICCID = "8910300000046957662";
 
 const POSTMARK_TOKEN = "eb7e4a97-3d71-4c8e-8bd0-f2c85fafaa28";
-const RECIPIENT_EMAIL = "keren.cohen@gmail.com";
-const RECIPIENT_NAME = "keren cohen";
+const RECIPIENT_EMAIL = "asaf.gershon88@gmail.com";
+const RECIPIENT_NAME = "asaf gershon";
 
 // 📁 תקייה שבה יושבים נכסי האימייל (אותם קבצים שאתה כבר משתמש בהם בשרת)
 const EMAIL_ASSETS_DIR = path.join(__dirname, "email-assets");
@@ -90,6 +90,20 @@ async function sendEsimEmail() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="light">
   <meta name="supported-color-schemes" content="light">
+  <style>
+  /* מנטרל החלפת צבעים ב־dark mode */
+  @media (prefers-color-scheme: dark) {
+    body, table, td, div, p, span {
+      background-color: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    /* אל תיתן ל־Gmail/Apple Mail להפוך לינקים לכחול בהיר */
+    a {
+      color: #0a84ff !important;
+    }
+  }
+</style>
   <title>ה-eSIM שלך מוכן</title>
 </head>
 
@@ -238,7 +252,7 @@ async function sendEsimEmail() {
                              ">
                             <img src="cid:apple.png"
                                  alt="Apple"
-                                 style="width:18px; height:auto; filter:invert(0) !important;" />
+                                 style="width:18px; height:auto; filter:invert(0) !important;" data-ogsc="false" />
                              הפעילו את ה-eSIM בלחיצה כאן
                           </a>
 
@@ -448,7 +462,7 @@ async function sendEsimEmail() {
                        ">
                       <img src="cid:whatsapp.png"
                            alt="WhatsApp"
-                           style="width:18px; height:auto; filter:invert(0) !important;" />
+                           style="width:18px; height:auto; filter:invert(0) !important;" data-ogsc="false" />
                       לשליחת הודעה
                     </a>
                   </td>
@@ -459,13 +473,12 @@ async function sendEsimEmail() {
                 width:100%;
                 background:#00EBA7;
                 padding:20px 10px;
-                text-align:center;
-              ">
+                text-align:center;" data-ogsc="false">
                 <tr>
                   <td style="font-size:15px; color:#000; font-weight:600;">
                     נשמח שתשלחו לנו משוב: 
                     <a href="mailto:office@hiiloworld.com"
-                       style="color:#000; text-decoration:underline;">
+                       style="color:#000; text-decoration:underline;" data-ogsc="false">
                       office@hiiloworld.com
                     </a>
                   </td>
@@ -526,7 +539,7 @@ async function sendEsimEmail() {
       },
       {
         Name: "whatsapp.png",
-        Content: loadFileAsBase64("C:\\Users\\gersh\\esim-go\\backend\\server\\assets\\email\\whatsapp.png"),
+        Content: loadFileAsBase64("C:\\Users\\gersh\\esim-go\\backend\\server\\assets\\email\\logo.png"),
         ContentID: "whatsapp.png",
         ContentType: "image/png",
       },
