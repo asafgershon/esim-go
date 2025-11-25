@@ -3,7 +3,7 @@ import { cleanEnv, str } from "envalid";
 
 const env = cleanEnv(process.env, {
   NEXT_PUBLIC_GRAPHQL_ENDPOINT: str({
-    default: "http://localhost:5001/graphql",
+    default: "https://api-demo.hiiloworld.com/graphql",
   }),
 });
 
