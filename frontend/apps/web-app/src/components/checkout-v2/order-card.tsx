@@ -39,6 +39,9 @@ export function OrderCard({
   if (!data || !data.bundle) return <OrderDetailsSkeleton />;
 
   const bundle = updatedPricing || data.bundle;
+
+  // Extract bundle meta (unchanged)
+  const { numOfDays, country, numOfEsims } = data.bundle;
   // Determine final displayed prices
   const priceAfter = updatedPricing?.priceAfter ?? data.bundle.price;
 
@@ -46,9 +49,8 @@ export function OrderCard({
 
   const hasDiscount = updatedPricing?.hasDiscount ?? false;
 
-// Extract bundle meta (unchanged)
-const { numOfDays, country } = data.bundle;
-
+  const totalPriceAfter = priceAfter * (numOfEsims ?? 1);
+  const totalPriceBefore = priceBefore * (numOfEsims ?? 1);
 
   const currencySymbol =
     Intl.NumberFormat("en-US", {
@@ -108,15 +110,32 @@ const { numOfDays, country } = data.bundle;
                 {currencySymbol}
                 {priceBefore.toFixed(2)}
               </span>
-              <span className="text-xl font-bold text-primary">
-                <CountUp
-                  end={priceAfter}
-                  decimals={2}
-                  prefix={currencySymbol}
-                  duration={0.5}
-                  preserveValue
-                />
-              </span>
+                {hasDiscount ? (
+                  <div className="flex flex-col items-end">
+                    <span className="text-gray-400 line-through text-sm">
+                      {currencySymbol}{totalPriceBefore.toFixed(2)}
+                    </span>
+                    <span className="text-xl font-bold text-primary">
+                      <CountUp
+                        end={totalPriceAfter}
+                        decimals={2}
+                        prefix={currencySymbol}
+                        duration={0.5}
+                        preserveValue
+                      />
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-xl font-bold text-primary">
+                    <CountUp
+                      end={totalPriceAfter}
+                      decimals={2}
+                      prefix={currencySymbol}
+                      duration={0.5}
+                      preserveValue
+                    />
+                  </span>
+                )}
             </div>
           ) : (
             <span className="text-xl font-bold text-primary">

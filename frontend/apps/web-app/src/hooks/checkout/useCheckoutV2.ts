@@ -28,6 +28,7 @@ export interface CheckoutBundle {
   discounts?: Discount[];
   pricePerDay?: number;
   speed?: string[];
+  numOfEsims: number;
 }
 
 // 👇 AND ADD EXPORT HERE
@@ -37,6 +38,7 @@ export interface CheckoutData {
   auth: { completed: boolean };
   delivery: { completed: boolean };
   payment: { completed: boolean };
+  numOfEsims?: number;
 }
 
 export interface CheckoutData {
