@@ -22,7 +22,7 @@ export interface CheckoutBundle {
     nameHebrew?: string | null;
   } | null;
   completed: boolean;
-  // (We add these as optional to satisfy other components temporarily)
+  // (We add these as optional to satisfy other components temporarily).
   currency?: string;
   dataAmount?: string;
   discounts?: Discount[];
