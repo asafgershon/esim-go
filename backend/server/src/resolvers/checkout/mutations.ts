@@ -82,6 +82,7 @@ export const checkoutMutationsV2: MutationResolvers = {
       const checkout = await services.checkoutSessionServiceV2.createSession({
         numOfDays,
         countryId,
+        numOfEsims,  
         initialState,
       });
       setImmediate(async () => {
