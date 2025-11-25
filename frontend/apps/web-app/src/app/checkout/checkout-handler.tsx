@@ -11,6 +11,7 @@ interface CheckoutHandlerProps {
     numOfDays?: string;
     countryId?: string;
     regionId?: string;
+    numOfEsims?: string;
   };
 }
 
@@ -95,6 +96,8 @@ export default async function CheckoutHandler({
   // 2. אם אין טוקן אבל יש פרמטרים, נסה ליצור סשן חדש
   if ((countryId || regionId) && numOfDays) {
     try {
+      const parsedNumOfEsims =
+        searchParams.numOfEsims ? Number(searchParams.numOfEsims) : 1;
       // --- שלב 3: בונים את האובייקט input כאן, פעם אחת ---
       const parsedNumOfDays = parseInt(numOfDays ?? "7") || 7;
       const input: CreateCheckoutSessionInput = {
@@ -103,6 +106,7 @@ export default async function CheckoutHandler({
         // הוסף פרמטרים רק אם הם קיימים
         ...(countryId && { countryId }),
         ...(regionId && { regionId }),
+        numOfEsims: parsedNumOfEsims,
       };
 
       // קוראים לפונקציית העזר עם האובייקט המוכן

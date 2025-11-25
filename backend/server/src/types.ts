@@ -596,6 +596,7 @@ export type CreateCheckoutSessionInput = {
   group?: InputMaybe<Scalars['String']['input']>;
   numOfDays: Scalars['Int']['input'];
   regionId?: InputMaybe<Scalars['String']['input']>;
+  numOfEsims?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateCheckoutSessionResponse = {
