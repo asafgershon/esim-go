@@ -60,16 +60,6 @@ export function OrderCard({
       .formatToParts(priceAfter || 0)
       .find((part) => part.type === "currency")?.value || "";
 
-        // DEBUG LOGS
-  console.log("===== ORDER CARD RENDER =====");
-  console.log("data:", data);
-  console.log("data.bundle:", data.bundle);
-  console.log("numOfEsims:", numOfEsims);
-  console.log("updatedPricing:", updatedPricing);
-  console.log("priceAfter:", priceAfter, "priceBefore:", priceBefore);
-  console.log("totalPriceAfter:", totalPriceAfter, "totalPriceBefore:", totalPriceBefore);
-  console.log("==============================");
-
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
       <div className="flex items-center gap-2">
@@ -115,52 +105,59 @@ export function OrderCard({
           <span className="text-lg font-semibold">סה״כ מחיר</span>
 
           {hasDiscount ? (
-            <div className="flex flex-col items-end">
-              <span className="text-gray-400 line-through text-sm">
-                {currencySymbol}
-                {priceBefore.toFixed(2)}
-              </span>
-                {hasDiscount ? (
-                  <div className="flex flex-col items-end">
-                    <span className="text-gray-400 line-through text-sm">
-                      {currencySymbol}{totalPriceBefore.toFixed(2)}
-                    </span>
-                    <span className="text-xl font-bold text-primary">
-                      <CountUp
-                        end={totalPriceAfter}
-                        decimals={2}
-                        prefix={currencySymbol}
-                        duration={0.5}
-                        preserveValue
-                      />
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-xl font-bold text-primary">
-                    <CountUp
-                      end={totalPriceAfter}
-                      decimals={2}
-                      prefix={currencySymbol}
-                      duration={0.5}
-                      preserveValue
-                    />
-                  </span>
-                )}
-            </div>
-          ) : (
-            <span className="text-xl font-bold text-primary">
-              <CountUp
-                end={priceAfter}
-                decimals={2}
-                prefix={currencySymbol}
-                duration={0.5}
-                preserveValue
-              />
-            </span>
-          )}
-        </div>
-      </div>
-    </Card>
+  <div className="flex flex-col items-end">
+    {/* מחיר קודם ליחידה */}
+    <span className="text-gray-400 line-through text-sm">
+      {currencySymbol}{priceBefore.toFixed(2)}
+    </span>
+
+    {/* מחיר קודם כולל לפי כמות eSIMs */}
+    <span className="text-gray-400 line-through text-sm">
+      {currencySymbol}{totalPriceBefore.toFixed(2)}
+    </span>
+
+    {/* מחיר אחרי הנחה */}
+    <span className="text-xl font-bold text-primary">
+      <CountUp
+        end={totalPriceAfter}
+        decimals={2}
+        prefix={currencySymbol}
+        duration={0.5}
+        preserveValue
+      />
+    </span>
+
+    {/* תצוגת כמות × מחיר ליחידה */}
+    {numOfEsims > 1 && (
+      <span className="text-xs text-gray-500 mt-1">
+        {numOfEsims} × {priceAfter.toFixed(2)} {currencySymbol}
+      </span>
+    )}
+  </div>
+) : (
+  <div className="flex flex-col items-end">
+    {/* מחיר ללא הנחה */}
+    <span className="text-xl font-bold text-primary">
+      <CountUp
+        end={totalPriceAfter}
+        decimals={2}
+        prefix={currencySymbol}
+        duration={0.5}
+        preserveValue
+      />
+    </span>
+
+    {/* תצוגת כמות × מחיר ליחידה */}
+    {numOfEsims > 1 && (
+      <span className="text-xs text-gray-500 mt-1">
+        {numOfEsims} × {priceAfter.toFixed(2)} {currencySymbol}
+      </span>
+    )}
+  </div>
+)}
+</div>
+</div> 
+</Card>  
   );
 }
 
