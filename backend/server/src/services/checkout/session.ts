@@ -61,12 +61,21 @@ const createSession = async ({
   countryId,
   numOfDays,
   initialState,
+  numOfEsims = 1,
 }: {
   numOfDays: number;
   countryId: string;
+  numOfEsims?: number;
   initialState?: Pick<CheckoutSession, "auth">;
 }) => {
   const id = nanoid();
+
+  console.log("[V2] CREATE SESSION — RAW INPUT:", {
+    countryId,
+    numOfDays,
+    numOfEsims,
+    initialState,
+  });
 
   let countryData: { iso2: string; name: string } | null = null;
   if (!bundleRepository) {
@@ -90,6 +99,7 @@ const createSession = async ({
       completed: false,
       countryId,
       numOfDays,
+      numOfEsims,
       country: countryData,
     },
     auth: {
@@ -117,6 +127,15 @@ const createSession = async ({
     updatedAt: new Date(),
     expiresAt: new Date(Date.now() + ttl * 1000),
   });
+
+    console.log("[V2] CREATE SESSION — BUILT SESSION:", JSON.stringify({
+    id: session.id,
+    bundle: session.bundle,
+    auth: session.auth,
+    delivery: session.delivery,
+    payment: session.payment,
+    expiresAt: session.expiresAt,
+  }, null, 2));
 
   try {
       await saveSession(session);
@@ -192,6 +211,7 @@ const getSession = async (
             speed: metadata.speed || [],
             validated: metadata.isValidated || false,
             pricePerDay: pricing.finalPrice && metadata.requestedDays ? pricing.finalPrice / metadata.requestedDays : 0,
+            numOfEsims: metadata.numOfEsims || 1,
         },
         auth: {
             completed: !!sessionDataFromDb.user_id || steps.authentication?.completed || false,
