@@ -60,6 +60,16 @@ export function OrderCard({
       .formatToParts(priceAfter || 0)
       .find((part) => part.type === "currency")?.value || "";
 
+        // DEBUG LOGS
+  console.log("===== ORDER CARD RENDER =====");
+  console.log("data:", data);
+  console.log("data.bundle:", data.bundle);
+  console.log("numOfEsims:", numOfEsims);
+  console.log("updatedPricing:", updatedPricing);
+  console.log("priceAfter:", priceAfter, "priceBefore:", priceBefore);
+  console.log("totalPriceAfter:", totalPriceAfter, "totalPriceBefore:", totalPriceBefore);
+  console.log("==============================");
+
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
       <div className="flex items-center gap-2">
