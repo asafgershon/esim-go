@@ -11,6 +11,7 @@ export const CreateCheckoutSessionInputSchema = z.object({
   regionId: z.string().optional(),
   countryId: z.string().optional(),
   group: z.string().optional(),
+  numOfEsims: z.number().int().positive().max(10).optional(),
 });
 
 // Update checkout step input

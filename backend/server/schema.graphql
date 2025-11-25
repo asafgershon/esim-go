@@ -1018,6 +1018,7 @@ input CreateCheckoutSessionInput {
   regionId: String
   countryId: String
   group: String
+  numOfEsims: Int
 }
 
 # Response types

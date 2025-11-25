@@ -656,6 +656,7 @@ input CreateCheckoutSessionInput {
   group: String
   numOfDays: Int!
   regionId: String
+  numOfEsims: Int
 }
 
 type CreateCheckoutSessionResponse {
