@@ -24,6 +24,9 @@ import { MayaApi } from "@hiilo/esim-go/maya";
 import type { PaymentServiceInstance } from "../payment";
 // 👇 ייבוא קריטי: פונקציות האימות מול איזיקארד
 import { getTransactionStatus,getIntentIdFromTransaction, type ITransactionStatusResponse } from "../../../../apis/easycard/src/custom-payment.service"; 
+import type { constants } from "zlib";
+import type { any } from "zod";
+import { num } from "envalid";
 
 const logger = createLogger({ component: "checkout-workflow" });
 
@@ -282,7 +285,10 @@ export const completeOrder = async ({
 
       // 🌟 3.4 יצירת eSIM באמצעות Maya API (FULFILLMENT)
       logger.info(`[COMPLETE_ORDER] 📞 Calling Maya to create eSIM for order ${order.id}`);
+      const numOfEsims = session.bundle?.numOfEsims || 1; 
+      const createdEsims: any[] = [];
 
+      for(let i = 0; i < numOfEsims; i++) {
       const mayaResponse = await mayaAPI.createEsim({
         product_uid: mayaProductUid,
         quantity: 1, 
@@ -315,6 +321,8 @@ export const completeOrder = async ({
     });
 
       logger.info(`[COMPLETE_ORDER] ✅ eSIM ${esimRecord.iccid} created and saved for order ${order.id}`);
+      createdEsims.push(esimDetails);
+  }
 
       // 3.6 שלח מייל ללקוח (עם פרטי eSIM)
       try {
@@ -324,16 +332,24 @@ export const completeOrder = async ({
             .filter(Boolean)
             .join(" ") || "לקוח יקר";
         const amount = transactionInfo.totalAmount || session.pricing?.finalPrice || 0;
-        
-const activationString = esimDetails.activation_code || esimDetails.qr_code_url;
-const qrImageBase64 = (await QRCode.toDataURL(activationString, { width: 250 }))
-  .replace(/^data:image\/png;base64,/, "");
-
-const lpaString = esimDetails.smdp_address;
-const manualCode = esimDetails.manual_code;
-const appleActivationUrl =
-  `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${activationString}`;
-
+        const activationString : any[] = [];
+        const lpaString: any[] = [];
+        const manualCode: any[] = [];
+        const appleActivationUrl: any[] = [];
+        const qrImageBase64: any[] = [];
+        for(let i = 0 ; i < createdEsims.length ; i++) {
+          activationString.push(createdEsims[i].activation_code || createdEsims[i].qr_code_url);
+          lpaString.push(createdEsims[i].smdp_address);
+          manualCode.push(createdEsims[i].manual_code);
+          qrImageBase64.push((await QRCode.toDataURL(activationString[i], { width: 250 })).replace(/^data:image\/png;base64,/, ""));
+          appleActivationUrl.push(`https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${activationString[i]}`);
+        }
+if(numOfEsims === 1) {
+  const activationStringSingle = activationString[0];
+  const lpaStringSingle = lpaString[0];
+  const manualCodeSingle = manualCode[0];
+  const appleActivationUrlSingle = appleActivationUrl[0];
+  const qrImageBase64Single = qrImageBase64[0];
 await postmarkClient.sendEmail({
   From: "HiiloWorld office@hiiloworld.com",
   To: email,
@@ -475,7 +491,7 @@ await postmarkClient.sendEmail({
                       <tr>
                         <td style="text-align:center;">
 
-                          <a href="${appleActivationUrl}"
+                          <a href="${appleActivationUrlSingle}"
                              style="
                                display:inline-flex;
                                align-items:center;
@@ -614,7 +630,7 @@ await postmarkClient.sendEmail({
                               width:100%;
                               display:block;
                             ">
-                              ${lpaString}
+                              ${lpaStringSingle}
                             </div>
                           </td>
                         </tr>
@@ -645,7 +661,7 @@ await postmarkClient.sendEmail({
                               width:100%;
                               display:block;
                             ">
-                              ${manualCode}
+                              ${manualCodeSingle}
                             </div>
                           </td>
                         </tr>
@@ -743,12 +759,12 @@ await postmarkClient.sendEmail({
 ה-eSIM שלך מוכן.
 
 סרוק את הקוד המצורף או, אם אתה משתמש ב-iPhone,
-הפעל ישירות מהקישור הבא: ${activationString}
+הפעל ישירות מהקישור הבא: ${activationStringSingle}
 
 אם אתה משתמש ב-Android:
 1. כנס להגדרות › רשת ניידת › הוסף eSIM ידנית
-2. הזן כתובת SM-DP+: ${lpaString}
-3. הזן קוד הפעלה: ${manualCode}
+2. הזן כתובת SM-DP+: ${lpaStringSingle}
+3. הזן קוד הפעלה: ${manualCodeSingle}
 
 צוות Hiilo מאחל לך חופשה מושלמת.`,
 
@@ -787,12 +803,265 @@ await postmarkClient.sendEmail({
     },
     {
       Name: "qrcode.png",
-      Content: qrImageBase64,
+      Content: qrImageBase64Single,
       ContentID: "qrcode.png",
       ContentType: "image/png",
     },
   ],
 });
+}
+else{
+let whatsappMessageText = "";
+
+for (let i = 0; i < createdEsims.length; i++) {
+  whatsappMessageText += `
+# eSIM ${i + 1}:
+
+קישור התקנה לאייפון:
+${appleActivationUrl[i]}
+
+התקנה ידנית לאנדרואיד:
+כתובת SM-DP+: ${lpaString[i]}
+קוד הפעלה: ${manualCode[i]}
+
+`;
+}
+
+const whatsappEncoded = encodeURIComponent(whatsappMessageText.trim());
+const whatsappUrl = `https://wa.me/?text=${whatsappEncoded}`;
+
+await postmarkClient.sendEmail({
+  From: "HiiloWorld office@hiiloworld.com",
+  To: email,
+  Subject: "ה-eSIMים שלך מוכנים",
+
+  HtmlBody: `
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ה-eSIMים שלך מוכנים</title>
+</head>
+
+<body style="margin:0; padding:0; background-color:#f5f5f7;
+             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+             direction:rtl; text-align:right;">
+
+  <table role="presentation" style="width:100%; border-collapse:collapse;
+         background-color:#f5f5f7; padding:40px 20px;">
+    <tr>
+      <td align="center">
+
+        <table role="presentation" style="max-width:600px; width:100%;
+               background:#ffffff; border-radius:16px;
+               box-shadow:0 4px 20px rgba(0,0,0,0.08); overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:0; margin:0;">
+              <img src="cid:header.png"
+                   alt="Hiilo Header"
+                   style="display:block; width:100%; height:auto;" />
+            </td>
+          </tr>
+
+          <!-- Greeting Section -->
+          <tr>
+            <td style="background:#ffffff; padding:25px 30px 10px; margin:0;">
+              <table role="presentation" style="width:100%; border-collapse:collapse;">
+                <tr>
+
+                  <!-- RIGHT — Text -->
+                  <td style="width:65%; vertical-align:middle; text-align:right;">
+
+                    <p style="margin:0; font-size:16px; color:#000; font-weight:600;">
+                      שלום ${name},
+                    </p>
+
+                    <p style="margin:12px 0 0; font-size:13px; color:#000; line-height:1.6;">
+                      שתהיה לך חופשה מושלמת,
+                    </p>
+
+                    <p style="margin:2px 0 0; font-size:13px; color:#000; line-height:1.6;">
+                      וכמובן אם צריך אותי אני כאן!
+                    </p>
+
+                    <p style="margin:12px 0 0; font-size:12px; color:#3f51ff; font-weight:600;">
+                      - אסף, מנהל קשרי לקוחות
+                    </p>
+
+                  </td>
+
+                  <!-- LEFT — Beach Image -->
+                  <td style="width:35%; vertical-align:bottom; text-align:left;">
+                    <img src="cid:beach.svg"
+                         alt="Beach Illustration"
+                         style="width:90%; height:auto; display:block; margin-top:35px;" />
+                  </td>
+
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Order ID Box -->
+          <tr>
+            <td style="background:#ffffff; padding:5px 30px 20px;">
+              <table role="presentation"
+                     style="width:100%; background:#5565ef; border-radius:10px; padding:12px 18px;">
+                <tr>
+                  <td style="text-align:center;">
+                    <span style="color:#ffffff; font-size:14px; font-weight:600;
+                                 white-space:nowrap; display:inline-block;">
+                      מספר ההזמנה שלך: ${order.id}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- WhatsApp Button -->
+          <tr>
+            <td style="padding:0 30px 40px; text-align:center;">
+
+              <a href="${whatsappUrl}"
+                 style="
+                   display:inline-flex;
+                   align-items:center;
+                   justify-content:center;
+                   padding:14px 26px;
+                   background:#25D366;
+                   color:#ffffff;
+                   font-size:17px;
+                   font-weight:700;
+                   border-radius:12px;
+                   text-decoration:none;
+                   margin-top:20px;
+                   width:100%;
+                   max-width:400px;
+                 ">
+                שליחת פרטי התקנה בוואטסאפ
+              </a>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:0; margin:0;">
+
+              <table role="presentation" style="
+                width:100%;
+                background:#06202B;
+                border-radius:20px 20px 0 0;
+                padding:32px 20px 40px;
+                text-align:center;
+              ">
+                <tr>
+                  <td style="font-size:20px; font-weight:700; color:#ffffff; padding-bottom:6px;">
+                    עדיין צריכים עזרה?
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="font-size:14px; color:#d5e0e5; padding-bottom:20px;">
+                    לשליחת הודעת וואטסאפ לשירות הלקוחות
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <a href="https://wa.me/972000000000"
+                       style="
+                         display:inline-flex;
+                         align-items:center;
+                         gap:8px;
+                         background:#ffffff;
+                         color:#000000;
+                         padding:10px 22px;
+                         border-radius:10px;
+                         text-decoration:none;
+                         font-size:15px;
+                         font-weight:600;
+                       ">
+                      <img src="cid:whatsapp.png"
+                           alt="WhatsApp"
+                           style="width:18px; height:auto;" />
+                      לשליחת הודעה
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" style="
+                width:100%;
+                background:#00EBA7;
+                padding:20px 10px;
+                text-align:center;
+              ">
+                <tr>
+                  <td style="font-size:15px; color:#000; font-weight:600;">
+                    נשמח שתשלחו לנו משוב: 
+                    <a href="mailto:office@hiiloworld.com"
+                       style="color:#000; text-decoration:underline;">
+                      office@hiiloworld.com
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+  `,
+
+  TextBody: `שלום ${name},
+
+אפשר לקבל את כל פרטי ההתקנה בוואטסאפ בקישור הבא:
+${whatsappUrl}
+
+צוות Hiilo מאחל לך חופשה מושלמת.`,
+  
+  MessageStream: "transactional",
+
+  Attachments: [
+    {
+      Name: "header_hiilo_esim.png",
+      Content: readEmailAsset("header_hiilo_esim.png"),
+      ContentID: "header.png",
+      ContentType: "image/png",
+    },
+    {
+      Name: "beach.svg",
+      Content: readEmailAsset("beach.svg"),
+      ContentID: "beach.svg",
+      ContentType: "image/svg+xml",
+    },
+    {
+      Name: "palm.svg",
+      Content: readEmailAsset("palm.svg"),
+      ContentID: "palm.svg",
+      ContentType: "image/svg+xml",
+    },
+    {
+      Name: "whatsapp.png",
+      Content: readEmailAsset("whatsapp.png"),
+      ContentID: "whatsapp.png",
+      ContentType: "image/png",
+    }
+  ],
+});
+}
 
 
         logger.info(`[COMPLETE_ORDER] 📧 Confirmation email with eSIM sent to ${email}`);
