@@ -189,9 +189,6 @@ const getSession = async (
       logger.warn(`[DEBUG] getSession: Session ${sessionId} not found in DB.`);
       return null;
     }
-
-    console.log("[DEBUG] Raw data from DB:", JSON.stringify(sessionDataFromDb, null, 2));
-
     const metadata = sessionDataFromDb.metadata as any || {};
     const pricing = sessionDataFromDb.pricing as any || {};
     const steps = sessionDataFromDb.steps as any || {};
@@ -239,9 +236,6 @@ const getSession = async (
         expiresAt: new Date(sessionDataFromDb.expires_at || Date.now()),
         completedAt: sessionDataFromDb.payment_status === 'SUCCEEDED' ? new Date(sessionDataFromDb.updated_at || Date.now()) : undefined,
     };
-
-    console.log("[DEBUG] Data mapped for Zod parse:", JSON.stringify(mappedSessionData, null, 2));
-
     const validationResult = CheckoutSessionSchema.safeParse(mappedSessionData);
     if (!validationResult.success) {
         logger.error("Failed to parse MAPPED session data from DB against Zod schema", validationResult.error, { sessionId });
