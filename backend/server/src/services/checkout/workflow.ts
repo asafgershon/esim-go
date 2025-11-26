@@ -239,6 +239,10 @@ export const completeOrder = async ({
     return { status: 'FAILED' };
   }
 
+logger.info(
+  `[COMPLETE_ORDER] 📝 Loaded session object:\n${JSON.stringify(session, null, 2)}`
+);
+
   logger.info(`[COMPLETE_ORDER] 🟢 Processing transaction ${easycardTransactionId}`);
 
   // 2. אימות העסקה מול EasyCard

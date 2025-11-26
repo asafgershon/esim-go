@@ -211,7 +211,7 @@ const getSession = async (
             speed: metadata.speed || [],
             validated: metadata.isValidated || false,
             pricePerDay: pricing.finalPrice && metadata.requestedDays ? pricing.finalPrice / metadata.requestedDays : 0,
-            numOfEsims: metadata.numOfEsims || 1,
+            numOfEsims: steps.bundle?.numOfEsims || metadata.numOfEsims || 1,
         },
         auth: {
             completed: !!sessionDataFromDb.user_id || steps.authentication?.completed || false,
