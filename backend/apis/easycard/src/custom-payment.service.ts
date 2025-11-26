@@ -133,7 +133,8 @@ export interface IPaymentIntentResponse {
  * מקבלת את פרטי התשלום ומחזירה את הקישור לדף התשלום.
  */
 export async function createPaymentIntent(params: ICreatePaymentParams): Promise<IPaymentIntentResponse> {
-    
+        console.log("🟦 createPaymentIntent() called with params:");
+    console.log(JSON.stringify(params, null, 2));
     // שלב 1: השג טוקן גישה
     const token = await getAccessToken();
 
