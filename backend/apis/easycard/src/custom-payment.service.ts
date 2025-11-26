@@ -113,6 +113,7 @@ export interface ICreatePaymentParams {
     items: IPaymentItem[];  // רשימת פריטים
     redirectUrl: string;    // הכתובת לחזרה לאתר שלנו (כדי לקבל transactionID)
     terminalID: string;     // מזהה הטרמינל שלך
+    email?: string;
     }
 
 // מתאר את התשובה שאנו מצפים לקבל מ-Easycard
@@ -145,7 +146,9 @@ export async function createPaymentIntent(params: ICreatePaymentParams): Promise
         invoiceType: "invoiceWithPaymentInfo",
         paymentRequestAmount: params.amount,
         issueInvoice: true,
-        dealDetails: {},
+        dealDetails: {
+            consumerEmail: params.email || null,
+        },
         items: params.items.map(item => {
             // נפרק את האובייקט 'item' כדי למנוע כפילויות
             const { 

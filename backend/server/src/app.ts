@@ -335,7 +335,7 @@ app.post("/webhooks/easycard", async (req, res) => {
     app.post("/api/payment/create-intent", async (req, res) => {
     try {
       // 1. ולידציה בסיסית לקלט מהפרונטאנד
-      const { amount, items } = req.body;
+      const { amount, items, email } = req.body;
       if (!amount || typeof amount !== 'number' || !items || !Array.isArray(items) || items.length === 0) {
         logger.warn('Invalid create-intent request', { body: req.body });
         return res.status(400).json({ error: "Missing or invalid 'amount' or 'items' in request body" });
@@ -351,7 +351,8 @@ app.post("/webhooks/easycard", async (req, res) => {
           amount: amount,
           items: items, // מעבירים את רשימת הפריטים כפי שהגיעה מהפרונטאנד
           terminalID: env.EASYCARD_TERMINAL_ID, // קורא מה-env
-          redirectUrl: redirectUrl 
+          redirectUrl: redirectUrl,
+           email: email || null,
       };
       
       // 3. קריאה ל"ארגז הכלים" (השירות שיצרנו)
