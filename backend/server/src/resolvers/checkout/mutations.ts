@@ -22,6 +22,7 @@ import {
 
 // 👇 הוספת ייבוא קריטי לטיפול ב-Callback
 import { handleRedirectCallback } from "../../services/checkout/workflow";
+import { metadata } from '../../../../../frontend/apps/web-app/src/app/layout';
 
 // ==================================================================
 // Helper function to prevent code duplication when publishing events
@@ -239,17 +240,19 @@ logger.info("🔍 Loaded checkout session:", {
         // שלב 4️⃣ - הרכב את הבקשה עבור השירות *שלנו*
         const paymentItem = {
           itemName: bundle.dataAmount || "eSIM Bundle", 
-          price: pricing.finalPrice, // שימוש במחיר הנכון
+          price: (pricing.finalPrice) * (session.bundle.numOfEsims ?? 1), // שימוש במחיר הנכון
           quantity: 1, 
         };
 
         const paymentParams: ICreatePaymentParams = {
-          amount: pricing.finalPrice, // שימוש במחיר הנכון
+          amount: (pricing.finalPrice) * (session.bundle.numOfEsims ?? 1), // שימוש במחיר הנכון
           items: [paymentItem],   
           redirectUrl: redirectUrl, // שימוש ב-redirectUrl שהגיע מה-Frontend
           terminalID:
             process.env.EASY_CARD_TERMINAL_ID ||
             "bcbb963a-7eb1-497d-9611-b2ce00b2bdc5",
+          email: session.delivery.email || undefined,
+          numOfEsims: session.bundle.numOfEsims || 1,
         };
 
         // שלב 5️⃣ - קריאה לשירות *שלנו* (זה שקורא ל-/connect/token)

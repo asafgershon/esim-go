@@ -1,5 +1,6 @@
 import axios from 'axios';
 import qs from 'qs';
+import { num } from 'envalid';
 
 // אנחנו מניחים שהקובץ .env נטען ע"י השרת הראשי שלך
 // ושהמפתח זמין ב-process.env
@@ -114,6 +115,7 @@ export interface ICreatePaymentParams {
     redirectUrl: string;    // הכתובת לחזרה לאתר שלנו (כדי לקבל transactionID)
     terminalID: string;     // מזהה הטרמינל שלך
     email?: string;
+    numOfEsims?: number;
     }
 
 // מתאר את התשובה שאנו מצפים לקבל מ-Easycard

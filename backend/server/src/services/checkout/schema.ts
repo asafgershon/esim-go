@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Provider } from "../../types";
 import { type SimplePricingDiscount } from '../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer';
+import { num } from "envalid";
 
 const SimplePricingDiscountSchema = z.object({
   code: z.string(),
@@ -24,6 +25,7 @@ const BundleSelectionSchema = z.object({
   validated: z.boolean().default(false),
   discounts: z.array(SimplePricingDiscountSchema).default([]),
   provider: z.nativeEnum(Provider).optional(), // Use nativeEnum for TS enums
+  numOfEsims: z.number().optional(),
 });
 
 const AuthSchema = z.object({
