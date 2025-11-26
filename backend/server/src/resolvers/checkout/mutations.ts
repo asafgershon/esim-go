@@ -202,6 +202,13 @@ triggerCheckoutPayment: {
       try {
         // שלב 1️⃣ - שלוף את הסשן הקיים (הלוגיקה הזו נשארת, היא טובה)
         session = await context.services.checkoutSessionServiceV2.getSession(sessionId);
+logger.info("🔍 Loaded checkout session:", {
+  sessionId,
+  delivery: session?.delivery,
+  bundle: session?.bundle,
+  pricing: session?.pricing,
+  rawSession: session,
+});
         if (!session) {
           throw new GraphQLError("Session not found", { extensions: { code: "SESSION_NOT_FOUND" } });
         }

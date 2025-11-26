@@ -334,6 +334,7 @@ app.post("/webhooks/easycard", async (req, res) => {
 
     app.post("/api/payment/create-intent", async (req, res) => {
     try {
+      console.log("🔵 /api/payment/create-intent BODY:", JSON.stringify(req.body, null, 2));
       // 1. ולידציה בסיסית לקלט מהפרונטאנד
       const { amount, items, email } = req.body;
       if (!amount || typeof amount !== 'number' || !items || !Array.isArray(items) || items.length === 0) {
