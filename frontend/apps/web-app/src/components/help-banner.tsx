@@ -3,7 +3,7 @@
 import { Button, cn } from "@workspace/ui";
 
 export const handleContactSupport = () => {
-  const whatsappUrl = "https://wa.me/972XXXXXXXXX"; 
+  const whatsappUrl = "https://wa.me/972559965794"; 
   window.open(whatsappUrl, "_blank");
 };
 

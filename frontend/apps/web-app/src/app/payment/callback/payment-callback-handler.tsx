@@ -1,6 +1,6 @@
 "use client";
 
-import { gql } from "@/__generated__";
+import { gql } from "@apollo/client";
 import {
   ProcessPaymentCallbackMutation,
   ProcessPaymentCallbackMutationVariables,
@@ -93,18 +93,48 @@ export function PaymentCallbackHandler({
   }
 
   return (
-    <Card className="p-8 max-w-md mx-auto text-center" dir="rtl">
-      <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-      <h2 className="text-2xl font-bold mb-2">ההזמנה הושלמה בהצלחה ✅</h2>
-      <p className="text-muted-foreground mb-6">
-        ניתן לסגור את העמוד הזה או לחזור לעמוד הבית.
-      </p>
-      <Button
-        onClick={() => router.push("/")}
-        className="w-full"
-      >
-        חזרה לעמוד הבית
-      </Button>
+  <div
+    className="flex min-h-screen items-center justify-center bg-secondary/30 p-4"
+    dir="rtl"
+  >
+    <Card className="w-full max-w-lg p-8 shadow-lg">
+      <div className="text-center">
+        
+        {/* Success Icon */}
+        <div className="mb-6 flex justify-center">
+          <div className="rounded-full bg-success/10 p-4">
+            <CheckCircle className="h-16 w-16 text-success" />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h1 className="mb-3 text-3xl font-bold text-foreground">
+          ההזמנה הושלמה בהצלחה!
+        </h1>
+
+        {/* Description */}
+        <div className="mb-8 space-y-2 text-muted-foreground">
+          <p className="text-lg">
+            התשלום התקבל ומעבד התשלום אישר את העסקה.
+          </p>
+          <p className="text-sm">
+            ניתן לסגור את העמוד הזה או לחזור לעמוד הבית.
+          </p>
+        </div>
+
+        {/* Buttons */}
+        <div className="space-y-3">
+          <Button
+            variant="secondary"
+            className="w-full"
+            size="lg"
+            onClick={() => router.push("/")}
+          >
+            חזרה לעמוד הבית
+          </Button>
+        </div>
+      </div>
     </Card>
-  );
+  </div>
+);
 }
