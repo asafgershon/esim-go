@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useHorizontalScroll } from "@workspace/ui";
 
 interface Review {
@@ -46,26 +46,138 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
 };
 
 const reviews: Review[] = [
-  { id: "1", countryCode: "gr", countryName: "יוון", imageUrl: "/images/reviews/greece.png" },
-  { id: "2", countryCode: "us", countryName: "ארצות הברית", imageUrl: "/images/reviews/usa.png" },
-  { id: "3", countryCode: "np", countryName: "נפאל", imageUrl: "/images/reviews/nepal.png" },
-  { id: "4", countryCode: "fr", countryName: "צרפת", imageUrl: "/images/reviews/france.png" },
-  { id: "5", countryCode: "be", countryName: "בלגיה", imageUrl: "/images/reviews/belgium.png" },
-  { id: "6", countryCode: "vn", countryName: "וייטנאם", imageUrl: "/images/reviews/vietnam.png" },
-  { id: "7", countryCode: "gr", countryName: "יוון", imageUrl: "/images/reviews/greece2.png" },
-  { id: "8", countryCode: "ch", countryName: "שוויץ", imageUrl: "/images/reviews/switzerland.png" },
-  { id: "9", countryCode: "es", countryName: "ספרד", imageUrl: "/images/reviews/spain.png" },
-  { id: "10", countryCode: "gr", countryName: "יוון", imageUrl: "/images/reviews/greece3.png" },
-  { id: "11", countryCode: "kr", countryName: "קוריאה", imageUrl: "/images/reviews/korea.png" }
-  //{ id: "12", countryCode: "za", countryName: "דרום אפריקה", imageUrl: "/images/reviews/south_africa.png" },
+  {
+    id: "1",
+    countryCode: "gr",
+    countryName: "יוון",
+    imageUrl: "/images/reviews/greece.png",
+  },
+  {
+    id: "2",
+    countryCode: "us",
+    countryName: "ארצות הברית",
+    imageUrl: "/images/reviews/usa.png",
+  },
+  {
+    id: "3",
+    countryCode: "np",
+    countryName: "נפאל",
+    imageUrl: "/images/reviews/nepal.png",
+  },
+  {
+    id: "4",
+    countryCode: "fr",
+    countryName: "צרפת",
+    imageUrl: "/images/reviews/france.png",
+  },
+  {
+    id: "5",
+    countryCode: "be",
+    countryName: "בלגיה",
+    imageUrl: "/images/reviews/belgium.png",
+  },
+  {
+    id: "6",
+    countryCode: "vn",
+    countryName: "וייטנאם",
+    imageUrl: "/images/reviews/vietnam.png",
+  },
+  {
+    id: "7",
+    countryCode: "gr",
+    countryName: "יוון",
+    imageUrl: "/images/reviews/greece2.png",
+  },
+  {
+    id: "8",
+    countryCode: "ch",
+    countryName: "שוויץ",
+    imageUrl: "/images/reviews/switzerland.png",
+  },
+  {
+    id: "9",
+    countryCode: "es",
+    countryName: "ספרד",
+    imageUrl: "/images/reviews/spain.png",
+  },
+  {
+    id: "10",
+    countryCode: "gr",
+    countryName: "יוון",
+    imageUrl: "/images/reviews/greece3.png",
+  },
+  {
+    id: "11",
+    countryCode: "kr",
+    countryName: "קוריאה",
+    imageUrl: "/images/reviews/korea.png",
+  },
+  // {
+  //   id: "12",
+  //   countryCode: "za",
+  //   countryName: "דרום אפריקה",
+  //   imageUrl: "/images/reviews/south_africa.png",
+  // },
 ];
 
 export const ReviewsSection = () => {
-
-  const { containerRef, contentRef, progressRef } = useHorizontalScroll({
-  progressColor: "#00e09574",
+const { containerRef, contentRef, progressRef } = useHorizontalScroll({
+  progressColor: "#00E095",
   progressTrackColor: "rgba(255, 255, 255, 0.1)",
-  });
+});
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    const progress = progressRef.current;
+
+    if (!container || !content || !progress) return;
+
+    let isDragging = false;
+    let startX = 0;
+    let scrollLeft = 0;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      startX = e.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+      if (content) content.style.cursor = "grabbing";
+    };
+
+    const handleMouseUp = () => {
+      isDragging = false;
+      if (content) content.style.cursor = "grab";
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const x = e.pageX - container.offsetLeft;
+      const walk = (x - startX) * 2;
+      container.scrollLeft = scrollLeft - walk;
+    };
+
+    const updateProgress = () => {
+      const scrollWidth = container.scrollWidth - container.clientWidth;
+      const scrolled = container.scrollLeft;
+      const progressPercent = scrollWidth > 0 ? scrolled / scrollWidth : 0;
+      progress.style.transform = `scaleX(${progressPercent})`;
+    };
+
+    container.addEventListener("mousedown", handleMouseDown);
+    container.addEventListener("mouseup", handleMouseUp);
+    container.addEventListener("mouseleave", handleMouseUp);
+    container.addEventListener("mousemove", handleMouseMove);
+    container.addEventListener("scroll", updateProgress);
+
+    return () => {
+      container.removeEventListener("mousedown", handleMouseDown);
+      container.removeEventListener("mouseup", handleMouseUp);
+      container.removeEventListener("mouseleave", handleMouseUp);
+      container.removeEventListener("mousemove", handleMouseMove);
+      container.removeEventListener("scroll", updateProgress);
+    };
+  }, []);
 
   return (
     <section
@@ -82,20 +194,27 @@ export const ReviewsSection = () => {
         </div>
 
         {/* Horizontal Scroll Container */}
-          <div
-            ref={containerRef}
-            className="relative overflow-x-scroll overflow-y-hidden max-w-full no-scrollbar"
-            style={{ height: "420px", WebkitOverflowScrolling: "touch" }}
-          >
-          <div
-            ref={contentRef}
-            className="flex gap-6 px-4"
-            style={{
-              cursor: "grab",
-              userSelect: "none",
-              WebkitUserSelect: "none",
-            }}
-          >
+            <div
+              ref={containerRef}
+              className="relative overflow-visible mx-auto mt-10"
+              style={{
+                height: "420px",
+                maxWidth: "100%",
+                position: "relative"
+              }}
+            >
+              <div
+                ref={contentRef}
+                className="flex gap-6 px-4 absolute top-0 left-0"
+                style={{
+                  cursor: "grab",
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                  willChange: "transform",
+                  touchAction: "pan-y",
+                  overflowX: "visible"
+                }}
+              >
             {reviews.map((review) => (
               <div
                 key={review.id}
