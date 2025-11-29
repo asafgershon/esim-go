@@ -706,7 +706,7 @@ await postmarkClient.sendEmail({
 
                 <tr>
                   <td>
-                    <a href="https://wa.me/972000000000"
+                    <a href="https://wa.me/972559965794"
                        style="
                          display:inline-flex;
                          align-items:center;
@@ -977,7 +977,7 @@ await postmarkClient.sendEmail({
 
                 <tr>
                   <td>
-                    <a href="https://wa.me/972000000000"
+                    <a href="https://wa.me/972559965794"
                        style="
                          display:inline-flex;
                          align-items:center;
