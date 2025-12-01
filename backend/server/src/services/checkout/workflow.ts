@@ -684,7 +684,7 @@ await postmarkClient.sendEmail({
 
               <table role="presentation" style="
                 width:100%;
-                background:#06202B;
+                background:#0A0A0A;
                 border-radius:20px 20px 0 0;
                 padding:32px 20px 40px;
                 text-align:center;
@@ -727,7 +727,7 @@ await postmarkClient.sendEmail({
 
               <table role="presentation" style="
                 width:100%;
-                background:#00EBA7;
+                background:#00C48C;
                 padding:20px 10px;
                 text-align:center;
               ">
