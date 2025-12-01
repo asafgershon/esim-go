@@ -58,6 +58,7 @@ export function MainView({
 }: MainViewProps) {
 
     const [isPricingThinking, setIsPricingThinking] = useState(false);
+    const [isPurchasing, setIsPurchasing] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false)
     // 2. הגדרת מצב מקומי לכמות ה-eSIMs
@@ -212,19 +213,28 @@ export function MainView({
             {/* Purchase Button - Always visible */}
             <SelectorAction className="mt-5">
 <SelectorButton
-    onClick={() => {
-        if (isPricingValid && !isPricingThinking) {
-            handlePurchase();
-        } else {
-            triggerDestinationSelectorFocus();
-        }
-    }}
-    disabled={!isPricingValid || isPricingThinking}
+    onClick={async () => {
+    if (!isPricingValid || isPricingThinking || isPurchasing) return;
+
+    setIsPurchasing(true);
+
+    try {
+        await handlePurchase(); // your purchase flow
+    } finally {
+        setIsPurchasing(false);
+    }
+}}
+disabled={!isPricingValid || isPricingThinking || isPurchasing}
     variant={isPricingValid && !isPricingThinking ? "brand-success" : undefined}
     emphasized={isPricingValid && !isPricingThinking}
 >
-    {isPricingThinking ? "מחשב..." :
-        isPricingValid ? "לרכישת החבילה" : "לצפייה בחבילה המשתלמת ביותר"}
+{isPricingThinking
+    ? "מחשב..."
+    : isPurchasing
+        ? "מבצע רכישה..."
+        : isPricingValid
+            ? "לרכישת החבילה"
+            : "לצפייה בחבילה המשתלמת ביותר"}
 </SelectorButton>
 
             </SelectorAction>
