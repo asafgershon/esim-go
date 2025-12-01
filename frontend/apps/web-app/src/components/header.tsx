@@ -27,6 +27,7 @@ export function Header({
 
   // ✅ MUST come before handleNavigate
   const navigation = [
+    { title: "מדריך התקנה", href: "/how-to-install", external: true },
     { title: "שאלות ותשובות", href: "#faq", external: false },
     { title: "?eSim מה זה", href: "#what-is-esim", external: false },
     { title: "עלינו", href: "#about", external: false }, // ✅ override path
