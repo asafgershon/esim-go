@@ -100,65 +100,45 @@ export function OrderCard({
         </div>
       </div>
 
-      <div className="border-t pt-4 space-y-3">
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-semibold">סה״כ מחיר</span>
+<div className="border-t pt-4 space-y-3">
+  <div className="flex justify-between items-center">
+    <span className="text-lg font-semibold">סה״כ מחיר</span>
 
-          {hasDiscount ? (
-  <div className="flex flex-col items-end">
-    {/* מחיר קודם ליחידה */}
-    <span className="text-gray-400 line-through text-sm">
-      {currencySymbol}{priceBefore.toFixed(2)}
-    </span>
+    <div className="flex flex-col items-end">
 
-    {/* מחיר קודם כולל לפי כמות eSIMs */}
-    <span className="text-gray-400 line-through text-sm">
-      {currencySymbol}{totalPriceBefore.toFixed(2)}
-    </span>
+      {/* ✔ If discount → show ONLY single-esim original price */}
+      {hasDiscount && (
+        <span className="text-gray-400 line-through text-sm">
+          {currencySymbol}{priceBefore.toFixed(2)}
+        </span>
+      )}
 
-    {/* מחיר אחרי הנחה */}
-    <span className="text-xl font-bold text-primary">
-      <CountUp
-        end={totalPriceAfter}
-        decimals={2}
-        prefix={currencySymbol}
-        duration={0.5}
-        preserveValue
-      />
-    </span>
+      {/* ✔ Small line: single × quantity = TOTAL */}
+      {numOfEsims > 1 && (
+        <span className="text-xs text-gray-500 mt-1">
+          {priceAfter.toFixed(2)} {currencySymbol} × {numOfEsims} ={" "}
+          <span className="font-bold">
+            {(priceAfter * numOfEsims).toFixed(2)}{currencySymbol}
+          </span>
+        </span>
+      )}
 
-    {/* תצוגת כמות × מחיר ליחידה */}
-    {numOfEsims > 1 && (
-      <span className="text-xs text-gray-500 mt-1">
-        {numOfEsims} × {priceAfter.toFixed(2)} {currencySymbol}
+      {/* ✔ BIG PRICE — price of ONE eSIM */}
+      <span className="text-xl font-bold text-primary">
+        <CountUp
+          end={priceAfter}
+          decimals={2}
+          prefix={currencySymbol}
+          duration={0.5}
+          preserveValue
+        />
       </span>
-    )}
-  </div>
-) : (
-  <div className="flex flex-col items-end">
-    {/* מחיר ללא הנחה */}
-    <span className="text-xl font-bold text-primary">
-      <CountUp
-        end={totalPriceAfter}
-        decimals={2}
-        prefix={currencySymbol}
-        duration={0.5}
-        preserveValue
-      />
-    </span>
 
-    {/* תצוגת כמות × מחיר ליחידה */}
-    {numOfEsims > 1 && (
-      <span className="text-xs text-gray-500 mt-1">
-        {numOfEsims} × {priceAfter.toFixed(2)} {currencySymbol}
-      </span>
-    )}
+    </div>
   </div>
-)}
 </div>
-</div> 
-</Card>  
-  );
+</Card>
+);
 }
 
 // ... (קוד הסקלטון נשאר זהה)

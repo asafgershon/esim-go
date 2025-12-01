@@ -129,27 +129,45 @@ export const CouponCard = ({
   }
 
   if (result.success) {
-if (result.success && result.checkout?.bundle) {
-  const b = result.checkout.bundle;
+  if (result.checkout?.bundle) {
+    const b = result.checkout.bundle;
 
-  onCouponApplied?.({
-    priceAfter: b.price,
-    priceBefore: b.discounts?.length ? b.price + b.discounts[0] : b.price,
-    hasDiscount: !!(b.discounts?.length && b.discounts[0] > 0),
-  });
-}
-    setMessage("✅ הקופון הוחל בהצלחה");
-  } else {
-    setMessage(`❌ ${result.error?.message || "קוד לא תקף"}`);
+    // Extract discount value safely
+    const discountValue =
+      Array.isArray(b.discounts) && b.discounts.length > 0
+        ? b.discounts[0]
+        : 0;
+
+    // Detect if there's a real discount
+    const hasDiscount = discountValue !== 0;
+
+    // Calculate correct before-price:
+    // Backend sometimes returns positive discount (amount)
+    // and sometimes negative (already applied value)
+    const priceBefore =
+      discountValue > 0
+        ? b.price + discountValue
+        : b.price - discountValue;
+
+    // Apply to parent
+    onCouponApplied?.({
+      priceAfter: b.price,
+      priceBefore,
+      hasDiscount,
+    });
   }
-} catch (err:any) {
+
+  setMessage("✅ הקופון הוחל בהצלחה");
+} else {
+  setMessage(`❌ ${result.error?.message || "קוד לא תקף"}`);
+}
+} catch (err: any) {
   console.log("========== COUPON ERROR ==========");
 
   console.error("FULL ERROR OBJECT:", err);
   console.error("GRAPHQL ERRORS:", err?.graphQLErrors);
   console.error("NETWORK ERROR:", err?.networkError);
 
-  // ניסוי לתפוס עוד מידע
   try {
     console.error(
       "STRINGIFIED ERROR:",
@@ -161,8 +179,7 @@ if (result.success && result.checkout?.bundle) {
 
   setMessage("אירעה שגיאה בעת ניסיון להחיל את הקופון");
 }
-  };
-
+};
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
       <SectionHeader

@@ -181,21 +181,18 @@ const displayPricing = {
             {format(endDate, "dd/MM/yyyy", { locale: he })}
           </div>
         )}
-
-        <div className="w-full mb-2">
-  {/* שורה עליונה: ימים ← ימין | ↔ | מחיר ← שמאל */}
+<div className="w-full mb-2">
+  {/* BIG PRICE — one eSIM price */}
   <div className="flex items-center justify-between w-full">
-    {/* ימין */}
     <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
       {displayPricing.days} ימים ללא הגבלה
     </span>
 
-    {/* שמאל – מחיר */}
-    <span className="text-[14px] md:text-[18px] font-bold text-brand-dark">
+    <span className="text-[18px] md:text-[22px] font-bold text-brand-dark">
       <CountUp
-        key={`total-${countryId || tripId}-${numOfDays}`}
-        start={previousPriceRef.current}
-        end={displayPricing.totalPrice || 0}
+        key={`one-${countryId || tripId}-${numOfDays}`}
+        start={previousPriceRef.current / numOfEsims}
+        end={basePrice}
         decimals={2}
         prefix="$"
         duration={0.8}
@@ -205,13 +202,14 @@ const displayPricing = {
     </span>
   </div>
 
-  {/* שורה שנייה – מיושרת לימין */}
-  <div className="text-right text-[10px] md:text-[12px] text-brand-dark opacity-50 mt-1">
-    ${basePrice.toFixed(2)} × {numOfEsims}
+  {/* SMALL — one × num = TOTAL (bold total) */}
+  <div className="text-right text-[10px] md:text-[12px] text-brand-dark opacity-70 mt-1">
+    ${basePrice.toFixed(2)} × {numOfEsims} ={" "}
+    <span className="font-bold">
+      ${(basePrice * numOfEsims).toFixed(2)}
+    </span>
   </div>
 </div>
-
-
         {displayPricing.hasDiscount && (
           <div className="space-y-1">
             <div

@@ -928,24 +928,23 @@ await postmarkClient.sendEmail({
             <td style="padding:0 30px 40px; text-align:center;">
 
               <a href="${whatsappUrl}"
-                 style="
-                   display:inline-flex;
-                   align-items:center;
-                   justify-content:center;
-                   padding:14px 26px;
-                   background:#25D366;
-                   color:#ffffff;
-                   font-size:17px;
-                   font-weight:700;
-                   border-radius:12px;
-                   text-decoration:none;
-                   margin-top:20px;
-                   width:100%;
-                   max-width:400px;
-                 ">
+                style="
+                  display:block;
+                  margin:25px auto 0;
+                  width:100%;
+                  max-width:400px;
+                  padding:14px 26px;
+                  background:#ffffff;
+                  border:2px solid #000000;
+                  border-radius:12px;
+                  text-align:center;
+                  font-size:17px;
+                  font-weight:700;
+                  color:#000000;
+                  text-decoration:none;
+                ">
                 שליחת פרטי התקנה בוואטסאפ
               </a>
-
             </td>
           </tr>
 
@@ -955,7 +954,7 @@ await postmarkClient.sendEmail({
 
               <table role="presentation" style="
                 width:100%;
-                background:#06202B;
+                background:#0A0A0A;
                 border-radius:20px 20px 0 0;
                 padding:32px 20px 40px;
                 text-align:center;
@@ -998,7 +997,7 @@ await postmarkClient.sendEmail({
 
               <table role="presentation" style="
                 width:100%;
-                background:#00EBA7;
+                background:#00C48C;
                 padding:20px 10px;
                 text-align:center;
               ">
