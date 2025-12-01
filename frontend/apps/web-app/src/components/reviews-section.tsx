@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import { useHorizontalScroll } from "@workspace/ui";
 
 interface Review {
   id: string;
@@ -120,9 +121,10 @@ const reviews: Review[] = [
 ];
 
 export const ReviewsSection = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
+const { containerRef, contentRef, progressRef } = useHorizontalScroll({
+  progressColor: "#00E095",
+  progressTrackColor: "rgba(255, 255, 255, 0.1)",
+});
 
   useEffect(() => {
     const container = containerRef.current;
@@ -192,20 +194,27 @@ export const ReviewsSection = () => {
         </div>
 
         {/* Horizontal Scroll Container */}
-          <div
-            ref={containerRef}
-            className="relative overflow-x-scroll overflow-y-hidden max-w-full no-scrollbar"
-            style={{ height: "420px", WebkitOverflowScrolling: "touch" }}
-          >
-          <div
-            ref={contentRef}
-            className="flex gap-6 px-4"
-            style={{
-              cursor: "grab",
-              userSelect: "none",
-              WebkitUserSelect: "none",
-            }}
-          >
+            <div
+              ref={containerRef}
+              className="relative overflow-visible mx-auto mt-10"
+              style={{
+                height: "420px",
+                maxWidth: "100%",
+                position: "relative"
+              }}
+            >
+              <div
+                ref={contentRef}
+                className="flex gap-6 px-4 absolute top-0 left-0"
+                style={{
+                  cursor: "grab",
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                  willChange: "transform",
+                  touchAction: "pan-y",
+                  overflowX: "visible"
+                }}
+              >
             {reviews.map((review) => (
               <div
                 key={review.id}

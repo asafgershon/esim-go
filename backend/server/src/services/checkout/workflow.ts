@@ -509,9 +509,6 @@ await postmarkClient.sendEmail({
                                color:#0a0a0a;
                                white-space:nowrap;
                              ">
-                            <img src="cid:apple.png"
-                                 alt="Apple"
-                                 style="width:18px; height:auto;" />
                              הפעילו את ה-eSIM בלחיצה כאן
                           </a>
 
