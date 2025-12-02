@@ -725,7 +725,8 @@ await postmarkClient.sendEmail({
 
               <table role="presentation" style="
                 width:100%;
-                background:#00C48C;
+                background:#FFFFFF;
+                border-top:1px solid #000000;
                 padding:20px 10px;
                 text-align:center;
               ">
@@ -733,7 +734,7 @@ await postmarkClient.sendEmail({
                   <td style="font-size:15px; color:#000; font-weight:600;">
                     נשמח שתשלחו לנו משוב: 
                     <a href="mailto:office@hiiloworld.com"
-                       style="color:#000; text-decoration:underline;">
+                       style="color:#1a73e8; text-decoration:underline;">
                       office@hiiloworld.com
                     </a>
                   </td>
@@ -966,9 +967,6 @@ await postmarkClient.sendEmail({
                          font-size:15px;
                          font-weight:600;
                        ">
-                      <img src="cid:whatsapp.png"
-                           alt="WhatsApp"
-                           style="width:18px; height:auto;" />
                       לשליחת הודעה
                     </a>
                   </td>
@@ -1027,18 +1025,6 @@ ${whatsappUrl}
       Content: readEmailAsset("beach.svg"),
       ContentID: "beach.svg",
       ContentType: "image/svg+xml",
-    },
-    {
-      Name: "palm.svg",
-      Content: readEmailAsset("palm.svg"),
-      ContentID: "palm.svg",
-      ContentType: "image/svg+xml",
-    },
-    {
-      Name: "whatsapp.png",
-      Content: readEmailAsset("whatsapp.png"),
-      ContentID: "whatsapp.png",
-      ContentType: "image/png",
     }
   ],
 });
