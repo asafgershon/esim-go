@@ -684,7 +684,7 @@ await postmarkClient.sendEmail({
 
               <table role="presentation" style="
                 width:100%;
-                background:#0A0A0A;
+                background:#5565ef;
                 border-radius:20px 20px 0 0;
                 padding:32px 20px 40px;
                 text-align:center;
@@ -696,7 +696,7 @@ await postmarkClient.sendEmail({
                 </tr>
 
                 <tr>
-                  <td style="font-size:14px; color:#d5e0e5; padding-bottom:20px;">
+                  <td style="font-size:14px; color:#ffffff; padding-bottom:20px;">
                     לשליחת הודעת וואטסאפ לשירות הלקוחות
                   </td>
                 </tr>
@@ -726,7 +726,7 @@ await postmarkClient.sendEmail({
               <table role="presentation" style="
                 width:100%;
                 background:#FFFFFF;
-                border-top:1px solid #000000;
+                border-top:1px solid #5565ef;
                 padding:20px 10px;
                 text-align:center;
               ">
@@ -935,7 +935,7 @@ await postmarkClient.sendEmail({
 
               <table role="presentation" style="
                 width:100%;
-                background:#0A0A0A;
+                background:#5565ef;
                 border-radius:20px 20px 0 0;
                 padding:32px 20px 40px;
                 text-align:center;
@@ -947,7 +947,7 @@ await postmarkClient.sendEmail({
                 </tr>
 
                 <tr>
-                  <td style="font-size:14px; color:#C8C8C8; padding-bottom:20px;">
+                  <td style="font-size:14px; color:#FFFFFF; padding-bottom:20px;">
                     לשליחת הודעת וואטסאפ לשירות הלקוחות
                   </td>
                 </tr>
@@ -976,7 +976,7 @@ await postmarkClient.sendEmail({
               <table role="presentation" style="
                 width:100%;
                 background:#FFFFFF;
-                border-top:1px solid #000000;
+                border-top:1px solid #5565ef;
                 padding:20px 10px;
                 text-align:center;
               ">
