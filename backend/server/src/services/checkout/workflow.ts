@@ -707,6 +707,7 @@ await postmarkClient.sendEmail({
                        style="
                          display:inline-flex;
                          align-items:center;
+                         justify-content:center;
                          gap:8px;
                          background:#ffffff;
                          color:#000000;
@@ -716,9 +717,6 @@ await postmarkClient.sendEmail({
                          font-size:15px;
                          font-weight:600;
                        ">
-                      <img src="cid:whatsapp.png"
-                           alt="WhatsApp"
-                           style="width:18px; height:auto;" />
                       לשליחת הודעה
                     </a>
                   </td>
@@ -783,24 +781,6 @@ await postmarkClient.sendEmail({
       Content: readEmailAsset("beach.svg"),
       ContentID: "beach.svg",
       ContentType: "image/svg+xml",
-    },
-    {
-      Name: "palm.svg",
-      Content: readEmailAsset("palm.svg"),
-      ContentID: "palm.svg",
-      ContentType: "image/svg+xml",
-    },
-    {
-      Name: "apple.png",
-      Content: readEmailAsset("apple.png"),
-      ContentID: "apple.png",
-      ContentType: "image/png",
-    },
-    {
-      Name: "whatsapp.png",
-      Content: readEmailAsset("whatsapp.png"),
-      ContentID: "whatsapp.png",
-      ContentType: "image/png",
     },
     {
       Name: "qrcode.png",
@@ -960,13 +940,13 @@ await postmarkClient.sendEmail({
                 text-align:center;
               ">
                 <tr>
-                  <td style="font-size:20px; font-weight:700; color:#ffffff; padding-bottom:6px;">
+                  <td style="font-size:20px; font-weight:700; color:#FFFFFF; padding-bottom:6px;">
                     עדיין צריכים עזרה?
                   </td>
                 </tr>
 
                 <tr>
-                  <td style="font-size:14px; color:#d5e0e5; padding-bottom:20px;">
+                  <td style="font-size:14px; color:#C8C8C8; padding-bottom:20px;">
                     לשליחת הודעת וואטסאפ לשירות הלקוחות
                   </td>
                 </tr>
@@ -997,7 +977,8 @@ await postmarkClient.sendEmail({
 
               <table role="presentation" style="
                 width:100%;
-                background:#00C48C;
+                background:#FFFFFF;
+                border-top:1px solid #000000;
                 padding:20px 10px;
                 text-align:center;
               ">
@@ -1005,7 +986,7 @@ await postmarkClient.sendEmail({
                   <td style="font-size:15px; color:#000; font-weight:600;">
                     נשמח שתשלחו לנו משוב: 
                     <a href="mailto:office@hiiloworld.com"
-                       style="color:#000; text-decoration:underline;">
+                       style="color:#1a73e8; text-decoration:underline;">
                       office@hiiloworld.com
                     </a>
                   </td>
