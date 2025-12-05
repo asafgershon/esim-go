@@ -86,7 +86,7 @@ export function OrderCard({
           )}
           <div>
             <h3 className="font-medium">
-              {`${country?.nameHebrew || country?.name || "מדינה לא ידועה"} - ללא הגבלה`}
+              {`${country?.nameHebrew || country?.name || "מדינה לא ידועה"} `}
             </h3>
           </div>
         </div>
@@ -98,6 +98,10 @@ export function OrderCard({
             <span className="font-medium">{numOfDays} ימים</span>
           </div>
         </div>
+          <div className="flex justify-between">
+    <span className="text-muted-foreground">מהירות גלישה</span>
+    <span className="font-medium">ללא הגבלה</span>
+  </div>
       </div>
 
 <div className="border-t pt-4 space-y-3">
@@ -105,23 +109,6 @@ export function OrderCard({
     <span className="text-lg font-semibold">סה״כ מחיר</span>
 
     <div className="flex flex-col items-end">
-
-      {/* ✔ If discount → show ONLY single-esim original price */}
-      {hasDiscount && (
-        <span className="text-gray-400 line-through text-sm">
-          {currencySymbol}{priceBefore.toFixed(2)}
-        </span>
-      )}
-
-      {/* ✔ Small line: single × quantity = TOTAL */}
-      {numOfEsims > 1 && (
-        <span className="text-xs text-gray-500 mt-1">
-          {priceAfter.toFixed(2)} {currencySymbol} × {numOfEsims} ={" "}
-          <span className="font-bold">
-            {(priceAfter * numOfEsims).toFixed(2)}{currencySymbol}
-          </span>
-        </span>
-      )}
 
       {/* ✔ BIG PRICE — price of ONE eSIM */}
       <span className="text-xl font-bold text-primary">
@@ -133,6 +120,23 @@ export function OrderCard({
           preserveValue
         />
       </span>
+
+      {/* ✔ Small line: single × quantity = TOTAL */}
+      {numOfEsims > 1 && (
+        <span className="text-xs text-gray-500 mt-1">
+          {priceAfter.toFixed(2)} {currencySymbol} × {numOfEsims} ={" "}
+          <span className="font-bold">
+            {(priceAfter * numOfEsims).toFixed(2)}{currencySymbol}
+          </span>
+        </span>
+      )}
+
+      {/* ✔ If discount → show ONLY single-esim original price */}
+      {hasDiscount && (
+        <span className="text-gray-400 line-through text-sm">
+          {currencySymbol}{priceBefore.toFixed(2)}
+        </span>
+      )}
 
     </div>
   </div>
