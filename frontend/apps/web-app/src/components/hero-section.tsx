@@ -51,9 +51,6 @@ export function HeroSection({
           אינטרנט{" "}
         <span className="text-brand-purple">
           ללא הגבלה
-          {/* 👇 ירידת שורה רק במחשב */}
-          <br className="hidden md:block" />
-          <span className="block md:inline">לכל העולם.</span>
         </span>
       </span>
     </h1>
