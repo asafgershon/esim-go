@@ -48,7 +48,7 @@ export function HeroSection({
   <div className="text-center max-w-6xl mx-auto font-birzia">
     <h1 className="font-bold mb-6">
       <span className="text-5xl md:text-6xl lg:text-7xl text-brand-dark block leading-tight md:leading-snug">
-        חבילות גלישה{" "}
+          אינטרנט{" "}
         <span className="text-brand-purple">
           ללא הגבלה
           {/* 👇 ירידת שורה רק במחשב */}
@@ -59,7 +59,7 @@ export function HeroSection({
     </h1>
             <p className="text-md md:text-2xl pb-2 text-brand-dark mb-8 max-w-4xl mx-auto leading-relaxed">
               <span className="font-medium">
-                רוכשים ESIM ללא הגבלת נפח גלישה, בדיוק לפי מספר הימים שאתם טסים.
+                רוכשים eSIM ללא הגבלת נפח גלישה, בדיוק לפי מספר הימים שאתם טסים.
               </span>
               <span className="font-light">
                 {" "}

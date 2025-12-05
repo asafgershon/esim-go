@@ -146,99 +146,118 @@ const displayPricing = {
   }
 
   // תצוגת המחיר הרגילה
-  return (
-    <div className="bg-brand-white border border-brand-dark/10 rounded-lg md:rounded-[15px] p-3 md:p-4">
-      <div className="flex items-center justify-between mb-3">
+return (
+  <div className="bg-brand-white border border-brand-dark/10 rounded-lg md:rounded-[15px] p-3 md:p-4">
+    
+    {/* Header */}
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <img
+          src={destination.icon}
+          alt={destination.name}
+          className="w-6 h-4 md:w-8 md:h-5 rounded-sm object-cover"
+        />
         <div className="flex items-center gap-2">
-          <img
-            src={destination.icon}
-            alt={destination.name}
-            className="w-6 h-4 md:w-8 md:h-5 rounded-sm object-cover"
-          />
-          <div className="flex items-center gap-2">
-            <h3 className="text-[14px] md:text-[18px] font-medium text-brand-dark flex items-center gap-2">
-              {destination.name}
-              {isStreamingData && (
-                <Loader2 className="h-3 w-3 animate-spin text-brand-purple opacity-60" />
-              )}
-            </h3>
+          <h3 className="text-[14px] md:text-[18px] font-medium text-brand-dark flex items-center gap-2">
+            {destination.name}
+            {isStreamingData && (
+              <Loader2 className="h-3 w-3 animate-spin text-brand-purple opacity-60" />
+            )}
+          </h3>
+        </div>
+      </div>
+
+      <button
+        onClick={onRemoveDestination}
+        className="text-brand-dark opacity-50 hover:opacity-100 text-sm p-1 focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2 rounded"
+        aria-label="הסר בחירת יעד"
+      >
+        ✕
+      </button>
+    </div>
+
+    {/* Pricing Summary */}
+    <div className="pt-3 border-t border-brand-dark/10">
+      
+      {startDate && endDate && (
+        <div className="text-[10px] md:text-[12px] text-brand-dark opacity-60 mb-2">
+          {format(startDate, "dd/MM", { locale: he })} -{" "}
+          {format(endDate, "dd/MM/yyyy", { locale: he })}
+        </div>
+      )}
+
+      {/* PRICE BLOCK */}
+      <div className="w-full mb-2">
+
+        <div className="flex items-center justify-between w-full">
+
+          {/* DAYS LABEL (Right) */}
+          <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
+            {displayPricing.days} ימים ללא הגבלה
+          </span>
+
+          {/* PRICES (Left) */}
+          <div className="flex flex-col items-end">
+            
+            {/* BIG PRICE */}
+            <span className="text-[18px] md:text-[22px] font-bold text-brand-dark">
+              <CountUp
+                key={`one-${countryId || tripId}-${numOfDays}`}
+                start={previousPriceRef.current / numOfEsims}
+                end={basePrice}
+                decimals={2}
+                prefix="$"
+                duration={0.8}
+                preserveValue
+                useEasing
+              />
+            </span>
+
+            {/* SMALL PRICE */}
+            <span className="text-[10px] md:text-[12px] text-brand-dark opacity-70 mt-0.5">
+              ${basePrice.toFixed(2)} × {numOfEsims} ={" "}
+              <span className="font-bold">
+                {(basePrice * numOfEsims).toFixed(2)}
+              </span>
+            </span>
+
           </div>
         </div>
-        <button
-          onClick={onRemoveDestination}
-          className="text-brand-dark opacity-50 hover:opacity-100 text-sm p-1 focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2 rounded"
-          aria-label="הסר בחירת יעד"
-        >
-          ✕
-        </button>
       </div>
 
-      {/* Pricing Summary */}
-      <div className="pt-3 border-t border-brand-dark/10">
-        {startDate && endDate && (
-          <div className="text-[10px] md:text-[12px] text-brand-dark opacity-60 mb-2">
-            {format(startDate, "dd/MM", { locale: he })} -{" "}
-            {format(endDate, "dd/MM/yyyy", { locale: he })}
-          </div>
-        )}
-<div className="w-full mb-2">
-  {/* BIG PRICE — one eSIM price */}
-  <div className="flex items-center justify-between w-full">
-    <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">
-      {displayPricing.days} ימים ללא הגבלה
-    </span>
-
-    <span className="text-[18px] md:text-[22px] font-bold text-brand-dark">
-      <CountUp
-        key={`one-${countryId || tripId}-${numOfDays}`}
-        start={previousPriceRef.current / numOfEsims}
-        end={basePrice}
-        decimals={2}
-        prefix="$"
-        duration={0.8}
-        preserveValue
-        useEasing
-      />
-    </span>
-  </div>
-
-  {/* SMALL — one × num = TOTAL (bold total) */}
-  <div className="text-right text-[10px] md:text-[12px] text-brand-dark opacity-70 mt-1">
-    ${basePrice.toFixed(2)} × {numOfEsims} ={" "}
-    <span className="font-bold">
-      ${(basePrice * numOfEsims).toFixed(2)}
-    </span>
-  </div>
-</div>
-        {displayPricing.hasDiscount && (
-          <div className="space-y-1">
-            <div
-              className="text-center py-1 text-[8px] md:text-[10px] rounded bg-green-50 text-green-600"
-              role="status"
-              aria-live="polite"
-            >
-              <div className="flex items-center justify-center gap-1">
-                {displayPricing.discountAmount > 0 && (
-                  <Sparkles className="h-3 w-3" />
-                )}
-                <span>חסכת ${displayPricing.discountAmount.toFixed(2)}!</span>
-              </div>
-              {displayPricing.discountAmount > 0 &&
-                displayPricing.totalPrice > 0 && (
-                  <div className="text-[6px] md:text-[8px] opacity-75">
-                    {(
-                      (displayPricing.discountAmount /
-                        (displayPricing.totalPrice +
-                          displayPricing.discountAmount)) *
-                      100
-                    ).toFixed(1)}
-                    % הנחה
-                  </div>
-                )}
+      {/* DISCOUNT */}
+      {displayPricing.hasDiscount && (
+        <div className="space-y-1">
+          <div
+            className="text-center py-1 text-[8px] md:text-[10px] rounded bg-green-50 text-green-600"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex items-center justify-center gap-1">
+              {displayPricing.discountAmount > 0 && (
+                <Sparkles className="h-3 w-3" />
+              )}
+              <span>חסכת ${displayPricing.discountAmount.toFixed(2)}!</span>
             </div>
+
+            {displayPricing.discountAmount > 0 &&
+              displayPricing.totalPrice > 0 && (
+                <div className="text-[6px] md:text-[8px] opacity-75">
+                  {(
+                    (displayPricing.discountAmount /
+                      (displayPricing.totalPrice +
+                        displayPricing.discountAmount)) *
+                    100
+                  ).toFixed(1)}
+                  % הנחה
+                </div>
+              )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
     </div>
-  );
+  </div>
+);
+
 }

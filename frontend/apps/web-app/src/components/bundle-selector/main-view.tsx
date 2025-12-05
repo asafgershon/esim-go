@@ -22,6 +22,7 @@ import { useEffect } from "react";
 import { getFlagUrl } from "@/utils/flags";
 import { Users2Icon } from "lucide-react";
 
+
 interface MainViewProps {
     // ... (שדות Pricing)
     pricing: {
@@ -59,10 +60,11 @@ export function MainView({
 
     const [isPricingThinking, setIsPricingThinking] = useState(false);
     const [isPurchasing, setIsPurchasing] = useState(false);
+    const [showEsimSection, setShowEsimSection] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false)
     // 2. הגדרת מצב מקומי לכמות ה-eSIMs
-    const { numOfEsims, setNumOfEsims } = useBundleSelector();
+    const [numOfEsims, setNumOfEsims] = useState(1);
     
     // Get UI state and handlers from context
     const {
@@ -167,27 +169,39 @@ export function MainView({
                 </SelectorSection>
 
                 <SelectorSection>
-                    <div className="flex items-center gap-[4px] md:gap-2 justify-start">
-                        <Users2Icon className="w-4 h-4 md:w-[20px] md:h-[20px] text-brand-dark" />
-                        <p className="text-base md:text-xl leading-[26px] md:leading-normal text-brand-dark">
-                            כמה eSIMs צריך?
-                            {countryId && numOfEsims > 1}
-                        </p>
-                    </div>
+  <button
+    onClick={() => setShowEsimSection((prev) => !prev)}
+    className="text-brand-purple text-sm md:text-base font-semibold underline hover:opacity-80 transition"
+  >
+    לרכישה קבוצתית
+  </button>
+</SelectorSection>
 
-                    <div className="relative h-[21px] md:h-[38px]">
-                        <SliderWithValue
-                            dir={"rtl"}
-                            value={[numOfEsims]}
-                            onValueChange={(value) => setNumOfEsims(value[0])}
-                            min={1}
-                            max={10} // טווח בין 1 ל-10
-                        />
-                    </div>
-                    <div className="text-right text-xs text-gray-500 mt-1">
-                        לכל מטייל נפרד דרוש eSIM משלו.
-                    </div>
-                </SelectorSection>
+{showEsimSection && (
+  <SelectorSection>
+    <div className="flex items-center gap-[4px] md:gap-2 justify-start">
+      <Users2Icon className="w-4 h-4 md:w-[20px] md:h-[20px] text-brand-dark" />
+      <p className="text-base md:text-xl leading-[26px] md:leading-normal text-brand-dark">
+        כמה eSIMs צריך?
+      </p>
+    </div>
+
+    <div className="relative h-[21px] md:h-[38px]">
+      <SliderWithValue
+        dir={"rtl"}
+        value={[numOfEsims]}
+        onValueChange={(value) => setNumOfEsims(value[0])}
+        min={1}
+        max={10}
+      />
+    </div>
+
+    <div className="text-right text-xs text-gray-500 mt-1">
+      לכל מטייל נפרד דרוש eSIM משלו.
+    </div>
+  </SelectorSection>
+)}
+
 
                 {/* Selected Destination and Pricing */}
                 {destination && (
