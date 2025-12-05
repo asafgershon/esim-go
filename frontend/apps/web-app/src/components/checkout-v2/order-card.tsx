@@ -99,7 +99,7 @@ export function OrderCard({
           </div>
         </div>
           <div className="flex justify-between">
-    <span className="text-muted-foreground">מהירות גלישה</span>
+    <span className="text-muted-foreground">נפח גלישה</span>
     <span className="font-medium">ללא הגבלה</span>
   </div>
       </div>
