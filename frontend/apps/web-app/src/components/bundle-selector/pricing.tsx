@@ -189,7 +189,7 @@ return (
       {/* PRICE BLOCK */}
       <div className="w-full mb-2">
 
-        <div className="flex items-center justify-between w-full">
+        <div className="flex justify-between w-full items-end">
 
           {/* DAYS LABEL (Right) */}
           <span className="text-[10px] md:text-[14px] text-brand-dark opacity-50">

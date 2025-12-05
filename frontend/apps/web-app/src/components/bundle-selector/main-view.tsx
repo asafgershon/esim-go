@@ -64,7 +64,7 @@ export function MainView({
 
     const [isLoading, setIsLoading] = useState(false)
     // 2. הגדרת מצב מקומי לכמות ה-eSIMs
-    const [numOfEsims, setNumOfEsims] = useState(1);
+    const { numOfEsims, setNumOfEsims } = useBundleSelector();
     
     // Get UI state and handlers from context
     const {
@@ -169,12 +169,14 @@ export function MainView({
                 </SelectorSection>
 
                 <SelectorSection>
+<div className="text-right w-full">
   <button
     onClick={() => setShowEsimSection((prev) => !prev)}
     className="text-brand-purple text-sm md:text-base font-semibold underline hover:opacity-80 transition"
   >
     לרכישה קבוצתית
   </button>
+</div>
 </SelectorSection>
 
 {showEsimSection && (
