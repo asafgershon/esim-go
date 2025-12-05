@@ -91,7 +91,7 @@ export function OrderCard({
           </div>
         </div>
 
-        {/* Package Details */}
+        {/* Package Detail */}
         <div className="space-y-3">
           <div className="flex justify-between">
             <span className="text-muted-foreground">משך זמן</span>
