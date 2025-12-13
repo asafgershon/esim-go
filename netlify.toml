@@ -1,6 +1,6 @@
 [build]
 base = "frontend/apps/web-app"
-publish = "."
+publish = .next"
 command = "pnpm install --frozen-lockfile && next build"
 
 [[plugins]]
