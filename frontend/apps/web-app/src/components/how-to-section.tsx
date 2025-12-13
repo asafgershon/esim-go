@@ -22,7 +22,7 @@ interface PhoneMockupProps {
 
 interface TextContentProps {
   title: React.ReactNode;
-  description: string;
+  description: React.ReactNode;
   steps: Step[];
   isMobile: boolean;
 }
@@ -176,8 +176,13 @@ export function HowToSection({
                   והחבילה שלך מחוברת
                 </>
               }
-              description="פחות מדקה וה־eSIM כבר אצלך בטלפון. אפשר להתקין את ה־eSIM כבר מהבית, והוא יתחיל לפעול אוטומטית לאחר הנחיתה ביעד."
-              steps={STEPS_DATA}
+description={
+  <>
+    <p>פחות מדקה וה־eSIM כבר אצלך בטלפון.</p>
+    <p>אפשר להתקין את ה־eSIM כבר מהבית.</p>
+    <p>הוא יתחיל לפעול אוטומטית לאחר הנחיתה ביעד.</p>
+  </>
+}              steps={STEPS_DATA}
               isMobile={isMobile}
             />
             <PhoneMockup message="החבילה שלכם מוכנה לשימוש" />

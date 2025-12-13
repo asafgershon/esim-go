@@ -1,24 +1,24 @@
+const messages = [
+  "eSIM ללא הגבלת נפח גלישה",
+  "eSIM עם אין סוף ג׳יגה בייט",
+  "eSIM במחיר המשתלם ביותר",
+  "שירות 24/7 בעברית",
+  "התקנת eSIM בקליק!",
+];
+
 export function AnnouncementBanner() {
   return (
-    <div className="relative bg-brand-dark text-white">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-center py-2 text-sm">
-          {/* Desktop Content */}
-          <div className="hidden md:flex items-center gap-1">
-            <span>שירות 24/7 בעברית מכל מקום בעולם.</span>
-            <span className="text-brand-green font-semibold">
-              בלי הגבלות, בלי הפתעות
-            </span>
-          </div>
-
-          {/* Mobile Content */}
-          <div className="flex md:hidden items-center gap-1 text-xs">
-            <span>שירות 24/7 בעברית מכל מקום בעולם.</span>
-            <span className="text-brand-green font-semibold">
-              בלי הגבלות, בלי הפתעות
-            </span>
-          </div>
-        </div>
+    <div className="relative bg-brand-dark text-white overflow-hidden">
+      <div className="whitespace-nowrap flex items-center animate-marquee">
+        {[...messages, ...messages].map((msg, i) => (
+          <span
+            key={i}
+            className="mx-6 text-xs md:text-sm font-medium"
+          >
+            {msg}
+            <span className="mx-6 text-brand-green font-semibold">•</span>
+          </span>
+        ))}
       </div>
     </div>
   );

@@ -151,7 +151,15 @@ export function Footer({ onNavigate }: FooterProps) {
     },
   };
 
+  const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth",
+  });
+};
+
   const links = [
+    { label: "לרכישת eSIM", onClick: scrollToTop },
     { label: "תנאי שימוש", onClick: () => handleOpen("terms") },
     { label: "מדיניות פרטיות", onClick: () => handleOpen("privacy") },
     { label: "אודות", onClick: () => handleOpen("about") },

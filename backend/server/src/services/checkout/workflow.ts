@@ -789,6 +789,12 @@ await postmarkClient.sendEmail({
       ContentID: "qrcode.png",
       ContentType: "image/png",
     },
+    {
+      Name:"how-to-install.pdf",
+      Content: readEmailAsset("guide.pdf"),
+      ContentID: "how-to-install.pdf",
+      ContentType: "application/pdf",
+    },
   ],
 });
 }
@@ -1025,7 +1031,13 @@ ${whatsappUrl}
       Content: readEmailAsset("beach.svg"),
       ContentID: "beach.svg",
       ContentType: "image/svg+xml",
-    }
+    },
+    {
+      Name:"how-to-install.pdf",
+      Content: readEmailAsset("guide.pdf"),
+      ContentID: "how-to-install.pdf",
+      ContentType: "application/pdf",
+    },
   ],
 });
 }

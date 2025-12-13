@@ -128,9 +128,9 @@ export function PaymentCallbackHandler({
             variant="secondary"
             className="w-full"
             size="lg"
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/how-to-install")}
           >
-            חזרה לעמוד הבית
+           למדריך התקנה
           </Button>
         </div>
       </div>

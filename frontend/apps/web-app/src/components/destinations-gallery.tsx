@@ -249,12 +249,12 @@ function DestinationCard({
   const days = (() => {
     const reasonable: Record<string, number> = {
       IT: 5,
-      US: 10,
+      US: 20,
       GR: 7,
-      TH: 14,
+      TH: 21,
       AE: 5,
       BR: 12,
-      CA: 10,
+      CA: 15,
       CN: 10,
     };
     return reasonable[destination.countryIso] ?? 7;

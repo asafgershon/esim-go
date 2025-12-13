@@ -15,17 +15,6 @@ export function WhySwitchSection({
       aria-label={ariaLabel}
       className="pt-12 md:pt-20 pb-4" // רווח תחתון קטן כדי להצמיד ל־QASection
     >
-      {/* 🔥 Full-Width Image */}
-      <div className="w-full">
-        <Image
-          src="/images/logos/logo-green.png"
-          alt="eSIM Card Illustration"
-          width={1920}
-          height={1080}
-          className="w-full h-auto object-contain"
-          priority
-        />
-      </div>
 
       {/* 🔥 Text Content container */}
       <div className="container mx-auto px-4 mt-8">
@@ -46,8 +35,7 @@ export function WhySwitchSection({
               אנחנו החלטנו לשנות את זה.
             </h3>
             <p className="text-gray-600 leading-relaxed">
-              הרי למי יש היום חבילה ״מוגבלת״ או כזאת שצריך ״להטעין״ אותה באמצע
-              החודש... אז בטח שאין סיבה שתתעסקו עם זה בחופש שלכם.
+המערכת שבנינו עונה על כל הבעיות האלו!  המערכת של היילו סורקת בזמן אמת את הספקים המשתלמים ביותר שלא מגבילים נפח גלישה (= מספקים אין סוף ג׳יגה בייט) , לכל יעד בעולם, בהתקנה חד פעמית וכמובן בידיוק לזמן של החופשה או הטיסה שלכם כדי שלא תשלמו סתם על תקופה ארוכה ממה שאתם צריכים
             </p>
           </div>
         </div>
