@@ -6,7 +6,8 @@ import type { ComboboxOption } from "./combobox";
 import { useMediaQuery } from "../hooks/use-media-query";
 import { useCountries } from "../hooks/use-countries";
 import { Drawer } from "vaul";
-import { Input, Button } from "@workspace/ui";
+import { Button } from "./button";
+import { Input } from "./input";
 import { Search, X, Loader2 } from "lucide-react";
 import { cn } from "../lib/utils";
 
@@ -215,7 +216,7 @@ function MobileCountrySheet({
                 className="w-full pl-10 pr-4"
                 placeholder={searchPlaceholder}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 autoFocus
               />
             </div>

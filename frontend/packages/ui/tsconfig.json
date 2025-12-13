@@ -9,7 +9,7 @@
     "allowJs": true,
 
     // Module resolution for building
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
