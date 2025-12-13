@@ -30,9 +30,9 @@ import { num } from "envalid";
 
 const logger = createLogger({ component: "checkout-workflow" });
 
-// ==========================
+// ===========================
 // Internal Global Context (נשאר כפי שהיה)
-// ==========================
+// ===========================
 let pubsub: PubSubInstance | null = null;
 let sessionService: CheckoutSessionServiceV2 | null = null;
 let bundleRepository: BundleRepository | null = null;
