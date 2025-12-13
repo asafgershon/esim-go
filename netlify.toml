@@ -1,6 +1,12 @@
 [build]
-  base = "frontend/apps/web-app"
-  command = "pnpm install --frozen-lockfile && pnpm build"
+# חשוב: build מה-root
+base = "."
+
+# מתקין את כל ה-workspace ואז בונה רק את web-app
+command = "pnpm install --frozen-lockfile && pnpm --filter ./frontend/apps/web-app... build"
+
+# הפלט של Next (Netlify plugin יודע לטפל בזה)
+publish = "frontend/apps/web-app"
 
 [[plugins]]
-  package = "@netlify/plugin-nextjs"
+package = "@netlify/plugin-nextjs"
