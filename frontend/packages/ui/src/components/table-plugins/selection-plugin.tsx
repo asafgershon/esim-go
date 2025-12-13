@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { type Row } from "@tanstack/react-table"
-import { Checkbox } from "@/components/checkbox"
+import { Checkbox } from "../checkbox"
 // Plugin interface for extending table functionality
 export interface TablePlugin<TData = any> {
   id: string

@@ -30,23 +30,23 @@ import {
   Columns3
 } from "lucide-react"
 
-import { Button } from "@/components/button"
-import { Checkbox } from "@/components/checkbox"
+import { Button } from "./button"
+import { Checkbox } from "./checkbox"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/dropdown-menu"
-import { Input } from "@/components/input"
-import { Label } from "@/components/label"
+} from "./dropdown-menu"
+import { Input } from "./input"
+import { Label } from "./label"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/select"
+} from "./select"
 import {
   Table,
   TableBody,
@@ -54,7 +54,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/table"
+} from "./table"
 
 import { type TablePlugin } from "./table-plugins"
 import { ColumnContextMenu } from "./column-context-menu"

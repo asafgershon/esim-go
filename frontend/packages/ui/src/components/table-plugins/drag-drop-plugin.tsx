@@ -22,7 +22,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { GripVertical } from "lucide-react"
 import { type Row } from "@tanstack/react-table"
-import { Button } from "@/components/button"
+import { Button } from "../button"
 // Plugin interface for extending table functionality
 export interface TablePlugin<TData = any> {
   id: string

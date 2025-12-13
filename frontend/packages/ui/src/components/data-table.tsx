@@ -15,14 +15,14 @@ import {
 } from "@tanstack/react-table"
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 
-import { Button } from "@/components/button"
+import { Button } from "./button"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/dropdown-menu"
-import { Input } from "@/components/input"
+} from "./dropdown-menu"
+import { Input } from "./input"
 import {
   Table,
   TableBody,
@@ -30,14 +30,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/table"
+} from "./table"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/select"
+} from "./select"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
