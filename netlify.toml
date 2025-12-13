@@ -1,6 +1,6 @@
 [build]
-base = "frontend/apps/web-app"
-command = "npm run build"
+base = "frontend"
+command = "npm install && npm --workspace=web-app run build"
 
 [[plugins]]
 package = "@netlify/plugin-nextjs"
