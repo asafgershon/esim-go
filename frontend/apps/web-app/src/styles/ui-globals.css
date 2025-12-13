@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "./scrollbar.css";
-@import "@workspace/ui/theme.css";
+@import "./ui-theme.css";
 
 @custom-variant dark (&:is(.dark *));
 

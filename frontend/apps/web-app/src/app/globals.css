@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@workspace/ui/theme.css";
-@import "@workspace/ui/globals.css";
+@import "../styles/ui-theme.css";
+@import "../styles/ui-globals.css";
 
 /* Birzia Font Family */
 @font-face {
