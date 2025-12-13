@@ -9,8 +9,8 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@workspace/ui/components/avatar";
-import { Badge } from "@workspace/ui/components/badge";
+} from "@workspace/ui";
+import { Badge } from "@workspace/ui";
 import {
   ArrowLeft,
   Calendar,

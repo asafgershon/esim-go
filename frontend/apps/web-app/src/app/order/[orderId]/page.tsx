@@ -6,8 +6,8 @@ import { ArrowLeft, Download, RefreshCw, CheckCircle, Smartphone } from "lucide-
 import Link from "next/link";
 import { Button } from "@workspace/ui";
 import { Card } from "@workspace/ui";
-import { Badge } from "@workspace/ui/components/badge";
-import { Skeleton } from "@workspace/ui/components/skeleton";
+import { Badge } from "@workspace/ui";
+import { Skeleton } from "@workspace/ui";
 import { OrderDetails } from "@/lib/graphql/checkout";
 import { OrderDetailsQuery } from "@/__generated__/graphql";
 import Image from "next/image";

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '@workspace/ui';
 import { Button } from '@workspace/ui';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui';
 import { QrCode, Smartphone } from 'lucide-react';
 import Image from 'next/image';
 import { InstallationLinks } from '@/__generated__/graphql';

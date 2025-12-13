@@ -11,7 +11,7 @@ import {
   DialogTrigger,
   DialogTitle,
   DialogDescription,
-} from "@workspace/ui/components/dialog";
+} from "@workspace/ui";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
