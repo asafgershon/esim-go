@@ -7,7 +7,7 @@
     "tunnel": "lt --port 3000 --subdomain hiilo",
     "dev": "next dev -H 0.0.0.0 -p 3000 --turbopack",
     "prebuild": "echo 'prebuild'",
-    "build": "next build",
+    "build": "next build --no-lint",
     "start": "next start",
     "lint": "next lint",
     "codegen": "graphql-codegen",

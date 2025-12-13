@@ -106,7 +106,7 @@ export default async function CheckoutHandler({
         ...(countryId && { countryId }),
         ...(regionId && { regionId }),
         numOfEsims: parsedNumOfEsims,
-      };
+      } as CreateCheckoutSessionInput;
 
       // קוראים לפונקציית העזר עם האובייקט המוכן
       const result = await createCheckoutSession(input);

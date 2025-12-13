@@ -63,10 +63,11 @@ export function getDeviceInfo(): DeviceInfo {
 }
 
 export function isAppleSignInSupported(): boolean {
+   const w = window as any;
   return typeof window !== 'undefined' && 
-    'AppleID' in window && 
-    !!window.AppleID && 
-    !!window.AppleID.auth;
+    'AppleID' in w && 
+    !!w.AppleID && 
+    !!w.AppleID.auth;
 }
 
 export function isGoogleSignInSupported(): boolean {

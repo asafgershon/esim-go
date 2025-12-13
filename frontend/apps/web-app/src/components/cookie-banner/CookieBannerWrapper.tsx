@@ -101,8 +101,8 @@ export function CookieBannerWrapper() {
         `;
         document.head.appendChild(script);
 
-        window.fbq('init', process.env.NEXT_PUBLIC_FB_PIXEL_ID);
-        window.fbq('track', 'PageView');
+        //window.fbq('init', process.env.NEXT_PUBLIC_FB_PIXEL_ID);
+        //window.fbq('track', 'PageView');
       }
     } else if (!prefs.marketing && window.fbq) {
       // Clear Facebook cookies

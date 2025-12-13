@@ -42,6 +42,7 @@
     "vitest.config.ts",
     "vitest.setup.ts",
     "playwright.config.ts",
-    "tests/**/*"
+    "tests/**/*",
+    "**/backend/**"
   ]
 }

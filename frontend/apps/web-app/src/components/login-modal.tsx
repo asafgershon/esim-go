@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@workspace/ui";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+//import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -108,10 +108,10 @@ export function LoginModal({
           getModalSize()
         )}
       >
-        <VisuallyHidden>
+        {/* <VisuallyHidden>
           <DialogTitle className="">התחברות</DialogTitle>
           <DialogDescription className="">התחבר לחשבון שלך</DialogDescription>
-        </VisuallyHidden>
+        </VisuallyHidden> */}
         <div className="bg-background rounded-xl border shadow-lg overflow-hidden">
           {/* Custom header with close button */}
           <div className="flex justify-end p-4 pb-0">

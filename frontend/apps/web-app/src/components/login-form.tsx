@@ -47,7 +47,7 @@ export function LoginForm({
     otpLoading,
     
     // Social sign-in loading states
-    appleLoading,
+    //appleLoading,
     googleLoading,
     
     // Handlers
@@ -182,8 +182,8 @@ export function LoginForm({
             <Button
               variant="outline"
               type="button"
-              onClick={() => handleSocialSignIn("apple")}
-              disabled={isLoading || appleLoading || otpLoading}
+              onClick={() => null}
+              disabled={isLoading || otpLoading}
               className="w-full"
             >
               <svg
@@ -196,7 +196,7 @@ export function LoginForm({
                   fill="currentColor"
                 />
               </svg>
-              {appleLoading ? "מתחבר..." : "המשך עם Apple"}
+              { "המשך עם Apple"}
             </Button>
 
             <Button

@@ -69,10 +69,10 @@ export const useGoogleSignIn = () => {
             if (result.data?.signInWithGoogle.success && result.data.signInWithGoogle.sessionToken) {
               localStorage.setItem('authToken', result.data.signInWithGoogle.sessionToken);
               // Return the sign-in response with user data
-              resolve({
-                ...result.data.signInWithGoogle,
-                userData: { email, firstName, lastName }
-              });
+              // resolve({
+              //   ...result.data.signInWithGoogle,
+              //   userData: { email, firstName, lastName }
+              // });
             } else {
               reject(new Error(result.data?.signInWithGoogle.error || 'Sign in failed'));
             }

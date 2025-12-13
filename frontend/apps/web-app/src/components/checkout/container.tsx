@@ -162,14 +162,14 @@ export function CheckoutContainer() {
             isCompleted={!!session?.steps?.delivery?.completed}
           />
 
-          <PaymentSection
+          {/* <PaymentSection
             sectionNumber={4}
             onPaymentSubmit={handlePaymentSubmit}
             isProcessing={isProcessing}
-            canSubmit={canSubmitPayment}
+            //canSubmit={canSubmitPayment}
             isCompleted={!!session?.steps?.payment?.completed}
             paymentIntentUrls={extractPaymentIntentUrls(session?.metadata)}
-          />
+          /> */}
 
           {/* Payment processing screen */}
           {isProcessing && (

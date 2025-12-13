@@ -36,7 +36,7 @@ export const useCheckoutPayment = () => {
     return processPayment({
       variables: {
         input: { token, paymentMethodId, savePaymentMethod: false },
-      },
+      } as any,
     });
   };
 

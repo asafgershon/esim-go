@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useMemo } from "react";
 import { useCountries } from "@/hooks/useCountries";
 // ⚠️ הנתיב הזה עדיין מוגזם, אבל נשארתי איתו כרגע:
-import { type SimplePricingResult } from "../../../../../../backend/packages/rules-engine-2/src/simple-pricer/simple-pricer"; 
+import { type SimplePricingResult } from "../../utils/pricing"; 
 
 export interface Discount {
   name: string;

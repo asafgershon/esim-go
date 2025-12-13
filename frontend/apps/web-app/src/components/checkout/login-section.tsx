@@ -196,14 +196,14 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
             icon={<User className="h-5 w-5 text-primary" />}
             isCompleted={true}
           />
-          <Button
+          {/* <Button
             onClick={signOut}
             variant="ghost"
             size="sm"
             className="text-muted-foreground hover:text-foreground"
           >
             <LogOut className="h-4 w-4" />
-          </Button>
+          </Button> */}
         </div>
 
         <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
@@ -259,7 +259,7 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
           <form onSubmit={handleFormPhoneSubmit} className="space-y-3">
             <div className="space-y-2">
               <Label htmlFor="phone">מספר טלפון</Label>
-              <PhoneInput
+              {/* <PhoneInput
                 id="phone"
                 value={phoneForm.watch("phoneNumber")}
                 onChange={handlePhoneInputChange}
@@ -267,7 +267,7 @@ export function LoginSection({ sectionNumber }: LoginSectionProps) {
                 disabled={otpLoading}
                 defaultCountry={getDefaultCountry()}
                 error={!!error && !phoneForm.watch("phoneNumber").trim()}
-              />
+              /> */}
             </div>
 
             {phoneForm.watch("phoneNumber").trim() && (
