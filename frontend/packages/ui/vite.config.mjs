@@ -1,16 +1,15 @@
-const { defineConfig } = require("vite");
-const react = require("@vitejs/plugin-react-swc").default;
-const { resolve } = require("path");
-const useClientPlugin = require("./vite-plugin-use-client");
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react-swc";
+import { resolve } from "path";
+import useClientPlugin from "./vite-plugin-use-client.js";
 
-module.exports = defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), useClientPlugin()],
   build: {
     lib: {
       entry: {
-        index: resolve(__dirname, "src/index.ts"),
+        index: resolve("src/index.ts"),
         "components/smooth-scroll-container": resolve(
-          __dirname,
           "src/components/smooth-scroll-container.tsx"
         ),
       },
@@ -51,10 +50,9 @@ module.exports = defineConfig(({ mode }) => ({
           react: "React",
           "react-dom": "ReactDOM",
         },
-        // Keep GSAP bundled with smooth-scroll-container, separate from main bundle
         manualChunks: (id) => {
           if (id.includes("node_modules/gsap")) {
-            return undefined; // Let it be bundled with smooth-scroll-container
+            return undefined;
           }
         },
       },
@@ -67,11 +65,11 @@ module.exports = defineConfig(({ mode }) => ({
   },
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
-      "@workspace/ui/lib": resolve(__dirname, "./src/lib"),
-      "@workspace/ui/hooks": resolve(__dirname, "./src/hooks"),
-      "@workspace/ui/components": resolve(__dirname, "./src/components"),
-      "@workspace/ui": resolve(__dirname, "./src"),
+      "@": resolve("./src"),
+      "@workspace/ui/lib": resolve("./src/lib"),
+      "@workspace/ui/hooks": resolve("./src/hooks"),
+      "@workspace/ui/components": resolve("./src/components"),
+      "@workspace/ui": resolve("./src"),
     },
   },
 }));

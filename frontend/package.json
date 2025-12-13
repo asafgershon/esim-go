@@ -2,6 +2,7 @@
   "name": "client",
   "type": "module",
   "private": true,
+  "packageManager": "pnpm@10.24.0",
   "scripts": {
     "ui:add": "cd packages/ui && bunx shadcn@canary add",
     "build": "turbo build",
