@@ -24,7 +24,7 @@ bun add @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities @dnd-kit/modifiers
 ## Basic Usage
 
 ```tsx
-import { AdvancedDataTable } from "@workspace/ui/components/advanced-data-table"
+import { AdvancedDataTable } from "@/components/advanced-data-table"
 
 interface User {
   id: number
@@ -63,7 +63,7 @@ function MyTable() {
 Adds global search and column-specific filters:
 
 ```tsx
-import { createFilteringPlugin, filterConfigs } from "@workspace/ui/components/table-plugins"
+import { createFilteringPlugin, filterConfigs } from "@/components/table-plugins"
 
 const filteringPlugin = createFilteringPlugin({
   globalSearch: true,
@@ -92,7 +92,7 @@ const filteringPlugin = createFilteringPlugin({
 Enables row selection with bulk actions:
 
 ```tsx
-import { createSelectionPlugin, addSelectionColumn, BasicBulkActions } from "@workspace/ui/components/table-plugins"
+import { createSelectionPlugin, addSelectionColumn, BasicBulkActions } from "@/components/table-plugins"
 
 const BulkActionsComponent = ({ selectedRows }: { selectedRows: User[] }) => (
   <BasicBulkActions
@@ -123,7 +123,7 @@ const columnsWithSelection = addSelectionColumn(columns)
 Group rows by columns with expand/collapse:
 
 ```tsx
-import { createGroupingPlugin, enableColumnGrouping } from "@workspace/ui/components/table-plugins"
+import { createGroupingPlugin, enableColumnGrouping } from "@/components/table-plugins"
 
 const groupingPlugin = createGroupingPlugin({
   groupableColumns: ["department", "role"],
@@ -152,7 +152,7 @@ const columnsWithGrouping = enableColumnGrouping(columns, ["department", "role"]
 Enable row reordering with drag handles:
 
 ```tsx
-import { createDragDropPlugin, addDragHandleColumn } from "@workspace/ui/components/table-plugins"
+import { createDragDropPlugin, addDragHandleColumn } from "@/components/table-plugins"
 
 const [data, setData] = useState(initialData)
 
@@ -185,7 +185,7 @@ import {
   addDragHandleColumn,
   addSelectionColumn,
   enableColumnGrouping,
-} from "@workspace/ui/components/table-plugins"
+} from "@/components/table-plugins"
 
 const plugins = [
   createDragDropPlugin({

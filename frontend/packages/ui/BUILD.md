@@ -63,8 +63,8 @@ Contains all UI components except heavy dependencies:
 ```tsx
 // Standard components (from main bundle)
 import { Button, Card, Dialog } from '@workspace/ui'
-import { Badge } from '@workspace/ui/components/badge'
+import { Badge } from '@/components/badge'
 
 // Heavy component (separate bundle, loads GSAP)
-import { SmoothScrollContainer } from '@workspace/ui/components/smooth-scroll-container'
+import { SmoothScrollContainer } from '@/components/smooth-scroll-container'
 ```

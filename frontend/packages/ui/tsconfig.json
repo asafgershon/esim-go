@@ -15,8 +15,7 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "@workspace/ui/*": ["./src/*"],
-      "@workspace/ui": ["./src/index.ts"]
+        "@/*": ["./src/*"]
     },
     
     // Declaration generation

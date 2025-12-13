@@ -2,8 +2,8 @@
 
 import * as React from "react"
 import { type ColumnDef } from "@tanstack/react-table"
-import { Badge } from "@workspace/ui/components/badge"
-import { Button } from "@workspace/ui/components/button"
+import { Badge } from "@/components/badge"
+import { Button } from "@/components/button"
 import { AdvancedDataTable } from "../advanced-data-table"
 import { createTableBuilder, createAdminTable, createReadOnlyTable } from "../table-builder"
 import {

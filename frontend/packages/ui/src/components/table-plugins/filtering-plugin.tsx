@@ -3,21 +3,21 @@
 import * as React from "react"
 import { type Column } from "@tanstack/react-table"
 import { Search, X, Filter } from "lucide-react"
-import { Input } from "@workspace/ui/components/input"
-import { Button } from "@workspace/ui/components/button"
+import { Input } from "@/components/input"
+import { Button } from "@/components/button"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select"
+} from "@/components/select"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@workspace/ui/components/popover"
-import { Badge } from "@workspace/ui/components/badge"
+} from "@/components/popover"
+import { Badge } from "@/components/badge"
 // Plugin interface for extending table functionality
 export interface TablePlugin<TData = any> {
   id: string
