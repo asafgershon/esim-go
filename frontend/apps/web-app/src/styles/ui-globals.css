@@ -1,0 +1,155 @@
+@import "tailwindcss";
+@import "./scrollbar.css";
+@import "@workspace/ui/theme.css";
+
+@custom-variant dark (&:is(.dark *));
+
+
+
+:root {
+  --radius: 1rem;
+  
+  /* Light theme - CSS variables for shadcn/ui components - Hiiilo Branding */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 205 30% 24%;           /* Hiiilo dark teal */
+  --primary-foreground: 0 0% 100%;  /* White text */
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 166 100% 42%;           /* Hiiilo vibrant green */
+  --accent-foreground: 0 0% 100%;   /* White text on accent */
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 166 100% 42%;             /* Hiiilo green for focus */
+  
+  /* Chart colors */
+  --chart-1: 12 76% 61%;
+  --chart-2: 173 58% 39%;
+  --chart-3: 197 37% 24%;
+  --chart-4: 43 74% 66%;
+  --chart-5: 27 87% 67%;
+  
+  /* Sidebar */
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 240 5.3% 26.1%;
+  --sidebar-primary: 240 5.9% 10%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 240 4.8% 95.9%;
+  --sidebar-accent-foreground: 240 5.9% 10%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 217.2 91.2% 59.8%;
+}
+
+.dark {
+  /* Dark theme - CSS variables for shadcn/ui components - Hiiilo Branding */
+  --background: 205 50% 8%;         /* Dark teal background */
+  --foreground: 0 0% 98%;           /* White text */
+  --card: 205 40% 12%;              /* Slightly lighter teal for cards */
+  --card-foreground: 0 0% 98%;      /* White text on cards */
+  --popover: 205 40% 12%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 166 100% 50%;          /* Brighter Hiiilo green for dark mode */
+  --primary-foreground: 205 50% 8%; /* Dark teal text on bright green */
+  --secondary: 205 30% 18%;         /* Darker teal secondary */
+  --secondary-foreground: 0 0% 98%;
+  --muted: 205 30% 18%;
+  --muted-foreground: 0 0% 70%;     /* Light gray text */
+  --accent: 166 100% 42%;           /* Hiiilo green accent */
+  --accent-foreground: 0 0% 100%;   /* White text on accent */
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 205 30% 18%;            /* Darker teal borders */
+  --input: 205 30% 18%;             /* Darker teal input backgrounds */
+  --ring: 166 100% 50%;             /* Bright green focus ring */
+  
+  /* Chart colors */
+  --chart-1: 220 70% 50%;
+  --chart-2: 160 60% 45%;
+  --chart-3: 30 80% 55%;
+  --chart-4: 280 65% 60%;
+  --chart-5: 340 75% 55%;
+  
+  /* Sidebar */
+  --sidebar-background: 240 5.9% 10%;
+  --sidebar-foreground: 240 4.8% 95.9%;
+  --sidebar-primary: 224.3 76.3% 48%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 3.7% 15.9%;
+  --sidebar-accent-foreground: 240 4.8% 95.9%;
+  --sidebar-border: 240 3.7% 15.9%;
+  --sidebar-ring: 224.3 76.3% 48%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom Font Definitions */
+@layer base {
+  :root {
+    --font-hebrew: var(--font-rubik), 'Rubik', system-ui, -apple-system, sans-serif;
+    --font-english: 'Agency FB', 'Agency', Arial, sans-serif;
+    --font-fallback: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+}
+
+/* Font Family Utilities */
+@layer utilities {
+  .font-hebrew {
+    font-family: var(--font-hebrew);
+  }
+  
+  .font-english {
+    font-family: var(--font-english);
+  }
+  
+  .font-fallback {
+    font-family: var(--font-fallback);
+  }
+}
+
+/* Language-specific font switching */
+@layer base {
+  /* Hebrew text - RTL and Hebrew unicode ranges */
+  [dir="rtl"], 
+  :lang(he),
+  .hebrew-text {
+    font-family: var(--font-hebrew);
+  }
+  
+  /* English text - LTR context */
+  [dir="ltr"], 
+  :lang(en),
+  .english-text {
+    font-family: var(--font-english);
+  }
+  
+  /* Auto-detect Hebrew characters */
+  :lang(he) *,
+  [dir="rtl"] * {
+    font-family: var(--font-hebrew);
+  }
+  
+  /* Ensure English content uses Agency font when specified */
+  .english-text * {
+    font-family: var(--font-english);
+  }
+  
+  /* Mixed content - prioritize Hebrew font for better support */
+  body {
+    font-family: var(--font-hebrew);
+  }
+}

@@ -1,7 +1,6 @@
 import { CreateCheckoutSessionInput } from "@/__generated__/graphql";
 // import { CheckoutContainer } from "@/components/checkout/container";
 import { redirect } from "next/navigation";
-import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { WEB_APP_BUNDLE_GROUP } from "@/lib/constants/bundle-groups";
 import { CheckoutContainerV2 } from "@/components/checkout-v2/container";
 
@@ -137,12 +136,6 @@ export default async function CheckoutHandler({
     } catch (error) {
       // תפיסת שגיאות: או מה-fetch או מה-redirect
 
-      // אם זו שגיאת Redirect של Next.js, זה תקין, זרוק אותה הלאה
-      if (isRedirectError(error)) {
-        throw error;
-      }
-
-      // זו שגיאה אמיתית
       console.error("Server-side session creation failed:", error);
       return (
         <div className="p-8 text-center">
