@@ -33,6 +33,7 @@
   },
   "packageManager": "bun@1.2.9",
   "dependencies": {
-    "@netlify/plugin-nextjs": "^5.13.3"
+    "@netlify/plugin-nextjs": "^5.13.3",
+    "next": "^16.0.10"
   }
 }
