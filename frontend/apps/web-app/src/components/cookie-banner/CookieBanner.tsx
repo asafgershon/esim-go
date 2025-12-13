@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@workspace/ui";
 import { X } from "lucide-react";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@/lib/utils";
 import { CDN_LINKS } from "@/lib/constants/cdn";
 
 export interface CookiePreferences {
