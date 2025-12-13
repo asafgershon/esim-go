@@ -1,8 +1,7 @@
 [build]
 base = "frontend/apps/web-app"
-publish = "frontend/apps/web-app"
-command = "pnpm install --frozen-lockfile && pnpm --filter web-app build"
-functions = "" 
+publish = "."
+command = "pnpm install --frozen-lockfile && next build"
 
 [[plugins]]
 package = "@netlify/plugin-nextjs"
