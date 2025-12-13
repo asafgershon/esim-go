@@ -1,6 +1,6 @@
 [build]
 base = "."
-command = "pnpm install --frozen-lockfile && pnpm --filter ./frontend/apps/web-app... build"
+command = "pnpm install --frozen-lockfile && pnpm --filter web-app... build"
 publish = "frontend/apps/web-app"
 
 [[plugins]]
