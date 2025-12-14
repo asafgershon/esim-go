@@ -16,6 +16,11 @@
     "packages/*",
     "apps/*"
   ],
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "@netlify/plugin-nextjs": "^5.13.3"
+  },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.15.0",
     "@graphql-codegen/cli": "^5.0.7",
@@ -31,8 +36,5 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "packageManager": "bun@1.2.9",
-  "dependencies": {
-    "@netlify/plugin-nextjs": "^5.13.3"
-  }
+  "packageManager": "bun@1.2.9"
 }
