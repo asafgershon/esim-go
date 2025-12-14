@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
-
+  swcMinify: false,
   transpilePackages: ["@workspace/ui"],
 
   images: {
@@ -22,6 +22,7 @@ const nextConfig = {
   },
 
   experimental: {
+    optimizeCss: false,
     serverActions: {
       allowedOrigins: [
         "fonts.cdnfonts.com",
