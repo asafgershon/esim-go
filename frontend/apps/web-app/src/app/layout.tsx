@@ -4,8 +4,8 @@ import { Providers } from "./providers";
 import AuthMetaTags from "./AuthMetaTags";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { CookieBannerWrapper } from "@/components/cookie-banner/CookieBannerWrapper";
-import "../styles/ui-theme.css";
-import "../styles/ui-globals.css";
+import "@workspace/ui/theme.css";
+import "@workspace/ui/globals.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
