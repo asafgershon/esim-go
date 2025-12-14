@@ -1,25 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
+
   transpilePackages: ["@workspace/ui"],
 
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "via.placeholder.com",
-      },
-      {
-        protocol: "https",
-        hostname: "upload.wikimedia.org",
-      },
-      {
-        protocol: "https",
-        hostname: "api.qrserver.com",
-      },
-      {
-        protocol: "https",
-        hostname: "flagcdn.com",
-      },
+      { protocol: "https", hostname: "via.placeholder.com" },
+      { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "api.qrserver.com" },
+      { protocol: "https", hostname: "flagcdn.com" },
     ],
   },
 
