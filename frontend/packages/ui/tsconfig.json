@@ -9,13 +9,14 @@
     "allowJs": true,
 
     // Module resolution for building
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-        "@/*": ["./src/*"]
+      "@workspace/ui/*": ["./src/*"],
+      "@workspace/ui": ["./src/index.ts"]
     },
     
     // Declaration generation

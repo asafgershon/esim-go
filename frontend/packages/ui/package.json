@@ -77,8 +77,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "pnpm run build:ci",
-    "build:ci": "vite build && tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts && tsc --emitDeclarationOnly --declaration --declarationMap --outDir dist",
+    "build": "bun run build:lib && bun run build:css && bun run build:types",
     "build:lib": "vite build",
     "build:css": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts",
     "dev:css": "tailwindcss -i ./src/styles/globals.css -o ./dist/globals.css -c ./tailwind.config.ts --watch",
