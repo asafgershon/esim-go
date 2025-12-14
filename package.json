@@ -1,38 +1,6 @@
 {
-  "name": "client",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "ui:add": "cd packages/ui && bunx shadcn@canary add",
-    "build": "turbo build",
-    "build:web-app": "turbo build --filter=...web-app",
-    "build:dashboard": "turbo build --filter=...dashboard",
-    "dev": "turbo dev",
-    "lint": "turbo lint",
-    "clean": "turbo clean"
-  },
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
-  "devDependencies": {
-    "@0no-co/graphqlsp": "^1.15.0",
-    "@graphql-codegen/cli": "^5.0.7",
-    "@graphql-codegen/schema-ast": "^4.1.0",
-    "@parcel/watcher": "^2.5.1",
-    "@types/bun": "latest",
-    "country-data-list": "^1.5.4",
-    "turbo": "^2.5.4"
-  },
-  "engines": {
-    "node": ">= 22.0.0"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "packageManager": "bun@1.2.9",
   "dependencies": {
-    "@netlify/plugin-nextjs": "^5.13.3"
+    "@netlify/plugin-nextjs": "^5.13.3",
+    "ioredis": "^5.7.0"
   }
 }
