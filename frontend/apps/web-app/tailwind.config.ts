@@ -8,6 +8,7 @@ const config: Config = {
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
+    "../../packages/ui/dist/**/*.{js,mjs}",
   ],
   theme: {
     extend: {
