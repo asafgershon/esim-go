@@ -222,17 +222,21 @@ keywords: [
           </Suspense>
         </div>
       ) : (
-  <div className="relative min-h-[60px]">
-    <SimpleSearchCombobox
-      options={comboboxOptions}
-      value={currentValue}
-      onValueChange={handleDestinationChange}
-      placeholder={DESTINATION_PLACEHOLDER}
-      searchPlaceholder={SEARCH_PLACEHOLDER}
-      emptyMessage={NO_RESULTS_MESSAGE}
-      className="w-full bg-brand-white border border-[rgba(10,35,46,0.2)] rounded-[15px] h-[60px] px-3 flex items-center justify-between cursor-pointer hover:border-brand-purple transition-colors focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2 text-[18px]"
-    />
-  </div>
+        <div className="relative min-h-[60px]">
+          <FuzzyCombobox
+            options={comboboxOptions}
+            value={currentValue}
+            onValueChange={handleDestinationChange}
+            placeholder={DESTINATION_PLACEHOLDER}
+            searchPlaceholder={SEARCH_PLACEHOLDER}
+            emptyMessage={NO_RESULTS_MESSAGE}
+            className={comboboxClassName}
+            open={comboboxOpen}
+            onOpenChange={(open) => {
+              setComboboxOpen(open);
+            }}
+          />
+        </div>
       )}
     </SelectorSection>
   );
