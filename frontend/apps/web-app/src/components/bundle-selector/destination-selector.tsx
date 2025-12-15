@@ -37,14 +37,14 @@ export function DestinationSelector() {
 
   const isMobile = useIsMobile({ tablet: true });
   const [showMobileSheet, setShowMobileSheet] = useState(false);
-  const [comboboxOpen, setComboboxOpen] = useState(false);
+  //const [comboboxOpen, setComboboxOpen] = useState(false);
 
   // ✅ נועל רק בגלילה של דסקטופ
-  useScrollSmootherLock({
-    autoLock: !isMobile && comboboxOpen,
-    preserveScrollPosition: false,
-    preventTouchMove: false,
-  });
+  // useScrollSmootherLock({
+  //   autoLock: !isMobile && comboboxOpen,
+  //   preserveScrollPosition: false,
+  //   preventTouchMove: false,
+  // });
   
 
   const sharedButtonStyles =
@@ -159,18 +159,14 @@ keywords: [
     if (shouldFocusDestinationSelector) {
       if (isMobile) {
         setShowMobileSheet(true);
-      } else {
-        setComboboxOpen(true);
       }
+      // else {
+      //   setComboboxOpen(true);
+      // }
       setShouldFocusDestinationSelector(false);
     }
   }, [shouldFocusDestinationSelector, isMobile, setShouldFocusDestinationSelector]);
 
-  console.log({
-  isMobile,
-  comboboxOpen,
-  optionsLength: comboboxOptions.length,
-});
   return (
         <SelectorSection
           role="tabpanel"
@@ -235,10 +231,10 @@ keywords: [
             searchPlaceholder={SEARCH_PLACEHOLDER}
             emptyMessage={NO_RESULTS_MESSAGE}
             className={comboboxClassName}
-            open={comboboxOpen}
-            onOpenChange={(open) => {
-              setComboboxOpen(open);
-            }}
+            // open={comboboxOpen}
+            // onOpenChange={(open) => {
+            //   setComboboxOpen(open);
+            // }}
           />
         </div>
       )}
