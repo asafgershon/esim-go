@@ -4,6 +4,7 @@ import * as React from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 
 import { cn } from "../lib/utils";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { Button } from "./button";
 import {
   Command,
@@ -53,45 +54,50 @@ export function Combobox({
     [options, value]
   );
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn(
-            "w-full justify-between",
-            !value && "text-muted-foreground",
-            className
+return (
+  <Popover open={open} onOpenChange={setOpen}>
+    <PopoverTrigger asChild>
+      <Button
+        variant="outline"
+        role="combobox"
+        aria-expanded={open}
+        className={cn(
+          "w-full justify-between",
+          !value && "text-muted-foreground",
+          className
+        )}
+        disabled={disabled}
+      >
+        <div className="flex items-center gap-2">
+          {selectedOption ? (
+            <>
+              {selectedOption.icon && (
+                <img
+                  src={selectedOption.icon}
+                  alt={selectedOption.label}
+                  width={12}
+                  height={9}
+                  className="inline-block align-middle rounded-[2px] object-cover"
+                />
+              )}
+              <span>{selectedOption.label}</span>
+            </>
+          ) : (
+            <span>{placeholder}</span>
           )}
-          disabled={disabled}
-        >
-          <div className="flex items-center gap-2">
-            {selectedOption ? (
-              <>
-                  {selectedOption.icon && (
-                    <img
-                      src={selectedOption.icon}
-                      alt={selectedOption.label}
-                      width={12}
-                      height={9}
-                      className="inline-block align-middle rounded-[2px] object-cover"
-                    />
-                  )}
-                <span>{selectedOption.label}</span>
-              </>
-            ) : (
-              <span>{placeholder}</span>
-            )}
-          </div>
-          <ChevronsUpDown className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
+        </div>
+        <ChevronsUpDown className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+    </PopoverTrigger>
+
+    {/* 🔴 זה השינוי היחיד */}
+    <PopoverPrimitive.Portal>
       <PopoverContent
-        className="w-full max-w-sm p-0 bg-background"
+        forceMount
+        className="p-0"
         side="bottom"
         align="start"
+        style={{ width: "var(--radix-popover-trigger-width)" }}
         sideOffset={4}
       >
         <Command>
@@ -130,8 +136,9 @@ export function Combobox({
           </CommandList>
         </Command>
       </PopoverContent>
-    </Popover>
-  );
+    </PopoverPrimitive.Portal>
+  </Popover>
+);
 }
 
 // Enhanced Combobox with Fuse.js integration for fuzzy search
