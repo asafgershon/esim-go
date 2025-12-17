@@ -91,7 +91,6 @@ return (
     </PopoverTrigger>
 
     {/* 🔴 זה השינוי היחיד */}
-    <PopoverPrimitive.Portal>
       <PopoverContent
         forceMount
         className="p-0"
@@ -136,7 +135,6 @@ return (
           </CommandList>
         </Command>
       </PopoverContent>
-    </PopoverPrimitive.Portal>
   </Popover>
 );
 }

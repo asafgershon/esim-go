@@ -9,17 +9,24 @@
 .marquee {
   overflow: hidden;
   position: relative;
-  direction: rtl;            /* כדי שהטקסט ייסע משמאל לימין ↔ */
+  width: 100%;
 }
+
 .marquee__track {
   display: inline-flex;
-  gap: 2rem;                 /* רווח בין הודעות */
-  animation: slide 18s linear infinite;
+  white-space: nowrap;
+  animation: marquee-scroll 30s linear infinite;
 }
-@keyframes slide {
-  from { transform: translateX(0);       }
-  to   { transform: translateX(-50%);    }   /* 50% כי שכפלת את המערך */
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
 }
+
 
 .animate-in, .fade-in, .zoom-in-95 {
   animation: none !important;
