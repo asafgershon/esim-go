@@ -1,4 +1,4 @@
-import "..styles/announcement-banner.css";
+import "../styles/AnnouncementBanner.css";
 
 const messages = [
   "eSIM ללא הגבלת נפח גלישה",
