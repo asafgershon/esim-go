@@ -9,15 +9,22 @@
 .marquee {
   overflow: hidden;
   position: relative;
+  direction: rtl;            /* כדי שהטקסט ייסע משמאל לימין ↔ */
 }
 .marquee__track {
-  display: flex;
-  width: max-content;
-  animation: marquee 22s linear infinite;
+  display: inline-flex;
+  gap: 2rem;                 /* רווח בין הודעות */
+  animation: slide 18s linear infinite;
 }
-@keyframes marquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+@keyframes slide {
+  from { transform: translateX(0);       }
+  to   { transform: translateX(-50%);    }   /* 50% כי שכפלת את המערך */
+}
+
+.animate-in, .fade-in, .zoom-in-95 {
+  animation: none !important;
+  opacity: 1    !important;
+  transform: none !important;
 }
 
 /* Birzia Font Family */
