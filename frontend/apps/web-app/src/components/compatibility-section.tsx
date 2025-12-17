@@ -16,7 +16,7 @@ export function CompatibilitySection({
   // Use the eSIM detection hook with manual start
   const { isSupported, loading, start, deviceInfo } = useESIMDetection({
     autoStart: false,
-    enableCanvasFingerprint: true,
+    enableCanvasFingerprint: false,
     enableWebGLDetection: true,
     confidenceThreshold: 0.5,
   });

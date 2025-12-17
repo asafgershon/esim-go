@@ -6,6 +6,20 @@
 @import "@workspace/ui/theme.css";
 @import "@workspace/ui/globals.css";
 
+.marquee {
+  overflow: hidden;
+  position: relative;
+}
+.marquee__track {
+  display: flex;
+  width: max-content;
+  animation: marquee 22s linear infinite;
+}
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 /* Birzia Font Family */
 @font-face {
   font-family: "Birzia";

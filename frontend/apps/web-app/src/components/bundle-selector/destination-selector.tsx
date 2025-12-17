@@ -222,7 +222,7 @@ keywords: [
           </Suspense>
         </div>
       ) : (
-        <div className="relative min-h-[60px]">
+        <div className="relative min-h-[60px] overflow-visible z-50">
           <FuzzyCombobox
             options={comboboxOptions}
             value={currentValue}
