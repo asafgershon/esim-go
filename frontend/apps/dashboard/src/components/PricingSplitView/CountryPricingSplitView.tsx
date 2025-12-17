@@ -1,3 +1,5 @@
+'use client';
+
 import { Bundle, GetPaymentMethodsQuery } from "@/__generated__/graphql";
 import {
   Button,
