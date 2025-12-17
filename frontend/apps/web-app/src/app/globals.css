@@ -6,17 +6,6 @@
 @import "@workspace/ui/theme.css";
 @import "@workspace/ui/globals.css";
 
-/* DEBUG TEST */
-* {
-  border: 1px solid red !important;
-}
-
-@media (min-width: 768px) {
-  * {
-    border: 2px solid blue !important;
-  }
-}
-
 /* Birzia Font Family */
 @font-face {
   font-family: "Birzia";
