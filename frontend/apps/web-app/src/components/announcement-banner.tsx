@@ -1,29 +1,28 @@
+import "..styles/announcement-banner.css";
+
 const messages = [
   "eSIM ללא הגבלת נפח גלישה",
-  "eSIM עם אין סוף ג׳יגה בייט",
+  "eSIM עם אין סוף ג׳יגה-בייט",
   "eSIM במחיר המשתלם ביותר",
   "שירות 24/7 בעברית",
   "התקנת eSIM בקליק!",
+  "מתאים לאייפון ואנדרואיד",
+  "חבילת eSIM תוך דקה למייל",
+  "תמיכה טכנית בוואטסאפ",
+  "100% שביעות רצון מובטחת",
+  "מגוון חבילות לכל מדינה בעולם",
 ];
 
 export function AnnouncementBanner() {
   return (
-    <div className="relative bg-brand-dark text-white overflow-hidden">
-      <div className="container mx-auto px-4">
-        <div className="py-2">
-          <div className="flex items-center whitespace-nowrap">
-            <div className="marquee">
-              <div className="marquee__track">
-                {[...messages, ...messages].map((msg, i) => (
-                  <span key={i} className="mx-6 text-xs md:text-sm font-medium">
-                    {msg}
-                    <span className="mx-6 text-brand-green font-semibold">•</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="announcement-container">
+      <div className="announcement-track">
+        {[...messages, ...messages].map((msg, i) => (
+          <span key={i} className="announcement-message">
+            {msg}
+            <span className="dot">•</span>
+          </span>
+        ))}
       </div>
     </div>
   );

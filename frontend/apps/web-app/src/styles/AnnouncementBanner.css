@@ -1,0 +1,38 @@
+.announcement-container {
+  position: relative;
+  background-color: #0c1f2c; /* brand-dark */
+  color: white;
+  overflow: hidden;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.announcement-track {
+  display: flex;
+  white-space: nowrap;
+  animation: marquee-scroll 40s linear infinite;
+}
+
+.announcement-message {
+  margin: 0 24px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.dot {
+  color: #4ade80; /* brand-green */
+  font-weight: bold;
+  margin-left: 24px;
+}
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
