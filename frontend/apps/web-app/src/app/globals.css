@@ -167,7 +167,57 @@
 /* ============================================ */
 /* SCROLLBAR STYLES (from UI package) */
 /* ============================================ */
-/* Add scrollbar.css content here if you have it */
+
+/* Custom OverlayScrollbars theme */
+.os-scrollbar {
+  --os-size: 10px;
+  --os-padding-perpendicular: 2px;
+  --os-padding-axis: 2px;
+  --os-track-border-radius: 10px;
+  --os-handle-border-radius: 10px;
+  --os-handle-bg: hsl(var(--muted-foreground) / 0.3);
+  --os-handle-bg-hover: hsl(var(--muted-foreground) / 0.5);
+  --os-handle-bg-active: hsl(var(--muted-foreground) / 0.7);
+}
+
+/* Hide scrollbar by default, show on hover */
+.os-scrollbar-auto-hide .os-scrollbar {
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+}
+
+.os-scrollbar-auto-hide:hover .os-scrollbar,
+.os-scrollbar-auto-hide.os-scrolling .os-scrollbar {
+  opacity: 1;
+}
+
+/* Ensure smooth transitions */
+.os-scrollbar-handle {
+  transition: background-color 0.2s ease-out;
+}
+
+/* Dark theme adjustments */
+.dark .os-scrollbar {
+  --os-handle-bg: hsl(var(--muted-foreground) / 0.2);
+  --os-handle-bg-hover: hsl(var(--muted-foreground) / 0.4);
+  --os-handle-bg-active: hsl(var(--muted-foreground) / 0.6);
+}
+
+/* Minimal style for better integration */
+.os-theme-dark,
+.os-theme-light {
+  --os-track-bg: transparent;
+}
+
+/* Custom thin scrollbar variant */
+.scroll-area-thin .os-scrollbar {
+  --os-size: 6px;
+}
+
+/* Custom thick scrollbar variant */
+.scroll-area-thick .os-scrollbar {
+  --os-size: 12px;
+}
 
 /* ============================================ */
 /* WEB-APP SPECIFIC STYLES */
