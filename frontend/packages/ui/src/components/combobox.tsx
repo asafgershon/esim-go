@@ -281,10 +281,11 @@ export function FuzzyCombobox({
   collisionPadding={0}
   style={{ 
     width: "var(--radix-popover-trigger-width)",
-    zIndex: 99999  // 🔥 Add this
+    zIndex: 99999,
+    transform: 'translate(0px, 4px) !important'  // 🔥 Override the -200%
   }}
   sideOffset={4}
-      >
+>
         <Command shouldFilter={false}>
           <CommandInput
             placeholder={searchPlaceholder}

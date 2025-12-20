@@ -32,7 +32,12 @@ function PopoverContent({
           "data-[side=bottom]:translate-y-0",
           className
         )}
-        style={{ zIndex: 99999 }} // 🔥 Add this
+        // 🔥 ADD THIS TO OVERRIDE THE TRANSFORM
+        style={{
+          transform: 'none !important',
+          position: 'fixed',
+          zIndex: 99999
+        }}
         {...props}
       />
     </PopoverPrimitive.Portal>
