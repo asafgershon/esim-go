@@ -166,8 +166,8 @@ export function FuzzyCombobox({
 }: FuzzyComboboxProps) {
   const [internalOpen, setInternalOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
 
-  // Use controlled open state if provided, otherwise use internal state
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = React.useCallback(
     (newOpen: boolean) => {
@@ -178,7 +178,6 @@ export function FuzzyCombobox({
     },
     [controlledOpen, onOpenChange]
   );
-
   // Configure Fuse.js for fuzzy search
   const fuse = React.useMemo(() => {
     // Try to import Fuse.js dynamically
@@ -238,83 +237,78 @@ export function FuzzyCombobox({
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn(
-            "w-full flex justify-end",
-            !value && "text-muted-foreground",
-            className
-          )}
-          disabled={disabled}
-        >
-          <div className="flex w-full items-center gap-2">
-            <ChevronsUpDown className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+    <>
+      <button
+        ref={triggerRef}
+        role="combobox"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "w-full flex justify-between items-center",
+          !value && "text-muted-foreground",
+          className
+        )}
+        disabled={disabled}
+      >
+        <div className="flex w-full items-center gap-2">
+          <ChevronsUpDown className="mr-2 h-4 w-4 shrink-0 opacity-50" />
 
-            {selectedOption ? (
-              <>
-                {selectedOption.icon && (
-                  <img
-                    src={selectedOption.icon}
-                    alt={selectedOption.label}
-                    width={12}
-                    height={9}
-                    className="inline-block align-middle rounded-[2px] object-cover"
-                  />
-                )}
-                <span>{selectedOption.label}</span>
-              </>
-            ) : (
-              <span>{placeholder}</span>
-            )}
-          </div>
-        </Button>
-      </PopoverTrigger>
-<PopoverContent
-  className="p-0"
-  side="bottom"
-  align="start"
-  avoidCollisions={false}
-  collisionPadding={0}
-  style={{ 
-    width: "var(--radix-popover-trigger-width)",
-    zIndex: 99999,
-    transform: 'translate(0px, 4px) !important'  // 🔥 Override the -200%
-  }}
-  sideOffset={4}
->
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder={searchPlaceholder}
-            className="h-9"
-            dir="rtl"
-            value={searchValue}
-            onValueChange={setSearchValue}
-          />
-          <CommandList
-            className="overflow-y-auto"
-            style={{ height: "240px", maxHeight: "240px" }}
-          >
-            {filteredOptions.length === 0 ? (
-              <CommandEmpty>{emptyMessage}</CommandEmpty>
-            ) : (
-              <CommandGroup>
-                {filteredOptions.map((option: ComboboxOption) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    onSelect={(currentValue) => {
-                      const selectedValue =
-                        currentValue === value ? "" : currentValue;
-                      onValueChange?.(selectedValue);
-                      setOpen(false);
-                      setSearchValue(""); // Clear search when selecting
-                    }}
-                  >
-                    <div className="flex items-center gap-2 flex-1" dir="rtl">
+          {selectedOption ? (
+            <>
+              {selectedOption.icon && (
+                <img
+                  src={selectedOption.icon}
+                  alt={selectedOption.label}
+                  width={12}
+                  height={9}
+                  className="inline-block align-middle rounded-[2px] object-cover"
+                />
+              )}
+              <span>{selectedOption.label}</span>
+            </>
+          ) : (
+            <span>{placeholder}</span>
+          )}
+        </div>
+      </button>
+
+      {/* 🔥 RENDER DIRECTLY WITHOUT RADIX POPOVER */}
+      {open && (
+        <div
+          className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-md shadow-lg p-0 z-[99999]"
+          style={{
+            maxHeight: '280px',
+          }}
+        >
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder={searchPlaceholder}
+              className="h-9"
+              dir="rtl"
+              value={searchValue}
+              onValueChange={setSearchValue}
+            />
+            <CommandList
+              className="overflow-y-auto"
+              style={{ height: "240px", maxHeight: "240px" }}
+            >
+              {filteredOptions.length === 0 ? (
+                <CommandEmpty>{emptyMessage}</CommandEmpty>
+              ) : (
+                <CommandGroup>
+                  {filteredOptions.map((option: ComboboxOption) => (
+                    <CommandItem
+                      key={option.value}
+                      value={option.value}
+                      onSelect={(currentValue) => {
+                        const selectedValue =
+                          currentValue === value ? "" : currentValue;
+                        onValueChange?.(selectedValue);
+                        setOpen(false);
+                        setSearchValue("");
+                      }}
+                    >
+                      <div className="flex items-center gap-2 flex-1" dir="rtl">
                         {option.icon && (
                           <img
                             src={option.icon}
@@ -324,15 +318,16 @@ export function FuzzyCombobox({
                             className="inline-block align-middle rounded-[2px] object-cover"
                           />
                         )}
-                      <span>{option.label}</span>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                        <span>{option.label}</span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </div>
+      )}
+    </>
   );
 }
