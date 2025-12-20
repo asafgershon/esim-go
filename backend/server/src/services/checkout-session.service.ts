@@ -245,14 +245,14 @@ export const mapStateToSteps = (params: {
   };
 
   // Map states to steps
-  if (state !== CheckoutState.INITIALIZED) {
-    steps.authentication.completed = true;
-    steps.authentication.completedAt = metadata.authCompletedAt;
-    steps.authentication.userId = userId;
-    steps.authentication.email = user?.email;
-    steps.authentication.firstName = user?.first_name;
-    steps.authentication.lastName = user?.last_name;
-  }
+  // if (state !== CheckoutState.INITIALIZED) {
+  //   steps.authentication.completed = true;
+  //   steps.authentication.completedAt = metadata.authCompletedAt;
+  //   steps.authentication.userId = userId;
+  //   steps.authentication.email = user?.email;
+  //   steps.authentication.firstName = user?.first_name;
+  //   steps.authentication.lastName = user?.last_name;
+  // }
 
   if (
     [
@@ -405,15 +405,15 @@ export const createSession = async (
   );
 
   // Start async validation (don't await)
-  validateSessionOrder(context, session.id, planSnapshot.name || "")
-    .then(() => {
-      logger.info("Session validation completed", { sessionId: session.id });
-    })
-    .catch((error) => {
-      logger.error("Session validation failed", error as Error, {
-        sessionId: session.id,
-      });
-    });
+  // validateSessionOrder(context, session.id, planSnapshot.name || "")
+  //   .then(() => {
+  //     logger.info("Session validation completed", { sessionId: session.id });
+  //   })
+  //   .catch((error) => {
+  //     logger.error("Session validation failed", error as Error, {
+  //       sessionId: session.id,
+  //     });
+  //   });
 
   return mappedSession;
 };

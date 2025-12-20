@@ -167,6 +167,7 @@ export function FuzzyCombobox({
   const [internalOpen, setInternalOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
   const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = React.useCallback(
@@ -178,6 +179,27 @@ export function FuzzyCombobox({
     },
     [controlledOpen, onOpenChange]
   );
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        open &&
+        dropdownRef.current &&
+        triggerRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        !triggerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+        setSearchValue(""); // Reset search when closing
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open, setOpen]);
+  
   // Configure Fuse.js for fuzzy search
   const fuse = React.useMemo(() => {
     // Try to import Fuse.js dynamically
