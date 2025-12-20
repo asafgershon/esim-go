@@ -87,6 +87,13 @@
   --sidebar-ring: 224.3 76.3% 48%;
 }
 
+[data-radix-popper-content-wrapper] {
+  transform: none !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+
 @layer base {
   * {
     @apply border-border;

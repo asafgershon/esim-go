@@ -12,6 +12,13 @@
   width: 100%;
 }
 
+[data-radix-popper-content-wrapper] {
+  transform: none !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+
 .marquee__track {
   display: inline-flex;
   white-space: nowrap;
