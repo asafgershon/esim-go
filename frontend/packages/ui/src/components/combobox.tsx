@@ -290,7 +290,7 @@ export function FuzzyCombobox({
           />
           <CommandList
             className="overflow-y-auto"
-            style={{ maxHeight: "240px" }}
+            style={{ height: "240px", maxHeight: "240px" }}
           >
             {filteredOptions.length === 0 ? (
               <CommandEmpty>{emptyMessage}</CommandEmpty>
