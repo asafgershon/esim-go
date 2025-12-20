@@ -339,13 +339,13 @@ export const createSession = async (
   };
 
   // Fetch available bundles
-  const bundleResults = await context.repositories.bundles.search(searchParams);
+  // const bundleResults = await context.repositories.bundles.search(searchParams);
 
-  if (!bundleResults?.data || bundleResults.data.length === 0) {
-    throw new GraphQLError(`No bundles available for the specified location`, {
-      extensions: { code: "NO_BUNDLES_AVAILABLE" },
-    });
-  }
+  // if (!bundleResults?.data || bundleResults.data.length === 0) {
+  //   throw new GraphQLError(`No bundles available for the specified location`, {
+  //     extensions: { code: "NO_BUNDLES_AVAILABLE" },
+  //   });
+  // }
 
   const pricingResult = await calculateSimplePrice(validInput.countryId || "", validInput.numOfDays);
 

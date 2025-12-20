@@ -199,7 +199,7 @@ export function FuzzyCombobox({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [open, setOpen]);
-  
+
   // Configure Fuse.js for fuzzy search
   const fuse = React.useMemo(() => {
     // Try to import Fuse.js dynamically
@@ -297,6 +297,7 @@ export function FuzzyCombobox({
       {/* 🔥 RENDER DIRECTLY WITHOUT RADIX POPOVER */}
       {open && (
         <div
+          ref={dropdownRef}
           className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-md shadow-lg p-0 z-[99999]"
           style={{
             maxHeight: '280px',
