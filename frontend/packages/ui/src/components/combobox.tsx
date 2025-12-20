@@ -278,6 +278,7 @@ export function FuzzyCombobox({
         side="bottom"
         align="start"
         avoidCollisions={false}
+        collisionPadding={0}
         style={{ width: "var(--radix-popover-trigger-width)" }}
         sideOffset={4}
       >
