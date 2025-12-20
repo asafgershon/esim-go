@@ -273,14 +273,17 @@ export function FuzzyCombobox({
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        className="p-0"
-        side="bottom"
-        align="start"
-        avoidCollisions={false}
-        collisionPadding={0}
-        style={{ width: "var(--radix-popover-trigger-width)" }}
-        sideOffset={4}
+<PopoverContent
+  className="p-0"
+  side="bottom"
+  align="start"
+  avoidCollisions={false}
+  collisionPadding={0}
+  style={{ 
+    width: "var(--radix-popover-trigger-width)",
+    zIndex: 99999  // 🔥 Add this
+  }}
+  sideOffset={4}
       >
         <Command shouldFilter={false}>
           <CommandInput

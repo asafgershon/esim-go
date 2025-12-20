@@ -222,7 +222,7 @@ keywords: [
           </Suspense>
         </div>
       ) : (
-        <div className="relative z-[9999]">
+        <div className="relative" style={{ zIndex: 9999 }}>
           <FuzzyCombobox
             options={comboboxOptions}
             value={currentValue}

@@ -28,10 +28,11 @@ function PopoverContent({
         align={align}
         sideOffset={sideOffset}
         className={cn(
-        "bg-popover text-popover-foreground z-[9999] w-72 rounded-md border p-0 shadow-md outline-hidden",
-        "data-[side=bottom]:translate-y-0 !transform-none",
-        className
+          "bg-popover text-popover-foreground z-[99999] w-72 rounded-md border p-0 shadow-md outline-hidden",
+          "data-[side=bottom]:translate-y-0",
+          className
         )}
+        style={{ zIndex: 99999 }} // 🔥 Add this
         {...props}
       />
     </PopoverPrimitive.Portal>
