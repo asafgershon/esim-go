@@ -1,4 +1,4 @@
-import React from 'react';
+import "../styles/AnnouncementBanner.css";
 
 const messages = [
   "eSIM ללא הגבלת נפח גלישה",
