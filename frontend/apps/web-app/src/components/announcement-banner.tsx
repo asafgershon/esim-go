@@ -1,5 +1,3 @@
-"use client";
-
 import "../styles/AnnouncementBanner.css";
 
 const messages = [
