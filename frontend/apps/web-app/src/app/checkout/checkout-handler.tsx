@@ -78,65 +78,53 @@ export default async function CheckoutHandler({
 }: CheckoutHandlerProps) {
   const { token, numOfDays, countryId, regionId } = searchParams;
 
-  // --- שלב 1: נטרול העצירה המוקדמת ---
-  // return <CheckoutContainerV2 />;
-
-  // --- זרימה תקינה ---
-
-  // 1. אם כבר יש טוקן, הצג את הצ'קאאוט
+  // 1. If token exists, show checkout
   if (token) {
     console.log("Handler: Found existing token, rendering CheckoutContainer.");
-    // כאן צריך לשים את הרכיב שמטפל בסשן קיים
-    // אם CheckoutContainerV2 הוא הנכון, החזר אותו. אם לא, החזר את V1.
-    return <CheckoutContainerV2 />; 
-    // או: return <CheckoutContainer />;
+    return <CheckoutContainerV2 />;
   }
 
-  // 2. אם אין טוקן אבל יש פרמטרים, נסה ליצור סשן חדש
+  // 2. If no token but has params, create session
   if ((countryId || regionId) && numOfDays) {
-    try {
-      const parsedNumOfEsims =
-        searchParams.numOfEsims ? Number(searchParams.numOfEsims) : 1;
-      // --- שלב 3: בונים את האובייקט input כאן, פעם אחת ---
-      const parsedNumOfDays = parseInt(numOfDays ?? "7") || 7;
-      const input: CreateCheckoutSessionInput = {
-        numOfDays: parsedNumOfDays,
-        group: WEB_APP_BUNDLE_GROUP,
-        // הוסף פרמטרים רק אם הם קיימים
+    const parsedNumOfEsims = searchParams.numOfEsims ? Number(searchParams.numOfEsims) : 1;
+    const parsedNumOfDays = parseInt(numOfDays ?? "7") || 7;
+    
+    const input: CreateCheckoutSessionInput = {
+      numOfDays: parsedNumOfDays,
+      group: WEB_APP_BUNDLE_GROUP,
+      ...(countryId && { countryId }),
+      ...(regionId && { regionId }),
+      numOfEsims: parsedNumOfEsims,
+    } as CreateCheckoutSessionInput;
+
+    console.log("🚀 Creating checkout session with input:", input);
+
+    // Call the session creation (this is safe, won't throw redirect)
+    const result = await createCheckoutSession(input);
+
+    if (result.success && result.session?.token) {
+      console.log("✅ Checkout session created successfully. Redirecting...", {
+        token: result.session.token.substring(0, 10) + "...",
+      });
+
+      const params = new URLSearchParams({
+        token: result.session.token,
+        numOfDays: parsedNumOfDays.toString(),
         ...(countryId && { countryId }),
         ...(regionId && { regionId }),
-        numOfEsims: parsedNumOfEsims,
-      } as CreateCheckoutSessionInput;
+      });
 
-      // קוראים לפונקציית העזר עם האובייקט המוכן
-      const result = await createCheckoutSession(input);
+      const redirectUrl = `/checkout?${params.toString()}`;
+      console.log("Redirecting to:", redirectUrl);
 
-      if (result.success && result.session?.token) {
-        // הצלחה! נוצר סשן
-        console.log("✅ Checkout session created successfully. Redirecting...", {
-          token: result.session.token.substring(0, 10) + "...",
-        });
-
-        // בנה את ה-URL מחדש עם הטוקן שקיבלנו
-        const params = new URLSearchParams({
-          token: result.session.token,
-          numOfDays: parsedNumOfDays.toString(),
-          ...(countryId && { countryId }),
-          ...(regionId && { regionId }),
-        });
-
-        // בצע הפנייה מחדש (Redirect) של השרת לעצמו, הפעם עם הטוקן
-        // זה יגרום לקוד הזה לרוץ שוב, והפעם להיכנס ל- if (token)
-        performRedirect(`/checkout?${params.toString()}`);
-
-      } else {
-        // ה-mutation החזיר success: false
-        throw new Error(result.error || "Failed to create checkout session (API Error)");
-      }
-    } catch (error) {
-      // תפיסת שגיאות: או מה-fetch או מה-redirect
-
-      console.error("Server-side session creation failed:", error);
+      // 🔥 This throws NEXT_REDIRECT - let it propagate (no try/catch)
+      performRedirect(redirectUrl);
+      
+      // This line never executes (redirect throws)
+      return null;
+    } else {
+      // Session creation failed (API error)
+      console.error("Session creation failed:", result.error);
       return (
         <div className="p-8 text-center">
           <h2 className="text-2xl font-bold mb-4 text-red-600">
@@ -146,7 +134,7 @@ export default async function CheckoutHandler({
             Unable to create checkout session. Please try again.
           </p>
           <p className="text-sm text-gray-600 mb-2">
-            Error: {error instanceof Error ? error.message : "Unknown error"}
+            Error: {result.error || "Unknown error"}
           </p>
           <p className="text-sm text-gray-600">Refresh the page to retry.</p>
         </div>
@@ -154,8 +142,8 @@ export default async function CheckoutHandler({
     }
   }
 
-  // 3. אם אין טוקן ואין פרמטרים - הצג שגיאה
-  console.warn("Handler: No token and no valid params. Showing invalid params error.");
+  // 3. No token and no params
+  console.warn("Handler: No token and no valid params.");
   return (
     <div className="p-8 text-center">
       <h2 className="text-2xl font-bold mb-4">Invalid Checkout Parameters</h2>
