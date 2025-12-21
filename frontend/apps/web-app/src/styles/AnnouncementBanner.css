@@ -1,6 +1,6 @@
 .announcement-container {
   position: relative;
-  background-color: #0c1f2c; /* brand-dark */
+  background-color: #0c1f2c;
   color: white;
   overflow: hidden;
   height: 40px;
@@ -11,7 +11,7 @@
 .announcement-track {
   display: flex;
   white-space: nowrap;
-  animation: marquee-scroll 40s linear infinite;
+  animation: marquee-scroll 60s linear infinite;
 }
 
 .announcement-message {
@@ -27,10 +27,11 @@
 .dot {
   color: #4ade80;
   font-weight: bold;
-  margin: 0 24px;   /* 🔥 במקום margin-left */
-  font-size: 16px;  /* אופציונלי */
+  margin: 0 24px;
+  font-size: 16px;
 }
 
+/* זהה ל־inline שלך */
 @keyframes marquee-scroll {
   0% {
     transform: translateX(0);
