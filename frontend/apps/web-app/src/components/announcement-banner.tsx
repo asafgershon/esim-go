@@ -13,11 +13,10 @@ const messages = [
   "מגוון חבילות לכל מדינה בעולם",
 ];
 
-export default function AnnouncementBanner() {
+export function AnnouncementBanner() {
   return (
     <div className="announcement-container">
       <div className="announcement-track">
-        {/* אותו שכפול ×3 כמו אצלך */}
         {[...messages, ...messages, ...messages].map((msg, i) => (
           <span key={i} className="announcement-message">
             {msg}
