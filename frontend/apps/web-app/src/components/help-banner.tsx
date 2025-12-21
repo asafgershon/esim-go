@@ -30,17 +30,15 @@ export function HelpBanner({
   )}
 >
   {/* 🔥 Background Image */}
-  <div
-    className="
-      absolute inset-0
-      bg-[url('/images/logos/logo-green.png')]
-      bg-no-repeat bg-center bg-contain
-      opacity-20
-    "
-  />
-
-  {/* 🎨 Dark overlay for readability */}
-  <div className="absolute inset-0 bg-brand-dark/80" />
+<div
+  className="
+    absolute inset-0
+    bg-[url('/images/logos/logo-green.png')]
+    bg-no-repeat bg-center
+    bg-cover
+    opacity-10
+  "
+/>
 
   {/* ✅ Content */}
   <div className="relative z-10 max-w-3xl text-center flex flex-col items-center justify-center">

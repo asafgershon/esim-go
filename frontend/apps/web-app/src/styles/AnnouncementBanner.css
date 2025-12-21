@@ -15,24 +15,27 @@
 }
 
 .announcement-message {
-  margin: 0 24px;
+  margin: 0;
+  padding: 0 12px;
   font-size: 14px;
   font-weight: 500;
   display: flex;
   align-items: center;
+  white-space: nowrap;
 }
 
 .dot {
-  color: #4ade80; /* brand-green */
+  color: #4ade80;
   font-weight: bold;
-  margin-left: 24px;
+  margin: 0 24px;   /* 🔥 במקום margin-left */
+  font-size: 16px;  /* אופציונלי */
 }
 
 @keyframes marquee-scroll {
   0% {
-    transform: translateX(100%);
+    transform: translateX(0);
   }
   100% {
-    transform: translateX(-100%);
+    transform: translateX(-50%);
   }
 }
