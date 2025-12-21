@@ -42,14 +42,14 @@ export function HelpBanner({
 
   {/* ✅ Content */}
   <div className="relative z-10 max-w-3xl text-center flex flex-col items-center justify-center">
-    <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+    <h2 className="text-4xl md:text-5xl font-bold text-brand-dark mb-4">
       צריכים עזרה? דברו איתנו!
     </h2>
 
-    <p className="text-lg md:text-xl text-white/90 mb-2">
+    <p className="text-lg md:text-xl text-brand-dark/90 mb-2">
       תכתבו לנו מכל מקום, בכל שעה ונדאג
     </p>
-    <p className="text-lg md:text-xl text-white/90 mb-2">
+    <p className="text-lg md:text-xl text-brand-dark/90 mb-2">
       שתישארו מחוברים.
     </p>
     <p className="text-lg md:text-xl text-brand-green font-medium mb-10">
