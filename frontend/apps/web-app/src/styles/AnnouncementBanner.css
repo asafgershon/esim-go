@@ -11,7 +11,7 @@
 .announcement-track {
   display: flex;
   white-space: nowrap;
-  animation: marquee-scroll 40s linear infinite;
+  animation: marquee-scroll 120s linear infinite;
   flex-shrink: 0;
 }
 
@@ -37,6 +37,6 @@
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-100%);
+    transform: translateX(-50%);
   }
 }

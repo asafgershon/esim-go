@@ -152,7 +152,9 @@ export function DestinationsGallery({
     >
       <div className="container mx-auto px-4 max-w-[1440px]">
         {/* Header */}
-        <PromoBanner />
+<div className="-mt-8">
+  <PromoBanner />
+</div>
         <div
           ref={containerRef}
           className="relative overflow-y-visible mx-auto mt-10"

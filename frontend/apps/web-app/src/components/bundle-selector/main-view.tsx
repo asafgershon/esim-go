@@ -126,7 +126,7 @@ export function MainView({
 
     return (
         <>
-            <SelectorHeader>
+            <SelectorHeader className="mt-6 md:mt-8">
                 <h2 className="text-2xl text-center font-medium text-brand-dark">
                     איזה כיף! לאן טסים? ✈️
                 </h2>
