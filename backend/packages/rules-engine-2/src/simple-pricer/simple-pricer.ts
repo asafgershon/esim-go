@@ -74,7 +74,10 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
 
         let bundles = data as Bundle[];
         if (providerName === 'maya') {
-            bundles = bundles.filter(b => b.plan_type?.toUpperCase() === 'STANDARD');
+            bundles = bundles.filter(b =>
+                b.plan_type?.toUpperCase() === 'STANDARD' &&
+                !b.name.includes('+')
+            );
         }
         return bundles;
     }
