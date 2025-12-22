@@ -55,7 +55,7 @@ export function HeroSection({
     </h1>
 
     {/* ✨ Subtitle */}
-    <h2 className="text-xl md:text-2xl text-brand-dark/90 font-medium mb-8 max-w-4xl mx-auto">
+    <h2 className="text-xl md:text-2xl text-brand-dark/90 font-medium mb-12 md:mb-16 max-w-4xl mx-auto">
       ב־Hiilo אתם מקבלים eSIM עם אין סוף ג׳יגה גלישה —
       לכל מקום, לכל החופשה
     </h2>
