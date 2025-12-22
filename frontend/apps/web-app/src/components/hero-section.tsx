@@ -59,18 +59,6 @@ export function HeroSection({
       ב־Hiilo אתם מקבלים eSIM עם אין סוף ג׳יגה גלישה —
       לכל מקום, לכל החופשה
     </h2>
-
-    {/* 🧩 Supporting copy – אפשר להזיז / להסתיר */}
-    <p className="text-md md:text-lg text-brand-dark/80 max-w-4xl mx-auto leading-relaxed">
-      <span className="font-medium">
-        רוכשים eSIM ללא הגבלת נפח גלישה, בדיוק לפי מספר הימים שאתם טסים.
-      </span>{" "}
-      <span className="font-light">
-        ולא מתעסקים יותר עם נפח גלישה, הטענות או חידושים. החבילה שלכם פועלת
-        אוטומטית מרגע הנחיתה וללא כל הגבלת נפח.
-      </span>
-    </p>
-
   </div>
 </div>
     </section>

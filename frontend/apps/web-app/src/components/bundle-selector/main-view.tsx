@@ -227,7 +227,7 @@ export function MainView({
             </SelectorContent>
 
             {/* Purchase Button - Always visible */}
-            <SelectorAction className="mt-5">
+            <SelectorAction className="mt-2">
 <SelectorButton
     onClick={async () => {
     if (!isPricingValid || isPricingThinking || isPurchasing) return;

@@ -148,7 +148,7 @@ export function DestinationsGallery({
       data-speed={speed}
       id={id}
       aria-label={ariaLabel}
-      className="overflow-hidden"
+      className="overflow-hidden mt-0"
     >
       <div className="container mx-auto px-4 max-w-[1440px]">
         {/* Header */}
@@ -216,7 +216,7 @@ export function DestinationsGallery({
      <div className="flex justify-center mt-12">
   <p
     className="
-      text-white
+      text-brand-dark
       text-sm md:text-base lg:text-lg
       font-birzia
       leading-relaxed
