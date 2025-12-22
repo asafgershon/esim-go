@@ -174,7 +174,7 @@ export function MainView({
     onClick={() => setShowEsimSection((prev) => !prev)}
     className="text-brand-purple text-sm md:text-base font-semibold underline hover:opacity-80 transition"
   >
-    לרכישה קבוצתית
+   טסים כמה אנשים?
   </button>
 </div>
 </SelectorSection>

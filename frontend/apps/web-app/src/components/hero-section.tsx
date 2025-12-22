@@ -46,25 +46,33 @@ export function HeroSection({
 
 <div className="container mx-auto px-4 pt-4 md:pt-20 pb-[200px] relative z-10">
   <div className="text-center max-w-6xl mx-auto font-birzia">
-    <h1 className="font-bold mb-6">
-      <span className="text-5xl md:text-6xl lg:text-7xl text-brand-dark block leading-tight md:leading-snug">
-          אינטרנט{" "}
-        <span className="text-brand-purple">
-          ללא הגבלה
-        </span>
-      </span>
+
+    {/* 🔥 H1 */}
+    <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-brand-dark leading-tight mb-6">
+      חבילות גלישה{" "}
+      <span className="text-brand-purple">ללא הגבלה</span>{" "}
+      לכל יעד בעולם
     </h1>
-            <p className="text-md md:text-2xl pb-2 text-brand-dark mb-8 max-w-4xl mx-auto leading-relaxed">
-              <span className="font-medium">
-                רוכשים eSIM ללא הגבלת נפח גלישה, בדיוק לפי מספר הימים שאתם טסים.
-              </span>
-              <span className="font-light">
-                {" "}
-                ולא מתעסקים יותר עם נפח גלישה, הטענות או חידושים. החבילה שלכם פועלת אוטומטית מרגע הנחיתה וללא כל הגבלת נפח.
-              </span>
-            </p>
-        </div>
-      </div>
+
+    {/* ✨ Subtitle */}
+    <h2 className="text-xl md:text-2xl text-brand-dark/90 font-medium mb-8 max-w-4xl mx-auto">
+      ב־Hiilo אתם מקבלים eSIM עם אין סוף ג׳יגה גלישה —
+      לכל מקום, לכל החופשה
+    </h2>
+
+    {/* 🧩 Supporting copy – אפשר להזיז / להסתיר */}
+    <p className="text-md md:text-lg text-brand-dark/80 max-w-4xl mx-auto leading-relaxed">
+      <span className="font-medium">
+        רוכשים eSIM ללא הגבלת נפח גלישה, בדיוק לפי מספר הימים שאתם טסים.
+      </span>{" "}
+      <span className="font-light">
+        ולא מתעסקים יותר עם נפח גלישה, הטענות או חידושים. החבילה שלכם פועלת
+        אוטומטית מרגע הנחיתה וללא כל הגבלת נפח.
+      </span>
+    </p>
+
+  </div>
+</div>
     </section>
   );
 }

@@ -8,11 +8,11 @@ import path from "path";
 const MAYA_USERNAME = "y5b7HUu2PkCK";
 const MAYA_PASSWORD = "BcM1pD9MhpY5eZNunPJqRCEQGIyDbmmceIw69bszr7xQT6KLqvVvj4kFo8Xz1SuH";
 const MAYA_BASE_URL = "https://api.maya.net/connectivity/v1";
-const ICCID = "8910300000046955920";
+const ICCID = "8910300000046944851";
 
 const POSTMARK_TOKEN = "eb7e4a97-3d71-4c8e-8bd0-f2c85fafaa28";
-const RECIPIENT_EMAIL = "arinsf2010@gmail.com";
-const RECIPIENT_NAME = "arin";
+const RECIPIENT_EMAIL = "amitutish@gmail.com";
+const RECIPIENT_NAME = "amit";
 
 // 📁 תקייה שבה יושבים נכסי האימייל (אותם קבצים שאתה כבר משתמש בהם בשרת)
 const EMAIL_ASSETS_DIR = path.join(__dirname, "email-assets");

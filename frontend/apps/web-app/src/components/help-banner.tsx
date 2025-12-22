@@ -36,7 +36,7 @@ export function HelpBanner({
     bg-[url('/images/logos/logo-green.png')]
     bg-no-repeat bg-center
     bg-cover
-    opacity-10
+    opacity-40
   "
 />
 

@@ -12,16 +12,21 @@ export function PromoBanner() {
             px-6 md:px-8 
             text-center
           ">
-            <p className="
-              text-white 
-              text-sm md:text-base lg:text-lg
-              font-birzia
-              leading-relaxed
-            ">
-              <span>אנחנו מאמינים שאינטרנט, גם בחו״ל, צריך להיות פשוט וזמין ללא הגבלה כדי שאתם</span>
-              {" "}
-              <span className="text-brand-green font-semibold">תוכלו להתעסק בלהנות.</span>
-            </p>
+<p
+  className="
+    text-white
+    text-sm md:text-base lg:text-lg
+    font-birzia
+    leading-relaxed
+  "
+>
+  <span>
+    המערכת של Hiilo סורקת בזמן אמת את כל ספקי הגלישה הרלוונטיים ביעד אליו אתם טסים,
+  </span>{" "}
+  <span className="text-brand-green font-semibold">
+    ומביאה לכם את הדיל המשתלם ביותר.
+  </span>
+</p>
           </div>
         </div>
       </div>

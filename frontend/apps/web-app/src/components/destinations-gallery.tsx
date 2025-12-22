@@ -152,19 +152,7 @@ export function DestinationsGallery({
     >
       <div className="container mx-auto px-4 max-w-[1440px]">
         {/* Header */}
-        <div className="text-right mb-12 max-w-4xl mx-auto">
-          <h2 className="font-birzia font-bold text-[2rem] leading-[2.125rem] tracking-[-0.01em] text-[#0A232E] mb-6">
-            גלישה חופשית וזמינה במעל <span className="text-[#535FC8]">150</span> מדינות
-          </h2>
-          <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-birzia">
-            &nbsp;בחרו את היעד הבא שלכם, רכשו חבילה
-            <br className="hidden md:block" />
-            &nbsp;לפי מספר הימים, וה-ESIM יופעל אוטומטית
-            <br className="hidden md:block" />
-            &nbsp;עם הנחיתה - בלי נפח, בלי הגבלות.
-          </p>
-        </div>
-
+        <PromoBanner />
         <div
           ref={containerRef}
           className="relative overflow-y-visible mx-auto mt-10"
@@ -225,8 +213,25 @@ export function DestinationsGallery({
           />
         </div>
       </div>
-      {/* Promo Banner */}
-      <PromoBanner />
+     <div className="flex justify-center mt-12">
+  <p
+    className="
+      text-white
+      text-sm md:text-base lg:text-lg
+      font-birzia
+      leading-relaxed
+      text-center
+      max-w-4xl
+    "
+  >
+    <span className="font-medium">
+      רוכשים eSIM ב־Hiilo ולא מתעסקים יותר בהטענות או חידוש חבילה.
+    </span>{" "}
+    <span className="text-brand-green font-semibold">
+      בזכות הטכנולוגיה של Hiilo יש לכם אין סוף אינטרנט, במחיר המשתלם ביותר — לכל יעד בעולם.
+    </span>
+  </p>
+</div>
     </section>
   );
 }

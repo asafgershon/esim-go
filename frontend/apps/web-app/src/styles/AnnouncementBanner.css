@@ -11,7 +11,8 @@
 .announcement-track {
   display: flex;
   white-space: nowrap;
-  animation: marquee-scroll 60s linear infinite;
+  animation: marquee-scroll 40s linear infinite;
+  flex-shrink: 0;
 }
 
 .announcement-message {
@@ -31,12 +32,11 @@
   font-size: 16px;
 }
 
-/* זהה ל־inline שלך */
 @keyframes marquee-scroll {
   0% {
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-33.333%);
+    transform: translateX(-100%);
   }
 }
