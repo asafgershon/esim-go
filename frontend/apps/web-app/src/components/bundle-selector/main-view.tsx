@@ -21,6 +21,7 @@ import { SliderWithValue } from "@workspace/ui";
 import { useEffect } from "react";
 import { getFlagUrl } from "@/utils/flags";
 import { Users2Icon } from "lucide-react";
+import { DestinationTabs } from "./destination-tabs";
 
 
 interface MainViewProps {
@@ -68,17 +69,17 @@ export function MainView({
     
     // Get UI state and handlers from context
     const {
+        activeTab,
         numOfDays,
         countryId,
         tripId,
+        handleTabChange,
         setNumOfDays,
         setCurrentView,
         setCountryId,
         setTripId,
         isPricingValid,
         triggerDestinationSelectorFocus,
-        // 3. הסרת numOfEsims ו-setNumOfEsims מה-useBundleSelector 
-        // כי הם לא קיימים שם, ומוגדרים עכשיו מקומית.
     } = useBundleSelector();
 
     useEffect(() => {
@@ -133,6 +134,10 @@ export function MainView({
             </SelectorHeader>
 
             <SelectorContent>
+
+                {/* Tab Container with smooth sliding transition */}
+                <DestinationTabs activeTab={activeTab} onTabChange={handleTabChange} />
+
                 {/* Destination Selection */}
                 <DestinationSelector />
 
