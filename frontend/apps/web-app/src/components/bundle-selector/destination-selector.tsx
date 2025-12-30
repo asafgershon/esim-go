@@ -182,6 +182,8 @@ keywords: [
             aria-label="בחר יעד"
             aria-expanded={showMobileSheet}
             aria-haspopup="dialog"
+            onTouchStart={(e) => e.stopPropagation()}
+            onPointerDownCapture={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.preventDefault();
               setShowMobileSheet(true);

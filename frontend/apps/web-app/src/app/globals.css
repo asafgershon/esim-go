@@ -216,3 +216,31 @@
     outline-offset: -2px;
   }
 }
+
+/* ---------------------------------------------------------
+   🚑 iOS WebView Fix Bundle
+----------------------------------------------------------- */
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain;
+    touch-action: manipulation;
+  }
+
+  select, button, input, [role="button"], [data-interactive="true"] {
+    touch-action: manipulation !important;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input[type="range"] {
+    pointer-events: auto !important;
+    touch-action: pan-x;
+  }
+
+  .overflow-hidden {
+    overflow: visible !important;
+  }
+}
+
