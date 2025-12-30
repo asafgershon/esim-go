@@ -92,24 +92,26 @@ function SliderWithValue({
       min={min}
       max={max}
       step={1}
-      onPointerDownCapture={(e) => {
-      const isIOS = /iPad|iPhone|iPod/.test(window.navigator.userAgent);
-        if (isIOS) {
-          e.stopPropagation();
-          // ❌ לא נשתמש ב-e.preventDefault() כאן!
-        }
+      onTouchStart={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      onPointerMove={(e) => e.stopPropagation()}
+      style={{
+        touchAction: "none",
+        WebkitTapHighlightColor: "transparent",
       }}
       className={cn(
-        "relative flex w-full select-none items-center pointer-events-auto",
+        "relative flex w-full select-none items-center pointer-events-auto touch-none",
         className
       )}
       {...props}
-    >
+      >
       <SliderPrimitive.Track className="relative h-4 w-full grow overflow-hidden rounded-full bg-brand-dark/10">
         <SliderPrimitive.Range className="absolute h-full bg-brand-dark" />
       </SliderPrimitive.Track>
-      <SliderPrimitive.Thumb className="h-[44px] w-[44px] flex items-center active:ring-2 active:ring-brand-green active:border-brand-green justify-center rounded-full border border-brand-dark bg-brand-white shadow-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green disabled:pointer-events-none disabled:opacity-50">
-        <span className="text-[16px] font-bold text-brand-dark">
+      <SliderPrimitive.Thumb
+        className="h-[44px] w-[44px] flex items-center justify-center rounded-full border border-brand-dark bg-brand-white shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green touch-none select-none"
+      >        
+          <span className="text-[16px] font-bold text-brand-dark">
           {value[0]}
         </span>
       </SliderPrimitive.Thumb>
