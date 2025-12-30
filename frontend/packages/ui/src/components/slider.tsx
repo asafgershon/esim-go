@@ -92,6 +92,10 @@ function SliderWithValue({
       min={min}
       max={max}
       step={1}
+      onPointerDownCapture={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      }}
       className={cn(
         "relative flex w-full touch-none select-none items-center",
         className
