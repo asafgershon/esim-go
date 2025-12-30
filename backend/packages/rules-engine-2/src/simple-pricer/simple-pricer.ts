@@ -73,11 +73,19 @@ export async function calculateSimplePrice(countryIso: string, requestedDays: nu
         }
 
         let bundles = data as Bundle[];
-        if (providerName === 'maya') {
-            bundles = bundles.filter(b =>
-                b.plan_type?.toUpperCase() === 'STANDARD' &&
-                !b.name.includes('+')
-            );
+        if (providerName === "maya") {
+            // בסיסיים: רק STANDARD
+            const base = bundles.filter(
+            (b) => b.plan_type?.toUpperCase() === "STANDARD"
+        );
+
+        // 🔹 קבוצה בלי +
+        const noPlus = base.filter((b) => !b.name.includes("+"));
+
+        // 🔸 קבוצה עם +
+        const withPlus = base.filter((b) => b.name.includes("+"));
+
+        bundles = noPlus.length > 0 ? noPlus : withPlus;
         }
         return bundles;
     }
