@@ -93,11 +93,14 @@ function SliderWithValue({
       max={max}
       step={1}
       onPointerDownCapture={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
+      const isIOS = /iPad|iPhone|iPod/.test(window.navigator.userAgent);
+        if (isIOS) {
+          e.stopPropagation();
+          // ❌ לא נשתמש ב-e.preventDefault() כאן!
+        }
       }}
       className={cn(
-        "relative flex w-full touch-none select-none items-center",
+        "relative flex w-full select-none items-center pointer-events-auto",
         className
       )}
       {...props}
