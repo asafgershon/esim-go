@@ -70,6 +70,23 @@ async function createCheckoutSession(input: CreateCheckoutSessionInput) {
   }
 }
 
+function validateCheckoutToken(token: string): boolean {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return false;
+
+    const decoded = JSON.parse(atob(payload));
+    if (!decoded.exp) return false;
+
+    const expiresAt = decoded.exp * 1000; // convert seconds → ms
+    const isValid = Date.now() < expiresAt;
+
+    return isValid;
+  } catch {
+    return false; // token is malformed or not a JWT
+  }
+}
+
 /**
  * רכיב "הרמזור" הראשי של הצ'קאאוט
  */
@@ -79,10 +96,11 @@ export default async function CheckoutHandler({
   const { token, numOfDays, countryId, regionId } = searchParams;
 
   // 1. If token exists, show checkout
-  if (token) {
-    console.log("Handler: Found existing token, rendering CheckoutContainer.");
+  if (token && validateCheckoutToken(token)) {
+    console.log("Handler: Valid token, rendering CheckoutContainer.");
     return <CheckoutContainerV2 />;
   }
+
 
   // 2. If no token but has params, create session
   if ((countryId || regionId) && numOfDays) {

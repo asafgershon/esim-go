@@ -332,26 +332,56 @@ export function BundleSelectorProvider({
     }
   }, [countryId, tripId, scrollContext]);
 
-  const handlePurchase = (pricingData?: { totalPrice?: number } | null) => {
-    // Use the passed pricing data or fall back to context pricing
-    const effectivePricing = pricingData ?? pricing;
-    const isReadyToPurchase =
-      (countryId || tripId) &&
-      effectivePricing &&
-      effectivePricing.totalPrice !== undefined;
-    if (!isReadyToPurchase) return;
+const handlePurchase = (pricingData?: { totalPrice?: number } | null) => {
+  // ⬇️ נקבע מחיר לפי קוד שמגיע או מה־context
+  const effectivePricing = pricingData ?? pricing;
 
-    // Navigate to checkout with current parameters
-    const params = new URLSearchParams();
-    params.set("numOfDays", numOfDays.toString());
-    if (countryId) params.set("countryId", countryId.toUpperCase());
-    if (numOfEsims) params.set("numOfEsims", numOfEsims.toString());
-    if (tripId) params.set("tripId", tripId);
-    if (effectivePricing?.totalPrice)
-      params.set("totalPrice", effectivePricing.totalPrice.toString());
-    console.log("[CLIENT] pushing checkout params:", Object.fromEntries(params.entries()));
-    router.push(`/checkout?${params.toString()}`);
-  };
+  // ⬇️ וידוא מינימלי שיש את מה שצריך
+  const isReadyToPurchase =
+    (countryId || tripId) &&
+    effectivePricing &&
+    effectivePricing.totalPrice !== undefined;
+
+  if (!isReadyToPurchase) return;
+
+  // ⬇️ מאספים פרמטרים לניווט
+  const params = new URLSearchParams();
+  params.set("numOfDays", numOfDays.toString());
+
+  if (countryId) params.set("countryId", countryId.toUpperCase());
+  if (numOfEsims) params.set("numOfEsims", numOfEsims.toString());
+  if (tripId) params.set("tripId", tripId);
+
+  // ⬇️ שמירת totalPrice גם אם הוא 0
+  if (
+    effectivePricing?.totalPrice !== undefined &&
+    effectivePricing?.totalPrice !== null
+  ) {
+    params.set("totalPrice", String(effectivePricing.totalPrice));
+  }
+
+  // ⬇️ אם יש token קיים ב־URL והוא פג תוקף — למחוק אותו
+  const existingToken = new URLSearchParams(window.location.search).get("token");
+  if (existingToken) {
+    try {
+      const exp = JSON.parse(atob(existingToken.split(".")[1])).exp * 1000;
+      if (exp < Date.now()) {
+        console.warn("⚠️ Found expired token → removing before redirect");
+        params.delete("token");
+      }
+    } catch {
+      params.delete("token"); // token לא תקין או לא קריא → ננקה בכל מקרה
+    }
+  }
+
+  // ⬇️ לוג + ניתוב
+  console.log(
+    "[CLIENT] redirecting to checkout with:",
+    Object.fromEntries(params.entries())
+  );
+
+  router.push(`/checkout?${params.toString()}`);
+};
 
   const triggerDestinationSelectorFocus = () => {
     setShouldFocusDestinationSelector(true);
