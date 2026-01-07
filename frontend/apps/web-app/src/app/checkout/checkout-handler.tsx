@@ -95,8 +95,9 @@ export default async function CheckoutHandler({
 }: CheckoutHandlerProps) {
   const { token, numOfDays, countryId, regionId } = searchParams;
 
+  const hasBusinessParams = Boolean(countryId || regionId || numOfDays);
   // 1. If token exists, show checkout
-  if (token && validateCheckoutToken(token)) {
+  if (token && validateCheckoutToken(token)  && !hasBusinessParams) {
     console.log("Handler: Valid token, rendering CheckoutContainer.");
     return <CheckoutContainerV2 />;
   }
