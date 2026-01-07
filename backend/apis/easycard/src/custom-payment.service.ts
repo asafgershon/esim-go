@@ -198,7 +198,7 @@ export async function createPaymentIntent(params: ICreatePaymentParams): Promise
         jDealType: "J4",
         allowRegular: true,
         additionalFields: {},
-        hideNationalID: true,
+        //hideNationalID: true,
         paymentIntent: true,
         hidePhone: true,
         hideConsumerName:true,
