@@ -360,6 +360,20 @@ const handlePurchase = (pricingData?: { totalPrice?: number } | null) => {
     params.set("totalPrice", String(effectivePricing.totalPrice));
   }
 
+  // ⬇️ אם יש token קיים ב־URL והוא פג תוקף — למחוק אותו
+  const existingToken = new URLSearchParams(window.location.search).get("token");
+  if (existingToken) {
+    try {
+      const exp = JSON.parse(atob(existingToken.split(".")[1])).exp * 1000;
+      if (exp < Date.now()) {
+        console.warn("⚠️ Found expired token → removing before redirect");
+        params.delete("token");
+      }
+    } catch {
+      params.delete("token"); // token לא תקין או לא קריא → ננקה בכל מקרה
+    }
+  }
+
   // ⬇️ לוג + ניתוב
   console.log(
     "[CLIENT] redirecting to checkout with:",

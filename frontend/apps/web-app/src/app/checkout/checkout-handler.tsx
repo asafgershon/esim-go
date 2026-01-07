@@ -95,6 +95,13 @@ export default async function CheckoutHandler({
 }: CheckoutHandlerProps) {
   const { token, numOfDays, countryId, regionId } = searchParams;
 
+  // 1. If token exists, show checkout
+  if (token && validateCheckoutToken(token)) {
+    console.log("Handler: Valid token, rendering CheckoutContainer.");
+    return <CheckoutContainerV2 />;
+  }
+
+
   // 2. If no token but has params, create session
   if ((countryId || regionId) && numOfDays) {
     const parsedNumOfEsims = searchParams.numOfEsims ? Number(searchParams.numOfEsims) : 1;
