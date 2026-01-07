@@ -439,37 +439,39 @@ app.post("/webhooks/easycard", async (req, res) => {
     }
   });
 
-  app.get("/payment/callback", (req, res) => {
-    const transactionId = req.query.transactionID as string;
-    const code = req.query.code as string;
+  /*
+app.get("/payment/callback", (req, res) => {
+  const transactionId = req.query.transactionID as string;
+  const code = req.query.code as string;
 
-    if (!transactionId) {
-      return res.redirect("/checkout/failure?reason=missing_transaction_id");
-    }
+  if (!transactionId) {
+    return res.redirect("/checkout/failure?reason=missing_transaction_id");
+  }
 
-    // שולחים ללקוח redirect מהיר
-    if (code === "0") {
-      console.log(`[CALLBACK] code=0, immediate success redirect for ${transactionId}`);
-      res.redirect(`/checkout/success?transactionId=${transactionId}`);
-    } else {
-      console.log(`[CALLBACK] code=${code || "none"}, redirecting to pending page`);
-      res.redirect(`/checkout?transactionId=${transactionId}&status=pending`);
-    }
+  // שולחים ללקוח redirect מהיר
+  if (code === "0") {
+    console.log(`[CALLBACK] code=0, immediate success redirect for ${transactionId}`);
+    res.redirect(`/checkout/success?transactionId=${transactionId}`);
+  } else {
+    console.log(`[CALLBACK] code=${code || "none"}, redirecting to pending page`);
+    res.redirect(`/checkout?transactionId=${transactionId}&status=pending`);
+  }
 
-    // מריצים את האימות ברקע
-    checkoutWorkflowService
-      .handleRedirectCallback({ easycardTransactionId: transactionId })
-      .then((result) => {
-        if (result.success) {
-          console.log(`[ASYNC CALLBACK] ✅ Order completed for ${transactionId}`);
-        } else {
-          console.warn(`[ASYNC CALLBACK] ❌ Failed to complete order for ${transactionId}`);
-        }
-      })
-      .catch((error) => {
-        console.error(`[ASYNC CALLBACK] 💥 Error processing ${transactionId}:`, error);
-      });
-  });
+  // מריצים את האימות ברקע
+  checkoutWorkflowService
+    .handleRedirectCallback({ easycardTransactionId: transactionId })
+    .then((result) => {
+      if (result.success) {
+        console.log(`[ASYNC CALLBACK] ✅ Order completed for ${transactionId}`);
+      } else {
+        console.warn(`[ASYNC CALLBACK] ❌ Failed to complete order for ${transactionId}`);
+      }
+    })
+    .catch((error) => {
+      console.error(`[ASYNC CALLBACK] 💥 Error processing ${transactionId}:`, error);
+    });
+});
+*/
 
     // 🟣 GraphQL Endpoint
     app.use(
