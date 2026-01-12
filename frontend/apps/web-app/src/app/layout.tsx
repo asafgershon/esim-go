@@ -9,7 +9,7 @@ import { CookieBannerWrapper } from "@/components/cookie-banner/CookieBannerWrap
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Hilo ESIM - Unlimited Travel. Unlimited Data",
+  title: "Hiilo world - Unlimited Travel. Unlimited Data",
   description:
     "Stay connected worldwide with Hilo ESIM's global eSIM solutions. Unlimited travel, unlimited data.",
 };
