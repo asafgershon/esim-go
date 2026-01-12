@@ -30,6 +30,16 @@ export function useCountries() {
     errorPolicy: 'all',
   });
 
+  const europe: EnhancedCountry = {
+  iso: "EU",
+  name: "Europe",
+  nameHebrew: "אירופה",
+  // אם יש לך שדות נוספים ב-Country 타입 (כמו flag, dialCode וכו') תן להם ערכים ברירת מחדל
+  id: "eu",
+  tagline: "אירופה", // או מה שבא לך
+  basePrice: 2.5,
+};
+
   // FIX: Process the data from the new, simpler structure (data.countries instead of data.bundlesByCountry)
   const countries: EnhancedCountry[] = data?.countries?.map((country, index: number) => ({
     ...country,
@@ -37,6 +47,10 @@ export function useCountries() {
     tagline: taglines[index % taglines.length],
     basePrice: 2.5, // Default base price
   })) || [];
+
+  if (!countries.some(c => c.id === "eu")) {
+  countries.unshift(europe); // או push אם אתה רוצה בסוף
+}
 
   // Sort by Hebrew name - this logic also remains the same.
   const sortedCountries = countries.sort((a, b) => 
