@@ -15,11 +15,11 @@ const CountUp = lazy(() => import("react-countup"));
 // 3. שימוש בטיפוס הנכון במקום any
 interface OrderDetailsSectionProps {
   data: CheckoutData | undefined;
-    updatedPricing?: {
-      priceAfter: number;
-      priceBefore: number;
-      hasDiscount: boolean;
-    } | null;
+  updatedPricing?: {
+    priceAfter: number;
+    priceBefore: number;
+    hasDiscount: boolean;
+  } | null;
   sectionNumber?: number;
   completed?: boolean;
 }
@@ -38,27 +38,50 @@ export function OrderCard({
 
   if (!data || !data.bundle) return <OrderDetailsSkeleton />;
 
-  const bundle = updatedPricing || data.bundle;
+  const bundle = data.bundle;
+
+  // 🛡️ CRITICAL FIX: Validate bundle has required pricing data
+  if (typeof bundle.price !== 'number' || bundle.price <= 0) {
+    console.error('[OrderCard] Invalid bundle price!', { bundle });
+    return (
+      <Card dir="rtl" className="p-6 border-red-500">
+        <div className="text-center text-red-600">
+          <h3 className="font-bold text-lg mb-2">שגיאה בנתוני התמחור</h3>
+          <p className="text-sm mb-3">לא הצלחנו לטעון את מחיר החבילה</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+          >
+            רענן דף
+          </button>
+        </div>
+      </Card>
+    );
+  }
 
   // Extract bundle meta (unchanged)
-  const { numOfDays, country, numOfEsims } = data.bundle;
-  // Determine final displayed prices
-  const priceAfter = updatedPricing?.priceAfter ?? data.bundle.price;
+  const { numOfDays, country, numOfEsims } = bundle;
 
-  const priceBefore = updatedPricing?.priceBefore ?? data.bundle.price;
-
+  // Determine final displayed prices - with safe fallbacks
+  const priceAfter = updatedPricing?.priceAfter ?? bundle.price;
+  const priceBefore = updatedPricing?.priceBefore ?? bundle.price;
   const hasDiscount = updatedPricing?.hasDiscount ?? false;
 
-  const totalPriceAfter = priceAfter * (numOfEsims ?? 1);
-  const totalPriceBefore = priceBefore * (numOfEsims ?? 1);
+  // 🛡️ Additional safety: Ensure prices are valid numbers
+  const safePriceAfter = typeof priceAfter === 'number' && priceAfter > 0 ? priceAfter : 0;
+  const safePriceBefore = typeof priceBefore === 'number' && priceBefore > 0 ? priceBefore : safePriceAfter;
+  const safeNumOfEsims = numOfEsims && numOfEsims > 0 ? numOfEsims : 1;
+
+  const totalPriceAfter = safePriceAfter * safeNumOfEsims;
+  const totalPriceBefore = safePriceBefore * safeNumOfEsims;
 
   const currencySymbol =
     Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
     })
-      .formatToParts(priceAfter || 0)
-      .find((part) => part.type === "currency")?.value || "";
+      .formatToParts(safePriceAfter)
+      .find((part) => part.type === "currency")?.value || "$";
 
   return (
     <Card dir="rtl" className="flex flex-col gap-4 shadow-xl">
@@ -98,51 +121,51 @@ export function OrderCard({
             <span className="font-medium">{numOfDays} ימים</span>
           </div>
         </div>
-          <div className="flex justify-between">
-    <span className="text-muted-foreground">נפח גלישה</span>
-    <span className="font-medium">ללא הגבלה</span>
-  </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">נפח גלישה</span>
+          <span className="font-medium">ללא הגבלה</span>
+        </div>
       </div>
 
-<div className="border-t pt-4 space-y-3">
-  <div className="flex justify-between items-center">
-    <span className="text-lg font-semibold">סה״כ מחיר</span>
+      <div className="border-t pt-4 space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="text-lg font-semibold">סה״כ מחיר</span>
 
-    <div className="flex flex-col items-end">
+          <div className="flex flex-col items-end">
 
-      {/* ✔ BIG PRICE — price of ONE eSIM */}
-      <span className="text-xl font-bold text-primary">
-        <CountUp
-          end={priceAfter}
-          decimals={2}
-          prefix={currencySymbol}
-          duration={0.5}
-          preserveValue
-        />
-      </span>
+            {/* ✔ BIG PRICE — price of ONE eSIM */}
+            <span className="text-xl font-bold text-primary">
+              <CountUp
+                end={safePriceAfter}
+                decimals={2}
+                prefix={currencySymbol}
+                duration={0.5}
+                preserveValue
+              />
+            </span>
 
-      {/* ✔ Small line: single × quantity = TOTAL */}
-      {numOfEsims > 1 && (
-        <span className="text-xs text-gray-500 mt-1">
-          {priceAfter.toFixed(2)} {currencySymbol} × {numOfEsims} ={" "}
-          <span className="font-bold">
-            {(priceAfter * numOfEsims).toFixed(2)}{currencySymbol}
-          </span>
-        </span>
-      )}
+            {/* ✔ Small line: single × quantity = TOTAL */}
+            {safeNumOfEsims > 1 && (
+              <span className="text-xs text-gray-500 mt-1">
+                {safePriceAfter.toFixed(2)} {currencySymbol} × {safeNumOfEsims} ={" "}
+                <span className="font-bold">
+                  {totalPriceAfter.toFixed(2)}{currencySymbol}
+                </span>
+              </span>
+            )}
 
-      {/* ✔ If discount → show ONLY single-esim original price */}
-      {hasDiscount && (
-        <span className="text-gray-400 line-through text-sm">
-          {currencySymbol}{priceBefore.toFixed(2)}
-        </span>
-      )}
+            {/* ✔ If discount → show ONLY single-esim original price */}
+            {hasDiscount && (
+              <span className="text-gray-400 line-through text-sm">
+                {currencySymbol}{safePriceBefore.toFixed(2)}
+              </span>
+            )}
 
-    </div>
-  </div>
-</div>
-</Card>
-);
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 // ... (קוד הסקלטון נשאר זהה)

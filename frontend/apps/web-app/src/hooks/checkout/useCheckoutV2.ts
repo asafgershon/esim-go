@@ -1,11 +1,11 @@
 "use client";
 
-import { gql, useQuery } from "@apollo/client"; 
+import { gql, useQuery } from "@apollo/client";
 import { useSearchParams } from 'next/navigation';
 import { useMemo } from "react";
 import { useCountries } from "@/hooks/useCountries";
 // ⚠️ הנתיב הזה עדיין מוגזם, אבל נשארתי איתו כרגע:
-import { type SimplePricingResult } from "../../utils/pricing"; 
+import { type SimplePricingResult } from "../../utils/pricing";
 
 export interface Discount {
   name: string;
@@ -84,38 +84,61 @@ export const useCheckout = () => {
     const session = data?.getCheckoutSession?.session;
 
     console.log("[CLIENT] GraphQL raw session:", session);
-  console.log("[CLIENT] GraphQL raw metadata:", session?.metadata);
-  console.log("[CLIENT] GraphQL raw pricing:", session?.pricing);
+    console.log("[CLIENT] GraphQL raw metadata:", session?.metadata);
+    console.log("[CLIENT] GraphQL raw pricing:", session?.pricing);
     if (!session) {
       return undefined; // ⬅️⬅️ תיקון 2: החזר undefined במקום null
     }
 
-    // ה-pricing כאן הוא האובייקט המלא מ-calculateSimplePrice
-    const pricing = session.pricing as SimplePricingResult; 
-    
+    // 🛡️ CRITICAL FIX: Validate pricing exists and has required fields
+    const pricing = session.pricing as SimplePricingResult;
+
+    if (!pricing) {
+      console.error("[CLIENT] ❌ Session has no pricing data!", {
+        sessionId: session.id
+      });
+      return undefined;
+    }
+
+    if (typeof pricing.finalPrice !== 'number' || pricing.finalPrice <= 0) {
+      console.error("[CLIENT] ❌ Invalid or missing finalPrice!", {
+        sessionId: session.id,
+        pricing
+      });
+      return undefined;
+    }
+
+    if (!pricing.requestedDays || pricing.requestedDays <= 0) {
+      console.error("[CLIENT] ❌ Invalid requestedDays!", {
+        sessionId: session.id,
+        pricing
+      });
+      return undefined;
+    }
+
     // שלוף את קוד המדינה מה-metadata
     const countryIso = session.metadata?.countries?.[0];
-    
+
     // מצא את אובייקט המדינה המלא
     const country = countries.find(c => c.iso === countryIso);
 
     return {
       id: session.id,
       bundle: {
-        id: pricing.bundleName,
+        id: pricing.bundleName || 'unknown',
         price: pricing.finalPrice,
         numOfDays: pricing.requestedDays,
-        country: country ? { 
+        country: country ? {
           iso: country.iso,
           name: country.name,
           nameHebrew: country.nameHebrew
-        } : null, 
+        } : null,
         completed: false,
         currency: "USD",
-        dataAmount: "Unlimited",
-        discounts: [],
-        pricePerDay: 0,
-        speed: [],
+        dataAmount: "Unlimited",
+        discounts: [],
+        pricePerDay: 0,
+        speed: [],
         numOfEsims: session.metadata?.numOfEsims ?? 1,
       },
       auth: { completed: false },
@@ -127,7 +150,7 @@ export const useCheckout = () => {
   return {
     checkout,
     loading,
-    error,
-    refreshCheckout: () => {}, 
+    error: error || (!checkout && !loading ? new Error("Invalid session data") : null),
+    refreshCheckout: () => { },
   };
 };
