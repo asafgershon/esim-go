@@ -108,5 +108,6 @@ export const CheckoutContainerV2 = () => {
       /> 
       */}
       </main>
-      );
+    </CheckoutErrorBoundary>
+  );
 };
