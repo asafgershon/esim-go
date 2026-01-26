@@ -8,14 +8,14 @@ import postmark from "postmark";
 import QRCode from "qrcode";
 import fs, { stat } from "fs";
 import path from "path";
-type CheckoutSession = any; 
+type CheckoutSession = any;
 
 import { calculateSimplePrice, type SimplePricingResult, type SimplePricingDiscount } from "../../../../packages/rules-engine-2/src/simple-pricer/simple-pricer";
 import type {
-  BundleRepository,
-  CouponRepository,
-  OrderRepository,
-  UserRepository,
+  BundleRepository,
+  CouponRepository,
+  OrderRepository,
+  UserRepository,
 } from "../../repositories";
 import type { ESIMRepository } from "../../repositories/esim.repository";
 import type { DeliveryService } from "../delivery";
@@ -23,7 +23,7 @@ import type { ESimGoClient } from "@hiilo/esim-go";
 import { MayaApi } from "@hiilo/esim-go/maya";
 import type { PaymentServiceInstance } from "../payment";
 // 👇 ייבוא קריטי: פונקציות האימות מול איזיקארד
-import { getTransactionStatus,getIntentIdFromTransaction, type ITransactionStatusResponse } from "../../../../apis/easycard/src/custom-payment.service"; 
+import { getTransactionStatus, getIntentIdFromTransaction, type ITransactionStatusResponse } from "../../../../apis/easycard/src/custom-payment.service";
 import type { constants } from "zlib";
 import type { any } from "zod";
 import { num } from "envalid";
@@ -49,164 +49,164 @@ let esimRepository: ESIMRepository | null = null;
 // Init (נשאר כפי שהיה)
 // ======================
 const init = async (context: {
-  pubsub: PubSubInstance;
-  sessionService: CheckoutSessionServiceV2;
-  bundleRepository: BundleRepository;
-  userRepository: UserRepository;
-  esimAPI: ESimGoClient;
-  paymentAPI: PaymentServiceInstance;
-  deliveryService: DeliveryService;
-  orderRepository: OrderRepository;
-  esimRepository: ESIMRepository;
-  couponRepository: CouponRepository;
-  mayaAPI?: MayaApi;
+  pubsub: PubSubInstance;
+  sessionService: CheckoutSessionServiceV2;
+  bundleRepository: BundleRepository;
+  userRepository: UserRepository;
+  esimAPI: ESimGoClient;
+  paymentAPI: PaymentServiceInstance;
+  deliveryService: DeliveryService;
+  orderRepository: OrderRepository;
+  esimRepository: ESIMRepository;
+  couponRepository: CouponRepository;
+  mayaAPI?: MayaApi;
 }) => {
-  pubsub = context.pubsub;
-  sessionService = context.sessionService;
-  bundleRepository = context.bundleRepository;
-  userRepository = context.userRepository;
-  esimAPI = context.esimAPI;
-  paymentAPI = context.paymentAPI;
-  deliveryService = context.deliveryService;
-  orderRepository = context.orderRepository;
-  esimRepository = context.esimRepository;
-  couponRepository = context.couponRepository;
-  mayaAPI =
-    context.mayaAPI ||
-    (env.MAYA_API_KEY
-      ? new MayaApi({ auth: env.MAYA_API_KEY, baseUrl: env.MAYA_BASE_URL })
-      : null);
-  return checkoutWorkflow;
+  pubsub = context.pubsub;
+  sessionService = context.sessionService;
+  bundleRepository = context.bundleRepository;
+  userRepository = context.userRepository;
+  esimAPI = context.esimAPI;
+  paymentAPI = context.paymentAPI;
+  deliveryService = context.deliveryService;
+  orderRepository = context.orderRepository;
+  esimRepository = context.esimRepository;
+  couponRepository = context.couponRepository;
+  mayaAPI =
+    context.mayaAPI ||
+    (env.MAYA_API_KEY
+      ? new MayaApi({ auth: env.MAYA_API_KEY, baseUrl: env.MAYA_BASE_URL })
+      : null);
+  return checkoutWorkflow;
 };
 
 // ==================================
 // selectBundle – now adds country
 // ==================================
 const selectBundle = async ({
-  sessionId,
-  countryId,
-  numOfDays,
+  sessionId,
+  countryId,
+  numOfDays,
 }: {
-  sessionId: string;
-  countryId: string;
-  numOfDays: number;
+  sessionId: string;
+  countryId: string;
+  numOfDays: number;
 }) => {
-  if (!sessionService) throw new NotInitializedError();
-  if (!bundleRepository) throw new NotInitializedError();
+  if (!sessionService) throw new NotInitializedError();
+  if (!bundleRepository) throw new NotInitializedError();
 
-  const session = await sessionService.getSession(sessionId);
-  if (!session) throw new SessionNotFound();
+  const session = await sessionService.getSession(sessionId);
+  if (!session) throw new SessionNotFound();
 
-  let country: { iso2: string; name: string } | null = null;
-  try {
-    const found = await bundleRepository.getCountryByIso(countryId);
-    if (found) country = found;
-  } catch (err: any) {
-    logger.warn(`[WARN] Could not fetch country ${countryId}:`, err.message);
-  }
+  let country: { iso2: string; name: string } | null = null;
+  try {
+    const found = await bundleRepository.getCountryByIso(countryId);
+    if (found) country = found;
+  } catch (err: any) {
+    logger.warn(`[WARN] Could not fetch country ${countryId}:`, err.message);
+  }
 
-  const result = await calculateSimplePrice(countryId, numOfDays);
-  const price = result.finalPrice;
+  const result = await calculateSimplePrice(countryId, numOfDays);
+  const price = result.finalPrice;
 
-  const next = await sessionService.updateSessionStep(
-    sessionId,
-    "bundle",
-    {
-      ...session.bundle,
-      completed: false,
-      validated: false,
-      countryId,
-      country,
-      numOfDays,
-      price,
-      externalId: result.externalId.toString(),
-      pricePerDay: price / numOfDays,
-    }
-  );
+  const next = await sessionService.updateSessionStep(
+    sessionId,
+    "bundle",
+    {
+      ...session.bundle,
+      completed: false,
+      validated: false,
+      countryId,
+      country,
+      numOfDays,
+      price,
+      externalId: result.externalId.toString(),
+      pricePerDay: price / numOfDays,
+    }
+  );
 
   logger.info("[BUNDLE] after updateSessionStep()", {
     sessionId,
     savedExternalId: next.bundle?.externalId,
   });
 
-  return next;
+  return next;
 };
 
 // ==================================
 // Other workflow methods
 // ==================================
 const validateBundle = async ({ sessionId }: { sessionId: string }) => {
-  if (!sessionService) throw new NotInitializedError();
-  const session = await sessionService.getSession(sessionId);
-  if (!session) throw new SessionNotFound();
-  return sessionService.updateSessionStep(sessionId, "bundle", {
-    ...session.bundle,
-    completed: true,
-    validated: true,
-  });
+  if (!sessionService) throw new NotInitializedError();
+  const session = await sessionService.getSession(sessionId);
+  if (!session) throw new SessionNotFound();
+  return sessionService.updateSessionStep(sessionId, "bundle", {
+    ...session.bundle,
+    completed: true,
+    validated: true,
+  });
 };
 
 const setDelivery = async ({
-  sessionId,
-  email,
-  phone,
-  firstName,
-  lastName,
+  sessionId,
+  email,
+  phone,
+  firstName,
+  lastName,
 }: {
-  sessionId: string;
-  email?: string | null;
-  phone?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
+  sessionId: string;
+  email?: string | null;
+  phone?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
 }) => {
-  if (!sessionService) throw new NotInitializedError();
-  console.log(`[DEBUG] setDelivery: Attempting to getSession with ID: ${sessionId}`);
-  const session = await sessionService.getSession(sessionId);
-  console.log(`[DEBUG] setDelivery: Got session successfully:`, session ? session.id : 'null');
-  if (!session) throw new Error(`SessionNotFound in setDelivery: ID ${sessionId} not found`);
+  if (!sessionService) throw new NotInitializedError();
+  console.log(`[DEBUG] setDelivery: Attempting to getSession with ID: ${sessionId}`);
+  const session = await sessionService.getSession(sessionId);
+  console.log(`[DEBUG] setDelivery: Got session successfully:`, session ? session.id : 'null');
+  if (!session) throw new Error(`SessionNotFound in setDelivery: ID ${sessionId} not found`);
 
-  return sessionService.updateSessionStep(sessionId, "delivery", {
-    email,
-    phone,
-    firstName,
-    lastName,
-    completed: true,
-  });
+  return sessionService.updateSessionStep(sessionId, "delivery", {
+    email,
+    phone,
+    firstName,
+    lastName,
+    completed: true,
+  });
 };
 
 const applyCoupon = async ({
-  sessionId,
-  couponCode,
+  sessionId,
+  couponCode,
 }: {
-  sessionId: string;
-  couponCode: string;
+  sessionId: string;
+  couponCode: string;
 }) => {
-  if (!sessionService || !couponRepository)
-    throw new NotInitializedError();
+  if (!sessionService || !couponRepository)
+    throw new NotInitializedError();
 
-  const session = await sessionService.getSession(sessionId);
-  if (!session) throw new SessionNotFound();
+  const session = await sessionService.getSession(sessionId);
+  if (!session) throw new SessionNotFound();
 
-  try {
-    const updatedSession = await couponRepository.applyCoupon({
-      sessionId,
-      couponCode,
-      userId: session.auth.userId,
-    });
+  try {
+    const updatedSession = await couponRepository.applyCoupon({
+      sessionId,
+      couponCode,
+      userId: session.auth.userId,
+    });
 
-    const updatedPricing = updatedSession.pricing as unknown as SimplePricingResult;
+    const updatedPricing = updatedSession.pricing as unknown as SimplePricingResult;
 
-    return sessionService.updateSessionStep(sessionId, "bundle", {
-      ...session.bundle,
-      discounts: updatedPricing.discount ? [updatedPricing.discount] : [],
-      price: updatedPricing.finalPrice ?? session.bundle.price,
-    });
-  } catch (err: any) {
-    logger.error("Coupon failed", err);
-    throw new GraphQLError(err.message || "Invalid or expired coupon", {
-      extensions: { code: "COUPON_VALIDATION_FAILED" },
-    });
-  }
+    return sessionService.updateSessionStep(sessionId, "bundle", {
+      ...session.bundle,
+      discounts: updatedPricing.discount ? [updatedPricing.discount] : [],
+      price: updatedPricing.finalPrice ?? session.bundle.price,
+    });
+  } catch (err: any) {
+    logger.error("Coupon failed", err);
+    throw new GraphQLError(err.message || "Invalid or expired coupon", {
+      extensions: { code: "COUPON_VALIDATION_FAILED" },
+    });
+  }
 };
 
 // ==========================================================
@@ -224,142 +224,147 @@ const readEmailAsset = (fileName: string) => {
  * 🛠️ מבצע את הלוגיקה הקריטית: אימות תשלום, יצירת הזמנת eSIM, ועדכון DB.
  */
 export const completeOrder = async ({
-  sessionId,
-  easycardTransactionId,
+  sessionId,
+  easycardTransactionId,
 }: {
-  sessionId: string;
-  easycardTransactionId: string;
+  sessionId: string;
+  easycardTransactionId: string;
 }): Promise<{ status: 'COMPLETED' | 'FAILED'; orderId?: string }> => {
-  // 1. אימות שירותים חיוניים
-  if (!sessionService || !orderRepository || !pubsub || !mayaAPI || !esimRepository) throw new NotInitializedError();
+  // 1. אימות שירותים חיוניים
+  if (!sessionService || !orderRepository || !pubsub || !mayaAPI || !esimRepository) throw new NotInitializedError();
 
-  const session = await sessionService.getSession(sessionId);
-  if (!session) {
-    logger.error(`[COMPLETE_ORDER] ❌ Session not found: ${sessionId}`);
-    return { status: 'FAILED' };
-  }
+  const session = await sessionService.getSession(sessionId);
+  if (!session) {
+    logger.error(`[COMPLETE_ORDER] ❌ Session not found: ${sessionId}`);
+    return { status: 'FAILED' };
+  }
 
-logger.info(
-  `[COMPLETE_ORDER] 📝 Loaded session object:\n${JSON.stringify(session, null, 2)}`
-);
+  logger.info(
+    `[COMPLETE_ORDER] 📝 Loaded session object:\n${JSON.stringify(session, null, 2)}`
+  );
 
-  logger.info(`[COMPLETE_ORDER] 🟢 Processing transaction ${easycardTransactionId}`);
+  logger.info(`[COMPLETE_ORDER] 🟢 Processing transaction ${easycardTransactionId}`);
 
-  // 2. אימות העסקה מול EasyCard
-  let transactionInfo;
-  try {
-    transactionInfo = await getTransactionStatus(easycardTransactionId);
-  } catch (err: any) {
-    logger.error(`[COMPLETE_ORDER] Failed to fetch transaction info: ${err.message}`);
-    return { status: 'FAILED' };
-  }
+  // 2. אימות העסקה מול EasyCard
+  let transactionInfo;
+  try {
+    transactionInfo = await getTransactionStatus(easycardTransactionId);
+  } catch (err: any) {
+    logger.error(`[COMPLETE_ORDER] Failed to fetch transaction info: ${err.message}`);
+    return { status: 'FAILED' };
+  }
 
-  const rawStatus = transactionInfo?.status || "";
-  const normalizedStatus = rawStatus.toLowerCase();
-  logger.info(`[COMPLETE_ORDER] 💳 EasyCard status: ${normalizedStatus}`);
- 
-  // 3. אם התשלום אושר או נמצא במצב המתנה לאספקה (Approved, Succeeded, AwaitingForTransmission)
-  if (["approved", "succeeded", "awaitingfortransmission"].includes(normalizedStatus)) {
-    try {
-      logger.info(`[COMPLETE_ORDER] ✅ Payment appears successful (${rawStatus}). Creating order and fulfilling...`);
+  const rawStatus = transactionInfo?.status || "";
+  const normalizedStatus = rawStatus.toLowerCase();
+  logger.info(`[COMPLETE_ORDER] 💳 EasyCard status: ${normalizedStatus}`);
 
-      // 3.1 בדיקת ה-UID של המוצר
+  // 3. אם התשלום אושר או נמצא במצב המתנה לאספקה (Approved, Succeeded, AwaitingForTransmission)
+  if (["approved", "succeeded", "awaitingfortransmission"].includes(normalizedStatus)) {
+    try {
+      logger.info(`[COMPLETE_ORDER] ✅ Payment appears successful (${rawStatus}). Creating order and fulfilling...`);
+
+      // 3.1 בדיקת ה-UID של המוצר
       const mayaProductUid =
         session.bundle?.externalId ||
         session.pricing?.externalId ||
         (session.pricing as any)?.calculation?.externalId ||
         null;
-          
-      if (!mayaProductUid) {
-          logger.error(`[COMPLETE_ORDER] ❌ Missing Maya Product UID in session: ${sessionId}`);
-          throw new Error("Missing Maya Product UID for fulfillment"); 
-      }
-      
-      // 3.2 יצירת הזמנה חדשה ב-DB
-      const order = await orderRepository.createFromSession(session, easycardTransactionId);
 
-      // 3.3 עדכון ה־Session
-      await sessionService.updateSessionFields(sessionId, {
-        orderId: order.id,
-        state: "PAYMENT_COMPLETED" as any,
-      });
-      await sessionService.updateSessionStep(sessionId, "payment", {
-        completed: true,
-      });
+      if (!mayaProductUid) {
+        logger.error(`[COMPLETE_ORDER] ❌ Missing Maya Product UID in session: ${sessionId}`);
+        throw new Error("Missing Maya Product UID for fulfillment");
+      }
 
-      // 🌟 3.4 יצירת eSIM באמצעות Maya API (FULFILLMENT)
-      logger.info(`[COMPLETE_ORDER] 📞 Calling Maya to create eSIM for order ${order.id}`);
-      const numOfEsims = session.bundle?.numOfEsims || 1; 
+      // 3.2 יצירת הזמנה חדשה ב-DB
+      const order = await orderRepository.createFromSession(session, easycardTransactionId);
+
+      // 3.3 עדכון ה־Session
+      await sessionService.updateSessionFields(sessionId, {
+        orderId: order.id,
+        state: "PAYMENT_COMPLETED" as any,
+      });
+      await sessionService.updateSessionStep(sessionId, "payment", {
+        completed: true,
+      });
+
+      // 🌟 3.4 יצירת eSIM באמצעות Maya API (FULFILLMENT)
+      logger.info(`[COMPLETE_ORDER] 📞 Calling Maya to create eSIM for order ${order.id}`);
+      const numOfEsims = session.bundle?.numOfEsims || 1;
       const createdEsims: any[] = [];
 
-      for(let i = 0; i < numOfEsims; i++) {
-      const mayaResponse = await mayaAPI.createEsim({
-        product_uid: mayaProductUid,
-        quantity: 1, 
-        metadata: {
-          order_id: order.id, 
-          session_id: sessionId,
-        },
-      });
+      for (let i = 0; i < numOfEsims; i++) {
+        const mayaResponse = await mayaAPI.createEsim({
+          product_uid: mayaProductUid,
+          quantity: 1,
+          metadata: {
+            order_id: order.id,
+            session_id: sessionId,
+          },
+        });
 
-    const esimDetails =
-  (mayaResponse as any).esim ?? mayaResponse.esims?.[0];
-      if (!esimDetails) {
-        logger.error(`[COMPLETE_ORDER] ❌ Maya did not return eSIM details for ${order.id}`);
-        throw new Error("Maya API did not return eSIM details (Fulfillment failed)");
-      }
-      
-      // 3.5 שמירת פרטי ה-eSIM ב-DB (מיפוי מדויק!)
-      const userId = session.auth?.userId || null; // יקבל null אם אורח (דורש user_id nullable ב-esims!)
-      const expirationDate = esimDetails.expires_at ? new Date(esimDetails.expires_at).toISOString() : null;
+        const esimDetails =
+          (mayaResponse as any).esim ?? mayaResponse.esims?.[0];
+        if (!esimDetails) {
+          logger.error(`[COMPLETE_ORDER] ❌ Maya did not return eSIM details for ${order.id}`);
+          throw new Error("Maya API did not return eSIM details (Fulfillment failed)");
+        }
 
-    const esimRecord = await esimRepository.create({
-      order_id: order.id,
-      user_id: userId, // עדיין יכול להיות NULL לאורחים
-      iccid: esimDetails.iccid,
-      qr_code_url: esimDetails.qr_code_url || esimDetails.activation_code, // ✅ זה ה־LPA (לסריקה או שליחה למשתמש)
-      smdp_address: esimDetails.smdp_address,   // ✅ כתובת ה־SM-DP+
-      activation_code: esimDetails.activation_code || esimDetails.manual_code || null, // ✅ קוד הפעלה (לפי מאיה)
-      status: esimDetails.status || esimDetails.service_status || 'ASSIGNED', // ✅ תומך גם ב-"active"
-      matching_id: esimDetails.matching_id || esimDetails.uid, // ✅ מזהה ה-eSIM במערכת Maya
-    });
+        // 3.5 שמירת פרטי ה-eSIM ב-DB (מיפוי מדויק!)
+        const userId = session.auth?.userId || null; // יקבל null אם אורח (דורש user_id nullable ב-esims!)
+        const expirationDate = esimDetails.expires_at ? new Date(esimDetails.expires_at).toISOString() : null;
 
-      logger.info(`[COMPLETE_ORDER] ✅ eSIM ${esimRecord.iccid} created and saved for order ${order.id}`);
-      createdEsims.push(esimDetails);
-  }
+        const esimRecord = await esimRepository.create({
+          order_id: order.id,
+          user_id: userId, // עדיין יכול להיות NULL לאורחים
+          iccid: esimDetails.iccid,
+          qr_code_url: esimDetails.qr_code_url || esimDetails.activation_code, // ✅ זה ה־LPA (לסריקה או שליחה למשתמש)
+          smdp_address: esimDetails.smdp_address,   // ✅ כתובת ה־SM-DP+
+          activation_code: esimDetails.activation_code || esimDetails.manual_code || null, // ✅ קוד הפעלה (לפי מאיה)
+          status: esimDetails.status || esimDetails.service_status || 'ASSIGNED', // ✅ תומך גם ב-"active"
+          matching_id: esimDetails.matching_id || esimDetails.uid, // ✅ מזהה ה-eSIM במערכת Maya
+        });
 
-      // 3.6 שלח מייל ללקוח (עם פרטי eSIM)
-      try {
-        const email = session.delivery?.email || session.auth?.email || "office@hiiloworld.com";
-        const name =
-          [session.delivery?.firstName, session.delivery?.lastName]
-            .filter(Boolean)
-            .join(" ") || "לקוח יקר";
-        const amount = transactionInfo.totalAmount || session.pricing?.finalPrice || 0;
-        const activationString : any[] = [];
+        logger.info(`[COMPLETE_ORDER] ✅ eSIM ${esimRecord.iccid} created and saved for order ${order.id}`);
+        createdEsims.push(esimDetails);
+      }
+
+      // 3.6 שלח מייל ללקוח (עם פרטי eSIM)
+      try {
+        const email = session.delivery?.email || session.auth?.email || "office@hiiloworld.com";
+        const name =
+          [session.delivery?.firstName, session.delivery?.lastName]
+            .filter(Boolean)
+            .join(" ") || "לקוח יקר";
+        const amount = transactionInfo.totalAmount || session.pricing?.finalPrice || 0;
+
+        // בדיקת אם המייל נגמר ב-@il.ey.com עבור לקוחות EY
+        const isEYCustomer = email.toLowerCase().endsWith("@il.ey.com");
+        const headerImageName = isEYCustomer ? "header_hiilo_esim_ey.png" : "header_hiilo_esim.png";
+        const beachImageName = isEYCustomer ? "beach_ey.svg" : "beach.svg";
+        const activationString: any[] = [];
         const lpaString: any[] = [];
         const manualCode: any[] = [];
         const appleActivationUrl: any[] = [];
         const qrImageBase64: any[] = [];
-        for(let i = 0 ; i < createdEsims.length ; i++) {
+        for (let i = 0; i < createdEsims.length; i++) {
           activationString.push(createdEsims[i].activation_code || createdEsims[i].qr_code_url);
           lpaString.push(createdEsims[i].smdp_address);
           manualCode.push(createdEsims[i].manual_code);
           qrImageBase64.push((await QRCode.toDataURL(activationString[i], { width: 250 })).replace(/^data:image\/png;base64,/, ""));
           appleActivationUrl.push(`https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${activationString[i]}`);
         }
-if(numOfEsims === 1) {
-  const activationStringSingle = activationString[0];
-  const lpaStringSingle = lpaString[0];
-  const manualCodeSingle = manualCode[0];
-  const appleActivationUrlSingle = appleActivationUrl[0];
-  const qrImageBase64Single = qrImageBase64[0];
-await postmarkClient.sendEmail({
-  From: "HiiloWorld office@hiiloworld.com",
-  To: email,
-  Subject: "ה-eSIM שלך מוכן",
+        if (numOfEsims === 1) {
+          const activationStringSingle = activationString[0];
+          const lpaStringSingle = lpaString[0];
+          const manualCodeSingle = manualCode[0];
+          const appleActivationUrlSingle = appleActivationUrl[0];
+          const qrImageBase64Single = qrImageBase64[0];
+          await postmarkClient.sendEmail({
+            From: "HiiloWorld office@hiiloworld.com",
+            To: email,
+            Subject: "ה-eSIM שלך מוכן",
 
-  HtmlBody: `
+            HtmlBody: `
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head>
@@ -754,7 +759,7 @@ await postmarkClient.sendEmail({
 </html>
   `,
 
-  TextBody: `שלום ${name},
+            TextBody: `שלום ${name},
 
 ה-eSIM שלך מוכן.
 
@@ -768,41 +773,41 @@ await postmarkClient.sendEmail({
 
 צוות Hiilo מאחל לך חופשה מושלמת.`,
 
-  MessageStream: "transactional",
+            MessageStream: "transactional",
 
-  Attachments: [
-    {
-      Name: "header_hiilo_esim.png",
-      Content: readEmailAsset("header_hiilo_esim.png"),
-      ContentID: "header.png",
-      ContentType: "image/png",
-    },
-    {
-      Name: "beach.svg",
-      Content: readEmailAsset("beach.svg"),
-      ContentID: "beach.svg",
-      ContentType: "image/svg+xml",
-    },
-    {
-      Name: "qrcode.png",
-      Content: qrImageBase64Single,
-      ContentID: "qrcode.png",
-      ContentType: "image/png",
-    },
-    {
-      Name:"how-to-install.pdf",
-      Content: readEmailAsset("guide.pdf"),
-      ContentID: "how-to-install.pdf",
-      ContentType: "application/pdf",
-    },
-  ],
-});
-}
-else{
-let whatsappMessageText = "";
+            Attachments: [
+              {
+                Name: headerImageName,
+                Content: readEmailAsset(headerImageName),
+                ContentID: "header.png",
+                ContentType: "image/png",
+              },
+              {
+                Name: beachImageName,
+                Content: readEmailAsset(beachImageName),
+                ContentID: "beach.svg",
+                ContentType: "image/svg+xml",
+              },
+              {
+                Name: "qrcode.png",
+                Content: qrImageBase64Single,
+                ContentID: "qrcode.png",
+                ContentType: "image/png",
+              },
+              {
+                Name: "how-to-install.pdf",
+                Content: readEmailAsset("guide.pdf"),
+                ContentID: "how-to-install.pdf",
+                ContentType: "application/pdf",
+              },
+            ],
+          });
+        }
+        else {
+          let whatsappMessageText = "";
 
-for (let i = 0; i < createdEsims.length; i++) {
-  whatsappMessageText += `
+          for (let i = 0; i < createdEsims.length; i++) {
+            whatsappMessageText += `
 # eSIM ${i + 1}:
 
 קישור התקנה לאייפון:
@@ -813,17 +818,17 @@ ${appleActivationUrl[i]}
 קוד הפעלה: ${manualCode[i]}
 
 `;
-}
+          }
 
-const whatsappEncoded = encodeURIComponent(whatsappMessageText.trim());
-const whatsappUrl = `https://wa.me/?text=${whatsappEncoded}`;
+          const whatsappEncoded = encodeURIComponent(whatsappMessageText.trim());
+          const whatsappUrl = `https://wa.me/?text=${whatsappEncoded}`;
 
-await postmarkClient.sendEmail({
-  From: "HiiloWorld office@hiiloworld.com",
-  To: email,
-  Subject: "ה-eSIMים שלך מוכנים",
+          await postmarkClient.sendEmail({
+            From: "HiiloWorld office@hiiloworld.com",
+            To: email,
+            Subject: "ה-eSIMים שלך מוכנים",
 
-  HtmlBody: `
+            HtmlBody: `
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head>
@@ -1010,59 +1015,59 @@ await postmarkClient.sendEmail({
 </html>
   `,
 
-  TextBody: `שלום ${name},
+            TextBody: `שלום ${name},
 
 אפשר לקבל את כל פרטי ההתקנה בוואטסאפ בקישור הבא:
 ${whatsappUrl}
 
 צוות Hiilo מאחל לך חופשה מושלמת.`,
-  
-  MessageStream: "transactional",
 
-  Attachments: [
-    {
-      Name: "header_hiilo_esim.png",
-      Content: readEmailAsset("header_hiilo_esim.png"),
-      ContentID: "header.png",
-      ContentType: "image/png",
-    },
-    {
-      Name: "beach.svg",
-      Content: readEmailAsset("beach.svg"),
-      ContentID: "beach.svg",
-      ContentType: "image/svg+xml",
-    },
-    {
-      Name:"how-to-install.pdf",
-      Content: readEmailAsset("guide.pdf"),
-      ContentID: "how-to-install.pdf",
-      ContentType: "application/pdf",
-    },
-  ],
-});
-}
+            MessageStream: "transactional",
+
+            Attachments: [
+              {
+                Name: headerImageName,
+                Content: readEmailAsset(headerImageName),
+                ContentID: "header.png",
+                ContentType: "image/png",
+              },
+              {
+                Name: beachImageName,
+                Content: readEmailAsset(beachImageName),
+                ContentID: "beach.svg",
+                ContentType: "image/svg+xml",
+              },
+              {
+                Name: "how-to-install.pdf",
+                Content: readEmailAsset("guide.pdf"),
+                ContentID: "how-to-install.pdf",
+                ContentType: "application/pdf",
+              },
+            ],
+          });
+        }
 
 
-        logger.info(`[COMPLETE_ORDER] 📧 Confirmation email with eSIM sent to ${email}`);
-      } catch (emailErr: any) {
-        logger.error(`[COMPLETE_ORDER] ⚠️ Failed to send confirmation email (Fulfillment was successful): ${emailErr.message}`);
-        // נמשיך הלאה כי ההזמנה וה-eSIM נוצרו
-      }
+        logger.info(`[COMPLETE_ORDER] 📧 Confirmation email with eSIM sent to ${email}`);
+      } catch (emailErr: any) {
+        logger.error(`[COMPLETE_ORDER] ⚠️ Failed to send confirmation email (Fulfillment was successful): ${emailErr.message}`);
+        // נמשיך הלאה כי ההזמנה וה-eSIM נוצרו
+      }
 
-      logger.info(`[COMPLETE_ORDER] ✅ Order ${order.id} created successfully and fulfilled for session ${sessionId}`);
-      return { status: "COMPLETED", orderId: order.id };
-    } catch (err: any) {
-      logger.error(`[COMPLETE_ORDER] 💥 Fulfillment or DB Error for ${sessionId}: ${err.message}`);
-      // במקרה של כשלון בשלבים 3.2-3.5:
-      await sessionService.updateSessionFields(sessionId, { state: "PAYMENT_FAILED" as any });
-      return { status: "FAILED" };
-    }
-  }
+      logger.info(`[COMPLETE_ORDER] ✅ Order ${order.id} created successfully and fulfilled for session ${sessionId}`);
+      return { status: "COMPLETED", orderId: order.id };
+    } catch (err: any) {
+      logger.error(`[COMPLETE_ORDER] 💥 Fulfillment or DB Error for ${sessionId}: ${err.message}`);
+      // במקרה של כשלון בשלבים 3.2-3.5:
+      await sessionService.updateSessionFields(sessionId, { state: "PAYMENT_FAILED" as any });
+      return { status: "FAILED" };
+    }
+  }
 
-  // 4. אם לא הצליח בכלל – נרשום ככישלון
-  logger.warn(`[COMPLETE_ORDER] ❌ Payment not approved (${rawStatus})`);
-  await sessionService.updateSessionFields(sessionId, { state: "PAYMENT_FAILED" as any });
-  return { status: "FAILED" };
+  // 4. אם לא הצליח בכלל – נרשום ככישלון
+  logger.warn(`[COMPLETE_ORDER] ❌ Payment not approved (${rawStatus})`);
+  await sessionService.updateSessionFields(sessionId, { state: "PAYMENT_FAILED" as any });
+  return { status: "FAILED" };
 };
 
 // ==========================================================
@@ -1158,14 +1163,14 @@ export const handleRedirectCallback = async ({
 // Export workflow
 // ===========================
 export const checkoutWorkflow = {
-  init,
-  selectBundle,
-  validateBundle,
-  setDelivery,
-  applyCoupon,
-  // 👇 הוספת הפונקציות החדשות לאובייקט הייצוא
-  completeOrder, 
-  handleRedirectCallback,
+  init,
+  selectBundle,
+  validateBundle,
+  setDelivery,
+  applyCoupon,
+  // 👇 הוספת הפונקציות החדשות לאובייקט הייצוא
+  completeOrder,
+  handleRedirectCallback,
 };
 
 export type CheckoutWorkflowInstance = typeof checkoutWorkflow;
@@ -1174,12 +1179,12 @@ export type CheckoutWorkflowInstance = typeof checkoutWorkflow;
 // Errors
 // ===========================
 class NotInitializedError extends Error {
-  constructor() {
-    super("Workflow not initialized");
-  }
+  constructor() {
+    super("Workflow not initialized");
+  }
 }
 class SessionNotFound extends Error {
-  constructor() {
-    super("Session not found");
-  }
+  constructor() {
+    super("Session not found");
+  }
 }

@@ -11,7 +11,7 @@ const MAYA_BASE_URL = "https://api.maya.net/connectivity/v1";
 const ICCID = "8910300000049988956";
 
 const POSTMARK_TOKEN = "eb7e4a97-3d71-4c8e-8bd0-f2c85fafaa28";
-const RECIPIENT_EMAIL = "doronshua@walla.com";
+const RECIPIENT_EMAIL = "asaf.gershon88@gmail.com";
 const RECIPIENT_NAME = "doron";
 
 // 📁 תקייה שבה יושבים נכסי האימייל (אותם קבצים שאתה כבר משתמש בהם בשרת)
@@ -156,19 +156,11 @@ async function sendEsimEmail() {
                   <td style="width:65%; vertical-align:middle; text-align:right;">
 
                     <p style="margin:0; font-size:16px; color:#000; font-weight:600;">
-                      שלום ${RECIPIENT_NAME},
+                     Hiilo וועד העובדים של EY ,
                     </p>
 
                     <p style="margin:12px 0 0; font-size:13px; color:#000; line-height:1.6;">
-                      שתהיה לך חופשה מושלמת,
-                    </p>
-
-                    <p style="margin:2px 0 0; font-size:13px; color:#000; line-height:1.6;">
-                      וכמובן אם צריך אותי אני כאן!
-                    </p>
-
-                    <p style="margin:12px 0 0; font-size:12px; color:#3f51ff; font-weight:600;">
-                      - אסף, מנהל קשרי לקוחות
+                     מאחלים לכם טיסה נעימה! 
                     </p>
 
                   </td>
@@ -517,7 +509,7 @@ async function sendEsimEmail() {
     Attachments: [
       {
         Name: "header_hiilo_esim.png",
-        Content: loadFileAsBase64("C:\\Users\\gersh\\esim-go\\backend\\server\\assets\\email\\header_hiilo_esim.png"),
+        Content: loadFileAsBase64("C:\\Users\\gersh\\esim-go\\backend\\server\\assets\\email\\header_hiilo_esim_ey.png"),
         ContentID: "header.png",
         ContentType: "image/png",
       },
