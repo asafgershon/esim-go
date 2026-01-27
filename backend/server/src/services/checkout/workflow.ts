@@ -341,6 +341,12 @@ export const completeOrder = async ({
         const isEYCustomer = email.toLowerCase().endsWith("@il.ey.com");
         const headerImageName = isEYCustomer ? "header_hiilo_esim_ey.png" : "header_hiilo_esim.png";
         const beachImageName = isEYCustomer ? "beach_ey.svg" : "beach.svg";
+
+        // צבעים דינמיים: EY מקבל שחור וצהוב, רגיל מקבל כחול וירוק
+        const primaryColor = isEYCustomer ? "#1a1a1a" : "#4a5be3"; // כחול → שחור
+        const secondaryColor = isEYCustomer ? "#2a2a2a" : "#5565ef"; // כחול בהיר → אפור כהה
+        const footerMainBg = "#1a1a1a"; // רקע footer עליון - שחור לכולם
+        const footerSubBg = isEYCustomer ? "#FFD700" : "#00EBA7"; // רקע footer תחתון: צהוב לEY, ירוק לרגיל
         const activationString: any[] = [];
         const lpaString: any[] = [];
         const manualCode: any[] = [];
@@ -416,7 +422,7 @@ export const completeOrder = async ({
                       וכמובן אם צריך אותי אני כאן!
                     </p>
 
-                    <p style="margin:12px 0 0; font-size:12px; color:#3f51ff; font-weight:600;">
+                    <p style="margin:12px 0 0; font-size:12px; color:${primaryColor}; font-weight:600;">
                       - אסף, מנהל קשרי לקוחות
                     </p>
 
@@ -438,7 +444,7 @@ export const completeOrder = async ({
           <tr>
             <td style="background:#ffffff; padding:5px 30px 20px;">
               <table role="presentation"
-                     style="width:100%; background:#5565ef; border-radius:10px; padding:12px 18px;">
+                     style="width:100%; background:${secondaryColor}; border-radius:10px; padding:12px 18px;">
                 <tr>
                   <td style="text-align:center;">
                     <span style="color:#ffffff; font-size:14px; font-weight:600;
@@ -689,7 +695,7 @@ export const completeOrder = async ({
 
               <table role="presentation" style="
                 width:100%;
-                background:#5565ef;
+                background:${footerMainBg};
                 border-radius:20px 20px 0 0;
                 padding:32px 20px 40px;
                 text-align:center;
@@ -730,8 +736,8 @@ export const completeOrder = async ({
 
               <table role="presentation" style="
                 width:100%;
-                background:#FFFFFF;
-                border-top:1px solid #5565ef;
+                background:${footerSubBg};
+                border-top:1px solid ${footerMainBg};
                 padding:20px 10px;
                 text-align:center;
               ">
@@ -880,7 +886,7 @@ ${appleActivationUrl[i]}
                       וכמובן אם צריך אותי אני כאן!
                     </p>
 
-                    <p style="margin:12px 0 0; font-size:12px; color:#3f51ff; font-weight:600;">
+                    <p style="margin:12px 0 0; font-size:12px; color:${primaryColor}; font-weight:600;">
                       - אסף, מנהל קשרי לקוחות
                     </p>
 
@@ -902,7 +908,7 @@ ${appleActivationUrl[i]}
           <tr>
             <td style="background:#ffffff; padding:5px 30px 20px;">
               <table role="presentation"
-                     style="width:100%; background:#5565ef; border-radius:10px; padding:12px 18px;">
+                     style="width:100%; background:${secondaryColor}; border-radius:10px; padding:12px 18px;">
                 <tr>
                   <td style="text-align:center;">
                     <span style="color:#ffffff; font-size:14px; font-weight:600;
@@ -946,7 +952,7 @@ ${appleActivationUrl[i]}
 
               <table role="presentation" style="
                 width:100%;
-                background:#5565ef;
+                background:${footerMainBg};
                 border-radius:20px 20px 0 0;
                 padding:32px 20px 40px;
                 text-align:center;
@@ -986,8 +992,8 @@ ${appleActivationUrl[i]}
 
               <table role="presentation" style="
                 width:100%;
-                background:#FFFFFF;
-                border-top:1px solid #5565ef;
+                background:${footerSubBg};
+                border-top:1px solid ${footerMainBg};
                 padding:20px 10px;
                 text-align:center;
               ">

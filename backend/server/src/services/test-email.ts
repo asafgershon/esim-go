@@ -71,6 +71,15 @@ async function sendEsimEmail() {
   const manualCode = esim.manual_code;             // קוד הפעלה ידני
   const pseudoOrderId = `ESIM-${esim.iccid}`;      // "מספר הזמנה" דמיוני רק לתצוגה במייל
 
+  // בדיקת אם המייל נגמר ב-@il.ey.com עבור לקוחות EY
+  const isEYCustomer = RECIPIENT_EMAIL.toLowerCase().endsWith("eeyeyeey.com");
+
+  // צבעים דינמיים: EY מקבל שחור וצהוב, רגיל מקבל כחול וירוק
+  const primaryColor = isEYCustomer ? "#1a1a1a" : "#4a5be3"; // כחול → שחור
+  const secondaryColor = isEYCustomer ? "#2a2a2a" : "#5565ef"; // כחול בהיר → אפור כהה
+  const footerMainBg = "#1a1a1a"; // רקע footer עליון - שחור לכולם
+  const footerSubBg = isEYCustomer ? "#FFD700" : "#00EBA7"; // רקע footer תחתון: צהוב לEY, ירוק לרגיל
+
   // 2. יצירת QR כ-base64
   const qrImageBase64 = (await QRCode.toDataURL(activationString, { width: 250 }))
     .replace(/^data:image\/png;base64,/, "");
@@ -181,7 +190,7 @@ async function sendEsimEmail() {
           <tr>
             <td style="background:#ffffff !important; padding:5px 30px 20px;">
               <table role="presentation"
-                     style="width:100%; background:#5565ef; border-radius:10px; padding:12px 18px;">
+                     style="width:100%; background:${secondaryColor}; border-radius:10px; padding:12px 18px;">
                 <tr>
                   <td style="text-align:center;">
                     <span style="color:#ffffff; font-size:14px; font-weight:600;
@@ -225,7 +234,7 @@ async function sendEsimEmail() {
                 margin-bottom:20px;
               ">
                 <tr>
-                  <td style="font-size:16px; font-weight:700; color:#4a5be3; padding-bottom:16px;">
+                  <td style="font-size:16px; font-weight:700; color:${primaryColor}; padding-bottom:16px;">
                     להתקנה בקליק ב-iPhone
                   </td>
                 </tr>
@@ -250,7 +259,7 @@ async function sendEsimEmail() {
                                gap:6px;
                                padding:12px 28px;
                                border-radius:10px;
-                               border:2px solid #4a5be3;
+                               border:2px solid ${primaryColor};
                                text-decoration:none;
                                font-size:16px;
                                font-weight:700;
@@ -332,7 +341,7 @@ async function sendEsimEmail() {
                       <tr>
                         <td style="
                           font-size:14px;
-                          color:#4a5be3;
+                          color:${primaryColor};
                           font-weight:700;
                           padding-top:8px;
                         ">
@@ -430,7 +439,7 @@ async function sendEsimEmail() {
           <tr>
             <td style="padding:0; margin:0;">
 <table role="presentation" class="footer-main"
-  style="width:100%; background:#06202B; padding:32px 20px 40px;
+  style="width:100%; background:${footerMainBg}; padding:32px 20px 40px;
   border-radius:20px 20px 0 0; text-align:center; color:#ffffff;">
                 <tr>
                   <td style="font-size:20px; font-weight:700; color:#ffffff; padding-bottom:6px;">
@@ -466,7 +475,7 @@ async function sendEsimEmail() {
               </table>
 
 <table role="presentation" class="footer-sub"
-  style="width:100%; background:#00EBA7; padding:20px 10px; text-align:center;">
+  style="width:100%; background:${footerSubBg}; padding:20px 10px; text-align:center;">
                 <tr>
                   <td style="font-size:15px; font-weight:600;">
                     נשמח שתשלחו לנו משוב:
@@ -515,7 +524,7 @@ async function sendEsimEmail() {
       },
       {
         Name: "beach.svg",
-        Content: loadFileAsBase64("C:\\Users\\gersh\\esim-go\\backend\\server\\assets\\email\\beach.svg"),
+        Content: loadFileAsBase64("C:\\Users\\gersh\\esim-go\\backend\\server\\assets\\email\\beach_ey.svg"),
         ContentID: "beach.svg",
         ContentType: "image/svg+xml",
       },
