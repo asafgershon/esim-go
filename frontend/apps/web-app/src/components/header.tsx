@@ -12,6 +12,9 @@ import { useRouter } from "next/navigation";
 import type { RefObject } from "react";
 import type { SmoothScrollHandle } from "@workspace/ui";
 import DocumentViewer from "./DocumentViewer";
+import { useAuth } from "@/hooks/useAuth";
+import { LoginModal } from "@/components/login-modal";
+import { User } from "lucide-react";
 
 type DocKey = "about";
 
@@ -22,6 +25,7 @@ export function Header({
 }) {
   const router = useRouter();
   const { scrollTo } = useScrollTo({ scrollContainerRef });
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [openDoc, setOpenDoc] = useState<DocKey | null>(null);
 
@@ -69,6 +73,17 @@ export function Header({
 
   const desktopActions = (
     <div className="flex items-center gap-2">
+      {!authLoading && (
+        isAuthenticated ? (
+          <Link href="/profile">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <User className="h-5 w-5" />
+            </Button>
+          </Link>
+        ) : (
+          <LoginModal trigger="avatar" />
+        )
+      )}
       <Button
         variant="brand-secondary"
         size="default"
@@ -83,6 +98,17 @@ export function Header({
   const mobileActions = (
     <div className="w-full">
       <div className="flex items-center gap-2 justify-center">
+        {!authLoading && (
+          isAuthenticated ? (
+            <Link href="/profile">
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
+          ) : (
+            <LoginModal trigger="button" />
+          )
+        )}
         <Button
           variant="brand-secondary"
           emphasized
