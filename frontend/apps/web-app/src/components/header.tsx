@@ -3,14 +3,18 @@
 import { useState } from "react";
 import {
   Button,
+  IconButton,
   Navbar,
+  UserIcon,
   useScrollTo,
 } from "@workspace/ui";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { parseAsBoolean, useQueryState } from "nuqs";
 import type { RefObject } from "react";
 import type { SmoothScrollHandle } from "@workspace/ui";
+import { useAuth } from "@/hooks/useAuth";
 import DocumentViewer from "./DocumentViewer";
 
 type DocKey = "about";
@@ -21,9 +25,22 @@ export function Header({
   scrollContainerRef?: RefObject<SmoothScrollHandle | null>;
 }) {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const { scrollTo } = useScrollTo({ scrollContainerRef });
+  const [, setShowLogin] = useQueryState(
+    "showLogin",
+    parseAsBoolean.withDefault(false)
+  );
 
   const [openDoc, setOpenDoc] = useState<DocKey | null>(null);
+
+  const handleUserClick = () => {
+    if (isAuthenticated) {
+      router.push("/profile");
+    } else {
+      setShowLogin(true);
+    }
+  };
 
   // ✅ MUST come before handleNavigate
   const navigation = [
@@ -69,6 +86,13 @@ export function Header({
 
   const desktopActions = (
     <div className="flex items-center gap-2">
+      <IconButton
+        variant="brand-primary"
+        size="default"
+        onClick={handleUserClick}
+      >
+        <UserIcon />
+      </IconButton>
       <Button
         variant="brand-secondary"
         size="default"
@@ -83,6 +107,13 @@ export function Header({
   const mobileActions = (
     <div className="w-full">
       <div className="flex items-center gap-2 justify-center">
+        <IconButton
+          variant="brand-primary"
+          size="default"
+          onClick={handleUserClick}
+        >
+          <UserIcon />
+        </IconButton>
         <Button
           variant="brand-secondary"
           emphasized
