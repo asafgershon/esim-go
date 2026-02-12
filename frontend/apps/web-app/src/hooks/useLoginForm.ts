@@ -6,7 +6,6 @@ import { useGoogleSignIn } from "./useGoogleSignIn";
 import {
   phoneFormSchema,
   otpFormSchema,
-  formatPhoneNumber,
   type PhoneFormData,
   type OTPFormData,
 } from "@/lib/validation/auth-schemas";
@@ -27,22 +26,22 @@ interface UseLoginFormReturn {
   // Form instances
   phoneForm: ReturnType<typeof useForm<PhoneFormData>>;
   otpForm: ReturnType<typeof useForm<OTPFormData>>;
-  
+
   // State
   error: string | null;
   isLoading: boolean;
   otp: string;
   showPhoneHelper: boolean;
   resendCooldown: number;
-  
+
   // OTP hook state
   step: "phone" | "otp";
   phoneNumber: string;
   otpLoading: boolean;
-  
+
   // Social sign-in loading states
   googleLoading: boolean;
-  
+
   // Handlers
   handlePhoneSubmit: (data: PhoneFormData) => Promise<void>;
   handleOTPSubmit: (data: OTPFormData) => Promise<void>;
@@ -51,7 +50,7 @@ interface UseLoginFormReturn {
   handleBackToPhone: () => void;
   handlePhoneInputChange: (value: string) => void;
   handleOTPChange: (value: string) => void;
-  
+
   // State setters
   setShowPhoneHelper: (show: boolean) => void;
   setError: (error: string | null) => void;
@@ -98,10 +97,9 @@ export const useLoginForm = ({
     mode: "onChange",
   });
 
-  // Phone input change handler with formatting
+  // Email input change handler
   const handlePhoneInputChange = useCallback((value: string) => {
-    const formatted = formatPhoneNumber(value);
-    phoneForm.setValue("phoneNumber", formatted, { 
+    phoneForm.setValue("phoneNumber", value, {
       shouldValidate: true,
       shouldDirty: true,
     });
@@ -110,7 +108,7 @@ export const useLoginForm = ({
   // OTP input change handler
   const handleOTPChange = useCallback((value: string) => {
     setOtp(value);
-    otpForm.setValue("otp", value, { 
+    otpForm.setValue("otp", value, {
       shouldValidate: true,
       shouldDirty: true,
     });
@@ -129,7 +127,7 @@ export const useLoginForm = ({
 
       if (result.success) {
         setResendCooldown(60); // 60 second cooldown
-        
+
         // Save preference if remember me is checked
         if (data.rememberMe) {
           localStorage.setItem("rememberLogin", "true");
@@ -210,18 +208,18 @@ export const useLoginForm = ({
       if (result && result.success) {
         // Extract user data from the result
         const userData: SocialUserData = result.user || {};
-        
+
         if (onSuccess) {
           onSuccess();
         } else {
           window.location.href = redirectTo;
         }
-        
+
         // Return the user data
         return userData;
       } else {
         const errorMessage = "התחברות עם Google נכשלה";
-        
+
         if (result?.error && !result.error.includes("dismissed") && !result.error.includes("skipped")) {
           setError(`${errorMessage}: ${result.error}`);
         }
@@ -262,15 +260,14 @@ export const useLoginForm = ({
     return () => clearTimeout(timer);
   }, [resendCooldown]);
 
-  // Load remembered phone number
+  // Load remembered email
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const rememberLogin = localStorage.getItem("rememberLogin") === "true";
       const lastPhone = localStorage.getItem("lastPhoneNumber");
 
       if (rememberLogin && lastPhone) {
-        const formatted = formatPhoneNumber(lastPhone);
-        phoneForm.setValue("phoneNumber", formatted);
+        phoneForm.setValue("phoneNumber", lastPhone);
         phoneForm.setValue("rememberMe", true);
       }
     }
@@ -280,22 +277,22 @@ export const useLoginForm = ({
     // Form instances
     phoneForm,
     otpForm,
-    
+
     // State
     error,
     isLoading,
     otp,
     showPhoneHelper,
     resendCooldown,
-    
+
     // OTP hook state
     step,
     phoneNumber,
     otpLoading,
-    
+
     // Social sign-in loading states
     googleLoading,
-    
+
     // Handlers
     handlePhoneSubmit,
     handleOTPSubmit,
@@ -304,7 +301,7 @@ export const useLoginForm = ({
     handleBackToPhone,
     handlePhoneInputChange,
     handleOTPChange,
-    
+
     // State setters
     setShowPhoneHelper,
     setError,
