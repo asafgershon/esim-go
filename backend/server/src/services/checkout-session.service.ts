@@ -347,7 +347,16 @@ export const createSession = async (
   //   });
   // }
 
+  logger.info("[CREATE_SESSION] Calling calculateSimplePrice", { countryId: validInput.countryId, numOfDays: validInput.numOfDays });
   const pricingResult = await calculateSimplePrice(validInput.countryId || "", validInput.numOfDays);
+
+  logger.info("[CREATE_SESSION] Pricing result", {
+    finalPrice: pricingResult?.finalPrice,
+    bundleName: pricingResult?.bundleName,
+    provider: pricingResult?.provider,
+    requestedDays: pricingResult?.requestedDays,
+    calculation: pricingResult?.calculation,
+  });
 
   if (!pricingResult?.finalPrice) {
     throw new GraphQLError("No suitable bundle found for pricing", {
@@ -466,13 +475,13 @@ const validateSessionOrder = async (
       isValidated: isValid,
       validationDetails: isValid
         ? {
-            bundleDetails: response.data.order?.[0] || null,
-            totalPrice: response.data.total || null,
-            currency: response.data.currency || "USD",
-          }
+          bundleDetails: response.data.order?.[0] || null,
+          totalPrice: response.data.total || null,
+          currency: response.data.currency || "USD",
+        }
         : {
-            error: "Order validation failed",
-          },
+          error: "Order validation failed",
+        },
     } as any;
 
     await context.repositories.checkoutSessions.update(sessionId, {
@@ -785,11 +794,10 @@ export const preparePayment = async (
     const orderId = `order_${Date.now()}_${Math.random()
       .toString(36)
       .substring(2, 11)}`;
-    const redirectUrl = `${
-      env.isDev
+    const redirectUrl = `${env.isDev
         ? "https://hiilo.loca.lt"
         : process.env.NEXT_PUBLIC_APP_URL || "https://hiilo.loca.lt"
-    }/payment/callback?sessionId=${sessionId}`;
+      }/payment/callback?sessionId=${sessionId}`;
 
     const paymentResult =
       await context.services.easycardPayment.createPaymentIntent({
@@ -1112,9 +1120,8 @@ const renewPaymentIntent = async (
     const orderId = `order_${Date.now()}_${Math.random()
       .toString(36)
       .substring(2, 11)}`;
-    const redirectUrl = `${
-      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-    }/payment/callback?sessionId=${session.id}`;
+    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+      }/payment/callback?sessionId=${session.id}`;
 
     const paymentResult =
       await context.services.easycardPayment.createPaymentIntent({
@@ -1415,7 +1422,7 @@ const mapDatabaseSessionToModel = (dbSession: any): CheckoutSession => {
     expiresAt: dbSession.expires_at,
     isValidated: metadata.isValidated || false,
     metadata: metadata,
-    
+
     createdAt: dbSession.created_at,
     updatedAt: dbSession.updated_at,
   };
@@ -1461,7 +1468,7 @@ export const createCheckoutSessionService = (
   if (!serviceInstance) {
     serviceInstance = {
       createSession: (ctx, input) => createSession(ctx, input),
-      authenticateSession: (ctx,  sessionId, userId) =>
+      authenticateSession: (ctx, sessionId, userId) =>
         authenticateSession(ctx, sessionId, userId),
       setDeliveryMethod: (ctx, sessionId, data) =>
         setDeliveryMethod(ctx, sessionId, data),
