@@ -45,6 +45,10 @@ export const useGoogleSignIn = () => {
 
       return new Promise<SignInResponse>((resolve, reject) => {
         const handleCredentialResponse = async (response: GoogleCredentialResponse) => {
+          // Clean up hidden container
+          const container = document.getElementById('__google-signin-hidden');
+          if (container) container.remove();
+
           try {
             if (!response.credential) {
               throw new Error('No credential received from Google');
@@ -54,7 +58,6 @@ export const useGoogleSignIn = () => {
             const payload = parseJwt(response.credential);
             const firstName = payload.given_name || '';
             const lastName = payload.family_name || '';
-            const email = payload.email || '';
 
             const result = await signInWithGoogleMutation({
               variables: {
@@ -82,25 +85,53 @@ export const useGoogleSignIn = () => {
           callback: handleCredentialResponse,
           auto_select: false,
           cancel_on_tap_outside: true,
-          use_fedcm_for_prompt: false, // Enable FedCM to fix migration warning
-          ux_mode: 'popup',
+          use_fedcm_for_prompt: true,
         });
 
         if (autoPrompt) {
           window.google.accounts.id.prompt((notification: GoogleNotification) => {
             if (notification.isSkippedMoment()) {
-              // One-tap was skipped, could show button as fallback
-              console.log('Google One Tap was skipped');
               reject(new Error('Google One Tap was skipped'));
             } else if (notification.isDismissedMoment()) {
-              // One-tap was dismissed by user
-              console.log('Google One Tap was dismissed:', notification.getDismissedReason());
               reject(new Error('Google One Tap was dismissed'));
             }
           });
         } else {
-          // Manual trigger for button click
-          window.google.accounts.id.prompt();
+          // Render a hidden Google button and click it programmatically.
+          // This is far more reliable than prompt() which silently fails
+          // in many browsers due to FedCM, One Tap cooldowns, etc.
+          const existing = document.getElementById('__google-signin-hidden');
+          if (existing) existing.remove();
+
+          const container = document.createElement('div');
+          container.id = '__google-signin-hidden';
+          container.style.position = 'fixed';
+          container.style.top = '-200px';
+          container.style.left = '-200px';
+          container.style.opacity = '0';
+          container.style.pointerEvents = 'none';
+          document.body.appendChild(container);
+
+          window.google.accounts.id.renderButton(container, {
+            theme: 'outline',
+            size: 'large',
+            width: 200,
+            text: 'continue_with',
+          });
+
+          // Wait for the button to render, then click it
+          setTimeout(() => {
+            const btn = container.querySelector('[role="button"]') as HTMLElement
+              || container.querySelector('iframe') as HTMLElement;
+            if (btn) {
+              // Re-enable pointer events briefly to click
+              container.style.pointerEvents = 'auto';
+              btn.click();
+            } else {
+              // Fallback to prompt if button render failed
+              window.google.accounts.id.prompt();
+            }
+          }, 200);
         }
       });
     } catch (error) {
