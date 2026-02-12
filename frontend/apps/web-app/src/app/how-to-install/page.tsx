@@ -2,7 +2,7 @@
 
 import { Header } from "@/components/header";
 import { Footer, SmoothScrollHandle } from "@workspace/ui";
-import { useRef } from "react";
+import { useRef, Suspense } from "react";
 import { useScrollTo } from "@workspace/ui";
 
 export default function HowToInstallPage() {
@@ -17,8 +17,9 @@ export default function HowToInstallPage() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden" dir="rtl">
       {/* Header */}
-      <Header scrollContainerRef={scrollContainerRef} />
-
+      <Suspense fallback={null}>
+        <Header scrollContainerRef={scrollContainerRef} />
+      </Suspense>
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-12 space-y-16">
 
