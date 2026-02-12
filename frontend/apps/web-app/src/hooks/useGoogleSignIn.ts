@@ -68,11 +68,7 @@ export const useGoogleSignIn = () => {
 
             if (result.data?.signInWithGoogle.success && result.data.signInWithGoogle.sessionToken) {
               localStorage.setItem('authToken', result.data.signInWithGoogle.sessionToken);
-              // Return the sign-in response with user data
-              // resolve({
-              //   ...result.data.signInWithGoogle,
-              //   userData: { email, firstName, lastName }
-              // });
+              resolve(result.data.signInWithGoogle);
             } else {
               reject(new Error(result.data?.signInWithGoogle.error || 'Sign in failed'));
             }
@@ -175,7 +171,7 @@ const waitForGoogleScript = (): Promise<void> => {
       resolve();
       return;
     }
-    
+
     const checkGoogle = () => {
       if (window.google) {
         resolve();
@@ -183,7 +179,7 @@ const waitForGoogleScript = (): Promise<void> => {
         setTimeout(checkGoogle, 100);
       }
     };
-    
+
     checkGoogle();
   });
 };
@@ -192,7 +188,7 @@ const parseJwt = (token: string) => {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
       return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
     return JSON.parse(jsonPayload);

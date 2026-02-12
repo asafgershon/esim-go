@@ -169,6 +169,7 @@ export function LoginForm({
 
           {/* Social Sign-In */}
           <div className="grid gap-3">
+            {/* Apple Sign-In - TODO: להשמיש בשלב הבא
             <Button
               variant="outline"
               type="button"
@@ -188,6 +189,7 @@ export function LoginForm({
               </svg>
               {"המשך עם Apple"}
             </Button>
+            */}
 
             <Button
               variant="outline"
