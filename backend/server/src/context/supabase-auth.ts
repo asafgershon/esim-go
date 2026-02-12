@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { cleanEnv, str } from "envalid";
 import type { IncomingMessage } from "node:http";
 import type { User } from "../types";
+import crypto from "crypto";
 
 const env = cleanEnv(process.env, {
   SUPABASE_URL: str(),
@@ -79,11 +80,11 @@ export const createSupabaseAuthContext = async (
         // Prioritize user_metadata.phone_number which should be in E164 format
         const metadataPhone = supabaseUser.user_metadata?.phone_number;
         if (metadataPhone) return metadataPhone;
-        
+
         // Fallback to phone field, add + if missing
         const phone = supabaseUser.phone;
         if (!phone) return null;
-        
+
         // Check if already has + prefix
         return phone.startsWith('+') ? phone : `+${phone}`;
       })(),
@@ -292,6 +293,121 @@ export const verifyPhoneOTP = async (
 };
 
 /**
+ * Sign in or create a user by email (used after email OTP verification)
+ * Creates user if not exists, then generates a session
+ */
+export const signInOrCreateUserByEmail = async (
+  email: string,
+  firstName?: string,
+  lastName?: string
+) => {
+  try {
+    // Check if user with this email already exists
+    const { data: existingUsers, error: listError } =
+      await supabaseAdmin.auth.admin.listUsers();
+
+    let user = existingUsers?.users?.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (!user) {
+      // Create a new user with a random password (they use OTP to sign in)
+      const randomPassword = crypto.randomUUID() + crypto.randomUUID();
+      const { data: newUser, error: createError } =
+        await supabaseAdmin.auth.admin.createUser({
+          email,
+          password: randomPassword,
+          email_confirm: true, // Auto-confirm since we already verified via OTP
+          user_metadata: {
+            first_name: firstName || "",
+            last_name: lastName || "",
+            role: "USER",
+          },
+        });
+
+      if (createError || !newUser.user) {
+        return {
+          success: false,
+          error: createError?.message || "Failed to create user",
+          user: null,
+          session: null,
+        };
+      }
+
+      user = newUser.user;
+    } else {
+      // Update metadata if provided
+      if (firstName || lastName) {
+        await supabaseAdmin.auth.admin.updateUserById(user.id, {
+          user_metadata: {
+            ...user.user_metadata,
+            ...(firstName && { first_name: firstName }),
+            ...(lastName && { last_name: lastName }),
+          },
+        });
+      }
+    }
+
+    // Generate a session for this user using admin magic link
+    const { data: linkData, error: linkError } =
+      await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+      });
+
+    if (linkError || !linkData) {
+      return {
+        success: false,
+        error: linkError?.message || "Failed to generate session",
+        user: null,
+        session: null,
+      };
+    }
+
+    // Verify the token from the magic link to get a real session
+    const token_hash = linkData.properties?.hashed_token;
+    if (!token_hash) {
+      return {
+        success: false,
+        error: "Failed to generate authentication token",
+        user: null,
+        session: null,
+      };
+    }
+
+    const { data: sessionData, error: sessionError } =
+      await supabaseAdmin.auth.verifyOtp({
+        type: "magiclink",
+        token_hash,
+      });
+
+    if (sessionError || !sessionData.session) {
+      return {
+        success: false,
+        error: sessionError?.message || "Failed to create session",
+        user: null,
+        session: null,
+      };
+    }
+
+    return {
+      success: true,
+      error: null,
+      user: sessionData.user,
+      session: sessionData.session,
+    };
+  } catch (error) {
+    console.error("signInOrCreateUserByEmail error:", error);
+    return {
+      success: false,
+      error: "Authentication failed",
+      user: null,
+      session: null,
+    };
+  }
+};
+
+/**
  * Invite a user by email (admin only)
  */
 export const inviteUserByEmail = async (
@@ -305,8 +421,7 @@ export const inviteUserByEmail = async (
       {
         redirectTo:
           redirectUrl ||
-          `${
-            process.env.DASHBOARD_URL || "http://localhost:3000"
+          `${process.env.DASHBOARD_URL || "http://localhost:3000"
           }/auth/callback`,
       }
     );

@@ -61,9 +61,9 @@ export const SIGN_IN_WITH_GOOGLE = gql`
   }
 `;
 
-export const SEND_PHONE_OTP = gql`
-  mutation SendPhoneOTP($phoneNumber: String!) {
-    sendPhoneOTP(phoneNumber: $phoneNumber) {
+export const SEND_EMAIL_OTP = gql`
+  mutation SendEmailOTP($email: String!) {
+    sendEmailOTP(email: $email) {
       success
       error
       messageId
@@ -71,9 +71,9 @@ export const SEND_PHONE_OTP = gql`
   }
 `;
 
-export const VERIFY_PHONE_OTP = gql`
-  mutation VerifyPhoneOTP($input: VerifyOTPInput!) {
-    verifyPhoneOTP(input: $input) {
+export const VERIFY_EMAIL_OTP = gql`
+  mutation VerifyEmailOTP($input: VerifyEmailOTPInput!) {
+    verifyEmailOTP(input: $input) {
       success
       error
       user {

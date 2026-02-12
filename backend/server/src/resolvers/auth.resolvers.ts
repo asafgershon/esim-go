@@ -1,9 +1,12 @@
 import {
   signInWithGoogle,
-  sendPhoneOTP,
+  signInOrCreateUserByEmail,
   supabaseAdmin,
-  verifyPhoneOTP,
 } from "../context/supabase-auth";
+import {
+  sendEmailOTP as sendEmailOTPService,
+  verifyEmailOTP as verifyEmailOTPService,
+} from "../services/email-otp.service";
 import type { Context } from "../context/types";
 import { createLogger } from "../lib/logger";
 import type { Resolvers } from "../types";
@@ -210,10 +213,10 @@ export const authResolvers: Partial<Resolvers> = {
       }
     },
 
-    // Phone Authentication
-    sendPhoneOTP: async (_, { phoneNumber }) => {
+    // Email OTP Authentication
+    sendEmailOTP: async (_, { email }) => {
       try {
-        const result = await sendPhoneOTP(phoneNumber);
+        const result = await sendEmailOTPService(email);
 
         return {
           success: result.success,
@@ -229,11 +232,24 @@ export const authResolvers: Partial<Resolvers> = {
       }
     },
 
-    verifyPhoneOTP: async (_, { input }) => {
+    verifyEmailOTP: async (_, { input }) => {
       try {
-        const result = await verifyPhoneOTP(
-          input.phoneNumber,
-          input.otp,
+        // Verify the OTP code
+        const otpResult = verifyEmailOTPService(input.email, input.otp);
+
+        if (!otpResult.valid) {
+          return {
+            success: false,
+            error: otpResult.error,
+            user: null,
+            sessionToken: null,
+            refreshToken: null,
+          };
+        }
+
+        // OTP valid — sign in or create user in Supabase
+        const result = await signInOrCreateUserByEmail(
+          input.email,
           input.firstName || "",
           input.lastName || ""
         );
@@ -256,11 +272,11 @@ export const authResolvers: Partial<Resolvers> = {
             result.user!.user_metadata?.first_name || input.firstName || "",
           lastName:
             result.user!.user_metadata?.last_name || input.lastName || "",
-          phoneNumber: result.user!.phone || input.phoneNumber,
+          phoneNumber: result.user!.phone || null,
           role: result.user!.user_metadata?.role || "USER",
           createdAt: result.user!.created_at,
           updatedAt: result.user!.updated_at || result.user!.created_at,
-          orderCount: 0, // Will be resolved by field resolver
+          orderCount: 0,
         };
 
         return {
@@ -273,7 +289,7 @@ export const authResolvers: Partial<Resolvers> = {
       } catch (error) {
         return {
           success: false,
-          error: "Phone verification failed",
+          error: "Email verification failed",
           user: null,
           sessionToken: null,
           refreshToken: null,
@@ -293,7 +309,7 @@ export const authResolvers: Partial<Resolvers> = {
         }
 
         const userId = context.auth.user.id;
-        
+
         // Update profile using repository
         const result = await context.repositories.users.updateProfile(userId, {
           firstName: input.firstName || undefined,

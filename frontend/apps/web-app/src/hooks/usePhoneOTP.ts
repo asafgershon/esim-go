@@ -1,29 +1,29 @@
 import { useState } from 'react';
 import { useMutation } from '@apollo/client';
-import { SEND_PHONE_OTP, VERIFY_PHONE_OTP } from '@/lib/graphql/mutations';
+import { SEND_EMAIL_OTP, VERIFY_EMAIL_OTP } from '@/lib/graphql/mutations';
 import { SendOTPResponse, SignInResponse } from '@/lib/types';
 
 export const usePhoneOTP = () => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
-  
-  const [sendOTPMutation] = useMutation(SEND_PHONE_OTP);
-  const [verifyOTPMutation] = useMutation(VERIFY_PHONE_OTP);
 
-  const sendOTP = async (phone: string): Promise<SendOTPResponse> => {
+  const [sendOTPMutation] = useMutation(SEND_EMAIL_OTP);
+  const [verifyOTPMutation] = useMutation(VERIFY_EMAIL_OTP);
+
+  const sendOTP = async (email: string): Promise<SendOTPResponse> => {
     try {
       setLoading(true);
       const { data } = await sendOTPMutation({
-        variables: { phoneNumber: phone }
+        variables: { email }
       });
-      
-      if (data.sendPhoneOTP.success) {
-        setPhoneNumber(phone);
+
+      if (data.sendEmailOTP.success) {
+        setPhoneNumber(email); // stored as "phoneNumber" for backwards compat
         setStep('otp');
       }
-      
-      return data.sendPhoneOTP;
+
+      return data.sendEmailOTP;
     } catch (error) {
       console.error('Send OTP error:', error);
       return {
@@ -41,25 +41,25 @@ export const usePhoneOTP = () => {
       const { data } = await verifyOTPMutation({
         variables: {
           input: {
-            phoneNumber,
+            email: phoneNumber, // the email stored earlier
             otp,
             firstName,
             lastName
           }
         }
       });
-      
-      if (data.verifyPhoneOTP.success) {
+
+      if (data.verifyEmailOTP.success) {
         // Store tokens in localStorage
-        if (data.verifyPhoneOTP.sessionToken) {
-          localStorage.setItem('authToken', data.verifyPhoneOTP.sessionToken);
+        if (data.verifyEmailOTP.sessionToken) {
+          localStorage.setItem('authToken', data.verifyEmailOTP.sessionToken);
         }
-        if (data.verifyPhoneOTP.refreshToken) {
-          localStorage.setItem('refreshToken', data.verifyPhoneOTP.refreshToken);
+        if (data.verifyEmailOTP.refreshToken) {
+          localStorage.setItem('refreshToken', data.verifyEmailOTP.refreshToken);
         }
       }
-      
-      return data.verifyPhoneOTP;
+
+      return data.verifyEmailOTP;
     } catch (error) {
       console.error('Verify OTP error:', error);
       return {
@@ -84,4 +84,4 @@ export const usePhoneOTP = () => {
     verifyOTP,
     resetFlow
   };
-}; 
+};

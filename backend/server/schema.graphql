@@ -353,9 +353,9 @@ type Mutation {
   # Social Authentication
   signInWithGoogle(input: SocialSignInInput!): SignInResponse
 
-  # Phone Authentication
-  sendPhoneOTP(phoneNumber: String!): SendOTPResponse
-  verifyPhoneOTP(input: VerifyOTPInput!): SignInResponse
+  # Email OTP Authentication
+  sendEmailOTP(email: String!): SendOTPResponse
+  verifyEmailOTP(input: VerifyEmailOTPInput!): SignInResponse
 
   # Profile Management
   updateProfile(input: UpdateProfileInput!): UpdateProfileResponse @auth
@@ -621,9 +621,9 @@ input SocialSignInInput {
   lastName: String # For first-time users
 }
 
-# Phone Authentication
-input VerifyOTPInput {
-  phoneNumber: String!
+# Email OTP Authentication
+input VerifyEmailOTPInput {
+  email: String!
   otp: String!
   firstName: String # For first-time users
   lastName: String # For first-time users
