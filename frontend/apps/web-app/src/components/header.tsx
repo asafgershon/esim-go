@@ -109,7 +109,7 @@ export function Header({
       <div className="flex items-center gap-2 justify-center">
         <IconButton
           variant="brand-primary"
-          size="default"
+          size="sm"
           onClick={handleUserClick}
         >
           <UserIcon />
@@ -117,7 +117,7 @@ export function Header({
         <Button
           variant="brand-secondary"
           emphasized
-          size="default"
+          size="sm"
           onClick={() => scrollTo("#contact")}
         >
           צריכים עזרה בהזמנה?

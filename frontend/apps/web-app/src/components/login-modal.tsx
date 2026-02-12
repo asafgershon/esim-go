@@ -107,6 +107,7 @@ export function LoginModal({
           "w-full p-0 border-none bg-transparent shadow-none",
           getModalSize()
         )}
+        showCloseButton={false}
       >
         {/* <VisuallyHidden>
           <DialogTitle className="">התחברות</DialogTitle>
@@ -192,7 +193,7 @@ export function useLoginModal() {
 
     return (
       <Dialog open={isOpen} onOpenChange={setIsOpen} modal>
-        <DialogContent className="max-w-[480px] w-full p-0 border-none bg-transparent shadow-none">
+        <DialogContent className="max-w-[480px] w-full p-0 border-none bg-transparent shadow-none" showCloseButton={false}>
           <div className="bg-background rounded-xl border shadow-lg overflow-hidden">
             <div className="flex justify-end p-4 pb-0">
               <Button

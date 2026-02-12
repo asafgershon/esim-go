@@ -4,7 +4,7 @@ import { ErrorDisplay } from "@/components/error-display";
 import { useLoginForm } from "@/hooks/useLoginForm";
 import { ErrorType } from "@/lib/error-types";
 import { cn } from "@/lib/utils";
-import { formatPhoneForDisplay } from "@/lib/validation/auth-schemas";
+
 import { CDN_LINKS } from "@/lib/constants/cdn";
 import {
   Button,
@@ -15,7 +15,7 @@ import {
   Label,
 } from "@workspace/ui";
 import { Checkbox } from "@workspace/ui";
-import { Smartphone } from "lucide-react";
+import { Mail } from "lucide-react";
 import { useEffect } from "react";
 
 interface LoginFormProps extends React.ComponentProps<"div"> {
@@ -33,23 +33,23 @@ export function LoginForm({
     // Form instances
     phoneForm,
     otpForm,
-    
+
     // State
     error,
     isLoading,
     otp,
     showPhoneHelper,
     resendCooldown,
-    
+
     // OTP hook state
     step,
     phoneNumber,
     otpLoading,
-    
+
     // Social sign-in loading states
     //appleLoading,
     googleLoading,
-    
+
     // Handlers
     handlePhoneSubmit,
     handleOTPSubmit,
@@ -58,7 +58,7 @@ export function LoginForm({
     handleBackToPhone,
     handlePhoneInputChange,
     handleOTPChange,
-    
+
     // State setters
     setShowPhoneHelper,
     setError,
@@ -77,15 +77,15 @@ export function LoginForm({
       {/* Header */}
       <div className="flex flex-col items-center text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-          <Smartphone className="h-6 w-6 text-primary" />
+          <Mail className="h-6 w-6 text-primary" />
         </div>
         <h1 className="mt-4 text-2xl font-bold text-foreground">
-          {step === "phone" ? "התחברות לחשבון" : "אימות מספר טלפון"}
+          {step === "phone" ? "התחברות לחשבון" : "אימות כתובת אימייל"}
         </h1>
         <p className="text-balance text-muted-foreground mt-2">
           {step === "phone"
             ? "בחר את דרך ההתחברות המועדפת עליך"
-            : `הזנו את הקוד שנשלח ל-${formatPhoneForDisplay(phoneNumber)}`}
+            : `הזנו את הקוד שנשלח ל-${phoneNumber}`}
         </p>
       </div>
 
@@ -111,18 +111,18 @@ export function LoginForm({
           >
             <div className="grid gap-2">
               <Label htmlFor="phone" className="text-right">
-                מספר טלפון
+                כתובת אימייל
               </Label>
               <Input
                 id="phone"
-                placeholder="+972 50-123-4567"
-                type="tel"
+                placeholder="example@email.com"
+                type="email"
                 dir="ltr"
                 {...phoneForm.register("phoneNumber")}
                 onChange={(e) => handlePhoneInputChange(e.target.value)}
                 onFocus={() => setShowPhoneHelper(true)}
                 onBlur={() => setTimeout(() => setShowPhoneHelper(false), 200)}
-                autoComplete="tel"
+                autoComplete="email"
                 disabled={otpLoading}
                 className={
                   (phoneForm.formState.errors.phoneNumber
@@ -130,16 +130,6 @@ export function LoginForm({
                     : "") + " text-left"
                 }
               />
-
-              {/* Phone number helper */}
-              {showPhoneHelper && (
-                <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                  <p>דוגמאות תקינות:</p>
-                  <p>• +972-50-123-4567</p>
-                  <p>• 050-123-4567</p>
-                  <p>• +1-555-123-4567</p>
-                </div>
-              )}
 
               {phoneForm.formState.errors.phoneNumber && (
                 <p className="text-sm text-destructive text-right">
@@ -196,7 +186,7 @@ export function LoginForm({
                   fill="currentColor"
                 />
               </svg>
-              { "המשך עם Apple"}
+              {"המשך עם Apple"}
             </Button>
 
             <Button
@@ -286,7 +276,7 @@ export function LoginForm({
               onClick={handleBackToPhone}
               disabled={otpLoading}
             >
-              חזור למספר הטלפון
+              חזור לכתובת האימייל
             </Button>
           </form>
         </div>
