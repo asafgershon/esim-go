@@ -390,13 +390,11 @@ export function BundleSelectorProvider({
         input,
       });
 
-      const response = await fetch("/api/graphql", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: `
+      // ⬇️ שימוש ב-Apollo Client ישירות
+      const { apolloClient } = await import("@/lib/apollo-client");
+      const { gql } = await import("@apollo/client");
+
+      const CREATE_CHECKOUT_SESSION = gql`
           mutation CreateCheckoutSession($input: CreateCheckoutSessionInput!) {
             createCheckoutSession(input: $input) {
               success
@@ -406,37 +404,37 @@ export function BundleSelectorProvider({
               }
             }
           }
-        `,
-          variables: { input },
-        }),
-      });
+    `;
 
-      const data = await response.json();
+      const { data, errors } = await apolloClient.mutate({
+        mutation: CREATE_CHECKOUT_SESSION,
+        variables: { input },
+      });
 
       console.log("[FRONTEND] GraphQL response received", {
         operationType: "create-session-response",
-        success: data?.data?.createCheckoutSession?.success,
-        hasToken: !!data?.data?.createCheckoutSession?.session?.token,
-        error: data?.data?.createCheckoutSession?.error,
+        success: data?.createCheckoutSession?.success,
+        hasToken: !!data?.createCheckoutSession?.session?.token,
+        error: data?.createCheckoutSession?.error,
       });
 
-      if (data?.errors) {
+      if (errors) {
         console.error("[FRONTEND] GraphQL errors", {
           operationType: "graphql-errors",
-          errors: data.errors,
+          errors,
         });
-        throw new Error(data.errors[0]?.message || "Failed to create checkout session");
+        throw new Error(errors[0]?.message || "Failed to create checkout session");
       }
 
-      if (!data?.data?.createCheckoutSession?.success || !data?.data?.createCheckoutSession?.session?.token) {
+      if (!data?.createCheckoutSession?.success || !data?.createCheckoutSession?.session?.token) {
         console.error("[FRONTEND] Session creation failed", {
           operationType: "session-creation-failed",
-          error: data?.data?.createCheckoutSession?.error,
+          error: data?.createCheckoutSession?.error,
         });
-        throw new Error(data?.data?.createCheckoutSession?.error || "Failed to create checkout session");
+        throw new Error(data?.createCheckoutSession?.error || "Failed to create checkout session");
       }
 
-      const token = data.data.createCheckoutSession.session.token;
+      const token = data.createCheckoutSession.session.token;
 
       // ⬇️ עכשיו עושים redirect עם ה-token
       const params = new URLSearchParams();
