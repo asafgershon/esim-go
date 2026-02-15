@@ -379,7 +379,7 @@ export function BundleSelectorProvider({
       // ⬇️ קריאה ל-GraphQL mutation ליצירת session וקבלת token
       const input = {
         numOfDays,
-        countryId: countryId || undefined,
+        countryId: countryId ? countryId.toUpperCase() : undefined,
         regionId: tripId || undefined,
         numOfEsims: numOfEsims || 1,
         group: "web-app",
