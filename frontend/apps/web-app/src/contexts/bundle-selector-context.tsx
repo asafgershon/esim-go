@@ -332,56 +332,142 @@ export function BundleSelectorProvider({
     }
   }, [countryId, tripId, scrollContext]);
 
-const handlePurchase = (pricingData?: { totalPrice?: number } | null) => {
-  // ⬇️ נקבע מחיר לפי קוד שמגיע או מה־context
-  const effectivePricing = pricingData ?? pricing;
+  const handlePurchase = async (pricingData?: { totalPrice?: number } | null) => {
+    console.log("[FRONTEND] handlePurchase called", {
+      operationType: "handle-purchase-entry",
+      countryId,
+      tripId,
+      numOfDays,
+      numOfEsims,
+      pricingData,
+      contextPricing: pricing,
+    });
 
-  // ⬇️ וידוא מינימלי שיש את מה שצריך
-  const isReadyToPurchase =
-    (countryId || tripId) &&
-    effectivePricing &&
-    effectivePricing.totalPrice !== undefined;
+    // ⬇️ נקבע מחיר לפי קוד שמגיע או מה־context
+    const effectivePricing = pricingData ?? pricing;
 
-  if (!isReadyToPurchase) return;
+    console.log("[FRONTEND] Effective pricing determined", {
+      operationType: "pricing-validation",
+      effectivePricing,
+      hasTotalPrice: effectivePricing?.totalPrice !== undefined,
+    });
 
-  // ⬇️ מאספים פרמטרים לניווט
-  const params = new URLSearchParams();
-  params.set("numOfDays", numOfDays.toString());
+    // ⬇️ וידוא מינימלי שיש את מה שצריך
+    const isReadyToPurchase =
+      (countryId || tripId) &&
+      effectivePricing &&
+      effectivePricing.totalPrice !== undefined;
 
-  if (countryId) params.set("countryId", countryId.toUpperCase());
-  if (numOfEsims) params.set("numOfEsims", numOfEsims.toString());
-  if (tripId) params.set("tripId", tripId);
-
-  // ⬇️ שמירת totalPrice גם אם הוא 0
-  if (
-    effectivePricing?.totalPrice !== undefined &&
-    effectivePricing?.totalPrice !== null
-  ) {
-    params.set("totalPrice", String(effectivePricing.totalPrice));
-  }
-
-  // ⬇️ אם יש token קיים ב־URL והוא פג תוקף — למחוק אותו
-  const existingToken = new URLSearchParams(window.location.search).get("token");
-  if (existingToken) {
-    try {
-      const exp = JSON.parse(atob(existingToken.split(".")[1])).exp * 1000;
-      if (exp < Date.now()) {
-        console.warn("⚠️ Found expired token → removing before redirect");
-        params.delete("token");
-      }
-    } catch {
-      params.delete("token"); // token לא תקין או לא קריא → ננקה בכל מקרה
+    if (!isReadyToPurchase) {
+      console.warn("[FRONTEND] Purchase validation failed", {
+        operationType: "purchase-validation-failed",
+        hasDestination: !!(countryId || tripId),
+        hasPricing: !!effectivePricing,
+        hasTotalPrice: effectivePricing?.totalPrice !== undefined,
+        countryId,
+        tripId,
+        effectivePricing,
+      });
+      return;
     }
-  }
 
-  // ⬇️ לוג + ניתוב
-  console.log(
-    "[CLIENT] redirecting to checkout with:",
-    Object.fromEntries(params.entries())
-  );
+    console.log("[FRONTEND] Purchase validation passed", {
+      operationType: "purchase-validation-success",
+    });
 
-  router.push(`/checkout?${params.toString()}`);
-};
+    try {
+      // ⬇️ קריאה ל-GraphQL mutation ליצירת session וקבלת token
+      const input = {
+        numOfDays,
+        countryId: countryId || undefined,
+        regionId: tripId || undefined,
+        numOfEsims: numOfEsims || 1,
+        group: "web-app",
+      };
+
+      console.log("[FRONTEND] Calling createCheckoutSession mutation", {
+        operationType: "create-session-mutation",
+        input,
+      });
+
+      const response = await fetch("/api/graphql", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `
+          mutation CreateCheckoutSession($input: CreateCheckoutSessionInput!) {
+            createCheckoutSession(input: $input) {
+              success
+              error
+              session {
+                token
+              }
+            }
+          }
+        `,
+          variables: { input },
+        }),
+      });
+
+      const data = await response.json();
+
+      console.log("[FRONTEND] GraphQL response received", {
+        operationType: "create-session-response",
+        success: data?.data?.createCheckoutSession?.success,
+        hasToken: !!data?.data?.createCheckoutSession?.session?.token,
+        error: data?.data?.createCheckoutSession?.error,
+      });
+
+      if (data?.errors) {
+        console.error("[FRONTEND] GraphQL errors", {
+          operationType: "graphql-errors",
+          errors: data.errors,
+        });
+        throw new Error(data.errors[0]?.message || "Failed to create checkout session");
+      }
+
+      if (!data?.data?.createCheckoutSession?.success || !data?.data?.createCheckoutSession?.session?.token) {
+        console.error("[FRONTEND] Session creation failed", {
+          operationType: "session-creation-failed",
+          error: data?.data?.createCheckoutSession?.error,
+        });
+        throw new Error(data?.data?.createCheckoutSession?.error || "Failed to create checkout session");
+      }
+
+      const token = data.data.createCheckoutSession.session.token;
+
+      // ⬇️ עכשיו עושים redirect עם ה-token
+      const params = new URLSearchParams();
+      params.set("token", token);
+      params.set("numOfDays", numOfDays.toString());
+
+      if (countryId) params.set("countryId", countryId.toUpperCase());
+      if (tripId) params.set("regionId", tripId);
+
+      const checkoutUrl = `/checkout?${params.toString()}`;
+      console.log("[FRONTEND] Redirecting to checkout with token", {
+        operationType: "checkout-redirect",
+        url: checkoutUrl,
+        hasToken: true,
+      });
+
+      router.push(checkoutUrl);
+
+      console.log("[FRONTEND] Router.push called successfully", {
+        operationType: "router-push-success",
+      });
+    } catch (error) {
+      console.error("[FRONTEND] handlePurchase failed", {
+        operationType: "handle-purchase-error",
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      // TODO: הצג הודעת שגיאה למשתמש
+      throw error;
+    }
+  };
 
   const triggerDestinationSelectorFocus = () => {
     setShouldFocusDestinationSelector(true);
@@ -391,10 +477,10 @@ const handlePurchase = (pricingData?: { totalPrice?: number } | null) => {
   const isPricingValid = useMemo(() => {
     return Boolean(
       numOfDays > 0 &&
-        (countryId || tripId) &&
-        pricing &&
-        pricing.totalPrice !== undefined &&
-        pricing.totalPrice > 0
+      (countryId || tripId) &&
+      pricing &&
+      pricing.totalPrice !== undefined &&
+      pricing.totalPrice > 0
     );
   }, [numOfDays, countryId, tripId, pricing]);
 

@@ -28,6 +28,12 @@ async function createCheckoutSession(input: CreateCheckoutSessionInput) {
   const GRAPHQL_ENDPOINT =
     process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:5001/graphql";
 
+  console.log("[SERVER] createCheckoutSession function called", {
+    operationType: "graphql-mutation-start",
+    input,
+    endpoint: GRAPHQL_ENDPOINT,
+  });
+
   const mutation = `
     mutation CreateCheckoutSession($input: CreateCheckoutSessionInput!) {
       createCheckoutSession(input: $input) {
@@ -41,8 +47,10 @@ async function createCheckoutSession(input: CreateCheckoutSessionInput) {
   `;
 
   try {
-    // הדפסה חדשה: מוודאת שה-input שהגיע לפונקציה תקין
-    console.log("🚀 Creating checkout session with input:", input);
+    console.log("[SERVER] Sending GraphQL mutation to backend", {
+      operationType: "graphql-fetch-start",
+      variables: { input },
+    });
 
     const response = await fetch(GRAPHQL_ENDPOINT, {
       method: "POST",
@@ -51,21 +59,40 @@ async function createCheckoutSession(input: CreateCheckoutSessionInput) {
       },
       body: JSON.stringify({
         query: mutation,
-        variables: { input }, // האובייקט מועבר ישירות
+        variables: { input },
       }),
+    });
+
+    console.log("[SERVER] GraphQL response received", {
+      operationType: "graphql-fetch-complete",
+      status: response.status,
+      ok: response.ok,
     });
 
     const data = await response.json();
 
     if (data.errors) {
-      console.error("GraphQL errors:", data.errors);
+      console.error("[SERVER] GraphQL errors returned", {
+        operationType: "graphql-errors",
+        errors: data.errors,
+      });
       throw new Error(data.errors[0]?.message || "GraphQL error");
     }
 
+    console.log("[SERVER] Checkout session created successfully", {
+      operationType: "session-created",
+      success: data.data.createCheckoutSession.success,
+      hasToken: !!data.data.createCheckoutSession.session?.token,
+      error: data.data.createCheckoutSession.error,
+    });
+
     return data.data.createCheckoutSession;
   } catch (error) {
-    console.error("Failed to create checkout session:", error);
-    // זורק את השגיאה הלאה כדי שה-try/catch ברכיב הראשי יתפוס אותה
+    console.error("[SERVER] Failed to create checkout session", {
+      operationType: "session-creation-error",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw error;
   }
 }
@@ -93,21 +120,49 @@ function validateCheckoutToken(token: string): boolean {
 export default async function CheckoutHandler({
   searchParams,
 }: CheckoutHandlerProps) {
+  console.log("[SERVER] CheckoutHandler invoked", {
+    operationType: "checkout-handler-entry",
+    searchParams,
+  });
+
   const { token, numOfDays, countryId, regionId } = searchParams;
 
   const hasBusinessParams = Boolean(countryId || regionId || numOfDays);
+  console.log("[SERVER] Parsed search params", {
+    operationType: "params-parsed",
+    hasToken: !!token,
+    hasBusinessParams,
+    countryId,
+    regionId,
+    numOfDays,
+    numOfEsims: searchParams.numOfEsims,
+  });
+
   // 1. If token exists, show checkout
   if (token && validateCheckoutToken(token)) {
-    console.log("Handler: Valid token, rendering CheckoutContainer.");
+    console.log("[SERVER] Valid token found - rendering checkout", {
+      operationType: "token-valid",
+    });
     return <CheckoutContainerV2 />;
   }
 
+  if (token && !validateCheckoutToken(token)) {
+    console.warn("[SERVER] Invalid or expired token found", {
+      operationType: "token-invalid",
+    });
+  }
 
   // 2. If no token but has params, create session
   if ((countryId || regionId) && numOfDays) {
+    console.log("[SERVER] No valid token but has params - creating session", {
+      operationType: "session-creation-required",
+      countryId,
+      regionId,
+      numOfDays,
+    });
     const parsedNumOfEsims = searchParams.numOfEsims ? Number(searchParams.numOfEsims) : 1;
     const parsedNumOfDays = parseInt(numOfDays ?? "7") || 7;
-    
+
     const input: CreateCheckoutSessionInput = {
       numOfDays: parsedNumOfDays,
       group: WEB_APP_BUNDLE_GROUP,
@@ -116,14 +171,19 @@ export default async function CheckoutHandler({
       numOfEsims: parsedNumOfEsims,
     } as CreateCheckoutSessionInput;
 
-    console.log("🚀 Creating checkout session with input:", input);
+    console.log("[SERVER] Prepared session input", {
+      operationType: "session-input-prepared",
+      input,
+    });
 
     // Call the session creation (this is safe, won't throw redirect)
     const result = await createCheckoutSession(input);
 
     if (result.success && result.session?.token) {
-      console.log("✅ Checkout session created successfully. Redirecting...", {
-        token: result.session.token.substring(0, 10) + "...",
+      console.log("[SERVER] Session created - preparing redirect", {
+        operationType: "session-created-success",
+        hasToken: !!result.session.token,
+        tokenPreview: result.session.token.substring(0, 10) + "...",
       });
 
       const params = new URLSearchParams({
@@ -134,16 +194,24 @@ export default async function CheckoutHandler({
       });
 
       const redirectUrl = `/checkout?${params.toString()}`;
-      console.log("Redirecting to:", redirectUrl);
+      console.log("[SERVER] Redirecting with token", {
+        operationType: "checkout-redirect",
+        url: redirectUrl,
+        params: Object.fromEntries(params.entries()),
+      });
 
       // 🔥 This throws NEXT_REDIRECT - let it propagate (no try/catch)
       performRedirect(redirectUrl);
-      
+
       // This line never executes (redirect throws)
       return null;
     } else {
       // Session creation failed (API error)
-      console.error("Session creation failed:", result.error);
+      console.error("[SERVER] Session creation failed", {
+        operationType: "session-creation-failed",
+        error: result.error,
+        success: result.success,
+      });
       return (
         <div className="p-8 text-center">
           <h2 className="text-2xl font-bold mb-4 text-red-600">
@@ -162,7 +230,12 @@ export default async function CheckoutHandler({
   }
 
   // 3. No token and no params
-  console.warn("Handler: No token and no valid params.");
+  console.warn("[SERVER] Missing required checkout parameters", {
+    operationType: "invalid-params",
+    hasToken: !!token,
+    hasBusinessParams,
+    searchParams,
+  });
   return (
     <div className="p-8 text-center">
       <h2 className="text-2xl font-bold mb-4">Invalid Checkout Parameters</h2>
