@@ -324,11 +324,25 @@ export const createSession = async (
     numOfEsims?: number;
   }
 ): Promise<CheckoutSession> => {
-  logger.info("Creating checkout session", { input });
+  logger.info("[BACKEND SERVICE] createSession called", {
+    operationType: "service-entry",
+    input,
+    hasCountryId: !!input.countryId,
+    hasRegionId: !!input.regionId,
+    numOfDays: input.numOfDays,
+    numOfEsims: input.numOfEsims,
+  });
   console.log("[SERVER] createSession INPUT:", JSON.stringify(input, null, 2));
 
   // Validate input using pure function
+  logger.info("[BACKEND SERVICE] Validating input", {
+    operationType: "input-validation",
+  });
   const validInput = validateSessionCreationInput(input);
+  logger.info("[BACKEND SERVICE] Input validation passed", {
+    operationType: "input-validated",
+    validInput,
+  });
 
   // Build search parameters
   const searchParams = {
@@ -347,13 +361,39 @@ export const createSession = async (
   //   });
   // }
 
+  logger.info("[BACKEND SERVICE] Calling calculateSimplePrice", {
+    operationType: "pricing-calculation-start",
+    countryId: validInput.countryId,
+    numOfDays: validInput.numOfDays,
+  });
   const pricingResult = await calculateSimplePrice(validInput.countryId || "", validInput.numOfDays);
 
+  logger.info("[BACKEND SERVICE] Pricing calculation complete", {
+    operationType: "pricing-calculation-complete",
+    finalPrice: pricingResult?.finalPrice,
+    bundleName: pricingResult?.bundleName,
+    provider: pricingResult?.provider,
+    requestedDays: pricingResult?.requestedDays,
+    calculation: pricingResult?.calculation,
+  });
+
   if (!pricingResult?.finalPrice) {
+    logger.error("[BACKEND SERVICE] No suitable bundle found", undefined, {
+      operationType: "pricing-error",
+      pricingResult,
+      countryId: validInput.countryId,
+      numOfDays: validInput.numOfDays,
+    });
     throw new GraphQLError("No suitable bundle found for pricing", {
       extensions: { code: "PRICING_ERROR" },
     });
   }
+
+  logger.info("[BACKEND SERVICE] Bundle found and validated", {
+    operationType: "bundle-validated",
+    bundleName: pricingResult.bundleName,
+    finalPrice: pricingResult.finalPrice,
+  });
 
   // Create plan snapshot
   const planSnapshot = {
@@ -388,12 +428,30 @@ export const createSession = async (
       numOfEsims: input.numOfEsims || 1,
     } as any,
   };
+
+  logger.info("[BACKEND SERVICE] Saving session to database", {
+    operationType: "database-save-start",
+    bundleId: sessionData.plan_id,
+    userId: sessionData.user_id,
+    state: sessionData.state,
+  });
   console.log("[SERVER] createSession sessionData being saved:", JSON.stringify(sessionData, null, 2));
+
   const session = await context.repositories.checkoutSessions.create(
     sessionData
   );
 
-  logger.info("Session created successfully (v_simple_pricer)", { sessionId: session.id });
+  logger.info("[BACKEND SERVICE] Session saved to database successfully", {
+    operationType: "database-save-complete",
+    sessionId: session.id,
+    bundleId: session.plan_id,
+    state: session.state,
+  });
+
+  logger.info("[BACKEND SERVICE] Session created successfully (v_simple_pricer)", {
+    operationType: "session-creation-complete",
+    sessionId: session.id,
+  });
 
   const mappedSession = mapDatabaseSessionToModel(session);
 
@@ -466,13 +524,13 @@ const validateSessionOrder = async (
       isValidated: isValid,
       validationDetails: isValid
         ? {
-            bundleDetails: response.data.order?.[0] || null,
-            totalPrice: response.data.total || null,
-            currency: response.data.currency || "USD",
-          }
+          bundleDetails: response.data.order?.[0] || null,
+          totalPrice: response.data.total || null,
+          currency: response.data.currency || "USD",
+        }
         : {
-            error: "Order validation failed",
-          },
+          error: "Order validation failed",
+        },
     } as any;
 
     await context.repositories.checkoutSessions.update(sessionId, {
@@ -785,11 +843,10 @@ export const preparePayment = async (
     const orderId = `order_${Date.now()}_${Math.random()
       .toString(36)
       .substring(2, 11)}`;
-    const redirectUrl = `${
-      env.isDev
-        ? "https://hiilo.loca.lt"
-        : process.env.NEXT_PUBLIC_APP_URL || "https://hiilo.loca.lt"
-    }/payment/callback?sessionId=${sessionId}`;
+    const redirectUrl = `${env.isDev
+      ? "https://hiilo.loca.lt"
+      : process.env.NEXT_PUBLIC_APP_URL || "https://hiilo.loca.lt"
+      }/payment/callback?sessionId=${sessionId}`;
 
     const paymentResult =
       await context.services.easycardPayment.createPaymentIntent({
@@ -1112,9 +1169,8 @@ const renewPaymentIntent = async (
     const orderId = `order_${Date.now()}_${Math.random()
       .toString(36)
       .substring(2, 11)}`;
-    const redirectUrl = `${
-      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-    }/payment/callback?sessionId=${session.id}`;
+    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+      }/payment/callback?sessionId=${session.id}`;
 
     const paymentResult =
       await context.services.easycardPayment.createPaymentIntent({
@@ -1415,7 +1471,7 @@ const mapDatabaseSessionToModel = (dbSession: any): CheckoutSession => {
     expiresAt: dbSession.expires_at,
     isValidated: metadata.isValidated || false,
     metadata: metadata,
-    
+
     createdAt: dbSession.created_at,
     updatedAt: dbSession.updated_at,
   };
@@ -1461,7 +1517,7 @@ export const createCheckoutSessionService = (
   if (!serviceInstance) {
     serviceInstance = {
       createSession: (ctx, input) => createSession(ctx, input),
-      authenticateSession: (ctx,  sessionId, userId) =>
+      authenticateSession: (ctx, sessionId, userId) =>
         authenticateSession(ctx, sessionId, userId),
       setDeliveryMethod: (ctx, sessionId, data) =>
         setDeliveryMethod(ctx, sessionId, data),

@@ -87,13 +87,26 @@ export const checkoutResolvers: Partial<Resolvers> = {
      */
     createCheckoutSession: async (_, args, context: Context) => {
       try {
+        logger.info("[BACKEND] createCheckoutSession resolver called", {
+          operationType: "resolver-entry",
+          hasInput: !!args.input,
+          userId: context.auth?.user?.id,
+        });
+
         const input = validateCreateSessionInput(args.input);
+        logger.info("[BACKEND] Input validation passed", {
+          operationType: "input-validated",
+          input,
+        });
+
         const tokenService = getCheckoutTokenService();
         const sessionService =
           context.services.checkoutSessionService ||
           createCheckoutSessionService(context);
 
-        logger.info("Creating checkout session", { input });
+        logger.info("[BACKEND] Services initialized, creating session", {
+          operationType: "services-initialized",
+        });
 
         // 💡 FIX: Added 'context' as the first argument as required by the updated service.
         const session = await sessionService.createSession(context, {
@@ -101,24 +114,51 @@ export const checkoutResolvers: Partial<Resolvers> = {
           userId: context.auth?.user?.id,
         });
 
+        logger.info("[BACKEND] Session created by service", {
+          operationType: "session-created",
+          sessionId: session.id,
+          bundleId: session.bundleId,
+          state: session.state,
+          userId: session.userId,
+        });
+
         const token = tokenService.generateToken(
           context.auth?.user?.id || "anonymous",
           session.id
         );
+
+        logger.info("[BACKEND] Token generated for session", {
+          operationType: "token-generated",
+          sessionId: session.id,
+          tokenPreview: token.substring(0, 10) + "...",
+        });
 
         await context.repositories.checkoutSessions.updateTokenHash(
           session.id,
           tokenService.hashToken(token)
         );
 
-        logger.info("Checkout session created", { sessionId: session.id });
+        logger.info("[BACKEND] Token hash updated in database", {
+          operationType: "token-hash-updated",
+          sessionId: session.id,
+        });
+
+        logger.info("[BACKEND] Checkout session creation complete", {
+          operationType: "checkout-session-complete",
+          sessionId: session.id,
+        });
+
         return {
           success: true,
           session: formatSessionForGraphQL(session, token),
           error: null,
         };
       } catch (error: any) {
-        logger.error("Error in createCheckoutSession", error);
+        logger.error("[BACKEND] Error in createCheckoutSession", error, {
+          operationType: "resolver-error",
+          errorMessage: error.message,
+          errorName: error.name,
+        });
         return {
           success: false,
           session: null,

@@ -5,7 +5,7 @@ import type { Destination } from "@/contexts/bundle-selector-context";
 import { useCountries } from "@/hooks/useCountries";
 import { useTrips } from "@/hooks/useTrips";
 // 1. הוספת useState לייבוא
-import { useMemo } from "react"; 
+import { useMemo } from "react";
 import { useState } from "react";
 import {
     SelectorAction,
@@ -65,7 +65,7 @@ export function MainView({
     const [isLoading, setIsLoading] = useState(false)
     // 2. הגדרת מצב מקומי לכמות ה-eSIMs
     const { numOfEsims, setNumOfEsims } = useBundleSelector();
-    
+
     // Get UI state and handlers from context
     const {
         numOfDays,
@@ -169,89 +169,124 @@ export function MainView({
                 </SelectorSection>
 
                 <SelectorSection>
-<div className="text-right w-full">
-  <button
-    onClick={() => setShowEsimSection((prev) => !prev)}
-    className="text-brand-purple text-sm md:text-base font-semibold underline hover:opacity-80 transition"
-  >
-   טסים כמה אנשים?
-  </button>
-</div>
-</SelectorSection>
+                    <div className="text-right w-full">
+                        <button
+                            onClick={() => setShowEsimSection((prev) => !prev)}
+                            className="text-brand-purple text-sm md:text-base font-semibold underline hover:opacity-80 transition"
+                        >
+                            טסים כמה אנשים?
+                        </button>
+                    </div>
+                </SelectorSection>
 
-{showEsimSection && (
-  <SelectorSection>
-    <div className="flex items-center gap-[4px] md:gap-2 justify-start">
-      <Users2Icon className="w-4 h-4 md:w-[20px] md:h-[20px] text-brand-dark" />
-      <p className="text-base md:text-xl leading-[26px] md:leading-normal text-brand-dark">
-        כמה eSIMs צריך?
-      </p>
-    </div>
+                {showEsimSection && (
+                    <SelectorSection>
+                        <div className="flex items-center gap-[4px] md:gap-2 justify-start">
+                            <Users2Icon className="w-4 h-4 md:w-[20px] md:h-[20px] text-brand-dark" />
+                            <p className="text-base md:text-xl leading-[26px] md:leading-normal text-brand-dark">
+                                כמה eSIMs צריך?
+                            </p>
+                        </div>
 
-    <div className="relative h-[21px] md:h-[38px]">
-      <SliderWithValue
-        dir={"rtl"}
-        value={[numOfEsims]}
-        onValueChange={(value) => setNumOfEsims(value[0])}
-        min={1}
-        max={10}
-      />
-    </div>
+                        <div className="relative h-[21px] md:h-[38px]">
+                            <SliderWithValue
+                                dir={"rtl"}
+                                value={[numOfEsims]}
+                                onValueChange={(value) => setNumOfEsims(value[0])}
+                                min={1}
+                                max={10}
+                            />
+                        </div>
 
-    <div className="text-right text-xs text-gray-500 mt-1">
-      לכל מטייל נפרד דרוש eSIM משלו.
-    </div>
-  </SelectorSection>
-)}
+                        <div className="text-right text-xs text-gray-500 mt-1">
+                            לכל מטייל נפרד דרוש eSIM משלו.
+                        </div>
+                    </SelectorSection>
+                )}
 
 
                 {/* Selected Destination and Pricing */}
                 {destination && (
-<Pricing
-    destination={destination}
-    pricing={pricing}
-    shouldShowStreamingUI={shouldShowStreamingUI}
-    isStreamingData={isStreamingData}
-    hasDataForDay={hasDataForDay}
-    countryId={countryId}
-    tripId={tripId}
-    numOfDays={numOfDays}
-    onRemoveDestination={() => {
-        setCountryId(null);
-        setTripId(null);
-    }}
-    numOfEsims={numOfEsims}
-    onThinkingStateChange={(state) => setIsPricingThinking(state)} // 👈 חדש
-/>
+                    <Pricing
+                        destination={destination}
+                        pricing={pricing}
+                        shouldShowStreamingUI={shouldShowStreamingUI}
+                        isStreamingData={isStreamingData}
+                        hasDataForDay={hasDataForDay}
+                        countryId={countryId}
+                        tripId={tripId}
+                        numOfDays={numOfDays}
+                        onRemoveDestination={() => {
+                            setCountryId(null);
+                            setTripId(null);
+                        }}
+                        numOfEsims={numOfEsims}
+                        onThinkingStateChange={(state) => setIsPricingThinking(state)} // 👈 חדש
+                    />
                 )}
             </SelectorContent>
 
             {/* Purchase Button - Always visible */}
             <SelectorAction className="mt-2">
-<SelectorButton
-    onClick={async () => {
-    if (!isPricingValid || isPricingThinking || isPurchasing) return;
+                <SelectorButton
+                    onClick={async () => {
+                        console.log("[FRONTEND] Purchase button clicked", {
+                            operationType: "purchase-button-click",
+                            isPricingValid,
+                            isPricingThinking,
+                            isPurchasing,
+                            countryId,
+                            tripId,
+                            numOfDays,
+                            numOfEsims,
+                        });
 
-    setIsPurchasing(true);
+                        if (!isPricingValid || isPricingThinking || isPurchasing) {
+                            console.warn("[FRONTEND] Purchase blocked - invalid state", {
+                                operationType: "purchase-blocked",
+                                isPricingValid,
+                                isPricingThinking,
+                                isPurchasing,
+                            });
+                            return;
+                        }
 
-    try {
-        await handlePurchase(); // your purchase flow
-    } finally {
-        setIsPurchasing(false);
-    }
-}}
-disabled={!isPricingValid || isPricingThinking || isPurchasing}
-    variant={isPricingValid && !isPricingThinking ? "brand-success" : undefined}
-    emphasized={isPricingValid && !isPricingThinking}
->
-{isPricingThinking
-    ? "מחשב..."
-    : isPurchasing
-        ? "מבצע רכישה..."
-        : isPricingValid
-            ? "לרכישת החבילה"
-            : "לצפייה בחבילה המשתלמת ביותר"}
-</SelectorButton>
+                        setIsPurchasing(true);
+
+                        try {
+                            console.log("[FRONTEND] Calling handlePurchase", {
+                                operationType: "calling-handle-purchase",
+                                countryId,
+                                tripId,
+                                numOfDays,
+                                numOfEsims,
+                            });
+                            await handlePurchase(); // your purchase flow
+                            console.log("[FRONTEND] handlePurchase completed successfully", {
+                                operationType: "handle-purchase-success",
+                            });
+                        } catch (error) {
+                            console.error("[FRONTEND] handlePurchase failed", {
+                                operationType: "handle-purchase-error",
+                                error: error instanceof Error ? error.message : String(error),
+                                stack: error instanceof Error ? error.stack : undefined,
+                            });
+                        } finally {
+                            setIsPurchasing(false);
+                        }
+                    }}
+                    disabled={!isPricingValid || isPricingThinking || isPurchasing}
+                    variant={isPricingValid && !isPricingThinking ? "brand-success" : undefined}
+                    emphasized={isPricingValid && !isPricingThinking}
+                >
+                    {isPricingThinking
+                        ? "מחשב..."
+                        : isPurchasing
+                            ? "מבצע רכישה..."
+                            : isPricingValid
+                                ? "לרכישת החבילה"
+                                : "לצפייה בחבילה המשתלמת ביותר"}
+                </SelectorButton>
 
             </SelectorAction>
         </>

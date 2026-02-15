@@ -8,10 +8,10 @@ import path from "path";
 const MAYA_USERNAME = "y5b7HUu2PkCK";
 const MAYA_PASSWORD = "BcM1pD9MhpY5eZNunPJqRCEQGIyDbmmceIw69bszr7xQT6KLqvVvj4kFo8Xz1SuH";
 const MAYA_BASE_URL = "https://api.maya.net/connectivity/v1";
-const ICCID = "8910300000049988956";
+const ICCID = "8910300000057317907";
 
 const POSTMARK_TOKEN = "eb7e4a97-3d71-4c8e-8bd0-f2c85fafaa28";
-const RECIPIENT_EMAIL = "doronshua@walla.com";
+const RECIPIENT_EMAIL = "inandesign@yahoo.com";
 const RECIPIENT_NAME = "doron";
 
 // 📁 תקייה שבה יושבים נכסי האימייל (אותם קבצים שאתה כבר משתמש בהם בשרת)
